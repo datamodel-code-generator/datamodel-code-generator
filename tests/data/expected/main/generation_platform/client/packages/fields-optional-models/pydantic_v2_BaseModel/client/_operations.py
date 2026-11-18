@@ -63,7 +63,6 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
                 kind='form',
                 codec=model_bindings.codec_2,
                 fields=(FieldPlan('name', 'string'), FieldPlan('tag', 'string')),
-                additional=FieldPlan('', 'string'),
             ),
         ),
         required=True,

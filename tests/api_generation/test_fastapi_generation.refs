@@ -5,6 +5,8 @@
 [test_fastapi_checkouts]
 	main/generation_platform/fastapi/acceptance/checkouts.txt
 [test_fastapi_render]
+applied-config	main/generation_platform/fastapi/applied-config.txt
+applied-config	main/generation_platform/fastapi/packages/applied-config/
 argument-errors	main/generation_platform/fastapi/argument-errors.txt
 argument-errors	main/generation_platform/fastapi/packages/argument-errors/
 auth-parameters	main/generation_platform/fastapi/auth-parameters.txt

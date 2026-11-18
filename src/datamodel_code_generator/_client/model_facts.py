@@ -8,6 +8,7 @@ symbols and field bindings alone, never from a codec.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import cached_property
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._target_contract import (
@@ -15,9 +16,8 @@ from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
     ImportedType,
-    KnownBackendValue,
-    LiteralScalar,
     UnionType,
+    schema_uses,
     wrapped_type,
 )
 from datamodel_code_generator._target_types import (
@@ -32,13 +32,16 @@ from datamodel_code_generator._target_types import (
 from datamodel_code_generator.imports import _import_path
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Sequence
 
     from datamodel_code_generator._target_contract import (
+        Direction,
         FieldUseBinding,
         FinalModelSymbol,
         ModelFieldFacts,
+        SourceDocumentId,
         SymbolId,
+        TypeUseBinding,
         TypeView,
     )
 
@@ -46,7 +49,6 @@ __all__ = ("ItemStep", "ModelFacts", "ModelField", "StepKind")
 
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 _EXTRAS: Final = "__pydantic_extra__"
-_FALSE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=False))
 _MODELS: Final = frozenset({"model", "root"})
 
 
@@ -69,8 +71,9 @@ class ItemStep:
 class ModelField:
     """A field of a generated model by its wire name: its attribute, or key, its type, and what its model gives it.
 
-    `required` says the model's constructor needs the field, and `missing` that it defaults to Pydantic's MISSING;
-    `explicit` that an `--aliases` entry of its class gave its name; `member` is the field's binding in its consumer.
+    `required` says the model's constructor needs the field, `missing` that it defaults to Pydantic's MISSING and
+    `annotation_null` that its annotation accepts None; `explicit` that an `--aliases` entry of its class gave its
+    name; `member` is the field's binding in its consumer.
     """
 
     wire_name: str
@@ -82,6 +85,7 @@ class ModelField:
     member: FieldUseBinding
     missing: bool = False
     explicit: bool = False
+    annotation_null: bool = False
 
 
 def _declared_root(symbol: FinalModelSymbol) -> bool:
@@ -89,39 +93,24 @@ def _declared_root(symbol: FinalModelSymbol) -> bool:
     return symbol.kind == "root" and symbol.facts is not None
 
 
-def _partial(symbol: FinalModelSymbol) -> bool:
-    """Return whether a TypedDict class declares `total=False`."""
-    parameters = () if symbol.facts is None else symbol.facts.parameters
-    return next((item.value for item in parameters if item.name == "total" and item.present), None) == _FALSE
-
-
-def _required(consumer: FinalModelSymbol, owner: FinalModelSymbol, facts: ModelFieldFacts) -> bool:
-    """Return whether a model's constructor requires a field, by the rules of the consumer's backend.
-
-    Pydantic requires a required field without a default, a dataclass or Struct an initialized field without an emitted
-    default, and a TypedDict a key its qualifiers or its declaring class's totality require.
-    """
-    backend = facts.backend
-    match consumer.backend:
-        case "pydantic" | "pydantic_dataclass":
-            required = facts.required and backend.emitted.emitted_default_kind == "absent"
-        case "typeddict":
-            qualifiers = backend.emitted.qualifiers
-            required = "Required" in qualifiers or (not _partial(owner) and "NotRequired" not in qualifiers)
-        case _:
-            required = backend.constructor_init != _FALSE and backend.emitted.emitted_default_kind == "absent"
-    return required
-
-
 class ModelFacts:
-    """The generated models of a batch: their symbols, their fields by consumer, and the types they stand for."""
+    """The generated models of a batch: their symbols, their fields by consumer, and the types they stand for.
 
-    def __init__(self, tables: TypeTables) -> None:
+    `schemas` holds the value use of each schema occurrence among the batch's type uses (``schema_uses``).
+    """
+
+    def __init__(self, tables: TypeTables, uses: Sequence[TypeUseBinding]) -> None:
         """Read the batch's symbols by identity and its field bindings by consuming symbol from its tables."""
         self.tables = tables
         self.symbols = tables.symbols
         self.members = tables.members
+        self._uses = uses
         self.planned: dict[SymbolId, tuple[ModelField, ...]] = {}
+
+    @cached_property
+    def schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+        """Return the value use of each schema occurrence by its location and direction, indexed when first read."""
+        return schema_uses(self._uses)
 
     def symbol(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the model or root model a type names when its backend declares it, or None for any other type."""
@@ -154,12 +143,13 @@ class ModelFacts:
                 wire_name=wire_name,
                 name=wire_name if functional else slot.name,
                 type=facts.type,
-                required=_required(consumer, owner, facts),
+                required=facts.constructor_required,
                 read_only=facts.read_only,
                 write_only=facts.write_only,
                 member=member,
                 missing=facts.backend.emitted.emitted_default_kind == "pydantic_missing",
                 explicit=facts.explicit_name,
+                annotation_null=facts.annotation_null,
             )
 
     def root(self, symbol: SymbolId) -> TypeView | None:

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping as _Mapping
 from enum import Enum
 from typing import Any, ClassVar, Literal
@@ -10,7 +11,7 @@ from typing import Any, ClassVar, Literal
 from pydantic import BaseModel, model_validator
 
 
-class _JsonSchemaRuntimeValidationBase(BaseModel):
+class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
     __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ()
 
     @model_validator(mode='before')
@@ -224,6 +225,79 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         return cls._json_schema_unique_items_equal(left, right) or cls._json_schema_unique_items_equal(right, left)
 
 
+class _JsonSchemaRuntimeValidationBase(_JsonSchemaRuntimeValidationBaseCore):
+    __json_schema_constant_types__: ClassVar[tuple[tuple[object, ...], ...]] = ()
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_constant_types(cls, data: Any) -> Any:
+        for path, values in cls.__json_schema_constant_types__:
+            cls._validate_json_schema_constant_types_path(data, path, 0, values)
+        return data
+
+    @classmethod
+    def _validate_json_schema_constant_types_path(
+        cls,
+        value: Any,
+        path: tuple[object, ...],
+        position: int,
+        values: tuple[object, ...],
+    ) -> None:
+        if position == len(path):
+            if (
+                isinstance(value, (int, float))
+                and value in values
+                and not any(
+                    isinstance(value, bool) is isinstance(expected, bool) and value == expected for expected in values
+                )
+            ):
+                raise ValueError('Expected the JSON type of the schema constant')
+            return
+
+        match path[position]:
+            case None:
+                if not isinstance(value, (list, tuple)):
+                    return
+                for item in value:
+                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+            case ('__json_schema_array_tail__', int() as start):
+                if not isinstance(value, (list, tuple)):
+                    return
+                for item in value[start:]:
+                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+            case int() as index:
+                if isinstance(value, (list, tuple)) and index < len(value):
+                    cls._validate_json_schema_constant_types_path(value[index], path, position + 1, values)
+            case '__json_schema_mapping_values__':
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                for item in value.values():
+                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+            case ('__json_schema_mapping_pattern_values__', str() as pattern, None):
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                for name, item in value.items():
+                    if re.search(pattern, name):
+                        cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+            case ('__json_schema_mapping_additional_values__', tuple() as declared_name_groups, tuple() as patterns):
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                declared_names = {
+                    next((name for name in names if name in value), None) for names in declared_name_groups
+                }
+                for name, item in value.items():
+                    if name in declared_names or any(re.search(pattern, name) for pattern in patterns):
+                        continue
+                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+            case tuple() as input_names:
+                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                    return
+                for name in input_names:
+                    if name in value:
+                        cls._validate_json_schema_constant_types_path(value[name], path, position + 1, values)
+                        return
+
+
 class OneOfFallback(BaseModel):
     kind: str
 
@@ -245,6 +319,8 @@ class UniqueItemsUnionMappingShapes(_JsonSchemaRuntimeValidationBase):
         (('arrayConstScalar',),),
         (('mappingEnumScalar',), '__json_schema_mapping_values__'),
     )
+
+    __json_schema_constant_types__: ClassVar[tuple[tuple[object, ...], ...]] = (((('mappingEnumScalar',),), (0,)),)
 
     anyOfFallback: Any | dict[str, Any]
     oneOfFallback: Any | OneOfFallback

@@ -79,7 +79,6 @@ OPERATION_0: Final[OperationPlan[SubmitFormResponse]] = OperationPlan(
                 'form',
                 model_bindings.codec_1,
                 fields=(FieldPlan('name', 'string'), FieldPlan('count', 'integer')),
-                additional=FieldPlan('', 'string'),
             ),
         ),
         (),
@@ -95,7 +94,6 @@ OPERATION_0: Final[OperationPlan[SubmitFormResponse]] = OperationPlan(
                     FieldPlan('count', 'integer'),
                     FieldPlan('labels', 'string', repeated=True),
                 ),
-                additional=FieldPlan('', 'string'),
             ),
         ),
         default='application/x-www-form-urlencoded',
@@ -115,18 +113,7 @@ OPERATION_1: Final[OperationPlan[SubmitProfileResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 codec=model_bindings.codec_2,
-                form=MultipartForm(
-                    members=True,
-                    parts=(
-                        PartPlan('name', 'string'),
-                        PartPlan('age', 'string'),
-                        PartPlan('active', 'string'),
-                        PartPlan('tags', 'string', repeated=True),
-                        PartPlan('address', 'json'),
-                        PartPlan('nickname', 'string'),
-                    ),
-                    additional=PartPlan('', 'json'),
-                ),
+                form=MultipartForm(members=True, parts=(PartPlan('address', 'json'),)),
             ),
         ),
         default='multipart/form-data',
@@ -451,7 +438,6 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse]] = OperationPlan(
                 kind='form',
                 codec=model_bindings.codec_10,
                 fields=(FieldPlan('term', 'string'),),
-                additional=FieldPlan('', 'string'),
                 encoded=(
                     ParameterPlan(
                         location='query',
@@ -478,8 +464,6 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse]] = OperationPlan(
                             FieldPlan('name', 'string'),
                             FieldPlan('min', 'integer'),
                         ),
-                        additional=FieldPlan('', 'string'),
-                        reserved_names=('extra', 'ids', 'meta', 'path', 'tags', 'term'),
                     ),
                     ParameterPlan(
                         location='query',
@@ -574,12 +558,6 @@ OPERATION_17: Final[OperationPlan[SubmitCardResponse]] = OperationPlan(
                 codec=model_bindings.codec_11,
                 form=MultipartForm(
                     members=True,
-                    parts=(
-                        PartPlan('title', 'string'),
-                        PartPlan('count', 'string'),
-                        PartPlan('tags', 'string', repeated=True),
-                    ),
-                    additional=PartPlan('', 'json'),
                     content_types=(
                         ('title', 'text/plain; charset=utf-16'),
                         ('count', 'application/json'),
@@ -607,8 +585,6 @@ OPERATION_18: Final[OperationPlan[SubmitStickersResponse]] = OperationPlan(
                 codec=model_bindings.codec_12,
                 form=MultipartForm(
                     members=True,
-                    parts=(PartPlan('y', 'string'),),
-                    additional=PartPlan('', 'json'),
                     encoded=(
                         ParameterPlan(
                             location='query',
@@ -637,15 +613,6 @@ OPERATION_18: Final[OperationPlan[SubmitStickersResponse]] = OperationPlan(
                             fields=(
                                 FieldPlan('name', 'string'),
                                 FieldPlan('min', 'integer'),
-                            ),
-                            additional=FieldPlan('', 'string'),
-                            reserved_names=(
-                                'label',
-                                'point',
-                                'sizes',
-                                'tags',
-                                'words',
-                                'y',
                             ),
                         ),
                         ParameterPlan(

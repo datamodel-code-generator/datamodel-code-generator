@@ -31,12 +31,9 @@ from datamodel_code_generator.python_literal import stable_repr
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic, SchemaRef
     from datamodel_code_generator._client.codec_plan import ClientCodecs
     from datamodel_code_generator._client.codec_render import UseAccessors
-    from datamodel_code_generator._client.plan import ClientPlan
-    from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
@@ -151,38 +148,33 @@ def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) ->
                 break
 
 
-def webhook_uses(
-    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest
-) -> tuple[tuple[WebhookSpec, ...], dict[str, list[Diagnostic]]]:
+def webhook_uses(planner: HelperPlanner | None) -> tuple[tuple[WebhookSpec, ...], dict[str, list[Diagnostic]]]:
     """Return each enabled webhook helper with its events' request-body uses, and each such helper's problems.
 
     An event's use is the first JSON request body of a webhook or callback operation whose schema, through references,
     is the event's schema; its decoding mode is settled once the use is bound.
     """
-    helpers = (
-        ()
-        if protocols is None
-        else tuple(item for item in protocols.helpers if item.enabled and item.kind == "webhook")
-    )
-    if protocols is None or not helpers:
+    if planner is None:
+        return (), {}
+    protocols, schema_type = planner.protocols, planner.schema_type
+    if not (helpers := tuple(item for item in protocols.helpers if item.enabled and item.kind == "webhook")):
         return (), {}
     problems: dict[str, list[Diagnostic]] = {helper.name: [] for helper in helpers}
     for helper, problem in _names(helpers, protocols.python_version):
         problems[helper.name].append(problem)
     candidates = [
         use
-        for use in request.batch.type_uses
+        for use in planner.request.batch.type_uses
         if use.id.role == "request_body"
         and isinstance(owner := use.id.owner, OperationId)
         and owner.kind in _SENDERS
         and use.type is not None
         and media_kind(use.id.media or "") == "json"
     ]
-    planner = HelperPlanner(protocols, plan, request)
 
     def event(helper: Helper, name: str | None, reference: SchemaRef, at: str) -> WebhookEvent | None:
         """Return the event a schema reference binds, adding the helper's problem when there is none."""
-        if (expected := planner.schema_type(reference, "request")) == "missing":
+        if (expected := schema_type(reference, "request")) == "missing":
             problems[helper.name].append(
                 _problem("E_CONFIG_VALUE", "config", at, missing_schema(helper, "event_schema", reference))
             )

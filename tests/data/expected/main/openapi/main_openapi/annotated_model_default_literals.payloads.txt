@@ -1,0 +1,2 @@
+Film(cast='actors', pet=Pet(name='rex'), petOrLevel=1, petOrFloat=1, petOrFlag=1)
+['str', 'Pet', 'int', 'int', 'int']

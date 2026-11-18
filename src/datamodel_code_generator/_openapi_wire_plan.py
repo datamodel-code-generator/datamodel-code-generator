@@ -7,7 +7,6 @@ from functools import cached_property
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
-from datamodel_code_generator._openapi_codec_plan import keeps_extras
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     LexicalKind,
@@ -29,7 +28,6 @@ from datamodel_code_generator._target_contract import (
     API_KEY_LOCATIONS,
     BindingReason,
     EncodingFacts,
-    GeneratedSymbolType,
     GeneratedTypeContractBatch,
     KindAt,
     LiteralScalar,
@@ -122,11 +120,16 @@ class WirePlan:
 
     parameters: tuple[tuple[OperationId, tuple[tuple[tuple[ParameterLocation, str], ParameterPlan], ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
-    kinds: LexicalKinds
+    tables: BatchTables
     versions: OpenAPIVersions
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
     styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
+
+    @property
+    def kinds(self) -> LexicalKinds:
+        """Return the reader of the bound lexical kinds of the batch."""
+        return self.tables.kinds
 
 
 class _PlanError(Exception):
@@ -137,17 +140,33 @@ class _PlanError(Exception):
         self.diagnostic = CodecDiagnostic("MC_PARAMETER_ENCODING", source, message, feature=feature)
 
 
-class _WirePlanner:
-    def __init__(self, batch: GeneratedTypeContractBatch, *, writes: bool = False, brackets: bool = False) -> None:
+class BatchTables:
+    """The indexes of a batch that the planners of one target read, built once per target.
+
+    `kinds` reads the batch's type tables (``TypeTables.of``), `uses` and `order` give its type uses by identity and
+    their order, and `schemes` the security schemes of each document (``scheme_catalogues``).
+    """
+
+    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
+        """Index the batch's types, type uses and security schemes."""
         self.batch = batch
-        self.writes = writes
-        self.brackets = brackets
-        self.kinds = LexicalKinds(batch)
-        self.diagnostics: list[CodecDiagnostic] = []
-        self.versions = batch.versions
+        self.kinds = LexicalKinds(batch, TypeTables.of(batch))
         self.uses = uses_by_id(batch)
         self.order = {use: index for index, use in enumerate(self.uses)}
         self.schemes = scheme_catalogues(batch)
+
+
+class _WirePlanner:
+    def __init__(self, tables: BatchTables, *, writes: bool = False, brackets: bool = False) -> None:
+        self.tables = tables
+        self.writes = writes
+        self.brackets = brackets
+        self.kinds = tables.kinds
+        self.diagnostics: list[CodecDiagnostic] = []
+        self.versions = tables.batch.versions
+        self.uses = tables.uses
+        self.order = tables.order
+        self.schemes = tables.schemes
 
 
 def declared_media(name: str) -> tuple[str, str | None]:
@@ -219,6 +238,7 @@ def plan_wire(  # noqa: PLR0913
     batch: GeneratedTypeContractBatch,
     uses: Sequence[TypeUseId] | None = None,
     *,
+    tables: BatchTables | None = None,
     operations: Collection[OperationId] | None = None,
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
@@ -232,11 +252,12 @@ def plan_wire(  # noqa: PLR0913
     encodings give a style. A requested use that carries a raw binary string as text is refused, since the model
     backends write bytes as different text. An operation parameter that is an item or an array of items is planned
     only when the operations' parameters are written (`writes`), since text read back cannot tell the two apart.
-    With `brackets`, a written deepObject query parameter is written in the bracket form (`_brackets`).
+    With `brackets`, a written deepObject query parameter is written in the bracket form (`_brackets`). `tables` are
+    the target's indexes of the batch, which differs from it at most in its operations; without them it is indexed.
     """
     forms = forms or {}
     styles = styles or {}
-    planner = _WirePlanner(batch, writes=writes, brackets=brackets)
+    planner = _WirePlanner(tables or BatchTables(batch), writes=writes, brackets=brackets)
     requested = None if uses is None else frozenset(uses)
     planned = [operation for operation in batch.operations if operations is None or operation.id in operations]
     parameters = tuple((operation.id, _parameters(planner, operation)) for operation in planned)
@@ -259,7 +280,7 @@ def plan_wire(  # noqa: PLR0913
     return WirePlan(
         parameters,
         tuple(planner.diagnostics),
-        planner.kinds,
+        planner.tables,
         planner.versions,
         headers,
         planned_forms,
@@ -347,7 +368,7 @@ def _form(
             _encoding(bound, members, declaration, writes=planner.writes, brackets=planner.brackets)
             for declaration in styled.values()
         )
-        encoded = _distinct(planner, bound, [field.name for field in fields], encoded)
+        encoded = _distinct(bound, [field.name for field in fields], encoded)
     except _PlanError as error:
         _refused(planner, error, use.id.owner, (use.id,))
         return None
@@ -368,11 +389,20 @@ def _styles(
         encoded = tuple(_encoding(bound, members, declaration) for declaration in member_encodings(use, encodings))
         styled = {plan.name for plan in encoded}
         names = [member.name for member in form_members(planner.kinds, bound) if member.name not in styled]
-        encoded = _distinct(planner, bound, names, encoded)
+        encoded = _distinct(bound, names, encoded)
     except _PlanError as error:
         _refused(planner, error, use.id.owner, (use.id,))
         return None
     return use.id, encoded
+
+
+def plan_styles(
+    tables: BatchTables, use: TypeUseBinding, encodings: tuple[WireDeclaration, ...]
+) -> tuple[tuple[ParameterPlan, ...], tuple[CodecDiagnostic, ...]]:
+    """Return the plans of a form-data use's members that its encodings give a style (``_styles``), and its refusals."""
+    planner = _WirePlanner(tables)
+    styled = _styles(planner, use, encodings)
+    return () if styled is None else styled[1], tuple(planner.diagnostics)
 
 
 @dataclass(frozen=True, slots=True)
@@ -405,15 +435,24 @@ def form_members(kinds: LexicalKinds, use: TypeUseBinding) -> Iterator[FormMembe
             yield FormMember(name, facts.type, *kinds.tables.member_kind(facts.type), shaped.get(name, schema), member)
 
 
-def form_extras(kinds: LexicalKinds, use: TypeUseBinding) -> FormMember | None:
+def form_extras(kinds: LexicalKinds, use: TypeUseBinding, *, loose: bool = False) -> FormMember | None:
     """Return how the other properties of a form are written, by the type of their values.
 
     The type is the one the form's model keeps them as, in a field of its own or one it inherits. A model without
     such a field takes the type its use binds for their schema (`EncodingFacts.extras`). A form whose model keeps
     none as a type, and that allows no other properties, has no schema for them, or binds no type for it, has no such
-    member: its other properties are text as they come.
+    member: its other properties are text as they come. A reader that hands them to the model has none when the model
+    takes none (`PartFacts.extra`, else a form's `TextShape.additional` where it has a builtin encoding); one that
+    keeps the parts itself (`loose`) takes those the schema gives.
     """
-    extras = None if (encoding := use.encoding) is None else encoding.extras
+    encoding, parts = use.encoding, use.parts
+    if not loose and (
+        parts.extra == "closed"
+        if parts is not None
+        else encoding is not None and encoding.form.problem is None and encoding.form.additional is None
+    ):
+        return None
+    extras = None if encoding is None else encoding.extras
     if (kept := kinds.kept(use)) is not None:
         value, declared = kept
         return FormMember("", value, *kinds.tables.member_kind(value), declared if extras is None else extras[0])
@@ -491,16 +530,14 @@ def _refused(planner: _WirePlanner, error: _PlanError, owner: object, uses: tupl
     planner.diagnostics.append(replace(error.diagnostic, operation=operation, uses=uses))
 
 
-def _distinct(
-    planner: _WirePlanner, form: TypeUseBinding, names: list[str], encoded: tuple[ParameterPlan, ...]
-) -> tuple[ParameterPlan, ...]:
+def _distinct(form: TypeUseBinding, names: list[str], encoded: tuple[ParameterPlan, ...]) -> tuple[ParameterPlan, ...]:
     """Refuse a form whose members write a name twice, or whose other names more than one member would take back.
 
     An exploded member's own names count, and an exploded object that allows other properties takes every name no
     other member writes, so the form may have one such member and no deepObject member then, as an operation's query
-    parameters may, nor other properties of its own that its schema allows as `true` or a schema or its model keeps by
-    its configuration. Return the plans with the other exploded members' names reserved from the one that takes the
-    rest.
+    parameters may, nor other properties of its own that its class takes as `true` or a schema or by its
+    configuration (`EncodingFacts.declared`). Return the plans with the other exploded members' names reserved from
+    the one that takes the rest.
     """
     location = _located(form)
     claimed = [
@@ -512,10 +549,7 @@ def _distinct(
         raise _PlanError(location, "Expanded form member names collide")
     absorbing = [plan.name for plan in encoded if plan.additional is not None and _spread(plan)]
     if absorbing and (
-        len(absorbing) > 1
-        or any(plan.style == "deepObject" for plan in encoded)
-        or _encoded(form).declared
-        or planner.kinds.configured(form)
+        len(absorbing) > 1 or any(plan.style == "deepObject" for plan in encoded) or _encoded(form).declared
     ):
         message = (
             f"The exploded form member {stable_repr(absorbing[0])} allows other properties and takes every name no "
@@ -997,14 +1031,10 @@ def _field(member: MemberShape) -> FieldPlan:
 class LexicalKinds:
     """Read the lexical kind of a form member (``TypeTables.member_kind``) and the other properties its model keeps."""
 
-    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
-        """Keep the batch whose tables and root values the first lookups index."""
+    def __init__(self, batch: GeneratedTypeContractBatch, tables: TypeTables) -> None:
+        """Keep the batch's tables, and the batch whose root values the first lookup indexes."""
         self._batch = batch
-
-    @cached_property
-    def tables(self) -> TypeTables:
-        """Return the batch's symbols and field bindings, indexed once (``TypeTables.of``)."""
-        return TypeTables.of(self._batch)
+        self.tables = tables
 
     @cached_property
     def _extras(self) -> dict[FieldSlot | None, SourceLocation]:
@@ -1029,16 +1059,6 @@ class LexicalKinds:
                 if (schema := member.schema) is not None
             ),
             None,
-        )
-
-    def configured(self, use: TypeUseBinding) -> bool:
-        """Return whether the model a use's type stands for keeps its other properties by the configuration it takes.
-
-        The type stands for the model through aliases, root models and a union with None alone, and the model takes
-        its own setting over the one it inherits.
-        """
-        return isinstance(value := self.tables.unwrapped(use.type), GeneratedSymbolType) and keeps_extras(
-            self.tables.symbols, value.symbol
         )
 
     def text(self, use: TypeUseBinding) -> bool:

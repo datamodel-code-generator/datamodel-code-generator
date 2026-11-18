@@ -99,15 +99,6 @@
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."enum_member_literal_values"]
 "data_type._enum_member_literal_reference" = 1
 
-["src/datamodel_code_generator/parser/_passes/_shared.py"."get_constructor_field_adjustment"]
-"model._field_assignment_facts" = 1
-
-["src/datamodel_code_generator/parser/_passes/_shared.py"."get_constructor_ordering_conflicts"]
-"model._field_assignment_facts" = 1
-
-["src/datamodel_code_generator/parser/_passes/_shared.py"."get_inherited_constructor_info"]
-"model._field_assignment_facts" = 1
-
 ["src/datamodel_code_generator/parser/_passes/_shared.py"."normalize_default_value_constraints"]
 "host._graph_builder" = 1
 
@@ -216,9 +207,6 @@
 "resolver._get_unique_field_name" = 1
 "resolver._reset_for_reuse" = 1
 
-["src/datamodel_code_generator/parser/_passes/modules.py"."collapse_root_models"]
-"parser.generation_store._collapse_root_reference_scope" = 1
-
 ["src/datamodel_code_generator/parser/_passes/modules.py"."collapse_root_models_in_scope"]
 "generation_store._replace_data_type_and_detach_data_type_ref" = 2
 "model_field._set_runtime_expression_imports" = 1
@@ -228,9 +216,6 @@
 
 ["src/datamodel_code_generator/parser/_passes/modules.py"."const_narrowed_data_type"]
 "new_data_type._set_enum_member_literal_reference" = 1
-
-["src/datamodel_code_generator/parser/_passes/modules.py"."has_other_root_references"]
-"store._root_collapse_has_data_type_references" = 1
 
 ["src/datamodel_code_generator/parser/_passes/modules.py"."rename_fields_hiding_types"]
 "_field_type_resolver(...)._get_unique_field_name" = 1
@@ -291,9 +276,6 @@
 "field._render_plan_text" = 2
 "model._FREEZES_FIELD_RENDER_PLANS" = 1
 "model_field._build_frozen_render_plan" = 1
-
-["src/datamodel_code_generator/parser/_passes/render_prep.py"."get_local_constructor_ordering_key"]
-"model._field_assignment_facts" = 1
 
 ["src/datamodel_code_generator/parser/_passes/render_prep.py"."has_required_assignment_after_default"]
 "model._field_assignment_facts" = 1

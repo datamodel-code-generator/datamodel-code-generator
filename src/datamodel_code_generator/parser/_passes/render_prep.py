@@ -31,9 +31,7 @@ from datamodel_code_generator.model.base import (
     DataModel,
     _default_state,
     _effective_field_owners,
-    _find_base_classes,
     _model_key_of_model,
-    linearize_data_models,
     ordering_constructor_fields,
     set_item_models_keeping_builtin_hash,
 )
@@ -61,6 +59,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _hidden_type_names,
     _ModelPositions,
     _unwrap_type_alias,
+    assignment_facts_of,
     constructor_base_models,
     definition_reads,
     get_constructor_field_adjustment,
@@ -237,8 +236,17 @@ def _apply_constructor_field_adjustments(
         model.enable_model_keyword_only()
 
 
-def _contains_model_reference(data_type: DataType) -> bool:
-    """Check if a data type tree contains any reference to a non-alias model."""
+def _takes_validated_defaults(source: DataModel, *, root_model_aliases: bool) -> bool:
+    """Return whether Pydantic validates a default into a model: no enum, no alias, or a root model alias (option)."""
+    return not isinstance(source, Enum) and (not source.is_alias or (root_model_aliases and source.IS_ROOT_MODEL))
+
+
+def _contains_model_reference(data_type: DataType, *, root_model_aliases: bool = False) -> bool:
+    """Check if a data type tree contains any reference to a non-alias model.
+
+    With ``root_model_aliases`` (``--use-validate-default-for-root-model-type-aliases``) a root model written as an
+    alias (``Tags = RootModel[list[str]]``) is such a model too, as the root model class it is at runtime.
+    """
     stack = [data_type]
     seen: set[int] = set()
     while stack:
@@ -249,18 +257,17 @@ def _contains_model_reference(data_type: DataType) -> bool:
         seen.add(resolved_id)
         if (
             resolved.reference
-            and isinstance(resolved.reference.source, DataModel)
-            and not isinstance(resolved.reference.source, Enum)
-            and not resolved.reference.source.is_alias
+            and isinstance(source := resolved.reference.source, DataModel)
+            and _takes_validated_defaults(source, root_model_aliases=root_model_aliases)
         ):
             return True
         stack.extend(type_children(resolved))
     return False
 
 
-def _needs_validate_default(data_type: DataType) -> bool:
+def _needs_validate_default(data_type: DataType, *, root_model_aliases: bool = False) -> bool:
     """Check if a field needs validate_default=True to coerce defaults into model instances."""
-    return _contains_model_reference(data_type)
+    return _contains_model_reference(data_type, root_model_aliases=root_model_aliases)
 
 
 def _applies_default(field: DataModelFieldBase) -> bool:
@@ -272,6 +279,9 @@ def validates_structured_default(field: DataModelFieldBase) -> bool:
     """Return whether render preparation writes ``validate_default=True`` for the default of a field.
 
     It reads the facts that are final at the end of the module loop: the required state, the default and the type.
+    The tag plan asks it for the root of a type alias, never for a type that names a root model written as an alias:
+    under ``--use-root-model-type-alias`` the only type aliases are the GraphQL scalars and unions, so
+    ``--use-validate-default-for-root-model-type-aliases`` changes no answer it gives.
     """
     return _applies_default(field) and _needs_validate_default(field.data_type)
 
@@ -450,6 +460,7 @@ def set_validate_default_on_fields(
     """
     deserialized_default = False
     incomplete: list[str] = []
+    root_model_aliases = parser.config.use_validate_default_for_root_model_type_aliases
     for model in models:
         if isinstance(model, Enum):
             continue
@@ -468,7 +479,10 @@ def set_validate_default_on_fields(
                 )
                 or deserialized_default
             )
-            if _needs_validate_default(model_field.data_type) and model_field.enable_structured_default_validation():
+            if (
+                _needs_validate_default(model_field.data_type, root_model_aliases=root_model_aliases)
+                and model_field.enable_structured_default_validation()
+            ):
                 parser._graph_builder.set_field_extra(model_field, "validate_default", value=True)
     if deserialized_default:
         normalize_default_value_constraints(
@@ -561,7 +575,7 @@ def record_decimal_default_warning(parser: RenderPrepHost, model: DataModel, fie
         examples.append(f"{model.class_name}.{field.name or '<root>'}")
 
 
-def fix_tag_opt_out_field_ordering(opted_out: list[DataModel], models: list[DataModel]) -> None:
+def fix_tag_opt_out_field_ordering(parser: RenderPrepHost, opted_out: list[DataModel], models: list[DataModel]) -> None:
     """Make keyword-only the structs that opted out of a tag, and those inheriting from them, when they need it.
 
     A field named like the inherited tag field is then a field of its own after the inherited ones, as the base
@@ -573,7 +587,7 @@ def fix_tag_opt_out_field_ordering(opted_out: list[DataModel], models: list[Data
         (
             (model, ancestors)
             for model in models
-            if (ancestors := linearize_data_models(_find_base_classes(model)))
+            if (ancestors := constructor_base_models(parser, model, bases="parsed"))
             and not opted_out_ids.isdisjoint(map(id, (model, *ancestors)))
         ),
         key=lambda item: len(item[1]),
@@ -582,7 +596,7 @@ def fix_tag_opt_out_field_ordering(opted_out: list[DataModel], models: list[Data
             name: (field, owner, None)
             for name, (owner, field) in _effective_field_owners(model, ancestors, class_vars="no-place").items()
         }
-        if get_constructor_ordering_conflicts(model, effective_fields, set()).own:
+        if get_constructor_ordering_conflicts(model, effective_fields, set(), assignment_facts_of(model)).own:
             model.enable_model_keyword_only()
 
 
@@ -655,15 +669,7 @@ def fix_constructor_field_ordering_of(
         field_adjustments: Iterator[tuple[DataModelFieldBase, _ConstructorFieldAdjustment]] = (
             (field, adjustment)
             for field in model.fields
-            if (
-                adjustment := get_constructor_field_adjustment(
-                    model,
-                    field,
-                    inherited,
-                    supports_inherited_override=model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT,
-                )
-            )
-            is not None
+            if (adjustment := get_constructor_field_adjustment(field, inherited)) is not None
         )
         first_adjustment: tuple[DataModelFieldBase, _ConstructorFieldAdjustment] | None = next(
             field_adjustments,
@@ -724,7 +730,7 @@ def get_local_constructor_ordering_key(
     """
     if not model.SUPPORTS_KW_ONLY:
         return None
-    facts = {id(field): model._field_assignment_facts(field) for field in model.fields}
+    facts_of = assignment_facts_of(model)
     if model.orders_required_assignments_before_defaults():
 
         def written_key(field: DataModelFieldBase, field_facts: AssignmentFacts) -> tuple[bool, bool]:  # noqa: ARG001
@@ -739,12 +745,12 @@ def get_local_constructor_ordering_key(
             )
 
     def order_key(field: DataModelFieldBase) -> tuple[bool, bool, bool, bool]:
-        key = written_key(field, field_facts := facts[id(field)])
+        key = written_key(field, field_facts := facts_of(field))
         return (*key, *(key if field_facts.place_assigned else (False, False)))
 
     previous_key = (False, False, False, False)
     for field in model.fields:
-        if not takes_positional_place(facts[id(field)], field, model):
+        if not takes_positional_place(facts_of(field), field, model):
             continue
         if (key := order_key(field)) < previous_key:
             return order_key
@@ -752,7 +758,7 @@ def get_local_constructor_ordering_key(
     return None
 
 
-def warn_required_assignments_after_defaults(models: list[DataModel]) -> None:
+def warn_required_assignments_after_defaults(parser: RenderPrepHost, models: list[DataModel]) -> None:
     """Warn once per model whose signature lists a required ``= Field(...)`` field after a default.
 
     Such a field, its own or inherited, is a dataclass default, so the class is created, but its validator
@@ -762,7 +768,7 @@ def warn_required_assignments_after_defaults(models: list[DataModel]) -> None:
         if (
             model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
             and not model.orders_required_assignments_before_defaults()
-            and has_required_assignment_after_default(model)
+            and has_required_assignment_after_default(parser, model)
         ):
             warn_as_parser_base(
                 f"{model.class_name} has a required field after a field with a default, in its own fields or "
@@ -773,10 +779,11 @@ def warn_required_assignments_after_defaults(models: list[DataModel]) -> None:
             )
 
 
-def has_required_assignment_after_default(model: DataModel) -> bool:
+def has_required_assignment_after_default(parser: RenderPrepHost, model: DataModel) -> bool:
     """Return whether a positional field without a signature default follows one with a default."""
     seen_default = False
-    for owner, field in _effective_field_owners(model, linearize_data_models(_find_base_classes(model))).values():
+    ancestors = constructor_base_models(parser, model, bases="parsed")
+    for owner, field in _effective_field_owners(model, ancestors).values():
         if not takes_positional_place(facts := model._field_assignment_facts(field), field, owner):
             continue
         has_default = facts.has_default

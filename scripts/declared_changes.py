@@ -1,0 +1,813 @@
+"""Report stored-output changes that no change record covers.
+
+Usage:
+    python scripts/declared_changes.py status [--base REV]
+    python scripts/declared_changes.py declare ID [--category C] [--title T] [--summary S] [--refs '#n' ...]
+        [--decision '#n' ...] [--surface ITEM ...] [--extends ID] (--rest | --labels GLOB ... | --tests NODEID-GLOB ...)
+        [--base REV]
+    python scripts/declared_changes.py prune [--tag TAG]
+    python scripts/declared_changes.py check --base REV [--head REV] [--tag TAG] [--main] [--report-only]
+
+The unit is a reference: one `.refs` line (a test item and a label), whose value is the content of its stored unit,
+read by the rules of `tests/units.py`, with its environment predicate and its `?` flag. A reference changes when its
+content, predicate or flag changes, also when pytest splits a shared unit into its own file; when the change touches
+neither `src/` nor `uv.lock`, a removed reference whose content an added one has is a move. Every changed and every
+other removed reference needs its label in the `covers` of a change record (`docs/data/migration/unreleased/<id>.toml`,
+`scripts/_change_records.py`); so does every added reference when the change touches `src/` or `uv.lock`, until a
+replay can tell which ones the base package already writes. Coverage is per label, so it covers every reference to
+the label. A change's coverage is the labels it adds to `covers`: records of its base (a lower stack layer) do not
+cover its changes, and a label it covers must move in it or be a gap of its base (a backfill). A label whose
+references the change brings back to the tag's references and contents needs no record while no unreleased record
+covers it, and is stale while one does. Fragments the tag contains are released: they cover nothing and are not
+edited.
+
+`check` also judges the release: every reference that moved since the latest tag is covered by a record the tag does
+not contain, and every covered label still differs from the tag (`prune` drops those that do not, and the labels a
+change added that it may not cover). A change is told only of the gaps it adds; with `--main` every gap counts, and
+so does a tag that `releases.toml` does not list yet (stamp pending). `--report-only` prints the same and exits 0.
+`status` reports the working tree against the merge base with origin/main, and `declare` writes the `covers` of a
+record from that diff, or from `--base` (a stack layer passes the layer below): never write them by hand. `--labels`
+and `--tests` also take the gaps of the base that the head still moves from the tag; `--rest` only what this change
+moves. The check prints one `declare` command per kind of undeclared output, with `--base` unless the base is that
+merge base.
+"""
+
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import glob
+import json
+import operator
+import os
+import re
+import shlex
+import subprocess
+import sys
+from bisect import bisect_left
+from dataclasses import dataclass, field
+from functools import cached_property
+from itertools import count, takewhile
+from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
+
+import tomllib
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(ROOT)]
+
+from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-of-file]
+    DERIVED_PREFIXES,
+    ID_PATTERN,
+    PRESET_SURFACE,
+    RULES,
+    Category,
+    Owner,
+    covers_block,
+    covers_written,
+    owner_of,
+    parse_entry,
+    rule_problems,
+    stamp_pending,
+    with_covers,
+)
+from tests.units import (  # ruff: ignore[module-import-not-at-top-of-file]
+    REFS_SUFFIX,
+    label_problem,
+    parse_refs,
+    predicate_text,
+    split_label,
+    stored_member,
+    unit_digest,
+    unit_value,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
+    from scripts._change_records import Record
+
+SCRIPT = "scripts/declared_changes.py"
+EXPECTED = "tests/data/expected/"
+FRAGMENTS = "docs/data/migration/unreleased/"
+RELEASES = "docs/data/migration/releases.toml"
+LISTED = ("tests", "docs/data/migration", "src", "uv.lock")
+GENERATOR = ("src/", "uv.lock")
+DEFAULT_BASE = "origin/main"
+CHANGED, REMOVED, ADDED = "changed", "removed", "added"
+SUBJECT_REF = re.compile(
+    r"\((#[1-9]\d*)\)\s*$|\b(?:fixes|closes|resolves):?\s+(#[1-9]\d*)", re.IGNORECASE | re.MULTILINE
+)
+SLUG = re.compile(r"[^a-z0-9.:_-]+")
+RECORD_OPTIONS = ("category", "title", "summary", "extends", "refs", "decision", "surface")
+"""The `declare` options that a new record takes as its keys, in the order it writes them."""
+SHOWN = 20
+"""Labels a message lists one by one before it counts the rest."""
+Line = tuple[str, bool, str]
+"""One `.refs` line of a reference: its predicate text, its `?` flag and its storage."""
+
+
+def git(repo: Path, *args: str, stdin: bytes | None = None) -> bytes:
+    """Run git in a repository and return its output; a failure raises CalledProcessError."""
+    return subprocess.run(["git", "-C", str(repo), *args], input=stdin, capture_output=True, check=True).stdout
+
+
+@dataclass(frozen=True, order=True)
+class Reference:
+    """A test item and a label it compares, as one `.refs` file names them."""
+
+    sidecar: str
+    function: str
+    param: str
+    label: str
+
+    @property
+    def nodeid(self) -> str:
+        """Return the item's nodeid."""
+        item = f"{self.function}[{self.param}]" if self.param else self.function
+        return f"{self.sidecar.removesuffix(REFS_SUFFIX)}.py::{item}"
+
+
+class Side:
+    """One revision of a repository, or its working tree (`rev` None), read through git."""
+
+    def __init__(self, repo: Path, rev: str | None) -> None:
+        """List the files the check reads; their contents are read on demand."""
+        self.repo, self.rev = repo, rev
+        self.files = self._list()
+        self.paths = sorted(self.files)
+        self._blobs: dict[str, bytes] = {}
+        self._digests: dict[str, str | None] = {}
+
+    @property
+    def name(self) -> str:
+        """Return the revision as messages name it."""
+        return self.rev or "the working tree"
+
+    def _list(self) -> dict[str, str]:
+        if self.rev is not None:
+            entries = git(self.repo, "ls-tree", "-r", "-z", self.rev, "--", *LISTED).decode().split("\0")
+            return {path: meta.split()[2] for meta, _, path in (entry.partition("\t") for entry in entries if entry)}
+        listed = git(self.repo, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *LISTED)
+        paths = sorted({path for path in listed.decode().split("\0") if path and (self.repo / path).is_file()})
+        ids = git(self.repo, "hash-object", "--stdin-paths", stdin="".join(f"{path}\n" for path in paths).encode())
+        return dict(zip(paths, ids.decode().split(), strict=True))
+
+    def read(self, path: str) -> bytes:
+        """Return the bytes of a listed file."""
+        if self.rev is None:
+            return (self.repo / path).read_bytes()
+        self.load([path])
+        return self._blobs[path]
+
+    def load(self, paths: Iterable[str]) -> None:
+        """Read the blobs of many files of a revision with one git process."""
+        wanted = [path for path in dict.fromkeys(paths) if path not in self._blobs]
+        if self.rev is None or not wanted:
+            return
+        output = git(self.repo, "cat-file", "--batch", stdin="".join(f"{self.files[p]}\n" for p in wanted).encode())
+        position = 0
+        for path in wanted:
+            header = output.index(b"\n", position)
+            size = int(output[position:header].split()[2])
+            self._blobs[path] = output[header + 1 : header + 1 + size]
+            position = header + 2 + size
+
+    def text(self, path: str) -> str | None:
+        """Return the text of a file, or None when the side has no such file."""
+        return self.read(path).decode("utf-8") if path in self.files else None
+
+    def members(self, storage: str) -> list[tuple[str, str]]:
+        """Return the (path relative to the tree, file) pairs a tree storage holds, as `tests/units.py` reads a tree."""
+        directory, pattern = split_label(storage)
+        prefix = f"{EXPECTED}{directory}/"
+        inside = takewhile(lambda path: path.startswith(prefix), self.paths[bisect_left(self.paths, prefix) :])
+        return [
+            (relative.as_posix(), path)
+            for path in inside
+            if stored_member(relative := PurePosixPath(path[len(prefix) :])) and relative.match(pattern or "*")
+        ]
+
+    def raw(self, storage: str) -> object:
+        """Return the blob ids a storage holds: equal ids are equal units; unequal ids may still be equal units."""
+        if split_label(storage)[1] is None:
+            return self.files.get(f"{EXPECTED}{storage}")
+        return tuple((relative, self.files[path]) for relative, path in self.members(storage))
+
+    def digest(self, storage: str) -> str | None:
+        """Return the digest of the unit a storage holds, as the ledger computes it; None when nothing is stored."""
+        if storage not in self._digests:
+            name, pattern = split_label(storage)
+            value: object = None
+            if pattern is None:
+                if (path := f"{EXPECTED}{name}") in self.files:
+                    value = unit_value(name, self.read(path))
+            else:
+                members = self.members(storage)
+                self.load(path for _, path in members)
+                value = {relative: unit_value(relative, self.read(path), in_tree=True) for relative, path in members}
+            self._digests[storage] = None if value is None else unit_digest(storage, value)
+        return self._digests[storage]
+
+    @cached_property
+    def references(self) -> dict[Reference, tuple[Line, ...]]:
+        """Return every reference of the side with its lines (predicate, flag, storage), sorted."""
+        sidecars = [
+            path
+            for path in self.paths
+            if path.endswith(REFS_SUFFIX)
+            and not path.startswith("tests/data/")
+            and not any(part.startswith((".", "__")) for part in path.split("/")[1:-1])
+        ]
+        self.load(sidecars)
+        found: dict[Reference, list[Line]] = {}
+        for sidecar in sidecars:
+            for line in parse_refs(self.read(sidecar).decode("utf-8").replace("\r\n", "\n"))[0]:
+                reference = Reference(sidecar, line.function, line.param, line.label)
+                found.setdefault(reference, []).append((predicate_text(line.predicate), line.conditional, line.stored))
+        return {reference: tuple(sorted(lines)) for reference, lines in found.items()}
+
+    @cached_property
+    def by_label(self) -> dict[str, list[Reference]]:
+        """Return the references of each label."""
+        found: dict[str, list[Reference]] = {}
+        for reference in self.references:
+            found.setdefault(reference.label, []).append(reference)
+        return found
+
+    @cached_property
+    def records(self) -> dict[str, tuple[Record | None, str, list[str]]]:
+        """Return each fragment by its id (file stem): its record, None if it holds none, its text and its problems."""
+        found: dict[str, tuple[Record | None, str, list[str]]] = {}
+        for path in self.paths:
+            stem = path.removeprefix(FRAGMENTS).removesuffix(".toml")
+            if not path.startswith(FRAGMENTS) or not path.endswith(".toml") or "/" in stem:
+                continue
+            text, where = self.read(path).decode("utf-8").replace("\r\n", "\n"), f"unreleased/{stem}.toml"
+            try:
+                entries = tomllib.loads(text).get("change", [])
+            except tomllib.TOMLDecodeError as error:
+                found[stem] = (None, text, [f"{where}: {error}"])
+                continue
+            if [entry.get("id") for entry in entries] != [stem]:
+                problem = f"{where}: a fragment holds exactly one [[change]] whose id is the file name"
+                found[stem] = (None, text, [problem])
+                continue
+            record, problems = parse_entry(entries[0], where)
+            found[stem] = (record, text, problems)
+        return found
+
+    def released(self) -> list[str]:
+        """Return the versions `releases.toml` lists."""
+        text = self.text(RELEASES)
+        return [str(row["version"]) for row in tomllib.loads(text).get("release", [])] if text else []
+
+    def generator(self) -> dict[str, str]:
+        """Return the files whose change changes what the package generates."""
+        return {path: blob for path, blob in self.files.items() if path.startswith(GENERATOR)}
+
+
+def _same(old: Side, old_lines: tuple[Line, ...], new: Side, new_lines: tuple[Line, ...]) -> bool:
+    """Return whether two sides' lines of a reference compare equal units with the same predicates and flags."""
+    if [line[:2] for line in old_lines] != [line[:2] for line in new_lines]:
+        return False
+    return all(
+        old.raw(before) == new.raw(after) or old.digest(before) == new.digest(after)
+        for (_, _, before), (_, _, after) in zip(old_lines, new_lines, strict=True)
+    )
+
+
+def _content(side: Side, lines: tuple[Line, ...]) -> tuple[tuple[str, bool, str | None], ...]:
+    return tuple((predicate, conditional, side.digest(storage)) for predicate, conditional, storage in lines)
+
+
+@dataclass
+class Diff:
+    """The references that differ between two sides; `moved` are removed and added references of equal content."""
+
+    changed: list[Reference] = field(default_factory=list)
+    removed: list[Reference] = field(default_factory=list)
+    moved: list[Reference] = field(default_factory=list)
+    added: list[Reference] = field(default_factory=list)
+
+    def rows(self, *, added: bool) -> list[tuple[str, Reference]]:
+        """Return the references that need a record with their state; the added ones only with `added`."""
+        rows = [(CHANGED, ref) for ref in self.changed] + [(REMOVED, ref) for ref in self.removed]
+        return sorted(rows + ([(ADDED, ref) for ref in self.added] if added else []), key=operator.itemgetter(1))
+
+    def moving(self) -> set[str]:
+        """Return every label with a reference that changed, was removed, moved or was added."""
+        return {ref.label for refs in (self.changed, self.removed, self.moved, self.added) for ref in refs}
+
+
+def diff(old: Side, new: Side, *, pair: bool = True) -> Diff:
+    """Return the references that differ between two sides; without `pair` no removed and added references move."""
+    result = Diff()
+    before, after = old.references, new.references
+    result.changed = [
+        ref for ref in sorted(before.keys() & after.keys()) if not _same(old, before[ref], new, after[ref])
+    ]
+    added, removed = sorted(after.keys() - before.keys()), sorted(before.keys() - after.keys())
+    kept = {_content(new, after[ref]) for ref in added} if pair else set()
+    gone = {_content(old, before[ref]) for ref in removed} if pair else set()
+    for ref in removed:
+        (result.moved if _content(old, before[ref]) in kept else result.removed).append(ref)
+    for ref in added:
+        (result.moved if _content(new, after[ref]) in gone else result.added).append(ref)
+    return result
+
+
+def _unreleased(side: Side, tag: Side) -> dict[str, Record]:
+    """Return the records of a side that the tag does not contain: a fragment the tag contains is released."""
+    return {
+        stem: record for stem, (record, _, _) in side.records.items() if record is not None and stem not in tag.records
+    }
+
+
+def _by_label(rows: Iterable[tuple[str, Reference]]) -> dict[str, list[tuple[str, Reference]]]:
+    found: dict[str, list[tuple[str, Reference]]] = {}
+    for state, reference in rows:
+        found.setdefault(reference.label, []).append((state, reference))
+    return found
+
+
+def _covers_of(records: dict[str, Record], stem: str) -> set[str]:
+    return set(records[stem].covers) if stem in records else set()
+
+
+def _holders(label: str, *sides: Side) -> list[Reference]:
+    return [reference for side in sides for reference in side.by_label.get(label, [])]
+
+
+@dataclass
+class Report:
+    """What a change moves that its records do not cover, what they claim wrongly, and what the release lacks."""
+
+    base: str
+    head: str
+    tag: str
+    generator: bool
+    branch: str
+    undeclared: dict[str, list[tuple[str, Reference]]] = field(default_factory=dict)
+    over_claimed: list[str] = field(default_factory=list)
+    problems: list[str] = field(default_factory=list)
+    moves: int = 0
+    gaps: list[str] = field(default_factory=list)
+    backfill: dict[str, list[tuple[str, Reference]]] = field(default_factory=dict)
+    stale: list[str] = field(default_factory=list)
+    older_gaps: int = 0
+    stamp: str | None = None
+    refs: list[str] = field(default_factory=list)
+    main: bool = False
+    returned: dict[str, list[str]] = field(default_factory=dict)
+    replay: list[str] = field(default_factory=list)
+    commands: list[str] = field(default_factory=list)
+
+    @property
+    def failed(self) -> bool:
+        """Return whether the change breaks a rule; on main a pending stamp does too."""
+        return bool(
+            self.undeclared
+            or self.over_claimed
+            or self.problems
+            or self.gaps
+            or self.stale
+            or (self.main and self.stamp)
+        )
+
+
+def _kinds(label: str, *sides: Side) -> set[Owner]:
+    """Return the kinds of stored output the references of a label compare on any of the sides."""
+    return {owner_of(reference.nodeid, label) for reference in _holders(label, *sides)}
+
+
+def _refused(category: Category, surface: tuple[str, ...] | None, kinds: set[Owner], *, released: bool) -> set[Owner]:
+    """Return the kinds of a label's stored output that a record of the category may not cover.
+
+    `surface` is the record's items, None for a record not written yet; `released` says the latest release has the
+    label: `new-surface` covers only model output that release does not have.
+    """
+    if (owners := RULES[category].owners) is None:
+        return set()
+    if category == Category.NEW_SURFACE:
+        if surface is not None and all(item.startswith(PRESET_SURFACE) for item in surface):
+            owners = frozenset({Owner.LISTING})
+        elif released:
+            owners -= {Owner.MODELS}
+    return kinds - owners
+
+
+def _revalidated(stem: str, records: dict[str, Record], base_records: dict[str, Record]) -> set[str]:
+    """Return the labels a record's category must cover again: all of its record's when the category or surface changed.
+
+    The labels are those of the record and of the records that extend it; a record the base does not have, one that
+    extends another and a fragment without a record only have the labels they add.
+    """
+    record, before = records.get(stem), base_records.get(stem)
+    if record is None or before is None or record.extends is not None:
+        return set()
+    if (record.category, record.surface) == (before.category, before.surface):
+        return set()
+    return {label for other in records.values() if other is record or other.extends == stem for label in other.covers}
+
+
+def _record_problems(
+    stem: str, sides: tuple[Side, Side, Side], records: dict[str, Record], added: set[str]
+) -> list[str]:
+    """Return how one record the change adds or edits breaks the rules the static check reads.
+
+    `added` are the labels the record's category must cover: those the record adds, and those its category change
+    puts under a new rule.
+    """
+    base, head, tag = sides
+    record, text, problems = head.records[stem]
+    if record is None:
+        return problems
+    where = f"unreleased/{stem}.toml"
+    problems = rule_problems(record, fragment=True)
+    if not covers_written(text, record):
+        problems.append(f"{where}: its covers are not written as '{SCRIPT} declare' writes them")
+    problems += [f"{where}: {problem}" for label in record.covers if (problem := label_problem(label))]
+    target = _target(records, stem)
+    if target is None or target.extends is not None:
+        return [*problems, f"{where}: extends {record.extends}, which is not an unreleased record of its own"]
+    if target.category is None:
+        return problems
+    for label in sorted(added):
+        released = label in tag.by_label
+        if kinds := _refused(target.category, target.surface, _kinds(label, base, head), released=released):
+            has = f" that {tag.name} has" if target.category == Category.NEW_SURFACE and released else ""
+            problems.append(
+                f"{where}: covers {label}, {', '.join(sorted(kinds))} output{has}, which category {target.category} "
+                "does not cover: give it a record of its own"
+            )
+    return problems
+
+
+def _release(tag: Side, side: Side) -> tuple[set[str], dict[str, list[tuple[str, Reference]]], set[str]]:
+    """Return the labels that moved since the tag, the gaps among them with their references, and the stale ones.
+
+    A gap moved and no unreleased record covers it; a reference added since the tag counts as moved only when `src/`
+    or `uv.lock` differs from the tag's, as in `evaluate`. A stale label is covered and did not move.
+    """
+    generator = tag.generator() != side.generator()
+    moved = diff(tag, side, pair=not generator)
+    moving = moved.moving()
+    covered = {label for record in _unreleased(side, tag).values() for label in record.covers}
+    gaps = _by_label((state, ref) for state, ref in moved.rows(added=generator) if ref.label not in covered)
+    return moving, gaps, covered - moving
+
+
+def _branch(repo: Path) -> str:
+    """Return the id a record of this branch gets: the branch name as a slug."""
+    name = os.environ.get("GITHUB_HEAD_REF") or git(repo, "branch", "--show-current").decode().strip()
+    return SLUG.sub("-", name.lower()).strip("-") or "<id>"
+
+
+def _merge_base(repo: Path, head: str | None) -> str | None:
+    """Return the merge base of a revision (the working tree's HEAD for None) with origin/main, None without one."""
+    try:
+        return git(repo, "merge-base", DEFAULT_BASE, head or "HEAD").decode().strip()
+    except subprocess.CalledProcessError:
+        return None
+
+
+def _target(records: dict[str, Record], stem: str) -> Record | None:
+    """Return the record whose category a record has: itself, or the record it extends."""
+    record = records[stem]
+    return record if record.extends is None else records.get(record.extends)
+
+
+def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = False) -> Report:
+    """Return what the change from `base` to `head` moves and claims, and what the release since `tag` lacks.
+
+    A label the change moves back to the tag's references and contents is free when no unreleased record covers it,
+    and stale when one does; a label a record adds to `covers` must move in the change or be a gap of the base.
+    """
+    generator = base.generator() != head.generator()
+    moved = diff(base, head, pair=not generator)
+    report = Report(base.name, head.name, tag.name, generator, _branch(repo), moves=len(moved.moved), main=main)
+    head_records, base_records = _unreleased(head, tag), _unreleased(base, tag)
+    added = {stem: set(record.covers) - _covers_of(base_records, stem) for stem, record in head_records.items()}
+    coverage = set().union(*added.values())
+    covered = {label for record in head_records.values() for label in record.covers}
+    since, head_rows, head_stale = _release(tag, head)
+    _, base_rows, base_stale = _release(tag, base)
+    head_gaps, base_gaps = set(head_rows), set(base_rows)
+    rows = moved.rows(added=generator)
+    at_tag = {ref.label for _, ref in rows} - since
+    report.returned = {
+        label: [stem for stem, record in sorted(base_records.items()) if label in record.covers]
+        for label in sorted(at_tag - covered)
+    }
+    report.undeclared = _by_label((state, ref) for state, ref in rows if ref.label not in coverage | at_tag)
+    report.over_claimed = sorted(coverage - _claimable(moved, base_gaps))
+    report.backfill = {
+        label: rows for label, rows in base_rows.items() if label in since - covered and label not in report.undeclared
+    }
+    for stem in sorted(head.records):
+        text = head.records[stem][1]
+        if stem in tag.records:
+            if text != base.records.get(stem, (None, text, []))[1]:
+                report.problems.append(
+                    f"unreleased/{stem}.toml shipped in {tag.name}; move later edits to a new fragment"
+                )
+        elif stem not in base.records or text != base.records[stem][1]:
+            checked = added.get(stem, set()) | _revalidated(stem, head_records, base_records)
+            report.problems += _record_problems(stem, (base, head, tag), head_records, checked)
+    older = set() if main else base_gaps
+    report.gaps = sorted(head_gaps - older - set(report.undeclared))
+    report.stale = sorted(head_stale - base_stale - set(report.over_claimed))
+    report.older_gaps = len(head_gaps & older)
+    report.stamp = stamp_pending(tag.name, head.released())
+    if generator:
+        report.replay = sorted(
+            label
+            for stem, labels in added.items()
+            if (target := _target(head_records, stem)) is not None and target.category == Category.HARNESS
+            for label in labels
+        )
+    log = git(repo, "log", "--format=%B", f"{base.rev or 'HEAD'}..{head.rev or 'HEAD'}").decode()
+    report.refs = list(dict.fromkeys(ref for match in SUBJECT_REF.finditer(log) for ref in match.groups() if ref))
+    default = _merge_base(repo, head.rev) == _rev(repo, base.rev or "HEAD")
+    fresh = {stem: record for stem, record in head_records.items() if stem not in base.records}
+    report.commands = _commands(report, (base, head, tag), base_records, fresh, None if default else base.rev)
+    return report
+
+
+def _claimable(moved: Diff, base_gaps: set[str]) -> set[str]:
+    """Return the labels a change may add to `covers`: those it moves, and the gaps of its base (a backfill)."""
+    return moved.moving() | base_gaps
+
+
+def _admissible(kinds: set[Owner], *, released: bool, generator: bool) -> list[Category]:
+    """Return the categories whose records may cover outputs of these kinds; `harness` only if src/ is the same."""
+    return [
+        category
+        for category in RULES
+        if not _refused(category, None, kinds, released=released) and not (category == Category.HARNESS and generator)
+    ]
+
+
+def _commands(
+    report: Report, sides: tuple[Side, Side, Side], lower: dict[str, Record], fresh: dict[str, Record], base: str | None
+) -> list[str]:
+    """Return one `declare` command per kind of undeclared output, filled with what the check knows.
+
+    A label a lower layer's record covers extends that record; the others form one group per kind of stored output
+    when the change touches the generator (else a `harness` record takes them all). A group goes to the one record
+    of its category the change adds, or the branch's record, with no record options; else to a new record.
+    """
+    old, head, tag = sides
+    groups: dict[tuple[str, ...], list[str]] = {}
+    for label in report.undeclared:
+        target = next((record.extends or stem for stem, record in sorted(lower.items()) if label in record.covers), "")
+        kinds = sorted(_kinds(label, old, head)) if report.generator and not target else []
+        groups.setdefault((target, *kinds), []).append(label)
+    taken = set(head.records) | set(tag.records)
+    commands = []
+    for (extends, *_), labels in groups.items():
+        released = any(label in tag.by_label for label in labels)
+        owners = set().union(*(_kinds(label, old, head) for label in labels))
+        admissible = _admissible(owners, released=released, generator=report.generator)
+        fits = [
+            stem
+            for stem, record in sorted(fresh.items())
+            if (record.extends or "") == extends and (extends or record.category in admissible)
+        ]
+        selection = ["--labels", *map(glob.escape, labels)] if len(groups) > 1 else ["--rest"]
+        tail = [*selection, *(["--base", base] if base else [])]
+        if (stem := report.branch if report.branch in fits else fits[0] if len(fits) == 1 else None) is not None:
+            commands.append(shlex.join(["python", SCRIPT, "declare", stem, *tail]))
+            continue
+        ident = next(name for name in _ids(report.branch) if name not in taken)
+        taken.add(ident)
+        command = ["python", SCRIPT, "declare", ident]
+        if extends:
+            commands.append(shlex.join([*command, "--extends", extends, *tail]))
+            continue
+        category = Category.HARNESS if not report.generator else admissible[0] if len(admissible) == 1 else "<category>"
+        command += ["--category", category]
+        if category == Category.HARNESS:
+            command += ["--title", "<title>", "--summary", "<why the package writes the same output>"]
+        for ref in report.refs:
+            command += ["--refs", ref]
+        commands.append(
+            shlex.join([*command, *tail])
+            + ("" if category != "<category>" else f"\n    <category>: one of {', '.join(admissible)}")
+        )
+    return commands
+
+
+def _ids(branch: str) -> Iterator[str]:
+    """Yield the ids a new record of the branch may take: the branch's slug, then the slug numbered."""
+    yield branch
+    yield from (f"{branch}-{number}" for number in count(2))
+
+
+def _more(items: list[str]) -> list[str]:
+    return [f"  ... {len(items) - SHOWN} more"] if len(items) > SHOWN else []
+
+
+def format_report(report: Report) -> str:
+    """Return the report as the check prints it."""
+    lines = [f"declared changes: {report.head} against {report.base}, release since {report.tag}"]
+    if report.undeclared:
+        lines.append(f"{len(report.undeclared)} stored outputs this change moves are not declared:")
+        for label, rows in list(report.undeclared.items())[:SHOWN]:
+            state, ref = rows[0]
+            more = f" (+{len(rows) - 1} more)" if len(rows) > 1 else ""
+            note = " (src/ changed: a record until a replay tells)" if state == ADDED else ""
+            lines.append(f"  {state:8} {label}  {ref.nodeid}{more}{note}")
+        lines += _more(list(report.undeclared))
+        lines += ["Declare them:", *(f"  {command}" for command in report.commands)]
+        lines.append("Categories: docs/development-contributing.md#declared-changes")
+    if report.over_claimed:
+        lines.append(f"{len(report.over_claimed)} labels this change adds to covers do not move in it:")
+        lines += [f"  {label}" for label in report.over_claimed[:SHOWN]] + _more(report.over_claimed)
+        lines.append(f"  python {SCRIPT} prune")
+    lines += [f"record problem: {problem}" for problem in report.problems]
+    if report.gaps:
+        lost = "have no unreleased record" if report.main else "lost their record here"
+        lines.append(f"{len(report.gaps)} stored outputs moved since {report.tag} and {lost}:")
+        lines += [f"  {label}" for label in report.gaps[:SHOWN]] + _more(report.gaps)
+    if report.stale:
+        lines.append(f"{len(report.stale)} covered labels no longer differ from {report.tag}:")
+        lines += [f"  {label}" for label in report.stale[:SHOWN]] + _more(report.stale)
+        lines.append(f"  python {SCRIPT} prune")
+    if report.returned:
+        lines.append(f"{len(report.returned)} stored outputs returned to {report.tag} and need no record:")
+        lines += [
+            f"  {label}" + (f" (dropped from {', '.join(stems)})" if stems else "")
+            for label, stems in list(report.returned.items())[:SHOWN]
+        ] + _more(list(report.returned))
+    if report.replay:
+        lines.append(f"{len(report.replay)} stored outputs a harness record covers need the replay, as src/ changes:")
+        lines += [f"  {label}" for label in report.replay[:SHOWN]] + _more(report.replay)
+    if report.older_gaps:
+        lines.append(f"{report.older_gaps} stored outputs moved since {report.tag} with no record before this change")
+    if report.stamp:
+        lines.append(report.stamp)
+    if report.moves:
+        lines.append(f"{report.moves} references moved: removed and added with equal content")
+    lines.append("failed" if report.failed else "ok")
+    return "\n".join(lines) + "\n"
+
+
+class CheckError(Exception):
+    """A command cannot run: a revision or a record it needs is missing or unusable."""
+
+
+def _rev(repo: Path, rev: str) -> str:
+    try:
+        return git(repo, "rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}").decode().strip()
+    except subprocess.CalledProcessError:
+        msg = f"{rev} is not a revision"
+        raise CheckError(msg) from None
+
+
+def _tag(repo: Path, tag: str | None, head: str | None) -> str:
+    if tag is not None:
+        _rev(repo, tag)
+        return tag
+    try:
+        return git(repo, "describe", "--tags", "--abbrev=0", head or "HEAD").decode().strip()
+    except subprocess.CalledProcessError:
+        msg = "no release tag is reachable; pass --tag"
+        raise CheckError(msg) from None
+
+
+def _sides(repo: Path, ns: argparse.Namespace) -> tuple[Side, Side, Side]:
+    """Return the base, head and tag sides the arguments name; the base defaults to the merge base with origin/main."""
+    head = getattr(ns, "head", None)
+    if head is not None:
+        _rev(repo, head)
+    if (base := ns.base or _merge_base(repo, head)) is None:
+        msg = f"no merge base with {DEFAULT_BASE}; pass --base"
+        raise CheckError(msg)
+    _rev(repo, base)
+    return Side(repo, base), Side(repo, head), Side(repo, _tag(repo, ns.tag, head))
+
+
+def _select(report: Report, ns: argparse.Namespace) -> list[str]:
+    """Return the labels a selector picks: `--rest` the undeclared ones, the others also the gaps of the base."""
+    if ns.rest:
+        return list(report.undeclared)
+    eligible = report.undeclared | report.backfill
+    if ns.labels:
+        return [label for label in eligible if any(fnmatch.fnmatchcase(label, glob) for glob in ns.labels)]
+    return [
+        label
+        for label, rows in eligible.items()
+        if any(fnmatch.fnmatchcase(ref.nodeid, glob) for _, ref in rows for glob in ns.tests)
+    ]
+
+
+def _new_fragment(ns: argparse.Namespace, labels: list[str]) -> str:
+    lines = ["[[change]]", f"id = {json.dumps(ns.id)}"]
+    lines += [
+        f"{key} = {json.dumps(value, ensure_ascii=False)}" for key in RECORD_OPTIONS if (value := getattr(ns, key))
+    ]
+    return "\n".join(lines) + "\n" + covers_block(labels)
+
+
+def declare(repo: Path, ns: argparse.Namespace) -> int:
+    """Add the selected undeclared outputs to the record `ns.id`, creating it from the options when it is new."""
+    if not ID_PATTERN.fullmatch(ns.id) or ns.id.startswith(DERIVED_PREFIXES):
+        msg = f"{ns.id!r} is not a lower-case slug"
+        raise CheckError(msg)
+    base, head, tag = _sides(repo, ns)
+    report = evaluate(repo, base, head, tag)
+    if not (labels := _select(report, ns)):
+        msg = "nothing to declare: no undeclared stored output matches"
+        raise CheckError(msg)
+    path = repo / FRAGMENTS / f"{ns.id}.toml"
+    if ns.id in tag.records:
+        msg = f"{ns.id} shipped in {tag.name}; declare a new record"
+        raise CheckError(msg)
+    if ns.id in head.records:
+        record, text, problems = head.records[ns.id]
+        given = [key for key in RECORD_OPTIONS if getattr(ns, key)]
+        if record is None or given:
+            why = "; ".join(problems) or "it exists: edit its other fields by hand"
+            msg = f"{path.relative_to(repo).as_posix()}: {why}"
+            raise CheckError(msg)
+        text = with_covers(text, {*record.covers, *labels})
+    else:
+        if ns.category is None and ns.extends is None:
+            msg = "a new record needs --category, or --extends"
+            raise CheckError(msg)
+        text = _new_fragment(ns, labels)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+    record, _ = parse_entry(tomllib.loads(text)["change"][0], path.name)
+    print(f"{path.relative_to(repo).as_posix()} covers {len(labels)} more stored outputs")
+    print("".join(f"  still needed: {problem}\n" for problem in rule_problems(record, fragment=True)), end="")
+    return 0
+
+
+def prune(repo: Path, ns: argparse.Namespace) -> int:
+    """Drop the covered labels that do not move against the base (added here) or no longer differ from the tag."""
+    base, head, tag = _sides(repo, ns)
+    claimable, since = _claimable(diff(base, head), set(_release(tag, base)[1])), _release(tag, head)[0]
+    base_records = _unreleased(base, tag)
+    for stem, record in _unreleased(head, tag).items():
+        added = set(record.covers) - _covers_of(base_records, stem)
+        drop = {label for label in record.covers if label not in since or (label in added and label not in claimable)}
+        if drop:
+            text = head.records[stem][1]
+            (repo / FRAGMENTS / f"{stem}.toml").write_text(
+                with_covers(text, set(record.covers) - drop), encoding="utf-8", newline="\n"
+            )
+            print(f"unreleased/{stem}.toml: dropped {', '.join(sorted(drop))}")
+    return 0
+
+
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog=SCRIPT, description="Report stored-output changes no change record covers")
+    commands = parser.add_subparsers(dest="command", required=True)
+    status = commands.add_parser("status", help="report the working tree against the merge base with origin/main")
+    declare_parser = commands.add_parser("declare", help="write the covers of a record from the diff")
+    prune_parser = commands.add_parser("prune", help="drop covered labels that no longer move")
+    check = commands.add_parser("check", help="judge a change and the release")
+    for command in (status, declare_parser, prune_parser, check):
+        command.add_argument("--base", required=command is check, help="the revision the change starts from")
+        command.add_argument("--tag", help="the latest release tag (default: the newest reachable tag)")
+    check.add_argument("--head", help="the revision to judge (default: the working tree)")
+    check.add_argument("--main", action="store_true", help="every gap of the release counts, and a pending stamp")
+    check.add_argument("--report-only", action="store_true", help="print the report and exit 0")
+    declare_parser.add_argument("id", help="the record's id, a lower-case slug (its file name)")
+    declare_parser.add_argument("--category", choices=list(Category))
+    declare_parser.add_argument("--title")
+    declare_parser.add_argument("--summary")
+    declare_parser.add_argument("--extends", metavar="ID")
+    for key, metavar in (("refs", "#N"), ("decision", "#N"), ("surface", "ITEM")):
+        declare_parser.add_argument(f"--{key}", action="append", default=[], metavar=metavar)
+    selection = declare_parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--rest", action="store_true", help="every undeclared stored output")
+    selection.add_argument("--labels", nargs="+", metavar="GLOB", help="the undeclared outputs whose label matches")
+    selection.add_argument("--tests", nargs="+", metavar="NODEID-GLOB", help="the undeclared outputs of matching items")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None, repo: Path | None = None) -> int:
+    """Script entrypoint."""
+    ns = _parse_args(argv)
+    repo = repo or Path.cwd()
+    try:
+        match ns.command:
+            case "declare":
+                return declare(repo, ns)
+            case "prune":
+                return prune(repo, ns)
+        base, head, tag = _sides(repo, ns)
+        report = evaluate(repo, base, head, tag, main=getattr(ns, "main", False))
+    except CheckError as error:
+        print(f"{SCRIPT}: {error}", file=sys.stderr)
+        return 2
+    print(format_report(report), end="")
+    return 1 if ns.command == "check" and report.failed and not ns.report_only else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

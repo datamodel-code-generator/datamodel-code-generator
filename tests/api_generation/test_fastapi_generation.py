@@ -48,6 +48,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "response-keys",
         "querystring-nameless",
         "serialize-as-any-aliases",
+        "applied-config",
         "media-kept",
         "parameter-errors",
         "selector-errors",

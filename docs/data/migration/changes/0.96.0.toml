@@ -2,6 +2,7 @@
 
 [[change]]
 id = "client-item-stream-raw-body"
+category = "experimental"
 kind = "experimental"
 action = "required"
 title = "Generated client methods return the raw body of `itemSchema` stream responses"
@@ -13,6 +14,7 @@ source = "release-note"
 
 [[change]]
 id = "client-stream-items-referenced-model"
+category = "experimental"
 kind = "experimental"
 action = "required"
 title = "Generated client stream helpers type items as the model their `itemSchema` references"
@@ -24,6 +26,7 @@ source = "release-note"
 
 [[change]]
 id = "client-stream-helper-name-collision"
+category = "notice"
 kind = "error"
 action = "required"
 title = "A protocols helper whose name collides with a derived stream helper is refused"
@@ -46,6 +49,7 @@ source = "release-note"
 
 [[change]]
 id = "pattern-quote-literal"
+category = "output-text"
 kind = "output-text"
 action = "none"
 title = "Patterns holding a quote are written without an escaped quote"

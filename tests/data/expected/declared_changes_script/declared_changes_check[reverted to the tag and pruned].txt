@@ -1,0 +1,6 @@
+exit 0
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs returned to 0.1.0 and need no record:
+  models/b.py (dropped from lower)
+1 stored outputs moved since 0.1.0 with no record before this change
+ok

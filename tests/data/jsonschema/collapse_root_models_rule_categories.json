@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LintConfig",
+  "type": "object",
+  "definitions": {
+    "rule": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "type": "string",
+          "enum": [
+            "off",
+            "warn",
+            "error"
+          ]
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "possibleErrors": {
+      "type": "object",
+      "properties": {
+        "comma-dangle": {
+          "$ref": "#/definitions/rule",
+          "description": "Require or disallow trailing commas"
+        },
+        "no-debugger": {
+          "$ref": "#/definitions/rule"
+        }
+      }
+    },
+    "bestPractices": {
+      "type": "object",
+      "properties": {
+        "accessor-pairs": {
+          "$ref": "#/definitions/rule"
+        },
+        "curly": {
+          "$ref": "#/definitions/rule",
+          "description": "Enforce consistent brace style"
+        }
+      }
+    },
+    "legacy": {
+      "type": "object",
+      "properties": {
+        "max-depth": {
+          "$ref": "#/definitions/rule"
+        }
+      }
+    }
+  },
+  "properties": {
+    "root": {
+      "type": "boolean"
+    },
+    "rules": {
+      "description": "The rules a project uses.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/possibleErrors"
+        },
+        {
+          "$ref": "#/definitions/bestPractices"
+        },
+        {
+          "$ref": "#/definitions/legacy"
+        }
+      ]
+    },
+    "overrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "string"
+          },
+          "rules": {
+            "description": "The rules a project uses.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/definitions/possibleErrors"
+              },
+              {
+                "$ref": "#/definitions/bestPractices"
+              },
+              {
+                "$ref": "#/definitions/legacy"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

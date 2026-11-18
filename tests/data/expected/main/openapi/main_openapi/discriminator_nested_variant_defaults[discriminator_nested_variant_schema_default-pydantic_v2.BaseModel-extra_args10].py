@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -22,9 +22,9 @@ class Bird(BaseModel):
 
 
 class DefaultedDogOrBird(RootModel[Dog | Bird]):
-    root: Annotated[Dog | Bird, Field(discriminator='type', validate_default=True)] = {
-        'type': 'dog'
-    }
+    root: Annotated[Dog | Bird, Field(discriminator='type', validate_default=True)] = (
+        cast('Dog | Bird', {'type': 'dog'})
+    )
 
 
 class DefaultedPets(BaseModel):

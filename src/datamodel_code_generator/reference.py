@@ -821,7 +821,7 @@ class FieldNameResolver:
               or list[str] for multiple aliases (Pydantic v2 AliasChoices).
         """
         del path
-        for key in field_keys(class_scope(class_name, output_names), field_name):
+        for key in field_keys(class_scope(class_name, output_names), field_name) if self.aliases else ():
             if (resolved_alias := self._resolve_alias_value(field_name, self.aliases.get(key), excludes)) is not None:
                 return resolved_alias
 

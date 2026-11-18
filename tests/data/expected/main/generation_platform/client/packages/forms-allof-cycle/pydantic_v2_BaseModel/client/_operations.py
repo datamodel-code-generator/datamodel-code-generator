@@ -17,7 +17,6 @@ from ._runtime.client.operations import (
     ServerPlan,
     empty_branch,
 )
-from ._runtime.client.parts import PartPlan
 from ._runtime.model_codecs.media import FieldPlan
 from .types.default import SendCycleResponse
 
@@ -35,18 +34,13 @@ OPERATION_0: Final[OperationPlan[SendCycleResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 codec=model_bindings.codec_0,
-                form=MultipartForm(
-                    members=True,
-                    parts=(PartPlan('a', 'string'), PartPlan('b', 'string')),
-                    additional=PartPlan('', 'json'),
-                ),
+                form=MultipartForm(members=True),
             ),
             BodyMedia(
                 media_type='application/x-www-form-urlencoded',
                 kind='form',
                 codec=model_bindings.codec_1,
                 fields=(FieldPlan('a', 'string'), FieldPlan('b', 'integer')),
-                additional=FieldPlan('', 'string'),
             ),
         ),
         required=True,

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ignored",
+  "type": "object",
+  "properties": {
+    "flag": {"type": ["boolean", "integer"], "enum": [1, 2]},
+    "fixed": {"type": ["boolean", "integer"], "const": 1, "enum": [1, 2]}
+  }
+}

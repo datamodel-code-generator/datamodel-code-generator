@@ -33,10 +33,9 @@ from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._target_contract import Direction, SourceLocation
 
@@ -267,7 +266,7 @@ class _Streams(HelperPlanner):
         status: str | None = None,
     ) -> TypeUseBinding:
         """Return the use that reads or sends a schema as its operation's body, bound as the schema's value use is."""
-        schema = schema_use(self.schemas, location, direction)
+        schema = schema_use(self.facts.schemas, location, direction)
         use = TypeUseId(
             owner=spec.contract.id,
             role="request_body" if direction == "request" else "response_body",
@@ -351,36 +350,28 @@ class _Streams(HelperPlanner):
 
 
 def stream_uses(
-    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest
+    streams: _Streams | None,
 ) -> tuple[tuple[StreamSpec, ...], tuple[TypeUseBinding, ...], dict[str, list[Diagnostic]]]:
     """Check every enabled stream helper before its codecs are planned, returning the helpers, uses, and problems.
 
     Each use appears once, however many helpers decode its schema from the same response.
     """
-    if protocols is None:
+    if streams is None:
         return (), (), {}
-    streams = _Streams(protocols, plan, request)
     return streams.coded(STREAM_MEDIA, streams.helper)
 
 
-def plan_streams(  # noqa: PLR0913, PLR0917
-    specs: tuple[StreamSpec, ...],
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-    problems: dict[str, list[Diagnostic]],
+def plan_streams(
+    specs: tuple[StreamSpec, ...], polls: _Polls | None, problems: dict[str, list[Diagnostic]]
 ) -> tuple[StreamSpec, ...]:
     """Plan every stream helper whose events have native codecs and whose body discriminator each schema declares.
 
     A helper declaring resumption also needs its cursor, bindings, and expiry to fit. The problems found are added to
     each helper's.
     """
-    if protocols is None or not specs:
+    if polls is None or not specs:
         return ()
-    pages = _Pages(protocols, plan, facts, codecs, request)
-    polls = _Polls(pages)
+    pages = polls.pages
     planned: list[StreamSpec] = []
     for spec in specs:
         helper = spec.helper

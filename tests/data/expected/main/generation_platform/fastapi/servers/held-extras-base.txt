@@ -1,0 +1,15 @@
+# held-extras-base
+serve pydantic_v2.BaseModel
+service DefaultService: get_plain, post_plain_parts, post_typed
+service DefaultService without its methods: TypeError
+> GET /plain?count=1&foo=bar
+  get_plain(count=1, obj=Plain(size=None, foo='bar'))
+< 204 - b''
+> POST /parts/plain
+  post_plain_parts(Plain(size=2, foo=1))
+< 204 - b''
+> POST /typed
+  post_typed(Typed(size=1, x=5))
+< 204 - b''
+> POST /typed
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "x"]}]

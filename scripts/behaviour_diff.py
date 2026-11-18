@@ -1,13 +1,23 @@
-"""Classify every output change between a release and a checkout by its behaviour.
+"""Classify every output change between a release or a git revision and a checkout by its behaviour.
 
 Usage:
   python scripts/behaviour_diff.py gate [BASE] [CANDIDATE] [--tier pr|nightly|release] [--types T1,T2]
-      [--shard I/N] [-j N] [--check] [--json OUT]
+      [--shard I/N] [-j N] [--check] [--json OUT] [--identity]
 
-BASE is a released version (default: the latest tag). CANDIDATE is a checkout path (default: this checkout; its
-`.venv` is used when it has one) or a git revision of this repository, which is extracted with `git archive` and run
-from this interpreter through PYTHONPATH. The release is installed into a cached environment pinned to the
-candidate's dependency versions, as scripts/compare_release.py does.
+BASE is a released version (default: the latest tag) or a git revision of the candidate's repository (this
+repository for a candidate revision). CANDIDATE is a checkout path (default: this checkout; its `.venv` is used when
+it has one) or a git revision of this repository. scripts/compare_release.py resolves both (`resolve_base`,
+`source_tree`): a revision is extracted with `git archive` and run from the candidate's interpreter through
+PYTHONPATH; a release is installed into a cached environment pinned to the candidate's dependency versions. The
+allowlist applies to a release base only.
+
+`--identity` compares without the allowlist and implies `--check`: any difference in a cell's output bytes, warnings
+(category, message, module), handled exceptions, messages (errors by class and message, without traceback frames),
+exit status or refused single-file attempt is a violation, and so is every option or option value one side has and
+the other lacks and every cell that uses one the candidate has and the base lacks. A cell the same on both sides is
+`same`, or `both-fail` where both sides failed alike; such a cell is not compared where the timeout or the memory cap
+stopped both sides or where every cell of its input fails on both sides. Refactoring steps use it against their base
+commit.
 
 A cell is one input x output model type x option set. Tiers:
   pr       inputs changed since BASE, inputs named by the allowlist and a fixed sample of 300 fixtures,
@@ -110,7 +120,9 @@ PRESET_PYTHON_OLDER = "py312"
 PAYLOAD_VALID = 10
 PAYLOAD_INVALID = 12
 PAYLOAD_DRAW_TIMEOUT = 90
-EXCLUDED_OPTIONS = frozenset({"--watch"})
+EXCLUDED_OPTIONS = frozenset({"--watch", "--debug"})
+"""Options no cell runs: `--watch` never returns, and the trace `--debug` prints holds object addresses and times, so
+its messages differ on every run."""
 OPTION_SETS = (
     ("--strip-default-none",),
     ("--strip-default-none", "--keyword-only"),
@@ -127,6 +139,8 @@ ERA_EXTRAS = "graphql,http,protobuf"
 ERA_PACKAGES = ("black", "isort", "msgspec", "email-validator")
 SNIPPET_LINES = 40
 OPT_IN_TRIES = 5
+NOT_COMPARED_STOPPED = "not compared: the timeout or the memory cap stopped both sides"
+NOT_COMPARED_INPUT = "not compared: every cell of the input fails on both sides"
 RESTORE_GROUPS = (
     "Typing customization",
     "Field customization",
@@ -201,6 +215,11 @@ class Candidate:
     env: dict[str, str]
     revision: str | None
 
+    @property
+    def repo(self) -> Path:
+        """The repository the candidate's revisions and a revision base resolve in."""
+        return ROOT if self.revision else self.root
+
 
 @dataclass
 class Result:
@@ -237,7 +256,7 @@ class Project:
                     ["sparse-checkout", "set", "--no-cone", *self.paths],
                     ["-c", "advice.detachedHead=false", "checkout", "-q", "FETCH_HEAD"],
                 ]
-                if all(_isolated_git(step, self.root) for step in steps):
+                if all(compare_release.git(self.root, *step).returncode == 0 for step in steps):
                     (self.root / ".complete").touch()
                     return
             msg = f"cannot fetch {self.url} at {self.sha}"
@@ -300,64 +319,30 @@ class Gate:
     projects: dict[str, Project] = field(default_factory=dict)
     draw_locks: dict[str, threading.Lock] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
-
-
-def _git(*args: str, cwd: Path = ROOT) -> str | None:
-    result = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=False)
-    return result.stdout if result.returncode == 0 else None
-
-
-def _isolated_git(args: list[str], cwd: Path) -> bool:
-    """Run git in `cwd` without the caller's repository settings (a hook's GIT_DIR) or an interactive prompt."""
-    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")} | {"GIT_TERMINAL_PROMPT": "0"}
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, env=env, check=False).returncode == 0
+    identity: bool = False
 
 
 def latest_tag() -> str:
     """Return the latest release tag reachable from HEAD."""
-    return (_git("describe", "--tags", "--abbrev=0") or "").strip()
-
-
-def archive_version(revision: str) -> str:
-    """Return the version the build hook writes for a revision (`git archive` leaves the version file out)."""
-    described = (_git("describe", "--tags", "--long", "--match", "[0-9]*", "--exclude", "*+*", revision) or "").strip()
-    if described.count("-") < 2:  # ruff: ignore[magic-value-comparison]
-        return f"0.0.0+g{revision[:9]}"
-    tag, distance, commit = described.rsplit("-", 2)
-    if distance == "0":
-        return tag
-    major_minor, _, patch = tag.rpartition(".")
-    return f"{major_minor}.{int(patch) + 1}.dev{distance}+{commit}"
+    return compare_release.git(ROOT, "describe", "--tags", "--abbrev=0").stdout.strip()
 
 
 def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) -> Candidate:
-    """Resolve a checkout path or a revision to a root, an interpreter and the environment to run it with."""
-    env = {**os.environ, "PYTHONWARNINGS": "ignore", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+    """Resolve a checkout path or a revision to a root, an interpreter and the environment to run it with.
+
+    Either way the candidate imports the root's `src` (`compare_release.run_environment`).
+    """
     if spec is None or Path(spec).is_dir():
         root = Path(spec or ROOT).resolve()
         venv = root / ".venv" / "bin" / "python"
         chosen = python or (venv if venv.exists() else Path(sys.executable))
-        if not (venv.exists() and chosen.absolute() == venv.absolute()):
-            env["PYTHONPATH"] = str(root / "src")
-        return Candidate(root, chosen.absolute(), env, None)
-    revision = (_git("rev-parse", "--verify", f"{spec}^{{commit}}") or "").strip()
-    if not revision:
+        return Candidate(root, chosen.absolute(), compare_release.run_environment(root / "src"), None)
+    if not (revision := compare_release.commit_of(spec)):
         msg = f"{spec} is neither a directory nor a revision of {ROOT}"
         raise SystemExit(msg)
-    root = cache_dir / "trees" / revision
-    if not (root / ".complete").exists():
-        shutil.rmtree(root, ignore_errors=True)
-        root.mkdir(parents=True)
-        archive = subprocess.run(
-            ["git", "archive", revision, "src", "tests"], cwd=ROOT, capture_output=True, check=True
-        )
-        subprocess.run(["tar", "-x", "-C", str(root)], input=archive.stdout, check=True)
-        version_file = root / "src" / "datamodel_code_generator" / "_version.py"
-        if not version_file.exists():
-            version_file.write_text(f"__version__ = {archive_version(revision)!r}\n", encoding="utf-8")
-        (root / ".complete").touch()
-    env["PYTHONPATH"] = str(root / "src")
-    return Candidate(root, (python or Path(sys.executable)).absolute(), env, revision)
+    root = compare_release.source_tree(revision, cache_dir, paths=("src", "tests"))
+    python = (python or Path(sys.executable)).absolute()
+    return Candidate(root, python, compare_release.run_environment(root / "src"), revision)
 
 
 def option_inventory(python: Path, env: dict[str, str] | None = None) -> dict[str, list[str] | None]:
@@ -386,17 +371,15 @@ def opt_in_reason(args: list[str], inventory: dict[str, list[str] | None]) -> st
 def changed_files(candidate: Candidate, base: str) -> list[str]:
     """Return the files under tests/data that changed between the release and the candidate."""
     revision = [candidate.revision] if candidate.revision else []
-    cwd = ROOT if candidate.revision else candidate.root
-    output = _git("diff", "--name-only", "--no-renames", base, *revision, "--", "tests/data", cwd=cwd)
-    return sorted(output.split()) if output else []
+    args = ("diff", "--name-only", "--no-renames", base, *revision, "--", "tests/data")
+    return sorted(compare_release.git(candidate.repo, *args).stdout.split())
 
 
 def added_files(candidate: Candidate, base: str, directory: str) -> list[str]:
     """Return the files added below tests/data/<directory> since the release."""
     revision = [candidate.revision] if candidate.revision else []
-    cwd = ROOT if candidate.revision else candidate.root
-    output = _git("diff", "--name-only", "--diff-filter=A", base, *revision, "--", f"tests/data/{directory}", cwd=cwd)
-    return sorted(output.split()) if output else []
+    args = ("diff", "--name-only", "--diff-filter=A", base, *revision, "--", f"tests/data/{directory}")
+    return sorted(compare_release.git(candidate.repo, *args).stdout.split())
 
 
 def fixture_inputs(candidate: Candidate, base: str) -> list[tuple[str, str]]:
@@ -511,7 +494,7 @@ def _without(args: list[str], option: str) -> tuple[list[str], str | None]:
 
 
 def anchor_cells(root: Path, types: list[str]) -> list[Cell]:
-    """Return one cell per cli_doc example and output model type it documents; `--watch` examples never finish."""
+    """Return one cell per cli_doc example and output model type it documents, but none of `EXCLUDED_OPTIONS`."""
     cells: dict[tuple[str, str, tuple[str, ...]], Cell] = {}
     for example in cli_doc_examples(root):
         schema = root / "tests" / "data" / example["input_schema"]
@@ -713,6 +696,8 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             base = gate.base.generate(args, tmp)
             gate.cache.put(cell.input, args, base, import_check=False)
         candidate = gate.candidate.generate(args, tmp)
+        if gate.identity:
+            return Result(cell, identity_verdict(base, candidate))
         same = base.ok and candidate.ok and base.tree == candidate.tree
         sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
         valid: frozenset[str] = frozenset()
@@ -742,6 +727,43 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
         valid_payloads=valid,
     )
     return Result(cell, verdict)
+
+
+def identity_verdict(base: compare_release.Outcome, candidate: compare_release.Outcome) -> Verdict:
+    """Return the identity verdict of a cell: any difference is a violation; a run a cap stopped is not compared."""
+    if changes := compare_release.identity_changes(base, candidate):
+        return Verdict("violation", tuple(detail for _, detail in changes))
+    if base.ok:
+        return Verdict("same")
+    return Verdict("both-fail", (NOT_COMPARED_STOPPED,) if base.stopped() else ())
+
+
+def not_compared(results: list[Result]) -> list[Result]:
+    """Mark the cells of an input that fails on both sides in every cell as not compared."""
+    cells = Counter(result.cell.label for result in results)
+    failed = Counter(result.cell.label for result in results if result.verdict.cls == "both-fail")
+    return [
+        Result(result.cell, Verdict("both-fail", (*result.verdict.notes, NOT_COMPARED_INPUT)))
+        if failed[result.cell.label] == cells[result.cell.label]
+        else result
+        for result in results
+    ]
+
+
+def option_changes(base: dict[str, list[str] | None], candidate: dict[str, list[str] | None]) -> list[str]:
+    """Return each option and option value one side's datamodel-codegen has and the other's lacks."""
+
+    def surface(inventory: dict[str, list[str] | None]) -> set[str]:
+        return {
+            " ".join(filter(None, (name, value)))
+            for name, values in inventory.items()
+            for value in (None, *(values or ()))
+        }
+
+    old, new = surface(base), surface(candidate)
+    return [f"option added: {name}" for name in sorted(new - old)] + [
+        f"option removed: {name}" for name in sorted(old - new)
+    ]
 
 
 def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[str] | None]) -> list[Cell]:
@@ -798,7 +820,7 @@ def _environment_args(parser: argparse.ArgumentParser) -> None:
         "--memory-mb",
         type=_memory_mb,
         default=8192,
-        help="data memory of one generation process before it fails, a safety net far above any real cell (0: no cap)",
+        help="data memory of a worker while it generates a cell, a safety net far above any real cell (0: no cap)",
     )
     parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
 
@@ -833,12 +855,18 @@ def _gate_args(parser: argparse.ArgumentParser) -> None:
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    gate = commands.add_parser("gate", help="classify every output change of the candidate against the release")
-    gate.add_argument("base", nargs="?", help="released version (default: the latest tag)")
+    gate = commands.add_parser("gate", help="classify every output change of the candidate against the base")
+    gate.add_argument("base", nargs="?", help="released version (default: the latest tag) or git revision")
     gate.add_argument("candidate", nargs="?", help="checkout path or git revision (default: this checkout)")
     _gate_args(gate)
     gate.add_argument("--check", action="store_true", help="exit 1 on a violation or an invalid or stale allowlist")
     gate.add_argument("--json", type=Path, help="write every cell as one JSON line to this file (read by `guide`)")
+    gate.add_argument(
+        "--identity",
+        action="store_true",
+        help="no allowlist: any difference in output, warnings, handled exceptions, messages, exit status or "
+        "options is a violation; implies --check",
+    )
     record = commands.add_parser("record", help="write the behaviour record of one release")
     record.add_argument("version", help="release version, or the version a checkout is recorded as")
     record.add_argument("checkout", nargs="?", help="checkout path or git revision to record instead of the release")
@@ -863,7 +891,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     guide.add_argument("version", help="the release the page describes")
     guide.add_argument("--candidate", help="checkout path or git revision of the release (default: this checkout)")
     _gate_args(guide)
-    guide.set_defaults(tier="release")
+    guide.set_defaults(tier="release", identity=False)
     guide.add_argument("--cells", type=Path, action="append", default=[], help="gate --json output (default: run)")
     guide.add_argument("--docs", type=Path, required=True, help="page data to write, docs/data/output-changes/V.json")
     guide.add_argument("--notes", type=Path, help="release-note fragment to write")
@@ -944,35 +972,33 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace, run: Plac
     return 1 if ns.check and (counts["violation"] or problems) else 0
 
 
-def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
-    """Return the gate of a release and a candidate, and the release's interpreter."""
+def build_gate(ns: argparse.Namespace) -> Gate:
+    """Return the gate of a base and a candidate."""
     cache_dir = ns.cache_dir.absolute()
     candidate = resolve_candidate(ns.candidate, ns.candidate_python, cache_dir)
-    if ns.base_python is not None:
-        base_python = ns.base_python.absolute()
-        identity = json.dumps([str(base_python), *compare_release._probe(base_python)])  # ruff: ignore[private-member-access]
-        cache_name = f"python-{_stable(identity)[:12]}"
-    else:
-        base_python = compare_release._base_python(ns.base, candidate.python, cache_dir)  # ruff: ignore[private-member-access]
-        cache_name = base_python.parents[1].name
-    base_env = {k: v for k, v in candidate.env.items() if k != "PYTHONPATH"}
-    allowlist = Allowlist.load(ns.allowlist) if ns.allowlist.exists() else Allowlist()
-    gate = Gate(
+    base = (
+        compare_release.installed_base(ns.base_python.absolute())
+        if ns.base_python is not None
+        else compare_release.resolve_base(ns.base, candidate.python, cache_dir, candidate.repo)
+    )
+    listed = not ns.identity and base.revision is None and ns.allowlist.exists()
+    allowlist = Allowlist.load(ns.allowlist) if listed else Allowlist()
+    return Gate(
         base=compare_release.Runner(
-            compare_release.Side("base", base_python),
-            base_env,
+            compare_release.Side("base", base.python, base.package),
+            base.env(),
             import_check=False,
             timeout=ns.timeout,
             memory_mb=ns.memory_mb,
         ),
         candidate=compare_release.Runner(
-            compare_release.Side("cand", candidate.python),
+            compare_release.Side("cand", candidate.python, candidate.root / "src"),
             candidate.env,
             import_check=False,
             timeout=ns.timeout,
             memory_mb=ns.memory_mb,
         ),
-        cache=compare_release.OutputCache(cache_dir / "outputs" / cache_name),
+        cache=compare_release.OutputCache(cache_dir / "outputs" / base.cache_name),
         candidate_python=candidate.python,
         allowlist=allowlist if allowlist.base == ns.base else Allowlist(allowlist.base, [], allowlist.base_skips),
         loaded_allowlist=allowlist,
@@ -981,15 +1007,17 @@ def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
         payload_root=cache_dir / "payload-inputs" / _stable(str(candidate.root))[:12],
         candidate_info=candidate,
         base_version=ns.base,
+        identity=ns.identity,
     )
-    return gate, base_python
 
 
 def gate_main(ns: argparse.Namespace) -> int:
-    """Run the gate."""
+    """Run the gate; `--identity` fails on any difference, as `--check` does."""
     started = time.monotonic()
-    gate, base_python = build_gate(ns)
-    inventory = option_inventory(base_python)
+    ns.check = ns.check or ns.identity
+    gate = build_gate(ns)
+    inventory = option_inventory(gate.base.side.python, gate.base.env)
+    offered = option_inventory(gate.candidate.side.python, gate.candidate.env) if gate.identity else inventory
     cells = build_cells(ns, gate, inventory)
     run = place([(cell.label, cell.backend) for cell in cells], gate.allowlist, ns.base)
     cells = [cell for cell in cells if run.shard(cell, ns.shard_total) == ns.shard_index]
@@ -1006,8 +1034,23 @@ def gate_main(ns: argparse.Namespace) -> int:
     finally:
         gate.base.close()
         gate.candidate.close()
-    results += [Result(cell, Verdict("opt-in", (f"the release has no {reason}",))) for cell, reason in reasons.items()]
+    if gate.identity:
+        results = not_compared(results)
+        if ns.shard_index == 1 and (surface := option_changes(inventory, offered)):
+            results.append(
+                Result(Cell(Path(), "option surface", "", "", (), "options"), Verdict("violation", tuple(surface)))
+            )
+    results += [
+        Result(cell, Verdict("opt-in", (f"the release has no {reason}",)))
+        if opt_in_reason(cell.args(), offered)
+        else Result(cell, Verdict("violation", (f"the base has no {reason}, the candidate has it",)))
+        for cell, reason in reasons.items()
+    ]
     code = _report(results, gate, ns, run)
+    if gate.identity:
+        unseen = sum(any(note.startswith("not compared") for note in result.verdict.notes) for result in results)
+        failed = sum(result.verdict.cls == "both-fail" for result in results)
+        print(f"not compared: {unseen} of the {failed} cells that fail on both sides")
     print(f"elapsed: {time.monotonic() - started:.1f}s", file=sys.stderr)
     return code
 
@@ -1120,9 +1163,11 @@ def record_main(ns: argparse.Namespace) -> int:
     started = time.monotonic()
     cache_dir, out = ns.cache_dir.absolute(), ns.out.absolute()
     recorder = resolve_candidate(None, None, cache_dir)
+    package = None
     if ns.checkout:
         source = resolve_candidate(ns.checkout, ns.python, cache_dir)
         python, env, cache = source.python, source.env, compare_release.OutputCache(None)
+        package = source.root / "src"
         environment = release_environment(python)
     else:
         python = (ns.python or era_python(ns.version, cache_dir)).absolute()
@@ -1131,7 +1176,11 @@ def record_main(ns: argparse.Namespace) -> int:
         name = python.parent.parent.name if ns.python is None else f"python-{_stable(environment)[:12]}"
         cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{ns.version}-{name}")
     runner = compare_release.Runner(
-        compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb
+        compare_release.Side("rec", python, package),
+        env,
+        import_check=False,
+        timeout=ns.timeout,
+        memory_mb=ns.memory_mb,
     )
     gate = Gate(
         base=runner,
@@ -1431,7 +1480,7 @@ def guide_changes() -> list[dict[str, object]]:
 
 def guide_main(ns: argparse.Namespace) -> int:
     """Write a release page's data (and release notes) from a gate run of the release against the previous one."""
-    gate, _ = build_gate(ns)
+    gate = build_gate(ns)
     try:
         if not ns.cells:
             ns.check, ns.json = False, ns.cache_dir.absolute() / f"guide-{ns.base}-{ns.version}.jsonl"

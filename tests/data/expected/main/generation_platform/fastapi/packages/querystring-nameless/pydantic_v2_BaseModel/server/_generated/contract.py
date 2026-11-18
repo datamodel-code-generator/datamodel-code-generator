@@ -45,7 +45,6 @@ class Search:
                     name='',
                     content_media_type='application/x-www-form-urlencoded',
                     fields=(FieldPlan('term', 'string'),),
-                    additional=FieldPlan('', 'string'),
                 ),
                 adapter=TypeAdapter(models.SearchGetQuerystring),
             ),

@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 
 import pytest
 import time_machine
-from inline_snapshot._global_state import state as inline_snapshot_state
+from inline_snapshot._core._global_state import state as inline_snapshot_state
 from typing_extensions import Required
 
 from datamodel_code_generator import MIN_VERSION
@@ -860,7 +860,7 @@ def _ci_environment() -> CiEnvironment:
     CI runs never create or fix expected output, even with an explicit ``--inline-snapshot=create`` or ``fix``, and
     their failures print the payload that applies CI's output locally. tox passes the variables on (``pass_env``).
     """
-    from inline_snapshot._snapshot_session import is_ci_run
+    from inline_snapshot._core._snapshot_session import is_ci_run
 
     github = bool(os.environ.get("GITHUB_ACTIONS"))
     return CiEnvironment(is_ci_run() or None, github, os.environ.get("GITHUB_RUN_ID") if github else None)
@@ -1111,7 +1111,7 @@ class _Ledger:
     def start(self) -> None:
         state = inline_snapshot_state()
         if self.ci.variable is not None:
-            from inline_snapshot._flags import Flags
+            from inline_snapshot._core._flags import Flags
 
             state.update_flags = Flags()
             state.flags -= _UPDATE_CATEGORIES
@@ -2047,6 +2047,44 @@ def stored_expected(path: Path) -> Path:
 
 
 _OWN_FILE_HINT = "otherwise compare the second against its own expected file"
+_MIN_HOME_LENGTH = 6
+
+
+def home_directory_in(text: str, home: str) -> str | None:
+    """Return the spelling of ``home`` that ``text`` holds, or None; a short home or ``/`` never matches."""
+    if len(home) < _MIN_HOME_LENGTH:
+        return None
+    posix = home.replace("\\", "/")
+    return next((form for form in (home, posix, home.replace("\\", "\\\\")) if form in text), None)
+
+
+_SESSION_HOME = str(Path.home())
+
+
+def _strings_in(value: object) -> Generator[str]:
+    """Yield every string held by a value, walking nested dicts, lists and tuples."""
+    match value:
+        case str():
+            yield value
+        case dict():
+            for item in value.values():
+                yield from _strings_in(item)
+        case list() | tuple():
+            for item in value:
+                yield from _strings_in(item)
+
+
+def _refuse_home_directory(value: object) -> None:
+    """Fail the running test when stored output would hold the home directory the session started with."""
+    __tracebackhide__ = True
+    for text in _strings_in(value):
+        if (form := home_directory_in(text, _SESSION_HOME)) is not None:
+            pytest.fail(
+                f"Output to compare holds the home directory {form!r}: it would leak a developer's own path into the "
+                "repository. Normalize the path in the test (a placeholder), or set the variable with "
+                "`monkeypatch.setenv`.",
+                pytrace=False,
+            )
 
 
 def _compare_expected(
@@ -2061,6 +2099,7 @@ def _compare_expected(
     if pattern is not None and isinstance(value, dict):
         # The stored tree holds only the files the pattern selects; compare the same files of the output.
         value = {name: text for name, text in value.items() if PurePosixPath(name).match(pattern)}
+    _refuse_home_directory(value)
     ledger = _ledger()
     label = ledger.label(expected_path, pattern) if ledger is not None else None
     if ledger is None or label is None:

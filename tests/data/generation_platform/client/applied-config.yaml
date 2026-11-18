@@ -1,0 +1,69 @@
+openapi: 3.1.0
+info: {title: Applied model configuration, version: "1.0"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /children:
+    post:
+      operationId: echoChild
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Child"}
+      responses:
+        "200":
+          description: The child it received.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Child"}
+  /people:
+    post:
+      operationId: postPerson
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Person"}
+      responses:
+        "204": {description: Done.}
+  /forms:
+    post:
+      operationId: postForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/Closed"
+                - $ref: "#/components/schemas/Open"
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Open:
+      type: object
+      properties:
+        name: {type: string}
+      additionalProperties: true
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Open"
+        - type: object
+          properties:
+            size: {type: integer}
+    Named:
+      type: object
+      properties:
+        first-name: {type: string}
+    Person:
+      allOf:
+        - $ref: "#/components/schemas/Named"
+        - type: object
+          properties:
+            last-name: {type: string}
+    Closed:
+      type: object
+      properties:
+        code: {type: string}
+      additionalProperties: false

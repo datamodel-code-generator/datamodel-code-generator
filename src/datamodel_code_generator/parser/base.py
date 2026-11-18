@@ -17,7 +17,7 @@ from collections import (
 )
 from contextvars import ContextVar
 from copy import deepcopy  # noqa: F401  # Preserve the established parser.base export.
-from functools import partial
+from functools import cached_property, partial
 from itertools import chain
 from pathlib import Path
 from typing import (
@@ -163,6 +163,7 @@ from datamodel_code_generator.parser._field_copies import (
     _merge_data_type_modifiers,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._field_rows import (
+    FIELD_OPTIONS_LEFT_OUT,
     FIELD_ROWS_BUILT_WITHOUT_VALIDATION,
     FIELD_ROWS_WITHOUT_VALIDATION_ALIASES,
     field_options_left_out,
@@ -843,6 +844,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             "use_default_factory_for_optional_nested_models": self.use_default_factory_for_optional_nested_models,
         }
 
+    @cached_property
+    def _field_policy(self) -> Mapping[FieldRow, partial[DataModelFieldBase]]:
+        """The constructor of each row with the configured options it takes, read once, at the run's first field."""
+        options = self._field_option_kwargs
+        policy: dict[FieldRow, partial[DataModelFieldBase]] = {}
+        for row in FIELD_OPTIONS_LEFT_OUT:
+            left_out = field_options_left_out(row, every_field=self.apply_field_options_to_every_field)
+            policy[row] = partial(
+                _get_model_field_constructor(self.data_model_field_type)
+                if row in FIELD_ROWS_BUILT_WITHOUT_VALIDATION
+                else self.data_model_field_type,
+                **{key: value for key, value in options.items() if key not in left_out},
+            )
+        return policy
+
     def _build_field(
         self,
         row: FieldRow,
@@ -859,9 +875,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         into the alias and the validation aliases, beside the ``--serialization-aliases`` entry of the class ``scope``
         for a field with a ``name`` and the ``source_name`` it is read from.
         """
-        options = self._field_option_kwargs
-        if left_out := field_options_left_out(row, every_field=self.apply_field_options_to_every_field):
-            options = {key: value for key, value in options.items() if key not in left_out}
         aliases: dict[str, Any] = {}
         if "alias" in facts:
             aliases["alias"], validation_aliases, aliases["serialization_alias"] = self._field_aliases(
@@ -869,15 +882,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             if row not in FIELD_ROWS_WITHOUT_VALIDATION_ALIASES:
                 aliases["validation_aliases"] = validation_aliases
-        constructor = (
-            _get_model_field_constructor(self.data_model_field_type)
-            if row in FIELD_ROWS_BUILT_WITHOUT_VALIDATION
-            else self.data_model_field_type
-        )
-        return constructor(
-            data_type=data_type,
-            **{**options, **aliases, **facts},
-            **self._data_model_field_common_kwargs(),
+        return self._field_policy[row](
+            data_type=data_type, **{**aliases, **facts}, **self._data_model_field_common_kwargs_cache
         )
 
     def _field_aliases(
@@ -1482,9 +1488,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             config.use_default_factory_for_optional_nested_models
         )
         self.field_type_collision_strategy: FieldTypeCollisionStrategy | None = config.field_type_collision_strategy
-
-    def _data_model_field_common_kwargs(self) -> dict[str, Any]:
-        return self._data_model_field_common_kwargs_cache
 
     def _split_field_alias(  # noqa: PLR6301
         self,

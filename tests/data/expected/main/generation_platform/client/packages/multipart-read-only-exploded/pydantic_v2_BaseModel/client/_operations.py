@@ -17,7 +17,6 @@ from ._runtime.client.operations import (
     ServerPlan,
     empty_branch,
 )
-from ._runtime.client.parts import PartPlan
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import CreateItemResponse
@@ -38,7 +37,6 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
                 codec=model_bindings.codec_0,
                 form=MultipartForm(
                     members=True,
-                    additional=PartPlan('', 'json'),
                     encoded=(
                         ParameterPlan(
                             location='query',
@@ -47,8 +45,6 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
                             explode=True,
                             shape='object',
                             fields=(FieldPlan('id', 'string'),),
-                            additional=FieldPlan('', 'string'),
-                            reserved_names=('id',),
                         ),
                     ),
                 ),

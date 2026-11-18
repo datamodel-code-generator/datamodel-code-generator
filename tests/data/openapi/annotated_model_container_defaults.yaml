@@ -1,0 +1,144 @@
+openapi: 3.1.0
+info:
+  title: Container, union and scalar model defaults
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        pet-kind:
+          type: string
+    Toy:
+      type: object
+      properties:
+        label:
+          type: string
+    Color:
+      type: string
+      enum:
+        - red
+        - green
+    Count:
+      type: integer
+      minimum: 0
+    Code:
+      type: string
+      pattern: '^[a-z]+$'
+    Shelter:
+      type: object
+      properties:
+        pets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pet'
+          default:
+            - name: rex
+              pet-kind: dog
+        noPets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pet'
+          default: []
+        petsByName:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Pet'
+          default:
+            rex:
+              name: rex
+        petOrToy:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - $ref: '#/components/schemas/Toy'
+          default:
+            label: ball
+        petOrName:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: string
+          default: rex
+        petOrCode:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: string
+          default:
+            name: rex
+        count:
+          $ref: '#/components/schemas/Count'
+          default: 10
+        code:
+          $ref: '#/components/schemas/Code'
+          default: abc
+        counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Count'
+          default:
+            - 1
+            - 2
+        uniqueCounts:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Count'
+          default:
+            - 3
+        noUniqueCounts:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Count'
+          default: []
+        pair:
+          type: array
+          prefixItems:
+            - $ref: '#/components/schemas/Count'
+            - type: string
+          minItems: 2
+          maxItems: 2
+          default:
+            - 1
+            - a
+        groups:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/Pet'
+          default:
+            - - name: rex
+        next:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: string
+              format: uri
+          default: https://example.com/next
+        since:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: string
+              format: date
+          default: '2020-01-01'
+        petOrMode:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - const: auto
+          default: auto
+        paint:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: array
+              items:
+                $ref: '#/components/schemas/Color'
+          default:
+            - red
+    Kennel:
+      type: object
+      properties:
+        count:
+          $ref: '#/components/schemas/Count'
+          default: -1

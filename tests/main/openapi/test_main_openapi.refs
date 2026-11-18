@@ -703,6 +703,21 @@ request-body	main/openapi/main_openapi/anchor_refs_in_object_document_loaded_by_
 	main/openapi/main_openapi/anchor_refs_in_path_item_document_that_holds_itself.py
 [test_main_openapi_anchor_refs_in_referenced_object_documents]
 	main/openapi/main_openapi/anchor_refs_in_referenced_object_documents.py
+[test_main_openapi_annotated_model_container_defaults]
+nullable	main/openapi/main_openapi/annotated_model_container_defaults[nullable].payloads.txt
+nullable	main/openapi/main_openapi/annotated_model_container_defaults[nullable].py
+strict-nullable	main/openapi/main_openapi/annotated_model_container_defaults[strict-nullable].payloads.txt	= main/openapi/main_openapi/annotated_model_container_defaults[nullable].payloads.txt
+strict-nullable	main/openapi/main_openapi/annotated_model_container_defaults[strict-nullable].py
+unique-items-as-set	main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].payloads.txt
+unique-items-as-set	main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].py
+[test_main_openapi_annotated_model_default_literals]
+	main/openapi/main_openapi/annotated_model_default_literals.payloads.txt
+	main/openapi/main_openapi/annotated_model_default_literals.py
+[test_main_openapi_annotated_model_defaults]
+nullable	main/openapi/main_openapi/annotated_model_defaults[nullable].payloads.txt
+nullable	main/openapi/main_openapi/annotated_model_defaults[nullable].py
+strict-nullable	main/openapi/main_openapi/annotated_model_defaults[strict-nullable].payloads.txt	= main/openapi/main_openapi/annotated_model_defaults[nullable].payloads.txt
+strict-nullable	main/openapi/main_openapi/annotated_model_defaults[strict-nullable].py
 [test_main_openapi_api_scope_external_boolean_schema]
 	main/openapi/openapi_api_scope_external_boolean_schema.py
 [test_main_openapi_api_scope_name_map_spellings]

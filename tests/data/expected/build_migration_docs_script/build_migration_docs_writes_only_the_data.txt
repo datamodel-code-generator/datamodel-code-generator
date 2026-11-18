@@ -269,6 +269,9 @@ repository files []
     ]
    },
    "id": "custom-template-root",
+   "keep": {
+    "note": "No option keeps `model_fields`."
+   },
    "kind": "template",
    "migrate": "Rename `model_fields` to `fields` in your templates.",
    "refs": [
@@ -305,6 +308,20 @@ repository files []
    "source": "registry",
    "summary": "argcomplete will become optional.",
    "title": "argcomplete installation is scheduled to change"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "experimental": [
+     "input-format.toml"
+    ]
+   },
+   "id": "experimental:input-format.toml",
+   "kind": "experimental",
+   "release": "unreleased",
+   "source": "registry",
+   "summary": "TOML input is experimental.",
+   "title": "--input-file-type toml is experimental"
   },
   {
    "action": "none",

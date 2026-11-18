@@ -1,0 +1,61 @@
+[[change]]
+id = "annotated-model-default-cast"
+category = "output-text"
+kind = "output-text"
+action = "none"
+title = "`--use-annotated` casts a model field's default to the field's type"
+summary = "Under `--use-annotated`, a field whose type holds a model or a root model, which Pydantic validates its default into (`validate_default=True`), was assigned the schema default as it is in the class body: an object or an array for a model, a list or dict of objects for a list or dict of models, an object for a union of models, a number or string for a root model such as a constrained `integer`, or a string for a union of a model with a format such as a URL or a date. mypy (with the Pydantic plugin) and pyright expect the field's type there, so both reported the assignment. Such a value is now written as `cast('<the field type>', <value>)`, and the module imports `cast` from `typing`. Pydantic still validates the value at instantiation (`validate_default=True` is unchanged), so the models behave as before: the same values, the same JSON Schema defaults, the same error for a default the model rejects. A default the type already takes, such as an empty list for a list of models, a string for a union with `str` or enum members for a list of enums (`--set-default-enum-member`), is written as before."
+affects = { output_model_types = ["pydantic_v2.BaseModel"], options = ["--use-annotated"] }
+before = "flags: Annotated[Flags | None, Field(validate_default=True)] = {'enabled': False}"
+after = "flags: Annotated[Flags | None, Field(validate_default=True)] = cast('Flags | None', {'enabled': False})"
+refs = ["#7016"]
+source = "release-note"
+covers = [
+    "main/jsonschema/annotated_forward_reference/no_generator_2.12.py",
+    "main/jsonschema/annotated_forward_reference/no_generator_2_eager.py",
+    "main/jsonschema/annotated_forward_reference/no_generator_unset.py",
+    "main/jsonschema/annotated_forward_reference/to_camel_2.12.py",
+    "main/jsonschema/annotated_forward_reference/to_camel_unset.py",
+    "main/jsonschema/root_model_default_value.py",
+    "main/jsonschema/root_model_default_value_branches.py",
+    "main/jsonschema/root_model_default_value_non_root.py",
+    "main/jsonschema/type_alias_chain_union_default_object_ref.py",
+    "main/jsonschema/type_alias_dict_union_default_object_ref.py",
+    "main/jsonschema/type_alias_inline_dict_union_default_object.py",
+    "main/jsonschema/type_alias_inline_list_union_default_object.py",
+    "main/jsonschema/type_alias_inline_union_default_object_import_collision.py",
+    "main/jsonschema/type_alias_inline_union_default_object_one_of.py",
+    "main/jsonschema/type_alias_inline_union_default_object_silent_wrong_branch.py",
+    "main/jsonschema/type_alias_inline_union_default_object_type_override.py",
+    "main/jsonschema/type_alias_list_union_default_object_ref.py",
+    "main/jsonschema/type_alias_union_default_object_ref_any_of.py",
+    "main/jsonschema/type_alias_union_default_object_ref_mixed_scalar.py",
+    "main/jsonschema/type_alias_union_default_object_ref_one_of.py",
+    "main/openapi/extracted_branch_default/extracted_branch_default[annotated-pydantic_v2.BaseModel].py",
+    "main/openapi/extracted_branch_default/without_option[annotated-pydantic_v2.BaseModel].py",
+    "main/openapi/extracted_branch_nullable_default/extracted_branch_nullable_default[--use-annotated-keep].py",
+    "main/openapi/extracted_branch_nullable_default/extracted_branch_nullable_default[--use-annotated-without_option].py",
+    "main/openapi/main_openapi/annotated_model_container_defaults[nullable].payloads.txt",
+    "main/openapi/main_openapi/annotated_model_container_defaults[nullable].py",
+    "main/openapi/main_openapi/annotated_model_container_defaults[strict-nullable].payloads.txt",
+    "main/openapi/main_openapi/annotated_model_container_defaults[strict-nullable].py",
+    "main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].payloads.txt",
+    "main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].py",
+    "main/openapi/main_openapi/annotated_model_default_literals.payloads.txt",
+    "main/openapi/main_openapi/annotated_model_default_literals.py",
+    "main/openapi/main_openapi/annotated_model_defaults[nullable].payloads.txt",
+    "main/openapi/main_openapi/annotated_model_defaults[nullable].py",
+    "main/openapi/main_openapi/annotated_model_defaults[strict-nullable].payloads.txt",
+    "main/openapi/main_openapi/annotated_model_defaults[strict-nullable].py",
+    "main/openapi/main_openapi/discriminator_nested_variant_defaults[discriminator_collapsed_list_variant_defau~2670d841.py",
+    "main/openapi/main_openapi/discriminator_nested_variant_defaults[discriminator_nested_variant_schema_default-pydantic_v2.BaseModel-extra_args10].py",
+    "main/openapi/referenced_default_use_annotated.py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[omit-incomplete-model-defaults-practical].py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[omit-incomplete-model-defaults-standard].py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output[root_forms-pydantic_v2.BaseModel-use-annotated].py",
+    "main/schema_intersection_shapes/schema_intersection_shape_output_without_option[root_forms-pydantic_v2.BaseModel-use-annotated].py",
+    "payloads/native_numeric_empty_errors.txt",
+    "yaml_fast_constructor/parity.txt",
+]

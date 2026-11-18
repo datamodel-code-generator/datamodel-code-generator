@@ -262,7 +262,7 @@ def _check_no_data_type_cycles(graph_mode: Mode, store: Any) -> tuple[int, ...] 
     if not store._rebuild_required:
         recorded_model_ids = (
             *range(store._next_model_id, store._next_model_id + len(store._appended_model_ids)),
-            *store._changed_model_ids,
+            *store._changed_model_ids.union(store._changed_slots),
         )
     finished: set[int] = set()
     for model in store.models:

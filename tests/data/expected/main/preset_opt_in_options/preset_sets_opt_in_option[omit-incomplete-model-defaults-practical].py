@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -39,10 +39,10 @@ class PodTemplateSpec(BaseModel):
     annotations: dict[str, str] = {}
     selector_or_name: Annotated[
         LabelSelector | str, Field(alias='selectorOrName', validate_default=True)
-    ] = {'matchLabels': {}}
+    ] = cast('LabelSelector | str', {'matchLabels': {}})
     spec: PodSpec | None = None
     nullable_spec: Annotated[PodSpec | None, Field(alias='nullableSpec')] = None
     complete_spec: Annotated[
         PodSpec, Field(alias='completeSpec', validate_default=True)
-    ] = {'containers': ['app']}
+    ] = cast('PodSpec', {'containers': ['app']})
     workload: WorkloadSpec | None = None

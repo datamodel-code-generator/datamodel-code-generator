@@ -61,7 +61,6 @@ from datamodel_code_generator._target_contract import (
     property_members,
     request_media,
     type_uses,
-    uses_by_id,
 )
 from datamodel_code_generator._target_naming import (
     PATH_PLACEHOLDER,
@@ -403,7 +402,7 @@ class Planner:
         self.config = config
         self.wire = wire
         self.facts = facts
-        self.uses = uses_by_id(request.batch)
+        self.uses = wire.tables.uses
         self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
@@ -411,7 +410,7 @@ class Planner:
         self.documents = {document.id: document.uri for document in request.batch.documents}
         self.resource_names = {item.tag: item.namespace for item in config.resource_names}
         self.problems: list[Diagnostic] = []
-        self.security = SecurityPlanner(request.batch, self.problems)
+        self.security = SecurityPlanner(request.batch, wire.tables.schemes, self.problems)
         self.settings = self.resolved()
         tags = {group_tag(operation) for operation in selected}
         self.problems.extend(
@@ -870,7 +869,7 @@ class Planner:
         which every declared member's plan then tells apart from them.
         """
         parts = _parts(use)
-        declared_extra = parts.extra
+        declared_extra = parts.loose
         additional: PartSpec | None = PartSpec(plan=PartPlan("", "json" if declared_extra is None else "string"))
         if declared_extra == "closed":
             additional = None
@@ -878,7 +877,7 @@ class Planner:
             additional = PartSpec(
                 plan=PartPlan("", repeated=declared_extra.repeated, text=declared_extra.text), file=True
             )
-        elif (extras := form_extras(self.wire.kinds, use)) is not None:
+        elif (extras := form_extras(self.wire.kinds, use, loose=True)) is not None:
             text = not part_json(self.wire.kinds, extras.type, None, self.wire.versions)
             additional = PartSpec(
                 plan=PartPlan("", "string" if text else "json", repeated=extras.repeated),
@@ -909,6 +908,8 @@ class Planner:
             )
         if any(spec.file for spec in specs) or (additional is not None and additional.file):
             return tuple(specs), additional, (), None
+        if parts.extra == "closed":
+            additional = None
         others = None if additional is None or additional.plan.kind != "json" else additional.plan
         written = tuple(
             PartPlan(spec.plan.name, spec.plan.kind, repeated=spec.plan.repeated)
@@ -929,13 +930,13 @@ class Planner:
         parts = _parts(use)
         declared = dict(parts.members)
         members = _members(use)
-        declared_extra = parts.extra
+        declared_extra = parts.loose
         if not any(declared[name].file for name, _, _ in members) and not (
             isinstance(declared_extra, PartSchema) and declared_extra.file
         ):
             return None, None
         additional: PartSpec | None = PartSpec(plan=PartPlan("", repeated=True), file=True)
-        extras = form_extras(self.wire.kinds, use)
+        extras = form_extras(self.wire.kinds, use, loose=True)
         if declared_extra == "closed":
             additional = None
         elif extras is not None and not (isinstance(declared_extra, PartSchema) and declared_extra.file):
