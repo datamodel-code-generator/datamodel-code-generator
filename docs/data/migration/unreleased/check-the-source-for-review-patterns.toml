@@ -1,0 +1,10 @@
+[[change]]
+id = "check-the-source-for-review-patterns"
+category = "harness"
+title = "Check the source for the patterns reviews keep finding"
+summary = "Stored test output of check the source for the patterns reviews keep finding (#7026); the package writes the same output for the same call."
+refs = ["#7026"]
+covers = [
+    "source_rules/lost_last_caller_compares_with_the_base.txt",
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[ellipsis-statement].txt",
+]

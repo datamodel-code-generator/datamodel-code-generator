@@ -10,3 +10,9 @@ before = "fields=(FieldPlan(\"first-name\", \"string\"),),"
 after = "fields=(FieldPlan(\"first-name\", \"string\"), FieldPlan(\"first_name\", \"string\")),"
 refs = ["#7061"]
 source = "release-note"
+covers = [
+    "main/generation_platform/fastapi/servers/forms-by-alias.txt",
+    "main/generation_platform/fastapi/servers/held-bases.txt",
+    "main/generation_platform/fastapi/servers/packages/forms-by-alias/",
+    "main/generation_platform/fastapi/servers/packages/held-bases/",
+]
