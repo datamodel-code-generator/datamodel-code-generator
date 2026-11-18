@@ -42,6 +42,16 @@ def test_build_llms_txt_check_is_up_to_date(tmp_path: Path) -> None:
     subprocess.run([sys.executable, str(checkout / "scripts" / SCRIPT.name), "--check"], check=True)
 
 
+def test_build_llms_txt_builds_the_missing_guide_page_first(tmp_path: Path) -> None:
+    """A local run builds the upgrade guide's all-changes page the deploy builds, so llms.txt keeps listing it."""
+    docs = tmp_path / "docs"
+    (docs / "migration").mkdir(parents=True)
+    build_llms_txt.build_missing_guide(docs, MIGRATION_SCRIPT)
+    built = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*") if path.is_file())
+    build_llms_txt.build_missing_guide(docs, tmp_path / "absent.py")
+    assert_output(f"built {built}\n")
+
+
 def test_build_llms_txt_writes_both_files_and_checks_only_the_index(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

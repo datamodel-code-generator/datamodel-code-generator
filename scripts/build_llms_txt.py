@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
@@ -24,6 +25,8 @@ import tomllib
 ROOT_DIR = Path(__file__).parent.parent
 DOCS_DIR = ROOT_DIR / "docs"
 ZENSICAL_TOML = ROOT_DIR / "zensical.toml"
+MIGRATION_BUILDER = Path(__file__).parent / "build_migration_docs.py"
+"""Builds the upgrade guide's pages from the repository's records, as the docs deploy does before this script."""
 OPTIONAL_PATTERNS = ("faq.md", "development-contributing.md", "cli-reference/manual/*.md")
 SKIP_PREFIXES = ("```", "!!!", "[![", "![", "<", "---")
 MAX_DESC_LINES, MAX_DESC_LEN = 2, 150
@@ -238,6 +241,18 @@ def check_files(files: dict[Path, str]) -> int:
     return 0
 
 
+def build_missing_guide(docs_dir: Path, builder: Path = MIGRATION_BUILDER) -> None:
+    """Build the upgrade guide's all-changes page, which llms.txt lists, when it is absent and its builder is present.
+
+    The page is built at deploy and not committed, so a local run builds it first, as the deploy does; otherwise the
+    index would be written without it.
+    """
+    if (docs_dir / "migration" / "changes.md").exists() or not builder.exists():
+        return
+    arguments = ["--docs-dir", str(docs_dir / "migration"), "--json", str(docs_dir / "data" / "migration.json")]
+    subprocess.run([sys.executable, str(builder), *arguments], check=True)
+
+
 def main() -> int:
     """Run the llms.txt generator."""
     parser = argparse.ArgumentParser(description="Generate llms.txt files from documentation")
@@ -245,6 +260,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=DOCS_DIR, help="Output directory (default: docs/)")
     args = parser.parse_args()
 
+    build_missing_guide(DOCS_DIR)
     config = parse_zensical_toml(ZENSICAL_TOML)
     sections = flatten_nav(config["nav"])
     pages = collect_pages(sections, config["site_url"])
