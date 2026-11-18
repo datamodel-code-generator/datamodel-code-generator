@@ -20,7 +20,8 @@ components:
   schemas:
     Pet:
       type: object
-      required: [id]
+      required: [id, ns]
       properties:
         id: {type: integer}
+        ns: {type: string, x-is-classvar: true}
         dn: {type: string, nullable: true, default: null}

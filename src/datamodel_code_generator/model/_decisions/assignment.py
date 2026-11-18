@@ -65,7 +65,7 @@ AssignmentRow: TypeAlias = Literal["model", "dataclass", "pydantic-dataclass", "
 
 * ``model``: Pydantic models, TypedDict and the neutral model: the field's call outside ``Annotated``, or its default
   unless it is required or strips its ``None`` (a Pydantic model keeps it for a type rendered with None,
-  ``ModelWritten.keeps_none``); every field takes part in the constructor.
+  ``ModelWritten.keeps_none``); every field but a ``ClassVar`` takes part in the constructor.
 * ``dataclass``: stdlib dataclasses: the ``model`` rule (row ``legacy-stdlib-annotated``); an ``init=False`` field
   takes no part in the constructor.
 * ``pydantic-dataclass``: Pydantic dataclasses: the template keeps a stripped ``None`` default when the rendered type
@@ -279,7 +279,7 @@ def participates_in_constructor(row: AssignmentRow, *, init_excluded: bool, clas
     """Return whether a field takes part in its model's constructor."""
     if row == "dataclass":
         return not init_excluded
-    return not class_var if row == "pydantic-dataclass" else True
+    return not class_var if row in {"model", "pydantic-dataclass"} else True
 
 
 def excluded_from_init(field: FieldView) -> bool:

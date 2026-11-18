@@ -41,10 +41,11 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     ),
     fields=FieldArguments(
         method='create_pet',
-        names=('id', 'dn'),
+        names=('id', 'ns', 'dn'),
         media=(
             BodyFields(
-                media_type='application/json', fields=((0, 'id', True), (1, 'dn', True))
+                media_type='application/json',
+                fields=((0, 'id', True), (1, 'ns', False), (2, 'dn', True)),
             ),
         ),
     ),

@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pydantic.dataclasses import dataclass
 
 
 @dataclass
 class Pet:
     id: int
+    ns: ClassVar[str]
     dn: str | None

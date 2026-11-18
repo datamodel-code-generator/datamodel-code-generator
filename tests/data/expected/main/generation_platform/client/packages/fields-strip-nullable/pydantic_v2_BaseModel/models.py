@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pydantic import BaseModel
 
 
 class Pet(BaseModel):
     id: int
+    ns: ClassVar[str]
     dn: str | None
