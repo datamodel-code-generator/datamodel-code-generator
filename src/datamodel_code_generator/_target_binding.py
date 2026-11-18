@@ -1349,6 +1349,53 @@ class _Binder:
             and _has_root_field_constraints(field, row="declared")
         )
 
+    def leaves(
+        self, node: Reference | DataType, direction: Direction, stop: Callable[[DataType], bool], *, inline: bool = True
+    ) -> Iterator[tuple[Reference | DataType, DataModel | None, bool]]:
+        """Yield the nodes a value is one of, None aside, each with the model it names and whether it reads constrained.
+
+        A union is each of its members, a reference that binds no model the type it stands for, and with `inline` an
+        alias or root model the type it stands for, as an inlining projector reads them (``_Projector._base``,
+        ``_reference_value``), constrained when one of those models constrains it; a node `stop` holds, a reference to
+        any other model and any other node are one node each.
+        """
+
+        def walk(
+            node: Reference | DataType, active: frozenset[SymbolId], *, constrained: bool
+        ) -> Iterator[tuple[Reference | DataType, DataModel | None, bool]]:
+            reference = node if isinstance(node, Reference) else node.reference
+            if isinstance(node, DataType):
+                if node.type == "None":
+                    return
+                if stop(node):
+                    yield node, None, constrained
+                    return
+                if node.data_types:
+                    for child in node.data_types:
+                        yield from walk(child, active, constrained=constrained)
+                    return
+                if node.literals or node.enum_member_literals:
+                    reference = None
+            if reference is None:
+                yield node, None, constrained
+                return
+            if (final := self.final(reference, direction)) is None:
+                root = self.unwrapped(reference)
+                yield from () if root is None else walk(root, active, constrained=constrained)
+                return
+            model = _source(final)
+            if (
+                inline
+                and (symbol := self.symbols[id(model)]) not in active
+                and self.policies[id(model)].kind in WRAPPER_KINDS
+                and (field := self.root_field(model)) is not None
+            ):
+                yield from walk(field.data_type, active | {symbol}, constrained=constrained or self.constrains(model))
+                return
+            yield node, model, constrained
+
+        return walk(node, frozenset(), constrained=False)
+
     def projector(self, direction: Direction, *, inline: bool = False) -> _Projector:
         if (projector := self.projectors.get((direction, inline))) is None:
             projector = self.projectors[direction, inline] = _Projector(self, direction, inline=inline)
@@ -2092,6 +2139,11 @@ def _field_facts(  # noqa: PLR0913
         field.required if backend == "typeddict" else in_init and default_kind == "absent",
         in_init,
     )
+
+
+def _one_node(data_type: DataType) -> bool:
+    """Return whether a node is one alternative of a value (``_Octets.alternatives``): a container or a scalar."""
+    return data_type in CONTAINERS or data_type.python_type is not None or data_type.type is not None
 
 
 def _members_of(data_type: DataType) -> list[DataType]:
@@ -3306,48 +3358,10 @@ class _Octets(_UseFacts):
         return self.excluded[member.consumer, member.wire_name or ""]
 
     def alternatives(
-        self,
-        node: Reference | DataType,
-        direction: Direction,
-        constrained: bool = False,  # noqa: FBT001, FBT002
-        active: frozenset[SymbolId] = frozenset(),
-    ) -> Iterator[tuple[Reference | DataType, bool]]:
-        """Yield the nodes a value is one of, None aside, and whether a model it is read through constrains it.
-
-        A union is each of its members, and an alias or root model the type it stands for, as an inlining projector
-        reads them (``_Projector._reference_value``); a container, a scalar and a reference to any other model are one
-        node each.
-        """
-        reference = node if isinstance(node, Reference) else node.reference
-        if isinstance(node, DataType):
-            if node in CONTAINERS or node.python_type is not None or node.type is not None:
-                if node.type != "None":
-                    yield node, constrained
-                return
-            if node.data_types:
-                for child in node.data_types:
-                    yield from self.alternatives(child, direction, constrained, active)
-                return
-            if node.literals or node.enum_member_literals:
-                reference = None
-        binder = self.binder
-        if reference is None:
-            yield node, constrained
-            return
-        if (final := binder.final(reference, direction)) is None:
-            root = binder.unwrapped(reference)
-            yield from () if root is None else self.alternatives(root, direction, constrained, active)
-            return
-        model = _source(final)
-        if (
-            (symbol := binder.symbols[id(model)]) not in active
-            and binder.policies[id(model)].kind in WRAPPER_KINDS
-            and (field := binder.root_field(model)) is not None
-        ):
-            wrapped = constrained or binder.constrains(model)
-            yield from self.alternatives(field.data_type, direction, wrapped, active | {symbol})
-            return
-        yield node, constrained
+        self, node: Reference | DataType, direction: Direction
+    ) -> Iterator[tuple[Reference | DataType, DataModel | None, bool]]:
+        """Yield the nodes a value is one of (``_Binder.leaves``): a container and a scalar are one node each."""
+        return self.binder.leaves(node, direction, _one_node)
 
     def view(self, leaf: Reference | DataType, direction: Direction, *, inline: bool = True) -> TypeView | None:
         """Return the type the models give one node of a value, each alias and root model by the type it stands for.
@@ -3401,13 +3415,13 @@ class _Octets(_UseFacts):
         for each item; and they are structured when one of their alternatives is a model, a mapping or an item
         container.
         """
-        leaves = [] if node is None else [leaf for leaf, _ in self.alternatives(node, direction)]
+        leaves = [] if node is None else [leaf for leaf, _, _ in self.alternatives(node, direction)]
         if (item := self.tables.contained(value, "items")) is not None:
             leaves = [
                 inner
                 for leaf in leaves
                 if isinstance(leaf, DataType) and leaf in ITEM_CONTAINERS and leaf.data_types
-                for inner, _ in self.alternatives(leaf.data_types[0], direction)
+                for inner, _, _ in self.alternatives(leaf.data_types[0], direction)
             ]
         found = self.tables.unwrapped(value if item is None else item)
         binary = [leaf for leaf in leaves if isinstance(leaf, DataType) and binary_content_of(leaf)]
@@ -3439,7 +3453,7 @@ class _Octets(_UseFacts):
         return next(
             (
                 leaf.data_types[-1]
-                for leaf, _ in self.alternatives(node, direction)
+                for leaf, _, _ in self.alternatives(node, direction)
                 if isinstance(leaf, DataType) and leaf in MAPPINGS and leaf.data_types
             ),
             None,
@@ -3586,27 +3600,16 @@ class _Octets(_UseFacts):
     ) -> tuple[SchemaLocation | None, int]:
         """Return the first raw octets a value reaches (``first``), and the earliest walked model it leads back to."""
         low = len(walked)
-        pending: list[Reference | DataType] = [node]
         binder = self.binder
-        while pending:
-            current = pending.pop()
-            reference = current if isinstance(current, Reference) else current.reference
-            if isinstance(current, DataType):
-                if self.octet(current, direction):
-                    return type_origin_of(current) or fallback, low
-                if reference is None or current.literals or current.enum_member_literals:
-                    pending.extend(reversed(current.data_types))
-                    continue
-            if (final := binder.final(cast("Reference", reference), direction)) is None:
-                pending.extend(() if (root := binder.unwrapped(cast("Reference", reference))) is None else (root,))
-                continue
-            model = _source(final)
-            if binder.policies[id(model)].kind == "enum":
-                continue
-            found, reached = self.reach_model(binder.symbols[id(model)], direction, fallback, walked)
-            low = min(low, reached)
-            if found is not None:
-                return found, low
+        for leaf, model, _ in binder.leaves(node, direction, binary_content_of, inline=False):
+            if model is None:
+                if self.octet(leaf, direction):
+                    return type_origin_of(leaf) or fallback, low
+            elif binder.policies[id(model)].kind != "enum":
+                found, reached = self.reach_model(binder.symbols[id(model)], direction, fallback, walked)
+                low = min(low, reached)
+                if found is not None:
+                    return found, low
         return None, low
 
     def reach_model(
@@ -3662,16 +3665,16 @@ class _Octets(_UseFacts):
         alternatives are all enums or literals of strings carries text read by the model.
         """
         leaves = [] if node is None else list(self.alternatives(node, direction))
-        raw = [self.octet(leaf, direction) for leaf, _ in leaves]
+        raw = [self.octet(leaf, direction) for leaf, _, _ in leaves]
         octets = kind in _RAW_MEDIA and bool(raw) and all(raw)
         checked = octets and any(
-            constrained or isinstance(self.view(leaf, direction), ConstructorType) for leaf, constrained in leaves
+            constrained or isinstance(self.view(leaf, direction), ConstructorType) for leaf, _, constrained in leaves
         )
         text = (
             kind == "binary"
             and not any(raw)
             and bool(leaves)
-            and all(self.strings(self.view(leaf, direction)) for leaf, _ in leaves)
+            and all(self.strings(self.view(leaf, direction)) for leaf, _, _ in leaves)
         )
         return octets, not octets and any(raw), checked, text
 
