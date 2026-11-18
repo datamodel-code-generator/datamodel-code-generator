@@ -107,15 +107,16 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
-from datamodel_code_generator._target_types import TypeTables, admits_none, is_none, present
+from datamodel_code_generator._target_types import TypeTables, is_none, present
 from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
 from datamodel_code_generator.model._decisions.enum_kind import json_type
-from datamodel_code_generator.model._decisions.nullability import reference_null
+from datamodel_code_generator.model._decisions.nullability import field_renders_none, reference_null
 from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
+from datamodel_code_generator.model._field_imports import field_admits_none
 from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
@@ -1599,14 +1600,8 @@ class _Projector:
     def _project(self, data_type: DataType) -> TypeView:
         if not self.inline and (known := self.projected.get(id(data_type))) is not None:
             return known[1]
-        projected, inferred_optional = self._base(data_type)
-        projected = self._container(data_type, projected)
-        nullable_reference = (
-            (reference := data_type.reference) is not None
-            and data_type.adds_reference_null
-            and self.binder.reference(reference, self.direction) is not None
-        )
-        if (data_type.is_optional or inferred_optional or nullable_reference) and projected != ImportedType(IMPORT_ANY):
+        projected = self._container(data_type, self._base(data_type))
+        if self._admits_none(data_type) and projected != ImportedType(IMPORT_ANY):
             base = projected
             projected = _ordered_union(
                 (projected, NoneType()),
@@ -1617,11 +1612,25 @@ class _Projector:
             self.projected[id(data_type)] = data_type, projected
         return projected
 
-    def _base(self, data_type: DataType) -> tuple[TypeView | None, bool]:
+    def _admits_none(self, data_type: DataType) -> bool:
+        """Return whether a type takes None, as the model's hint of it does (``DataType.admits_none``).
+
+        A reference that binds no symbol in the direction is read through as the type it stands for, which holds the
+        None of the model it names already, so it adds only its own None.
+        """
+        return data_type.is_optional or (
+            data_type.admits_none
+            and (
+                (reference := data_type.reference) is None
+                or self.binder.reference(reference, self.direction) is not None
+            )
+        )
+
+    def _base(self, data_type: DataType) -> TypeView | None:
         if data_type.python_type is not None:
-            return BoundType(data_type.python_type, self.hints.leaf(data_type)), False
+            return BoundType(data_type.python_type, self.hints.leaf(data_type))
         if data_type.type is not None:
-            return self._atomic(data_type), False
+            return self._atomic(data_type)
         if data_type.data_types or data_type.is_tuple:
             return self._structural(data_type)
         if (reference := data_type.reference) is not None and not (
@@ -1629,8 +1638,8 @@ class _Projector:
         ):
             return self._reference_value(
                 reference, serialize_as_any=data_type.use_serialize_as_any and data_type.alias is None
-            ), False
-        return self._atomic(data_type), False
+            )
+        return self._atomic(data_type)
 
     def _reference_value(self, reference: Reference, *, serialize_as_any: bool) -> TypeView:
         binder = self.binder
@@ -1693,7 +1702,7 @@ class _Projector:
             for _, name in data_type.enum_member_literals
         )
 
-    def _structural(self, data_type: DataType) -> tuple[TypeView, bool]:
+    def _structural(self, data_type: DataType) -> TypeView:
         hints = self.hints
         if data_type.is_tuple:
             arguments = tuple(self._project(child) for child in data_type.data_types)
@@ -1707,17 +1716,16 @@ class _Projector:
             )
             if count is not None:
                 arguments = (arguments[0] if arguments else ImportedType(IMPORT_ANY),) * count
-            return GenericType(_BUILTINS[SLOT_CLASSES["tuple"].name], arguments, "fixed", hint), False
+            return GenericType(_BUILTINS[SLOT_CLASSES["tuple"].name], arguments, "fixed", hint)
         if len(data_type.data_types) == 1:
-            return self._project(data_type.data_types[0]), False
+            return self._project(data_type.data_types[0])
         preserve_order = data_type.preserve_union_member_order
         projected = tuple(self._project(child) for child in data_type.data_types)
         flattened = tuple(member for value in projected for member in _members(value))
-        merged = merge_members(
+        members = merge_members(
             WrittenMember(member, member, null=not preserve_order and is_none(member))
             for member in (projected if preserve_order else flattened)
-        )
-        members, inferred_optional = merged.kept, merged.takes_null
+        ).kept
         union = (
             _ordered_union(
                 members,
@@ -1741,8 +1749,8 @@ class _Projector:
             hint = ModelHint(HintText(annotation.parts, (*annotation.imports, IMPORT_FIELD)), hints.of(union).static)
             hints.fixed[IMPORT_FIELD] = None
             schema = union.discriminator if isinstance(union, UnionType) else None
-            return UnionType(parts, preserve_order, schema, hint, discriminator), inferred_optional
-        return union, inferred_optional
+            return UnionType(parts, preserve_order, schema, hint, discriminator)
+        return union
 
     def selector(self, data_type: DataType) -> UnionDiscriminator | None:
         """Return the discriminator a union's schema declares, with the tags the model reads for each of its variants.
@@ -2043,24 +2051,14 @@ def _applied_configuration(model: DataModel) -> tuple[Literal["allow", "forbid",
     return extra, "validate_by_alias" in items and _syntax_value(items["validate_by_alias"]).value == _FALSE
 
 
-@dataclass(frozen=True, slots=True)
-class _FieldContext:
-    """Producer facts of a property field: whether its schema is nullable, and whether its own type accepts None.
-
-    None says the field's own type is unknown.
-    """
-
-    explicit_nullable: bool
-    preexisting_null: bool | None
-
-
 def _field_facts(  # noqa: PLR0913
     field: DataModelFieldBase,
     type_value: TypeView,
     backend: BackendName,
     assignment: AssignmentFacts,
-    context: _FieldContext | None,
     *,
+    annotation_null: bool,
+    wire_null: bool,
     explicit_name: bool,
 ) -> ModelFieldFacts:
     """Read a field's model and builtin backend facts from the final field, its render data and its assignment facts.
@@ -2072,7 +2070,6 @@ def _field_facts(  # noqa: PLR0913
     qualifiers = _qualifiers(field, backend)
     default_kind, default_value = _emitted_default(field, backend, assignment)
     keywords = _constructor_keywords(field, backend)
-    null_in_annotation = _annotation_null(field, type_value)
     emitted_facts = EmittedFieldFacts(
         emitted=emitted,
         emitted_default_kind=default_kind,
@@ -2085,28 +2082,16 @@ def _field_facts(  # noqa: PLR0913
         field.required,
         field.nullable,
         field.has_default,
-        field.type_has_null,
         field.read_only,
         field.write_only,
         type_value,
         BackendFieldFacts(backend, emitted_facts),
-        context is not None
-        and (
-            context.preexisting_null is True
-            or (context.preexisting_null is False and context.explicit_nullable and null_in_annotation)
-        ),
-        null_in_annotation,
+        wire_null,
+        annotation_null,
         explicit_name,
         field.required if backend == "typeddict" else in_init and default_kind == "absent",
         in_init,
     )
-
-
-def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
-    """Return whether the emitted field annotation accepts None, as the field's type hint decides."""
-    if admits_none(type_value):
-        return True
-    return field._field_null_source(field.data_type) is not None  # noqa: SLF001
 
 
 def _members_of(data_type: DataType) -> list[DataType]:
@@ -2194,9 +2179,7 @@ class _Models:
         self.slots: dict[int, FieldSlot] = {}
         self.facts: dict[FieldSlot, ModelFieldFacts] = {}
         self.locations: dict[SymbolId, SchemaLocation | None] = {}
-        self.contexts_by_field: dict[
-            int, tuple[FieldKind, SchemaLocation | None, str | None, _FieldContext | None]
-        ] = {}
+        self.contexts_by_field: dict[int, tuple[FieldKind, SchemaLocation | None, str | None]] = {}
         self.alias_nulls: dict[SymbolId, bool | None] = {}
         self.helpers: dict[SchemaLocation, list[TypeProjection]] = {}
         self.texts: dict[TypeUseId, bool] = {}
@@ -2355,19 +2338,38 @@ class _Models:
                 if (projected := projector.project(field.data_type).value) is None:
                     continue
                 explicit = resolver.explicit_field_alias(field, model.reference, model_type)
+                annotation_null = field_admits_none(field)
                 self.facts[slot] = _field_facts(
                     field,
                     projected,
                     backend,
                     model._field_assignment_facts(field),  # ruff: ignore[private-member-access]
-                    self.context(model, field)[3],
+                    annotation_null=annotation_null,
+                    wire_null=self.wire_null(model, field, annotation_null=annotation_null),
                     explicit_name=explicit is not None and explicit[0] == field.name,
                 )
 
+    def wire_null(self, model: DataModel, field: DataModelFieldBase, *, annotation_null: bool) -> bool:
+        """Return whether a field's wire value may be JSON null, as the helper selectors read its JSON types.
+
+        A decided ``nullable`` says so, and so does the null of a ``type`` list; without either, a property takes the
+        null its own type accepts, or the ``nullable: true`` its schema declares (through field copies) where its
+        annotation accepts None and its own type is known to accept none. A decided ``nullable`` leaves out the null
+        the own type accepts (row ``legacy-wire-null-ignores-nullable-false``), and the own type's null is the one
+        ``preexisting_null`` reads, no null value of an enum and none of a type it cannot read, where
+        ``TypeTables.takes_null`` reads both (row ``legacy-wire-null-unknown-type``).
+        """
+        if field.nullable is not None or field.type_has_null:
+            return bool(field.nullable or field.type_has_null)
+        if self.context(model, field)[0] != "property":
+            return False
+        own = self.preexisting_null(field.data_type)
+        return own is True or (own is False and annotation_null and self.parser.nullable(field))
+
     def context(
         self, model: DataModel, field: DataModelFieldBase
-    ) -> tuple[FieldKind, SchemaLocation | None, str | None, _FieldContext | None]:
-        """Return a field's member kind, property declaration, wire name and, for a property, its producer facts.
+    ) -> tuple[FieldKind, SchemaLocation | None, str | None]:
+        """Return a field's member kind, property declaration and wire name.
 
         The property declaration is where the parser built the field (``reference.field_origin_of``); a tag the
         discriminator pass appends is declared where the model's schema declares the property. A field typed as a
@@ -2399,12 +2401,7 @@ class _Models:
                 kind = "discriminator_synthetic"
             elif origin.kind == "required-only":
                 kind = "required_only"
-        context = (
-            _FieldContext(self.parser.nullable(field) or field.nullable is True, self.preexisting_null(field.data_type))
-            if kind == "property"
-            else None
-        )
-        known = self.contexts_by_field[id(field)] = kind, schema, wire_name, context
+        known = self.contexts_by_field[id(field)] = kind, schema, wire_name
         return known
 
     def declaration(self, model: DataModel, wire_name: str) -> SchemaLocation | None:
@@ -2478,7 +2475,17 @@ class _Models:
         active.add(symbol)
         field = model.fields[0]
         value = self.binder.projector("neutral").project(field.data_type).value
-        direct = field.nullable is True or (field.nullable is None and field.required and bool(field.type_has_null))
+        direct = (
+            field_renders_none(
+                hint_has_none=False,
+                has_default_factory=False,
+                nullable=field.nullable,
+                required=field.required,
+                type_has_null=field.required and field.type_has_null,
+                fall_back_to_nullable=False,
+            )
+            is not None
+        )
         unknown = value is None
         references: list[SymbolId] = []
         pending: list[TypeView] = [] if value is None else [value]
@@ -2494,7 +2501,7 @@ class _Models:
                     unknown = True
                 case _:
                     pass
-        null_in_annotation = value is not None and _annotation_null(field, value)
+        null_in_annotation = value is not None and field_admits_none(field)
         result: bool | None
         if direct and null_in_annotation:
             result = True
@@ -2562,7 +2569,7 @@ class _Models:
     def member(self, symbol: FinalModelSymbol, owner: DataModel, field: DataModelFieldBase) -> FieldUseBinding:
         slot = self.slots[id(field)]
         facts = self.facts.get(slot)
-        kind, schema, wire_name, _ = self.context(owner, field)
+        kind, schema, wire_name = self.context(owner, field)
         source = None if schema is None else self.documents.location(schema, "schema")
         return FieldUseBinding(
             kind,
@@ -2865,7 +2872,7 @@ class _SchemaUses(_Models):
                 del self.uses[neutral]
         for model in self.binder.models:
             for field in model.fields:
-                kind, schema, _, _ = self.context(model, field)
+                kind, schema, _ = self.context(model, field)
                 if schema is None:
                     continue
                 match kind:
@@ -2957,7 +2964,7 @@ class _SchemaUses(_Models):
         if (location := self.locations.get(self.binder.symbols[id(model)])) is None or location == declaration:
             return
         for field in model.fields:
-            kind, schema, _, _ = self.context(model, field)
+            kind, schema, _ = self.context(model, field)
             if kind == "property" and schema is not None and _below(schema, location):
                 self.nested(_rebased(schema, location, declaration), field.data_type, moved=(location, declaration))
 

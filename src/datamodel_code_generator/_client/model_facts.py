@@ -219,13 +219,10 @@ class ModelFacts:
         """Return the JSON types of a field's wire values: those of its type, null only when its schema admits it.
 
         A schema admits null by its own nullability, or by a type it refers to that does, such as a nullable model; an
-        annotation that only makes an omitted field optional does not.
+        annotation that only makes an omitted field optional does not (``ModelFieldFacts.wire_null``).
         """
         kinds = self.tables.json_kinds(without_none(field.type), "schema")
-        accepts_null = field.nullable or field.type_has_null
-        if field.nullable is None:
-            accepts_null = accepts_null or field.schema_null
-        return kinds if kinds is None or not accepts_null else kinds | NULL_KINDS
+        return kinds if kinds is None or not field.wire_null else kinds | NULL_KINDS
 
 
 def _name(value: TypeView) -> str | None:
