@@ -1792,7 +1792,8 @@ class _Ledger:
         """Merge observations from other environments or CI payloads into the lines of the items they name.
 
         With ``drop_uncollected``, the lines of recorded items that no observed environment collects, although one of
-        them collected their whole module, go too; ``merge`` false applies only that.
+        them collected their whole module, go too; ``merge`` false applies only that. The payloads ``as_base`` names
+        by item, label and digest also become their label's base line.
         """
         rootpath = self.config.rootpath
         local = {nodeid_key(rootpath, item.nodeid) for item in session.items}
@@ -1810,6 +1811,7 @@ class _Ledger:
             for nodeid in uncollected_items(self.observations, recorded):
                 sidecar, function, param = nodeid_key(rootpath, nodeid)
                 updates.setdefault(sidecar, {})[function, param] = []
+        bases = {tuple(entry) for entry in self.apply_data.get("as_base", [])}
         for payload in self.apply_data.get("payloads", []):
             sidecar, function, param = nodeid_key(rootpath, payload["item"])
             current = updates.get(sidecar, {}).get((function, param))
@@ -1820,7 +1822,12 @@ class _Ledger:
                 else [Desired(line.label, line.conditional, line.predicate) for line in lines]
             )
             updates.setdefault(sidecar, {})[function, param] = apply_payload(
-                base, lines, payload, self.facts, exists=(sidecar, function, param) in local
+                base,
+                lines,
+                payload,
+                self.facts,
+                exists=(sidecar, function, param) in local,
+                as_base=(payload["item"], payload.get("label"), payload.get("digest")) in bases,
             )
         return updates
 

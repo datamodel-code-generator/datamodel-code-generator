@@ -54,6 +54,7 @@ __all__ = [
     "RefsIndex",
     "UnsafeWriteError",
     "apply_payload",
+    "common_contents",
     "decode_payload",
     "deduplicate",
     "derived_name",
@@ -1745,14 +1746,39 @@ def _merged_lines(
     return lines
 
 
+def common_contents(payloads: Iterable[Payload]) -> dict[tuple[str, str], tuple[str, int]]:
+    """Return the content that several environments sent alike for an item's label, by item and label.
+
+    Each entry holds the digest the most environments sent (the greater digest on a tie) and how many sent it; labels
+    whose content no two environments share are left out. Environments count once each, by their facts.
+    """
+    senders: dict[tuple[str, str], dict[str, set[tuple[tuple[str, str], ...]]]] = {}
+    for payload in payloads:
+        if "digest" in payload:
+            by_digest = senders.setdefault((payload["item"], payload["label"]), {})
+            by_digest.setdefault(payload["digest"], set()).add(tuple(sorted(payload["facts"].items())))
+    return {
+        key: (digest, count)
+        for key, by_digest in senders.items()
+        if (count := len(by_digest[digest := max(by_digest, key=lambda name: (len(by_digest[name]), name))])) > 1
+    }
+
+
 def apply_payload(
-    base: list[Desired], lines: list[RefLine], payload: Payload, local: Mapping[str, str], *, exists: bool
+    base: list[Desired],
+    lines: list[RefLine],
+    payload: Payload,
+    local: Mapping[str, str],
+    *,
+    exists: bool,
+    as_base: bool = False,
 ) -> list[Desired]:
     """Merge one CI payload, what another environment compared for an item, into the item's desired lines.
 
     A stale payload (the lane lacks the item) marks the item's lines for that lane conditional when the item exists
     here, and drops them when it exists nowhere. A value payload from this environment raises ``ValueError``: apply
-    sessions refuse it before, since only a local run may change what this environment compares.
+    sessions refuse it before, since only a local run may change what this environment compares. With ``as_base``
+    the value also becomes the label's base line, so the lane's override equals it and the resolution drops it.
     """
     facts = payload["facts"]
     if payload.get("stale"):
@@ -1770,6 +1796,11 @@ def apply_payload(
             for want in desired
         ]
     value, digest = payload["value"], payload["digest"]
+    if as_base:
+        desired = [
+            replace(want, value=value, digest=digest) if want.label == label and not want.predicate else want
+            for want in desired
+        ]
     candidates = [want for want in desired if want.label == label and predicate_matches(want.predicate, facts)]
     applicable = max(candidates, key=lambda want: len(want.predicate), default=None)
     if applicable is None:

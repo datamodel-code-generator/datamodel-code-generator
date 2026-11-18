@@ -2764,6 +2764,111 @@ def test_ledger_payload_from_this_environment_is_refused(
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=1)
 
 
+TWO_TESTS = ONE_TEST + "\n\ndef test_b():\n    assert_output('b\\n')\n"
+
+
+def _lanes(count: int) -> list[dict[str, str]]:
+    """Return the facts of lanes on the other platform that differ from each other and from here by Python."""
+    local = shared_conftest.expected_environment_facts()
+    return [{**_other_platform(local), "python": f"3.{minor}"} for minor in range(10, 10 + count)]
+
+
+def _storage(facts: dict[str, str], label: str = "m/a.txt") -> str:
+    """Return where a lane's override of a label is stored."""
+    predicate = units.payload_predicate(facts, shared_conftest.expected_environment_facts())
+    stem, _, suffix = label.rpartition(".")
+    return f"{stem}@{units._environment_slug(predicate)}.{suffix}"
+
+
+def _override(facts: dict[str, str], label: str = "m/a.txt", storage: str | None = None) -> str:
+    """Return the sidecar line of a lane's override of a label, by default stored under the lane's name."""
+    predicate = units.payload_predicate(facts, shared_conftest.expected_environment_facts())
+    return f"\t{label}\t@{units.predicate_text(predicate)}\t= {storage or _storage(facts, label)}\n"
+
+
+def _apply_in_process(ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Run the apply sessions of scripts/fix_expected.py in this process, so coverage records them."""
+    from scripts import fix_expected
+
+    monkeypatch.setattr(
+        fix_expected.subprocess, "run", lambda command, **_: SimpleNamespace(returncode=ledger.run(*command[3:]).ret)
+    )
+
+
+def test_fix_expected_stores_a_change_common_to_lanes_once(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Several lanes sending the same content for a label stop the run, which says how to store it as the base file.
+
+    Labels whose payloads differ are applied as before; ``--as-base`` stores the content most lanes sent as the base
+    file, keeps overrides of other content, and drops the overrides that now equal the base.
+    """
+    ledger.write("test_m.py", TWO_TESTS)
+    ledger.run("suite").assert_outcomes(passed=2)
+    _apply_in_process(ledger, monkeypatch)
+    lanes = _lanes(4)
+    common = [_encoded(_payload(facts=facts)) for facts in lanes[:3]]
+    other = _encoded(_payload(facts=lanes[3], value="z\n"))
+    second = _encoded(_payload(facts=lanes[0], item="suite/test_m.py::test_b", label="m/b.txt", value="c\n"))
+    stale = _encoded(_payload(facts=lanes[1], item="suite/test_m.py::test_b", label=None, value=None, stale=True))
+    stored = (ledger.refs(), ledger.files())
+    capsys.readouterr()
+    assert _fix_expected(ledger, monkeypatch, "--apply", *common) == 1
+    message = (
+        "Not applied: several lanes sent the same content for these labels, a change common to them that belongs in "
+        "the base file rather than in one override per lane:\n"
+        "  suite/test_m.py::test_a m/a.txt (3 lanes)\n"
+        "Lanes that sent no payload (they passed, or did not run) cannot be seen here. Nothing was written for these "
+        "labels. Store the content as the base file: regenerate it here, if this environment produces it too, with\n"
+        "  pytest 'suite/test_m.py::test_a' --inline-snapshot=fix && git add -A suite\n"
+        "or rerun this command with --as-base (writes the common content as the base file and removes the overrides "
+        "equal to it). Keep one override per lane, as before: rerun this command with --per-environment.\n"
+    )
+    assert (capsys.readouterr().out, ledger.refs(), ledger.files()) == (message, *stored)
+    assert _fix_expected(ledger, monkeypatch, "--apply", *common, other, second, stale) == 1
+    assert capsys.readouterr().out.endswith(f"stage them all: git add -A suite\n{message}")
+    test_b = f"[test_b]\n\tm/b.txt\t?\n{_override(lanes[0], 'm/b.txt')}"
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{test_b}"
+    assert _fix_expected(ledger, monkeypatch, "--apply", *common, other, second, stale, "--as-base") == 0
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{_override(lanes[3])}{test_b}"
+    assert ledger.files() == {
+        "m/a.txt": "y\n",
+        _storage(lanes[3]): "z\n",
+        "m/b.txt": "b\n",
+        _storage(lanes[0], "m/b.txt"): "c\n",
+    }
+    everyone = [_encoded(_payload(facts=facts, value="q\n")) for facts in lanes]
+    assert _fix_expected(ledger, monkeypatch, "--apply", *everyone, "--as-base") == 0
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{test_b}"
+    assert ledger.files() == {"m/a.txt": "q\n", "m/b.txt": "b\n", _storage(lanes[0], "m/b.txt"): "c\n"}
+    with pytest.raises(SystemExit):
+        _fix_expected(ledger, monkeypatch, "--where", "suite/test_m.py::test_a", "--per-environment")
+    assert "--as-base and --per-environment only go with --apply and --from-ci" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("values", "option"),
+    [
+        pytest.param(("y\n", "y\n", "y\n"), ("--per-environment",), id="equal-per-environment"),
+        pytest.param(("y\n", "z\n", "w\n"), (), id="different"),
+    ],
+)
+def test_fix_expected_stores_one_override_per_lane(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, values: tuple[str, ...], option: tuple[str, ...]
+) -> None:
+    """Content the lanes differ in, or any content with --per-environment, becomes one override per lane."""
+    ledger.write("test_m.py", ONE_TEST)
+    ledger.run("suite").assert_outcomes(passed=1)
+    _apply_in_process(ledger, monkeypatch)
+    lanes = _lanes(3)
+    payloads = [_encoded(_payload(facts=facts, value=value)) for facts, value in zip(lanes, values, strict=True)]
+    assert _fix_expected(ledger, monkeypatch, "--apply", *payloads, *option) == 0
+    stored = {value: _storage(facts) for facts, value in reversed(list(zip(lanes, values, strict=True)))}
+    lines = "".join(_override(facts, storage=stored[value]) for facts, value in zip(lanes, values, strict=True))
+    assert ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n{lines}"
+    assert ledger.files() == {"m/a.txt": "x\n", **{storage: value for value, storage in stored.items()}}
+
+
 def test_ledger_refuses_writes_outside_its_files(ledger: LedgerProject) -> None:
     """A run whose plan writes outside the expected files and sidecars of the tests root writes nothing and fails."""
     (ledger.pytester.path / "test_out.py").write_text(
@@ -3655,7 +3760,8 @@ def test_ledger_refuses_payloads_no_predicate_tells_apart(
     minor = {tool: f"{local[tool]}.post1+ci" if local[tool] else "" for tool in ("black", "isort")}
     near = units.encode_payload({**payload, "facts": {**local, **minor}}, 1 << 20) or ""
     foreign = {**_other_platform(local), **minor}
-    far = units.encode_payload({**payload, "facts": foreign}, 1 << 20) or ""
+    other = {"value": "z\n", "digest": units.unit_digest(payload["label"], "z\n")}
+    far = units.encode_payload({**payload, **other, "facts": foreign}, 1 << 20) or ""
     refusal = (
         "it comes from this environment, so there is no other environment to add an override for; "
         "this environment is yours, run: pytest suite/test_m.py::test_a --inline-snapshot=fix && git add -A suite"
@@ -3672,7 +3778,7 @@ def test_ledger_refuses_payloads_no_predicate_tells_apart(
     assert (
         ledger.refs() == HEADER + f"[test_a]\n\tm/a.txt\n\tm/a.txt\t@{units.predicate_text(predicate)}\t= {storage}\n"
     )
-    assert ledger.files() == {"m/a.txt": "x\n", storage: "y\n"}
+    assert ledger.files() == {"m/a.txt": "x\n", storage: "z\n"}
 
 
 def test_fix_expected_from_ci_skips_rejected_payloads(

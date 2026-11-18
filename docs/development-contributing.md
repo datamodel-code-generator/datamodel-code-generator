@@ -91,7 +91,13 @@ different output than your environment, its failure ends with a
 `python scripts/fix_expected.py --apply '...'` command (or use
 `--from-ci <run id>`) that writes that lane's output as an override for that
 environment only, so other environments keep the stored file and no other
-interpreter or formatter is needed locally.
+interpreter or formatter is needed locally. When several lanes send the same
+output for one stored file, the change is common to them and belongs in the
+stored file itself: the command then writes nothing for that file and prints
+how to go on, either regenerating it locally or rerunning with `--as-base`
+(writes that output as the stored file and drops the overrides equal to it), or
+rerunning with `--per-environment` (one override per lane). Lanes that sent no
+payload cannot be seen, so check that they produce the same output too.
 `python scripts/fix_expected.py --where '<test>'` shows where a test's expected
 output is stored.
 
