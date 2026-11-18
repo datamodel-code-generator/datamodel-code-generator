@@ -12,6 +12,13 @@ interpreter or formatter is needed locally. ``--from-ci`` collects every payload
 are untrusted input: one that names anything but an existing test item and a label below ``tests/data/expected``,
 whose digest does not match its value, or that comes from this environment (run its test here instead) is rejected.
 ``--apply`` then writes nothing; ``--from-ci`` reports the rejected payloads and applies the rest.
+Payloads of lanes stored under different overrides with the same content for a label (lanes that share one override,
+such as one Python on two platforms, count once) are a change common to those lanes, which belongs in the base file
+rather than in one override per lane: nothing is written for such a label and the command exits with status 1, saying
+how to go on. ``--as-base`` stores that content as the base file (overrides equal to what their lanes then compare
+go); every environment without an override of its own then compares it, this one and the lanes that sent no payload
+included, so check them: run the tests here, and a dispatch run of the Test workflow on the branch for the lanes.
+``--per-environment`` stores one override per lane.
 ``--repair`` drops the lines of a hand-edited sidecar that pytest cannot read and re-records the tests they were in.
 These three write files only inside ``tests/data/expected`` and the sidecars, and refuse to run in CI.
 
@@ -43,7 +50,7 @@ import tempfile
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
@@ -201,11 +208,19 @@ def index_for(module: str, root: Path = ROOT) -> RefsIndex:
     return RefsIndex(next((parent for parent in candidates if (parent / "data" / "expected").is_dir()), root / "tests"))
 
 
-def apply_payloads(texts: Sequence[str], root: Path = ROOT, *, skip: bool = False) -> int:
+def apply_payloads(
+    texts: Sequence[str],
+    root: Path = ROOT,
+    *,
+    skip: bool = False,
+    common: Literal["as-base", "per-environment"] | None = None,
+) -> int:
     """Apply CI payloads after checking every one of them.
 
     A single bad payload stops all of them, unless ``skip`` is set (``--from-ci``, whose run may also hold payloads
-    of this environment): then bad payloads are reported and the rest applied.
+    of this environment): then bad payloads are reported and the rest applied. Content that lanes of different
+    overrides sent alike for a label is written only with ``common``: as the base file, or as one override per lane;
+    the apply session decides which labels those are, after it refuses the payloads of this environment.
     """
     payloads, problems = [], []
     for number, text in enumerate(texts, start=1):
@@ -227,7 +242,7 @@ def apply_payloads(texts: Sequence[str], root: Path = ROOT, *, skip: bool = Fals
         print("No dcg-expected-fix payloads to apply.")
         return 1
     modules = (str(payload["item"]).partition("::")[0] for payload in payloads)
-    return run_apply({"payloads": payloads, "skip_rejected": skip}, modules, root)
+    return run_apply({"payloads": payloads, "skip_rejected": skip, "common": common}, modules, root)
 
 
 def repair(sidecar: str, root: Path = ROOT) -> int:
@@ -420,7 +435,7 @@ def ci_logs(reference: str) -> str:
     return "\n".join(gh("run", "view", run_id, "--log-failed") for run_id in run_ids)
 
 
-def from_ci(reference: str, root: Path = ROOT) -> int:
+def from_ci(reference: str, root: Path = ROOT, common: Literal["as-base", "per-environment"] | None = None) -> int:
     """Apply every payload of a CI run; when gh cannot read its logs, say how to go on instead."""
     try:
         log = ci_logs(reference)
@@ -431,7 +446,7 @@ def from_ci(reference: str, root: Path = ROOT) -> int:
             f"{PAYLOAD_PREFIX.strip()} lines of its log into: python scripts/fix_expected.py --apply '<payload>' ..."
         )
         return 2
-    return apply_payloads(payloads_in(log), root, skip=True)
+    return apply_payloads(payloads_in(log), root, skip=True, common=common)
 
 
 def where(nodeid: str, root: Path = ROOT) -> int:
@@ -522,6 +537,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="maintainers: drop the lines of tests no observed environment collects",
     )
     group.add_argument("--deduplicate", nargs="*", metavar="PATH", help="maintainers: store each content once")
+    common = parser.add_mutually_exclusive_group()
+    common.add_argument(
+        "--as-base",
+        action="store_const",
+        const="as-base",
+        dest="common",
+        help="with --apply or --from-ci: store content several lanes sent alike as the base file",
+    )
+    common.add_argument(
+        "--per-environment",
+        action="store_const",
+        const="per-environment",
+        dest="common",
+        help="with --apply or --from-ci: store content several lanes sent alike as one override per lane",
+    )
     parser.add_argument("--environment", action="append", choices=sorted(ENVIRONMENTS), help="limit the environments")
     parser.add_argument("--observe-only", action="store_true", help="record observations without applying them")
     parser.add_argument("--output", type=Path, help="where observations are recorded (default: a temporary dir)")
@@ -535,10 +565,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         arguments.environment or arguments.observe_only or arguments.output or arguments.workers != "auto"
     ):
         parser.error("--environment, --observe-only, --output and --workers only go with --all-environments")
+    if arguments.common and arguments.apply is None and arguments.from_ci is None:
+        parser.error("--as-base and --per-environment only go with --apply and --from-ci")
     root = arguments.root.resolve()
     commands: dict[str, Callable[[Any], int]] = {
-        "apply": lambda texts: apply_payloads(texts, root),
-        "from_ci": lambda run: from_ci(run, root),
+        "apply": lambda texts: apply_payloads(texts, root, common=arguments.common),
+        "from_ci": lambda run: from_ci(run, root, arguments.common),
         "where": lambda nodeid: where(nodeid, root),
         "repair": lambda sidecar: repair(sidecar, root),
         "observations": lambda paths: run_apply({"observations": [str(path.resolve()) for path in paths]}, (), root),

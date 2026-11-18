@@ -91,7 +91,19 @@ different output than your environment, its failure ends with a
 `python scripts/fix_expected.py --apply '...'` command (or use
 `--from-ci <run id>`) that writes that lane's output as an override for that
 environment only, so other environments keep the stored file and no other
-interpreter or formatter is needed locally.
+interpreter or formatter is needed locally. When lanes that would get
+different overrides send the same output for one stored file (lanes that share
+one override, such as one Python on two platforms, count once), the change is
+common to them and belongs in the stored file itself: the command then writes
+nothing for that file and prints how to go on, either regenerating it locally,
+rerunning with `--as-base`, or rerunning with `--per-environment` (one override
+per lane). `--as-base` writes that output as the stored file and drops the
+overrides equal to what their lanes then compare. Every environment without an
+override of its own then compares that output: yours, and the lanes that sent
+no payload because they passed or did not run. Run the tests here, and check
+those lanes with a dispatch run of the Test workflow on your branch
+(`gh workflow run test.yaml --ref <branch>`), which also runs the lanes pull
+requests skip.
 `python scripts/fix_expected.py --where '<test>'` shows where a test's expected
 output is stored.
 

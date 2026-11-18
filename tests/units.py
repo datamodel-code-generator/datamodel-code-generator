@@ -54,6 +54,7 @@ __all__ = [
     "RefsIndex",
     "UnsafeWriteError",
     "apply_payload",
+    "common_contents",
     "decode_payload",
     "deduplicate",
     "derived_name",
@@ -353,6 +354,17 @@ def parse_predicate(text: str) -> tuple[tuple[str, str], ...]:
 def predicate_matches(predicate: tuple[tuple[str, str], ...], facts: Mapping[str, str]) -> bool:
     """Return whether an environment's facts satisfy a predicate; versions match by their leading components."""
     return all((actual := facts.get(fact, "")) == value or actual.startswith(f"{value}.") for fact, value in predicate)
+
+
+def _overlap(first: tuple[tuple[str, str], ...], second: tuple[tuple[str, str], ...]) -> bool:
+    """Return whether one environment can satisfy both predicates: each fact they share names one release series."""
+    facts = dict(second)
+    return all(
+        fact not in facts
+        or predicate_matches(((fact, value),), facts)
+        or predicate_matches(((fact, facts[fact]),), {fact: value})
+        for fact, value in first
+    )
 
 
 @dataclass(frozen=True)
@@ -1265,11 +1277,25 @@ class _Resolution:
             )
 
     def collapse_overrides(self) -> None:
+        """Drop each override that stores what the environments it matches would compare without it.
+
+        Without the override, such an environment compares the most specific other line of the label it matches: the
+        most specific line the override's predicate implies, or a line no less specific that it may match too. The
+        override goes only when every one of those lines stores the same content, so no lane falls back to an older,
+        broader override; the most specific overrides are decided first.
+        """
         for lines in self.kept.values():
-            bases = {(line.function, line.param, line.label): line for line in lines if not line.predicate}
-            for line in [line for line in lines if line.predicate]:
-                base = bases.get((line.function, line.param, line.label))
-                if base is not None and self.digest(base.stored) == self.digest(line.stored):
+            for line in sorted((line for line in lines if line.predicate), key=lambda line: -len(line.predicate)):
+                others = [other for other in lines if other is not line and other.key[:3] == line.key[:3]]
+                implied = [other for other in others if predicate_matches(other.predicate, dict(line.predicate))]
+                floor = max((len(other.predicate) for other in implied), default=0)
+                fallbacks = [
+                    other
+                    for other in others
+                    if floor <= len(other.predicate) <= len(line.predicate)
+                    and _overlap(other.predicate, line.predicate)
+                ]
+                if implied and all(self.digest(other.stored) == self.digest(line.stored) for other in fallbacks):
                     lines.remove(line)
 
     def collect_garbage(self) -> None:
@@ -1745,14 +1771,44 @@ def _merged_lines(
     return lines
 
 
+def common_contents(payloads: Iterable[Payload], local: Mapping[str, str]) -> dict[tuple[str, str], tuple[str, int]]:
+    """Return the content that lanes of different overrides sent alike for an item's label, by item and label.
+
+    Lanes count by the predicate of the override their payload is stored under (``payload_predicate``), the facts a
+    stored file can tell apart: lanes that share one override, such as one Python on two platforms, count once, and
+    payloads no predicate tells apart from here count not at all (an apply session refuses or skips them). Each entry
+    holds the digest the most lanes sent, on a tie the one whose lowest predicate's text sorts first, and how many
+    lanes sent it; labels whose content no two lanes share are left out.
+    """
+    senders: dict[tuple[str, str], dict[str, set[str]]] = {}
+    for payload in payloads:
+        if "digest" not in payload or (predicate := payload_predicate(payload["facts"], local)) is None:
+            continue
+        by_digest = senders.setdefault((payload["item"], payload["label"]), {})
+        by_digest.setdefault(payload["digest"], set()).add(predicate_text(predicate))
+    common = {}
+    for key, by_digest in senders.items():
+        digest = min(by_digest, key=lambda name: (-len(by_digest[name]), min(by_digest[name])))
+        if (count := len(by_digest[digest])) > 1:
+            common[key] = digest, count
+    return common
+
+
 def apply_payload(
-    base: list[Desired], lines: list[RefLine], payload: Payload, local: Mapping[str, str], *, exists: bool
+    base: list[Desired],
+    lines: list[RefLine],
+    payload: Payload,
+    local: Mapping[str, str],
+    *,
+    exists: bool,
+    as_base: bool = False,
 ) -> list[Desired]:
     """Merge one CI payload, what another environment compared for an item, into the item's desired lines.
 
     A stale payload (the lane lacks the item) marks the item's lines for that lane conditional when the item exists
     here, and drops them when it exists nowhere. A value payload from this environment raises ``ValueError``: apply
-    sessions refuse it before, since only a local run may change what this environment compares.
+    sessions refuse it before, since only a local run may change what this environment compares. With ``as_base``
+    the value also becomes the label's base line, so the lane's override equals it and the resolution drops it.
     """
     facts = payload["facts"]
     if payload.get("stale"):
@@ -1770,6 +1826,11 @@ def apply_payload(
             for want in desired
         ]
     value, digest = payload["value"], payload["digest"]
+    if as_base:
+        desired = [
+            replace(want, value=value, digest=digest) if want.label == label and not want.predicate else want
+            for want in desired
+        ]
     candidates = [want for want in desired if want.label == label and predicate_matches(want.predicate, facts)]
     applicable = max(candidates, key=lambda want: len(want.predicate), default=None)
     if applicable is None:
