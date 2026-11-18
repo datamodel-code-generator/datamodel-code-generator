@@ -250,6 +250,10 @@ discriminator-forms	main/generation_platform/client/packages/discriminator-forms
 discriminator-reuse	main/generation_platform/client/discriminator-reuse.txt
 discriminator-reuse	main/generation_platform/client/packages/discriminator-reuse/dataclasses_dataclass//*.py
 discriminator-reuse	main/generation_platform/client/packages/discriminator-reuse/typing_TypedDict//*.py
+discriminator-shared-tags	main/generation_platform/client/discriminator-shared-tags.txt
+discriminator-values	main/generation_platform/client/discriminator-values.txt
+discriminator-values	main/generation_platform/client/packages/discriminator-values/dataclasses_dataclass//*.py
+discriminator-values	main/generation_platform/client/packages/discriminator-values/typing_TypedDict//*.py
 discriminator-variants	main/generation_platform/client/discriminator-variants.txt
 discriminator-variants	main/generation_platform/client/packages/discriminator-variants/dataclasses_dataclass//*.py
 discriminator-variants	main/generation_platform/client/packages/discriminator-variants/typing_TypedDict//*.py

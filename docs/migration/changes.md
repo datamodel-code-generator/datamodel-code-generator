@@ -27,6 +27,19 @@ With `--generate-client`, explicit argument names (`parameter_names`, `--aliases
 - **Pull requests and issues:** [#6979](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6979)
 - **Source:** the release notes
 
+### Generated clients select a union's variant by the tags its model holds (unreleased) { #client-tags-follow-the-model }
+
+With `--generate-client` and the `dataclasses.dataclass` or `typing.TypedDict` output, a union with a `discriminator`, in an OpenAPI body or an AsyncAPI message payload, selects each variant by the tags the model reads for it: its own tag field (a `const`, a one-value `Literal` or a one-member enum, whose value is a string, an integer or a boolean: a variant whose tag field holds any other value, such as an object, an array, `null` or a fraction, gets no tag from it), else the mapping keys read as the tag property's type, else its schema name. A union told apart by integers or booleans (`kind: {type: integer, const: 1}`, mapping keys `"1"` over an `integer` property, `const: true`) or by one-member enums (under `--use-enum-values-in-discriminator`, or with the TypedDict output) was matched by schema names, or by the mapping keys as text: every schema-valid payload raised `DecodeError(reason='invalid_value')` and, except with mapping keys, `{"kind": "Cat"}` decoded as `Cat`. Each payload now decodes to its variant and `{"kind": "Cat"}` is refused. Tags are matched by JSON kind and value, in decoding and in encoding a body of the TypedDict output: `1` and `true` never select each other's variant, and an `Enum` member selects the variant its value tags. The `Choice` of the copied runtime (`client/_runtime/model_codecs/stdlib_dataclasses.py`, `stdlib_typeddicts.py`) takes such tags: `tags: tuple[tuple[str | int | bool, type], ...]`. With `--collapse-root-models`, a TypedDict union whose variants share one enum for the tag property and are named by a mapping is generated instead of refused with "The discriminator version gives v1 to two union models". A TypedDict variant whose own tag field admits several values (`kind: {type: string, enum: [cat, kitty]}`) is now told apart, as in the dataclass and Pydantic outputs, by the mapping keys that name it, else its schema name, not by every value of its field: without a mapping `{"kind": "cat"}` and `{"kind": "kitty"}` raise `DecodeError(reason='invalid_value')` and `{"kind": "Cat"}` decodes, and with the mapping `cat: Cat` `{"kind": "kitty"}` is refused. The Pydantic and msgspec outputs decode through their models and are unchanged. Integer mapping keys over an integer enum still fail with the dataclass output under `--use-enum-values-in-discriminator` (#7083) and with the TypedDict output for an enum the variants share (#7084).
+
+- **Affects:** experimental features: `cli-option.generate-client`
+- **Pull requests and issues:** [#7082](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7082)
+- **Source:** the release notes
+
+```diff
+-Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog)))
++Choice((), 'kind', ((1, models.Cat), (2, models.Dog)))
+```
+
 ### Root models every use of which is collapsed are no longer written as unused aliases under msgspec (unreleased) { #collapsed-root-unused-alias }
 
 With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root model whose references are all collapsed into their users (several fields, some naming it inside a union) was still written as an unused module-level type alias (`NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None`); it is no longer written. Nothing named the alias, so the models that used it are unchanged and validate the same payloads.

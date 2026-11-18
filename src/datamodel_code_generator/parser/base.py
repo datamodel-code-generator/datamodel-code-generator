@@ -247,7 +247,14 @@ from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, pars
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser._serialize_as_any import SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
-from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities, writes_member_values
+from datamodel_code_generator.parser._tag_plan import (
+    TagCapabilities,
+    TagPlan,
+    declared_variant_tags,
+    field_namer,
+    tag_capabilities,
+    writes_member_values,
+)
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
 from datamodel_code_generator.parser._unique_sets import WRITE_UNIQUE_ITEMS_AS_SETS
 from datamodel_code_generator.parser.generation import GenerationStore
@@ -1903,6 +1910,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     @staticmethod
     def _get_enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:
         return enum_discriminator_literal(enum_source, value)
+
+    def _variant_tags(
+        self, property_name: str, mapping: dict[str, str], members: Sequence[DataType]
+    ) -> Iterator[tuple[DataModel, list[DiscriminatorValue]]]:
+        """Yield the variants of a union that declares a discriminator with their tags, read after L7.
+
+        A union whose field writes ``discriminator=`` selects its variant itself, so none is read there; otherwise each
+        variant takes the tags the tag passes read for it (``declared_variant_tags``).
+        """
+        if self._tag_capabilities.writes_argument:
+            return iter(())
+        namer = field_namer(self.model_resolver, self.field_name_model_type)
+        return declared_variant_tags(property_name, mapping, members, namer, _modules.tag_reading(self))
 
     def record_dropped_constraints(self) -> None:
         """Record this parse's dropped-constraint warnings as those of the generation that returns its models."""

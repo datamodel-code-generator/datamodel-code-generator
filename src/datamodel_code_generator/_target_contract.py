@@ -247,13 +247,13 @@ class GenericType:
 
 @dataclass(frozen=True, slots=True)
 class UnionDiscriminator:
-    """The discriminator a union's schema declares: its wire property, and the source of the model each value names.
+    """The discriminator a union's schema declares: its wire property, and the tags the model reads for each variant.
 
-    A source is the path of the schema a model is generated from, as `FinalModelSymbol.source` holds it.
+    A variant is named by the path of the schema its model is generated from, as `FinalModelSymbol.source` holds it.
     """
 
     property_name: str
-    mapping: tuple[tuple[str, str], ...]
+    variants: tuple[tuple[str, tuple[str | int | bool, ...]], ...]
 
 
 @dataclass(frozen=True, slots=True)

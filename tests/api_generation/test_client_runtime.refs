@@ -55,7 +55,9 @@ deadline-streams	main/generation_platform/client/runtime/deadline-streams.txt
 deep-object-brackets	main/generation_platform/client/runtime/deep-object-brackets.txt
 default-server	main/generation_platform/client/runtime/default-server.txt
 discriminator-copies	main/generation_platform/client/runtime/discriminator-copies.txt
+discriminator-enum-bodies	main/generation_platform/client/runtime/discriminator-enum-bodies.txt
 discriminator-reuse	main/generation_platform/client/runtime/discriminator-reuse.txt
+discriminator-values	main/generation_platform/client/runtime/discriminator-values.txt
 discriminator-variants	main/generation_platform/client/runtime/discriminator-variants.txt
 evolution	main/generation_platform/client/runtime/evolution.txt
 evolution-allow	main/generation_platform/client/runtime/evolution-allow.txt

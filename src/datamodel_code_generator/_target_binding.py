@@ -338,10 +338,10 @@ class _WalkedPathItem:
 
 @dataclass(frozen=True, slots=True)
 class _Selector:
-    """A union's declared discriminator: its wire property and each mapped value's resolved reference."""
+    """A union's declared discriminator: its wire property and its mapping, located as the parser reads it."""
 
     property_name: str
-    mapping: tuple[tuple[str, str], ...]
+    mapping: dict[str, str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -474,18 +474,16 @@ class _TargetRecording(OpenAPIParser):
     ) -> list[DataType]:
         """Record each combined schema with the discriminator it declares, by the members it parses into.
 
-        Each mapped value, a reference or a schema name, resolves where the union is declared, as the parser
-        resolves its references.
+        The mapping is located where the union is declared, as the parser locates the one a field's extras carry.
         """
         members = super().parse_combined_schema(name, obj, path, target_attribute_name)
-        mapping = obj.schema_location and obj.schema_location.child("discriminator", "mapping")
+        raw = obj.extras.get("discriminator")
         selector = (
             _Selector(
                 declared.propertyName,
-                tuple(
-                    (value, self._ref_path(self._discriminator_mapping_ref(value, ref, mapping)))
-                    for value, ref in (declared.mapping or {}).items()
-                ),
+                self._located_mapping(mapping)
+                if isinstance(raw, dict) and isinstance(mapping := raw.get("mapping"), dict)
+                else {},
             )
             if isinstance(declared := obj.discriminator, Discriminator)
             else None
@@ -493,6 +491,12 @@ class _TargetRecording(OpenAPIParser):
         union = _Union(tuple(members), selector)
         self.unions.update((id(member), union) for member in members)
         return members
+
+    def variant_tags(
+        self, property_name: str, mapping: dict[str, str], members: Sequence[DataType]
+    ) -> Iterator[tuple[DataModel, list[str | int | bool]]]:
+        """Yield the variants of a union that declares a discriminator with the tags the model reads for them."""
+        return self._variant_tags(property_name, mapping, members)
 
     def _copy_model_field(self, field: DataModelFieldBase, **options: Any) -> DataModelFieldBase:
         """Record the field a copy of a field is of, as inherited fields and read or write variants copy."""
@@ -1741,26 +1745,16 @@ class _Projector:
         return union, inferred_optional
 
     def selector(self, data_type: DataType) -> UnionDiscriminator | None:
-        """Return the discriminator a union's schema declares.
+        """Return the discriminator a union's schema declares, with the tags the model reads for each of its variants.
 
-        Each mapped value names the source of the model its reference resolves to, or the reference's own path when
-        no emitted model stands for it, as a model that only read and write variants stand for.
+        A variant is named by the source of its model, which its read and write variants share.
         """
         if (union := self.union(data_type)) is None or (selector := union.selector) is None:
             return None
-        references = self.binder.parser.model_resolver.references
+        variants = self.binder.parser.variant_tags(selector.property_name, selector.mapping, data_type.data_types)
         return UnionDiscriminator(
             selector.property_name,
-            tuple(
-                (
-                    value,
-                    self.binder.source(final)
-                    if (reference := references.get(path)) is not None
-                    and (final := self.binder.final(reference)) is not None
-                    else path,
-                )
-                for value, path in selector.mapping
-            ),
+            tuple((self.binder.source(variant.reference), tuple(tags)) for variant, tags in variants),
         )
 
     def union(self, data_type: DataType) -> _Union | None:
