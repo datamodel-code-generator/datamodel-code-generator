@@ -1,0 +1,14 @@
+[[change]]
+id = "collapsed-root-unused-alias"
+category = "default-fix"
+title = "Root models every use of which is collapsed are no longer written as unused aliases under msgspec"
+summary = "With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root model whose references are all collapsed into their users (several fields, some naming it inside a union) was still written as an unused module-level type alias (`NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None`); it is no longer written. Nothing named the alias, so the models that used it are unchanged and validate the same payloads."
+refs = ["#6915"]
+decision = ["#6915"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/msgspec_union_member_constraints/collapse_root_models.py",
+    "main/jsonschema/msgspec_union_shared_bounds/msgspec_union_shared_bounds[collapse_root_models].py",
+]

@@ -24,6 +24,7 @@ from tests.api_generation.scenarios.client_asyncapi_sockets import (
     asyncapi_handshake_models,
     asyncapi_message_codecs,
     asyncapi_messages,
+    asyncapi_optional_tags,
     asyncapi_perspective,
     asyncapi_schema_formats,
     asyncapi_serverless,
@@ -45,8 +46,9 @@ from tests.api_generation.scenarios.client_deadline_cleanup import deadline_clea
 from tests.api_generation.scenarios.client_deadline_options import deadline_options
 from tests.api_generation.scenarios.client_deadline_races import deadline_races
 from tests.api_generation.scenarios.client_deadline_streams import deadline_streams
-from tests.api_generation.scenarios.client_fields import fields, optional_models
+from tests.api_generation.scenarios.client_fields import fields, optional_models, stripped_fields, stripped_nullable
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
+from tests.api_generation.scenarios.client_held_extras import held_extras
 from tests.api_generation.scenarios.client_hooks import hooks
 from tests.api_generation.scenarios.client_item_streams import item_streams
 from tests.api_generation.scenarios.client_missing_sentinel import missing_members
@@ -930,6 +932,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "multipart-text-files": ("multipart-text-files", ("pydantic_v2.BaseModel", "msgspec.Struct"), text_files),
     "multipart-media-text": ("multipart-media-text", ("pydantic_v2.BaseModel", "msgspec.Struct"), media_text_parts),
+    "held-extras": ("held-extras", BACKENDS[:2], held_extras),
+    "held-extras-forbid": ("held-extras-forbid", BACKENDS[:2], held_extras),
+    "held-extras-allow": ("held-extras-allow", BACKENDS[:2], held_extras),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
     "call-layers": ("call-layers", ("pydantic_v2.BaseModel",), call_layers),
@@ -1000,6 +1005,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"),
         asyncapi_messages,
     ),
+    "asyncapi-optional-tags": (
+        "asyncapi-optional-tags",
+        ("pydantic_v2.BaseModel", "dataclasses.dataclass"),
+        asyncapi_optional_tags,
+    ),
     "asyncapi-union-sends": ("asyncapi-messages-aliases", ("pydantic_v2.BaseModel",), asyncapi_union_sends),
     "asyncapi-subclass-sends": (
         "asyncapi-messages",
@@ -1025,6 +1035,12 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "fields": ("fields", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), fields),
     "fields-structural": ("fields-structural", ("dataclasses.dataclass", "typing.TypedDict"), fields),
     "fields-unpack": ("fields-unpack", ("pydantic_v2.BaseModel",), fields),
+    "fields-strip": ("fields-strip", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), stripped_fields),
+    "fields-strip-nullable": (
+        "fields-strip-nullable",
+        ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"),
+        stripped_nullable,
+    ),
     "fields-optional-models": (
         "fields-optional-models",
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"),

@@ -27,6 +27,7 @@ from datamodel_code_generator._option_names import (
     mapping_argument,
     option_arguments,  # noqa: F401  # Preserve the established prompt export.
 )
+from datamodel_code_generator._option_table import COMMAND_DESTS
 from datamodel_code_generator.cli_options import (
     CLI_OPTION_META,
     OptionCategory,
@@ -40,21 +41,14 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Iterator
 
-# Options to exclude from prompt output
-PROMPT_EXCLUDED_OPTIONS: frozenset[str] = frozenset({
-    "generate_prompt",
-    "generate_pyproject_config",
-    "generate_cli_command",
-    "recommend_options",
-    "install_skill",
-    "skill_scope",
-    "overwrite_skill",
-    "version",
-    "help",
-    "no_color",
-    "output_format",
-    "output_format_json_schema",
-})
+PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {
+    "profile",
+    "job",
+    "all_jobs",
+    "ignore_pyproject",
+    "fail_on_multi_module_stdout",
+}
+"""The options the prompt leaves out of the current options: those of a command, except those that shape the run."""
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 

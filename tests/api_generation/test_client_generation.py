@@ -88,6 +88,10 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "method-collisions-parent-scoped-full-path",
         "child-collision",
         "name-repeats",
+        "applied-config",
+        "held-extras",
+        "held-extras-forbid",
+        "held-extras-allow",
         "media-errors",
         "response-keys",
         "form-name-errors",
@@ -249,6 +253,9 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-events-client",
         "asyncapi-server-schemes",
         "asyncapi-server-schemes-v2",
+        "fields-strip",
+        "fields-strip-nullable",
+        "asyncapi-optional-tags",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

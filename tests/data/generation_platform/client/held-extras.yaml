@@ -1,0 +1,133 @@
+openapi: 3.1.0
+info:
+  title: Held extras
+  version: "1"
+  description: >-
+    Objects whose schemas leave other properties unsaid, close them, allow them, or type them, read from query and
+    cookie parameters, URL-encoded forms, and form-data bodies, so that each reader takes the members the class it
+    fills takes.
+servers: [{url: "https://example.com"}]
+paths:
+  /plain:
+    get:
+      operationId: getPlain
+      parameters:
+        - {name: count, in: query, schema: {type: integer}}
+        - {name: obj, in: query, style: form, explode: true, schema: {$ref: "#/components/schemas/Plain"}}
+      responses: {"204": {description: Done.}}
+  /closed:
+    get:
+      operationId: getClosed
+      parameters:
+        - {name: count, in: query, schema: {type: integer}}
+        - {name: obj, in: query, style: form, explode: true, schema: {$ref: "#/components/schemas/Closed"}}
+      responses: {"204": {description: Done.}}
+  /open:
+    get:
+      operationId: getOpen
+      parameters:
+        - {name: count, in: query, schema: {type: integer}}
+        - {name: obj, in: query, style: form, explode: true, schema: {$ref: "#/components/schemas/Open"}}
+      responses: {"204": {description: Done.}}
+  /required:
+    get:
+      operationId: getRequired
+      parameters:
+        - {name: obj, in: query, required: true, style: form, explode: true, schema: {$ref: "#/components/schemas/Plain"}}
+      responses: {"204": {description: Done.}}
+  /cookie:
+    get:
+      operationId: getCookie
+      parameters:
+        - {name: session, in: cookie, schema: {type: string}}
+        - {name: prefs, in: cookie, schema: {$ref: "#/components/schemas/Plain"}}
+      responses: {"204": {description: Done.}}
+  /parts/plain:
+    post:
+      operationId: postPlainParts
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: "#/components/schemas/Plain"}}}}
+      responses: {"204": {description: Done.}}
+  /parts/closed:
+    post:
+      operationId: postClosedParts
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: "#/components/schemas/Closed"}}}}
+      responses: {"204": {description: Done.}}
+  /parts/open:
+    post:
+      operationId: postOpenParts
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: "#/components/schemas/Open"}}}}
+      responses: {"204": {description: Done.}}
+  /typed:
+    post:
+      operationId: postTyped
+      requestBody:
+        required: true
+        content: {application/x-www-form-urlencoded: {schema: {$ref: "#/components/schemas/Typed"}}}
+      responses: {"204": {description: Done.}}
+  /parts/typed:
+    post:
+      operationId: postTypedParts
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: "#/components/schemas/Typed"}}}}
+      responses: {"204": {description: Done.}}
+  /parts/located:
+    post:
+      operationId: postLocatedParts
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: "#/components/schemas/Located"}}}}
+      responses: {"204": {description: Done.}}
+  /two:
+    get:
+      operationId: getTwo
+      parameters:
+        - {name: a, in: query, style: form, explode: true, schema: {$ref: "#/components/schemas/Plain"}}
+        - {name: b, in: query, style: form, explode: true, schema: {$ref: "#/components/schemas/Paged"}}
+      responses: {"204": {description: Done.}}
+  /downloads:
+    get:
+      operationId: readDownload
+      responses:
+        "200":
+          description: A photo with parts of any name.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+  /downloads/typed:
+    get:
+      operationId: readTypedDownload
+      responses:
+        "200":
+          description: A photo with integer parts of any name.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+                additionalProperties: {type: integer}
+  /uploads:
+    post:
+      operationId: sendUpload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo: {type: string, format: binary}
+              additionalProperties: {type: string}
+      responses: {"204": {description: Done.}}
+components:
+  schemas:
+    Plain: {type: object, properties: {size: {type: integer}}}
+    Paged: {type: object, properties: {page: {type: integer}}}
+    Closed: {type: object, properties: {size: {type: integer}}, additionalProperties: false}
+    Open: {type: object, properties: {size: {type: integer}}, additionalProperties: true}
+    Typed: {type: object, properties: {size: {type: integer}}, additionalProperties: {type: integer}}
+    Located:
+      type: object
+      properties:
+        size: {type: integer}
+      additionalProperties: {type: object, properties: {lat: {type: integer}}}

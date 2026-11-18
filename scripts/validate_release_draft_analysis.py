@@ -43,6 +43,9 @@ UNREADABLE_DIFF_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 TOKEN_BOUNDARY_CHARS = r"A-Za-z0-9_.:/-"
+ELLIPSES = ("...", "\u2026")
+MIN_ELIDED_QUOTE_LENGTH = 8
+"""A quoted token that starts or ends with an ellipsis elides text there; the rest must be at least this long."""
 ACTIVE_MARKDOWN_RE = re.compile(
     r"\[|\]|@|<|>|\b(?:https?|ftp)://|\bwww\.|(?<!:)//",
     re.IGNORECASE | re.MULTILINE,
@@ -455,11 +458,20 @@ def _claimed_removed_tokens(line: str) -> set[str]:
 
 
 def _token_present(token: str, deleted_lines: str) -> bool:
-    """Return whether token appears with non-token boundaries in deleted lines."""
+    """Return whether token appears in deleted lines, with token boundaries on the sides not elided by an ellipsis."""
     if not (normalized := _normalize_token(token)):
         return False
-    pattern = re.compile(rf"(?<![{TOKEN_BOUNDARY_CHARS}]){re.escape(normalized)}(?![{TOKEN_BOUNDARY_CHARS}])")
-    return bool(pattern.search(deleted_lines))
+    start, end = 0, len(normalized)
+    if normalized.startswith(ELLIPSES):
+        start = 3 if normalized.startswith("...") else 1
+    if normalized.endswith(ELLIPSES):
+        end -= 3 if normalized.endswith("...") else 1
+    text = normalized[start : max(start, end)].strip()
+    if (start or end < len(normalized)) and len(text) < MIN_ELIDED_QUOTE_LENGTH:
+        return False
+    before = "" if start else rf"(?<![{TOKEN_BOUNDARY_CHARS}])"
+    after = "" if end < len(normalized) else rf"(?![{TOKEN_BOUNDARY_CHARS}])"
+    return bool(re.search(f"{before}{re.escape(text)}{after}", deleted_lines))
 
 
 def _validate_removal_claims(breaking_changes_content: str, deleted_lines_path: Path) -> None:

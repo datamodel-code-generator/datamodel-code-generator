@@ -43,7 +43,6 @@ _READ_DOCUMENT_HEADERS: Final[ResponseHeaders[models.Draft, UNSET]] = ResponseHe
                                 FieldPlan('title', 'string'),
                                 FieldPlan('secret', 'string'),
                             ),
-                            additional=FieldPlan('', 'string'),
                         ),
                         codec=model_bindings.codec_17,
                         missing=optional_header,

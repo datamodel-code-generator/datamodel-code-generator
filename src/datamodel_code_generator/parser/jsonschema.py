@@ -246,6 +246,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     ConditionalRequiredRule,
+    ConstantTypesRule,
     IndependentDeclaredPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     IndependentModelPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     PatternPropertiesRule,
@@ -1198,6 +1199,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._tag_key_variants: dict[SchemaLocation | None, tuple[str, str]] = {}
         if self.generate_schema_validators:
             self._property_count_rule_cache: dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]] = {}
+        self._ref_constant_values_cache: dict[int, tuple[JsonSchemaObject, tuple[object, ...] | None]] = {}
+        """The const or enum values of the schema each referring schema object names (``_ref_constant_values``)."""
         self.field_keys: set[str] = {
             *DEFAULT_FIELD_KEYS,
             *self.field_extra_keys,
@@ -1855,23 +1858,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         patternProperties give the keys; a schema with properties or allOf, and each inline allOf member merged into it,
         builds a model whose fields hold properties alone, so its map keywords type nothing. Under
         --generate-schema-validators the properties and the patternProperties its rules name are children (not a value
-        that is false written as an allOf, ``_is_false_all_of``: the rules forbid its keys), and so are the conditional
-        branches. The item positions of an array are those array parsing types
-        (``_value_keywords.get_array_item_schemas``), not the entries it leaves untyped. A model types the
-        additionalProperties its builder types: those the patternProperties rules pick
-        (``_pattern_rule_additional_properties``), as its values where it is a map
-        (``_schema_builds_map_model``) except where patternProperties give the values and ``_other_keys_schema`` types
-        no other key, and in its typed extra field otherwise (``_typed_extra_field_schema``); those of an inline allOf
-        member type something only where the allOf merges into a map. TypedDict also records those of the key's model
-        and of each inline model with fields, unless an inline allOf member closes it
-        (``_model_additional_properties``), as their extra_items type (``set_additional_properties``); that type
-        generates no model, so the site names the keys of the models it names (``_extra_items_type``, row
-        ``legacy-rw-extra-items-as-written``: as written, its false allOf values not read). Each property, item, value
-        and branch is a field site, typed as the row ``parse_item`` chooses for it declares (``typed_field_site``): a
-        property reads a $ref beside sibling keywords merged with them before the table chooses, the other sites
-        after its python-type row. A value is the site ``_parse_additional_properties_value`` builds
-        (``_typed_additional_properties_value``) and a oneOf or anyOf member the branch ``parse_combined_schema``
-        parses (``_typed_combined_members``).
+        the rules reject, ``_schema_validators.rule_rejects_pattern``), and so are the conditional branches. The item
+        positions of an array are those array parsing types (``_value_keywords.get_array_item_schemas``), not the
+        entries it leaves untyped. A model types the additionalProperties its builder types: those the patternProperties
+        rules type (``_schema_validators.pattern_rule_additional_properties``), as its values where it is a map
+        (``_schema_builds_map_model``) whose builder types its values (``_object_maps.map_value_schema``), and in its
+        typed extra field otherwise (``_object_maps.typed_extra_field_schema``); those of an inline allOf member type
+        something only where the allOf merges into a map. TypedDict also records those of the key's model and of each
+        inline model with fields, unless an inline allOf member closes it (``_model_additional_properties``), as their
+        extra_items type (``set_additional_properties``); that type generates no model, so the site names the keys of
+        the models it names (``_extra_items_type``, row ``legacy-rw-extra-items-as-written``: as written, its false
+        allOf values not read). Each property, item, value and branch is a field site, typed as the row ``parse_item``
+        chooses for it declares (``typed_field_site``): a property reads a $ref beside sibling keywords merged with them
+        before the table chooses, the other sites after its python-type row. A value is the site
+        ``_parse_additional_properties_value`` builds (``_typed_additional_properties_value``) and a oneOf or anyOf
+        member the branch ``parse_combined_schema`` parses (``_typed_combined_members``).
         """
         schema, defining_ref, into = site.obj, site.path[0], site.parent
         if into is None:
@@ -1891,11 +1892,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             with self._inherited_ref_context(defining_ref):
                 if self._has_pattern_properties_validator(model_schema):
                     rule = _schema_validators.pattern_rule_additional_properties(self, model_schema)
-                    extras = None if rule is None else extras if rule[1] is model_schema else rule[2]
+                    extras = None if not rule else extras if rule[1] is model_schema else rule[2]
                 elif (
                     (site.root or _object_maps.typed_extra_field_schema(self, model_schema) is None)
                     if not builds_map
-                    else model_schema.patternProperties and self._other_keys_schema(model_schema) is None
+                    else _object_maps.map_value_schema(self, model_schema) is None
                 ):
                     extras = None
             if (
@@ -1927,7 +1928,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         pattern_properties = schema.patternProperties
         if self.generate_schema_validators and not types_map and pattern_properties:
             pattern_properties = {
-                pattern: value for pattern, value in pattern_properties.items() if not _is_false_all_of(value)
+                pattern: value
+                for pattern, value in pattern_properties.items()
+                if not _schema_validators.rule_rejects_pattern(value)
             }
         for mapping, merges_ref_first in (
             ((schema.properties, True), (pattern_properties, False))
@@ -2116,7 +2119,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         if target:
             self.extra_template_data[target_path]["schema_runtime_validation"] = target
-        self._add_unique_items_validator(target_path, obj, fields, [], is_root_model=is_root_model)
+        self._add_path_rules_validator(target_path, obj, fields, [], is_root_model=is_root_model)
 
     def _generate_forced_base_models(self) -> None:
         """Retain the late parser extension hook used by schema subclasses."""
@@ -4142,10 +4145,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: UniqueItemsPath,
         visited_refs: frozenset[_TargetNode],
         property_input_names: Mapping[str, tuple[str, ...]] | None,
-    ) -> tuple[list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule, ...]]], list[UniqueItemsRule]]:
-        return _schema_validators.get_union_unique_items_branch_rules(
-            self, items, path, visited_refs, property_input_names
-        )
+    ) -> tuple[
+        list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule | ConstantTypesRule, ...]]],
+        list[UniqueItemsRule | ConstantTypesRule],
+    ]:
+        return _schema_validators.get_union_path_branch_rules(self, items, path, visited_refs, property_input_names)
 
     def _iter_union_unique_items_rules(
         self,
@@ -4154,8 +4158,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode],
         *,
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-    ) -> Iterator[UniqueItemsRule]:
-        return _schema_validators.iter_union_unique_items_rules(
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+        return _schema_validators.iter_union_path_rules(
             self, items, path, visited_refs, property_input_names=property_input_names
         )
 
@@ -4194,12 +4198,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
         *,
         include_properties: bool = False,
-    ) -> Iterator[UniqueItemsRule]:
-        return _schema_validators.iter_unique_items_rules(
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+        return _schema_validators.iter_path_rules(
             self, obj, path, visited_refs, property_input_names, include_properties=include_properties
         )
 
-    def _add_unique_items_validator(
+    def _add_path_rules_validator(
         self,
         reference_path: str,
         obj: JsonSchemaObject,
@@ -4208,7 +4212,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         is_root_model: bool,
     ) -> None:
-        _schema_validators.add_unique_items_validator(
+        _schema_validators.add_path_rules_validator(
             self, reference_path, obj, fields, base_classes, is_root_model=is_root_model
         )
 
@@ -4722,13 +4726,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             with_type_origin(with_field_origin(field, "root", location).data_type, location)
         requested_root_model_type = data_model_root_type
         if self.generate_schema_validators:
-            self._add_unique_items_validator(
-                reference.path,
-                obj,
-                fields,
-                [],
-                is_root_model=True,
-            )
+            self._add_path_rules_validator(reference.path, obj, fields, [], is_root_model=True)
         data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference.path)
         if _rw_split.splits_root_model(self, reference, fields):
             self._request_response_fields[reference.path] = tuple(_rw_split.copy_unregistered_fields(self, fields))
@@ -5828,14 +5826,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         rows = self._legacy_object_maps
         typed = False
+        values = _object_maps.map_value_schema(self, obj)
         if pattern_properties := obj.patternProperties:
             if "legacy-map-union-of-dicts" not in rows:
                 self._warn_inexact_object_map(name, obj, pattern_properties)
             map_type = (
                 self.parse_pattern_properties(name, pattern_properties, object_path, property_names=obj.propertyNames)
-                if (other_keys := self._other_keys_schema(obj)) is None
+                if values is None
                 else _object_maps.parse_pattern_map(
-                    self, name, pattern_properties, object_path, obj.propertyNames, other_keys
+                    self, name, pattern_properties, object_path, obj.propertyNames, values
                 )
             )
         elif obj.propertyNames is not None:
@@ -5845,10 +5844,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         elif typed_values is not None:
             typed = True
             map_type = _object_maps.parse_nullable_map(self, name, obj, object_path, typed_values)
-        elif isinstance(obj.additionalProperties, JsonSchemaObject):
-            map_type = _object_maps.parse_additional_properties_map(
-                self, name, obj, object_path, obj.additionalProperties
-            )
+        elif values is not None:
+            map_type = _object_maps.parse_additional_properties_map(self, name, obj, object_path, values)
         else:
             map_type = self.data_type_manager.get_data_type(Types.object)
         null_left_to_field = "legacy-map-null-left-to-field" in rows

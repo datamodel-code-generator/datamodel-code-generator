@@ -1,0 +1,22 @@
+$ check --base base
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+ok
+
+$ prune --base base
+exit 0
+
+$ check --base base
+exit 0
+declared changes: the working tree against base, release since 0.1.0
+ok
+
+--- backfill-b.toml ---
+[[change]]
+id = "backfill-b"
+category = "harness"
+title = "t"
+summary = "s"
+covers = [
+    "models/b.py",
+]

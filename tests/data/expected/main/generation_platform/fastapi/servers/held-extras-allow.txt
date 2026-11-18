@@ -1,0 +1,110 @@
+# held-extras-allow
+serve pydantic_v2.BaseModel
+service DefaultService: get_closed, get_cookie, get_open, get_plain, get_required, post_closed_parts, post_located_parts, post_open_parts, post_plain_parts, post_typed, post_typed_parts, send_upload
+service DefaultService without its methods: TypeError
+> GET /plain?count=1&foo=bar
+  get_plain(count=1, obj=Plain(size=None, foo='bar'))
+< 204 - b''
+> GET /plain?count=1&size=2&foo=bar
+  get_plain(count=1, obj=Plain(size=2, foo='bar'))
+< 204 - b''
+> GET /closed?count=1&foo=bar
+  get_closed(count=1, obj=None)
+< 204 - b''
+> GET /closed?count=1&size=2&foo=bar
+  get_closed(count=1, obj=Closed(size=2))
+< 204 - b''
+> GET /open?count=1&foo=bar
+  get_open(count=1, obj=Open(size=None, foo='bar'))
+< 204 - b''
+> GET /required?foo=bar
+  get_required(obj=Plain(size=None, foo='bar'))
+< 204 - b''
+> GET /required?size=2&foo=bar
+  get_required(obj=Plain(size=2, foo='bar'))
+< 204 - b''
+> GET /cookie
+  get_cookie(session=None, prefs=Plain(size=None, _ga='x'))
+< 204 - b''
+> GET /cookie
+  get_cookie(session='s', prefs=Plain(size=3, _ga='x'))
+< 204 - b''
+> POST /parts/plain
+  post_plain_parts(Plain(size=2, foo=1))
+< 204 - b''
+> POST /parts/closed
+  post_closed_parts(Closed(size=2, foo='1'))
+< 204 - b''
+> POST /parts/open
+  post_open_parts(Open(size=2, foo=1))
+< 204 - b''
+> POST /typed
+  post_typed(Typed(size=1, x=5))
+< 204 - b''
+> POST /typed
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "x"]}]
+> POST /parts/typed
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "x"]}]
+> POST /parts/located
+  post_located_parts(Located(size=1, x={'lat': 5}))
+< 204 - b''
+> POST /parts/located
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "x", "lat"]}]
+> POST /uploads
+  send_upload(UploadsPostRequest(photo=b'PNG', note='kept'))
+< 204 - b''
+serve pydantic_v2.dataclass
+service DefaultService: get_closed, get_cookie, get_open, get_plain, get_required, post_closed_parts, post_located_parts, post_open_parts, post_plain_parts, post_typed, post_typed_parts, send_upload
+service DefaultService without its methods: TypeError
+> GET /plain?count=1&foo=bar
+  get_plain(count=1, obj=Plain(size=MISSING, foo='bar'))
+< 204 - b''
+> GET /plain?count=1&size=2&foo=bar
+  get_plain(count=1, obj=Plain(size=2, foo='bar'))
+< 204 - b''
+> GET /closed?count=1&foo=bar
+  get_closed(count=1, obj=None)
+< 204 - b''
+> GET /closed?count=1&size=2&foo=bar
+  get_closed(count=1, obj=Closed(size=2))
+< 204 - b''
+> GET /open?count=1&foo=bar
+  get_open(count=1, obj=Open(size=MISSING, foo='bar'))
+< 204 - b''
+> GET /required?foo=bar
+  get_required(obj=Plain(size=MISSING, foo='bar'))
+< 204 - b''
+> GET /required?size=2&foo=bar
+  get_required(obj=Plain(size=2, foo='bar'))
+< 204 - b''
+> GET /cookie
+  get_cookie(session=None, prefs=Plain(size=MISSING, _ga='x'))
+< 204 - b''
+> GET /cookie
+  get_cookie(session='s', prefs=Plain(size=3, _ga='x'))
+< 204 - b''
+> POST /parts/plain
+  post_plain_parts(Plain(size=2, foo=1))
+< 204 - b''
+> POST /parts/closed
+  post_closed_parts(Closed(size=2, foo='1'))
+< 204 - b''
+> POST /parts/open
+  post_open_parts(Open(size=2, foo=1))
+< 204 - b''
+> POST /typed
+  post_typed(Typed(size=1, x=5))
+< 204 - b''
+> POST /typed
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "x"]}]
+> POST /parts/typed
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "x"]}]
+> POST /parts/located
+  post_located_parts(Located(size=1, x={'lat': 5}))
+< 204 - b''
+> POST /parts/located
+  post_located_parts(Located(size=1, x={'lat': 'zz'}))
+< 204 - b''
+> POST /uploads
+  send_upload(UploadsPostRequest(photo=b'PNG', note='kept'))
+< 204 - b''

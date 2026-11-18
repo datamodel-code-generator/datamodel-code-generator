@@ -24302,6 +24302,22 @@ def test_main_jsonschema_collapse_root_models_empty_union(output_file: Path) -> 
     )
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "typing.TypedDict"])
+def test_main_jsonschema_collapse_root_models_rule_categories(output_file: Path, output_model_type: str) -> None:
+    """Inline one root model into every field of the objects that merge the categories naming it (#7015).
+
+    Like ESLint's configuration schema: rule categories name the root model ``rule`` from each property, and two
+    ``rules`` objects merge every category with ``allOf``. Each field of the categories takes the inlined union, which
+    the ``rules`` model inherits.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_rule_categories.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--collapse-root-models", "--output-model-type", output_model_type],
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     [
@@ -30104,7 +30120,9 @@ The `--generate-schema-validators` option emits schema-derived model validators
 for object constraints that cannot be represented as type hints alone, including
 minProperties/maxProperties on named object models, patternProperties on
 composed object models, required-only oneOf/anyOf groups, simple
-if/then/else required-property conditions, and uniqueItems array validation.
+if/then/else required-property conditions, uniqueItems array validation, and
+the JSON type of const and enum values: a boolean for a numeric value and a
+number for a boolean one, which Python's `True == 1` lets through, are rejected.
 This feature is experimental and may change as JSON Schema coverage is expanded.
 
 With standard models and templates, required names absent from generated fields
@@ -35033,6 +35051,54 @@ def test_main_read_only_write_only_pattern_map_extras(
         validate(json.dumps(valid))
         with pytest.raises(error_type):
             validate(json.dumps(invalid))
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "error_type"),
+    [
+        pytest.param("pydantic_v2.BaseModel", "extra_forbidden", id="pydantic_v2.BaseModel"),
+        pytest.param("pydantic_v2.dataclass", "unexpected_keyword_argument", id="pydantic_v2.dataclass"),
+    ],
+)
+@pytest.mark.parametrize("merge_option", ["--intersect-combined-schema-keywords", "--intersect-allof-keywords"])
+def test_main_read_only_write_only_closed_ref_beside_map_value(
+    output_file: Path, output_model_type: str, error_type: str, merge_option: str
+) -> None:
+    """Keep one class for a reference to a closed object beside a map value that names a readOnly model.
+
+    ``Holder`` is a $ref to ``Closed``, which admits no key, beside an additionalProperties naming the readOnly
+    ``Item``. The merge option intersects the two into a closed object whose builder types no value, so ``Holder``
+    keeps one class and the variants of the root model name it.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "read_only_write_only_closed_ref_beside_map_value.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            merge_option,
+            "--disable-timestamp",
+            "--output-model-type",
+            output_model_type,
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    valid = {"holder": {}, "count": 1}
+    invalid = {"holder": {"k": {"name": "n"}}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="rw_closed_ref_beside_map_value",
+        model_name="ModelRequest",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type=error_type,
+    )
 
 
 @pytest.mark.parametrize(

@@ -279,7 +279,6 @@ class Upload:
                     ),
                 ),
                 file_parts=(FilePart('file'),),
-                additional=JsonPart('', TypeAdapter(object), untyped=True),
             ),
         ),
     )

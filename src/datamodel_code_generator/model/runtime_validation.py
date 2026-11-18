@@ -200,6 +200,23 @@ class UniqueItemsRule:
     path: UniqueItemsPath
 
 
+@record
+class ConstantTypesRule:
+    """Runtime rule that rejects a JSON boolean for a numeric const or enum value equal to it, and the reverse.
+
+    ``values`` are the bool and number values of the const or enum that Python's ``True == 1`` conflates. ``booleans``
+    marks the booleans among them, so that a rule over ``(1,)`` never equals or hashes as one over ``(True,)``.
+    """
+
+    path: UniqueItemsPath
+    values: tuple[bool | int | float, ...]
+    booleans: tuple[bool, ...] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Derive ``booleans`` from ``values``."""
+        object.__setattr__(self, "booleans", tuple(isinstance(value, bool) for value in self.values))
+
+
 def unique_items_path_uses_regex(path: UniqueItemsPath) -> bool:
     """Return whether a compact uniqueItems path needs regex key selection."""
     for step in path:
@@ -221,6 +238,8 @@ class SchemaRuntimeValidation:
     property_count: PropertyCountRule | None = None
     unique_items: list[UniqueItemsRule] = field(default_factory=list)
     replace_unique_items: bool = False
+    constant_types: list[ConstantTypesRule] = field(default_factory=list, init=False)
+    replace_constant_types: bool = field(default=False, init=False)
 
     def __bool__(self) -> bool:
         """Return whether any runtime validation rule is registered."""
@@ -231,6 +250,8 @@ class SchemaRuntimeValidation:
             or self.property_count
             or self.unique_items
             or self.replace_unique_items
+            or self.constant_types
+            or self.replace_constant_types
         )
 
     @property
@@ -257,6 +278,8 @@ class SchemaRuntimeValidation:
             stable_repr(self.property_count),
             stable_repr(self.unique_items),
             self.replace_unique_items,
+            stable_repr(self.constant_types),
+            self.replace_constant_types,
         )
 
     def _replace_pattern_properties(self, pattern_properties: list[PatternPropertiesRule]) -> SchemaRuntimeValidation:

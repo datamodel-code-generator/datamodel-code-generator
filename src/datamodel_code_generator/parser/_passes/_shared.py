@@ -62,6 +62,7 @@ from datamodel_code_generator.model.base import (
     _field_source_name,
     _find_base_classes,
     _ModelKeys,
+    _written_name,
     direct_base_models,
     get_inherited_fields,
     linearize_data_models,
@@ -851,10 +852,30 @@ def takes_positional_place(facts: AssignmentFacts, field: DataModelFieldBase, de
     )
 
 
+class AssignmentFactsHost(Protocol):
+    """The model whose fields' assignment facts a pass reads."""
+
+    def _field_assignment_facts(self, field: DataModelFieldBase) -> AssignmentFacts:
+        """Return how the model's class body assigns ``field``."""
+
+
+def assignment_facts_of(model: AssignmentFactsHost) -> Callable[[DataModelFieldBase], AssignmentFacts]:
+    """Return the assignment facts of the fields ``model`` has, each classified once while no field changes."""
+    facts: dict[int, AssignmentFacts] = {}
+
+    def facts_of(field: DataModelFieldBase) -> AssignmentFacts:
+        if (found := facts.get(id(field))) is None:
+            found = facts[id(field)] = model._field_assignment_facts(field)
+        return found
+
+    return facts_of
+
+
 def get_constructor_ordering_conflicts(
     model: DataModel,
     effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
     required_assignment_names: set[str],
+    facts_of: Callable[[DataModelFieldBase], AssignmentFacts],
 ) -> ConstructorConflicts:
     """Return the positional fields of the model's effective constructor that follow a positional default.
 
@@ -866,7 +887,7 @@ def get_constructor_ordering_conflicts(
     ordering_conflicts: set[str] = set()
     inherited_conflicts: list[tuple[DataModelFieldBase, DataModel]] = []
     for field_name, (field, declaring_model, inherited_has_default) in effective_fields.items():
-        if not takes_positional_place(facts := model._field_assignment_facts(field), field, declaring_model):
+        if not takes_positional_place(facts := facts_of(field), field, declaring_model):
             continue
         required_assignment_is_constructor_default = (
             model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
@@ -958,6 +979,28 @@ def definition_reads(
     return model.fields if reads_own_fields or _is_pydantic_v2_root_model(model, root_model_type) else None
 
 
+def class_body_references(
+    model: DataModel,
+    *,
+    row: DefinitionReadsRow,
+    root_model_type: type[DataModel] | None,
+    evaluates_annotations: bool = False,
+) -> Iterator[tuple[Literal["base", "field"], Reference]]:
+    """Yield the references the statement defining ``model`` needs defined first, each with its edge.
+
+    They are its bases and the types of the fields its definition reads (``definition_reads`` with ``row``). The types
+    of schema validator rules are keyed by the caller's run (``_runtime_validation_reference_keys``).
+    """
+    fields = definition_reads(
+        model, row=row, root_model_type=root_model_type, evaluates_annotations=evaluates_annotations
+    )
+    yield from (("base", base.reference) for base in model.base_classes if base.reference)
+    for field in fields or ():
+        yield from (
+            ("field", data_type.reference) for data_type in field.data_type.all_data_types if data_type.reference
+        )
+
+
 @record
 class _ReuseOptimizationContext:
     """Parser-owned semantic constraints for model reuse optimizations."""
@@ -1020,18 +1063,12 @@ def _sort_models_by_class_body_references(
     targets: dict[ModelKey, set[ModelKey]] = {}
     for model_key, model in keyed.models.items():
         model_targets = targets[model_key] = {
-            keyed.key_of(base_class.reference) for base_class in model.base_classes if base_class.reference
-        }
-        model_targets.update(runtime_validation_references.get(model_key, ()))
-        model_targets.update(
-            keyed.key_of(data_type.reference)
-            for field in definition_reads(
+            keyed.key_of(reference)
+            for _, reference in class_body_references(
                 model, row="legacy-class-body-without-alias-values", root_model_type=pydantic_v2_root_model_type
             )
-            or ()
-            for data_type in field.data_type.all_data_types
-            if data_type.reference
-        )
+        }
+        model_targets.update(runtime_validation_references.get(model_key, ()))
         model_targets.discard(model_key)
     graph = reference_graph(GraphSnapshot.CLASS_BODY_ORDER, keyed.models, {EdgeKind.CLASS_BODY: targets})
     sorted_keys = graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__)
@@ -1873,12 +1910,25 @@ def _annotated_reference(data_type: DataType) -> Reference | None:
     return data_type.reference or data_type._enum_member_literal_reference
 
 
-def _annotated_references(model: DataModel) -> Iterator[tuple[DataType, Reference]]:
-    """Yield each type that an annotation of the model's fields names, with the data type that names it."""
-    for field in model.fields:
+def _written_type_names(
+    fields: Iterable[DataModelFieldBase],
+    *,
+    names: Literal["written", "short-name"] = "written",
+    references: Literal["annotated", "legacy-reference-only"] = "annotated",
+) -> Iterator[tuple[str, Reference]]:
+    """Yield each type the annotations of ``fields`` name, by the name the annotation writes, with its reference.
+
+    The types are those ``_annotated_reference`` gives, the enum of member literals included; row
+    ``legacy-reference-only`` (``change_field_name``) reads only the references. Row ``short-name`` takes the short
+    name of a type written under an alias too. A written alias is never a field name of its module.
+    """
+    for field in fields:
         for data_type in field.data_type.all_data_types:
-            if (reference := _annotated_reference(data_type)) is not None:
-                yield data_type, reference
+            reference = (
+                data_type.reference if references == "legacy-reference-only" else _annotated_reference(data_type)
+            )
+            if reference is not None:
+                yield reference.short_name if names == "short-name" else _written_name(data_type, reference), reference
 
 
 def _annotated_enum(data_type: DataType) -> Enum | None:
@@ -2019,6 +2069,12 @@ class _InheritedConstructorInfo(NamedTuple):
     inherited_stripped_none_names: frozenset[str]
     ordering_conflicts: frozenset[str]
     inherited_conflicts: tuple[tuple[DataModelFieldBase, DataModel], ...]
+    facts_of: Callable[[DataModelFieldBase], AssignmentFacts]
+
+
+ConstructorBases: TypeAlias = Literal["parsed", "stand-ins"]
+"""The bases constructor ordering reads: ``parsed`` those the model lists, ``stand-ins`` with each base a model-level
+type override replaced read as the generated model it stood for."""
 
 
 class ConstructorInfoHost(Protocol):
@@ -2033,15 +2089,21 @@ class ConstructorInfoHost(Protocol):
         """The generated base class of every model, if the output has one."""
 
 
-def constructor_base_models(host: ConstructorInfoHost, model: DataModel, *, early: bool = False) -> list[DataModel]:
+def _stand_ins_of(host: ConstructorInfoHost, bases: ConstructorBases) -> Mapping[int, Reference | None]:
+    return {} if bases == "parsed" else host._base_stand_ins
+
+
+def constructor_base_models(
+    host: ConstructorInfoHost, model: DataModel, *, bases: ConstructorBases = "stand-ins"
+) -> list[DataModel]:
     """Return the generated models whose fields ``model``'s constructor takes, in MRO order, the generic base left out.
 
-    ``early`` reads the bases as parsed; otherwise a base a model-level type override replaced is the generated
-    model it stood for.
+    The generic base has no fields. The signature warning and the tag opt-out read the parsed bases after the
+    overrides replaced them (row ``legacy-warning-reads-parsed-bases``).
     """
     if not model.base_classes:
         return []
-    stand_ins = {} if early else host._base_stand_ins
+    stand_ins = _stand_ins_of(host, bases)
     return [
         base
         for base in linearize_data_models(direct_base_models(model, stand_ins), stand_ins)
@@ -2060,19 +2122,21 @@ def get_inherited_constructor_info(
     """
     if not model.SUPPORTS_KW_ONLY:
         return None
-    if not (inherited_models := constructor_base_models(host, model, early=early)):
+    bases: ConstructorBases = "parsed" if early else "stand-ins"
+    if not (inherited_models := constructor_base_models(host, model, bases=bases)):
         return None
 
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
     required_assignment_names: set[str] = set()
     inherited_stripped_none_names: set[str] = set()
     inherited_defaults: dict[int, bool] = {}
+    facts_of = assignment_facts_of(model)
     if supports_inherited_override:
         for inherited_model in reversed(inherited_models):
             for field in inherited_model.fields:
                 if not (field_name := field.name):
                     continue
-                facts = model._field_assignment_facts(field)
+                facts = facts_of(field)
                 has_default, has_value_default = facts.default_info
                 inherited_defaults[id(field)] = has_default
                 if has_value_default or (has_default and model.REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE):
@@ -2084,29 +2148,28 @@ def get_inherited_constructor_info(
     effective_fields = {
         name: (field, owner, None if owner is model else inherited_defaults.get(id(field)))
         for name, (owner, field) in _effective_field_owners(
-            model,
-            inherited_models,
-            stand_ins={} if early else host._base_stand_ins,
+            model, inherited_models, stand_ins=_stand_ins_of(host, bases)
         ).items()
     }
-    conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
+    conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names, facts_of)
     return _InheritedConstructorInfo(
         frozenset(required_assignment_names),
         frozenset(inherited_stripped_none_names),
         conflicts.own,
         conflicts.inherited,
+        facts_of,
     )
 
 
 def get_constructor_field_adjustment(
-    model: DataModel,
-    field: DataModelFieldBase,
-    inherited: _InheritedConstructorInfo,
-    *,
-    supports_inherited_override: bool,
+    field: DataModelFieldBase, inherited: _InheritedConstructorInfo
 ) -> _ConstructorFieldAdjustment | None:
-    """Return the exact explicit assignment needed for a required child field."""
-    facts = model._field_assignment_facts(field)
+    """Return the exact explicit assignment needed for a required child field.
+
+    The inherited names that need one are those of a model whose class assigns a required inherited field
+    (``SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT``); for other models there are none.
+    """
+    facts = inherited.facts_of(field)
     if not facts.participates_in_constructor:
         return None
     if field.name in inherited.ordering_conflicts:
@@ -2115,7 +2178,6 @@ def get_constructor_field_adjustment(
         return None
     if (
         field.required
-        and supports_inherited_override
         and field.name in inherited.required_assignment_names
         and field.name not in inherited.inherited_stripped_none_names
     ):
@@ -2246,7 +2308,7 @@ def _hidden_type_names(model: DataModel) -> Collection[str | None]:
     """
     if not type(model).RESOLVES_STRING_ANNOTATIONS_FROM_MODULE:
         return ()
-    return {reference.short_name for data_type, reference in _annotated_references(model) if not data_type.alias} & {
+    return {name for name, _ in _written_type_names(model.fields)} & {
         field.name for field in model.fields if model.field_name_hides_types(field)
     }
 

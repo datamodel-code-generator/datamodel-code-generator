@@ -36,7 +36,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     media_encodings,
     parameter_plans,
     part_json,
-    plan_wire,
+    plan_styles,
     single_media,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
@@ -57,7 +57,6 @@ from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
     ImportedType,
-    KnownBackendValue,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
@@ -76,12 +75,10 @@ from datamodel_code_generator._target_contract import (
     operation_schemes,
     parameter_place,
     range_start,
-    scheme_catalogues,
     scope_problem,
     security_requirements,
     type_uses,
     unresolved_reference,
-    uses_by_id,
     wrapped_facts,
 )
 from datamodel_code_generator._target_naming import NameScope, fold_key, windows_device
@@ -167,8 +164,6 @@ _STRICT_BYTES: Final = ("pydantic", "StrictBytes")
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
 _NULL: Final = LiteralScalar("none", None)
-_TRUE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=True))
-_BY_NAME: Final = frozenset({"populate_by_name", "validate_by_name"})
 _LITERAL_KINDS: Final = frozenset({"bool", "int", "float", "str"})
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
@@ -642,13 +637,13 @@ class Planner:  # noqa: PLR0904
         self.wire = wire
         self.types = types
         self.unspelled: set[TypeUseId] = set()
-        self.uses = uses_by_id(request.batch)
+        self.uses = wire.tables.uses
         self.tables = wire.kinds.tables
         self.symbols = self.tables.symbols
         self.members = self.tables.members
         self.extras = extras_symbols(self.symbols, self.members)
         self.parameter_plans = parameter_plans(wire)
-        self.scheme_catalogues = scheme_catalogues(request.batch)
+        self.scheme_catalogues = wire.tables.schemes
         self.schemes: dict[str, SchemeSpec] = {}
         assert request.batch.names is not None
         self.target_names = request.batch.names
@@ -1283,7 +1278,7 @@ class Planner:  # noqa: PLR0904
             and field.slot is not None
             and member.name not in encoded
             and (name := field.slot.name) not in names
-            and self.by_name(field.consumer)
+            and self.symbols[field.consumer].by_name
         )
         additional: FieldPlan | JsonPartSpec | FilePartSpec | None = None
         extras = form_extras(self.wire.kinds, media.use)
@@ -1313,14 +1308,6 @@ class Planner:  # noqa: PLR0904
             encoded=tuple(plan for plan in encoded.values() if plan is not None),
         )
 
-    def by_name(self, symbol: SymbolId) -> bool:
-        """Return whether a model, by its own configuration or one it inherits, validates its fields by name too."""
-        declared = self.symbols[symbol]
-        settings = () if declared.facts is None else declared.facts.configuration
-        return any(setting.name in _BY_NAME and setting.value == _TRUE for setting in settings) or any(
-            self.by_name(base) for base in declared.bases
-        )
-
     def encoded(self, media: MediaSpec, members: tuple[FormMember, ...]) -> dict[str, ParameterPlan | None]:
         """Return the query parameter plans of the form members that the form's own text or parts do not read.
 
@@ -1339,9 +1326,9 @@ class Planner:  # noqa: PLR0904
         )
         if not encodings:
             return {}
-        wire = plan_wire(self.request.batch, (), operations=frozenset(), styles={media.use.id: encodings})
-        self.problems.extend(_problem(item.code, item.message, item.source) for item in wire.diagnostics)
-        plans = {plan.name: plan for _, planned in wire.styles for plan in planned}
+        planned, diagnostics = plan_styles(self.wire.tables, media.use, encodings)
+        self.problems.extend(_problem(item.code, item.message, item.source) for item in diagnostics)
+        plans = {plan.name: plan for plan in planned}
         return {child.name or "": plans.get(child.name or "") for child in encodings}
 
     def form_plan(

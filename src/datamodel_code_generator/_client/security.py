@@ -24,7 +24,6 @@ from datamodel_code_generator._target_contract import (
     operation_literal,
     operation_schemes,
     requirement_alternatives,
-    scheme_catalogues,
     scope_problem,
     unresolved_reference,
 )
@@ -155,11 +154,16 @@ def _shared(owners: Iterable[list[SecurityRequirement]]) -> Iterator[tuple[Secur
 class SecurityPlanner:
     """Resolve every requirement among the schemes of the document that uses its operation."""
 
-    def __init__(self, batch: GeneratedTypeContractBatch, problems: list[Diagnostic]) -> None:
+    def __init__(
+        self,
+        batch: GeneratedTypeContractBatch,
+        declared: Mapping[SourceDocumentId, Mapping[str, WireDeclaration]],
+        problems: list[Diagnostic],
+    ) -> None:
         """Compile complete document catalogues, retaining unusable names as unavailable entries."""
         self.catalogues: dict[SourceDocumentId, dict[str, SecuritySchemeEntry]] = {}
         self.declarations: dict[str, WireDeclaration] = {}
-        self.declared = scheme_catalogues(batch)
+        self.declared = declared
         self.versions = batch.versions
         root = batch.documents[0].id
         for document, schemes in self.declared.items():

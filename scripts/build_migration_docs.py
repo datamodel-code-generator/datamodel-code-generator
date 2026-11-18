@@ -42,7 +42,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from itertools import pairwise, starmap
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import tomllib
 
@@ -71,6 +71,23 @@ from datamodel_code_generator.preset import (  # ruff: ignore[module-import-not-
     get_preset_names,
 )
 from scripts._behaviour_report import version_key  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-of-file]
+    AFFECTS_KEYS,
+    PRESET_SURFACE,
+    Action,
+    Facts,
+    Kind,
+    Source,
+    covers_written,
+    entry_table,
+    guide_problems,
+    parse_entry,
+    rule_problems,
+    with_covers,
+)
+
+if TYPE_CHECKING:
+    from scripts._change_records import Record
 
 DATA_DIR = ROOT / "docs" / "data" / "migration"
 ALLOWLIST = ROOT / "scripts" / "behaviour_diff_allowlist.toml"
@@ -90,11 +107,11 @@ TAG_FRAGMENTS = Path("docs", "data", "migration", UNRELEASED)
 TAG_PRESET_NAMES = Path("src", "datamodel_code_generator", "preset_names.py")
 SCHEMA_VERSION = 1
 ACTIONS = {
-    "required": "Required changes",
-    "keep": "Output changes an option keeps",
-    "review": "Changes no option keeps",
-    "warn": "New warnings (act before the planned removal)",
-    "none": "Also changed, no action needed",
+    Action.REQUIRED: "Required changes",
+    Action.KEEP: "Output changes an option keeps",
+    Action.REVIEW: "Changes no option keeps",
+    Action.WARN: "New warnings (act before the planned removal)",
+    Action.NONE: "Also changed, no action needed",
 }
 BREAKING_ACTIONS = ("required", "keep", "review")
 NEW_WARNINGS = "New warnings"
@@ -118,54 +135,31 @@ CATEGORIES = (
     "Error Handling Changes",
 )
 KINDS = {
-    "default-output": "Code Generation Changes",
-    "output-text": "Code Generation Changes",
-    "experimental": "Code Generation Changes",
-    "template": "Custom Template Update Required",
-    "removal": "API/CLI Changes",
-    "cli": "API/CLI Changes",
-    "python-api": "API/CLI Changes",
-    "warning": "Default Behavior Changes",
-    "runtime": "Python Version Changes",
-    "error": "Error Handling Changes",
-    "preset": "New Dated Presets",
+    Kind.DEFAULT_OUTPUT: "Code Generation Changes",
+    Kind.OUTPUT_TEXT: "Code Generation Changes",
+    Kind.EXPERIMENTAL: "Code Generation Changes",
+    Kind.TEMPLATE: "Custom Template Update Required",
+    Kind.REMOVAL: "API/CLI Changes",
+    Kind.CLI: "API/CLI Changes",
+    Kind.PYTHON_API: "API/CLI Changes",
+    Kind.WARNING: "Default Behavior Changes",
+    Kind.RUNTIME: "Python Version Changes",
+    Kind.ERROR: "Error Handling Changes",
+    Kind.PRESET: "New Dated Presets",
 }
-AFFECTS = {
-    "output_model_types": "output model types",
-    "input_file_types": "input types",
-    "options": "only with",
-    "python_api": "Python API",
-    "templates": "custom templates",
-    "experimental": "experimental features",
-}
+AFFECTS = dict(
+    zip(
+        AFFECTS_KEYS,
+        ("output model types", "input types", "only with", "Python API", "custom templates", "experimental features"),
+        strict=True,
+    )
+)
 SOURCES = {
-    "run": "generated output of both releases",
-    "release-note": "the release notes",
-    "registry": "the registry of deprecations, experimental features and dated presets",
-    "surface": "the command-line options of both releases",
+    Source.RUN: "generated output of both releases",
+    Source.RELEASE_NOTE: "the release notes",
+    Source.REGISTRY: "the registry of deprecations, experimental features and dated presets",
+    Source.SURFACE: "the command-line options of both releases",
 }
-ENTRY_KEYS = frozenset({
-    "id",
-    "kind",
-    "action",
-    "title",
-    "summary",
-    "affects",
-    "before",
-    "after",
-    "keep",
-    "migrate",
-    "refs",
-    "supersedes",
-    "reverts",
-    "source",
-    "verify",
-})
-TEXT_KEYS = ("title", "summary", "before", "after", "migrate", "reverts")
-REQUIRED_KEYS = ("kind", "action", "title", "summary", "source")
-KEEP_KEYS = frozenset({"flags", "note"})
-VERIFY_KEYS = frozenset({"schema", "args"})
-DERIVED_PREFIXES = (DEPRECATION_PREFIX, "removal:", "experimental:", "preset:", "option:")
 JSON_KEYS = (
     "id",
     "release",
@@ -183,8 +177,6 @@ JSON_KEYS = (
     "reverts",
     "source",
 )
-ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9.:_-]*")
-REF_PATTERN = re.compile(r"#[1-9]\d*")
 DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 PRESET_DATE_PATTERN = re.compile(r'"(?:standard|practical)-py3\d+-(\d{8})"')
 RELEASES_HEADER = (
@@ -591,100 +583,53 @@ def _hand_files(layout: Layout, releases: _Releases, problems: list[str]) -> lis
     return files + [(UNRELEASED, path) for path in sorted(layout.unreleased.glob("*.toml"))]
 
 
-def _check_shape(entry_id: str, entry: dict[str, Any], problems: list[str]) -> None:
-    where = f"entry {entry_id}"
-    problems.extend(f"{where}: unknown key {key}" for key in sorted(set(entry) - ENTRY_KEYS))
-    problems.extend(
-        f"{where}: {key} is not a string" for key in TEXT_KEYS if key in entry and not isinstance(entry[key], str)
-    )
-    for key, allowed in (("kind", KINDS), ("action", ACTIONS), ("source", SOURCES)):
-        if key in entry and entry[key] not in allowed:
-            problems.append(f"{where}: {key} {entry[key]!r} is not one of {', '.join(allowed)}")
-    affects = entry.get("affects", {})
-    if not isinstance(affects, dict):
-        problems.append(f"{where}: affects is not a table")
-    else:
-        problems.extend(f"{where}: unknown affects key {key}" for key in sorted(set(affects) - set(AFFECTS)))
-        problems.extend(
-            f"{where}: affects.{key} is not a list of strings"
-            for key, values in affects.items()
-            if not isinstance(values, list) or not all(isinstance(value, str) for value in values)
-        )
-    for key, allowed in (("keep", KEEP_KEYS), ("verify", VERIFY_KEYS)):
-        if not isinstance(table := entry.get(key, {}), dict):
-            problems.append(f"{where}: {key} is not a table")
-            continue
-        problems.extend(f"{where}: unknown {key} key {name}" for name in sorted(set(table) - allowed))
-    if not isinstance(flags := _table(entry, "keep").get("flags", []), list) or not all(
-        isinstance(flag, str) for flag in flags
-    ):
-        problems.append(f"{where}: keep.flags is not a list of strings")
-    problems.extend(
-        f"{where}: {key} is not a list of strings"
-        for key in ("refs", "supersedes")
-        if not isinstance(values := entry.get(key, []), list) or not all(isinstance(value, str) for value in values)
-    )
-    problems.extend(
-        f"{where}: ref {ref!r} is not #<number>" for ref in entry.get("refs", []) if not REF_PATTERN.fullmatch(str(ref))
-    )
+def _hand_changes(
+    layout: Layout, changes: dict[str, dict[str, Any]], releases: _Releases, facts: Facts, problems: list[str]
+) -> None:
+    """Add the guide entries of the hand-written records to `changes`; one with the id of a derived entry extends it.
 
-
-def _hand_changes(layout: Layout, changes: dict[str, dict[str, Any]], releases: _Releases, problems: list[str]) -> None:
-    """Add the hand-written entries to `changes`; one with the id of a derived entry extends it.
-
-    A new entry's id is a lower-case slug; the id of a derived entry is taken as the build gives it, such as
-    `option:--output-model-type=msgspec.Struct`.
+    A new record's id is a lower-case slug; the id of a derived entry is taken as the build gives it, such as
+    `option:--output-model-type=msgspec.Struct`. Records of a category without a guide entry, and records that extend
+    another record, are checked and left out of the guide.
     """
     derived = set(changes)
     seen: dict[str, str] = {}
+    fragments: dict[str, Record] = {}
     for release, path in _hand_files(layout, releases, problems):
         entries = _read_toml(path, problems).get("change", [])
         where = f"{path.parent.name}/{path.name}"
-        if release == UNRELEASED and [entry.get("id") for entry in entries] != [path.stem]:
+        fragment = release == UNRELEASED
+        if fragment and [entry.get("id") for entry in entries] != [path.stem]:
             problems.append(f"{where}: a fragment holds exactly one [[change]] whose id is the file name")
         for entry in entries:
-            if not isinstance(entry_id := entry.get("id"), str) or not (
-                entry_id in derived or ID_PATTERN.fullmatch(entry_id)
-            ):
-                problems.append(f"{where}: id {entry_id!r} is not a lower-case slug")
+            record, found = parse_entry(entry, where)
+            problems += found
+            if record is None:
                 continue
-            if entry_id in seen:
-                problems.append(f"{where}: id {entry_id} is also in {seen[entry_id]}")
+            if record.id in seen:
+                problems.append(f"{where}: id {record.id} is also in {seen[record.id]}")
                 continue
-            seen[entry_id] = where
-            _check_shape(entry_id, entry, problems)
-            if entry_id.startswith(DERIVED_PREFIXES):
-                if entry_id not in derived:
-                    problems.append(f"{where}: {entry_id} extends no derived entry")
+            seen[record.id] = where
+            problems += rule_problems(record, fragment=fragment, facts=facts)
+            if fragment:
+                fragments[record.id] = record
+                if not covers_written(path.read_text(encoding="utf-8"), record):
+                    problems.append(f"{where}: covers are written by 'python scripts/declared_changes.py declare' only")
+            if not record.guide:
+                continue
+            if record.derived:
+                if record.id not in derived:
+                    problems.append(f"{where}: {record.id} extends no derived entry")
                     continue
-                if changes[entry_id]["release"] != release:
-                    problems.append(f"{where}: {entry_id} belongs to {changes[entry_id]['release']}")
-            elif not entry.get("refs"):
-                problems.append(f"{where}: entry {entry_id} has no refs")
-            fields = {key: value for key, value in entry.items() if key != "id"}
-            changes[entry_id] = changes.get(entry_id, {}) | fields | {"release": release}
-
-
-def _table(entry: dict[str, Any], key: str) -> dict[str, Any]:
-    """Return a table of an entry, or an empty one where the entry holds something else (a reported problem)."""
-    return value if isinstance(value := entry.get(key), dict) else {}
-
-
-def _check_entry(entry: dict[str, Any], problems: list[str]) -> None:
-    where = f"entry {entry['id']}"
-    problems.extend(f"{where}: missing {key}" for key in REQUIRED_KEYS if not entry.get(key))
-    keep = _table(entry, "keep")
-    if entry.get("action") == "keep" and not (keep.get("flags") or keep.get("note")):
-        problems.append(f"{where}: action keep needs keep.flags or keep.note")
-    if keep.get("flags") and entry.get("action") != "keep":
-        problems.append(f"{where}: keep.flags belong to an entry with action keep")
-    if entry.get("action") == "required" and not entry.get("migrate"):
-        problems.append(f"{where}: action required needs migrate")
-    verify = _table(entry, "verify")
-    if entry.get("source") == "run" and not (
-        isinstance(verify.get("schema"), str) and isinstance(verify.get("args"), list)
-    ):
-        problems.append(f"{where}: source run needs verify.schema and verify.args")
+                if changes[record.id]["release"] != release:
+                    problems.append(f"{where}: {record.id} belongs to {changes[record.id]['release']}")
+            changes[record.id] = changes.get(record.id, {}) | record.guide_fields() | {"release": release}
+    problems.extend(
+        f"entry {record.id}: extends {record.extends}, which is not an unreleased record of its own"
+        for record in fragments.values()
+        if record.extends is not None
+        and ((target := fragments.get(record.extends)) is None or target.extends is not None or target.derived)
+    )
 
 
 def _check_links(changes: dict[str, dict[str, Any]], order: dict[str, int], problems: list[str]) -> None:
@@ -868,6 +813,25 @@ def _check_records(
             )
 
 
+def _facts(registries: Registries, released_surface: dict[str, Any], changes: dict[str, dict[str, Any]]) -> Facts:
+    """Return what the rules of the records read: the derived entries give the releases of features and presets."""
+    unreleased = {entry_id for entry_id, entry in changes.items() if entry["release"] == UNRELEASED}
+    features = {feature.id for feature in registries.experimental}
+    presets = {f"{PRESET_SURFACE}{preset.date}" for preset in registries.preset_dates}
+    surface = set(surface_items(registries.surface)) | presets
+    return Facts(
+        features=frozenset(feature for feature in features if f"experimental:{feature}" not in unreleased),
+        unreleased_features=frozenset(feature for feature in features if f"experimental:{feature}" in unreleased),
+        scheduled=frozenset(item.target for item in registries.deprecations if item.removal_version),
+        new_surface=frozenset(
+            item
+            for item in surface - set(surface_items(released_surface))
+            if not item.startswith(PRESET_SURFACE) or item in unreleased
+        ),
+        surface=frozenset(surface),
+    )
+
+
 def load(layout: Layout | None = None, registries: Registries | None = None, *, records: bool = True) -> Guide:
     """Load, derive and check the change list; raise MigrationDataError with every problem found.
 
@@ -887,14 +851,14 @@ def load(layout: Layout | None = None, registries: Registries | None = None, *, 
     for key, version in option_releases.items():
         if release := placed.place(version, f"option {key}"):
             changes[f"option:{key}"] = _option_entry(key, release, registries.surface)
-    _hand_changes(layout, changes, placed, problems)
+    _hand_changes(layout, changes, placed, _facts(registries, released_surface, changes), problems)
     order = {version: index for index, version in enumerate(placed.versions)} | {UNRELEASED: len(placed.versions)}
     for entry_id, entry in changes.items():
         entry["id"] = entry_id
         entry["anchor"] = _anchor(entry_id)
         entry["index"] = order[entry["release"]]
-        entry["affects"] = {key: values for key, values in _table(entry, "affects").items() if values}
-        _check_entry(entry, problems)
+        entry["affects"] = {key: values for key, values in entry_table(entry, "affects").items() if values}
+        problems += guide_problems(entry)
     _check_links(changes, order, problems)
     _check_removals(registries.surface, released_surface, changes, problems)
     _check_allowlist(layout, placed.versions, changes, problems)
@@ -1312,12 +1276,20 @@ def _tag_facts(tag_tree: Path) -> tuple[set[str], dict[str, Any]]:
         raise MigrationDataError([problem]) from None
 
 
+def _guide_fragment(text: str) -> bool:
+    """Return whether a fragment that `load` accepted is a guide entry."""
+    record, _ = parse_entry(tomllib.loads(text)["change"][0], "")
+    return record is not None and record.guide
+
+
 def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: Registries | None = None) -> list[str]:
     """Record a published release: move the fragments its tag contains, add its row and its new preset dates.
 
     Returns the ids of the moved fragments. Fragments the tag does not contain were merged after it and stay unreleased.
-    Every input is read and checked before the first write, so a refused stamp can run again: a fragment edited after
-    the tag is refused, as its release would get text it did not ship.
+    A moved guide entry loses its `covers`, and a record without a guide entry, or one that extends another, is
+    deleted: their work, naming the stored outputs a change moves until it is released, is done. Every input is read
+    and checked before the first write, so a refused stamp can run again: a fragment edited after the tag is refused,
+    as its release would get text it did not ship, and so is one that extends a record the tag contains.
     """
     guide = load(layout, registries)
     if version_key(version) <= version_key(guide.latest):
@@ -1333,13 +1305,21 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
         raise MigrationDataError([
             f"unreleased/{path.name} differs from the tag's; move later edits to a new fragment" for path in edited
         ])
+    if orphaned := [
+        f"unreleased/{path.name} extends {extends}, which the tag contains; its release moves or deletes {extends}"
+        for path in sorted(layout.unreleased.glob("*.toml"))
+        if path not in moved
+        for extends in [tomllib.loads(path.read_text(encoding="utf-8"))["change"][0].get("extends")]
+        if extends and (layout.unreleased / f"{extends}.toml") in moved
+    ]:
+        raise MigrationDataError(orphaned)
     tag_presets, tagged_surface = _tag_facts(tag_tree)
     derived = tomllib.loads(layout.derived.read_text(encoding="utf-8"))
     released_surface = json.loads(layout.surface.read_text(encoding="utf-8"))
     if moved:
         target = layout.changes / f"{version}.toml"
         layout.changes.mkdir(parents=True, exist_ok=True)
-        texts = [text.strip() + "\n" for text in moved.values()]
+        texts = [with_covers(text, ()).strip() + "\n" for text in moved.values() if _guide_fragment(text)]
         target.write_text(CHANGES_HEADER.format(version=version) + "\n" + "\n".join(texts), encoding="utf-8")
         for path in moved:
             path.unlink()
@@ -1387,17 +1367,16 @@ class Generations:
     def _runner(self, version: str) -> Any:
         with self.lock:
             if version not in self.runners:
-                env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
-                env |= {"PYTHONWARNINGS": "ignore", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
+                source = SRC_PATH if version == HEAD else None
                 if version == HEAD:
-                    python, env["PYTHONPATH"] = Path(sys.executable), str(SRC_PATH)
+                    python = Path(sys.executable)
                 elif not (python := self.pythons.get(version)):
                     python = self.compare_release._base_python(  # ruff: ignore[private-member-access]
                         version, Path(sys.executable), self.cache_dir
                     )
-                side = self.compare_release.Side(version, python)
+                side = self.compare_release.Side(version, python, source)
                 self.runners[version] = self.compare_release.Runner(
-                    side, env, import_check=False, timeout=GENERATION_TIMEOUT
+                    side, self.compare_release.run_environment(source), import_check=False, timeout=GENERATION_TIMEOUT
                 )
             return self.runners[version]
 

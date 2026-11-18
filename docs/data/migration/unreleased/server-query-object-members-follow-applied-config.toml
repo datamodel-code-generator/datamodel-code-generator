@@ -1,0 +1,12 @@
+[[change]]
+id = "server-query-object-members-follow-applied-config"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Generated servers no longer attribute unclaimed query keys and cookies to an exploded query or cookie object whose model drops other members"
+summary = "With `--generate-server`, an exploded `form` query parameter or a cookie parameter typed by a Pydantic model or dataclass, and an exploded styled member of a form body, took every key no other parameter or member declares, by its schema's `additionalProperties`. Where the configuration the model applies says `extra='forbid'` or `'ignore'` (a class that sets no `extra` ignores them), it now takes none; declared parameters (`reserved_names`) are never taken, as before. For `GET /plain?count=1&foo=bar` with `count` declared and `obj` typed by `Plain` (properties `size`, no `additionalProperties`), the handler now gets `obj=None` where it got `Plain(size=None)`, and a cookie object `prefs` of the same type is `None` for a request that carries only other cookies (`_ga=x`), where it was `Plain(size=None)`; with `--extra-fields forbid` such requests are served (`obj=None`, `prefs=None`) where the model refused them with 422 although the object was not sent; with `--extra-fields ignore` an object whose schema says `additionalProperties: true` no longer takes `foo` either. A required object that receives only undeclared keys (`GET /required?foo=bar`) is now missing (422) where it was `Plain(size=None)`, as `--extra-fields forbid` already answered. Two such parameters without `additionalProperties` in one operation, or one beside a `deepObject` parameter, which stopped the server with \"Expanded query parameter names collide\", now generate and serve `?size=1&page=2`. With `--extra-fields allow` nothing changes: an object takes the keys and cookies its schema allows (with no `additionalProperties`, every unclaimed one), and two such parameters still stop the server."
+affects = { experimental = ["cli-option.generate-server"] }
+before = "fields=(FieldPlan(\"size\", \"integer\"),), additional=FieldPlan(\"\", \"string\"), reserved_names=(\"count\",),"
+after = "fields=(FieldPlan(\"size\", \"integer\"),),"
+refs = ["#6991"]
+source = "release-note"

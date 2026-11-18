@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, get_args
 
-from datamodel_code_generator._client.model_facts import _FALSE, _name
+from datamodel_code_generator._client.model_facts import _name
 from datamodel_code_generator._container_kinds import MAPPINGS
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._openapi_codec_plan import codec_file, extras_symbols, named_symbols
@@ -257,8 +257,7 @@ class _Planner:
                         == LiteralScalar(kind="none", value=None),
                     )
                     for field in self.facts.fields(symbol.id)
-                    if field.member.model_facts is not None
-                    and field.member.model_facts.backend.constructor_init != _FALSE
+                    if field.member.model_facts is not None and field.member.model_facts.in_init
                 )
                 self.models[symbol.id] = Model(symbol.id, fields)
                 self.building.remove(symbol.id)

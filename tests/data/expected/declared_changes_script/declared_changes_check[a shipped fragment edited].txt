@@ -1,0 +1,4 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+record problem: unreleased/shipped.toml shipped in 0.1.0; move later edits to a new fragment
+failed

@@ -19,7 +19,7 @@ from datamodel_code_generator._client.codec_plan import plan_client_codecs
 from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig, _is_sequence
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.model_facts import ModelFacts
-from datamodel_code_generator._client.pagination import plan_pagination
+from datamodel_code_generator._client.pagination import _Pages, plan_pagination
 from datamodel_code_generator._client.plan import (
     Planner,
     encoding_header_uses,
@@ -28,7 +28,7 @@ from datamodel_code_generator._client.plan import (
     plan_uses,
     style_uses,
 )
-from datamodel_code_generator._client.polling import plan_polling
+from datamodel_code_generator._client.polling import _Polls, plan_polling
 from datamodel_code_generator._client.protocol_plan import (
     helper_calls,
     helper_metadata,
@@ -38,7 +38,7 @@ from datamodel_code_generator._client.protocol_plan import (
 )
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
-from datamodel_code_generator._client.sockets import plan_sockets, routed_streams, socket_uses
+from datamodel_code_generator._client.sockets import _Sockets, plan_sockets, routed_streams, socket_uses
 from datamodel_code_generator._client.streams import item_protocols, plan_streams, stream_uses
 from datamodel_code_generator._client.templates import ClientTemplates
 from datamodel_code_generator._client.uploads import plan_uploads
@@ -51,7 +51,7 @@ from datamodel_code_generator._client.webhooks import (
 )
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._openapi_features import feature_label
-from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
+from datamodel_code_generator._openapi_wire_plan import BatchTables, operation_uses, plan_wire
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._target_contract import (
     GeneratedEnumMember,
@@ -89,7 +89,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         ChannelContract,
-        GeneratedTypeContractBatch,
         ModelFieldFacts,
         OperationContract,
         OperationId,
@@ -160,7 +159,7 @@ class ClientTarget:
             subjects = {identity: _channel(channel) for identity, channel in opened.items()}
             request = replace(request, operations=tuple(channel.handshake for channel in opened.values()))
             called = frozenset()
-        selected = request.operations
+        tables = _TargetTables(request)
         while isinstance(
             rendered := _attempt(
                 request,
@@ -168,7 +167,7 @@ class ClientTarget:
                 protocols
                 if channels is None
                 else channel_protocols(request, config, tuple(opened[item.id] for item in request.operations)),
-                selected,
+                tables,
             ),
             APIGenerationError,
         ):
@@ -291,28 +290,41 @@ def _attempt(
     request: TargetRequest,
     config: ClientGenerationConfig,
     protocols: Protocols | None,
-    selected: tuple[OperationContract, ...],
+    target: _TargetTables,
 ) -> TargetRender | APIGenerationError:
-    """Render the request's operations, or return the error that refuses them.
-
-    `selected` are the operations selected before any was skipped.
-    """
+    """Render the request's operations, or return the error that refuses them."""
     try:
-        return _render(request, config, protocols, selected)
+        return _render(request, config, protocols, target)
     except APIGenerationError as error:
         return error
+
+
+class _TargetTables:
+    """What every attempt of one client target reads: the batch's tables, its models' facts, and the selection.
+
+    `types` says where a package imports each model from, and `selected` are the operations selected before any was
+    skipped.
+    """
+
+    def __init__(self, request: TargetRequest) -> None:
+        """Index the request's batch once for the target, whose attempts plan fewer of its operations."""
+        batch = request.batch
+        self.tables = BatchTables(batch)
+        self.facts = ModelFacts(self.tables.kinds.tables, batch.type_uses)
+        self.types = TypeNames.of(batch, request.model_config)
+        self.selected = request.operations
 
 
 def _render(  # ruff: ignore[too-many-locals]
     request: TargetRequest,
     config: ClientGenerationConfig,
     protocols: Protocols | None,
-    selected: tuple[OperationContract, ...],
+    target: _TargetTables,
 ) -> TargetRender:
     """Plan the request's operations, bind their codecs, and render the package."""
     backend = _BACKENDS[request.model_config.output_model_type]
-    wire = _wire(request, request.batch, brackets=config.deep_object_brackets)
-    facts = ModelFacts(wire.kinds.tables)
+    wire = _wire(request, target.tables, brackets=config.deep_object_brackets)
+    facts, types, selected = target.facts, target.types, target.selected
     helping = helper_operations(protocols)
     try:
         plan = Planner(request, config, wire, facts, helping, selected=selected).plan()
@@ -322,36 +334,37 @@ def _render(  # ruff: ignore[too-many-locals]
             plan = Planner(request, config, wire, facts, helping, selected=selected).plan()
     except PlanError as error:
         raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
-    events, hooked = webhook_uses(protocols, plan, request)
+    checks = None if protocols is None else _Sockets(protocols, plan, request, facts, backend)
+    events, hooked = webhook_uses(checks)
     received = frozenset(event.use.id for spec in events for event in spec.events)
-    streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
+    streamed, stream_events, stream_problems = stream_uses(checks)
     if request.batch.channels is not None:
-        streamed, stream_events = routed_streams(streamed, protocols, plan, request, facts, backend, stream_problems)
-    opened, messages, socket_problems = socket_uses(protocols, plan, request, facts, backend)
+        streamed, stream_events = routed_streams(streamed, checks, stream_problems)
+    opened, messages, socket_problems = socket_uses(checks)
     uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
     batch = request.batch
     if parts := (*part_uses(plan), *stream_events, *messages):
         batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-    types = TypeNames.of(batch, request.model_config)
     codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
     raise_selected(codecs.diagnostics, (spec.contract.id for spec in plan.operations))
     coded = frozenset(item.use for item in codecs.uses)
     assert batch.names is not None
     plan, named = plan_fields(plan, facts, coded, batch.names, helping)
-    pages, checked = plan_pagination(protocols, plan, facts, coded, request)
-    polls, polled = plan_polling(protocols, plan, facts, coded, request)
-    caches, cached = plan_caches(protocols, plan, facts, coded, request)
-    uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
+    paging = None if protocols is None else _Pages(protocols, plan, facts, coded, request)
+    polling = None if paging is None else _Polls(paging)
+    pages, checked = plan_pagination(paging)
+    polls, polled = plan_polling(polling)
+    caches, cached = plan_caches(paging)
+    uploads, uploaded = plan_uploads(polling)
     order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
     helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-    streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
+    streams = plan_streams(streamed, polling, stream_problems)
     sockets = plan_sockets(opened, socket_problems)
     webhooks = plan_webhooks(events, codecs, hooked)
     if refused := (
         *named,
         *helper_problems(
-            protocols,
-            plan,
+            paging,
             {
                 **checked,
                 **polled,
@@ -453,19 +466,21 @@ def _backend_dependencies(backend: CodecBackend, model_imports: frozenset[str]) 
     return (MSGSPEC,) if backend == "msgspec.Struct" else ()
 
 
-def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch, *, brackets: bool) -> WirePlan:
+def _wire(request: TargetRequest, tables: BatchTables, *, brackets: bool) -> WirePlan:
     """Plan the parameters and headers of the selected operations, with the member plans of their forms.
 
     The operations are planned as the request holds them, without the request body media left out. With `brackets`, a
     deepObject query parameter or URL-encoded form member is written in the bracket form.
     """
     selected = {operation.id: operation for operation in request.operations}
+    batch = tables.batch
     return plan_wire(
         replace(batch, operations=tuple(selected.get(operation.id, operation) for operation in batch.operations)),
         [
             *(use for operation in request.operations for use in operation_uses(operation)),
             *encoding_header_uses(request),
         ],
+        tables=tables,
         operations=frozenset(operation.id for operation in request.operations),
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),

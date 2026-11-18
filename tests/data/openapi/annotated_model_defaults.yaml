@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  title: Model defaults
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Flags:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          default: false
+    Limits:
+      type: object
+      properties:
+        max-items:
+          type: integer
+    Inner:
+      type: object
+      properties:
+        flags:
+          $ref: '#/components/schemas/Flags'
+    Outer:
+      type: object
+      properties:
+        name:
+          type: string
+        inner:
+          $ref: '#/components/schemas/Inner'
+    Tags:
+      type: array
+      items:
+        type: string
+    Settings:
+      type: object
+      properties:
+        flags:
+          $ref: '#/components/schemas/Flags'
+          default:
+            enabled: false
+        optionalFlags:
+          anyOf:
+            - $ref: '#/components/schemas/Flags'
+            - type: 'null'
+          default:
+            enabled: true
+        limits:
+          $ref: '#/components/schemas/Limits'
+          default:
+            max-items: 3
+        outer:
+          $ref: '#/components/schemas/Outer'
+          default:
+            name: x
+            inner:
+              flags:
+                enabled: true
+        tags:
+          $ref: '#/components/schemas/Tags'
+          default:
+            - a
+            - b
+    Folder:
+      type: object
+      properties:
+        readme:
+          $ref: '#/components/schemas/Document'
+          default:
+            title: README
+    Document:
+      type: object
+      properties:
+        title:
+          type: string
+        folder:
+          $ref: '#/components/schemas/Folder'
+    Broken:
+      type: object
+      properties:
+        limits:
+          $ref: '#/components/schemas/Limits'
+          default:
+            max-items: many

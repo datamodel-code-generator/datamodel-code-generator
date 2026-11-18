@@ -838,6 +838,32 @@
     "model": {"parent_scoped_naming": true, "naming_strategy": "full-path"},
     "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
   },
+  "applied-config": {
+    "input": "applied-config.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {
+      "allow_population_by_field_name": true,
+      "extra_template_data": {"Person": {"config": {"populate_by_name": false, "validate_by_name": false}}}
+    },
+    "modules": [["models.py"], ["client", "_operations.py"], ["client", "_generated", "model_bindings.py"]]
+  },
+  "held-extras": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
+  "held-extras-forbid": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"extra_fields": "forbid"},
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
+  "held-extras-allow": {
+    "input": "held-extras.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"extra_fields": "allow"},
+    "modules": [["models.py"], ["client", "_operations.py"]]
+  },
   "name-repeats": {
     "input": "name-repeats.yaml",
     "config": {
@@ -6586,5 +6612,31 @@
     "input": "asyncapi-server-schemes-v2.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
     "modules": [["client", "_operations.py"]]
+  },
+  "fields-strip": {
+    "input": "fields-strip.yaml",
+    "references": ["protocols/fields-strip.json"],
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass"],
+    "model": {"strip_default_none": true},
+    "config": {"body_arguments": "both", "protocols": "protocols/fields-strip.json"},
+    "modules": [
+      ["client", "_operations.py"],
+      ["client", "protocols", "_plans.py"],
+      ["client", "resources", "default", "_sync.py"],
+      ["models.py"]
+    ]
+  },
+  "fields-strip-nullable": {
+    "input": "fields-strip-nullable.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "model": {"strip_default_none": true, "field_include_all_keys": true},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "_operations.py"], ["models.py"]]
+  },
+  "asyncapi-optional-tags": {
+    "input": "asyncapi-optional-tags.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "strip_default_none": true},
+    "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass"],
+    "modules": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]]
   }
 }

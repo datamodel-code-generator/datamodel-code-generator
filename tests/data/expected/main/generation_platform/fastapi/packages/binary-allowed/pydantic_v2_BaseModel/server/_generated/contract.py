@@ -93,7 +93,6 @@ class Upload:
                     FilePart('pages', repeated=True),
                     FilePart('scan'),
                 ),
-                additional=JsonPart('', TypeAdapter(object), untyped=True),
             ),
         ),
     )

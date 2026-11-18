@@ -15,12 +15,14 @@ import pytest
 import tomllib
 
 from datamodel_code_generator import cli_options
+from datamodel_code_generator.__main__ import GENERATE_FIELD_NAMES, Config
 from datamodel_code_generator.arguments import arg_parser as argument_parser
 from datamodel_code_generator.cli_options import (
     CLI_OPTION_META,
     MANUAL_DOCS,
     OPTION_RELATION_KINDS,
     OPTION_TOPIC_ALLOWED_GROUPS,
+    OPTIONS,
     CLIOptionMeta,
     OptionCategory,
     OptionGroup,
@@ -36,6 +38,7 @@ from datamodel_code_generator.cli_options import (
     is_excluded_from_docs,
     is_manual_doc,
 )
+from datamodel_code_generator.config import GenerateConfig
 from scripts import build_cli_docs
 from scripts.build_cli_docs import (
     CLIDocExample,
@@ -48,9 +51,10 @@ from scripts.build_cli_docs import (
     generate_topic_page,
     scan_docs_for_cli_option_tags,
 )
+from tests.conftest import assert_output
 
 if TYPE_CHECKING:
-    from collections.abc import Collection
+    from collections.abc import Collection, Iterable
 
 _T = TypeVar("_T")
 
@@ -850,3 +854,53 @@ class TestCLIOptionMetaSync:
             re_sorted = sorted(action.option_strings, key=_canonical_option_key)
             assert sorted_opts == re_sorted, f"Canonical determination is not stable for {action.option_strings}"
             assert canonical == re_sorted[-1], f"Canonical mismatch for {action.option_strings}"
+
+
+CONFIG_ONLY_FIELDS: dict[str, str] = {
+    "builtin_format_line_length": "the line length of the builtin formatter, set in pyproject.toml or generate()",
+    "command_line": "the command header, which the command line writes from its own arguments",
+    "custom_class_name_generator": "a function, which no option value can give",
+    "graphql_scopes": "the GraphQL scopes of generate(), which the command line takes from the input",
+    "input_filename": "the name of the input, which the command line takes from the input it reads",
+    "settings_path": "the directory of the settings, which the command line takes from pyproject.toml",
+}
+"""The config fields that no command-line option sets, each with the reason."""
+
+CONFIG_SYNC_GUIDE = (
+    "Every row of OPTIONS in src/datamodel_code_generator/_option_table.py sets the config field its dest names, "
+    "unless it is the option of a command that no config carries (config=False), and every config field of the "
+    "command line and of generate() has a row or an entry in CONFIG_ONLY_FIELDS with the reason. See Adding a New "
+    "CLI Option in docs/development-contributing.md."
+)
+
+
+def _listing(title: str, items: Iterable[str]) -> str:
+    return f"{title}: {', '.join(sorted(items)) or 'none'}"
+
+
+def test_option_table_matches_the_config_models() -> None:
+    """The rows of the option table and the fields of the config models name each other."""
+    cli_fields = {name for name, field in Config.model_fields.items() if not field.exclude}
+    cli_names = {generate_name: name for name, generate_name in GENERATE_FIELD_NAMES.items()}
+    fields = cli_fields | {cli_names.get(name, name) for name in GenerateConfig.model_fields}
+    dests = {option.dest for option in OPTIONS}
+    assert_output(
+        "\n".join((
+            _listing(
+                "Rows without a config field",
+                (option.dest for option in OPTIONS if option.config and option.dest not in cli_fields),
+            ),
+            _listing(
+                "Rows marked config=False whose config field exists",
+                (option.dest for option in OPTIONS if not option.config and option.dest in cli_fields),
+            ),
+            _listing("Config fields without a row", fields - dests - CONFIG_ONLY_FIELDS.keys()),
+            _listing(
+                "CONFIG_ONLY_FIELDS entries with a row or without a field",
+                (name for name in CONFIG_ONLY_FIELDS if name in dests or name not in fields),
+            ),
+            "",
+            CONFIG_SYNC_GUIDE,
+            "",
+        )),
+    )

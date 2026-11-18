@@ -227,9 +227,8 @@ class _Pages(HelperPlanner):
 
         The positions of the package's security schemes, with the credential headers, are where no helper writes.
         """
-        super().__init__(protocols, plan, request)
+        super().__init__(protocols, plan, request, facts)
         self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
-        self.facts = facts
         self.codecs = codecs
 
     def _walk(self, value: TypeView, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
@@ -254,7 +253,8 @@ class _Pages(HelperPlanner):
                     kind,
                     field.name,
                     none=admits_none(facts.plain(field.type))
-                    or (not field.required and not struct and not field.missing),
+                    or (not field.required and not struct and not field.missing)
+                    or field.annotation_null,
                     unset=struct and not field.required,
                     missing=field.missing,
                 )
@@ -819,18 +819,11 @@ def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
     return None if len(successes) != 1 or successes[0].bodyless else successes[0].json_use
 
 
-def plan_pagination(
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
+def plan_pagination(pages: _Pages | None) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
 
-    Helpers of other kinds have planners of their own.
+    Helpers of other kinds have planners of their own, which share the checks of `pages`.
     """
-    if protocols is None:
+    if pages is None:
         return (), {}
-    pages = _Pages(protocols, plan, facts, codecs, request)
     return pages.each(("pagination",), pages.helper)

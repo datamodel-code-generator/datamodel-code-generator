@@ -1,0 +1,12 @@
+[[change]]
+id = "classify-the-json-kind-of-a-type-by-one-table"
+category = "harness"
+title = "Classify the JSON kind of a type by one table"
+summary = "Stored test output of classify the json kind of a type by one table (#7019); the package writes the same output for the same call."
+refs = ["#7019"]
+covers = [
+    "main/generation_platform/client/packages/union-value-kinds-literals/dataclasses_dataclass//*.py",
+    "main/generation_platform/client/packages/union-value-kinds/dataclasses_dataclass//*.py",
+    "main/generation_platform/client/union-value-kinds-literals.txt",
+    "main/generation_platform/client/union-value-kinds.txt",
+]

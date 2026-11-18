@@ -14,15 +14,10 @@ from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Container
-
-    from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic
-    from datamodel_code_generator._client.model_facts import ModelFacts
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
-    from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.plan import OperationSpec
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_contract import TypeUseBinding
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -91,15 +86,8 @@ class _Caches:
         return found[0] if found else None
 
 
-def plan_caches(
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-) -> tuple[tuple[CacheSpec, ...], dict[str, list[Diagnostic]]]:
+def plan_caches(pages: _Pages | None) -> tuple[tuple[CacheSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled cache helper, returning the planned ones and each checked helper's problems."""
-    if protocols is None:
+    if pages is None:
         return (), {}
-    caches = _Caches(_Pages(protocols, plan, facts, codecs, request))
-    return caches.pages.each(("cache",), caches.helper)
+    return pages.each(("cache",), _Caches(pages).helper)

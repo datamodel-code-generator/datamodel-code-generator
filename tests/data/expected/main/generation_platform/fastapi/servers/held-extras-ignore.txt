@@ -1,0 +1,119 @@
+# held-extras-ignore
+serve pydantic_v2.BaseModel
+service DefaultService: get_closed, get_cookie, get_open, get_plain, get_required, get_two, post_closed_parts, post_located_parts, post_open_parts, post_plain_parts, post_typed, post_typed_parts, send_upload
+service DefaultService without its methods: TypeError
+> GET /plain?count=1&foo=bar
+  get_plain(count=1, obj=None)
+< 204 - b''
+> GET /plain?count=1&size=2&foo=bar
+  get_plain(count=1, obj=Plain(size=2))
+< 204 - b''
+> GET /closed?count=1&foo=bar
+  get_closed(count=1, obj=None)
+< 204 - b''
+> GET /closed?count=1&size=2&foo=bar
+  get_closed(count=1, obj=Closed(size=2))
+< 204 - b''
+> GET /open?count=1&foo=bar
+  get_open(count=1, obj=None)
+< 204 - b''
+> GET /required?foo=bar
+< 422 application/json [{"type": "missing", "loc": ["query", "obj"]}]
+> GET /required?size=2&foo=bar
+  get_required(obj=Plain(size=2))
+< 204 - b''
+> GET /cookie
+  get_cookie(session=None, prefs=None)
+< 204 - b''
+> GET /cookie
+  get_cookie(session='s', prefs=Plain(size=3))
+< 204 - b''
+> GET /two?size=1&page=2&foo=x
+  get_two(a=Plain(size=1), b=Paged(page=2))
+< 204 - b''
+> POST /parts/plain
+  post_plain_parts(Plain(size=2))
+< 204 - b''
+> POST /parts/closed
+  post_closed_parts(Closed(size=2))
+< 204 - b''
+> POST /parts/open
+  post_open_parts(Open(size=2))
+< 204 - b''
+> POST /typed
+  post_typed(Typed(size=1))
+< 204 - b''
+> POST /typed
+  post_typed(Typed(size=1))
+< 204 - b''
+> POST /parts/typed
+  post_typed_parts(Typed(size=1))
+< 204 - b''
+> POST /parts/located
+  post_located_parts(Located(size=1))
+< 204 - b''
+> POST /parts/located
+  post_located_parts(Located(size=1))
+< 204 - b''
+> POST /uploads
+  send_upload(UploadsPostRequest(photo=b'PNG'))
+< 204 - b''
+serve pydantic_v2.dataclass
+service DefaultService: get_closed, get_cookie, get_open, get_plain, get_required, get_two, post_closed_parts, post_located_parts, post_open_parts, post_plain_parts, post_typed, post_typed_parts, send_upload
+service DefaultService without its methods: TypeError
+> GET /plain?count=1&foo=bar
+  get_plain(count=1, obj=None)
+< 204 - b''
+> GET /plain?count=1&size=2&foo=bar
+  get_plain(count=1, obj=Plain(size=2))
+< 204 - b''
+> GET /closed?count=1&foo=bar
+  get_closed(count=1, obj=None)
+< 204 - b''
+> GET /closed?count=1&size=2&foo=bar
+  get_closed(count=1, obj=Closed(size=2))
+< 204 - b''
+> GET /open?count=1&foo=bar
+  get_open(count=1, obj=None)
+< 204 - b''
+> GET /required?foo=bar
+< 422 application/json [{"type": "missing", "loc": ["query", "obj"]}]
+> GET /required?size=2&foo=bar
+  get_required(obj=Plain(size=2))
+< 204 - b''
+> GET /cookie
+  get_cookie(session=None, prefs=None)
+< 204 - b''
+> GET /cookie
+  get_cookie(session='s', prefs=Plain(size=3))
+< 204 - b''
+> GET /two?size=1&page=2&foo=x
+  get_two(a=Plain(size=1), b=Paged(page=2))
+< 204 - b''
+> POST /parts/plain
+  post_plain_parts(Plain(size=2))
+< 204 - b''
+> POST /parts/closed
+  post_closed_parts(Closed(size=2))
+< 204 - b''
+> POST /parts/open
+  post_open_parts(Open(size=2))
+< 204 - b''
+> POST /typed
+  post_typed(Typed(size=1))
+< 204 - b''
+> POST /typed
+  post_typed(Typed(size=1))
+< 204 - b''
+> POST /parts/typed
+  post_typed_parts(Typed(size=1))
+< 204 - b''
+> POST /parts/located
+  post_located_parts(Located(size=1))
+< 204 - b''
+> POST /parts/located
+  post_located_parts(Located(size=1))
+< 204 - b''
+> POST /uploads
+  send_upload(UploadsPostRequest(photo=b'PNG'))
+< 204 - b''

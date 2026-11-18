@@ -36,7 +36,6 @@ OPERATION_0: Final[OperationPlan[SearchResponse]] = OperationPlan(
                 name='criteria',
                 content_media_type='application/x-www-form-urlencoded',
                 fields=(FieldPlan('term', 'string'), FieldPlan('page', 'integer')),
-                additional=FieldPlan('', 'string'),
             ),
             codec=model_bindings.codec_0,
         ),

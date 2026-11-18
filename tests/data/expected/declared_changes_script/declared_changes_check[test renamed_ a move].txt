@@ -1,0 +1,4 @@
+exit 0
+declared changes: HEAD against base, release since 0.1.0
+8 references moved: removed and added with equal content
+ok

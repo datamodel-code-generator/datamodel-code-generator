@@ -207,17 +207,19 @@ entry as `docs/data/migration/unreleased/<id>.toml`; the release moves it into
 `docs/data/migration/changes/<version>.toml`.
 
 Write an entry for every behaviour change of the default output and every removal (an option, an option value, a
-template, a public name), and also for runtime floors, Python API behaviour, custom template content, inputs that
-are now refused and changes of experimental features that shipped in a release. A change of the generated text only,
-whose models behave the same, gets an entry with `action = "none"`, so users who compare generated code see it
-coming. Crash fixes need no entry. Deprecations, removals the deprecation registry schedules, experimental features
-and new dated presets get their entries from their registries; write nothing for them, or an entry with the same
-id (`deprecation:<id>`, `removal:<id>`, `experimental:<id>`, `preset:<date>`) to add a better title or a
+template, a public name), and also for runtime floors, Python API behaviour, custom template content, inputs that are
+now refused and changes of experimental features that shipped in a release. A change of the generated text only, whose
+models behave the same, gets an entry with `action = "none"`, so users who compare generated code see it coming. A crash
+fix gets a `crash-fix` entry with `action = "none"`. Deprecations, removals the deprecation registry schedules,
+experimental features and new dated presets get their entries from their registries; write nothing for them, or an entry
+with the same id (`deprecation:<id>`, `removal:<id>`, `experimental:<id>`, `preset:<date>`) to add a better title or a
 `supersedes`.
 
 ```toml
 [[change]]
 id = "specialized-enum-default"
+category = "decided-change"
+decision = ["#2500"]
 kind = "default-output"
 action = "keep"
 title = "String and integer enums become `StrEnum` / `IntEnum`"
@@ -230,6 +232,21 @@ refs = ["#2512"]
 source = "release-note"
 ```
 
+- `category` (every unreleased entry): why the stored output changed, which decides what the entry holds
+  (`scripts/_change_records.py`, `RULES`). `new-surface` (output only an option, option value, dated preset or public
+  name the latest release lacks reaches; `surface` names them), `experimental` (a released experimental feature;
+  `affects.experimental` names it, and `decision` the owner's decision unless it is the generated clients or servers),
+  `crash-fix` (generation, import or decoding failed before, or for an added stored output the previous package fails to
+  generate it or writes a unit `scripts/_behaviour_classify.py` calls unusable; `action = "none"`), `output-text` (the
+  modules' syntax trees are equal apart from docstrings, comments and the order of imports, or their signatures are
+  equal and no changed node is in a function body, a decorator or a configuration key the signature does not list),
+  `default-fix` (only invalid input changes outcome) and `decided-change` (any other behaviour change of the default or
+  a released option's output, with a `keep` table), both with the owner's `decision`, `notice` (warnings and error
+  messages), `api` (a public CLI or Python API change; `decision` unless the deprecation registry schedules it), and
+  `docs-text`, `internal` and `harness` (listing text, traces of internals, a changed test, input or repository script
+  whose package output is the same), which have no guide entry and hold only `title`, `summary` and `refs`. An entry
+  with `extends = "<id>"` adds more stored outputs to an unreleased record and holds nothing else. Entries of released
+  changes may lack a category. An entry that only adds text to a derived entry (below) has none.
 - `kind`: `default-output`, `output-text` (the text changes, the models behave the same), `removal`, `cli`,
   `python-api`, `template`, `runtime`, `warning`, `error`, `experimental` or `preset`.
 - `action`: `required` (users must change something; give `migrate`), `keep` (the output changes and `keep.flags`
@@ -269,6 +286,37 @@ Run `python scripts/build_migration_docs.py` to rebuild the committed pages (`do
 `docs/migration/changes.md`, `docs/data/migration.json`); `--check` fails on stale pages and on invalid entries.
 `--release-notes unreleased` prints the release-note sections of the next release, and
 `--range-pages docs/migration` writes the page of each range of releases locally, as the docs deploy does.
+
+## Declared changes
+
+Every change of stored expected output has a change record: an entry of the upgrade guide (above), or a record of a
+category without a guide entry, in `docs/data/migration/unreleased/<id>.toml`. Its `covers` lists the labels of the
+stored outputs it moves; `python scripts/declared_changes.py declare` writes them from the diff against the merge
+base with `origin/main`, never write them by hand.
+
+```bash
+python scripts/declared_changes.py status
+python scripts/declared_changes.py declare my-change --category output-text --title "..." --refs "#123" --rest
+python scripts/declared_changes.py prune
+python scripts/declared_changes.py check --base origin/main --report-only
+```
+
+The unit is a reference, one line of a `.refs` file: a change of its stored content, its environment predicate or its
+`?` flag needs a record, so does a removed reference, and so does an added reference when `src/` or `uv.lock`
+changes. Only a change that touches neither has moves: a renamed test or file whose references keep their content
+needs no record. Coverage is per label, so a label covers every test item that compares it. `declare` selects all of
+them (`--rest`), those whose label matches (`--labels GLOB`) or those of matching test items (`--tests NODEID-GLOB`),
+and adds them to the record, creating it from `--category`, `--title`, `--summary`, `--refs`, `--decision`,
+`--surface` or `--extends` when it is new. A stack layer passes `--base <layer below>` to every command. A change
+covers only the labels it adds to `covers`, and each must move in it or be a gap of its base (a record that only
+backfills an older change); `prune` drops the others and those that no longer differ from the latest tag. A label a
+change brings back to the latest tag needs no record, and a record that still covers it is stale. A failing check
+prints one `declare` command per kind of stored output (model output, notices, listings, internals), with `--base`
+when the base is not the merge base with `origin/main`, `--extends` for an output a lower layer's record covers, and
+the id of the record the change adds when it has one. `new-surface` covers model output only where the latest release
+has none, and a `harness` record of a change that touches `src/` is listed as needing the replay. The check also lists
+the outputs that moved since the latest tag with no unreleased record and a tag that `releases.toml` does not list
+yet. It reports only, for now; `--report-only` keeps its exit status 0 once it fails CI.
 
 ## Architecture boundaries
 
@@ -346,7 +394,8 @@ methods on `GenerationStore` are deprecated:
   `update_model_reference(...)`.
 - Report models whose fields, base classes, or data types changed without the
   store, for example through a model method, with `note_changed_models(...)`.
-  A refresh records again only the models the store knows have changed.
+  A refresh records again only the field types and base lists the store knows
+  have changed.
 
 Parser code should not directly assign `data_type.reference`, `model.fields`,
 `model.base_classes`, `model.reference.name`, or call reference child mutation
@@ -469,18 +518,29 @@ release over the test inputs and the option sets your change touches:
   tests/data/openapi/*.yaml
 ```
 
-The script installs the release once into a cached virtual environment with `uv`, next to the same versions
-of every other package in your environment, and caches the release's outputs, so later runs only generate
-your side. A cached output is reused while the input's directory, the local files it references through `$ref`, the
-files named by arguments and the arguments stay the same; pass `--no-cache` to regenerate it. Old environments and outputs are not removed;
-delete the cache directory (`~/.cache/datamodel-code-generator/compare-release` by default) to reclaim space.
-Every run goes through warm worker processes that fork a fresh child per generation in a temporary working
-directory, so give files in `--options` and `--extra` as absolute paths.
+The script installs the release once into a cached virtual environment with `uv`, next to the same versions of every
+other package in your environment, and caches the release's outputs, so later runs only generate your side. A cached
+output is reused while the input's directory, the local files it references through `$ref`, the files named by arguments
+and the arguments stay the same; pass `--no-cache` to regenerate it. Old environments and outputs are not removed;
+delete the cache directory (`~/.cache/datamodel-code-generator/compare-release` by default) to reclaim space. Every run
+goes through warm worker processes that import the generator once and generate in a temporary working directory, so give
+files in `--options` and `--extra` as absolute paths.
 
 The script prints one line for each run that differs, fails on either side, or imports on one side only,
 then a summary. It exits with 1 when any run differs, fails only on your side or imports only on the release
 side, or when every run fails on both sides. Use `--base-python` to compare with another interpreter, such as a build of another branch, and
 `--no-cache` when that build changes without a version change. The script needs a POSIX system.
+
+`--base` also takes a git revision of this repository (`main`, `HEAD~1`, a commit): its `src/` is extracted once with
+`git archive` and runs with your interpreter, so only what your commits changed shows up. Your side is this checkout's
+`src/`. Both sides run in an environment built from scratch (your `PYTHONPATH` and `PYTHONWARNINGS` reach neither),
+and a side whose package is imported from outside its tree or environment stops the run. To check that a refactoring
+changes nothing at all, run `scripts/behaviour_diff.py gate <revision> --identity`: it compares each run's output,
+warnings (category, message and the module warning filters match, not the line that raised them; deprecations
+included), the exception classes the CLI module handled, messages (errors by class and message, without traceback
+frames), exit status, the refusal of a single output file before a modular run, and the options and their values on
+each side, and fails on any difference. A cell that fails alike on both sides is not compared where the timeout or
+the memory cap stopped both or where every cell of its input fails on both sides; the run prints how many.
 
 ## Calibrating the option recommender
 
@@ -635,6 +695,12 @@ OPTIONS: Final[tuple[Option, ...]] = (
 The constructor of a row is its form: `toggle` (a flag with a `--no-` form), `flag` (off unless given), `deprecated`
 (a flag whose help is its message in the deprecation registry), `clear` (the `--no-` form of a list option) or `value`
 (an option that takes a value, with the arguments `argparse` takes, such as `choices=_values(MyEnum)` or `type=int`).
+
+The value of a row reaches the run through the config field its dest names (`my_new_option`): add the field to the
+config models. A row marked `config=False` is the option of a command that no config carries, such as `--help`.
+`test_option_table_matches_the_config_models` (`tests/cli_doc/test_cli_options_sync.py`) fails for a row without its
+field and for a config field without a row; a field that no option sets is listed in `CONFIG_ONLY_FIELDS` there, with
+the reason.
 
 ### Step 2: Add a test with documentation marker (Required)
 

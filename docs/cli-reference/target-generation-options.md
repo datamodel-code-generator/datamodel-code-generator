@@ -827,8 +827,6 @@ value does not tell apart stay left out. `--no-client-deep-object-brackets` turn
                     explode=True,
                     shape='object',
                     fields=(FieldPlan('gt', 'integer'),),
-                    additional=FieldPlan('', 'string'),
-                    reserved_names=('expand', 'limit'),
                     brackets=True,
                 ),
                 codec=model_bindings.codec_3,
