@@ -143,6 +143,13 @@ With `--collapse-root-models` under msgspec.Struct, the warning that a root-mode
 - **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
 - **Source:** the release notes
 
+### Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects (unreleased) { #count-named-groups-python-rejects }
+
+A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode.
+
+- **Pull requests and issues:** [#7088](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7088)
+- **Source:** the release notes
+
 ### New option `--use-validate-default-for-root-model-type-aliases` (`--no-use-validate-default-for-root-model-type-aliases`) (unreleased) { #option-use-validate-default-for-root-model-type-aliases }
 
 Under --use-root-model-type-alias, write the default of a field whose type names a root model written as an alias (`Tags = RootModel[list[str]]`) with validate_default=True, as for a root model class, so Pydantic validates it into the root model; without it the default stays the raw value, such as a list instead of a `Tags`, as in 0.97.0 (Pydantic v2 only)

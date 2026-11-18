@@ -1600,6 +1600,18 @@
   },
   {
    "action": "none",
+   "id": "count-named-groups-python-rejects",
+   "kind": "default-output",
+   "refs": [
+    "#7088"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode.",
+   "title": "Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects"
+  },
+  {
+   "action": "none",
    "id": "option:--use-validate-default-for-root-model-type-aliases",
    "kind": "cli",
    "release": "unreleased",

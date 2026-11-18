@@ -1,0 +1,42 @@
+The pattern '(?<=a|bc)x' of the schema at python_re_rejected_syntax.json#/properties/alternation_lookbehind is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[^]*$' of the schema at python_re_rejected_syntax.json#/properties/any_character_class is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '(?<=a{1,2})x' of the schema at python_re_rejected_syntax.json#/properties/counted_range_lookbehind is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[]$' of the schema at python_re_rejected_syntax.json#/properties/empty_class is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^\\1(a)$' of the schema at python_re_rejected_syntax.json#/properties/forward_reference is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '(a+)(?<=\\1)x' of the schema at python_re_rejected_syntax.json#/properties/lookbehind_of_a_repeated_group is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^(?<year>\\d{4})$' of the schema at python_re_rejected_syntax.json#/properties/named_group is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^(?<quote>[\'"]).*\\k<quote>$' of the schema at python_re_rejected_syntax.json#/properties/named_reference is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '(?<!a?)x' of the schema at python_re_rejected_syntax.json#/properties/optional_lookbehind is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '(?<=(a)\\1)b' of the schema at python_re_rejected_syntax.json#/properties/reference_in_its_lookbehind is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^(a\\1)$' of the schema at python_re_rejected_syntax.json#/properties/reference_inside_its_group is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '(?<=\\d+)x' of the schema at python_re_rejected_syntax.json#/properties/repeated_lookbehind is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^(?:(?<n>a)|(?<n>b))$' of the schema at python_re_rejected_syntax.json#/properties/repeated_name is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^a)$' of the schema at python_re_rejected_syntax.json#/properties/unbalanced_parenthesis is left out: no regex engine of the output compiles it, so the generated code does not check it.
+named_group '^(?<year>\\d{4})$': Python's re rejects it, the model leaves it out
+named_reference '^(?<quote>[\'"]).*\\k<quote>$': Python's re rejects it, the model leaves it out
+repeated_name '^(?:(?<n>a)|(?<n>b))$': Python's re rejects it, the model leaves it out
+empty_class '^[]$': Python's re rejects it, the model leaves it out
+any_character_class '^[^]*$': Python's re rejects it, the model leaves it out
+forward_reference '^\\1(a)$': Python's re rejects it, the model leaves it out
+reference_inside_its_group '^(a\\1)$': Python's re rejects it, the model leaves it out
+repeated_lookbehind '(?<=\\d+)x': Python's re rejects it, the model leaves it out
+alternation_lookbehind '(?<=a|bc)x': Python's re rejects it, the model leaves it out
+optional_lookbehind '(?<!a?)x': Python's re rejects it, the model leaves it out
+counted_range_lookbehind '(?<=a{1,2})x': Python's re rejects it, the model leaves it out
+lookbehind_of_a_repeated_group '(a+)(?<=\\1)x': Python's re rejects it, the model leaves it out
+reference_in_its_lookbehind '(?<=(a)\\1)b': Python's re rejects it, the model leaves it out
+unbalanced_parenthesis '^a)$': Python's re rejects it, the model leaves it out
+fixed_lookbehind '(?<=ab)c': Python's re compiles it, the model checks it
+fixed_alternation_lookbehind '(?<=ab|cd)e': Python's re compiles it, the model checks it
+counted_lookbehind '(?<=\\d{3}-\\d{4})x': Python's re compiles it, the model checks it
+assertion_in_lookbehind '(?<=^a|b)c': Python's re compiles it, the model checks it
+lookbehind_of_a_fixed_group '(a)(?<=\\1)b': Python's re compiles it, the model checks it
+backward_reference '^([\'"]).*\\1$': Python's re compiles it, the model checks it
+python_named_group '^(?P<y>\\d)(?P=y)$': Python's re compiles it, the model checks it
+bracket_first_in_class '^[]a]+$': Python's re compiles it, the model checks it
+bracket_first_in_negated_class '^[^]a]+$': Python's re compiles it, the model checks it
+escaped_parenthesis '^\\(?<a>$': Python's re compiles it, the model checks it
+group_text_in_class '^[(?<a>)]+$': Python's re compiles it, the model checks it
+lookahead '^(?=a)\\w$': Python's re compiles it, the model checks it
+comment_and_flags '(?i)^a(?#note)b$': Python's re compiles it, the model checks it
+conditional_group '^(a)?(?(1)b|c)$': Python's re compiles it, the model checks it

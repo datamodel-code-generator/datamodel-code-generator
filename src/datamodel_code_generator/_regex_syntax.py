@@ -337,6 +337,19 @@ _SIZE_QUANTIFIER: Final = r"\{\s*(?P<lower>[0-9]+)\s*(?:(?P<comma>,)\s*(?P<upper
 _ASCII_FLAG_GROUP: Final = r"\(\?[A-Za-z]*-[A-Za-z]*u"
 _VERBOSE_FLAG_GROUP: Final = r"\(\?[A-Za-z-]*x"
 _PYTHON_REJECTED_FLAGS: Final = r"\(\?[A-Za-z]*-[A-Za-z]*[auL]"
+_PYTHON_GRAMMAR_PART: Final = (
+    r"(?s)\\(?:[1-7][0-7]{2}|(?P<reference>[1-9][0-9]?)|0[0-7]{0,2}|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}"
+    r"|N\{[^}]*\}|(?P<assertion>[bBAZ])|.?)"
+    r"|\[\^?\]?(?:[^\\\]]|\\.)*(?:\]|(?P<unclosed>))"
+    r"|\(\?P=(?P<named_reference>[^)]*)\)"
+    r"|(?P<open>\((?:\?(?:(?P<behind><[=!])|(?P<ahead>[=!])|P<(?P<name>[^>]*)>"
+    r"|(?P<skipped>#[^)]*\)|[aiLmsux-]*\))|[aiLmsux-]*:|>|(?P<other>.?)))?)"
+    r"|(?P<repeat>(?:[*+?]|\{(?:(?P<count>[0-9]+)|(?P<lower>[0-9]*),(?P<upper>[0-9]*))\})[?+]?)"
+    r"|(?P<edge>[\^$])|(?P<bar>\|)|(?P<close>\))|."
+)
+"""A part of Python's grammar outside a class: an escape whole, a class, a group's start or end, a repetition."""
+_PYTHON_REPEATS: Final = MappingProxyType({"*": (0, math.inf), "+": (1, math.inf), "?": (0, 1)})
+"""The least and the greatest count of each repetition of one character."""
 _SIZE_ESCAPE: Final = rf"{_ESCAPE}|\\"
 """An escape (``_ESCAPE``), or the backslash that ends a pattern alone."""
 _ZERO_WIDTH_ESCAPES: Final = frozenset("bBAzZ<>")
@@ -412,11 +425,141 @@ def _class_escape_ranges(pattern: str, *, rust: bool) -> bool:
     return False
 
 
+@final
+class _PythonGroup:
+    """A group the reader of Python's grammar is in: what it captures, its lookaround and the widths read so far."""
+
+    def __init__(self, index: int | None, lookaround: str, outer_behind: int | None) -> None:
+        self.index = index
+        self.lookaround = lookaround
+        self.outer_behind = outer_behind
+        self.branches: list[tuple[int, float]] = []
+        self.low = 0
+        self.high: float = 0
+        self.last: tuple[int, float] = (0, 0)
+
+    def add(self, width: tuple[int, float]) -> None:
+        """Count the last atom of the branch and start the next one, of ``width``."""
+        self.low += self.last[0]
+        self.high += self.last[1]
+        self.last = width
+
+    def repeat(self, lower: int, upper: float) -> None:
+        """Repeat the last atom from ``lower`` to ``upper`` times, counting its width as Python's ``re`` does."""
+        low, high = self.last
+        self.last = (low * lower, 0 if 0 in {high, upper} else high * upper)
+
+    def branch(self) -> None:
+        """End a branch of the group."""
+        self.add((0, 0))
+        self.branches.append((self.low, self.high))
+        self.low, self.high = 0, 0
+
+    def width(self) -> tuple[int, float]:
+        """End the last branch and return the least and the greatest width of the group."""
+        self.branch()
+        return min(low for low, _ in self.branches), max(high for _, high in self.branches)
+
+
+@final
+class _PythonGrammar:
+    """Read the groups, references and widths of a pattern as Python's parser does, one part at a time."""
+
+    def __init__(self) -> None:
+        self.groups = [_PythonGroup(None, "", None)]
+        self.widths: dict[int, tuple[int, float] | None] = {}
+        self.names: dict[str, int] = {}
+        self.behind: int | None = None
+
+    def read(self, part: re.Match[str]) -> bool | None:
+        """Return True where the part makes Python reject the pattern, False where it ends the reading undecided."""
+        if part["unclosed"] is not None:
+            return True
+        if part["other"] is not None:
+            return part["other"] == "<"
+        group = self.groups[-1]
+        if part["reference"] or part["named_reference"] is not None:
+            return self._reference(part)
+        if part["close"]:
+            return self._close()
+        if part["open"] is not None:
+            if part["skipped"] is None:
+                self._open(part)
+        elif part["bar"]:
+            group.branch()
+        elif part["repeat"] is not None:
+            group.repeat(*(_PYTHON_REPEATS.get(part["repeat"][0]) or _counted(part)))
+        else:
+            group.add((0, 0) if part["assertion"] or part["edge"] else (1, 1))
+        return None
+
+    def _reference(self, part: re.Match[str]) -> bool | None:
+        """Read a reference, which needs its group closed before it and, in a lookbehind, defined before that."""
+        index = int(part["reference"]) if part["reference"] else self.names.get(part["named_reference"], 0)
+        if (width := self.widths.get(index)) is None or (self.behind is not None and index > self.behind):
+            return True
+        self.groups[-1].add(width)
+        return None
+
+    def _open(self, part: re.Match[str]) -> None:
+        """Open a group, numbering it where it captures."""
+        index = None
+        if part["open"] == "(" or part["name"] is not None:
+            index = len(self.widths) + 1
+            self.widths[index] = None
+            if part["name"] is not None:
+                self.names[part["name"]] = index
+        lookaround = "behind" if part["behind"] else "ahead" if part["ahead"] else ""
+        self.groups.append(_PythonGroup(index, lookaround, self.behind))
+        if lookaround == "behind" and self.behind is None:
+            self.behind = len(self.widths)
+
+    def _close(self) -> bool | None:
+        """Close a group: a lookbehind needs one width, and a ``)`` that closes no group is rejected."""
+        if len(self.groups) == 1:
+            return True
+        closed = self.groups.pop()
+        low, high = closed.width()
+        if closed.lookaround == "behind":
+            if low != high:
+                return True
+            self.behind = closed.outer_behind
+        if closed.index is not None:
+            self.widths[closed.index] = (low, high)
+        self.groups[-1].add((0, 0) if closed.lookaround else (low, high))
+        return None
+
+
+def _counted(part: re.Match[str]) -> tuple[int, float]:
+    """Return the least and the greatest count of a counted repetition that Python's ``re`` reads."""
+    if part["count"]:
+        return int(part["count"]), int(part["count"])
+    return int(part["lower"] or 0), int(part["upper"]) if part["upper"] else math.inf
+
+
+def _python_grammar_rejects(pattern: str) -> bool:
+    r"""Return whether Python's ``re`` rejects a pattern that is not verbose for its groups, classes or repetitions.
+
+    A named group of ECMA-262 (``(?<name>...)``), a class the first ``]`` leaves open (``[^]``, ``[]``), a reference
+    to a group not closed before it (``\1(a)``, ``(a\1)``) or defined in its lookbehind (``(?<=(a)\1)``), a
+    lookbehind whose width varies (``(?<=a+)``) and a ``)`` that closes no group fail on every Python from 3.10 on.
+    The reader follows Python's parser on a pattern it compiles, so it reports none of those there; a conditional
+    group or another extension ends the reading undecided. Each part holds a character at least, so the parts found
+    one after another cover the pattern.
+    """
+    grammar = _PythonGrammar()
+    for part in _compiled(_PYTHON_GRAMMAR_PART).finditer(pattern):
+        if (decided := grammar.read(part)) is not None:
+            return decided
+    return False
+
+
 def python_rejects(pattern: str) -> bool:
     r"""Return whether Python's ``re`` rejects a pattern on every Python from 3.10 on, decided statically.
 
     It rejects any ``\p`` or ``\P``, a braced hexadecimal escape (``\x{41}``), a class escape as the start of a range,
-    a flag group that turns ``a``, ``u`` or ``L`` off and the letters it reads after a backslash nowhere. A verbose
+    a flag group that turns ``a``, ``u`` or ``L`` off, the letters it reads after a backslash nowhere and what its
+    grammar refuses (``_python_grammar_rejects``), such as the named group ``(?<name>...)`` of ECMA-262. A verbose
     pattern is never decided, as a comment may hold any text.
     """
     if _compiled(_VERBOSE_FLAG_GROUP).search(pattern) is not None:
@@ -425,6 +568,7 @@ def python_rejects(pattern: str) -> bool:
         _class_escape_ranges(pattern, rust=False)
         or _compiled(_PYTHON_REJECTED_FLAGS).search(pattern) is not None
         or any(escape[1] in _PYTHON_REJECTED_ESCAPES or escape[1:] in _BRACED_CODES for escape in _escapes(pattern))
+        or _python_grammar_rejects(pattern)
     )
 
 

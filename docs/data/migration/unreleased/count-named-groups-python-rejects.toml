@@ -1,0 +1,21 @@
+[[change]]
+id = "count-named-groups-python-rejects"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects"
+summary = "A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode."
+refs = ["#7088"]
+covers = [
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[base_model_collapsed].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[base_model_collapsed].py",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[dataclass_alias].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[dataclass_alias].py",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[field_constraints].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/named_group_beside_a_lookaround_is_left_out[field_constraints].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_on_every_python[msgspec].patterns.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_on_every_python[msgspec].py",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_on_every_python[python_re].patterns.txt",
+    "main/jsonschema/pydantic_accepted_forms/patterns_python_re_rejects_on_every_python[python_re].py",
+]

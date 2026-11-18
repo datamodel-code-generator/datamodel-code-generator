@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import TYPE_CHECKING
 
+import msgspec
 import pytest
 from pydantic import ValidationError
 
@@ -379,6 +381,88 @@ def test_patterns_the_python_engine_rejects_beside_one_it_needs(
         value = _model_json_validator(model)(json.dumps(payloads["valid"]))
         outcomes += f"value: {value.description!r} {[getattr(key, 'root', key) for key in value.tagKeys]!r}\n"
     assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"], id="field_constraints"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--collapse-root-models"],
+            id="base_model_collapsed",
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], id="dataclass_alias"),
+    ],
+)
+def test_named_group_beside_a_lookaround_is_left_out(
+    output_file: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Leave out with a warning a named group of ECMA-262 where the model selects ``python-re`` (#7088).
+
+    A lookahead selects ``python-re`` for the model, and Python's ``re`` rejects ``(?<year>...)`` on every Python,
+    which writes it ``(?P<year>...)``; the module once failed at import. It imports, the lookahead still rejects what
+    it rejects and the date is not checked.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_engine_beside_named_group.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    payloads = {"valid": {"tag": "v1", "date": "2026-11"}, "draft tag": {"tag": "draft-1"}, "any date": {"date": "x"}}
+    with _generated_model(output_file, "python_engine_beside_named_group", "Release") as model:
+        outcomes += _outcomes(model, payloads)
+        outcomes += f"value: {_model_json_validator(model)(json.dumps(payloads['valid'])).date!r}\n"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"], id="python_re"),
+    ],
+)
+def test_patterns_python_re_rejects_on_every_python(
+    output_file: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Check each pattern on Python's ``re`` exactly where every Python from 3.10 on compiles it (#7088).
+
+    msgspec runs only Python's ``re``, and the lookbehinds select ``python-re`` for the Pydantic model. ECMA-262 syntax
+    that Python's ``re`` rejects is left out: a named group, a class that the first ``]`` leaves open (``[]``,
+    ``[^]``), a reference to a group not closed before it or defined in its lookbehind, a lookbehind whose width
+    varies, and so is a ``)`` that closes no group. A fixed lookbehind, a backward reference, Python's own named group,
+    a ``]`` that starts a class, group text inside a class or after an escape, a lookahead, a comment, flags and a
+    conditional group are kept. Each line holds what the running Python compiles and what the model checks, after the
+    warnings.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "python_re_rejected_syntax.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "python_re_rejected_syntax", "Syntax") as model:
+        schema = (
+            model.model_json_schema()
+            if hasattr(model, "model_json_schema")
+            else msgspec.json.schema(model)["$defs"]["Syntax"]
+        )
+    lines = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    for name, keywords in json.loads(input_path.read_text(encoding="utf-8"))["properties"].items():
+        try:
+            re.compile(keywords["pattern"])
+        except re.error:
+            compiled = "rejects"
+        else:
+            compiled = "compiles"
+        checked = "checks it" if "pattern" in schema["properties"][name] else "leaves it out"
+        lines += f"{name} {keywords['pattern']!r}: Python's re {compiled} it, the model {checked}\n"
+    assert_output(lines, name="patterns")
 
 
 def test_encoded_str_roots_build_their_pattern_with_the_python_engine(output_file: Path) -> None:
