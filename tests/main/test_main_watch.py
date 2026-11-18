@@ -2933,9 +2933,21 @@ def test_watch_with_no_collected_dependencies_stops_cleanly(tmp_path: Path) -> N
 WATCH_STEPS_TIMEOUT_SECONDS = 60.0
 
 
+@dataclass(frozen=True)
+class _OnceHandled:
+    """A watch step that runs ``action`` in the background once the watcher has handled an event for ``path``.
+
+    Only events after the previous step count, so a change that must reach the watcher in a later batch than that
+    step's changes waits for the watcher to finish that batch.
+    """
+
+    path: Path
+    action: Callable[[], None]
+
+
 @pytest.mark.abnormal_path(
-    "the macOS polling backend is selected by the platform, so other hosts patch it, and the late event batches of a "
-    "slow runner are replayed by delaying the batches of real watchfiles"
+    "the macOS polling backend is selected by the platform, so other hosts patch it; the batches of real watchfiles "
+    "are observed to know which ones the watcher handled, and delayed to replay the late batches of a slow runner"
 )
 @pytest.mark.allow_direct_assert("a watch run that never finishes its steps fails instead of hanging the suite")
 def _watch_in_steps(
@@ -2943,33 +2955,48 @@ def _watch_in_steps(
     platform: str,
     dependencies: WatchDependencies,
     observed_path: Path,
-    steps: list[Callable[[], None]],
+    steps: list[Callable[[], None] | _OnceHandled],
     watch_delay: float = 0.05,
     *,
     late_events: bool = False,
 ) -> list[bool]:
     """Watch with real watchfiles as on ``platform`` and return, per generation, whether ``observed_path`` existed.
 
-    Each generation runs the next step after it ends, and the generation after the last step stops watch mode. With
-    ``late_events``, each batch of events arrives after two polls without events, as on a slow runner.
+    Each generation runs the next step after it ends (an ``_OnceHandled`` step starts in the background), and the
+    generation after the last step stops watch mode. With ``late_events``, each batch of events arrives after two polls
+    without events, as on a slow runner.
     """
+    import watchfiles
+
     from datamodel_code_generator import watch as watch_module
     from datamodel_code_generator.__main__ import Config
 
     monkeypatch.setattr(watch_module.sys, "platform", platform)
-    if late_events:
-        import watchfiles
+    prompt_watch = watchfiles.watch
+    handled = threading.Condition()
+    handled_paths: set[Path] = set()
+    watch_ended = threading.Event()
+    background_steps: list[threading.Thread] = []
+    handled_before_steps: list[tuple[Path, bool]] = []
 
-        prompt_watch = watchfiles.watch
+    def observed_watch(*paths: Path, **options: object) -> Iterator[set[tuple[watchfiles.Change, str]]]:
+        for changes in prompt_watch(*paths, **options):
+            if late_events and changes:
+                yield set()
+                yield set()
+            yield changes
+            with handled:
+                handled_paths.update(Path(path).resolve() for _change, path in changes)
+                handled.notify_all()
 
-        def late_watch(*paths: Path, **options: object) -> Iterator[set[tuple[watchfiles.Change, str]]]:
-            for changes in prompt_watch(*paths, **options):
-                if changes:
-                    yield set()
-                    yield set()
-                yield changes
+    def run_once_handled(step: _OnceHandled) -> None:
+        event_path = step.path.resolve()
+        with handled:
+            handled.wait_for(lambda: event_path in handled_paths or watch_ended.is_set(), WATCH_STEPS_TIMEOUT_SECONDS)
+            handled_before_steps.append((step.path, event_path in handled_paths))
+        step.action()
 
-        monkeypatch.setattr(watchfiles, "watch", late_watch)
+    monkeypatch.setattr(watchfiles, "watch", observed_watch)
     generations: list[bool] = []
     pending_steps = iter(steps)
 
@@ -2979,7 +3006,14 @@ def _watch_in_steps(
         generations.append(observed)
         if (step := next(pending_steps, None)) is None:
             raise KeyboardInterrupt
-        step()
+        if isinstance(step, _OnceHandled):
+            background_step = threading.Thread(target=run_once_handled, args=(step,), daemon=True)
+            background_steps.append(background_step)
+            background_step.start()
+        else:
+            with handled:
+                handled_paths.clear()
+            step()
         return Exit.OK if observed else Exit.ERROR
 
     watcher = threading.Thread(
@@ -2991,6 +3025,15 @@ def _watch_in_steps(
     )
     watcher.start()
     watcher.join(WATCH_STEPS_TIMEOUT_SECONDS)
+    with handled:
+        watch_ended.set()
+        handled.notify_all()
+    for background_step in background_steps:
+        background_step.join(WATCH_STEPS_TIMEOUT_SECONDS)
+    unhandled_paths = [path for path, was_handled in handled_before_steps if not was_handled]
+    assert not unhandled_paths, (
+        f"the watcher handled no event for {unhandled_paths} before their steps; generations so far: {generations}"
+    )
     assert not watcher.is_alive(), f"watch mode did not finish its steps; generations so far: {generations}"
     return generations
 
@@ -3054,8 +3097,6 @@ def test_watch_polling_keeps_scanning_a_configured_directory_that_is_removed_and
     dependencies.enable_polling_fingerprints()
     _write_atomically(input_file, WATCH_SCHEMA_CHANGED)
 
-    recreation = threading.Timer(WATCH_CLI_READY_DELAY_SECONDS * 2, removed_directory.rename, [template_directory])
-
     generations = _watch_in_steps(
         monkeypatch,
         "darwin",
@@ -3063,12 +3104,11 @@ def test_watch_polling_keeps_scanning_a_configured_directory_that_is_removed_and
         template_directory,
         [
             lambda: template_directory.rename(removed_directory),
-            recreation.start,
+            _OnceHandled(template_directory, lambda: removed_directory.rename(template_directory)),
             lambda: _write_atomically(template_file, "changed"),
         ],
         late_events=late_events,
     )
-    recreation.join()
 
     assert generations == [True, False, True, True]
     assert "restarting the watcher" not in capsys.readouterr().out
@@ -3099,17 +3139,14 @@ def test_watch_polling_regenerates_for_a_template_added_after_a_fingerprint_fall
     dependencies.enable_polling_fingerprints()
     _write_atomically(input_file, WATCH_SCHEMA_CHANGED)
 
-    addition = threading.Timer(WATCH_CLI_READY_DELAY_SECONDS * 2, _write_atomically, [added_template, "root"])
-
     generations = _watch_in_steps(
         monkeypatch,
         "darwin",
         dependencies,
         added_template,
-        [header_file.unlink, addition.start],
+        [header_file.unlink, _OnceHandled(header_file, lambda: _write_atomically(added_template, "root"))],
         late_events=late_events,
     )
-    addition.join()
 
     assert generations == [False, False, True]
 
