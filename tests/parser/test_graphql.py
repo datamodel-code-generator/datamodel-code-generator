@@ -241,6 +241,7 @@ def test_graphql_schema_features() -> None:
             boolean_schemas=True,
             id_field="$id",
             definitions_key="$defs",
+            contains_counts=True,
             exclusive_as_number=True,
             read_only_write_only=True,
             anchor=True,
