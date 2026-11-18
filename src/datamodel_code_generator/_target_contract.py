@@ -346,9 +346,10 @@ class ModelArtifactAddress:
 class ModelFieldFacts:
     """Keep adopted model semantics separate from each original wire occurrence.
 
-    `schema_null` says the None the field's annotation accepts comes from its schema's nullability or its own type,
-    rather than from an optional fallback or the model configuration. `annotation_null` says the emitted annotation
-    accepts None at all, whether its type holds None or the field adds it. `explicit_name` says an `--aliases` entry
+    `wire_null` says the field's wire value may be JSON null, by its schema's nullability or its own type, rather
+    than by an optional fallback or the model configuration (``_target_binding.py:_Models.wire_null``).
+    `annotation_null` says the emitted annotation accepts None at all, whether its type holds None or the field adds
+    it (``model/_field_imports.py:field_admits_none``). `explicit_name` says an `--aliases` entry
     of the field's class scope gave its name, which is never renamed. `constructor_required` says the model's
     constructor requires the field, and `in_init` that the field takes part in it, as the model's assignment facts
     tell.
@@ -357,12 +358,11 @@ class ModelFieldFacts:
     required: bool
     nullable: bool | None
     has_default: bool
-    type_has_null: bool | None
     read_only: bool
     write_only: bool
     type: TypeView
     backend: BackendFieldFacts
-    schema_null: bool
+    wire_null: bool
     annotation_null: bool
     explicit_name: bool
     constructor_required: bool
