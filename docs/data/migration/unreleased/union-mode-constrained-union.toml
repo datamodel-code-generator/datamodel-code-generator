@@ -1,0 +1,12 @@
+[[change]]
+id = "union-mode-constrained-union"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "--union-mode no longer writes union_mode beside a length or bound constraint of the field"
+summary = "With --union-mode, a field whose union type carries a length or bound constraint of its own in Field() (a property that refers to a union an allOf member constrains, such as an array-or-string union with contains under --collapse-root-models) was given Field(min_length=..., union_mode=...), and the module failed at import with \"Unable to apply constraint 'union_mode' to schema of type 'function-after'\": Pydantic applies such a constraint as a validator around the union before union_mode. union_mode is now left out on such a field; a field whose choices carry the constraint, and one with a pattern, keep it."
+refs = ["#7107"]
+covers = [
+    "main/openapi/union_mode_constrained_union/union_mode_beside_a_field_constraint.py",
+]

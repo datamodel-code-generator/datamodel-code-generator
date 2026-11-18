@@ -337,6 +337,9 @@ _UNIQUE_ITEMS_ARGUMENT = "unique_items"
 """The constraint argument ``Field()`` of Pydantic v2 cannot express."""
 _FROZEN = Why(RuleId("D11.pydantic.frozen"), keyword="readOnly", option="--use-frozen-field")
 _UNION_MODE = Why(RuleId("D6.union-mode"), keyword="union_mode")
+_UNION_WRAPPING_CONSTRAINTS: frozenset[str] = _applicability.NUMBER_FIELD_KEYWORDS | _applicability.LENGTH_META_KEYWORDS
+"""The constraint arguments Pydantic applies before ``union_mode``: on a union, each wraps it in a validator, which
+``union_mode`` cannot take."""
 _ALIAS_GENERATOR = Why(RuleId("D9.alias.generator"), keyword="alias")
 _ALIAS_GENERATOR_PIN = Why(RuleId("D9.alias.generator-pinned"), keyword="alias")
 _VALIDATION_ALIASES = Why(RuleId("D9.alias.validation-choices"), keyword="validation_aliases")
@@ -1092,6 +1095,7 @@ class DataModelField(_PydanticBaseDataModelField):
                 union_mode.value
                 and self.data_type.is_union
                 and "discriminator" not in args
+                and _UNION_WRAPPING_CONSTRAINTS.isdisjoint(args.data())
                 and _validates_as_union(self.data_type)
             ):
                 args.put("union_mode", cast("Any", union_mode.value).value, _UNION_MODE, union_mode.items)

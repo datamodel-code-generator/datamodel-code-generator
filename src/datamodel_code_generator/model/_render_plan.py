@@ -263,7 +263,8 @@ OmitReason: TypeAlias = Literal[
 * ``use-field-description``: ``--use-field-description`` writes the description as the field's docstring.
 * ``backend-cannot-express``: the backend has no argument for it (``unique_items`` in Pydantic 2 and msgspec, a
   non-finite bound in msgspec ``Meta``).
-* ``union-mode-inapplicable``: ``union_mode`` on a type that is no union, or beside a discriminator.
+* ``union-mode-inapplicable``: ``union_mode`` on a type that is no union, beside a discriminator, or beside a
+  constraint Pydantic applies around the union (``min_length``, ``ge``, ...).
 * ``alias-generator-reproduces``: the model's alias generator gives the same alias.
 * ``validation-aliases``: ``AliasChoices`` replaces the single alias.
 * ``serialization-alias-is-name``: the serialization alias equals the field name.

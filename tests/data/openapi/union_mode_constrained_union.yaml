@@ -1,0 +1,44 @@
+openapi: "3.1.0"
+info:
+  title: Union mode on a union an allOf member constrains
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    ListOrText:
+      anyOf:
+        - type: array
+          items:
+            type: string
+        - type: string
+    CountOrText:
+      anyOf:
+        - type: integer
+        - type: string
+    Base:
+      type: object
+      required:
+        - tags
+        - names
+        - count
+        - plain
+      properties:
+        tags:
+          $ref: "#/components/schemas/ListOrText"
+        names:
+          $ref: "#/components/schemas/ListOrText"
+        count:
+          $ref: "#/components/schemas/CountOrText"
+        plain:
+          $ref: "#/components/schemas/CountOrText"
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            tags:
+              contains: true
+            names:
+              maxItems: 2
+            count:
+              minimum: 0
