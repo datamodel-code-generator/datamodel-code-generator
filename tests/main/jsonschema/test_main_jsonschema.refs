@@ -7586,6 +7586,10 @@ use-annotated	main/jsonschema/main_jsonschema/property_names_root_model_keys[use
 [test_main_jsonschema_read_only_write_only_external_directory]
 all	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[all].py
 request-response	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[request-response].py
+[test_main_jsonschema_read_ref_siblings_in_closed_allof_members]
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/read_ref_siblings_in_closed_allof_members[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/read_ref_siblings_in_closed_allof_members[pydantic_v2.dataclass].py
+typing.TypedDict	main/jsonschema/main_jsonschema/read_ref_siblings_in_closed_allof_members[typing.TypedDict].py
 [test_main_jsonschema_read_schema_version_per_document]
 first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document[first-read].py
 per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document[per-document].py

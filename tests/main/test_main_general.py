@@ -2110,6 +2110,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "read_dynamic_anchors_in_document_order",
         "read_ids_with_empty_fragment",
         "read_single_allof_refs_in_their_documents",
+        "read_ref_siblings_in_closed_allof_members",
         "ignore_ref_siblings_by_schema_version",
         "read_yaml_1_1_numbers_as_text",
         "read_implied_options_from_merged_values",

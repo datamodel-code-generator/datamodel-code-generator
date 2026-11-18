@@ -18,6 +18,8 @@ read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_opti
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
 read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
+read-ref-siblings-in-closed-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].py
+read-ref-siblings-in-closed-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].py
 read-single-allof-refs-in-their-documents-command-line	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
 read-single-allof-refs-in-their-documents-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
 read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
@@ -127,6 +129,8 @@ read-nullable-beside-type-list-practical	main/preset_opt_in_options/preset_sets_
 read-nullable-beside-type-list-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-standard].py
 read-object-keywords-by-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-practical].py
 read-object-keywords-by-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-object-keywords-by-type-practical].py
+read-ref-siblings-in-closed-allof-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-ref-siblings-in-closed-allof-members-practical].py
+read-ref-siblings-in-closed-allof-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-ref-siblings-in-closed-allof-members-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-ref-siblings-in-closed-allof-members-practical].py
 read-schema-version-per-document-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-single-allof-refs-in-their-documents-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-practical].py

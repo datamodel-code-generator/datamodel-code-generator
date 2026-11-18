@@ -180,6 +180,18 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         frozenset[str], ...) like one without; without it an
                         aliased field of a Pydantic dataclass takes the type
                         its JSON Schema spells (list[int]), as in 0.89.0
+  --read-ref-siblings-in-closed-allof-members, --no-read-ref-siblings-in-closed-allof-members
+                        Read every keyword beside a $ref of the allOf members
+                        an unevaluatedProperties: false allOf member evaluates
+                        where the schema version applies them, as the schema
+                        validators read them, so a dependentSchemas or
+                        $dynamicRef beside such a $ref, which may evaluate
+                        more properties, keeps the member from closing the
+                        model and a payload with those properties validates;
+                        without it they are read only where the $ref member
+                        holds an applicator, if, patternProperties,
+                        additionalProperties or unevaluatedProperties, and the
+                        model forbids those properties, as in 0.97.0.
   --read-schema-version-per-document, --no-read-schema-version-per-document
                         Read each document by the schema version it declares
                         ($schema, or the openapi or asyncapi field); a
