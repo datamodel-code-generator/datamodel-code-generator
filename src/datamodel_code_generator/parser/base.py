@@ -514,21 +514,20 @@ def _joined_models(texts: Iterable[str]) -> str:
     return "\n\n\n".join(texts)
 
 
-def _forward_root_model_aliases(models: Sequence[DataModel]) -> set[ModelKey]:
+def _forward_root_model_aliases(models: Sequence[DataModel], positions: _ModelPositions) -> set[ModelKey]:
     """Return the keys of the RootModel aliases of a module whose value names a model at their own or a later position.
 
     The module writes such a name quoted, and Pydantic resolves it only when the alias is rebuilt: the alias is no
     class, so no class of the module rebuilds it, and every use of it fails as not fully defined until then.
+    ``positions`` indexes ``models``.
     """
-    keys = [model_key_of(model.reference) for model in models]
-    positions = {key: index for index, key in enumerate(keys)}
     return {
-        key
-        for index, (key, model) in enumerate(zip(keys, models, strict=True))
+        model_key_of(model.reference)
+        for index, model in enumerate(models)
         if model.is_alias
         and model.REQUIRES_FIELD_DEPENDENCY_ORDERING
         and any(
-            positions.get(model_key_of(reference), -1) >= index
+            positions.names_at_or_after(reference, index, view="model-key")
             for field in model.fields
             for data_type in field.data_type.all_data_types
             if (reference := data_type.reference) is not None
@@ -2113,7 +2112,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if self.dump_resolve_reference_action is None:
             return []
 
-        keyed = keyed_models(models, "reference update actions")
+        positions = _ModelPositions(models, "reference update actions")
+        keyed = positions.keyed
         required_keys_in_module = {key for key in keyed.models if key in require_update}
 
         if (
@@ -2121,22 +2121,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             and required_keys_in_module
             and get_resolve_reference_action_capabilities(self.dump_resolve_reference_action).filter_forward_references
         ):
-            module_positions = {m.reference.short_name: i for i, m in enumerate(models) if m.reference}
-            module_model_names = set(module_positions)
-
             forward_needed: set[ModelKey] = set()
             for model in models:
                 if (key := model_key_of(model.reference)) not in required_keys_in_module:
                     continue
-                name = model.reference.short_name
-                pos = module_positions[name]
-                refs = {
-                    t.reference.short_name
-                    for f in model.fields
-                    for t in f.data_type.all_data_types
-                    if t.reference and t.reference.short_name in module_model_names
-                }
-                if name in refs or any(module_positions.get(r, -1) > pos for r in refs):
+                index = positions.rank(model.reference, view="legacy-forward-by-name")
+                if any(
+                    positions.names_at_or_after(reference, index, view="legacy-forward-by-name")
+                    for field in model.fields
+                    for data_type in field.data_type.all_data_types
+                    if (reference := data_type.reference) is not None
+                ):
                     forward_needed.add(key)
 
             required_keys_in_module = reaching(
@@ -2149,7 +2144,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     for model in models
                 ),
             )
-        required_keys_in_module |= _forward_root_model_aliases(models)
+        required_keys_in_module |= _forward_root_model_aliases(models, positions)
 
         return [
             "\n",
@@ -2184,10 +2179,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             hidden_names = _hidden_type_names(model)
             for field in model.fields:
                 for data_type in field.data_type.all_data_types:
-                    if (
-                        (reference := data_type.reference)
-                        and (reference_index := positions.get(reference)) is not None
-                        and (reference_index >= index or (reference.short_name in hidden_names and not data_type.alias))
+                    if (reference := data_type.reference) and (
+                        positions.names_at_or_after(reference, index)
+                        or (
+                            reference.short_name in hidden_names
+                            and not data_type.alias
+                            and positions.get(reference) is not None
+                        )
                     ):
                         return True
         return False

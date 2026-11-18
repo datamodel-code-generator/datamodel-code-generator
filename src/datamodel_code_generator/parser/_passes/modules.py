@@ -2524,7 +2524,7 @@ def hides_named_type(
         )
     )
     for user, reference in users:
-        is_forward = index is not None and positions.rank(reference) >= index
+        is_forward = index is not None and positions.names_at_or_after(reference, index)
         if model.class_attribute_hides_named_type(
             user,
             assigned=assigned,
