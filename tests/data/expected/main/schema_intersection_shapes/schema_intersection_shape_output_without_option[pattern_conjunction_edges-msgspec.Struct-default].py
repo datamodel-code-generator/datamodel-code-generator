@@ -68,7 +68,7 @@ class NonAlikeEnum(Enum):
     field_1 = '1'
 
 
-PythonGroupName: TypeAlias = str
+PythonGroupName: TypeAlias = Annotated[str, Meta(pattern='a')]
 
 
 class NonPortableEnum(Enum):

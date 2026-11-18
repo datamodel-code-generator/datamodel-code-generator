@@ -123,10 +123,7 @@ class NonAlikeEnum(Enum):
 
 
 class PythonGroupName(RootModel[str]):
-    model_config = ConfigDict(
-        regex_engine="python-re",
-    )
-    root: constr(pattern=r'(?=a)(?=(?<n>b))')
+    root: str
 
 
 class NonPortableEnum(Enum):

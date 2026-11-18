@@ -1437,6 +1437,18 @@
   },
   {
    "action": "review",
+   "id": "leave-out-uncompiled-members-before-a-pattern-conjunction",
+   "kind": "default-output",
+   "refs": [
+    "#7094"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "Without --intersect-allof-keywords, under msgspec.Struct, an allOf whose members' patterns include one that Python's re rejects on every Python and that the count of #7088 newly reads (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) wrote no pattern (`str`); that member is now left out with a warning before the patterns are conjoined, as `\\x{62}` and `\\p{L}` already were, so the other members are checked (`Annotated[str, Meta(pattern='a')]`). Only strings the schema rejects decode differently; schema-valid payloads decode the same.",
+   "title": "An allOf member pattern no engine of the output compiles is left out before the conjunction everywhere"
+  },
+  {
+   "action": "review",
    "affects": {
     "experimental": [
      "cli-option.generate-schema-validators"
@@ -1619,8 +1631,20 @@
    ],
    "release": "unreleased",
    "source": "release-note",
-   "summary": "A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode. The default constr case, a named group beside a lookahead written as constr, is fixed with #6941.",
+   "summary": "A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode; so are the lookaheads an allOf joins its member patterns into without --intersect-allof-keywords where a member holds such syntax. The default constr case, a named group beside a lookahead written as constr, is fixed with #6941.",
    "title": "Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects"
+  },
+  {
+   "action": "none",
+   "id": "leave-out-uncompiled-members-before-a-pattern-conjunction-warnings",
+   "kind": "warning",
+   "refs": [
+    "#7094"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "Where an allOf member's pattern holds syntax that Python's re rejects on every Python and that the count of #7088 newly reads (a named group (?<name>...) and the others), msgspec.Struct warns that the member's pattern is left out (`The pattern '(?<n>b)' of the schema at ... is left out`) instead of that no single regular expression checks it with the other members, as for `\\x{62}` and `\\p{L}`; pydantic --field-constraints and --use-annotated outputs without --intersect-allof-keywords, whose models are the same, warn that the joined pattern is left out. The models are unchanged.",
+   "title": "The warning for an allOf member pattern no engine compiles names the member"
   },
   {
    "action": "none",

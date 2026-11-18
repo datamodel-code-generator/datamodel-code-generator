@@ -47,6 +47,13 @@ With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root m
 - **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
 - **Source:** the release notes
 
+### An allOf member pattern no engine of the output compiles is left out before the conjunction everywhere (unreleased) { #leave-out-uncompiled-members-before-a-pattern-conjunction }
+
+Without --intersect-allof-keywords, under msgspec.Struct, an allOf whose members' patterns include one that Python's re rejects on every Python and that the count of #7088 newly reads (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) wrote no pattern (`str`); that member is now left out with a warning before the patterns are conjoined, as `\x{62}` and `\p{L}` already were, so the other members are checked (`Annotated[str, Meta(pattern='a')]`). Only strings the schema rejects decode differently; schema-valid payloads decode the same.
+
+- **Pull requests and issues:** [#7094](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7094)
+- **Source:** the release notes
+
 ### Schema validators check the numeric bounds an if/then/else puts on properties (unreleased) { #schema-validators-conditional-bounds }
 
 With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` that the `then` or `else` of an if/then/else puts on a property are checked on the raw input when the `if` is one the conditional required check reads (required properties with `const` or `enum` values, or presence only): `{"kind": "a", "value": 1}` is now rejected for `then: {properties: {value: {minimum: 10}}}` under `if: kind = "a"`, as JSON Schema rejects it. The bounds are read from the branch, its allOf members and the schema a branch or property references; a bound applies to a JSON number only, and the condition tells a boolean from a number. A model also checks the bounds of its base class. Models gain `__json_schema_conditional_bounds__` and a shared base with `_validate_json_schema_conditional_bounds`. Without the option nothing changes. The conditions of these checks, the released conditional `required` included, compare an enum member by its value, as the JSON input does: a model built with `Color.RED` takes the branch that `"red"` takes.
@@ -152,9 +159,16 @@ A pattern with a letter after a backslash that the Rust regex engine of pydantic
 
 ### Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects (unreleased) { #count-named-groups-python-rejects }
 
-A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode. The default constr case, a named group beside a lookahead written as constr, is fixed with #6941.
+A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode; so are the lookaheads an allOf joins its member patterns into without --intersect-allof-keywords where a member holds such syntax. The default constr case, a named group beside a lookahead written as constr, is fixed with #6941.
 
 - **Pull requests and issues:** [#7088](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7088)
+- **Source:** the release notes
+
+### The warning for an allOf member pattern no engine compiles names the member (unreleased) { #leave-out-uncompiled-members-before-a-pattern-conjunction-warnings }
+
+Where an allOf member's pattern holds syntax that Python's re rejects on every Python and that the count of #7088 newly reads (a named group (?<name>...) and the others), msgspec.Struct warns that the member's pattern is left out (`The pattern '(?<n>b)' of the schema at ... is left out`) instead of that no single regular expression checks it with the other members, as for `\x{62}` and `\p{L}`; pydantic --field-constraints and --use-annotated outputs without --intersect-allof-keywords, whose models are the same, warn that the joined pattern is left out. The models are unchanged.
+
+- **Pull requests and issues:** [#7094](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7094)
 - **Source:** the release notes
 
 ### New option `--use-validate-default-for-root-model-type-aliases` (`--no-use-validate-default-for-root-model-type-aliases`) (unreleased) { #option-use-validate-default-for-root-model-type-aliases }
