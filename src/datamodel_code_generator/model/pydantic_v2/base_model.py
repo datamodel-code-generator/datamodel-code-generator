@@ -134,7 +134,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
-from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager, EncodedTextDataType
+from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager, EncodedTextDataType, PydanticV2DataType
 from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
@@ -705,6 +705,21 @@ def _prepare_type_alias_field(
     return True
 
 
+def _type_without_pattern(data_type: DataType) -> DataType:
+    """Return a new type that writes ``data_type`` without its ``pattern`` (#6941).
+
+    It keeps its class and its other keywords; a string type left with none is the ``str`` it constrains.
+    """
+    kwargs = {key: value for key, value in (data_type.kwargs or {}).items() if key != "pattern"}
+    fresh = {"parent": None, "children": [], "data_types": []}
+    if kwargs or _constraint_base(data_type, annotated_string=True) != "str":
+        return data_type.model_copy(update={**fresh, "kwargs": kwargs or None})
+    values = {**dict(data_type), **fresh, "type": "str", "import_": None, "is_func": False, "kwargs": None}
+    written = PydanticV2DataType.model_construct(None, **values)
+    keep_node_records(written, data_type)
+    return written
+
+
 def _writes_no_call_without_plan(field: DataModelFieldBase) -> bool:
     """Return whether ``field`` has nothing a ``Field()`` call could write and needs no null default, so no call.
 
@@ -764,6 +779,7 @@ class DataModelField(_PydanticBaseDataModelField):
     _TYPE_MANAGER: ClassVar[type[DataTypeManagerBase]] = DataTypeManager
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
+    _TYPE_WITHOUT_PATTERN = staticmethod(_type_without_pattern)
     NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
     WRITES_NO_CALL_WITHOUT_PLAN = staticmethod(_writes_no_call_without_plan)
     PATTERN_NEEDS_HOLDER_ENGINE = staticmethod(_pattern_needs_holder_engine)

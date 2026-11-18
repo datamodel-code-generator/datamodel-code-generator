@@ -19,7 +19,8 @@ revisions it read hold; the field's imports are kept the same way, by the plan t
 A field, model or parser of a class outside this package computes both at each read. B2 builds each plan from the
 field's facts, which are final then, and keeps with it the expression of the field's type hint, which the field's
 ``type_hint`` renders from then on. A plan of a field of this package's classes is final, except one that holds a copy
-of the field's type (msgspec's ``written_type``), which keeps its field's revisions; a plan of a class outside this
+of the field's type (msgspec's ``written_type``, or a Pydantic field's copy without the patterns ``python-re``
+cannot compile, #6941), which keeps its field's revisions; a plan of a class outside this
 package, or under custom templates, keeps the contents of what it read from its field. A field whose revisions or
 contents differ when its model renders, as a model's ``render`` may change them, renders from a plan rebuilt then; the
 expression of such a class is built at each read. A plan holds
@@ -448,8 +449,10 @@ class FieldRenderPlan:
     the annotation; a msgspec or stdlib dataclass field with ``bare_default`` writes its default alone after the
     annotation. ``written_type`` is the type a msgspec annotation writes when it writes a copy of the field's type: its
     ``Annotated`` type, or its union with ``UnsetType``; the type writes its text when it is read. It is a ``DataType``,
-    typed ``object`` since importing ``types`` here would close an import cycle. ``qualifiers`` name the subscripts
-    that wrap the type hint, innermost first (``TypedDict``'s ``ReadOnly``, ``NotRequired``).
+    typed ``object`` since importing ``types`` here would close an import cycle. A Pydantic field holds it when its type
+    writes a pattern that Python's ``re`` rejects in a model built with ``python-re``: the copy is written without it.
+    ``qualifiers`` name the subscripts that wrap the type hint, innermost first (``TypedDict``'s ``ReadOnly``,
+    ``NotRequired``).
     """
 
     annotation_form: AnnotationForm

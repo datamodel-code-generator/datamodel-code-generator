@@ -15,6 +15,7 @@ from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
     _generated_model,
+    _generated_package_module,
     _model_json_validator,
     run_main_and_assert,
 )
@@ -384,6 +385,99 @@ def test_patterns_the_python_engine_rejects_beside_one_it_needs(
 
 
 @pytest.mark.parametrize(
+    "output_model_type",
+    [pytest.param("pydantic_v2.BaseModel", id="base_model"), pytest.param("pydantic_v2.dataclass", id="dataclass")],
+)
+def test_unicode_property_beside_a_lookahead_is_left_out_of_constr(
+    output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str
+) -> None:
+    r"""Leave out with a warning a ``\\p{L}`` that a ``constr`` writes where the model selects ``python-re`` (#6941).
+
+    With the default options the fields write their patterns in ``constr`` calls; a lookahead selects ``python-re``
+    for the model, and Python's ``re`` rejects ``\\p{L}``, so the module once failed at import. It imports, the
+    lookahead still rejects what it rejects and the name is not checked.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_engine_beside_unicode_property.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    payloads = {
+        "valid": {"password": "Abcdefgh", "name": "D\u00e9j\u00e0"},
+        "password without a capital": {"password": "abcdefgh"},
+        "any name": {"name": "42"},
+    }
+    with _generated_model(output_file, "python_engine_beside_unicode_property", "Model") as model:
+        outcomes += _outcomes(model, payloads)
+        outcomes += f"value: {_model_json_validator(model)(json.dumps(payloads['valid'])).name!r}\n"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="constr"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"], id="annotated"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"], id="type_alias"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--strict-types", "str"], id="strict_str"),
+        pytest.param(
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--field-constraints",
+                "--use-encoded-str-for-constrained-base64",
+            ],
+            id="encoded_str",
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="dataclass"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--target-pydantic-version", "2"],
+            id="type_alias_string_target",
+        ),
+        pytest.param(["--preset", "standard-py311-20260826"], id="preset"),
+    ],
+)
+def test_patterns_python_re_rejects_in_every_form_of_a_type(
+    output_file: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Leave out with a warning each pattern Python's ``re`` rejects in a type of a ``python-re`` model (#6941).
+
+    A lookahead selects ``python-re`` for the model, and ``\\p{L}`` is written in the types of its fields: a
+    ``constr`` or a ``StringConstraints`` of an item, a dict value, a dict key and a union member, the body of a type
+    alias the model builds, a strict string, and the constraints in front of decoding base64 text. Each module once
+    failed at import. It imports, the other constraints of those types stay (``maxLength``) and the lookahead still
+    rejects what it rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_engine_beside_rejected_pattern_forms.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    payloads = {
+        "valid": {
+            "password": "Abcdefgh",
+            "name": "Zo\u00eb",
+            "nicknames": ["Jo"],
+            "labels": {"a": "B\u00e9"},
+            "scores": {"\u00e9t\u00e9": 1},
+            "handle": "Zo\u00eb",
+        },
+        "password without a capital": {"password": "abcdefgh"},
+        "handle longer than 8": {"handle": "abcdefghij"},
+        "names are not checked": {"name": "1", "nicknames": ["1"], "labels": {"a": "1"}, "scores": {"1": 1}},
+    }
+    with _generated_model(output_file, "python_engine_beside_rejected_pattern_forms", "Account") as model:
+        outcomes += _outcomes(model, payloads)
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
     "extra_args",
     [
         pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"], id="field_constraints"),
@@ -392,6 +486,8 @@ def test_patterns_the_python_engine_rejects_beside_one_it_needs(
             id="base_model_collapsed",
         ),
         pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], id="dataclass_alias"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="base_model"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="dataclass"),
     ],
 )
 def test_named_group_beside_a_lookaround_is_left_out(
@@ -400,8 +496,9 @@ def test_named_group_beside_a_lookaround_is_left_out(
     r"""Leave out with a warning a named group of ECMA-262 where the model selects ``python-re`` (#7088).
 
     A lookahead selects ``python-re`` for the model, and Python's ``re`` rejects ``(?<year>...)`` on every Python,
-    which writes it ``(?P<year>...)``; the module once failed at import. It imports, the lookahead still rejects what
-    it rejects and the date is not checked.
+    which writes it ``(?P<year>...)``; the module once failed at import, with the default options also where the
+    field writes the pattern in a ``constr`` (#6941). It imports, the lookahead still rejects what it rejects and the
+    date is not checked.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "python_engine_beside_named_group.json",
@@ -415,6 +512,135 @@ def test_named_group_beside_a_lookaround_is_left_out(
     with _generated_model(output_file, "python_engine_beside_named_group", "Release") as model:
         outcomes += _outcomes(model, payloads)
         outcomes += f"value: {_model_json_validator(model)(json.dumps(payloads['valid'])).date!r}\n"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [pytest.param("pydantic_v2.BaseModel", id="base_model"), pytest.param("pydantic_v2.dataclass", id="dataclass")],
+)
+@pytest.mark.parametrize(
+    ("document", "model_name", "payloads"),
+    [
+        pytest.param(
+            "python_engine_beside_rejected_root_union",
+            "Token",
+            {"valid": "Abcdefgh", "letters": "abc", "digits": "123"},
+            id="root_union",
+        ),
+        pytest.param(
+            "python_engine_beside_rejected_in_a_base",
+            "Child",
+            {"valid": {"name": "Zo\u00eb", "tags": ["a"], "pw": "Abcdefgh"}, "digits": {"name": "1", "tags": ["1"]}},
+            id="base",
+        ),
+    ],
+)
+def test_patterns_python_re_rejects_in_a_root_union_and_in_a_base(
+    output_file: Path,
+    recwarn: pytest.WarningsRecorder,
+    output_model_type: str,
+    document: str,
+    model_name: str,
+    payloads: Mapping[str, object],
+) -> None:
+    r"""Leave out ``\p{L}`` of a root union and of a base whose child selects ``python-re`` (#6941).
+
+    The module once failed at import; it imports and the lookahead still rejects what it rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{document}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    with _generated_model(output_file, document, model_name) as model:
+        outcomes += _outcomes(model, payloads)
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="constr"),
+        pytest.param(["--use-type-alias", "--target-python-version", "3.12"], id="type_alias"),
+    ],
+)
+def test_patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module(
+    output_dir: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Leave out ``\p{L}`` of a base and a type alias that a ``python-re`` model of another module builds (#6941).
+
+    Modular output follows the rule ``Field()`` has followed since 0.92.0 (#6593): ``b.Child`` inherits ``a.Base`` and
+    ``b.User`` reaches ``a.Name``, both with a lookahead that selects ``python-re``, so ``a`` writes the shared
+    annotations without the pattern Python's ``re`` rejects (``maxLength`` stays). Both modules import; a module that
+    imported before validates less, the owner's decision of 2026-11-18.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "python_engine_beside_rejected_in_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            *extra_args,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    payloads = {
+        "module a": (
+            "a",
+            "Base",
+            {"valid": {"handle": "abc"}, "digits": {"handle": "12"}, "too long": {"handle": "abcdefghij"}},
+        ),
+        "module b child": (
+            "b",
+            "Child",
+            {"valid": {"handle": "abc", "password": "Abcdefgh"}, "no capital": {"password": "abcdefgh"}},
+        ),
+        "module b user": (
+            "b",
+            "User",
+            {"valid": {"password": "Abcdefgh", "label": "Zo\u00eb"}, "no capital": {"password": "abcdefgh"}},
+        ),
+    }
+    for label, (module, model_name, cases) in payloads.items():
+        with _generated_package_module(output_dir, module) as generated:
+            outcomes += f"{label}\n{_outcomes(getattr(generated, model_name), cases)}"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--field-constraints", "--collapse-root-models"], id="field_constraints"),
+        pytest.param(["--preset", "practical-py311-20260826"], id="preset"),
+    ],
+)
+def test_a_pattern_python_accepts_keeps_its_engine_beside_a_union(output_file: Path, extra_args: list[str]) -> None:
+    r"""Keep ``python-re`` and the backreference ``(a)\1`` that Python accepts: nothing is left out of such a model."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_engine_backreference_beside_union.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            *extra_args,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "python_engine_backreference_beside_union", "Model") as model:
+        outcomes = _outcomes(model, {"aa": {"r": "aa"}, "ab": {"r": "ab"}})
     assert_output(outcomes, name="outcomes")
 
 

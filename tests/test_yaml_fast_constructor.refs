@@ -551,6 +551,7 @@ openapi/pattern_size_word_and_space_class.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/plain.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/shared.yaml	yaml_fast_constructor/parity.txt
+openapi/python_engine_beside_rejected_in_modules.yaml	yaml_fast_constructor/parity.txt
 openapi/python_import_all_of/alias.yaml	yaml_fast_constructor/parity.txt
 openapi/python_import_all_of/api.yaml	yaml_fast_constructor/parity.txt
 openapi/python_import_all_of_request_response/api.yaml	yaml_fast_constructor/parity.txt

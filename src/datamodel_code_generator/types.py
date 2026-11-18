@@ -2015,20 +2015,33 @@ def _copied_node(data_type: DataType) -> DataType:
     return copied
 
 
-def _copy_data_type(data_type: DataType, *, register_references: bool = True, link_parents: bool = True) -> DataType:
+def _copy_data_type(
+    data_type: DataType,
+    *,
+    register_references: bool = True,
+    link_parents: bool = True,
+    replacements: Mapping[int, DataType] | None = None,
+) -> DataType:
     """Copy a DataType tree without detaching its model references.
 
     The copy has no parent; ``link_parents`` makes each nested copy the parent of the copies it holds, and
-    ``register_references`` registers every copy with the reference it names.
+    ``register_references`` registers every copy with the reference it names. ``replacements`` gives, by the ``id`` of
+    a node of the tree, the node the copy holds in its place.
     """
+    if replacements and (replacement := replacements.get(id(data_type))) is not None:
+        return replacement
     copied = _copied_node(data_type)
     copied.parent = None
     copied.data_types = [
-        _copy_data_type(child, register_references=register_references, link_parents=link_parents)
+        _copy_data_type(
+            child, register_references=register_references, link_parents=link_parents, replacements=replacements
+        )
         for child in data_type.data_types
     ]
     if (dict_key := data_type.dict_key) is not None:
-        copied.dict_key = _copy_data_type(dict_key, register_references=register_references, link_parents=link_parents)
+        copied.dict_key = _copy_data_type(
+            dict_key, register_references=register_references, link_parents=link_parents, replacements=replacements
+        )
     if link_parents:
         link_members(copied)
     if register_references:

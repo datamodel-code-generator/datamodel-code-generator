@@ -503,6 +503,12 @@ def dump_templates(templates: list[DataModel]) -> str:
     return _joined_models(str(m) for m in templates)
 
 
+def _hint_data_types(model: DataModel) -> Iterator[tuple[DataModelFieldBase, DataType]]:
+    """Yield each field of a model with the type its hint writes (``DataModelFieldBase._hint_data_type``)."""
+    for field in model.fields:
+        yield field, field._hint_data_type()  # noqa: SLF001
+
+
 def _joined_models(texts: Iterable[str]) -> str:
     """Join the rendered texts of models into a single code string."""
     return "\n\n\n".join(texts)
@@ -2049,12 +2055,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             imports = model_imports[model] if model_imports is not None else model.imports
             for import_ in imports:
                 add(import_.alias or import_.import_.split(".")[-1])
-            for field in model.fields:
+            for field, hint_type in _hint_data_types(model):
                 if field.is_class_var:
                     continue
                 add(field.name)
                 add(field.alias)
-                field.data_type.walk(collect_data_type_names)
+                hint_type.walk(collect_data_type_names)
             for data_type in _data_types_beside_fields(model):
                 collect_data_type_names(data_type)
         return names
@@ -2497,9 +2503,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for ctx in contexts:
             for model in ctx.models:
                 runtime_imports: list[Import] = []
-                for field in model.fields:
+                for field, hint_type in _hint_data_types(model):
                     runtime_imports.extend(field.runtime_expression_imports)
-                    for data_type in field.data_type.all_data_types:
+                    for data_type in hint_type.all_data_types:
                         runtime_imports.extend(data_type.runtime_expression_imports)
                 if runtime_imports:
                     model_imports[model] = (*model_imports[model], *runtime_imports)

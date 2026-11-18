@@ -746,6 +746,12 @@ class EncodedTextDataType(_RuntimeAnnotatedDataType):
 
     @property
     @override
+    def imports(self) -> Iterator[Import]:
+        """Yield the annotation imports, ``Field`` only where the type writes constraints in front of its decoding."""
+        yield from (import_ for import_ in super().imports if self.kwargs or import_ != IMPORT_FIELD)
+
+    @property
+    @override
     def type_hint(self) -> str:
         """Render the decoded type, its constraints and the base64 decoding inside an Annotated subscript."""
         constraints = (
