@@ -240,7 +240,24 @@ BUILTINS = frozenset({
     "vars",
     "zip",
 })
-"""The names of `builtins` on the oldest supported Python (3.11), so a read resolves the same on every version."""
+"""The names of `builtins` on every platform from the oldest supported Python (3.11) on."""
+
+CONDITIONAL_BUILTINS: dict[str, tuple[str | None, tuple[int, int]]] = {
+    "ImportCycleError": (None, (3, 15)),
+    "PythonFinalizationError": (None, (3, 13)),
+    "WindowsError": ("win32", (3, 11)),
+    "_IncompleteInputError": (None, (3, 13)),
+    "__lazy_import__": (None, (3, 15)),
+    "frozendict": (None, (3, 15)),
+    "sentinel": (None, (3, 15)),
+}
+"""The names of `builtins` that exist only on one platform or from a version on: the ``sys.platform`` each needs
+(``None``: every platform) and the first version that has it.
+
+A read resolves to these as to `BUILTINS` on every platform and version, since code under a platform or version guard
+reads them, so an answer depends on the source text alone."""
+
+_BUILTIN_NAMES = BUILTINS.union(CONDITIONAL_BUILTINS)
 
 MODULE_ATTRIBUTES = frozenset({
     "__annotations__",
@@ -1693,7 +1710,7 @@ class SourceModule(_Suppressions):
             return Resolution("global", module, ())
         if module.star_import:
             return Resolution("star", module, ())
-        return Resolution("builtin" if mangled in BUILTINS else "unbound", None, ())
+        return Resolution("builtin" if mangled in _BUILTIN_NAMES else "unbound", None, ())
 
     def _origin(self, node: ast.expr, active: frozenset[Binding] = frozenset()) -> str | None:
         head, parts = _chain(node)
@@ -2188,6 +2205,11 @@ def _table_names(table: symtable.SymbolTable) -> frozenset[str]:
     )
 
 
+def _path_parts(path: Path) -> tuple[str, ...]:
+    """Sort key of a file: its parts as written (a Windows path sorts case-insensitively, ``Models`` after ``_x``)."""
+    return path.parts
+
+
 class SourceTree:
     """The modules of packages under a root, read on first use, for the questions that cross modules."""
 
@@ -2197,7 +2219,7 @@ class SourceTree:
         self.verify = verify
         self.paths: dict[str, Path] = {}
         for package in packages:
-            for path in sorted((root / package).rglob("*.py")):
+            for path in sorted((root / package).rglob("*.py"), key=_path_parts):
                 parts = path.relative_to(root).with_suffix("").parts
                 self.paths[".".join(parts[:-1] if parts[-1] == "__init__" else parts)] = path
         self._modules: dict[str, SourceModule] = {}

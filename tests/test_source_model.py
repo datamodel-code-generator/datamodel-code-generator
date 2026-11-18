@@ -445,17 +445,22 @@ def test_the_model_refuses_what_it_has_no_rule_for() -> None:
     assert_output(str(error.value) + "\n")
 
 
-def test_builtins_are_the_floor_set() -> None:
-    """Reads resolve against the builtins of the oldest supported Python, a subset of every newer one's.
+def test_builtins_are_the_tables_on_this_python() -> None:
+    """The builtins of this platform and Python are the floor set and the conditional names the table gives them.
 
     The names come from a fresh interpreter: code that earlier tests ran in this one may have added to `builtins`
     (``eval`` or ``exec`` with the builtins namespace as globals adds ``__builtins__`` to it).
     """
     command = [sys.executable, "-I", "-c", "import builtins; print(*dir(builtins))"]
     names = set(subprocess.run(command, capture_output=True, text=True, check=True).stdout.split())
-    missing = sorted(source_model.BUILTINS - names)
-    extra = sorted(names - source_model.BUILTINS) if PYTHON == (3, 11) else []
-    assert_output(f"missing here: {missing or 'none'}\nextra on the floor Python: {extra or 'none'}\n")
+    expected = source_model.BUILTINS.union(
+        name
+        for name, (platform, since) in source_model.CONDITIONAL_BUILTINS.items()
+        if platform in {None, sys.platform} and since <= PYTHON
+    )
+    missing = sorted(expected - names)
+    extra = sorted(names - expected)
+    assert_output(f"missing here: {missing or 'none'}\nnot in the tables: {extra or 'none'}\n")
 
 
 @dataclass(frozen=True)
