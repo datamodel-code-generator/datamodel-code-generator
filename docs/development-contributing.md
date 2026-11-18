@@ -170,10 +170,11 @@ Documentation builders surround fixture-backed examples and generated output wit
 quote style and layout produced by the documented command. Keep these markers in
 the builders rather than editing generated Markdown directly.
 
-After changing documentation, regenerate the affected pages and then run
-`python scripts/build_llms_txt.py`, which updates the committed `docs/llms.txt`
-(`docs/llms-full.txt` is built when the site is deployed and is not committed).
-Run `tox run -e fix` and
+After changing documentation, regenerate the affected pages, run
+`python scripts/build_migration_docs.py` (`docs/llms.txt` lists the upgrade guide's
+pages) and then `python scripts/build_llms_txt.py`, which updates the committed
+`docs/llms.txt` (`docs/llms-full.txt` is built when the site is deployed and is not
+committed). Run `tox run -e fix` and
 `tox run -e docs-check-all -- --check` to verify formatting and generated content
 agree.
 
@@ -265,9 +266,10 @@ entry against this checkout and the recorded outputs, also with all keep flags o
 together, and `--verify --text` also checks the `before` and `after` lines. `--check` fails while an entry's fixture
 has no recorded output.
 
-Run `python scripts/build_migration_docs.py` to rebuild the committed pages (`docs/migration/index.md`,
-`docs/migration/changes.md`, `docs/data/migration.json`); `--check` fails on stale pages and on invalid entries.
-`--release-notes unreleased` prints the release-note sections of the next release, and
+Run `python scripts/build_migration_docs.py` to rebuild the committed hub `docs/migration/index.md` and, locally, the
+files the docs deploy builds and the repository does not commit (`docs/migration/changes.md`,
+`docs/data/migration.json`), so a change fragment conflicts with no other; `--check` fails on a stale hub and on invalid
+entries. `--release-notes unreleased` prints the release-note sections of the next release, and
 `--range-pages docs/migration` writes the page of each range of releases locally, as the docs deploy does.
 
 ## Architecture boundaries

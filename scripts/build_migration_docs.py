@@ -16,12 +16,13 @@ it) and `derived.toml` (the first release of each dated preset). The deprecation
 experimental registries and the dated presets of the source tree add entries nobody writes by hand; a hand entry
 with the id of such an entry extends it.
 
-The build writes the committed pages docs/migration/index.md (the hub), docs/migration/changes.md (every change by
-release) and docs/data/migration.json. `--range-pages` writes the page of each range of releases that need the same
-steps, `--raw-site` the Markdown of each release under `<site>/migration/from/<version>.md`; the docs deploy builds
-both. `--release-notes` prints the release-note sections of a release from the same entries, `--has-breaking` exits 0
-when the release has a breaking change and 1 otherwise, and `--stamp` moves the fragments a release tag contains into
-the changes of that release.
+The build writes the committed hub docs/migration/index.md and the files the docs deploy builds, which are not
+committed: docs/migration/changes.md (every change by release) and docs/data/migration.json. `--check` validates the
+data and compares the hub alone. `--range-pages` writes the page of each range of releases that need the same steps,
+`--raw-site` the Markdown of each release under `<site>/migration/from/<version>.md`; the docs deploy builds both.
+`--release-notes` prints the release-note sections of a release from the same entries, `--has-breaking` exits 0 when
+the release has a breaking change and 1 otherwise, and `--stamp` moves the fragments a release tag contains into the
+changes of that release.
 """
 
 from __future__ import annotations
@@ -238,7 +239,7 @@ class MigrationDataError(Exception):
 
 @dataclass(frozen=True)
 class Layout:
-    """Where the data is read from and the committed pages are written to."""
+    """Where the data is read from and the generated pages are written to."""
 
     data: Path = DATA_DIR
     docs: Path = DOCS_DIR
@@ -1269,12 +1270,13 @@ def has_breaking(guide: Guide, release: str) -> bool:
 
 
 def committed_files(guide: Guide, layout: Layout) -> dict[Path, str]:
-    """Return the committed generated files and their text."""
-    return {
-        layout.docs / HUB_PAGE: hub_page(guide),
-        layout.docs / CHANGES_PAGE: changes_page(guide, layout),
-        layout.json: to_json(guide),
-    }
+    """Return the committed generated page, the hub, and its text."""
+    return {layout.docs / HUB_PAGE: hub_page(guide)}
+
+
+def deploy_files(guide: Guide, layout: Layout) -> dict[Path, str]:
+    """Return the generated files the docs deploy builds and the repository does not commit, and their text."""
+    return {layout.docs / CHANGES_PAGE: changes_page(guide, layout), layout.json: to_json(guide)}
 
 
 def _write(files: dict[Path, str]) -> None:
@@ -1353,12 +1355,13 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
         f"{DERIVED_HEADER}\n[presets]\n{_toml_rows(presets)}\n[options]\n{_toml_rows(options)}", encoding="utf-8"
     )
     layout.surface.write_text(_surface_json(tagged_surface), encoding="utf-8")
-    _write(committed_files(load(layout, registries), layout))
+    guide = load(layout, registries)
+    _write(committed_files(guide, layout) | deploy_files(guide, layout))
     return [path.stem for path in moved]
 
 
 def check(guide: Guide, layout: Layout) -> list[str]:
-    """Return the committed generated files that are missing or out of date."""
+    """Return the committed generated files that are missing or out of date; the deploy builds the others."""
     return sorted(
         path.name
         for path, text in committed_files(guide, layout).items()
@@ -1663,7 +1666,7 @@ def run(ns: argparse.Namespace, registries: Registries | None = None) -> int:
         pages = ns.raw_site / "migration" / "from"
         _write({pages / f"{release['version']}.md": raw_page(guide, release["version"]) for release in guide.releases})
     else:
-        _write(committed_files(guide, layout))
+        _write(committed_files(guide, layout) | deploy_files(guide, layout))
     return 0
 
 
