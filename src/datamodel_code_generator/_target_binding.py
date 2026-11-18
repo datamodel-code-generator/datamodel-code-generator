@@ -896,13 +896,6 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
         named = source and self._schema_reference_location(source.document, value["$ref"])
         self._missing_messages.update({id(resolved.value): (resolved.value, named)} if named is not None else {})
         return resolved
-        source = self._raw_location(value)
-        if (
-            source is not None
-            and (named := self._schema_reference_location(source.document, value["$ref"])) is not None
-        ):
-            self._missing_messages[id(resolved.value)] = (resolved.value, named)
-        return resolved
 
     @override
     def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
