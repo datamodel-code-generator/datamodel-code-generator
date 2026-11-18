@@ -1,6 +1,7 @@
 [[change]]
 id = "decoded-document-to-first-parser"
 category = "harness"
+refs = ["#7134"]
 title = "Hand the decoded document to the first parser"
 summary = "Stored test output of the warnings an auto run with deprecated YAML bools raises at its inference and its parse; the package writes the same output for the same call."
 covers = [
