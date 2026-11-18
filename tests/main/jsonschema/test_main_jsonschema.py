@@ -3787,6 +3787,58 @@ def test_main_jsonschema_field_type_collision_runtime(
         )
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_jsonschema_field_named_like_type_beside_enum_named_base(
+    output_file: Path, output_model_type: str
+) -> None:
+    """Rename a field named like its type in a model whose base class name contains ``Enum`` but which is no enum.
+
+    ``Owner`` inherits the generated ``EnumerationBase`` and renames its field ``Pet`` as ``Shop`` does, so the module
+    imports.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "field_named_like_type_beside_enum_named_base.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", output_model_type, "--disable-timestamp"],
+    )
+    valid = {"owner": {"Pet": {"name": "a"}}, "shop": {"Pet": {"name": "b"}}, "Pet": {"name": "c"}}
+    invalid = {"owner": {"Pet": {"name": 1}}}
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="field_named_like_type_beside_enum_named_base",
+        model_name="Store",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
+        expected_attribute_path=("owner", "Pet_1", "name"),
+        expected_attribute_value="a",
+    )
+
+
+def test_main_jsonschema_field_named_like_type_beside_enum_named_custom_base(output_file: Path) -> None:
+    """Rename a field named like its type in a model whose custom base class name contains ``Enum``."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "field_named_like_type_beside_enum_named_base.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--base-class",
+            "mylib.EnumAwareModel",
+        ],
+    )
+
+
 def _annotation_type_names(annotation: Any) -> set[str]:
     """Return the names of the classes and containers that a resolved annotation names, ignoring unions."""
     if isinstance(annotation, type) and not get_args(annotation):
