@@ -1,0 +1,136 @@
+"""Print the test node ids a diff selects: the mirrors of changed modules and the rows of related_tests.toml."""
+
+from __future__ import annotations
+
+import argparse
+import re
+import subprocess
+import sys
+from fnmatch import fnmatchcase
+from pathlib import Path
+
+import tomllib
+
+RULES = Path(__file__).with_name("related_tests.toml")
+SRC = "src/datamodel_code_generator/"
+
+
+def _git(root: Path, *args: str) -> str:
+    result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=False)
+    return result.stdout
+
+
+def _exists(root: Path, head: str | None, path: str) -> bool:
+    """Whether the file or directory is in the head commit, or in the working tree without a head."""
+    if head is None:
+        return (root / path).exists()
+    return bool(_git(root, "ls-tree", head, "--", path).strip())
+
+
+def _changes(root: Path, base: str, head: str | None) -> dict[str, str]:
+    """Map each changed path to its diff letter, for base...head or for the merge base and the working tree."""
+    left = _git(root, "merge-base", base, head or "HEAD").strip() or base
+    listing = _git(root, "diff", "--name-status", "--no-renames", left, *([head] if head else []))
+    changed: dict[str, str] = {}
+    for line in listing.splitlines():
+        letter, _, path = line.partition("\t")
+        changed[path] = letter[0]
+    if head is None:
+        for path in _git(root, "ls-files", "-o", "--exclude-standard").splitlines():
+            changed[path] = "A"
+    return changed
+
+
+def _changed_lines(root: Path, base: str, head: str | None, paths: list[str]) -> list[str]:
+    left = _git(root, "merge-base", base, head or "HEAD").strip() or base
+    diff = _git(root, "diff", "-U0", "--no-renames", left, *([head] if head else []), "--", *paths)
+    return [line[1:] for line in diff.splitlines() if line[:1] in "+-" and line[:3] not in {"+++", "---"}]
+
+
+def _matches(path: str, globs: list[str]) -> bool:
+    return any(fnmatchcase(path, glob) for glob in globs)
+
+
+def _mirrors(path: str) -> list[str]:
+    """Name the test modules that mirror a source module or a script."""
+    if path.startswith(SRC) and path.endswith(".py"):
+        directory, _, name = path.removeprefix(SRC).rpartition("/")
+        prefix = f"tests/{directory}/" if directory else "tests/"
+        stem = name.removesuffix(".py")
+        return [f"{prefix}test_{stem}.py", f"{prefix}test_{stem.removeprefix('_')}.py"]
+    if path.startswith("scripts/") and path.endswith(".py"):
+        return [f"tests/test_{path.rpartition('/')[2].removesuffix('.py')}_script.py"]
+    return []
+
+
+def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[str]:
+    """Return the sorted node ids the diff selects: the mirrors of changed modules and every row that fires."""
+    changed = _changes(root, base, head)
+    nodes: set[str] = set()
+    for path, letter in changed.items():
+        if letter == "D":
+            continue
+        nodes.update(next(([test] for test in _mirrors(path) if _exists(root, head, test)), []))
+    for rule in rules:
+        status = rule.get("status")
+        hit = [
+            path
+            for path, letter in changed.items()
+            if _matches(path, rule["paths"])
+            and not _matches(path, rule.get("exclude", []))
+            and (status is None or letter in status)
+        ]
+        if hit and "pattern" in rule:
+            pattern = re.compile(rule["pattern"])
+            hit = [line for line in _changed_lines(root, base, head, hit) if pattern.search(line)]
+        if hit:
+            nodes.update(test for test in rule["tests"] if _exists(root, head, test.partition("::")[0]))
+    return sorted(nodes)
+
+
+def problems(root: Path, rules: list[dict]) -> list[str]:
+    """One line per row without an incident, with a repeated id, or with a target missing in the working tree."""
+    found: list[str] = []
+    seen: set[str] = set()
+    for rule in rules:
+        if rule["id"] in seen:
+            found.append(f"{rule['id']}: the id is used twice")
+        seen.add(rule["id"])
+        if not rule.get("incident"):
+            found.append(f"{rule['id']}: no incident")
+        for test in rule["tests"]:
+            file, _, function = test.partition("::")
+            path = root / file
+            if not path.exists() or (
+                function and not re.search(rf"^\s*def {function}\(", path.read_text("utf-8"), re.MULTILINE)
+            ):
+                found.append(f"{rule['id']}: missing target {test}")
+    return found
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Print the selection of a diff, or check that every row's target exists."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--base", help="the commit the change is measured against")
+    parser.add_argument("--head", help="the commit with the change (default: the working tree)")
+    parser.add_argument("--rules", type=Path, default=RULES, help="the rows to read (default: related_tests.toml)")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="list the rows with a problem (missing target, no incident) and exit 1 if any",
+    )
+    args = parser.parse_args(argv)
+    rules = tomllib.loads(args.rules.read_text(encoding="utf-8"))["rule"]
+    root = Path.cwd()
+    if args.check:
+        found = problems(root, rules)
+        sys.stdout.write("".join(f"{line}\n" for line in found))
+        return 1 if found else 0
+    if not args.base:
+        parser.error("--base is required unless --check is given")
+    sys.stdout.write("".join(f"{node}\n" for node in select(root, args.base, args.head, rules)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

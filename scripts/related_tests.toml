@@ -1,0 +1,159 @@
+# Rules of the form "when X changes, also run Y" for `scripts/related_tests.py`.
+#
+# Each [[rule]] fires when a changed path matches one of `paths` (fnmatch globs; `*` also matches `/`) and no
+# `exclude` glob, only for the diff letters in `status` when given (A added, M modified, D deleted), and, when
+# `pattern` is given, only when an added or removed line of the matched files matches that regular expression.
+# `tests` lists the pytest node ids (file, directory or file::function) the rule selects.
+# `incident` says what failed on hosted CI because no related test ran; `prs` lists the pull requests.
+#
+# The mirrors (a changed src/datamodel_code_generator/.../x.py selects tests/.../test_x.py; a changed scripts/x.py
+# selects tests/test_x_script.py) are not rows: the script derives them from the paths.
+
+[[rule]]
+id = "legacy-rows"
+prs = [6122]
+incident = "the architecture page's legacy- rows were checked by no selected test"
+paths = ["docs/architecture.md", "src/*"]
+pattern = "legacy-[a-z]"
+tests = ["tests/test_legacy_rows.py"]
+
+[[rule]]
+id = "fact-tables"
+prs = [6197]
+incident = "a new row in the fact tables failed the test that pins the row counts"
+paths = ["scripts/fact_tables.py", "scripts/generation_store_allowlist.toml"]
+tests = ["tests/parser/test_generation_store_usage.py"]
+
+[[rule]]
+id = "stored-python-output"
+prs = [6130]
+incident = "a new stored module failed the import-closure test that scans every stored module"
+paths = ["tests/data/expected/*.py"]
+status = "AM"
+tests = ["tests/test_generated_import_closure.py"]
+
+[[rule]]
+id = "pattern-writing"
+prs = [7095, 7098]
+incident = "a change to how patterns are written failed the pattern-conjunction and wire-plan tests on hosted CI"
+paths = ["src/*"]
+pattern = "(pattern|regex)"
+tests = [
+  "tests/main/test_schema_intersection_shapes.py",
+  "tests/model_codecs/test_wire_plan.py",
+  "tests/main/jsonschema/test_pydantic_accepted_forms.py::test_patterns_python_re_rejects_in_a_base_and_an_alias_of_another_module",
+]
+
+[[rule]]
+id = "migration-fragments"
+prs = [7057]
+incident = "a fragment without its guide fields failed the migration guide's check on every shard"
+paths = ["docs/data/migration/*"]
+tests = ["tests/test_build_migration_docs_script.py"]
+
+[[rule]]
+id = "option-set-files"
+prs = [6225, 6298, 6456, 7080]
+incident = "option, preset and pass changes failed the tests that read the whole option set (recipe, help, preset docs, calibration) only on hosted CI"
+paths = [
+  "src/datamodel_code_generator/arguments.py",
+  "src/datamodel_code_generator/preset.py",
+  "src/datamodel_code_generator/cli_options.py",
+  "src/datamodel_code_generator/config.py",
+  "scripts/pass_decls.py",
+  "src/datamodel_code_generator/parser/_passes/*",
+  "src/datamodel_code_generator/_recommend/*",
+  "src/datamodel_code_generator/resources/*",
+]
+tests = [
+  "tests/test_input_model.py",
+  "tests/skills",
+  "tests/parser/test_pipeline.py",
+  "tests/checks/test_checks.py",
+  "tests/test_build_schema_docs_script.py",
+  "tests/test_build_llms_txt_script.py",
+  "tests/test_prompt.py",
+  "tests/main/test_preset_opt_in_options.py",
+  "tests/main/test_main_general.py::test_builtin_preset_formatter_selection",
+  "tests/test_main_kr.py",
+  "tests/main/test_main_general.py::test_show_help",
+  "tests/test_build_preset_docs_script.py",
+  "tests/test_recommender_calibrate_script.py",
+  "tests/test_behaviour_diff_script.py::test_gate_shards_judge_the_stale_entries_of_an_unsharded_run",
+]
+
+[[rule]]
+id = "src-architecture-boundaries"
+prs = [6456]
+incident = "a new decision module imported a backend and added a store writer that no selected test saw"
+paths = ["src/*"]
+tests = ["tests/test_architecture_boundaries.py", "tests/checks/test_checks.py::test_check_seams", "tests/test_legacy_rows.py"]
+
+[[rule]]
+id = "src-public-api"
+prs = [6990]
+incident = "a helper added to a module's __all__ failed the public-API baseline on 8 hosted shards"
+paths = ["src/*"]
+tests = ["tests/main/test_public_api_signature_baseline.py"]
+
+[[rule]]
+id = "src-schema-docs"
+prs = [6950]
+incident = "a step replaced match arms that the schema docs script parses; its tests ran only for option files"
+paths = ["src/*"]
+tests = ["tests/test_build_schema_docs_script.py"]
+
+[[rule]]
+id = "src-generation-observation"
+prs = [7037]
+incident = "stored internal call counts moved on every hosted shard; the related tests never ran the observation module"
+paths = ["src/*"]
+tests = ["tests/main/test_generation_observation.py"]
+
+[[rule]]
+id = "src-deep-chain"
+prs = [6368]
+incident = "a new per-alias recursion in a render rule failed the deep-chain tests only on hosted CI"
+paths = ["src/*"]
+tests = [
+  "tests/main/jsonschema/test_main_jsonschema.py::test_main_unique_items_as_set_long_alias_chain",
+  "tests/main/jsonschema/test_main_jsonschema.py::test_main_nesting_within_recursion_limit",
+]
+
+[[rule]]
+id = "parser-store-usage"
+incident = "lane G-33 sr5a: a new __dict__ marker write in a parser module failed the store-usage check on the stack top"
+paths = ["src/datamodel_code_generator/parser/*"]
+tests = ["tests/parser/test_generation_store_usage.py"]
+
+[[rule]]
+id = "workflows"
+prs = [7043]
+incident = "a workflow change broke the workflow contract and gate simulation tests; no related test ran for .github"
+paths = [".github/workflows/*"]
+tests = ["tests/test_ci_workflow.py"]
+
+[[rule]]
+id = "added-inputs"
+prs = [6456]
+incident = "two lanes added the same input under client/ and fastapi/; and a $defs-only JSON input was inferred as plain JSON (lane z11)"
+paths = ["tests/data/*"]
+exclude = ["tests/data/expected/*"]
+status = "A"
+tests = ["tests/test_conftest_helpers.py::test_test_inputs_are_unique", "tests/test_infer_input_type.py"]
+
+[[rule]]
+id = "added-expected-outputs"
+prs = [6456]
+incident = "two lanes stored the same expected output and no check saw it until a later lane"
+paths = ["tests/data/expected/*"]
+status = "A"
+tests = ["tests/test_conftest_helpers.py::test_stored_expected_outputs_are_unique"]
+
+[[rule]]
+id = "tests-layout"
+prs = [6368]
+incident = "a new module under tests/data/python failed the test-layout check only on hosted CI"
+paths = ["tests/*"]
+exclude = ["tests/data/expected/*"]
+tests = ["tests/test_assert_helper_usage.py"]
