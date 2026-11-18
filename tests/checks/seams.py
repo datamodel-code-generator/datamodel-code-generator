@@ -79,6 +79,7 @@ SEAMS: Final = (
     ),
     Seam(f"{_PASSES}.naming", None, "name_models", "naming.name_models"),
     Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "schema", "schema_graph.schema"),
+    Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "pointer_value", "schema_graph.pointer_value"),
     Seam(
         f"{_PACKAGE}.parser._schema_documents",
         None,

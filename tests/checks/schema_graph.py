@@ -4,7 +4,8 @@
 object. The wrapper of ``schema`` keeps a fingerprint of each object when it is validated, and the check compares the
 objects with their fingerprints at the end of L1. The wrapper of ``prepare_schema_resources`` keeps the fingerprint of
 each document as the loader read it, when it is first prepared, and the same check compares the documents with them:
-the parser never writes a loaded document.
+the parser never writes a loaded document. The wrapper of ``pointer_value`` reads a value the record of a document keeps
+for a pointer anew from its tree at every ask and compares the two.
 
 ``ApiOpenAPIParser._site_facts`` reads the site of a location once, for the target bindings. Its wrapper reads a kept
 site anew from the documents at every read and compares the two, and the wrapper of ``site_facts_of`` reports a string
@@ -21,6 +22,8 @@ from tests.checks.areas import Area, mode
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
 
 _SHARED: Final = "shared schemas"
 """The schema objects each schema graph validated in the parse, with their fingerprints, by the id of the graph."""
@@ -108,6 +111,37 @@ def prepare_schema_resources(original: Callable[..., Any]) -> Callable[..., Any]
         return prepared
 
     return prepare_schema_resources
+
+
+def pointer_value(original: Callable[..., object]) -> Callable[..., object]:
+    """Wrap ``SchemaGraphBuilder.pointer_value``: a value a record keeps is read anew from its tree at every ask."""
+
+    @wraps(original)
+    def pointer_value(
+        self: SchemaGraphBuilder, tree: object, fragment: str, reading: str, read: Callable[[], object]
+    ) -> object:
+        read_now = False
+
+        def counted() -> object:
+            nonlocal read_now
+            read_now = True
+            return read()
+
+        kept = original(self, tree, fragment, reading, counted)
+        if (graph_mode := mode(Area.SCHEMA_GRAPH)) is not None and not read_now and read() is not kept:
+            from datamodel_code_generator import Error
+            from datamodel_code_generator._url_redaction import redact_reference
+
+            where = redact_reference(f"{self.locations[id(tree)].document}#{fragment}")
+            graph_mode.violation(
+                Error,
+                f"the value kept for {where} differs from its document",
+                kind="pointer-value",
+                location=where,
+            )
+        return kept
+
+    return pointer_value
 
 
 def check_shared_schemas(parser: Any) -> None:

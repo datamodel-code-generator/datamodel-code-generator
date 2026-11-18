@@ -926,15 +926,21 @@ def ref_value_in(
     """Return the value the fragment of a reference key names in ``tree``, a loaded document; ``""`` names ``tree``.
 
     The fragment is split by ``reading``, by default the parser's (``ref_fragment_tokens``), and walked by row
-    ``refusing``.
+    ``refusing``; the record of a prepared tree keeps the value (``SchemaGraphBuilder.pointer_value``), and a missing
+    one is read again as ``or_missing`` says.
     """
     if not (fragment := key.partition("#")[2]):
         return tree
     reading = reading or parser._pointer_slash_names
-    tokens = ref_fragment_tokens(tree, fragment, reading)
-    return _get_model_by_decoded_path(
-        tree, tokens, or_missing=or_missing, refuse_scalar=reading == "legacy-cycle-through-scalar"
-    )
+
+    def read(*, or_missing: bool = True) -> object:
+        tokens = ref_fragment_tokens(tree, fragment, reading)
+        return _get_model_by_decoded_path(
+            tree, tokens, or_missing=or_missing, refuse_scalar=reading == "legacy-cycle-through-scalar"
+        )
+
+    value = parser._graph.pointer_value(tree, fragment, reading, read)
+    return read(or_missing=False) if value is _MISSING_JSON_POINTER and not or_missing else value
 
 
 def lenient_pointer_exists(parser: SchemaResourcesHost, document: str, reference: str) -> bool:
@@ -1089,7 +1095,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
             parser, raw, document, base, resources.root_base, id_field, is_root=True
         )
     prepared = parser._index_document(prepared, path_parts)
-    record.loaded, record.tree = raw, prepared
+    record.loaded, record.tree, record.values = raw, prepared, {}
     return prepared
 
 

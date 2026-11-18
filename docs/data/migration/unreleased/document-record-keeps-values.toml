@@ -1,0 +1,6 @@
+[[change]]
+id = "document-record-keeps-values"
+extends = "keep-what-a-loaded-document-knows-in-one-record"
+covers = [
+    "checks/checks/check_seams.txt",
+]
