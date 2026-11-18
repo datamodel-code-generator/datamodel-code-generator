@@ -13,7 +13,7 @@ from __future__ import annotations
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, replace
 from decimal import Decimal
-from functools import cached_property, partial
+from functools import cached_property
 from itertools import starmap
 from math import isfinite
 from pathlib import Path
@@ -4136,39 +4136,29 @@ class _Contracts(_Octets):
         locate = self.documents.location
         for document in self.documents.walked:
             if document in self.parser._api_roots:  # noqa: SLF001
-                found = read(
-                    self.documents.documents[document],
-                    partial(self.loaded_schema, document),
-                    partial(self.handshake_members, document),
-                )
+                found = read(document, self.documents.borrow, self.loaded_target, self.handshake_members)
                 contracts.extend(
-                    self.channel(document, channel, len(contracts) + index)
-                    for index, channel in enumerate(found.channels)
+                    self.channel(channel, len(contracts) + index) for index, channel in enumerate(found.channels)
                 )
                 for scheme in found.schemes:
-                    declaration = SchemaLocation(document, scheme.declaration)
                     use = SchemaLocation(document, ("components", "securitySchemes", scheme.name))
                     schemes.append(
                         WireDeclaration(
                             "security_scheme",
                             scheme.name,
-                            DeclarationId(locate(declaration, "declaration")),
+                            DeclarationId(locate(scheme.declaration, "declaration")),
                             locate(use, "use"),
-                            _facts(dict(scheme.fields), _METADATA_FACTS["security_scheme"], declaration),
+                            _facts(dict(scheme.fields), _METADATA_FACTS["security_scheme"], scheme.declaration),
                         )
                     )
         return tuple(contracts), tuple(schemes)
 
-    def loaded_schema(self, document: str, ref: str) -> YamlValue:
-        """Return the schema a `$ref` of a document names in the loaded documents, or None where none holds it."""
-        return None if (target := self.loaded_target(document, ref)) is None else self.documents.borrow(target)
-
     def loaded_target(self, document: str, ref: str) -> SchemaLocation | None:
-        """Return where the schema a `$ref` of a document names is, as the parser resolves it, in a loaded document."""
+        """Return where a `$ref` of a document leads, as the parser resolves it, None outside the loaded documents."""
         target = self.parser._schema_reference_location(document, ref)  # noqa: SLF001
         return None if target is None or target.document not in self.documents.ids else target
 
-    def channel(self, document: str, read: ReadChannel, order: int) -> ChannelContract:
+    def channel(self, read: ReadChannel, order: int) -> ChannelContract:
         """Bind one channel: its handshake, a GET of its address on its servers, and its messages.
 
         The handshake of a server-sent event stream declares a 200 response of `text/event-stream`, which its events
@@ -4176,14 +4166,13 @@ class _Contracts(_Octets):
         (`message_codec`); one no codec carries leaves the channel out.
         """
         locate = self.documents.location
-        use_site = SchemaLocation(document, read.use_site)
-        declaration = SchemaLocation(document, read.declaration)
+        use_site, declaration = read.use_site, read.declaration
         identity = OperationId(locate(use_site, "use"), "channel")
         found: list[MessageContract] = []
         refused: list[ChannelSkip] = []
         for message in read.messages:
-            declared = locate(SchemaLocation(document, message.declaration), "declaration")
-            payload = self.payload(document, message.payload, message.payload_ref)
+            declared = locate(message.declaration, "declaration")
+            payload = self.payload(message.payload, message.payload_ref)
             if (codec := self._message_codec(message.media, payload, stream=read.kind == "sse")) is None:
                 why = f"message {declared.pointer} has content type {message.media}"
                 refused.append(ChannelSkip("message_content_types", why))
@@ -4250,13 +4239,9 @@ class _Contracts(_Octets):
         )
         return WireDeclaration("response", _STREAM_STATUS, declared, locate(response, "use"), (), children=(media,))
 
-    def payload(self, document: str, tokens: tuple[str, ...], ref: str | None) -> SchemaLocation:
+    def payload(self, written: SchemaLocation, ref: str | None) -> SchemaLocation:
         """Return the schema a message's payload binds as: the one a lone `$ref` names, which resolves, or its own."""
-        return (
-            SchemaLocation(document, tokens)
-            if ref is None
-            else cast("SchemaLocation", self.loaded_target(document, ref))
-        )
+        return written if ref is None else cast("SchemaLocation", self.loaded_target(written.document, ref))
 
     def _message_codec(self, media: str, payload: SchemaLocation, *, stream: bool) -> MessageCodec | None:
         """Return how a message of a media type travels, by the models' type of its payload's value (``whole``)."""
@@ -4279,17 +4264,12 @@ class _Contracts(_Octets):
         An AsyncAPI 2 parameter's schema types it, and any other is a string.
         """
         locate = self.documents.location
-        declared = (
-            channel.child("parameters", name)
-            if parameter is None
-            else SchemaLocation(channel.document, parameter.declaration)
-        )
+        declared = channel.child("parameters", name) if parameter is None else parameter.declaration
         used = use_site.child("parameters", name)
         facts: dict[str, YamlValue] = {"name": name, "in": "path", "required": True}
         if parameter is not None and parameter.description is not None:
             facts["description"] = parameter.description
-        if parameter is not None and parameter.schema is not None:
-            schema = SchemaLocation(channel.document, parameter.schema)
+        if parameter is not None and (schema := parameter.schema) is not None:
             self._recorded(schema)
             use = self.use_id(owner, "parameter", declared, used, schema, location="path", name=name)
             schemas = self.media_facts((self.use(use, schema),), schema, "parameter", None)
@@ -4307,7 +4287,7 @@ class _Contracts(_Octets):
             schemas,
         )
 
-    def handshake_members(self, document: str, tokens: tuple[str, ...]) -> tuple[ReadMember, ...] | str:
+    def handshake_members(self, location: SchemaLocation) -> tuple[ReadMember, ...] | str:
         """Return the properties the models hold of an object schema a handshake's binding writes, or why none.
 
         The object's model, or the one a root model or alias of it holds, has a field for each property, its own or
@@ -4317,7 +4297,6 @@ class _Contracts(_Octets):
         """
         from datamodel_code_generator._asyncapi_connections import ReadMember  # noqa: PLC0415
 
-        location = SchemaLocation(document, tokens)
         if self.bound_node(location, "value") is None:
             return "has no model"
         value = self.projection(location, "value", "request").value

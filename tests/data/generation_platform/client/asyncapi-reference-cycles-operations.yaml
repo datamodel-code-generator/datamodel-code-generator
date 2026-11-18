@@ -1,0 +1,26 @@
+asyncapi: 3.0.0
+info:
+  title: An operation that loops
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+channels:
+  quotes:
+    address: /quotes
+    messages:
+      quote:
+        payload:
+          type: string
+operations:
+  readQuotes:
+    action: receive
+    channel:
+      $ref: '#/channels/quotes'
+  looped:
+    $ref: '#/components/operations/looped'
+components:
+  operations:
+    looped:
+      $ref: '#/components/operations/looped'

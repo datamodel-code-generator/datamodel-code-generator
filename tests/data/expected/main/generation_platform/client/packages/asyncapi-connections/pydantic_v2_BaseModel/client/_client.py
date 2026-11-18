@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from .protocols._helpers import (
         PrimaryWebsocket,
         ProtocolHelpers,
+        RemoteWebsocket,
         SecondaryWebsocket,
         V1DeskRegionWebsocket,
         V1LevelsWebsocket,
@@ -38,6 +39,7 @@ _DEFAULTS = ClientDefaults(
         ('v1_desk_region', 'websocket'),
         ('primary', 'websocket'),
         ('secondary', 'websocket'),
+        ('remote', 'websocket'),
         ('v1_mirror', 'websocket'),
         ('v1_levels', 'websocket'),
     ),
@@ -121,6 +123,11 @@ class ClientView:
     def secondary(self) -> SecondaryWebsocket:
         """The WebSocket channel at /v1/news."""
         return self.protocols.secondary
+
+    @cached_property
+    def remote(self) -> RemoteWebsocket:
+        """The WebSocket channel at /v1/remote."""
+        return self.protocols.remote
 
     @cached_property
     def v1_mirror(self) -> V1MirrorWebsocket:

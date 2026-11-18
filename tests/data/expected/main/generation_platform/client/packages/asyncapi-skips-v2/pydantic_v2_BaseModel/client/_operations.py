@@ -24,7 +24,7 @@ OPERATION_0: Final[OperationPlan[None]] = OperationPlan(
 OPERATION_1: Final[OperationPlan[None]] = OperationPlan(
     operation_id=None,
     method='GET',
-    path='/',
+    path='/notes',
     servers=_SERVERS_0,
     responses=ResponseDecoder((), ()),
 )
@@ -32,13 +32,29 @@ OPERATION_1: Final[OperationPlan[None]] = OperationPlan(
 OPERATION_2: Final[OperationPlan[None]] = OperationPlan(
     operation_id=None,
     method='GET',
-    path='/guarded',
+    path='/',
     servers=_SERVERS_0,
     responses=ResponseDecoder((), ()),
-    security=security.OPERATION_2,
 )
 
 OPERATION_3: Final[OperationPlan[None]] = OperationPlan(
+    operation_id=None,
+    method='GET',
+    path='/guarded',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((), ()),
+    security=security.OPERATION_3,
+)
+
+OPERATION_4: Final[OperationPlan[None]] = OperationPlan(
+    operation_id=None,
+    method='GET',
+    path='/delegated',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((), ()),
+)
+
+OPERATION_5: Final[OperationPlan[None]] = OperationPlan(
     operation_id=None,
     method='GET',
     path='/packed',

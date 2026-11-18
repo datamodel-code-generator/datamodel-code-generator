@@ -141,6 +141,7 @@ asyncapi-events-skips	main/generation_platform/client/packages/asyncapi-events-s
 asyncapi-events-v2	main/generation_platform/client/asyncapi-events-v2.txt
 asyncapi-events-v2	main/generation_platform/client/packages/asyncapi-events-v2/pydantic_v2_BaseModel//*.py
 asyncapi-foreign-operations	main/generation_platform/client/asyncapi-foreign-operations.txt
+asyncapi-foreign-operations	main/generation_platform/client/packages/asyncapi-foreign-operations/pydantic_v2_BaseModel//*.py
 asyncapi-handshake	main/generation_platform/client/asyncapi-handshake.txt
 asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/msgspec_Struct//*.py
 asyncapi-handshake	main/generation_platform/client/packages/asyncapi-handshake/pydantic_v2_BaseModel//*.py
@@ -177,6 +178,9 @@ asyncapi-optional-tags	main/generation_platform/client/packages/asyncapi-optiona
 asyncapi-optional-tags	main/generation_platform/client/packages/asyncapi-optional-tags/pydantic_v2_BaseModel//*.py
 asyncapi-perspective	main/generation_platform/client/asyncapi-perspective.txt
 asyncapi-perspective	main/generation_platform/client/packages/asyncapi-perspective/pydantic_v2_BaseModel//*.py
+asyncapi-reference-cycles	main/generation_platform/client/asyncapi-reference-cycles.txt
+asyncapi-reference-cycles	main/generation_platform/client/packages/asyncapi-reference-cycles/pydantic_v2_BaseModel//*.py
+asyncapi-reference-cycles-operations	main/generation_platform/client/asyncapi-reference-cycles-operations.txt
 asyncapi-relative-v2	main/generation_platform/client/asyncapi-relative-v2.txt
 asyncapi-relative-v2	main/generation_platform/client/packages/asyncapi-relative-v2/pydantic_v2_BaseModel//*.py
 asyncapi-schema-formats	main/generation_platform/client/asyncapi-schema-formats.txt
@@ -192,6 +196,10 @@ asyncapi-skips	main/generation_platform/client/asyncapi-skips.txt
 asyncapi-skips	main/generation_platform/client/packages/asyncapi-skips/pydantic_v2_BaseModel//*.py
 asyncapi-skips-v2	main/generation_platform/client/asyncapi-skips-v2.txt
 asyncapi-skips-v2	main/generation_platform/client/packages/asyncapi-skips-v2/pydantic_v2_BaseModel//*.py
+asyncapi-unloaded-references	main/generation_platform/client/asyncapi-unloaded-references.txt
+asyncapi-unloaded-references	main/generation_platform/client/packages/asyncapi-unloaded-references/pydantic_v2_BaseModel//*.py
+asyncapi-unloaded-references-v2	main/generation_platform/client/asyncapi-unloaded-references-v2.txt
+asyncapi-unloaded-references-v2	main/generation_platform/client/packages/asyncapi-unloaded-references-v2/pydantic_v2_BaseModel//*.py
 asyncapi-unopened	main/generation_platform/client/asyncapi-unopened.txt
 auth	main/generation_platform/client/auth.txt
 auth	main/generation_platform/client/packages/auth/pydantic_v2_BaseModel//*.py

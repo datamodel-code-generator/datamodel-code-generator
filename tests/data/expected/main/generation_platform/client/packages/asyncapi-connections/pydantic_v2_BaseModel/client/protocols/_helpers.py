@@ -40,6 +40,11 @@ class ProtocolHelpers:
         return SecondaryWebsocket(self._core)
 
     @cached_property
+    def remote(self) -> RemoteWebsocket:
+        """The remote WebSocket helper."""
+        return RemoteWebsocket(self._core)
+
+    @cached_property
     def v1_mirror(self) -> V1MirrorWebsocket:
         """The v1_mirror WebSocket helper."""
         return V1MirrorWebsocket(self._core)
@@ -123,6 +128,29 @@ class SecondaryWebsocket:
         )
 
 
+class RemoteWebsocket:
+    """The remote WebSocket helper of channel /v1/remote."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def connect(
+        self,
+        *,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> WebSocketSession[models.OrderPayload, models.OrderPayload]:
+        """Open the WebSocket of channel /v1/remote, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_3,
+            (),
+            ws_options=ws_options,
+            options=options,
+        )
+
+
 class V1MirrorWebsocket:
     """The v1_mirror WebSocket helper of channel /v1/mirror."""
 
@@ -141,7 +169,7 @@ class V1MirrorWebsocket:
         """Open the WebSocket of channel /v1/mirror, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
-            _plans.SOCKET_3,
+            _plans.SOCKET_4,
             (),
             ws_options=ws_options,
             options=options,
@@ -166,7 +194,7 @@ class V1LevelsWebsocket:
         """Open the WebSocket of channel /v1/levels, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
-            _plans.SOCKET_4,
+            _plans.SOCKET_5,
             (depth, side),
             ws_options=ws_options,
             options=options,

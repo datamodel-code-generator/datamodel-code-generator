@@ -1,0 +1,129 @@
+asyncapi: 3.0.0
+info:
+  title: References that loop
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+channels:
+  quotes:
+    address: /quotes
+    messages:
+      quote:
+        payload:
+          type: string
+  looped:
+    $ref: '#/components/channels/looped'
+  noted:
+    address: /noted
+    messages:
+      note:
+        $ref: '#/components/messages/looped'
+  packed:
+    address: /packed
+    messages:
+      blob:
+        traits:
+          - $ref: '#/components/messageTraits/looped'
+        payload:
+          type: string
+  bound:
+    address: /bound
+    bindings:
+      $ref: '#/components/channelBindings/looped'
+    messages:
+      line:
+        payload:
+          type: string
+  socketed:
+    address: /socketed
+    bindings:
+      ws:
+        $ref: '#/components/channelBindings/socket'
+    messages:
+      line:
+        payload:
+          type: string
+  rooms:
+    address: /rooms/{room}
+    parameters:
+      room:
+        $ref: '#/components/parameters/looped'
+    messages:
+      line:
+        payload:
+          type: string
+  audited:
+    address: /audited
+    messages:
+      line:
+        payload:
+          type: string
+  replied:
+    address: /replied
+    messages:
+      line:
+        payload:
+          type: string
+operations:
+  readQuotes:
+    action: receive
+    channel:
+      $ref: '#/channels/quotes'
+  readNoted:
+    action: receive
+    channel:
+      $ref: '#/channels/noted'
+  readPacked:
+    action: receive
+    channel:
+      $ref: '#/channels/packed'
+  readBound:
+    action: receive
+    channel:
+      $ref: '#/channels/bound'
+  readSocketed:
+    action: receive
+    channel:
+      $ref: '#/channels/socketed'
+  readRooms:
+    action: receive
+    channel:
+      $ref: '#/channels/rooms'
+  readAudited:
+    action: receive
+    channel:
+      $ref: '#/channels/audited'
+    traits:
+      - $ref: '#/components/operationTraits/looped'
+  takeReplied:
+    action: receive
+    channel:
+      $ref: '#/channels/replied'
+    reply:
+      $ref: '#/components/replies/looped'
+components:
+  channels:
+    looped:
+      $ref: '#/components/channels/looped'
+  messages:
+    looped:
+      $ref: '#/components/messages/looped'
+  messageTraits:
+    looped:
+      $ref: '#/components/messageTraits/looped'
+  channelBindings:
+    looped:
+      $ref: '#/components/channelBindings/looped'
+    socket:
+      $ref: '#/components/channelBindings/socket'
+  parameters:
+    looped:
+      $ref: '#/components/parameters/looped'
+  operationTraits:
+    looped:
+      $ref: '#/components/operationTraits/looped'
+  replies:
+    looped:
+      $ref: '#/components/replies/looped'

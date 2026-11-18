@@ -58,33 +58,43 @@ SOCKET_2: Final[ChannelPlan[Never, models.QuotePayload]] = ChannelPlan(
 )
 
 
-SOCKET_3: Final[
+SOCKET_3: Final[ChannelPlan[models.OrderPayload, models.OrderPayload]] = ChannelPlan(
+    helper_id='remote',
+    operation=OperationRef(pointer='/channels/remote'),
+    call=_operations.OPERATION_3,
+    fingerprint='374dfb87e107c48cf4644b2ee3b06944e1430cbb136c0face80bb125538c51ec',
+    encoder=model_bindings.codec_10,
+    decoder=model_bindings.codec_11,
+)
+
+
+SOCKET_4: Final[
     ChannelPlan[Never, models.QuotePayload | models.AckPayload | models.ReceiptPayload]
 ] = ChannelPlan(
     helper_id='v1_mirror',
     operation=OperationRef(pointer='/channels/mirrored'),
-    call=_operations.OPERATION_3,
+    call=_operations.OPERATION_4,
     fingerprint='757b90589106b4e930834f6c6eeb6b9aa9e3784900793bf7e8ea2d93d112801d',
     send_codec='none',
     receive_routes=(
-        MessageRoute(decoder=model_bindings.codec_10, tag='quote'),
-        MessageRoute(decoder=model_bindings.codec_11, tag='ack'),
-        MessageRoute(decoder=model_bindings.codec_12, tag='receipt'),
+        MessageRoute(decoder=model_bindings.codec_12, tag='quote'),
+        MessageRoute(decoder=model_bindings.codec_13, tag='ack'),
+        MessageRoute(decoder=model_bindings.codec_14, tag='receipt'),
     ),
     discriminator=BodySelector(pointer='/kind'),
 )
 
 
-SOCKET_4: Final[ChannelPlan[Never, models.QuotePayload | models.AckPayload]] = (
+SOCKET_5: Final[ChannelPlan[Never, models.QuotePayload | models.AckPayload]] = (
     ChannelPlan(
         helper_id='v1_levels',
         operation=OperationRef(pointer='/channels/depthFirst'),
-        call=_operations.OPERATION_4,
+        call=_operations.OPERATION_5,
         fingerprint='3c2ddc8972192e9daea17cef3b4ccde7879f9ab6b72d25ae45faa835b3240caa',
         send_codec='none',
         receive_routes=(
-            MessageRoute(decoder=model_bindings.codec_13, tag='quote'),
-            MessageRoute(decoder=model_bindings.codec_14, tag='ack'),
+            MessageRoute(decoder=model_bindings.codec_15, tag='quote'),
+            MessageRoute(decoder=model_bindings.codec_16, tag='ack'),
         ),
         discriminator=BodySelector(pointer='/kind'),
     )

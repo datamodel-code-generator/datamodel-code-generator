@@ -32,65 +32,75 @@ SOCKET_1: Final[
     operation=OperationRef(pointer='/channels/rpc'),
     call=_operations.OPERATION_1,
     fingerprint='ef2a135271fbdb58ce4ab88be22399a6801f421204f25002c846020404219028',
-    encoder=model_bindings.codec_0,
-    decoder=model_bindings.codec_1,
+    encoder=model_bindings.codec_1,
+    decoder=model_bindings.codec_2,
 )
 
 
-SOCKET_2: Final[ChannelPlan[models.DocumentsDocumentPayload, Never]] = ChannelPlan(
-    helper_id='documents',
-    operation=OperationRef(pointer='/channels/documents'),
+SOCKET_2: Final[ChannelPlan[models.NotePayload, Never]] = ChannelPlan(
+    helper_id='notes',
+    operation=OperationRef(pointer='/channels/notes'),
     call=_operations.OPERATION_2,
-    fingerprint='b3e6a30a66d5c2aba77c77041d5bcc0d846651d2d202fc5fde8b0da2b6016d89',
-    encoder=model_bindings.codec_2,
+    fingerprint='55234717d5c8253f650da48e7f4e7b02305f91d44263fb80ebdee195815a3d73',
+    encoder=model_bindings.codec_3,
     receive_codec='none',
 )
 
 
-SOCKET_3: Final[ChannelPlan[Never, models.Report]] = ChannelPlan(
-    helper_id='reports',
-    operation=OperationRef(pointer='/channels/reports'),
+SOCKET_3: Final[ChannelPlan[models.DocumentsDocumentPayload, Never]] = ChannelPlan(
+    helper_id='documents',
+    operation=OperationRef(pointer='/channels/documents'),
     call=_operations.OPERATION_3,
-    fingerprint='c326efb1200256f343c13b873ee16630c301c7bd4b55a49b00b0c6c686a1378d',
-    send_codec='none',
-    decoder=model_bindings.codec_3,
+    fingerprint='b3e6a30a66d5c2aba77c77041d5bcc0d846651d2d202fc5fde8b0da2b6016d89',
+    encoder=model_bindings.codec_4,
+    receive_codec='none',
 )
 
 
-SOCKET_4: Final[ChannelPlan[str, str]] = ChannelPlan(
+SOCKET_4: Final[ChannelPlan[Never, models.Report]] = ChannelPlan(
+    helper_id='reports',
+    operation=OperationRef(pointer='/channels/reports'),
+    call=_operations.OPERATION_4,
+    fingerprint='c326efb1200256f343c13b873ee16630c301c7bd4b55a49b00b0c6c686a1378d',
+    send_codec='none',
+    decoder=model_bindings.codec_5,
+)
+
+
+SOCKET_5: Final[ChannelPlan[str, str]] = ChannelPlan(
     helper_id='echo',
     operation=OperationRef(pointer='/channels/echo'),
-    call=_operations.OPERATION_4,
+    call=_operations.OPERATION_5,
     fingerprint='c9e703c0e70c56f3c2e9b72dfe7752cede92fae86888d26fe7ef27df4f0322a6',
     send_codec='utf8',
     receive_codec='utf8',
 )
 
 
-SOCKET_5: Final[ChannelPlan[str, Never]] = ChannelPlan(
+SOCKET_6: Final[ChannelPlan[str, Never]] = ChannelPlan(
     helper_id='traited',
     operation=OperationRef(pointer='/channels/traited'),
-    call=_operations.OPERATION_5,
+    call=_operations.OPERATION_6,
     fingerprint='1fe85a176cc6aea2a51cc6b6efdedfa31ac68d832f0078a59bef7edba061ee64',
     send_codec='utf8',
     receive_codec='none',
 )
 
 
-SOCKET_6: Final[ChannelPlan[str, Never]] = ChannelPlan(
+SOCKET_7: Final[ChannelPlan[str, Never]] = ChannelPlan(
     helper_id='owned',
     operation=OperationRef(pointer='/channels/owned'),
-    call=_operations.OPERATION_6,
+    call=_operations.OPERATION_7,
     fingerprint='d7a04815da77a3c3b8c0be2403e1d22d146bb8019b2f4dd25f2d84953692cd6b',
     send_codec='utf8',
     receive_codec='none',
 )
 
 
-SOCKET_7: Final[ChannelPlan[bytes, Never]] = ChannelPlan(
+SOCKET_8: Final[ChannelPlan[bytes, Never]] = ChannelPlan(
     helper_id='inherited',
     operation=OperationRef(pointer='/channels/inherited'),
-    call=_operations.OPERATION_7,
+    call=_operations.OPERATION_8,
     fingerprint='bfdfd019381593352f8ce32aba333b556394b9405ca9b5873ad5540b48185a81',
     send_codec='bytes',
     send_frame='binary',
@@ -98,41 +108,51 @@ SOCKET_7: Final[ChannelPlan[bytes, Never]] = ChannelPlan(
 )
 
 
-SOCKET_8: Final[ChannelPlan[str, Never]] = ChannelPlan(
+SOCKET_9: Final[ChannelPlan[str, Never]] = ChannelPlan(
+    helper_id='delegated',
+    operation=OperationRef(pointer='/channels/delegated'),
+    call=_operations.OPERATION_9,
+    fingerprint='f5615fc6e5d035ceca542b2df4a2dbaed9e9b3d7cdec3d6e347dc855929e37f9',
+    send_codec='utf8',
+    receive_codec='none',
+)
+
+
+SOCKET_10: Final[ChannelPlan[str, Never]] = ChannelPlan(
     helper_id='encoded',
     operation=OperationRef(pointer='/channels/encoded'),
-    call=_operations.OPERATION_8,
+    call=_operations.OPERATION_10,
     fingerprint='4f917d7dc867f07d047376bc2bbfc912159e3f6b9313fe5cdf78c7abc2c3a85c',
     send_codec='utf8',
     receive_codec='none',
 )
 
 
-SOCKET_9: Final[ChannelPlan[str, Never]] = ChannelPlan(
+SOCKET_11: Final[ChannelPlan[str, Never]] = ChannelPlan(
     helper_id='listed',
     operation=OperationRef(pointer='/channels/listed'),
-    call=_operations.OPERATION_9,
+    call=_operations.OPERATION_11,
     fingerprint='0453218f08414ae31b1ffcf4a7b0f7c2fcbbd91f2102351a7d35b6ed2873052c',
     send_codec='utf8',
     receive_codec='none',
 )
 
 
-SOCKET_10: Final[ChannelPlan[models.DelegatedAuthLinePayload, Never]] = ChannelPlan(
+SOCKET_12: Final[ChannelPlan[models.DelegatedAuthLinePayload, Never]] = ChannelPlan(
     helper_id='delegated_auth',
     operation=OperationRef(pointer='/channels/delegatedAuth'),
-    call=_operations.OPERATION_10,
+    call=_operations.OPERATION_12,
     fingerprint='7fd5ed325606bbfaa65af0b497ea6f8c1e7198eb272d1b4dde3f7bd5275aade0',
-    encoder=model_bindings.codec_4,
+    encoder=model_bindings.codec_6,
     receive_codec='none',
 )
 
 
-SOCKET_11: Final[ChannelPlan[models.CrowdedLinePayload, Never]] = ChannelPlan(
+SOCKET_13: Final[ChannelPlan[models.CrowdedLinePayload, Never]] = ChannelPlan(
     helper_id='crowded',
     operation=OperationRef(pointer='/channels/crowded'),
-    call=_operations.OPERATION_11,
+    call=_operations.OPERATION_13,
     fingerprint='8152513f0c8d00c4ad229c15e2525ac92f998d3afe7b718a4b0af002839807cc',
-    encoder=model_bindings.codec_5,
+    encoder=model_bindings.codec_7,
     receive_codec='none',
 )

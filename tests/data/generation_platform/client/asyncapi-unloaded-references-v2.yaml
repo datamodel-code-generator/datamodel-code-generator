@@ -1,0 +1,29 @@
+asyncapi: 2.6.0
+info:
+  title: References the client does not follow
+  version: 1.0.0
+servers:
+  socket:
+    url: socket.example.com
+    protocol: wss
+channels:
+  /quotes:
+    subscribe:
+      message:
+        payload:
+          type: string
+  /audited:
+    subscribe:
+      traits:
+        - $ref: 'asyncapi-other.yaml#/components/operationTraits/audited'
+      message:
+        payload:
+          type: string
+  /looped:
+    subscribe:
+      message:
+        $ref: '#/components/messages/looped'
+components:
+  messages:
+    looped:
+      $ref: '#/components/messages/looped'
