@@ -12,10 +12,13 @@ interpreter or formatter is needed locally. ``--from-ci`` collects every payload
 are untrusted input: one that names anything but an existing test item and a label below ``tests/data/expected``,
 whose digest does not match its value, or that comes from this environment (run its test here instead) is rejected.
 ``--apply`` then writes nothing; ``--from-ci`` reports the rejected payloads and applies the rest.
-Payloads of several lanes with the same content for a label are a change common to those lanes, which belongs in the
-base file rather than in one override per lane: nothing is written for such a label and the command exits with status
-1, saying how to go on. ``--as-base`` stores that content as the base file (overrides equal to it go), and
-``--per-environment`` stores one override per lane. Lanes that sent no payload cannot be seen.
+Payloads of lanes stored under different overrides with the same content for a label (lanes that share one override,
+such as one Python on two platforms, count once) are a change common to those lanes, which belongs in the base file
+rather than in one override per lane: nothing is written for such a label and the command exits with status 1, saying
+how to go on. ``--as-base`` stores that content as the base file (overrides equal to what their lanes then compare
+go); every environment without an override of its own then compares it, this one and the lanes that sent no payload
+included, so check them: run the tests here, and a dispatch run of the Test workflow on the branch for the lanes.
+``--per-environment`` stores one override per lane.
 ``--repair`` drops the lines of a hand-edited sidecar that pytest cannot read and re-records the tests they were in.
 These three write files only inside ``tests/data/expected`` and the sidecars, and refuse to run in CI.
 
@@ -61,7 +64,6 @@ from tests.units import (  # noqa: E402
     RefLine,
     RefsIndex,
     UnsafeWriteError,
-    common_contents,
     decode_payload,
     deduplicate,
     duplicates,
@@ -206,24 +208,6 @@ def index_for(module: str, root: Path = ROOT) -> RefsIndex:
     return RefsIndex(next((parent for parent in candidates if (parent / "data" / "expected").is_dir()), root / "tests"))
 
 
-def common_change_message(shared: Mapping[tuple[str, str], tuple[str, int]], root: Path = ROOT) -> str:
-    """Say which labels several lanes sent the same content for, and the two ways to store it."""
-    items = sorted({item for item, _ in shared})
-    roots = {index_for(item.partition("::")[0], root).tests_root for item in items}
-    stage = " ".join(sorted(Path(os.path.relpath(path, root)).as_posix() for path in roots))
-    listed = "\n".join(f"  {item} {label} ({count} lanes)" for (item, label), (_, count) in sorted(shared.items()))
-    selection = " ".join(f"'{item}'" for item in items)
-    return (
-        "Not applied: several lanes sent the same content for these labels, a change common to them that belongs in "
-        f"the base file rather than in one override per lane:\n{listed}\n"
-        "Lanes that sent no payload (they passed, or did not run) cannot be seen here. Nothing was written for these "
-        "labels. Store the content as the base file: regenerate it here, if this environment produces it too, with\n"
-        f"  pytest {selection} --inline-snapshot=fix && git add -A {stage}\n"
-        "or rerun this command with --as-base (writes the common content as the base file and removes the overrides "
-        "equal to it). Keep one override per lane, as before: rerun this command with --per-environment."
-    )
-
-
 def apply_payloads(
     texts: Sequence[str],
     root: Path = ROOT,
@@ -234,8 +218,9 @@ def apply_payloads(
     """Apply CI payloads after checking every one of them.
 
     A single bad payload stops all of them, unless ``skip`` is set (``--from-ci``, whose run may also hold payloads
-    of this environment): then bad payloads are reported and the rest applied. Content that several lanes sent alike
-    for a label is written only with ``common``: as the base file, or as one override per lane.
+    of this environment): then bad payloads are reported and the rest applied. Content that lanes of different
+    overrides sent alike for a label is written only with ``common``: as the base file, or as one override per lane;
+    the apply session decides which labels those are, after it refuses the payloads of this environment.
     """
     payloads, problems = [], []
     for number, text in enumerate(texts, start=1):
@@ -256,20 +241,8 @@ def apply_payloads(
     if not payloads:
         print("No dcg-expected-fix payloads to apply.")
         return 1
-    shared = {} if common == "per-environment" else common_contents(payloads)
-    held = {} if common == "as-base" else shared
-    kept = [payload for payload in payloads if (payload["item"], payload.get("label")) not in held]
-    data: dict[str, object] = {
-        "payloads": kept,
-        "skip_rejected": skip,
-        "as_base": [[item, label, digest] for (item, label), (digest, _) in shared.items()] if not held else [],
-    }
-    modules = (str(payload["item"]).partition("::")[0] for payload in kept)
-    status = run_apply(data, modules, root) if kept else 0
-    if held:
-        print(common_change_message(held, root))
-        return status or 1
-    return status
+    modules = (str(payload["item"]).partition("::")[0] for payload in payloads)
+    return run_apply({"payloads": payloads, "skip_rejected": skip, "common": common}, modules, root)
 
 
 def repair(sidecar: str, root: Path = ROOT) -> int:

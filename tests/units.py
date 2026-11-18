@@ -356,6 +356,17 @@ def predicate_matches(predicate: tuple[tuple[str, str], ...], facts: Mapping[str
     return all((actual := facts.get(fact, "")) == value or actual.startswith(f"{value}.") for fact, value in predicate)
 
 
+def _overlap(first: tuple[tuple[str, str], ...], second: tuple[tuple[str, str], ...]) -> bool:
+    """Return whether one environment can satisfy both predicates: each fact they share names one release series."""
+    facts = dict(second)
+    return all(
+        fact not in facts
+        or predicate_matches(((fact, value),), facts)
+        or predicate_matches(((fact, facts[fact]),), {fact: value})
+        for fact, value in first
+    )
+
+
 @dataclass(frozen=True)
 class RefLine:
     """One reference: a test item, the label it compares, its flags, and the storage when it is not the label."""
@@ -1266,11 +1277,25 @@ class _Resolution:
             )
 
     def collapse_overrides(self) -> None:
+        """Drop each override that stores what the environments it matches would compare without it.
+
+        Without the override, such an environment compares the most specific other line of the label it matches: the
+        most specific line the override's predicate implies, or a line no less specific that it may match too. The
+        override goes only when every one of those lines stores the same content, so no lane falls back to an older,
+        broader override; the most specific overrides are decided first.
+        """
         for lines in self.kept.values():
-            bases = {(line.function, line.param, line.label): line for line in lines if not line.predicate}
-            for line in [line for line in lines if line.predicate]:
-                base = bases.get((line.function, line.param, line.label))
-                if base is not None and self.digest(base.stored) == self.digest(line.stored):
+            for line in sorted((line for line in lines if line.predicate), key=lambda line: -len(line.predicate)):
+                others = [other for other in lines if other is not line and other.key[:3] == line.key[:3]]
+                implied = [other for other in others if predicate_matches(other.predicate, dict(line.predicate))]
+                floor = max((len(other.predicate) for other in implied), default=0)
+                fallbacks = [
+                    other
+                    for other in others
+                    if floor <= len(other.predicate) <= len(line.predicate)
+                    and _overlap(other.predicate, line.predicate)
+                ]
+                if implied and all(self.digest(other.stored) == self.digest(line.stored) for other in fallbacks):
                     lines.remove(line)
 
     def collect_garbage(self) -> None:
@@ -1746,22 +1771,27 @@ def _merged_lines(
     return lines
 
 
-def common_contents(payloads: Iterable[Payload]) -> dict[tuple[str, str], tuple[str, int]]:
-    """Return the content that several environments sent alike for an item's label, by item and label.
+def common_contents(payloads: Iterable[Payload], local: Mapping[str, str]) -> dict[tuple[str, str], tuple[str, int]]:
+    """Return the content that lanes of different overrides sent alike for an item's label, by item and label.
 
-    Each entry holds the digest the most environments sent (the greater digest on a tie) and how many sent it; labels
-    whose content no two environments share are left out. Environments count once each, by their facts.
+    Lanes count by the predicate of the override their payload is stored under (``payload_predicate``), the facts a
+    stored file can tell apart: lanes that share one override, such as one Python on two platforms, count once, and
+    payloads no predicate tells apart from here count not at all (an apply session refuses or skips them). Each entry
+    holds the digest the most lanes sent, on a tie the one whose lowest predicate's text sorts first, and how many
+    lanes sent it; labels whose content no two lanes share are left out.
     """
-    senders: dict[tuple[str, str], dict[str, set[tuple[tuple[str, str], ...]]]] = {}
+    senders: dict[tuple[str, str], dict[str, set[str]]] = {}
     for payload in payloads:
-        if "digest" in payload:
-            by_digest = senders.setdefault((payload["item"], payload["label"]), {})
-            by_digest.setdefault(payload["digest"], set()).add(tuple(sorted(payload["facts"].items())))
-    return {
-        key: (digest, count)
-        for key, by_digest in senders.items()
-        if (count := len(by_digest[digest := max(by_digest, key=lambda name: (len(by_digest[name]), name))])) > 1
-    }
+        if "digest" not in payload or (predicate := payload_predicate(payload["facts"], local)) is None:
+            continue
+        by_digest = senders.setdefault((payload["item"], payload["label"]), {})
+        by_digest.setdefault(payload["digest"], set()).add(predicate_text(predicate))
+    common = {}
+    for key, by_digest in senders.items():
+        digest = min(by_digest, key=lambda name: (-len(by_digest[name]), min(by_digest[name])))
+        if (count := len(by_digest[digest])) > 1:
+            common[key] = digest, count
+    return common
 
 
 def apply_payload(

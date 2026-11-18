@@ -50,6 +50,7 @@ from tests.units import (
     RefsIndex,
     UnsafeWriteError,
     apply_payload,
+    common_contents,
     derived_name,
     encode_payload,
     facts_fit,
@@ -993,6 +994,8 @@ class _Ledger:
         self.rerun: list[str] = []
         self.report: list[str] = []
         self.refused = False
+        self.held: dict[tuple[str, str], tuple[str, int]] = {}
+        self.as_base: set[tuple[str, str, str]] = set()
         self.check_apply()
 
     @property
@@ -1054,6 +1057,59 @@ class _Ledger:
         if problems:
             msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)
             raise pytest.UsageError(msg)
+        self.hold_common_changes()
+
+    def hold_common_changes(self) -> None:
+        """Set aside the payloads of labels whose content lanes of different overrides sent alike, unless told how.
+
+        Such content is a change common to those lanes: ``common`` ``as-base`` stores it as the label's base line,
+        ``per-environment`` as one override per lane, and without it nothing is written for the label (nor for the
+        stale payloads of its test, which would change its lines) and the session fails, saying how to go on. Payloads
+        of this environment are refused or skipped before, so they neither count as a lane nor hide that refusal.
+        """
+        payloads = self.apply_data.get("payloads", [])
+        match self.apply_data.get("common"):
+            case "per-environment":
+                return
+            case "as-base":
+                self.as_base = {(*key, digest) for key, (digest, _) in common_contents(payloads, self.facts).items()}
+                return
+        if not (held := common_contents(payloads, self.facts)):
+            return
+        self.held = held
+        items = {item for item, _ in held}
+        self.apply_data["payloads"] = [
+            payload
+            for payload in payloads
+            if (payload["item"], payload.get("label")) not in held
+            and not (payload.get("stale") and payload["item"] in items)
+        ]
+
+    def common_change_message(self) -> list[str]:
+        """Say which labels lanes sent the same content for, what each way of storing it does, and what to check."""
+        items = sorted({item for item, _ in self.held})
+        selection = " ".join(_quote(item) for item in items)
+        listed = [f"  {item} {label} ({count} lanes)" for (item, label), (_, count) in sorted(self.held.items())]
+        return [
+            (
+                "expected: not applied: lanes of different overrides sent the same content for these labels, a change "
+                "common to them that belongs in the base file rather than in one override per lane:"
+            ),
+            *listed,
+            (
+                "Nothing was written for these labels or the stale payloads of their tests. Store the content as the "
+                "base file: regenerate it here, if this environment produces it too, with"
+            ),
+            f"  pytest {selection} --inline-snapshot=fix && {self.stage}",
+            (
+                "or rerun this command with --as-base, which writes the common content as the base file and removes "
+                "the overrides equal to it. Every environment without an override of its own then compares that "
+                "content: this one, and the lanes that sent no payload because they passed or did not run. Check this "
+                f"environment with: pytest {selection}; check those lanes with a dispatch run of the Test workflow on "
+                "your branch (gh workflow run test.yaml --ref <branch>), which also runs the lanes pull requests skip. "
+                "Keep one override per lane instead: rerun this command with --per-environment."
+            ),
+        ]
 
     def own_payload(self, payload: Mapping[str, Any]) -> str | None:
         """Refuse a payload no override predicate tells apart from this environment: only a local run changes it."""
@@ -1684,7 +1740,9 @@ class _Ledger:
 
     def finish(self, session: pytest.Session) -> None:
         self.write_updates(session)
-        if self.refused:
+        if self.held:
+            self.report += self.common_change_message()
+        if self.refused or self.held:
             session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
     def write_updates(self, session: pytest.Session) -> None:
@@ -1811,7 +1869,6 @@ class _Ledger:
             for nodeid in uncollected_items(self.observations, recorded):
                 sidecar, function, param = nodeid_key(rootpath, nodeid)
                 updates.setdefault(sidecar, {})[function, param] = []
-        bases = {tuple(entry) for entry in self.apply_data.get("as_base", [])}
         for payload in self.apply_data.get("payloads", []):
             sidecar, function, param = nodeid_key(rootpath, payload["item"])
             current = updates.get(sidecar, {}).get((function, param))
@@ -1827,7 +1884,7 @@ class _Ledger:
                 payload,
                 self.facts,
                 exists=(sidecar, function, param) in local,
-                as_base=(payload["item"], payload.get("label"), payload.get("digest")) in bases,
+                as_base=(payload["item"], payload.get("label"), payload.get("digest")) in self.as_base,
             )
         return updates
 
