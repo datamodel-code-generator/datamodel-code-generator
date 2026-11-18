@@ -691,14 +691,20 @@ def create_module_getattr(
     return _getattr
 
 
+_LAZY_LOADERS: Final = {"BaseModel": _get_base_model_class, "SafeLoader": get_safe_loader}
+
+
 def __getattr__(name: str) -> Any:
     """Provide lazy access to BaseModel and SafeLoader."""
-    if name == "BaseModel":
-        return _get_base_model_class()
-    if name == "SafeLoader":
-        return get_safe_loader()
+    if name in _LAZY_LOADERS:
+        return _LAZY_LOADERS[name]()
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
+
+
+def __dir__() -> list[str]:
+    """List the names of the module and the names ``__getattr__`` loads (PEP 562)."""
+    return sorted({*globals(), *_LAZY_LOADERS})
 
 
 _UNDER_SCORE_1: re.Pattern[str] = re.compile(r"([^_])([A-Z][a-z]+)")

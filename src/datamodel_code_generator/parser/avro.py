@@ -7,7 +7,7 @@ JSON Schema parser while preserving Avro named type and logical type semantics.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, NamedTuple, cast
 
 from typing_extensions import Unpack
 
@@ -69,14 +69,19 @@ def is_avro_schema_data(data: YamlValue) -> bool:
     return _is_avro_schema_data(data)
 
 
+_LAZY_VALUES: Final = {"COMPLEX_TYPES": _COMPLEX_TYPES, "JSON_SCHEMA_MARKER_KEYS": _JSON_SCHEMA_MARKER_KEYS}
+
+
 def __getattr__(name: str) -> Any:
     """Return compatibility constants moved to the lightweight detector."""
-    match name:
-        case "COMPLEX_TYPES":
-            return _COMPLEX_TYPES
-        case "JSON_SCHEMA_MARKER_KEYS":
-            return _JSON_SCHEMA_MARKER_KEYS
+    if name in _LAZY_VALUES:
+        return _LAZY_VALUES[name]
     raise AttributeError(name)
+
+
+def __dir__() -> list[str]:
+    """List the names of the module and the names ``__getattr__`` returns (PEP 562)."""
+    return sorted({*globals(), *_LAZY_VALUES})
 
 
 class _Name(NamedTuple):

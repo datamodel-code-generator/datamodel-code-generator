@@ -209,12 +209,14 @@ NOT_REQUIRED_PREFIX = f"{NOT_REQUIRED}["
 READ_ONLY = "ReadOnly"
 READ_ONLY_PREFIX = f"{READ_ONLY}["
 
-__getattr__ = create_module_getattr(
-    __name__,
-    {
-        "StrictTypes": ("datamodel_code_generator.enums", "StrictTypes"),
-    },
-)
+_LAZY_IMPORTS: Final = {"StrictTypes": ("datamodel_code_generator.enums", "StrictTypes")}
+__getattr__ = create_module_getattr(__name__, _LAZY_IMPORTS)
+
+
+def __dir__() -> list[str]:
+    """List the names of the module and the names ``__getattr__`` loads (PEP 562)."""
+    return sorted({*globals(), *_LAZY_IMPORTS})
+
 
 if TYPE_CHECKING:
     import builtins

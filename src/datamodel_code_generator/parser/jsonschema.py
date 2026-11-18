@@ -39,7 +39,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Final,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    Final,
     Literal,
     NamedTuple,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Optional,
@@ -890,14 +890,26 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
     )
 
 
+def _typed_dict_model() -> type:
+    """Import the TypedDict model class, which a parse does not load."""
+    from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel  # noqa: PLC0415
+
+    return TypedDictModel
+
+
+_LAZY_LOADERS: Final = {"TypedDictModel": _typed_dict_model}
+
+
 def __getattr__(name: str) -> Any:
     """Return compatibility model classes without importing them on parser load."""
-    match name:
-        case "TypedDictModel":
-            from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel  # noqa: PLC0415
-
-            return TypedDictModel
+    if name in _LAZY_LOADERS:
+        return _LAZY_LOADERS[name]()
     raise AttributeError(name)
+
+
+def __dir__() -> list[str]:
+    """List the names of the module and the names ``__getattr__`` loads (PEP 562)."""
+    return sorted({*globals(), *_LAZY_LOADERS})
 
 
 def _null_sources(

@@ -13,6 +13,7 @@ ClientAsyncAPIPerspective = datamodel_code_generator.enums.ClientAsyncAPIPerspec
 ClientBodyArguments = datamodel_code_generator.enums.ClientBodyArguments
 ClientSignatureStyle = datamodel_code_generator.enums.ClientSignatureStyle
 ClientType = datamodel_code_generator.enums.ClientType
+CodeFormatter = datamodel_code_generator.format.CodeFormatter
 CollapseRootModelsNameStrategy = datamodel_code_generator.enums.CollapseRootModelsNameStrategy
 ConstructorFieldOrder = datamodel_code_generator.enums.ConstructorFieldOrder
 CustomFileHeaderMode = datamodel_code_generator.enums.CustomFileHeaderMode
@@ -35,6 +36,7 @@ class Error(Exception)
   def __str__(self) -> str
 FieldTypeCollisionStrategy = datamodel_code_generator.enums.FieldTypeCollisionStrategy
 Final = import typing.Final
+Formatter = datamodel_code_generator._format_types.Formatter
 GenerateConfig = datamodel_code_generator.config.GenerateConfig
 GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
 Generator = import collections.abc.Generator
@@ -89,24 +91,35 @@ TargetPydanticVersion = datamodel_code_generator.enums.TargetPydanticVersion
 TypeAlias = import typing.TypeAlias
 TypeAliasType = import typing.TypeAliasType | typing_extensions.TypeAliasType
 TypeVar = import typing.TypeVar
+UnionMode = datamodel_code_generator.enums.UnionMode
 Unpack = import typing.Unpack
 VersionMode = datamodel_code_generator.enums.VersionMode
 XMLSchemaVersion = datamodel_code_generator.enums.XMLSchemaVersion
 YamlScalar: TypeAlias = str | int | float | bool | None
 YamlValue = TypeAliasType('YamlValue', 'dict[str, YamlValue] | list[YamlValue] | YamlScalar')
+agent_skill = module datamodel_code_generator.agent_skill
 annotations = import __future__.annotations
+arguments = module datamodel_code_generator.arguments
+base_config = module datamodel_code_generator.base_config
 def cached_path_exists(path: Path) -> bool
 cast = import typing.cast
 def chdir(path: Path | None) -> Generator[None]
 clear_dynamic_models_cache = datamodel_code_generator.dynamic.clear_dynamic_models_cache
+cli_options = module datamodel_code_generator.cli_options
+config = module datamodel_code_generator.config
 contextlib = module contextlib
 current_timestamp = datamodel_code_generator._generation_timestamp.current_timestamp
 defaultdict = import collections.defaultdict
+deprecations = module datamodel_code_generator.deprecations
 detect_jsonschema_version = datamodel_code_generator.parser.schema_version.detect_jsonschema_version
 detect_openapi_version = datamodel_code_generator.parser.schema_version.detect_openapi_version
 def detect_xmlschema_version(source: Any) -> XMLSchemaVersion
+dynamic = module datamodel_code_generator.dynamic
 def enable_debug_message() -> None
 enable_parsed_source_cache = datamodel_code_generator._source.enable_parsed_source_cache
+enums = module datamodel_code_generator.enums
+experimental = module datamodel_code_generator.experimental
+format = module datamodel_code_generator.format
 gc = module gc
 def generate(input_: Path | str | ParseResult | Mapping[str, Any] | list[Any], *, config: GenerateConfig | None=None, **options: Unpack[GenerateConfigDict]) -> str | GeneratedModules | None
 generate_dynamic_models = datamodel_code_generator.dynamic.generate_dynamic_models
@@ -114,13 +127,18 @@ generate_dynamic_module = datamodel_code_generator.dynamic.generate_dynamic_modu
 def get_first_file(path: Path) -> Path
 def get_version() -> str
 held = datamodel_code_generator._warning_control.held
+http = module datamodel_code_generator.http
+imports = module datamodel_code_generator.imports
 def infer_input_type(text: str) -> InputFileType
 inferred_message = 'The input file type was determined to be: {}\nThis can be specified explicitly with the `--input-file-type` option.'
 inferred_swagger_2_message = 'The input looks like a Swagger 2.0 document, which is read as data; its definitions are read as JSON Schema with `--input-file-type jsonschema`.'
+input_model = module datamodel_code_generator.input_model
+input_model_result = module datamodel_code_generator.input_model_result
 def is_asyncapi(data: Mapping[str, Any]) -> bool
 def is_openapi(data: Mapping[str, Any]) -> bool
 def is_schema(data: dict) -> bool
 def is_swagger_2(data: Mapping[str, Any]) -> bool
+json_config = module datamodel_code_generator.json_config
 load_data = datamodel_code_generator._source.load_data
 load_data_from_path = datamodel_code_generator._source.load_data_from_path
 load_pyproject_config = datamodel_code_generator._project_config.load_pyproject_config
@@ -128,14 +146,31 @@ load_text_data = datamodel_code_generator._source.load_text_data
 load_yaml = datamodel_code_generator._source.load_yaml
 load_yaml_dict = datamodel_code_generator._source.load_yaml_dict
 load_yaml_dict_from_path = datamodel_code_generator._source.load_yaml_dict_from_path
+model = module datamodel_code_generator.model
+model_metadata = module datamodel_code_generator.model_metadata
 os = module os
+parser = module datamodel_code_generator.parser
+preset = module datamodel_code_generator.preset
+preset_names = module datamodel_code_generator.preset_names
+prompt = module datamodel_code_generator.prompt
+prompt_data = module datamodel_code_generator.prompt_data
+python_literal = module datamodel_code_generator.python_literal
 quiet = datamodel_code_generator._warning_control.quiet
 redact_path = datamodel_code_generator._url_redaction.redact_path
 redact_url = datamodel_code_generator._url_redaction.redact_url
+reference = module datamodel_code_generator.reference
+remote_lock = module datamodel_code_generator.remote_lock
+resolve_use_type_checking_imports = datamodel_code_generator.format.resolve_use_type_checking_imports
+resources = module datamodel_code_generator.resources
 def snooper_to_methods() -> Callable[..., Any]
 sys = module sys
 threading = module threading
+types = module datamodel_code_generator.types
+util = module datamodel_code_generator.util
+validators = module datamodel_code_generator.validators
 warnings = module warnings
+watch = module datamodel_code_generator.watch
+watch_dependencies = module datamodel_code_generator.watch_dependencies
 
 [datamodel_code_generator.agent_skill]
 AgentName = Literal['codex', 'claude-code']
@@ -3466,6 +3501,7 @@ CHANNEL_OPERATIONS = datamodel_code_generator._document_reader.CHANNEL_OPERATION
 ClassVar = import typing.ClassVar
 Error = datamodel_code_generator.Error
 Field = import pydantic.Field
+Final = import typing.Final
 INTERNAL_SCHEMA_CONTAINER = 'x-datamodel-code-generator-asyncapi-schemas'
 InputFileType = datamodel_code_generator.enums.InputFileType
 JSON_SCHEMA_FORMATS: frozenset[str]
@@ -3489,6 +3525,9 @@ annotations = import __future__.annotations
 as_mapping = datamodel_code_generator._document_reader.as_mapping
 cast = import typing.cast
 contextmanager = import contextlib.contextmanager
+convert_avro_schema_data = datamodel_code_generator.parser.avro.convert_avro_schema_data
+convert_protobuf_schema_data = datamodel_code_generator.parser.protobuf.convert_protobuf_schema_data
+convert_xml_schema_data = datamodel_code_generator.parser.xmlschema.convert_xml_schema_data
 create_module_getattr = datamodel_code_generator.util.create_module_getattr
 definition_ref = datamodel_code_generator._json_schema.definition_ref
 escape_token = datamodel_code_generator._json_pointer.escape_token
@@ -3519,10 +3558,13 @@ class AvroParser(JsonSchemaParser)
   def parse_raw(self) -> None
 BOOLEAN_SCHEMA: JsonSchema
 BYTES_SCHEMA: JsonSchema
+COMPLEX_TYPES = datamodel_code_generator._avro_detection.COMPLEX_TYPES
 ClassVar = import typing.ClassVar
 DURATION_BYTE_LENGTH = 12
 Error = datamodel_code_generator.Error
+Final = import typing.Final
 Import = datamodel_code_generator.imports.Import
+JSON_SCHEMA_MARKER_KEYS = datamodel_code_generator._avro_detection.JSON_SCHEMA_MARKER_KEYS
 JsonSchema = dict[str, Any]
 JsonSchemaParser = datamodel_code_generator.parser.jsonschema.JsonSchemaParser
 MICROSECONDS_PER_DAY = 86400000000
@@ -3562,6 +3604,7 @@ Any = import typing.Any
 BaseClassDataType = datamodel_code_generator.model.base.BaseClassDataType
 BaseModel = import pydantic.BaseModel
 CONTAINERS = datamodel_code_generator._container_kinds.CONTAINERS
+Child = datamodel_code_generator._internal_utils.Child
 ClassScope = datamodel_code_generator._user_keys.ClassScope
 ClassVar = import typing.ClassVar
 ConfigDict = import pydantic.ConfigDict
@@ -3717,6 +3760,7 @@ class StdoutBindingContext(NamedTuple)
   models_by_name: Mapping[str, list[tuple[ModulePath, DataModel]]]
   treat_dot_as_module: bool | None
 StrictTypes = datamodel_code_generator.enums.StrictTypes
+T = datamodel_code_generator._internal_utils.T
 TYPE_CHECKING = import typing.TYPE_CHECKING
 TagCapabilities = datamodel_code_generator.parser._tag_plan.TagCapabilities
 TagPlan = datamodel_code_generator.parser._tag_plan.TagPlan
@@ -3741,6 +3785,7 @@ class_field_key = datamodel_code_generator._user_keys.class_field_key
 context_values = datamodel_code_generator._context_scope.context_values
 contextlib = module contextlib
 copy_extra_template_data = datamodel_code_generator._template_data.copy_extra_template_data
+dataclass_model = module datamodel_code_generator.model.dataclass
 declared_variant_tags = datamodel_code_generator.parser._tag_plan.declared_variant_tags
 deepcopy = import copy.deepcopy
 defaultdict = import collections.defaultdict
@@ -3778,6 +3823,7 @@ mapped_base_class = datamodel_code_generator._user_keys.mapped_base_class
 model_key_of = datamodel_code_generator._model_keys.model_key_of
 model_level_type_override = datamodel_code_generator._user_keys.model_level_type_override
 modules = module datamodel_code_generator.parser._passes.modules
+msgspec_model = module datamodel_code_generator.model.msgspec
 mutable_record = datamodel_code_generator._records.mutable_record
 named_location = datamodel_code_generator._url_redaction.named_location
 normalize_default_value_constraints = datamodel_code_generator.parser._passes._shared.normalize_default_value_constraints
@@ -3821,6 +3867,7 @@ tag_capabilities = datamodel_code_generator.parser._tag_plan.tag_capabilities
 target_builtin_names = datamodel_code_generator._python_target_names.target_builtin_names
 title = datamodel_code_generator._target_unicode.title
 def title_to_class_name(title: str) -> str
+to_hashable = datamodel_code_generator._internal_utils.to_hashable
 union_members = datamodel_code_generator.types.union_members
 unique_items_positions = datamodel_code_generator.parser._passes._shared.unique_items_positions
 untaken_minimums = datamodel_code_generator._constraint_applicability.untaken_minimums
@@ -4385,6 +4432,7 @@ TYPE_CHECKING = import typing.TYPE_CHECKING
 TaggedUnionValue = datamodel_code_generator.parser._union_tags.TaggedUnionValue
 TypeAlias = import typing.TypeAlias
 TypedChild = datamodel_code_generator.parser._schema_dispatch.TypedChild
+TypedDictModel = datamodel_code_generator.model.typed_dict.TypedDict
 Types = datamodel_code_generator.types.Types
 UNDEFINED = datamodel_code_generator.model.base.UNDEFINED
 UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP = datamodel_code_generator.model.runtime_validation.UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP
@@ -5027,7 +5075,7 @@ class JsonSchemaFeatures()
   const_support: bool = field(default=True, metadata=FeatureMetadata(introduced='Draft 6', doc_name='const', description='Single constant value constraint', status='supported'))
   property_names: bool = field(default=True, metadata=FeatureMetadata(introduced='Draft 6', doc_name='propertyNames', description='Dict key type constraints via pattern, enum, or $ref', status='supported'))
   contains: bool = field(default=False, metadata=FeatureMetadata(introduced='Draft 6', doc_name='contains', description='Count constraints are modeled when contains matches every item; general schema-valued contains is not supported', status='partial'))
-  contains_counts: bool = field(default=False, metadata=FeatureMetadata(introduced='2019-09', doc_name='minContains/maxContains', description='Count limits on the items `contains` matches (a `contains` needs one match before 2019-09)', status='partial'))
+  contains_counts: bool = field(default=False, kw_only=True, metadata=FeatureMetadata(introduced='2019-09', doc_name='minContains/maxContains', description='Count limits on the items `contains` matches (a `contains` needs one match before 2019-09)', status='partial'))
   deprecated_keyword: bool = field(default=False, metadata=FeatureMetadata(introduced='2019-09', doc_name='deprecated', description='Marks schema elements as deprecated', status='partial'))
   if_then_else: bool = field(default=False, metadata=FeatureMetadata(introduced='Draft 7', doc_name='if/then/else', description='Conditional schema validation', status='not_supported'))
   content_encoding: bool = field(default=False, metadata=FeatureMetadata(introduced='Draft 7', doc_name='contentMediaType/contentEncoding', description='Content type and encoding hints for strings', status='partial'))
@@ -6025,6 +6073,7 @@ SourceT = TypeVar('SourceT')
 StrictBool = import pydantic.StrictBool
 StrictInt = import pydantic.StrictInt
 StrictStr = import pydantic.StrictStr
+StrictTypes = datamodel_code_generator.enums.StrictTypes
 T = TypeVar('T')
 TUPLE = 'Tuple'
 TYPE_CHECKING = import typing.TYPE_CHECKING
@@ -6169,11 +6218,13 @@ def written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]
 
 [datamodel_code_generator.util]
 Any = import typing.Any
+BaseModel = datamodel_code_generator.util._get_base_model_class.<locals>._BaseModelV2
 BytesIO = import io.BytesIO
 ContextVar = import contextvars.ContextVar
 Final = import typing.Final
 Literal = import typing.Literal
 MappingProxyType = import types.MappingProxyType
+SafeLoader = datamodel_code_generator.util._custom_safe_loader.<locals>.CustomSafeLoader
 Sentinel = import typing_extensions.Sentinel
 TYPE_CHECKING = import typing.TYPE_CHECKING
 TypeVar = import typing.TypeVar
@@ -6326,6 +6377,12 @@ def generate_alias(generator_name: str, field_name: str, target_python_version: 
 
 [datamodel_code_generator._all_or_none] reached all_or_none
 def all_or_none(values: Iterable[_T | None], /) -> tuple[_T, ...] | None
+
+[datamodel_code_generator._avro_detection] reached COMPLEX_TYPES
+COMPLEX_TYPES
+
+[datamodel_code_generator._avro_detection] reached JSON_SCHEMA_MARKER_KEYS
+JSON_SCHEMA_MARKER_KEYS
 
 [datamodel_code_generator._avro_detection] reached NAMED_TYPES
 NAMED_TYPES
@@ -6698,6 +6755,11 @@ class PythonTypeExpressionCollector()
   def add(self, expression: PythonTypeExpr) -> str
   def loaded_schema(self, schema: dict[str, object]) -> LoadedInputModelSchema
 
+[datamodel_code_generator._internal_utils] reached Child
+class Child(Protocol)
+  @runtime_checkable
+  @property def parent(self) -> Any | None
+
 [datamodel_code_generator._internal_utils] reached HashableComparable
 class HashableComparable(Hashable, Protocol)
   @runtime_checkable
@@ -6705,6 +6767,9 @@ class HashableComparable(Hashable, Protocol)
   def __le__(self, value: Any, /) -> bool
   def __gt__(self, value: Any, /) -> bool
   def __ge__(self, value: Any, /) -> bool
+
+[datamodel_code_generator._internal_utils] reached T
+T = TypeVar('T')
 
 [datamodel_code_generator._internal_utils] reached get_most_of_parent
 def get_most_of_parent(value: Any, type_: type[T] | None=None) -> T | None
@@ -9015,6 +9080,12 @@ class _Payload(BaseModel)
 
 [datamodel_code_generator.reference] reached _BaseModel
 class _BaseModel(BaseModel)
+
+[datamodel_code_generator.util] reached _custom_safe_loader.<locals>.CustomSafeLoader
+class CustomSafeLoader(base)
+  yaml_constructors = base.yaml_constructors.copy()
+  yaml_implicit_resolvers = {k: v for k, v in ((k, [(tag, pat) for tag, pat in v if tag not in _YAML_1_1_RESOLVER_TAGS]) for k, v in base.yaml_implicit_resolvers.items()) if v}
+  def construct_document(self, node: Any) -> Any
 
 [datamodel_code_generator.util] reached _get_base_model_class.<locals>._BaseModelV2
 class _BaseModelV2(_PydanticBaseModel)

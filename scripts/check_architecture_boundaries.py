@@ -452,19 +452,19 @@ DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
     ): AllowlistEntry("Preserve the public ParserConfig default field model"),
     BoundaryKey(
         "src/datamodel_code_generator/parser/base.py",
-        "__getattr__",
+        "_dataclass_model",
         "backend-import",
         "datamodel_code_generator.model.dataclass",
     ): AllowlistEntry("Keep the lazy legacy parser.base.dataclass_model compatibility export"),
     BoundaryKey(
         "src/datamodel_code_generator/parser/base.py",
-        "__getattr__",
+        "_msgspec_model",
         "backend-import",
         "datamodel_code_generator.model.msgspec",
     ): AllowlistEntry("Keep the lazy legacy parser.base.msgspec_model compatibility export"),
     BoundaryKey(
         "src/datamodel_code_generator/parser/jsonschema.py",
-        "__getattr__",
+        "_typed_dict_model",
         "backend-import",
         "datamodel_code_generator.model.typed_dict",
     ): AllowlistEntry("Keep the lazy legacy parser.jsonschema.TypedDictModel compatibility export"),

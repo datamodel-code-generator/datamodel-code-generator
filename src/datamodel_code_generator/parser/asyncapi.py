@@ -9,7 +9,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import replace
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, cast
 
 from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
@@ -96,17 +96,17 @@ SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE: dict[str, str] = {
     **dict.fromkeys(XML_SCHEMA_FORMATS, "xmlschema"),
 }
 INTERNAL_SCHEMA_CONTAINER = "x-datamodel-code-generator-asyncapi-schemas"
-__getattr__ = create_module_getattr(
-    __name__,
-    {
-        "convert_avro_schema_data": ("datamodel_code_generator.parser.avro", "convert_avro_schema_data"),
-        "convert_protobuf_schema_data": (
-            "datamodel_code_generator.parser.protobuf",
-            "convert_protobuf_schema_data",
-        ),
-        "convert_xml_schema_data": ("datamodel_code_generator.parser.xmlschema", "convert_xml_schema_data"),
-    },
-)
+_LAZY_IMPORTS: Final = {
+    "convert_avro_schema_data": ("datamodel_code_generator.parser.avro", "convert_avro_schema_data"),
+    "convert_protobuf_schema_data": ("datamodel_code_generator.parser.protobuf", "convert_protobuf_schema_data"),
+    "convert_xml_schema_data": ("datamodel_code_generator.parser.xmlschema", "convert_xml_schema_data"),
+}
+__getattr__ = create_module_getattr(__name__, _LAZY_IMPORTS)
+
+
+def __dir__() -> list[str]:
+    """List the names of the module and the names ``__getattr__`` loads (PEP 562)."""
+    return sorted({*globals(), *_LAZY_IMPORTS})
 
 
 @record(slots=False)

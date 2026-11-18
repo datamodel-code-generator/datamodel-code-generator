@@ -3182,6 +3182,11 @@ def __getattr__(name: str) -> Any:
     raise AttributeError(msg)
 
 
+def __dir__() -> list[str]:
+    """List the names of the module and the names ``__getattr__`` loads (PEP 562)."""
+    return sorted({*globals(), *_LAZY_IMPORTS})
+
+
 __all__ = [
     "DEFAULT_FORMATTERS",
     "DEFAULT_SHARED_MODULE_NAME",

@@ -58,8 +58,11 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._container_kinds import CONTAINERS
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._graph import reaching
+from datamodel_code_generator._internal_utils import Child as _Child
 from datamodel_code_generator._internal_utils import HashableComparable
+from datamodel_code_generator._internal_utils import T as _T
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
+from datamodel_code_generator._internal_utils import to_hashable as _to_hashable
 from datamodel_code_generator._json_pointer import fragment_tokens
 from datamodel_code_generator._model_keys import ModelKey, is_item_counts_site, model_key_of
 from datamodel_code_generator._module_paths import (
@@ -283,6 +286,7 @@ from datamodel_code_generator.util import record_watch_dependency, yaml_number_r
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Hashable, Iterable, Iterator, Mapping, Sequence
+    from types import ModuleType
 
     from datamodel_code_generator._format_types import Formatter, PythonVersion
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
@@ -342,28 +346,39 @@ def _get_field_dependency_ordering_model_type(model_type: type[DataModel]) -> ty
     return model_type if model_type.REQUIRES_FIELD_DEPENDENCY_ORDERING else None
 
 
+def _dataclass_model() -> ModuleType:
+    """Import the dataclass model module, which a parse does not load."""
+    from datamodel_code_generator.model import dataclass as dataclass_model  # noqa: PLC0415
+
+    return dataclass_model
+
+
+def _msgspec_model() -> ModuleType:
+    """Import the msgspec model module, which a parse does not load."""
+    from datamodel_code_generator.model import msgspec as msgspec_model  # noqa: PLC0415
+
+    return msgspec_model
+
+
+_LAZY_LOADERS: Final = {
+    "dataclass_model": _dataclass_model,
+    "msgspec_model": _msgspec_model,
+    "Child": lambda: _Child,
+    "T": lambda: _T,
+    "to_hashable": lambda: _to_hashable,
+}
+
+
 def __getattr__(name: str) -> Any:
-    """Return compatibility model modules without importing them on parser load."""
-    match name:
-        case "dataclass_model":
-            from datamodel_code_generator.model import dataclass as dataclass_model  # noqa: PLC0415
-
-            return dataclass_model
-        case "msgspec_model":
-            from datamodel_code_generator.model import msgspec as msgspec_model  # noqa: PLC0415
-
-            return msgspec_model
-        case "Child" | "T" | "to_hashable":
-            from datamodel_code_generator._internal_utils import Child, T, to_hashable  # noqa: PLC0415
-
-            match name:
-                case "Child":
-                    return Child
-                case "T":
-                    return T
-                case _:
-                    return to_hashable
+    """Return compatibility names without importing their modules on parser load."""
+    if name in _LAZY_LOADERS:
+        return _LAZY_LOADERS[name]()
     raise AttributeError(name)
+
+
+def __dir__() -> list[str]:
+    """List the names of the module and the names ``__getattr__`` loads (PEP 562)."""
+    return sorted({*globals(), *_LAZY_LOADERS})
 
 
 DroppedConstraintFields: TypeAlias = frozenset[tuple[ModulePath, str]]
