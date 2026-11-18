@@ -91,25 +91,49 @@ class Context:
         return module == self.root or module.startswith(f"{self.root}.")
 
 
-def meta_text(meta: object) -> str | None:
-    """Return constraint metadata independent of how it was spelled; None for doc-only metadata."""
+CONSTRAINT_METADATA = {
+    "annotated_types": frozenset({"Gt", "Ge", "Lt", "Le", "Interval", "MultipleOf", "MinLen", "MaxLen", "Len"}),
+    "pydantic": frozenset({"StringConstraints", "_PydanticGeneralMetadata", "Strict", "AllowInfNan"}),
+}
+"""The metadata classes whose fields are single constraints: `conint(ge=1)`, `Field(ge=1)` and `Ge(1)` spell one."""
+
+
+def _constraint_values(meta: object) -> dict[str, object] | None:
     kind = type(meta)
+    if kind.__name__ not in CONSTRAINT_METADATA.get(kind.__module__.split(".")[0], ()):
+        return None
+    if dataclasses.is_dataclass(meta):
+        return {field.name: getattr(meta, field.name) for field in dataclasses.fields(meta)}
+    return dict(vars(meta))
+
+
+def meta_items(meta: object) -> list[str]:
+    """Return the constraints of one metadata object independent of how they were spelled; none for doc-only metadata.
+
+    Constraint classes (`CONSTRAINT_METADATA`) give one `key=value` item per set constraint, the `None` placeholders
+    of con*() give none, and any other metadata is one item of its own text.
+    """
+    kind = type(meta)
+    if meta is None:
+        return []
     if kind.__name__ == "FieldInfo":
-        parts = [text for text in map(meta_text, getattr(meta, "metadata", ())) if text]
+        items = [item for inner in getattr(meta, "metadata", ()) for item in meta_items(inner)]
         if discriminator := getattr(meta, "discriminator", None):
-            parts.append(f"discriminator={discriminator!r}")
-        return ",".join(parts) or None
+            items.append(f"discriminator={discriminator!r}")
+        return items
+    if (constraints := _constraint_values(meta)) is not None:
+        return [f"{key}={value!r}" for key, value in constraints.items() if value is not None]
     if kind.__name__ == "Meta" and kind.__module__.startswith("msgspec"):
         values = {key: getattr(meta, key) for key in dir(meta) if not key.startswith("_") and key not in DOC_ONLY_KEYS}
         values = {key: value for key, value in values.items() if value is not None and not callable(value)}
-        return "Meta(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")" if values else None
+        return ["Meta(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")"] if values else []
     if dataclasses.is_dataclass(meta) and not isinstance(meta, type):
         values = {field.name: getattr(meta, field.name) for field in dataclasses.fields(meta)}
         values = {key: value for key, value in values.items() if value is not None and key not in DOC_ONLY_KEYS}
         text = f"{kind.__name__}(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")" if values else None
     else:
         text = repr(meta)
-    return None if text is None or " at 0x" in text else text
+    return [] if text is None or " at 0x" in text else [text]
 
 
 def split_top_level(text: str) -> list[str]:
@@ -149,8 +173,9 @@ def union_text(parts: list[str]) -> str:
     return next(iter(flat)) if len(flat) == 1 else "Union[" + ", ".join(sorted(flat)) + "]"
 
 
-def _annotated(inner: str, metas: list[str | None], *, meta: bool) -> str:
-    texts = [text for text in metas if text]
+def _annotated(inner: str, metas: list[list[str]], *, meta: bool) -> str:
+    """Return the text of an annotated type: its constraints sorted, as their order does not change behaviour."""
+    texts = sorted(item for items in metas for item in items)
     return f"Annotated[{inner}, {', '.join(texts)}]" if meta and texts else inner
 
 
@@ -180,7 +205,7 @@ def canonical(tp: object, ctx: Context, *, meta: bool, depth: int = 0, seen: fro
         return canonical(arg, ctx, meta=meta, depth=depth + 1, seen=seen)
 
     if origin is typing.Annotated:
-        return _annotated(sub(args[0]), [meta_text(arg) for arg in args[1:]], meta=meta)
+        return _annotated(sub(args[0]), [meta_items(arg) for arg in args[1:]], meta=meta)
     if origin is not None and getattr(origin, "_name", None) in WRAPPERS:
         return sub(args[0])
     if origin is typing.Union or isinstance(tp, types.UnionType):
@@ -215,18 +240,33 @@ def _evaluate(node: ast.expr, ctx: Context) -> object:
     return eval(compile(ast.Expression(node), "<annotation>", "eval"), dict(ctx.namespace))
 
 
+_UNRESOLVED = object()
+
+
+def _evaluated(node: ast.expr, ctx: Context) -> object:
+    """Return the value of an annotation's expression in the module namespace; `_UNRESOLVED` where it raises."""
+    try:
+        return _evaluate(node, ctx)
+    except Exception:  # ruff: ignore[blind-except] - an unresolvable expression keeps its source text
+        return _UNRESOLVED
+
+
 def _value_text(node: ast.expr, ctx: Context) -> str:
-    try:
-        return repr(_evaluate(node, ctx))
-    except Exception:  # ruff: ignore[blind-except] - an unresolvable value keeps its source text
-        return ast.unparse(node)
+    value = _evaluated(node, ctx)
+    return ast.unparse(node) if value is _UNRESOLVED else repr(value)
 
 
-def _meta_node_text(node: ast.expr, ctx: Context) -> str | None:
-    try:
-        return meta_text(_evaluate(node, ctx))
-    except Exception:  # ruff: ignore[blind-except] - unresolvable metadata keeps its source text
+def _meta_node_items(node: ast.expr, ctx: Context) -> list[str]:
+    value = _evaluated(node, ctx)
+    return [ast.unparse(node)] if value is _UNRESOLVED else meta_items(value)
+
+
+def _annotated_call_text(node: ast.Call, ctx: Context, *, meta: bool, depth: int, seen: frozenset[int]) -> str:
+    """Return the text of a call that builds an Annotated type (pydantic's con*()), else the call's source text."""
+    value = _evaluated(node, ctx)
+    if typing.get_origin(value) is not typing.Annotated:
         return ast.unparse(node)
+    return canonical(value, ctx, meta=meta, depth=depth + 1, seen=seen)
 
 
 def canonical_node(node: ast.expr, ctx: Context, *, meta: bool, depth: int, seen: frozenset[int]) -> str:  # ruff: ignore[too-many-return-statements]
@@ -243,6 +283,8 @@ def canonical_node(node: ast.expr, ctx: Context, *, meta: bool, depth: int, seen
         return union_text([sub(node.left), sub(node.right)])
     if isinstance(node, ast.List):
         return "[" + ", ".join(map(sub, node.elts)) + "]"
+    if isinstance(node, ast.Call):
+        return _annotated_call_text(node, ctx, meta=meta, depth=depth, seen=seen)
     if not isinstance(node, (ast.Name, ast.Attribute, ast.Subscript)):
         return ast.unparse(node)
     try:
@@ -256,7 +298,7 @@ def canonical_node(node: ast.expr, ctx: Context, *, meta: bool, depth: int, seen
     if name in WRAPPERS:
         return sub(elements[0])
     if name == "Annotated":
-        return _annotated(sub(elements[0]), [_meta_node_text(e, ctx) for e in elements[1:]], meta=meta)
+        return _annotated(sub(elements[0]), [_meta_node_items(e, ctx) for e in elements[1:]], meta=meta)
     if name in {"Union", "Optional"}:
         return union_text([*map(sub, elements), *(["None"] if name == "Optional" else [])])
     if name == "Literal":
@@ -284,8 +326,8 @@ def _field(  # ruff: ignore[too-many-arguments]
     metadata: tuple[object, ...] = (),
 ) -> dict[str, Any]:
     constrained = canonical(annotation, ctx, meta=True)
-    if extra := [text for text in map(meta_text, metadata) if text]:
-        constrained = f"Annotated[{constrained}, {', '.join(extra)}]"
+    if extra := [item for meta in metadata for item in meta_items(meta)]:
+        constrained = _annotated(constrained, [extra], meta=True)
     return {
         "type": canonical(annotation, ctx, meta=False),
         "ctype": constrained,

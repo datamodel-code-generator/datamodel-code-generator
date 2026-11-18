@@ -1,1 +1,0 @@
-"_MetaWithCallable(check=<built-in function len>)"

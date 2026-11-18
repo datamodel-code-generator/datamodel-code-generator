@@ -1,0 +1,3 @@
+runtime: same: Annotated[float, allow_inf_nan=False, gt=0.5, strict=True] | Annotated[float, allow_inf_nan=False, gt=0.5, strict=True]
+string: same: Annotated[float, allow_inf_nan=False, gt=0.5, strict=True] | Annotated[float, allow_inf_nan=False, gt=0.5, strict=True]
+model-field: same: Annotated[float, allow_inf_nan=False, gt=0.5, strict=True] | Annotated[float, allow_inf_nan=False, gt=0.5, strict=True]

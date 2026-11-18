@@ -15,14 +15,14 @@ from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict, dataclass
 from io import StringIO
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
 
 from scripts import behaviour_diff
 from scripts._behaviour_classify import Allowlist, Side, classify_base_skipped, classify_cell, diff
-from scripts._behaviour_signature import example_value, meta_text
+from scripts._behaviour_signature import Context, _pydantic_item, canonical, example_value, meta_items
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -2072,6 +2072,94 @@ class _MetaWithCallable:
         pytest.param(object(), id="repr-address-dropped"),
     ],
 )
-def test_meta_text_drops_memory_addresses(meta: object) -> None:
+def test_meta_items_drop_memory_addresses(meta: object) -> None:
     """Metadata whose text carries a memory address is dropped, whether it is a dataclass or not."""
-    assert_output(json.dumps(meta_text(meta)) + "\n")
+    assert_output(json.dumps(meta_items(meta)) + "\n")
+
+
+CONSTRAINT_SPELLING_NAMESPACE = (
+    "from decimal import Decimal\n"
+    "from typing import Annotated, Optional, Union\n"
+    "from annotated_types import Ge, Interval, Len, MaxLen\n"
+    "from msgspec import Meta\n"
+    "from pydantic import BaseModel, Field, StringConstraints, condecimal, confloat, conint, constr\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [
+        pytest.param("Union[conint(ge=1), None, bool]", "Union[Annotated[int, Field(ge=1)], None, bool]", id="conint"),
+        pytest.param("Annotated[int, Ge(1)]", "Annotated[int, Field(ge=1)]", id="ge-class"),
+        pytest.param("Annotated[int, Interval(ge=0, le=9)]", "Annotated[int, Field(le=9, ge=0)]", id="interval"),
+        pytest.param(
+            "Union[constr(max_length=4), int]", "Union[Annotated[str, Field(max_length=4)], int]", id="constr"
+        ),
+        pytest.param(
+            "Optional[Union[Annotated[str, StringConstraints(pattern='^a', min_length=1)], int]]",
+            "Optional[Union[Annotated[str, Field(min_length=1, pattern='^a')], int]]",
+            id="string-constraints",
+        ),
+        pytest.param("Annotated[str, Len(1, 4)]", "Annotated[str, Field(min_length=1, max_length=4)]", id="len"),
+        pytest.param(
+            "condecimal(ge=Decimal('1'), multiple_of=Decimal('0.01'), max_digits=5)",
+            "Annotated[Decimal, Field(ge=Decimal('1'), multiple_of=Decimal('0.01'), max_digits=5)]",
+            id="condecimal",
+        ),
+        pytest.param(
+            "confloat(gt=0.5, strict=True, allow_inf_nan=False)",
+            "Annotated[float, Field(gt=0.5, strict=True, allow_inf_nan=False)]",
+            id="confloat-flags",
+        ),
+        pytest.param(
+            "Annotated[str, StringConstraints(max_length=4)]", "Annotated[str, Field(max_length=5)]", id="changed-value"
+        ),
+        pytest.param("Union[conint(ge=1), str]", "Union[Annotated[int, Field(le=1)], str]", id="changed-bound"),
+        pytest.param(
+            "Union[constr(min_length=1, max_length=4), int]",
+            "Union[Annotated[str, Field(max_length=4)], int]",
+            id="dropped-constraint",
+        ),
+        pytest.param("conint(ge=1, strict=True)", "Annotated[int, Field(ge=1)]", id="dropped-strict"),
+        pytest.param("constr(to_lower=True)", "str", id="dropped-flag"),
+    ],
+)
+def test_constraint_spellings(before: str, after: str) -> None:
+    """con*(), Field() and the constraint classes spell one constraint alike; a changed or dropped one differs.
+
+    Each annotation is read as a runtime type, as the string annotation postponed evaluation leaves, and as a pydantic
+    model field (whose top-level metadata pydantic moves to the field).
+    """
+    module = ModuleType("generated")
+    exec(CONSTRAINT_SPELLING_NAMESPACE, module.__dict__)
+    namespace, ctx = module.__dict__, Context(module)
+
+    def forms(text: str) -> dict[str, str]:
+        model = eval(f"type('Model', (BaseModel,), {{'__annotations__': {{'x': {text}}}}})", namespace)
+        return {
+            "runtime": canonical(eval(text, namespace), ctx, meta=True),
+            "string": canonical(text, ctx, meta=True),
+            "model-field": (_pydantic_item(model, ctx) or {})["fields"]["x"]["ctype"],
+        }
+
+    old, new = forms(before), forms(after)
+    lines = [f"{form}: {'same' if old[form] == new[form] else 'differs'}: {old[form]} | {new[form]}" for form in old]
+    assert_output("\n".join(lines) + "\n")
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        pytest.param("Union[undefined_call(ge=1), int]", id="unresolvable-call"),
+        pytest.param("Union[len('ab'), int]", id="call-not-annotated"),
+        pytest.param("Annotated[int, undefined_meta]", id="unresolvable-metadata"),
+        pytest.param("Annotated[Union[int, str], Field(discriminator='kind')]", id="discriminator"),
+        pytest.param("Annotated[int, Meta(ge=1, description='doc')]", id="msgspec-meta"),
+        pytest.param("Literal['b', 'a', undefined_value]", id="literal-values"),
+    ],
+)
+def test_annotation_text_of_other_metadata(annotation: str) -> None:
+    """Metadata that is no constraint class keeps its own text; a call or value that cannot be resolved its source."""
+    module = ModuleType("generated")
+    exec(CONSTRAINT_SPELLING_NAMESPACE, module.__dict__)
+    assert_output(canonical(annotation, Context(module), meta=True) + "\n")
