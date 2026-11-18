@@ -129,7 +129,10 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
-OPT_IN_OPTIONS_20261118: tuple[str, ...] = ("--use-validate-default-for-root-model-type-aliases",)
+OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
+    "--use-validate-default-for-root-model-type-aliases",
+    "--read-ref-siblings-in-closed-allof-members",
+)
 """The options the 20261118 presets set beyond the 20261113 presets."""
 
 PRACTICAL_OPT_IN_OPTIONS: dict[str, tuple[str, ...]] = {
@@ -538,6 +541,12 @@ CASES_20261118: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel", "--use-root-model-type-alias", "--no-collapse-root-models"],
         id="use-validate-default-for-root-model-type-aliases",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "allof_unevaluated_closed_member_ref_siblings.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-ref-siblings-in-closed-allof-members",
+    ),
 )
 """The inputs each opt-in option of the 20261118 presets changes."""
 
@@ -864,6 +873,13 @@ def test_preset_sets_opt_in_option(
             "--use-validate-default-for-root-model-type-aliases",
             "--no-use-validate-default-for-root-model-type-aliases",
             id="use-validate-default-for-root-model-type-aliases",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "allof_unevaluated_closed_member_ref_siblings.json",
+            [],
+            "--read-ref-siblings-in-closed-allof-members",
+            "--no-read-ref-siblings-in-closed-allof-members",
+            id="read-ref-siblings-in-closed-allof-members",
         ),
     ],
 )

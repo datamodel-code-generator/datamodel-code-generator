@@ -1001,19 +1001,21 @@ def _closes_unevaluated_properties(parser: AllOfValuesHost, member: JsonSchemaOb
 
     It says so with unevaluatedProperties false and no additionalProperties, beside a ``$ref`` only where the keywords
     beside it apply, and the schemas it evaluates, the one its ``$ref`` names among them, evaluate no property that no
-    ``properties`` names (``_evaluates_unnamed_properties``). Row ``legacy-closing-ref-siblings-with-applicators``:
-    of the allOf ``$ref`` members it evaluates, it reads the keywords beside the ``$ref`` only where the member has an
-    applicator, ``if`` or a map keyword.
+    ``properties`` names (``_evaluates_unnamed_properties``). The allOf ``$ref`` members it evaluates are read as the
+    schema validators read them; without ``--read-ref-siblings-in-closed-allof-members`` (row
+    ``legacy-closing-ref-siblings-with-applicators``) the keywords beside such a ``$ref`` are read only where the member
+    has an applicator, ``if`` or a map keyword.
     """
     if member.unevaluatedProperties is not False or member.additionalProperties is not None:
         return False
     held = parser.SCHEMA_OBJECT_TYPE.model_construct(allOf=[member])
+    sibling_yield = "ref-less-copy" if parser.config.read_ref_siblings_in_closed_allof_members else "applicator-copy"
     return next(
         islice(parser._iter_schema_validation_sources(held, include_references=False), 1, None),
         None,
     ) is not None and not any(
         _evaluates_unnamed_properties(source)
-        for source in parser._iter_schema_validation_sources(held, sibling_yield="applicator-copy")
+        for source in parser._iter_schema_validation_sources(held, sibling_yield=sibling_yield)
     )
 
 

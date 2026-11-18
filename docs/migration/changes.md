@@ -171,6 +171,12 @@ Where an allOf member's pattern holds syntax that Python's re rejects on every P
 - **Pull requests and issues:** [#7094](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7094)
 - **Source:** the release notes
 
+### New option `--read-ref-siblings-in-closed-allof-members` (`--no-read-ref-siblings-in-closed-allof-members`) (unreleased) { #option-read-ref-siblings-in-closed-allof-members }
+
+Read every keyword beside a $ref of the allOf members an unevaluatedProperties: false allOf member evaluates where the schema version applies them, as the schema validators read them, so a dependentSchemas or $dynamicRef beside such a $ref, which may evaluate more properties, keeps the member from closing the model and a payload with those properties validates; without it they are read only where the $ref member holds an applicator, if, patternProperties, additionalProperties or unevaluatedProperties, and the model forbids those properties, as in 0.97.0.
+
+- **Source:** the command-line options of both releases
+
 ### New option `--use-validate-default-for-root-model-type-aliases` (`--no-use-validate-default-for-root-model-type-aliases`) (unreleased) { #option-use-validate-default-for-root-model-type-aliases }
 
 Under --use-root-model-type-alias, write the default of a field whose type names a root model written as an alias (`Tags = RootModel[list[str]]`) with validate_default=True, as for a root model class, so Pydantic validates it into the root model; without it the default stays the raw value, such as a list instead of a `Tags`, as in 0.97.0 (Pydantic v2 only)
@@ -182,6 +188,7 @@ Under --use-root-model-type-alias, write the default of a field whose type names
 They keep the options of the 20261113 presets and add:
 
 - Validated defaults of root model type aliases (`--use-validate-default-for-root-model-type-aliases`): Under --use-root-model-type-alias, validate the default of a field whose type names a root model written as an alias into that root model, as for a root model class, instead of keeping the raw value.
+- $ref siblings read in closed allOf members (`--read-ref-siblings-in-closed-allof-members`): Read every keyword beside a $ref that an unevaluatedProperties: false allOf member evaluates, as the schema validators do, so a dependentSchemas beside it, which may evaluate more properties, keeps the model open instead of forbidding the properties a valid payload holds.
 
 - **Source:** the registry of deprecations, experimental features and dated presets
 

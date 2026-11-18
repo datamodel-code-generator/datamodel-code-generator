@@ -205,6 +205,7 @@ class ParserConfigDict(TypedDict):
     read_dynamic_anchors_in_document_order: NotRequired[bool]
     read_ids_with_empty_fragment: NotRequired[bool]
     read_single_allof_refs_in_their_documents: NotRequired[bool]
+    read_ref_siblings_in_closed_allof_members: NotRequired[bool]
     ignore_ref_siblings_by_schema_version: NotRequired[bool]
     read_yaml_1_1_numbers_as_text: NotRequired[bool]
     use_msgspec_tagged_unions: NotRequired[bool]

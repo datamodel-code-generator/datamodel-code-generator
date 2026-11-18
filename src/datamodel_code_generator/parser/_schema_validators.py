@@ -758,7 +758,8 @@ def iter_scoped_schema_validation_sources(  # noqa: PLR0913
     ``sibling_yield`` says: ``ref-less-copy`` walks a copy of the member without its ``$ref`` and without following
     references where it has a keyword beside its ``$ref``; ``member`` yields the member as written (the property
     counts); row ``legacy-closing-ref-siblings-with-applicators`` (``applicator-copy``, what closes an allOf in
-    ``parser/_all_of_values.py``) walks the copy only where the member has an applicator, ``if`` or a map keyword.
+    ``parser/_all_of_values.py`` without ``--read-ref-siblings-in-closed-allof-members``) walks the copy only where the
+    member has an applicator, ``if`` or a map keyword.
     Without ``track_scope`` every source keeps ``scope``.
     """
     yield obj, scope

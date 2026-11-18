@@ -180,6 +180,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-nullable-beside-type-list": "Write the null that `nullable: true` declares beside a `type` list into th...",
     "--read-object-keywords-by-type": "Read the keywords that constrain objects only beside an `anyOf` or `oneOf` f...",
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
+    "--read-ref-siblings-in-closed-allof-members": "Read every keyword beside a `$ref` that a closed allOf member e...",
     "--read-schema-version-per-document": "Read each document by the schema version it declares.",
     "--read-single-allof-refs-in-their-documents": "Read the target of an allOf of one `$ref` in the document that ...",
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",

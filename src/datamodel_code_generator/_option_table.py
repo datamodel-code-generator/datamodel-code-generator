@@ -2052,6 +2052,16 @@ OPTIONS: Final[tuple[Option, ...]] = (
     ),
     toggle(
         Section.BASE,
+        "--read-ref-siblings-in-closed-allof-members",
+        help="Read every keyword beside a $ref of the allOf members an unevaluatedProperties: false allOf member "
+        "evaluates where the schema version applies them, as the schema validators read them, so a dependentSchemas "
+        "or $dynamicRef beside such a $ref, which may evaluate more properties, keeps the member from closing the "
+        "model and a payload with those properties validates; without it they are read only where the $ref member "
+        "holds an applicator, if, patternProperties, additionalProperties or unevaluatedProperties, and the model "
+        "forbids those properties, as in 0.97.0.",
+    ),
+    toggle(
+        Section.BASE,
         "--ignore-ref-siblings-by-schema-version",
         help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
         "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those versions specify: a $ref with a sibling format: binary "

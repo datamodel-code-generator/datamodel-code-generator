@@ -1406,6 +1406,15 @@ _STANDARD_20261118_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
         output_model_types=frozenset({DataModelType.PydanticV2BaseModel}),
     ),
+    PresetOptionGroup(
+        title="$ref siblings read in closed allOf members",
+        config=PresetConfig(read_ref_siblings_in_closed_allof_members=True),
+        description=(
+            "Read every keyword beside a $ref that an unevaluatedProperties: false allOf member evaluates, as the "
+            "schema validators do, so a dependentSchemas beside it, which may evaluate more properties, keeps the "
+            "model open instead of forbidding the properties a valid payload holds."
+        ),
+    ),
 )
 """The 20261113 groups and the opt-in options added after them."""
 

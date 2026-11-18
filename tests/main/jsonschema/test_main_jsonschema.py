@@ -16340,14 +16340,65 @@ def test_main_jsonschema_allof_unevaluated_closed_member(
 def test_main_jsonschema_allof_unevaluated_closed_member_ref_siblings(output_file: Path) -> None:
     """Test a closed allOf member ignores a dependentSchemas beside a ``$ref`` it evaluates, as it always has.
 
-    The keywords beside that ``$ref`` are read only where the member holds an applicator or a map keyword (row
-    ``legacy-closing-ref-siblings-with-applicators``), so the member still closes the model.
+    Without ``--read-ref-siblings-in-closed-allof-members`` the keywords beside that ``$ref`` are read only where the
+    member holds an applicator or a map keyword (row ``legacy-closing-ref-siblings-with-applicators``), so the member
+    still closes the model.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "allof_unevaluated_closed_member_ref_siblings.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--read-ref-siblings-in-closed-allof-members"],
+    option_description="""Read every keyword beside a `$ref` that a closed allOf member evaluates.
+
+An allOf member with `unevaluatedProperties: false` closes the model where the schemas it evaluates name every
+property they evaluate. Without this option the keywords beside an allOf `$ref` of those schemas are read only where
+that `$ref` member holds an applicator (`allOf`, `anyOf`, `oneOf`, `if`), `patternProperties`, `additionalProperties`
+or `unevaluatedProperties`, as in 0.97.0: a `dependentSchemas` beside the `$ref`, which evaluates `owner` once `status`
+is present, is not read, so the model forbids extra keys and rejects `{"status": "x", "owner": "y"}`, which the schema
+accepts. With it they are read as the schema validators read them, wherever the schema version applies the keywords
+beside a `$ref`, so the member does not close the model and the payload validates.""",
+    input_schema="jsonschema/allof_unevaluated_closed_member_ref_siblings.json",
+    cli_args=["--read-ref-siblings-in-closed-allof-members"],
+    golden_output="main/jsonschema/main_jsonschema/read_ref_siblings_in_closed_allof_members[pydantic_v2.BaseModel].py",
+    comparison_output="main/jsonschema/main_jsonschema/allof_unevaluated_closed_member_ref_siblings.py",
+)
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "typing.TypedDict"])
+def test_main_jsonschema_read_ref_siblings_in_closed_allof_members(output_file: Path, output_model_type: str) -> None:
+    """Test a dependentSchemas beside a ``$ref`` keeps a closed allOf member from closing the model, opt-in (#7087).
+
+    With ``--read-ref-siblings-in-closed-allof-members`` the member's ``$ref`` siblings are read as the schema
+    validators read them, so the payload whose ``owner`` the ``dependentSchemas`` evaluates validates, as it does
+    against the schema, and a ``status`` of the wrong type is rejected by both.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "allof_unevaluated_closed_member_ref_siblings.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
+            *("--target-python-version", "3.10", "--read-ref-siblings-in-closed-allof-members"),
+        ],
+        force_exec_validation=True,
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    valid, invalid = {"status": "x", "owner": "y"}, {"status": 1, "owner": "y"}
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"read_ref_siblings_in_closed_allof_members_{output_model_type.replace('.', '_')}",
+        model_name="Filters",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
     )
 
 
