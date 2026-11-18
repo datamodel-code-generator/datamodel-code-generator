@@ -1,0 +1,6 @@
+{"steps": [0.5, 1.0]} (invalid): accepted/accepted
+{"steps": [0.5, 0.3]} (valid): accepted/accepted
+{"even": [2, 4]} (invalid): rejected/rejected
+{"even": [2, 3]} (valid): accepted/accepted
+{"named": ["a", "a"]} (pattern error): accepted/accepted
+{"named": ["b"]} (pattern error): accepted/accepted

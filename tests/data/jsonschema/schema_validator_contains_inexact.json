@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Probe",
+  "type": "object",
+  "properties": {
+    "steps": {
+      "type": "array",
+      "contains": {
+        "multipleOf": 0.1
+      },
+      "maxContains": 1
+    },
+    "even": {
+      "type": "array",
+      "contains": {
+        "multipleOf": 2
+      },
+      "maxContains": 1
+    },
+    "named": {
+      "type": "array",
+      "contains": {
+        "pattern": "(?<letter>a)"
+      },
+      "maxContains": 1
+    }
+  }
+}

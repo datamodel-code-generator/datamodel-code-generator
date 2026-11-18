@@ -8,9 +8,9 @@
 {"ints": ["1"]} (invalid): rejected/rejected
 {"ints": [1.5, 2]} (valid): accepted/accepted
 {"nums": [10, 10.5]} (valid): accepted/accepted
-{"nums": [10, 10.25]} (invalid): rejected/rejected
+{"nums": [10, 10.25]} (invalid): accepted/accepted
 {"nums": [19.5, 20, 11]} (valid): accepted/accepted
-{"nums": [10, 11, 12, 13]} (invalid): rejected/rejected
+{"nums": [10, 11, 12, 13]} (invalid): accepted/accepted
 {"counts": [3, 4.5, -3, 33]} (valid): accepted/accepted
 {"counts": [3.0, 6]} (invalid): rejected/rejected
 {"counts": [true, 0, 3]} (invalid): rejected/rejected

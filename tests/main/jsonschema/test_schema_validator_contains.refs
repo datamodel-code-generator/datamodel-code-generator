@@ -14,5 +14,9 @@ option4	main/jsonschema/schema_validator_contains/schema_validator_contains[opti
 [test_schema_validator_contains_rule_scope]
 draft4	main/jsonschema/schema_validator_contains/rule_scope[draft4].py
 draft4	main/jsonschema/schema_validator_contains/rule_scope[draft4].txt
+draft7	main/jsonschema/schema_validator_contains/rule_scope[draft7].py
+draft7	main/jsonschema/schema_validator_contains/rule_scope[draft7].txt	= main/jsonschema/schema_validator_contains/rule_scope[root].txt
+inexact	main/jsonschema/schema_validator_contains/rule_scope[inexact].py
+inexact	main/jsonschema/schema_validator_contains/rule_scope[inexact].txt
 root	main/jsonschema/schema_validator_contains/rule_scope[root].py
 root	main/jsonschema/schema_validator_contains/rule_scope[root].txt

@@ -1260,25 +1260,32 @@ def _contains_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject, path: Un
 
     A boolean ``contains`` and one that matches every item give item counts instead
     (``_get_array_items_constraints``); the counts are read as there (``get_contains_count_constraints``:
-    ``minContains`` is 1 when absent).
+    ``minContains`` is 1 when absent). ``minContains`` and ``maxContains`` exist from draft 2019-09 on; before, a
+    ``contains`` needs one match and the two keywords are ignored.
     """
     if _value_keywords.contains_matches_every_item(parser, obj):
         return None
-    min_contains, max_contains = _value_keywords.get_contains_count_constraints(type(parser), obj)
+    features = parser._features_at(obj)
+    min_contains, max_contains = (
+        _value_keywords.get_contains_count_constraints(type(parser), obj) if features.anchor else (1, None)
+    )
     if (min_contains is None and max_contains is None) or not isinstance(
         contains := get_conditional_schema(parser, obj, "contains"), JsonSchemaObject
     ):
         return None
-    if (matcher := _contains_matcher(parser, contains)) is None:
+    if (matcher := _contains_matcher(parser, contains, const_support=features.const_support)) is None:
         return None
     return ContainsRule(path=path, matcher=matcher, min_contains=min_contains, max_contains=max_contains)
 
 
-def _contains_matcher(parser: SchemaValidatorsHost, schema: JsonSchemaObject) -> ContainsMatcher | None:
+def _contains_matcher(
+    parser: SchemaValidatorsHost, schema: JsonSchemaObject, *, const_support: bool
+) -> ContainsMatcher | None:
     """Return the keywords of a ``contains`` schema that the generated matcher checks exactly, as (keyword, value).
 
     The matcher reads ``type``, ``const``, ``enum``, ``pattern``, ``minLength``, ``maxLength``, the numeric bounds and
-    ``multipleOf``, beside metadata only; any other keyword, a pattern Python's ``re`` rejects, an enum that
+    ``multipleOf``, beside metadata only; any other keyword, a pattern Python's ``re`` cannot compile, a
+    ``multipleOf`` that is not an integer (float division and the mathematical multiple disagree), an enum that
     ``--ignore-enum-constraints`` drops and a const the draft does not define give None, so that no count is checked
     with a matcher that accepts other items than the schema. An integral ``multipleOf`` is the integer it spells.
     """
@@ -1288,21 +1295,34 @@ def _contains_matcher(parser: SchemaValidatorsHost, schema: JsonSchemaObject) ->
     if schema.type is not None:
         matcher.append(("type", declared_types(schema.type)))
     if "const" in schema.extras:
-        if not parser._features_at(schema).const_support:
+        if not const_support:
             return None
         matcher.append(("const", schema.extras["const"]))
     if "enum" in schema.model_fields_set:
         if parser.ignore_enum_constraints:
             return None
         matcher.append(("enum", tuple(schema.enum)))
-    if schema.pattern is not None and python_rejects(schema.pattern):
+    if schema.pattern is not None and (python_rejects(schema.pattern) or not _compiles(schema.pattern)):
         return None
     for keyword, value in _constraint_values(
         schema, (*_CONTAINS_STRING_KEYWORDS, *_CONTAINS_NUMBER_KEYWORDS), as_numbers=True
     ).items():
-        integral = keyword == "multipleOf" and isinstance(value, float) and value.is_integer()
-        matcher.append((keyword, int(value) if integral else value))
+        if keyword == "multipleOf" and isinstance(value, float):
+            if not value.is_integer():
+                return None
+            matcher.append((keyword, int(value)))
+        else:
+            matcher.append((keyword, value))
     return tuple(matcher)
+
+
+def _compiles(pattern: str) -> bool:
+    """Return whether Python's ``re`` compiles ``pattern``."""
+    try:
+        re.compile(pattern)
+    except (re.error, OverflowError, RecursionError):
+        return False
+    return True
 
 
 def add_path_rules_validator(  # noqa: PLR0913

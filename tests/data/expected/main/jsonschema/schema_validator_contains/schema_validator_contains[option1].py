@@ -412,10 +412,6 @@ class Probe(_JsonSchemaRuntimeValidationBaseCoreContains):
         ((('keys',),), ((('pattern', '^k'),), 1, 1)),
         ((('ints',),), ((('type', ('integer',)),), 1, 1)),
         (
-            (('nums',),),
-            ((('minimum', 10), ('exclusiveMaximum', 20.0), ('multipleOf', 0.5)), 2, 3),
-        ),
-        (
             (('counts',),),
             ((('exclusiveMinimum', 0.0), ('maximum', 30), ('multipleOf', 3)), 1, 1),
         ),
