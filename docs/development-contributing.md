@@ -320,6 +320,15 @@ has none, and a `harness` record of a change that touches `src/` is listed as ne
 the outputs that moved since the latest tag with no unreleased record and a tag that `releases.toml` does not list
 yet. It reports only, for now; `--report-only` keeps its exit status 0 once it fails CI.
 
+## Review checklist
+
+`python scripts/review_checklist.py --base origin/main` prints the review items your diff triggers, at most ten: the
+rules of `AGENTS.md` and these pages that no check enforces, each with the lines that triggered it, the question a
+reviewer asks and the pull requests where the rule was broken. The items are the rows of
+`scripts/review_checklist.toml`; a row states its rule in words its file holds and names two pull requests, and it
+leaves the table once a check enforces its rule. `--head <revision>` reviews a commit instead of the working tree, and
+`--table <file>` tries a new row on past diffs before it enters.
+
 ## Architecture boundaries
 
 Before adding a dependency between layers, check `docs/architecture.md` and run:

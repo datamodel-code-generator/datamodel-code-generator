@@ -1,0 +1,9 @@
+exit status 0
+Review checklist against base up to main: 1 of 6 items.
+
+1. A test names its stored output [stored-output-name]
+   Rule (AGENTS.md): Never add or change an expected path to create, split, share or rename stored output
+   Ask: Does the test pass an expected path, a stored file name or a `name=` to a helper? Call the helper without one and commit what pytest writes; a module-local helper that takes a stored-output name gets none either.
+   Triggered by:
+     tests/test_coverage.py:13 adds `assert_output(capsys.readouterr().out, EXPECTED / f"exclusions-{case}.txt")`
+   Pull requests: #5874, #7119
