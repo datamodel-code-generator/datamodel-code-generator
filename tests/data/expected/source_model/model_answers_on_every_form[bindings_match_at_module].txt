@@ -1,0 +1,7 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  sys: import@3 [always]; origin sys
+  args: match@6 [case:body@6]
+  mode: assign@7 [case:body@6]; value "run"
+  mode: assign@9 [case:body@8]; value None
+== code objects: one per scope that compiles on this Python

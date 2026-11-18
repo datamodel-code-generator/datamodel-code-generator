@@ -1,0 +1,21 @@
+== references
+3:0 y store in <module> -> local <module> @3
+7:4 y store in C -> local C @7, else global <module> @3
+8:4 items store in C -> local C @8, else unbound
+9:4 z store in C -> local C @9, else unbound
+9:20 items load in C -> local C @8, else unbound
+9:15 _ store in C.<listcomp> -> local C.<listcomp> @9
+9:9 y load in C.<listcomp> -> global <module> @3; origin forms.references.class_scope_skipped.y
+10:4 first store in C -> local C @10, else unbound
+10:24 items load in C -> local C @8, else unbound
+10:19 v store in C.<listcomp> -> local C.<listcomp> @10
+10:13 v load in C.<listcomp> -> local C.<listcomp> @10
+11:4 f store in C -> local C @11, else unbound
+11:21 y load in C.<lambda> -> global <module> @3; origin forms.references.class_scope_skipped.y
+14:15 y load in C.m -> global <module> @3; origin forms.references.class_scope_skipped.y
+uses of <module>:y@3: read@9, read@11, read@14
+uses of C:items@8: read@9, read@10
+uses of C.<listcomp>:v@10: read@10
+type positions @3: -
+type positions @7: -
+== code objects: one per scope that compiles on this Python

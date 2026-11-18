@@ -1,0 +1,25 @@
+== references
+8:0 no_check store in <module> -> local <module> @8
+8:11 typing load in <module> -> local <module> @3; origin typing
+9:0 TC store in <module> -> local <module> @9
+9:5 tp load in <module> -> local <module> @4; origin typing
+10:0 first store in <module> -> local <module> @10
+10:8 second load in <module> -> local <module> @11
+11:0 second store in <module> -> local <module> @11
+11:9 first load in <module> -> local <module> @10
+14:1 no_check load in <module> -> local <module> @8; origin typing.no_type_check
+16:11 c load in f -> global <module> @6; origin typing.cast
+16:13 int load in f -> builtin; origin builtins.int
+16:18 x load in f -> local f @15
+16:22 load load in f -> global <module> @5; origin importlib.import_module
+16:36 tp load in f -> global <module> @4; origin typing
+16:44 first load in f -> global <module> @10
+uses of <module>:typing@3: read@8
+uses of <module>:tp@4: read@9, read@16
+uses of <module>:load@5: call@16
+uses of <module>:c@6: call@16
+uses of <module>:no_check@8: read@14
+uses of <module>:first@10: read@11, read@16
+uses of <module>:second@11: read@10
+uses of f:x@15: read@16
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,8 @@
+== suppressions
+comment @5: # ruff: noqa: F401
+comment @6: # flake8: noqa
+comment @9: # ruff: noqa: E501
+ruff file-noqa @5 (F401): lines 1-11
+ruff file-noqa @6 (every code): lines 1-11
+suppressed ruff F401 unused-import: 1-11
+== code objects: one per scope that compiles on this Python

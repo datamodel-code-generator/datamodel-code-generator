@@ -1,0 +1,7 @@
+== references
+9:12 Base load in <module> -> local <module> @4; origin forms.references.class_cell_and_super.Base
+11:15 super load in Child.name -> builtin; origin builtins.super
+11:32 __class__ load in Child.name -> class-cell Child
+14:23 __class__ load in Child.nested.<locals>.<lambda> -> class-cell Child
+uses of <module>:Base@4: read@9
+== code objects: one per scope that compiles on this Python

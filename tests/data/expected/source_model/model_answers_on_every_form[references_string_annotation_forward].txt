@@ -1,0 +1,21 @@
+== references
+7:3 TYPE_CHECKING load in <module> -> local <module> @5; origin typing.TYPE_CHECKING
+11:21 Optional load (deferred annotation) in <module> -> local <module> @5; origin typing.Optional
+16:4 children store in Fwd -> local Fwd @16, else unbound
+16:14 list load (deferred annotation) in Fwd -> builtin; origin builtins.list
+17:4 broken store in Fwd -> local Fwd @17, else unbound
+11:9 Later load (string annotation) in <module> -> local <module> @8; origin m.Later
+11:30 Fwd load (string annotation) in <module> -> local <module> @15; origin forms.references.string_annotation_forward.Fwd
+11:41 list load (string annotation) in <module> -> builtin; origin builtins.list
+11:41 Fwd load (string annotation) in <module> -> local <module> @15; origin forms.references.string_annotation_forward.Fwd
+16:19 Fwd load (string annotation) in Fwd -> global <module> @15; origin forms.references.string_annotation_forward.Fwd
+uses of <module>:TYPE_CHECKING@5: read@7
+uses of <module>:Optional@5: read@11
+uses of <module>:Later@8: read@11
+uses of <module>:Fwd@15: read@11, read@11, read@16
+type positions @11: list, Fwd
+type positions @16: list, Fwd
+type positions @17: -
+type positions @11: Later
+type positions @11: Optional, Fwd
+== code objects: one per scope that compiles on this Python

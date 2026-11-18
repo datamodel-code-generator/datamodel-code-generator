@@ -1,0 +1,14 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  count: annotation-only@3 [always]
+  f: def@6 [always]
+  Fields: class@11 [always]
+scope function f#0 'f': code yes; first line 6
+  opened by a node evaluated in <module>#0
+  total: annotation-only@7 [function:body@6]
+scope class Fields#0 'Fields': code yes; first line 11
+  opened by a node evaluated in <module>#0
+  name: annotation-only@12 [always]
+  size: annassign@13 [always]; value 0
+  members: name, size
+== code objects: one per scope that compiles on this Python

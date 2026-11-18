@@ -109,6 +109,8 @@ SWEEP_PYTHON = (3, 15)
 one CI lane runs the sweep and the passes whose trigger is false, the others skip those passes as users do."""
 CHECK_STORE_WRITES_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
 """The debug check area that reports into a file during each test, which `StoreWritesCheck` checks after the test."""
+CHECK_SOURCE_MODEL_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SOURCE_MODEL"
+"""Compares every model `scripts/_source_model.py` builds in the suite with the compiler (its `VERIFY_ENV`)."""
 CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}
 """What a test adds to the environment of a Python it starts under ``coverage run``: ``ctrace``, where installed.
 
@@ -285,10 +287,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
 
-    The finality sweep and the trigger check are turned on only from `SWEEP_PYTHON`.
+    The areas include the compiler check of `scripts/_source_model.py`. The finality sweep and the trigger check are
+    turned on only from `SWEEP_PYTHON`.
     """
     benchmarks = config.getoption("codspeed", default=False)
-    for name in () if benchmarks else CHECK_AREA_ENVS:
+    for name in () if benchmarks else (*CHECK_AREA_ENVS, CHECK_SOURCE_MODEL_ENV):
         os.environ.setdefault(name, "1")
     if not benchmarks and sys.version_info >= SWEEP_PYTHON:
         os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")

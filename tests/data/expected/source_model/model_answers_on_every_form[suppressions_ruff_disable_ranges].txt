@@ -1,0 +1,12 @@
+== suppressions
+comment @6: # ruff: disable[F401,E501]
+comment @8: # ruff: enable[F401]
+comment @10: # ruff: enable[F401,E501]
+comment @15: # ruff: disable[F401]
+comment @22: # ruff: disable[F401]
+comment @24: # ruff: disable[F401]
+ruff disable @6 (F401,E501): lines 6-9
+ruff disable @15 (F401): lines 15-20
+ruff disable @24 (F401): lines 24-25
+suppressed ruff F401 unused-import: 6-9,15-20,24-25
+== code objects: one per scope that compiles on this Python

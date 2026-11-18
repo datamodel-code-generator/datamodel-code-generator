@@ -1,0 +1,37 @@
+=== module submodule_and_parent_packages
+== references
+== imports
+from@6 submodule_and_parent_packages.leaf as leaf from submodule_and_parent_packages in <module> [always]; level 1; unconditional
+from@7 submodule_and_parent_packages.inner.deep as deep from submodule_and_parent_packages.inner in <module> [always]; level 1; unconditional
+definition submodule_and_parent_packages:deep -> module submodule_and_parent_packages.inner.deep@7 via submodule_and_parent_packages [always]
+definition submodule_and_parent_packages:leaf -> module submodule_and_parent_packages.leaf@6 via submodule_and_parent_packages [always]
+=== module submodule_and_parent_packages.inner
+== references
+== imports
+=== module submodule_and_parent_packages.inner.deep
+== references
+5:3 TYPE_CHECKING load in <module> -> local <module> @3; origin typing.TYPE_CHECKING
+12:11 inner load in load -> local load @10; origin submodule_and_parent_packages.inner
+uses of <module>:TYPE_CHECKING@3: read@5
+uses of load:inner@10: read@12
+== imports
+from@3 typing.TYPE_CHECKING as TYPE_CHECKING from typing in <module> [always]; unconditional
+from@6 submodule_and_parent_packages.leaf as leaf from submodule_and_parent_packages in <module> [type-checking:body@5]; level 2; typing only
+from@10 submodule_and_parent_packages.inner as inner from submodule_and_parent_packages in load [function:body@9]; level 2
+definition submodule_and_parent_packages.inner.deep:TYPE_CHECKING -> outside typing.TYPE_CHECKING@3 via submodule_and_parent_packages.inner.deep [always]
+definition submodule_and_parent_packages.inner.deep:leaf -> module submodule_and_parent_packages.leaf@6 via submodule_and_parent_packages.inner.deep [type-checking:body@5]
+definition submodule_and_parent_packages.inner.deep:load -> def submodule_and_parent_packages.inner.deep:load@9 via submodule_and_parent_packages.inner.deep [always]
+=== module submodule_and_parent_packages.leaf
+== references
+== imports
+import@3 submodule_and_parent_packages.inner.deep as submodule_and_parent_packages from submodule_and_parent_packages.inner.deep in <module> [always]; unconditional
+from@4 submodule_and_parent_packages.inner as inner from submodule_and_parent_packages in <module> [always]; unconditional
+definition submodule_and_parent_packages.leaf:inner -> module submodule_and_parent_packages.inner@4 via submodule_and_parent_packages.leaf [always]
+definition submodule_and_parent_packages.leaf:submodule_and_parent_packages -> module submodule_and_parent_packages@3 via submodule_and_parent_packages.leaf [always]
+edge submodule_and_parent_packages -> submodule_and_parent_packages.leaf @6 via submodule (module) [always]
+edge submodule_and_parent_packages -> submodule_and_parent_packages.inner @7 via from (module) [always]
+edge submodule_and_parent_packages -> submodule_and_parent_packages.inner.deep @7 via submodule (module) [always]
+edge submodule_and_parent_packages.inner.deep -> submodule_and_parent_packages.leaf @6 via submodule (module) [type-checking:body@5]
+edge submodule_and_parent_packages.leaf -> submodule_and_parent_packages.inner @3 via parent (module) [always]
+edge submodule_and_parent_packages.leaf -> submodule_and_parent_packages.inner.deep @3 via import (module) [always]
+edge submodule_and_parent_packages.leaf -> submodule_and_parent_packages.inner @4 via submodule (module) [always]

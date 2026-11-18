@@ -1,0 +1,11 @@
+== suppressions
+comment @6: # ruff: ignore[F401]
+comment @9: # ruff: ignore[unused-import]
+comment @12: # ruff: ignore[F401, E501]
+comment @13: # ruff: ignore[E501]
+ruff ignore @6 (F401): lines 7
+ruff ignore @9 (unused-import): lines 11
+ruff ignore @12 (F401,E501): lines 12
+ruff ignore @13 (E501): lines 13
+suppressed ruff F401 unused-import: 7,11-12
+== code objects: one per scope that compiles on this Python

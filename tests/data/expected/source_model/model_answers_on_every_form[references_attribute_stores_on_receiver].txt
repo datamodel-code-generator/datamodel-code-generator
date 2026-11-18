@@ -1,0 +1,37 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Parser: class@7 [always]
+scope class Parser#0 'Parser': code yes; first line 7
+  opened by a node evaluated in <module>#0
+  kind: assign@8 [always]; value "json"
+  parse: def@10 [always]
+  _factory: def@21 [always]
+  members: _Parser__private, _factory, cursor, extra, first, handle, kind, parse, rest, results, second, store, typed
+scope function Parser.parse#0 'parse': code yes; first line 10
+  opened by a node evaluated in Parser#0
+  self: param@10 [function:body@10]
+  receiver: self@10
+scope function Parser._factory#0 '_factory': code yes; first line 21
+  opened by a node evaluated in Parser#0
+  self: param@21 [function:body@21]
+  receiver: self@21
+== references
+8:4 kind store in Parser -> local Parser @8, else unbound
+11:8 self load in Parser.parse -> local Parser.parse @10
+11:20 self load in Parser.parse -> local Parser.parse @10
+11:35 self load in Parser.parse -> local Parser.parse @10
+12:9 self load in Parser.parse -> local Parser.parse @10
+12:22 self load in Parser.parse -> local Parser.parse @10
+13:9 self load in Parser.parse -> local Parser.parse @10
+13:21 self load in Parser.parse -> local Parser.parse @10
+14:12 self load in Parser.parse -> local Parser.parse @10
+14:27 range load in Parser.parse -> builtin; origin builtins.range
+16:13 open load in Parser.parse -> builtin; origin builtins.open
+16:26 self load in Parser.parse -> local Parser.parse @10
+18:8 self load in Parser.parse -> local Parser.parse @10
+18:20 int load (never annotation) in Parser.parse -> builtin; origin builtins.int
+19:8 self load in Parser.parse -> local Parser.parse @10
+uses of Parser.parse:self@10: attribute-store@11, attribute-store@11, call:_factory@11, attribute-store@12, attribute-store@12, attribute-store@13, attribute-store@13, attribute-store@14, attribute-store@16, attribute-store@18, attribute-store@19
+type positions @8: json
+type positions @18: int
+== code objects: one per scope that compiles on this Python

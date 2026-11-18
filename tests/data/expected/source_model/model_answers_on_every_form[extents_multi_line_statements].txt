@@ -1,0 +1,32 @@
+== extents
+Expr@1 lines 1
+Assign@3 lines 3-6
+Assign@7 lines 7-8
+Assign@9 lines 9-10
+FunctionDef@13 lines 13-16: function 13/14-16
+Return@14 lines 14-16
+code lines: 1,3-10,13-16
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: Assign@3; owner <module>#0; tokens <module>#0:body
+line 4: Assign@3; owner <module>#0; tokens <module>#0:body
+line 5: Assign@3; owner <module>#0; tokens <module>#0:body
+line 6: Assign@3; owner <module>#0; tokens <module>#0:body
+line 7: Assign@7; owner <module>#0; tokens <module>#0:body
+line 8: Assign@7; owner <module>#0; tokens <module>#0:body
+line 9: Assign@9; owner <module>#0; tokens <module>#0:body
+line 10: Assign@9; owner <module>#0; tokens -
+line 11: -; owner <module>#0; tokens -
+line 12: -; owner <module>#0; tokens -
+line 13: FunctionDef@13; owner call#0; tokens call#0:header
+line 14: Return@14; owner call#0; tokens call#0:body
+line 15: Return@14; owner call#0; tokens call#0:body
+line 16: Return@14; owner call#0; tokens call#0:body
+header call: 13
+source @1: """#7119: a continuation line maps to its statement, through brackets, backslashes and strings."""
+source @3: TOTAL = ( 1 + 2 )
+source @7: NAME = "a" "b"
+source @9: TEXT = """line
+inside"""
+source @14: return call( x, )
+== code objects: one per scope that compiles on this Python

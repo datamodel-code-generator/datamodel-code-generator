@@ -1,0 +1,12 @@
+== imports
+import@5 typing as typing from typing in <module> [always]; unconditional
+import@6 typing as t from typing in <module> [always]; unconditional
+from@7 typing.TYPE_CHECKING as TC from typing in <module> [always]; unconditional
+from@11 a.A as A from a in <module> [type-checking:body@10]; typing only
+from@13 b.B as B from b in <module> [type-checking:body@12]; typing only
+from@15 c.C as C from c in <module> [type-checking:body@14]; typing only
+from@17 d.D as D from d in <module> [type-checking:body@16]; typing only
+from@19 e.E as E from e in <module> [type-checking:else@18]
+from@21 f.F as F from f in <module> [type-checking:body@18]; typing only
+from@27 g.G as G from g in local [function:body@24|if:body@26]
+== code objects: one per scope that compiles on this Python

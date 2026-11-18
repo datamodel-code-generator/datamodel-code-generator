@@ -1,0 +1,37 @@
+== extents
+Expr@1 lines 1
+FunctionDef@4 lines 4-13: function 4/5-13
+Assign@5 lines 5
+Assign@6 lines 6
+FunctionDef@7 lines 7-10: function 7/7-10
+Return@7 lines 7-10
+Assign@11 lines 11
+Assign@12 lines 12
+Return@13 lines 13
+code lines: 1,4-13
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: -; owner <module>#0; tokens -
+line 4: FunctionDef@4; owner outer#0; tokens outer#0:header
+line 5: Assign@5; owner outer#0; tokens outer#0:body, outer.<locals>.<lambda>#0:body, outer.<locals>.<lambda>#0:header
+line 6: Assign@6; owner outer#0; tokens outer#0:body, outer.<locals>.<genexpr>#0:body
+line 7: Return@7; owner outer.<locals>.inner#0; tokens outer.<locals>.inner#0:body, outer.<locals>.inner#0:header
+line 8: Return@7; owner outer.<locals>.inner#0; tokens outer.<locals>.inner#0:body
+line 9: Return@7; owner outer.<locals>.inner#0; tokens outer.<locals>.inner#0:body
+line 10: Return@7; owner outer.<locals>.inner#0; tokens outer.<locals>.inner#0:body
+line 11: Assign@11; owner outer#0; tokens outer#0:body, outer.<locals>.<lambda>#1:body, outer.<locals>.<lambda>#1:header, outer.<locals>.<lambda>#2:body, outer.<locals>.<lambda>#2:header
+line 12: Assign@12; owner outer#0; tokens outer#0:body, outer.<locals>.<genexpr>#1:body, outer.<locals>.<genexpr>#2:body
+line 13: Return@13; owner outer#0; tokens outer#0:body
+header outer: 4
+header outer.<locals>.<lambda>: 5
+header outer.<locals>.inner: 7
+header outer.<locals>.<lambda>: 11
+header outer.<locals>.<lambda>: 11
+source @1: """C3 P1/P2: a lambda, a genexpr and a nested def on one line; two lambdas on one line are two scopes."""
+source @5: key = lambda value: value.upper()
+source @6: total = sum(x for x in rows)
+source @7: return ( "a", "b", )
+source @11: pair = (lambda a: a, lambda b: b)
+source @12: nested = list(name for name in (item for item in rows))
+source @13: return key, total, inner, pair, nested
+== code objects: one per scope that compiles on this Python

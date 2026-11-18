@@ -1,0 +1,490 @@
+"""The source model's answers on every form of `tests/data/source_forms`, its compiler check, and the rule verdicts.
+
+Every form is a small module (or a package directory) that holds one Python form a repository check must read right.
+The model's answers on it are stored once, whatever the Python version: a per-version difference is a model defect.
+"""
+
+from __future__ import annotations
+
+import ast
+import builtins
+import re
+import sys
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import pytest
+import tomllib
+
+from scripts import _source_model as source_model
+from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+ROOT = Path(__file__).parents[1]
+FORMS = Path(__file__).parent / "data" / "source_forms"
+VERDICTS = FORMS / "verdicts.toml"
+CHUNKS = 16
+PYTHON = (sys.version_info.major, sys.version_info.minor)
+_DIRECTIVE = re.compile(r"^(questions|min-python|module|path|keywords|constants|codes): *(.*)$", re.MULTILINE)
+
+
+def _form_paths() -> list[Path]:
+    """Return every form: a ``.py`` (or grammar-gated ``.py.txt``) file or a package directory under a question."""
+    return sorted(
+        path
+        for question in source_model.QUESTIONS
+        for path in (FORMS / question).iterdir()
+        if path.name.endswith((".py", ".py.txt")) or (path / "__init__.py").is_file()
+    )
+
+
+FORM_PATHS = _form_paths()
+
+
+def _form_id(path: Path) -> str:
+    return f"{path.parent.name}/{path.name.removesuffix('.txt').removesuffix('.py')}"
+
+
+def _form_text(path: Path) -> str:
+    return (path / "__init__.py" if path.is_dir() else path).read_text(encoding="utf-8")
+
+
+def _directives(path: Path) -> dict[str, str]:
+    """Read the form's directives: ``questions:``, ``min-python:``, ``module:``, ``path:``, ``keywords:``, ..."""
+    return {match[1]: match[2].strip() for match in _DIRECTIVE.finditer(_form_text(path))}
+
+
+def _questions(path: Path) -> set[str]:
+    listed = _directives(path).get("questions", "")
+    return {path.parent.name, *(item.strip() for item in listed.split(",") if item.strip())}
+
+
+def _min_python(path: Path) -> tuple[int, int]:
+    major, _, minor = _directives(path).get("min-python", "3.11").partition(".")
+    return int(major), int(minor)
+
+
+def _guard(guard: source_model.Guard) -> str:
+    return "|".join(map(str, guard)) or "always"
+
+
+def _resolution(resolution: source_model.Resolution) -> str:
+    where = f" {resolution.scope.qualname}" if resolution.scope is not None else ""
+    lines = ",".join(str(binding.line) for binding in resolution.bindings)
+    fallback = f", else {_resolution(resolution.fallback)}" if resolution.fallback is not None else ""
+    return f"{resolution.kind}{where}{f' @{lines}' if lines else ''}{fallback}"
+
+
+def _lines(lines: frozenset[int] | range) -> str:
+    """Render line numbers as compact ranges: ``1-3,7``."""
+    ordered = sorted(lines)
+    runs: list[list[int]] = []
+    for line in ordered:
+        runs.append([line, line]) if not runs or line != runs[-1][1] + 1 else runs[-1].__setitem__(1, line)
+    return ",".join(f"{start}-{end}" if start != end else str(start) for start, end in runs) or "-"
+
+
+def _value(value: object) -> str:
+    """Render a constant with sets and dicts in sorted order, so the text does not depend on hash seeds."""
+    if isinstance(value, (set, frozenset)):
+        items = ", ".join(sorted(map(_value, value)))
+        return f"{type(value).__name__}({{{items}}})" if value else f"{type(value).__name__}()"
+    if isinstance(value, dict):
+        return "{" + ", ".join(sorted(f"{_value(key)}: {_value(item)}" for key, item in value.items())) + "}"
+    if isinstance(value, (list, tuple)):
+        return type(value)().__class__.__name__ + "(" + ", ".join(map(_value, value)) + ")"
+    return repr(value)
+
+
+def _name(scope: source_model.Scope) -> str:
+    return f"{scope.qualname}#{scope.ordinal}"
+
+
+def _expression(model: source_model.SourceModule, node: ast.expr | None) -> str:
+    return "None" if node is None else "UNKNOWN" if node is source_model.UNKNOWN else model.source(node)
+
+
+def _bindings(model: source_model.SourceModule) -> list[str]:
+    out = []
+    for scope in model.scopes:
+        marks = [f"code {scope.code_object}", f"first line {scope.first_line}"]
+        marks += [f"in {scope.annotation} annotation"] * bool(scope.annotation)
+        marks += [f"global {','.join(sorted(scope.declared_global))}"] * bool(scope.declared_global)
+        marks += [f"nonlocal {','.join(sorted(scope.declared_nonlocal))}"] * bool(scope.declared_nonlocal)
+        marks += ["star import"] * scope.star_import
+        out.append(f"scope {scope.kind} {scope.qualname}#{scope.ordinal} {scope.code_name!r}: {'; '.join(marks)}")
+        defined = scope.kind not in {"module", "type-params"} and model.scope_defined_by(scope.node) is scope
+        out += [f"  opened by a node evaluated in {_name(model.scope_of(scope.node))}"] if defined else []
+        for binding in model.bindings(scope=scope):
+            name = binding.name if binding.name == binding.mangled else f"{binding.name} (as {binding.mangled})"
+            extra = [f"origin {binding.origin}"] * (binding.origin is not None)
+            extra += [f"re-export {binding.reexport_form!r}"] * (binding.reexport_form is not None)
+            extra += [f"value {model.source(binding.value)}"] if binding.value is not None else []
+            out.append(
+                f"  {name}: {binding.kind}@{binding.line} [{_guard(binding.guard)}]{''.join(f'; {e}' for e in extra)}"
+            )
+        members = model.class_members(scope) if scope.kind == "class" else {}
+        out += [f"  members: {', '.join(sorted(members))}"] * (scope.kind == "class")
+        receiver = model.receiver(scope)
+        out += [f"  receiver: {receiver.name}@{receiver.line}"] if receiver is not None else []
+    out += [
+        f"dynamic {site.kind}@{site.line} in {site.scope.qualname} [{_guard(site.guard)}]"
+        for site in model.dynamic_sites
+    ]
+    return out
+
+
+def _references(model: source_model.SourceModule, directives: dict[str, str]) -> list[str]:
+    out = []
+    for reference in model.references:
+        mode = f" ({reference.annotation} annotation)" if reference.annotation else ""
+        origin = model.origin(reference.node) if reference.context == "load" else None
+        alternatives = model.origins(reference.node) if reference.context == "load" else []
+        where = f"{reference.line}:{reference.column}"
+        text = f"{where} {reference.name} {reference.context}{mode} in {reference.scope.qualname}"
+        out.append(f"{text} -> {_resolution(model.resolve(reference.node))}" + (f"; origin {origin}" if origin else ""))
+        out += [
+            f"  may be {path} [{_guard(guard)}]"
+            for path, guard in alternatives
+            if len(alternatives) > 1 or origin is None
+        ]
+    for binding in model.bindings():
+        uses = ", ".join(f"{use.kind}@{use.reference.line}" for use in model.uses(binding))
+        out += [f"uses of {binding.scope.qualname}:{binding.name}@{binding.line}: {uses}"] if uses else []
+    for node in ast.walk(model.tree):
+        roots = [node.annotation] if isinstance(node, (ast.AnnAssign, ast.arg)) and node.annotation else []
+        roots += [node.returns] if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.returns else []
+        value = node.value if isinstance(node, ast.Assign) else None
+        roots += [value] if isinstance(value, ast.Constant) and isinstance(value.value, str) else []
+        out += [
+            f"type positions @{root.lineno}: {', '.join(item.name for item in model.type_positions(root)) or '-'}"
+            for root in roots
+        ]
+    out += [f"constant {name}: {_value(model.constant(name))}" for name in directives.get("constants", "").split()]
+    keywords = directives.get("keywords", "").split()
+    calls = [node for node in ast.walk(model.tree) if isinstance(node, ast.Call)] if keywords else []
+    for call in calls:
+        given = [(position, None) for position in range(3)] + [(None, name) for name in keywords]
+        found = [_expression(model, source_model.argument(call, *where)) for where in given]
+        labels = [str(position) if position is not None else str(name) for position, name in given]
+        callee = model.origin(call.func) or model.source(call.func)
+        out.append(f"call @{call.lineno} {callee}: {' '.join(f'{a}={b}' for a, b in zip(labels, found, strict=True))}")
+    return out
+
+
+def _imports(model: source_model.SourceModule) -> list[str]:
+    out = []
+    for item in model.imports:
+        flags = [f"level {item.level}"] * bool(item.level) + ["lazy"] * item.lazy
+        flags += ["typing only"] * item.typing_only + ["unconditional"] * item.unconditional
+        bound = f" as {item.bound}" if item.bound is not None else ""
+        line = item.node.lineno
+        out.append(
+            f"{item.kind}@{line} {item.target}{bound} from {item.source} in {item.scope.qualname} "
+            f"[{_guard(item.guard)}]{''.join(f'; {flag}' for flag in flags)}"
+        )
+    return out
+
+
+def _suppressions(model: source_model.SourceModule, directives: dict[str, str]) -> list[str]:
+    out = [f"comment @{line}: {comment}" for line, comment in model.comments.items()]
+    for item in model.suppressions():
+        codes = ",".join(item.codes) if item.codes is not None else "every code"
+        out.append(f"{item.tool} {item.form} @{item.line} ({codes}): lines {_lines(item.lines)}")
+    codes = tuple(directives.get("codes", "").split())
+    out += [f"suppressed ruff {' '.join(codes)}: {_lines(model.suppressed('ruff', codes))}"] * bool(codes)
+    return out
+
+
+def _extents(model: source_model.SourceModule) -> list[str]:
+    out = []
+    statements = sorted(
+        (node for node in ast.walk(model.tree) if isinstance(node, ast.stmt)),
+        key=lambda node: (node.lineno, node.col_offset),
+    )
+    for node in statements:
+        clauses = "; ".join(
+            f"{clause.keyword} {_lines(clause.header)}/{_lines(clause.suite)}" for clause in model.clauses(node)
+        )
+        out.append(
+            f"{type(node).__name__}@{node.lineno} lines {_lines(model.extent(node))}{f': {clauses}' if clauses else ''}"
+        )
+    out.append(f"code lines: {_lines(model.code_lines)}")
+    for line in range(1, len(model.lines) + 1):
+        statement = model.statement_at(line)
+        text = model.lines[line - 1]
+        column = len(text) - len(text.lstrip())
+        roles = sorted({f"{_name(token.owner)}:{token.role}" for token in model.tokens([line])})
+        held = f"{type(statement).__name__}@{statement.lineno}" if statement is not None else "-"
+        out.append(f"line {line}: {held}; owner {_name(model.owner(line, column))}; tokens {', '.join(roles) or '-'}")
+    out += [f"header {scope.qualname}: {_lines(model.header(scope))}" for scope in model.scopes if model.header(scope)]
+    out += [f"source @{node.lineno}: {model.source(node)}" for node in statements if not model.clauses(node)]
+    return out
+
+
+def _render_module(model: source_model.SourceModule, questions: set[str], directives: dict[str, str]) -> list[str]:
+    sections = {
+        "bindings": lambda: _bindings(model),
+        "references": lambda: _references(model, directives),
+        "imports": lambda: _imports(model),
+        "suppressions": lambda: _suppressions(model, directives),
+        "extents": lambda: _extents(model),
+    }
+    return [
+        line
+        for question in source_model.QUESTIONS
+        if question in questions
+        for line in [f"== {question}", *sections[question]()]
+    ]
+
+
+def _render_tree(path: Path, questions: set[str]) -> list[str]:
+    tree = source_model.SourceTree(path.parent, [path.name], verify=True)
+    out = []
+    for name in tree.paths:
+        out += [f"=== module {name}", *_render_module(tree.module(name), questions, _directives(tree.paths[name]))]
+        model = tree.module(name)
+        for key in sorted(model.module_scope.bindings):
+            hops = [
+                f"{definition.kind} {definition.module}{f':{definition.name}' if definition.name else ''}"
+                f"@{definition.line}"
+                f" via {' > '.join(f'{module} [{_guard(guard)}]' for module, guard in definition.path) or '-'}"
+                for definition in tree.definition(name, key)
+            ]
+            out.append(f"definition {name}:{key} -> {'; '.join(hops)}")
+    out += [
+        f"edge {edge.importer} -> {edge.imported} @{edge.line} via {edge.via} ({edge.level}) [{_guard(edge.guard)}]"
+        for edge in tree.import_edges()
+    ]
+    return out
+
+
+def render_form(path: Path) -> str:
+    """Render the model's answers on a form, for the questions the form serves."""
+    directives = _directives(path)
+    questions = _questions(path)
+    if path.is_dir():
+        return "\n".join(_render_tree(path, questions)) + "\n"
+    name = path.name.removesuffix(".txt")
+    form_path = directives.get("path", f"{path.parent.name}/{name}")
+    module = directives.get("module", f"forms.{path.parent.name}.{name.removesuffix('.py')}")
+    model = source_model.SourceModule(_form_text(path), form_path, module, verify=True)
+    expected = {scope for scope in model.scopes if scope.compiles_on(PYTHON)}
+    differing = sorted(map(repr, set(model.compiled()) ^ expected))
+    checked = [f"== code objects: {', '.join(differing) or 'one per scope that compiles on this Python'}"]
+    return "\n".join([*_render_module(model, questions, directives), *checked]) + "\n"
+
+
+@pytest.mark.parametrize("form", FORM_PATHS, ids=_form_id)
+def test_model_answers_on_every_form(form: Path) -> None:
+    """The model's answers on each form, the same on every supported Python (newer grammar from its version on)."""
+    if _min_python(form) > PYTHON:
+        pytest.skip(f"{_form_id(form)} needs Python {'.'.join(map(str, _min_python(form)))}")
+    assert_output(render_form(form))
+
+
+def _repository_files() -> list[Path]:
+    return sorted(
+        path
+        for top in ("src", "scripts", "tests")
+        for path in (ROOT / top).rglob("*.py")
+        if "data" not in path.relative_to(ROOT / top).parts[:1]
+    )
+
+
+@pytest.mark.parametrize("chunk", range(CHUNKS))
+def test_model_agrees_with_the_compiler(chunk: int) -> None:
+    """Every Python file of the repository (stored generated outputs aside) is read the compiler's way."""
+    for path in _repository_files()[chunk::CHUNKS]:
+        relative = path.relative_to(ROOT).as_posix()
+        module = relative.removeprefix("src/").removesuffix(".py").removesuffix("/__init__").replace("/", ".")
+        source_model.SourceModule(path.read_text(encoding="utf-8"), relative, module, verify=True).compiled()
+
+
+def test_a_read_the_model_misses_stops_the_check() -> None:
+    """The compiler check is two-way: a read the compiler counts and the model lacks is a disagreement."""
+    model = source_model.SourceModule(
+        "def f(key, rest):\n    return {key: 1, **rest}\n", "pkg/two_way.py", "pkg.two_way", verify=False
+    )
+    model.references.remove(next(item for item in model.references if item.name == "rest" and item.line == 2))
+    with pytest.raises(source_model.SourceModelError) as error:
+        model.verify()
+    assert_output(str(error.value) + "\n")
+
+
+def test_a_binding_the_model_misses_stops_the_check() -> None:
+    """A name the compiler binds in a scope and the model does not is a disagreement."""
+    model = source_model.SourceModule("y = 1\n", "pkg/binding.py", "pkg.binding", verify=False)
+    model.module_scope.bindings.clear()
+    assert_output("\n".join(model.disagreements()) + "\n")
+
+
+CHECKED = "g = 1\n\n\ndef f(x):\n    y = x\n    return g, (lambda: y)\n"
+"""The module every disagreement below starts from: a global, a parameter, a local and a lambda."""
+
+
+def _ghost_binding(model: source_model.SourceModule) -> None:
+    scope = model.module_scope
+    scope.bindings["ghost"] = [replace(scope.bindings["g"][0], name="ghost", mangled="ghost")]
+
+
+def _ghost_read(model: source_model.SourceModule) -> None:
+    model.references.append(replace(model.references[-1], name="ghost", mangled="ghost"))
+
+
+def _store_as_read(model: source_model.SourceModule) -> None:
+    store = next(item for item in model.references if item.name == "y" and item.context == "store")
+    model.references.append(replace(store, context="load"))
+
+
+def _wrong_kind(model: source_model.SourceModule) -> None:
+    local = next(item for item in model.references if item.name == "x" and item.context == "load")
+    model.references.append(replace(local, name="g", mangled="g"))
+
+
+DISAGREEMENTS: dict[str, Callable[[source_model.SourceModule], object]] = {
+    "a binding the compiler lacks": _ghost_binding,
+    "a global declaration the compiler lacks": lambda model: model.scopes[1].declared_global.add("y"),
+    "a nonlocal declaration the compiler lacks": lambda model: model.scopes[1].declared_nonlocal.add("y"),
+    "a declaration of a name the compiler does not know": lambda model: model.scopes[1].declared_global.add("other"),
+    "a read of a name the compiler does not know": _ghost_read,
+    "a read the compiler does not count": _store_as_read,
+    "a read of the wrong kind": _wrong_kind,
+    "a scope on the wrong line": lambda model: setattr(model.scopes[2], "line", 9),
+    "a scope the model lacks": lambda model: model.scopes[1].children.clear(),
+}
+"""How each disagreement is made on a model of `CHECKED`; every rule of the compiler check stops on its own."""
+
+
+def test_the_compiler_check_stops_on_every_disagreement() -> None:
+    """Each kind of disagreement between the model and the compiler gives its own message."""
+    found = []
+    for label, change in DISAGREEMENTS.items():
+        model = source_model.SourceModule(CHECKED, "pkg/checked.py", "pkg.checked", verify=False)
+        change(model)
+        found.append(f"{label}: {model.disagreements()}")
+    assert_output("\n".join(found) + "\n")
+
+
+def test_compiled_stops_on_a_scope_without_its_code_object() -> None:
+    """A scope with no code object of its key, and a code object no scope claims, both stop `compiled()`."""
+    renamed = source_model.SourceModule(CHECKED, "pkg/checked.py", "pkg.checked", verify=False)
+    renamed.scopes[1].code_name = "other"
+    dropped = source_model.SourceModule(CHECKED, "pkg/checked.py", "pkg.checked", verify=False)
+    dropped.scopes.pop()
+    messages = []
+    for model in (renamed, dropped):
+        with pytest.raises(source_model.SourceModelError) as error:
+            model.compiled()
+        messages.append(str(error.value))
+    assert_output("\n".join(messages) + "\n")
+
+
+def test_the_model_refuses_what_it_has_no_rule_for() -> None:
+    """A refusal names the file, the line, the form and the fix: a model rule and a form in the same pull request."""
+    with pytest.raises(source_model.SourceModelError) as error:
+        source_model.SourceModule("def f():\n    nonlocal x\n    x = 1\n", "pkg/refused.py", "pkg.refused")
+    assert_output(str(error.value) + "\n")
+
+
+def test_builtins_are_the_floor_set() -> None:
+    """Reads resolve against the builtins of the oldest supported Python, a subset of every newer one's."""
+    names = set(dir(builtins))
+    missing = sorted(source_model.BUILTINS - names)
+    extra = sorted(names - source_model.BUILTINS) if PYTHON == (3, 11) else []
+    assert_output(f"missing here: {missing or 'none'}\nextra on the floor Python: {extra or 'none'}\n")
+
+
+@dataclass(frozen=True)
+class RuleRun:
+    """A rule that reads Python through the model: its module, the questions it asks, and its run over one form."""
+
+    module: str
+    asks: frozenset[str]
+    run: Callable[[Path], list[str]]
+
+
+def _compiler_check(form: Path) -> list[str]:
+    files = sorted(form.rglob("*.py")) if form.is_dir() else [form]
+    return [
+        problem
+        for path in files
+        for problem in source_model.SourceModule(
+            path.read_text(encoding="utf-8"), path.name.removesuffix(".txt"), "forms.form", verify=False
+        ).disagreements()
+    ]
+
+
+RULES: dict[str, RuleRun] = {
+    "source-model-compiler-check": RuleRun(
+        "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
+    ),
+}
+"""Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
+
+
+def verdict_problems(findings: dict[str, list[str]], entries: dict[str, str]) -> list[str]:
+    """Compare a rule's findings per form with its verdict entries (``finding`` or ``no finding: <reason>``)."""
+    missing = [f"{form}: no verdict" for form in sorted(set(findings) - set(entries))]
+    stale = [f"{form}: verdict for a form the rule does not read" for form in sorted(set(entries) - set(findings))]
+    stated = {form: entries[form].partition(":")[0].strip() for form in set(findings) & set(entries)}
+    wrong = [
+        f"{form}: verdict {stated[form]!r}, the rule gives {'finding' if findings[form] else 'no finding'!r}"
+        for form in sorted(stated)
+        if stated[form] != ("finding" if findings[form] else "no finding")
+    ]
+    return [*missing, *stale, *wrong]
+
+
+@pytest.mark.parametrize("rule", sorted(RULES))
+def test_every_rule_states_its_verdicts(rule: str) -> None:
+    """Each rule runs over every form of the questions it asks; each form has its verdict, and none is stale."""
+    run = RULES[rule]
+    forms = [form for form in FORM_PATHS if _questions(form) & run.asks and _min_python(form) <= PYTHON]
+    with source_model.questions_asked() as asked:
+        findings = {_form_id(form): run.run(form) for form in forms}
+    entries = tomllib.loads(VERDICTS.read_text(encoding="utf-8")).get(rule, {})
+    gated = {_form_id(form) for form in FORM_PATHS if _min_python(form) > PYTHON}
+    problems = verdict_problems(findings, {form: verdict for form, verdict in entries.items() if form not in gated})
+    undeclared = sorted(asked - run.asks)
+    found = [f"{form}: {finding}" for form, items in findings.items() for finding in items]
+    report = [f"verdict problems: {problems or 'none'}", f"undeclared questions: {undeclared or 'none'}", *found]
+    assert_output("\n".join(report) + "\n")
+
+
+def test_verdict_problems() -> None:
+    """A missing, stale or wrong verdict is a problem; a matching one is not."""
+    cases = [
+        ({"a/x": []}, {"a/x": "no finding: clean"}),
+        ({"a/x": ["1: hit"]}, {"a/x": "finding"}),
+        ({"a/x": []}, {}),
+        ({}, {"a/x": "finding"}),
+        ({"a/x": []}, {"a/x": "finding"}),
+        ({"a/x": ["1: hit"]}, {"a/x": "no finding: clean"}),
+    ]
+    assert_output(
+        "".join(f"{findings} {entries}: {verdict_problems(findings, entries)}\n" for findings, entries in cases)
+    )
+
+
+def test_verdicts_name_registered_rules() -> None:
+    """Every section of `verdicts.toml` is a registered rule."""
+    unregistered = sorted(set(tomllib.loads(VERDICTS.read_text(encoding="utf-8"))) - set(RULES))
+    assert_output(f"unregistered sections: {unregistered or 'none'}\n")
+
+
+def test_rules_declare_what_they_ask() -> None:
+    """Every module that imports the model (read with the model's own imports) has a rule in `RULES`."""
+    importers = {
+        path.relative_to(ROOT).with_suffix("").as_posix().replace("/", ".")
+        for path in [*(ROOT / "scripts").glob("*.py"), *_repository_files()]
+        if "_source_model" in (text := path.read_text(encoding="utf-8"))
+        for item in source_model.SourceModule(text, path.name, verify=False).imports
+        if (isinstance(item.target, str) and item.target.endswith("_source_model"))
+        or item.source == "scripts._source_model"
+    }
+    unregistered = sorted(importers - {__name__} - {run.module for run in RULES.values()})
+    assert_output(f"importers without a rule: {unregistered or 'none'}\n")

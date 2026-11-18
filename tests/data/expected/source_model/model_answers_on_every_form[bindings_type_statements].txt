@@ -1,0 +1,48 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Alias: type-alias@8 [always]
+  Pair: type-alias@9 [always]
+  Tree: type-alias@10 [always]
+  Holder: class@13 [always]
+  use: def@18 [always]
+scope type-alias Alias#0 'Alias': code yes; first line 8
+  opened by a node evaluated in <module>#0
+scope type-params <generic parameters of Pair>#0 '<generic parameters of Pair>': code yes; first line 9
+  T: type-param@9 [always]
+scope type-alias Pair#0 'Pair': code yes; first line 9
+  opened by a node evaluated in <module>#0
+scope type-alias Tree#0 'Tree': code yes; first line 10
+  opened by a node evaluated in <module>#0
+scope class Holder#0 'Holder': code yes; first line 13
+  opened by a node evaluated in <module>#0
+  Unit: assign@14 [always]; value int
+  Inner: type-alias@15 [always]
+  members: Inner, Unit
+scope type-alias Holder.Inner#0 'Inner': code yes; first line 15
+  opened by a node evaluated in Holder#0
+scope function use#0 'use': code yes; first line 18
+  opened by a node evaluated in <module>#0
+== references
+8:5 Alias store in <module> -> local <module> @8
+8:13 list load in Alias -> builtin; origin builtins.list
+8:18 int load in Alias -> builtin; origin builtins.int
+9:5 Pair store in <module> -> local <module> @9
+9:15 tuple load in Pair -> builtin; origin builtins.tuple
+9:21 T load in Pair -> enclosing <generic parameters of Pair> @9
+9:24 T load in Pair -> enclosing <generic parameters of Pair> @9
+10:5 Tree store in <module> -> local <module> @10
+10:12 dict load in Tree -> builtin; origin builtins.dict
+10:17 str load in Tree -> builtin; origin builtins.str
+10:22 Tree load in Tree -> global <module> @10; origin forms.bindings.type_statements.Tree
+14:4 Unit store in Holder -> local Holder @14, else unbound
+14:11 int load in Holder -> builtin; origin builtins.int
+15:9 Inner store in Holder -> local Holder @15, else unbound
+15:17 list load in Holder.Inner -> builtin; origin builtins.list
+15:22 Unit load in Holder.Inner -> enclosing Holder @14, else unbound; origin builtins.int
+18:13 Alias load (evaluated annotation) in <module> -> local <module> @8; origin forms.bindings.type_statements.Alias
+uses of <module>:Alias@8: read@18
+uses of <module>:Tree@10: read@10
+uses of <generic parameters of Pair>:T@9: read@9, read@9
+uses of Holder:Unit@14: read@15
+type positions @18: Alias
+== code objects: one per scope that compiles on this Python

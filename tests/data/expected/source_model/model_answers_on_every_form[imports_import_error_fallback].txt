@@ -1,0 +1,10 @@
+== imports
+from@4 yaml.CSafeLoader as SafeLoader from yaml in <module> [import-error:body@3]
+from@6 yaml.SafeLoader as SafeLoader from yaml in <module> [import-error:except@5]
+import@9 graphql as graphql from graphql in <module> [import-error:body@8]
+import@14 tomllib as tomllib from tomllib in <module> [import-error:body@13]
+import@16 tomli as tomllib from tomli in <module> [import-error:except@15]
+import@18 extra as extra from extra in <module> [import-error:else@13]
+import@20 cleanup as cleanup from cleanup in <module> [import-error:finally@13]
+import@23 bare as bare from bare in <module> [import-error:body@22]
+== code objects: one per scope that compiles on this Python

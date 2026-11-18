@@ -1,0 +1,14 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  outer: def@4 [always]
+  x: assign@9 [function:body@4|function:body@7]; value 2
+scope function outer#0 'outer': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  x: assign@5 [function:body@4]; value 1
+  inner: def@7 [function:body@4]
+  reader: def@11 [function:body@4]
+scope function outer.<locals>.inner#0 'inner': code yes; first line 7; global x
+  opened by a node evaluated in outer#0
+scope function outer.<locals>.reader#0 'reader': code yes; first line 11
+  opened by a node evaluated in outer#0
+== code objects: one per scope that compiles on this Python
