@@ -2047,6 +2047,30 @@ def stored_expected(path: Path) -> Path:
 
 
 _OWN_FILE_HINT = "otherwise compare the second against its own expected file"
+_MIN_HOME_LENGTH = 6
+
+
+def home_directory_in(text: str, home: str) -> str | None:
+    """Return the spelling of ``home`` that ``text`` holds, or None; a short home or ``/`` never matches."""
+    if len(home) < _MIN_HOME_LENGTH:
+        return None
+    posix = home.replace("\\", "/")
+    return next((form for form in (home, posix, home.replace("\\", "\\\\")) if form in text), None)
+
+
+def _refuse_home_directory(value: object) -> None:
+    """Fail the running test when stored output would hold the current user's home directory."""
+    __tracebackhide__ = True
+    home = str(Path.home())
+    texts = value.values() if isinstance(value, dict) else (value,)
+    for text in texts:
+        if isinstance(text, str) and (form := home_directory_in(text, home)) is not None:
+            pytest.fail(
+                f"Output to compare holds the home directory {form!r}: it would leak a developer's own path into the "
+                "repository. Normalize the path in the test (a placeholder), or set the variable with "
+                "`monkeypatch.setenv`.",
+                pytrace=False,
+            )
 
 
 def _compare_expected(
@@ -2058,6 +2082,7 @@ def _compare_expected(
     generated tree, are compared directly. ``hint`` says how to keep two different outputs apart.
     """
     __tracebackhide__ = True
+    _refuse_home_directory(value)
     if pattern is not None and isinstance(value, dict):
         # The stored tree holds only the files the pattern selects; compare the same files of the output.
         value = {name: text for name, text in value.items() if PurePosixPath(name).match(pattern)}
