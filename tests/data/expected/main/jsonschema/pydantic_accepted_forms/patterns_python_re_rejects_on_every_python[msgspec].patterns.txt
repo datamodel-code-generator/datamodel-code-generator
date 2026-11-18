@@ -40,3 +40,5 @@ group_text_in_class '^[(?<a>)]+$': Python's re compiles it, the model checks it
 lookahead '^(?=a)\\w$': Python's re compiles it, the model checks it
 comment_and_flags '(?i)^a(?#note)b$': Python's re compiles it, the model checks it
 conditional_group '^(a)?(?(1)b|c)$': Python's re compiles it, the model checks it
+comment_with_escaped_parenthesis '^a(?#note\\)b)c$': Python's re compiles it, the model checks it
+comment_with_escaped_parenthesis_beside_a_group '(?<=a)(?#\\))x': Python's re compiles it, the model checks it

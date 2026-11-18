@@ -1600,6 +1600,18 @@
   },
   {
    "action": "none",
+   "id": "count-escapes-the-rust-engine-rejects",
+   "kind": "default-output",
+   "refs": [
+    "#7094"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "A pattern with a letter after a backslash that the Rust regex engine of pydantic-core reads nowhere (\\k in a named reference, \\c, \\e and the others), in a class or outside, or with a non-ASCII character after a backslash, is left out with a warning where no engine of the output compiles it, and is read with Python's re where only that engine reads it (\\é), instead of failing at import.",
+   "title": "Patterns with an escape pydantic-core's regex engine rejects are left out or read with Python's re"
+  },
+  {
+   "action": "none",
    "id": "count-named-groups-python-rejects",
    "kind": "default-output",
    "refs": [
@@ -1607,7 +1619,7 @@
    ],
    "release": "unreleased",
    "source": "release-note",
-   "summary": "A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode.",
+   "summary": "A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode. The default constr case, a named group beside a lookahead written as constr, is fixed with #6941.",
    "title": "Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects"
   },
   {

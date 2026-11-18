@@ -143,9 +143,16 @@ With `--collapse-root-models` under msgspec.Struct, the warning that a root-mode
 - **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
 - **Source:** the release notes
 
+### Patterns with an escape pydantic-core's regex engine rejects are left out or read with Python's re (unreleased) { #count-escapes-the-rust-engine-rejects }
+
+A pattern with a letter after a backslash that the Rust regex engine of pydantic-core reads nowhere (\k in a named reference, \c, \e and the others), in a class or outside, or with a non-ASCII character after a backslash, is left out with a warning where no engine of the output compiles it, and is read with Python's re where only that engine reads it (\é), instead of failing at import.
+
+- **Pull requests and issues:** [#7094](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7094)
+- **Source:** the release notes
+
 ### Models that compile patterns with Python's re leave out ECMA-262 syntax it rejects (unreleased) { #count-named-groups-python-rejects }
 
-A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode.
+A pattern with ECMA-262 syntax that Python's re rejects on every Python (a named group (?<name>...), an empty class [] or [^], a reference to a group not closed before it, a lookbehind whose width varies) is left out with a warning where the models compile it with Python's re, as other such patterns are, instead of failing at import or at the first decode. The default constr case, a named group beside a lookahead written as constr, is fixed with #6941.
 
 - **Pull requests and issues:** [#7088](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7088)
 - **Source:** the release notes

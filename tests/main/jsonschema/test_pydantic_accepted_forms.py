@@ -418,6 +418,37 @@ def test_named_group_beside_a_lookaround_is_left_out(
     assert_output(outcomes, name="outcomes")
 
 
+def _pattern_lines(
+    output_file: Path, recwarn: pytest.WarningsRecorder, name: str, title: str, extra_args: list[str]
+) -> str:
+    """Generate the schema ``name``; return the engine warnings and, per property, what ``re`` and the model do."""
+    input_path = JSON_SCHEMA_DATA_PATH / f"{name}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, name, title) as model:
+        schema = (
+            model.model_json_schema()
+            if hasattr(model, "model_json_schema")
+            else msgspec.json.schema(model)["$defs"][title]
+        )
+    lines = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    for key, keywords in json.loads(input_path.read_text(encoding="utf-8"))["properties"].items():
+        try:
+            re.compile(keywords["pattern"])
+        except re.error:
+            compiled = "rejects"
+        else:
+            compiled = "compiles"
+        checked = "checks it" if "pattern" in schema["properties"][key] else "leaves it out"
+        lines += f"{key} {keywords['pattern']!r}: Python's re {compiled} it, the model {checked}\n"
+    return lines
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [
@@ -438,31 +469,9 @@ def test_patterns_python_re_rejects_on_every_python(
     conditional group are kept. Each line holds what the running Python compiles and what the model checks, after the
     warnings.
     """
-    input_path = JSON_SCHEMA_DATA_PATH / "python_re_rejected_syntax.json"
-    run_main_and_assert(
-        input_path=input_path,
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
-        force_exec_validation=True,
+    assert_output(
+        _pattern_lines(output_file, recwarn, "python_re_rejected_syntax", "Syntax", extra_args), name="patterns"
     )
-    with _generated_model(output_file, "python_re_rejected_syntax", "Syntax") as model:
-        schema = (
-            model.model_json_schema()
-            if hasattr(model, "model_json_schema")
-            else msgspec.json.schema(model)["$defs"]["Syntax"]
-        )
-    lines = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
-    for name, keywords in json.loads(input_path.read_text(encoding="utf-8"))["properties"].items():
-        try:
-            re.compile(keywords["pattern"])
-        except re.error:
-            compiled = "rejects"
-        else:
-            compiled = "compiles"
-        checked = "checks it" if "pattern" in schema["properties"][name] else "leaves it out"
-        lines += f"{name} {keywords['pattern']!r}: Python's re {compiled} it, the model {checked}\n"
-    assert_output(lines, name="patterns")
 
 
 def test_encoded_str_roots_build_their_pattern_with_the_python_engine(output_file: Path) -> None:
@@ -574,3 +583,24 @@ def test_dataclass_regex_engine_ignores_a_config_that_is_no_mapping(
         ],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="base_model"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"], id="field_constraints"),
+    ],
+)
+def test_escapes_the_rust_engine_rejects_are_counted(
+    output_file: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Leave out or move to ``python-re`` a pattern with an escape pydantic-core's engine rejects (#7094).
+
+    The engine rejects the letters ``\c``, ``\e``, ``\k`` and the others it reads after a backslash nowhere, in and out
+    of a class, and a non-ASCII character there; the module failed at import. A named group with ``\k<q>`` and a
+    control letter are left out, as Python's ``re`` rejects them too; ``\é`` is read by Python's ``re`` alone, which
+    the model selects. A plain pattern is kept.
+    """
+    assert_output(_pattern_lines(output_file, recwarn, "rust_rejected_escapes", "Escapes", extra_args), name="patterns")

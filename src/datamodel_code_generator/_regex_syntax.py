@@ -77,8 +77,8 @@ _REGEX_CLASS_TOKEN: Final = rf"(?s)\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P
 _REGEX_VERBOSE_TOKEN: Final = rf"{_regex_token(_counted_repetition(_VERBOSE_SPACE))}|(?P<comment>#[^\n]*)"
 _REGEX_VERBOSE_CLASS_TOKEN: Final = rf"{_REGEX_CLASS_TOKEN}|(?P<comment>#[^\n]*)"
 _VERBOSE_FLAGS: Final = r"\(\?(?P<flags>[A-Za-z]*x[A-Za-z]*(?:-[A-Za-wyz]+)?)\)"
-_RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
-_RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
+_RUST_REJECTED_ESCAPES = frozenset("0123456789ceghijklmoqyCEFGHIJKLMNOQRTVXYZ")
+_RUST_REJECTED_CLASS_ESCAPES = _RUST_REJECTED_ESCAPES | {"b"}
 _RUST_REJECTED_FLAGS = frozenset("aL")
 _FIRST_SURROGATE = 0xD800
 _LAST_SURROGATE = 0xDFFF
@@ -118,12 +118,17 @@ def _names_no_scalar_value(code: str | None) -> bool:
     return _FIRST_SURROGATE <= value <= _LAST_SURROGATE or value > _LAST_CODE_POINT
 
 
+def _rust_rejects_escape(escape: str | None, rejected: frozenset[str]) -> bool:
+    """Return whether Rust rejects the character after a backslash: one of ``rejected`` or a non-ASCII one."""
+    return escape is not None and (escape in rejected or not escape.isascii())
+
+
 def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
     """Return whether a token outside character classes is Rust-rejected and the Python its syntax needs."""
     if (code := match["code"]) is not None:
         return _names_no_scalar_value(code), _PY_310
     if (escape := match["escape"]) is not None:
-        return escape in _RUST_REJECTED_ESCAPES, _PY_314 if escape == "z" else _PY_310
+        return _rust_rejects_escape(escape, _RUST_REJECTED_ESCAPES), _PY_314 if escape == "z" else _PY_310
     if (flags := match["flags"]) is not None:
         return None if "x" in flags else (not _RUST_REJECTED_FLAGS.isdisjoint(flags), _PY_310)
     if group := match["group"]:
@@ -139,8 +144,9 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
     pattern Rust accepts. Capture names such as ``(?P<ids[]>...)``, nested and POSIX character classes, braced
     escapes such as ``\p{L}``, ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are
     consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
-    octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
-    ``a`` and ``L`` flags, braces that cannot start a counted repetition, counted repetitions whose minimum
+    octal escapes, ``\N{...}``, ``\Z``, the letters it reads after a backslash nowhere (``\k``, ``\c``, ``\e``) and a
+    non-ASCII character there (``\é``), ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the ``a`` and
+    ``L`` flags, braces that cannot start a counted repetition, counted repetitions whose minimum
     exceeds their maximum (``a{ 3 , 2 }``, which Python's ``re`` reads as text), hexadecimal escapes of a
     surrogate or of a code point past U+10FFFF (``\uD800``, which Python's ``re`` reads as that surrogate) and, in a
     pattern that is not verbose, what ``_rust_rejects_beyond_tokens`` reads: Unicode properties Rust does not
@@ -173,7 +179,8 @@ def _scan_tokens(pattern: str, *, read_verbose: bool) -> tuple[bool, tuple[int, 
         position = match.end()
         if depth or match["open"]:
             depth += bool(match["open"]) - bool(depth and match["close"])
-            rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES or _names_no_scalar_value(match["code"])
+            rejected |= _rust_rejects_escape(match["escape"], _RUST_REJECTED_CLASS_ESCAPES)
+            rejected |= _names_no_scalar_value(match["code"])
             continue
         if (requirements := _regex_token_requirements(match)) is None:
             return None
@@ -339,11 +346,11 @@ _VERBOSE_FLAG_GROUP: Final = r"\(\?[A-Za-z-]*x"
 _PYTHON_REJECTED_FLAGS: Final = r"\(\?[A-Za-z]*-[A-Za-z]*[auL]"
 _PYTHON_GRAMMAR_PART: Final = (
     r"(?s)\\(?:[1-7][0-7]{2}|(?P<reference>[1-9][0-9]?)|0[0-7]{0,2}|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}"
-    r"|N\{[^}]*\}|(?P<assertion>[bBAZ])|.?)"
+    r"|N\{[^}]*\}?|(?P<assertion>[bBAZz])|.?)"
     r"|\[\^?\]?(?:[^\\\]]|\\.)*(?:\]|(?P<unclosed>))"
     r"|\(\?P=(?P<named_reference>[^)]*)\)"
     r"|(?P<open>\((?:\?(?:(?P<behind><[=!])|(?P<ahead>[=!])|P<(?P<name>[^>]*)>"
-    r"|(?P<skipped>#[^)]*\)|[aiLmsux-]*\))|[aiLmsux-]*:|>|(?P<other>.?)))?)"
+    r"|(?P<skipped>#(?:[^\\)]|\\.)*\)|[aiLmsux-]*\))|[aiLmsux-]*:|>|(?P<other>.?)))?)"
     r"|(?P<repeat>(?:[*+?]|\{(?:(?P<count>[0-9]+)|(?P<lower>[0-9]*),(?P<upper>[0-9]*))\})[?+]?)"
     r"|(?P<edge>[\^$])|(?P<bar>\|)|(?P<close>\))|."
 )

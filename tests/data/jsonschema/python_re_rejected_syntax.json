@@ -113,6 +113,14 @@
     "conditional_group": {
       "type": "string",
       "pattern": "^(a)?(?(1)b|c)$"
+    },
+    "comment_with_escaped_parenthesis": {
+      "type": "string",
+      "pattern": "^a(?#note\\)b)c$"
+    },
+    "comment_with_escaped_parenthesis_beside_a_group": {
+      "type": "string",
+      "pattern": "(?<=a)(?#\\))x"
     }
   },
   "required": [
@@ -143,6 +151,8 @@
     "group_text_in_class",
     "lookahead",
     "comment_and_flags",
-    "conditional_group"
+    "conditional_group",
+    "comment_with_escaped_parenthesis",
+    "comment_with_escaped_parenthesis_beside_a_group"
   ]
 }

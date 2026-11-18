@@ -38,3 +38,7 @@ class Syntax(BaseModel):
     lookahead: str = Field(..., pattern='^(?=a)\\w$')
     comment_and_flags: str = Field(..., pattern='(?i)^a(?#note)b$')
     conditional_group: str = Field(..., pattern='^(a)?(?(1)b|c)$')
+    comment_with_escaped_parenthesis: str = Field(..., pattern='^a(?#note\\)b)c$')
+    comment_with_escaped_parenthesis_beside_a_group: str = Field(
+        ..., pattern='(?<=a)(?#\\))x'
+    )

@@ -37,3 +37,7 @@ class Syntax(Struct):
     lookahead: Annotated[str, Meta(pattern='^(?=a)\\w$')]
     comment_and_flags: Annotated[str, Meta(pattern='(?i)^a(?#note)b$')]
     conditional_group: Annotated[str, Meta(pattern='^(a)?(?(1)b|c)$')]
+    comment_with_escaped_parenthesis: Annotated[str, Meta(pattern='^a(?#note\\)b)c$')]
+    comment_with_escaped_parenthesis_beside_a_group: Annotated[
+        str, Meta(pattern='(?<=a)(?#\\))x')
+    ]
