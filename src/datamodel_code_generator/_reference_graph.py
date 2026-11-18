@@ -18,7 +18,7 @@ from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._graph import post_order, reach, stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
 from datamodel_code_generator._records import record
-from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
+from datamodel_code_generator._scc import find_circular_sccs, is_circular, strongly_connected_components
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Hashable, Iterable, Mapping, Sequence
@@ -126,13 +126,11 @@ class ReferenceGraph:
 
     def acyclic_order(self, kinds: Collection[EdgeKind]) -> list[ModelKey] | None:
         """Return the models with the targets of each first, or ``None`` when edges of ``kinds`` close a cycle."""
-        order = all_or_none(self._acyclic(component, kinds) for component in self.components(kinds))
+        graph = self._adjacency(kinds)
+        order = all_or_none(
+            None if is_circular(component, graph.edges) else next(iter(component)) for component in graph.components()
+        )
         return None if order is None else list(order)
-
-    def _acyclic(self, component: set[ModelKey], kinds: Collection[EdgeKind]) -> ModelKey | None:
-        """Return the model of a strongly connected component, or ``None`` when edges of ``kinds`` make it a cycle."""
-        key = next(iter(component))
-        return None if len(component) > 1 or key in self.targets(key, kinds) else key
 
     def preorder(self, key: ModelKey, kind: EdgeKind, *, first_target_first: bool = False) -> list[ModelKey]:
         """Return ``key`` and the models it reaches through edges of ``kind``, each once, as a stack walk takes them.
