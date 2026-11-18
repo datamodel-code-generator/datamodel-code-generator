@@ -1415,6 +1415,15 @@ _STANDARD_20261118_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "model open instead of forbidding the properties a valid payload holds."
         ),
     ),
+    PresetOptionGroup(
+        title="Unmapped variant tag values",
+        config=PresetConfig(use_unmapped_variant_tag_values=True),
+        description=(
+            "Give a variant of a discriminated union that a mapping names also the values of its tag property that no "
+            "mapping key and no other variant claim, such as kitty beside the key cat of enum [cat, kitty], so the "
+            "union decodes every document of the variant the schema accepts. msgspec Structs keep one tag."
+        ),
+    ),
 )
 """The 20261113 groups and the opt-in options added after them."""
 

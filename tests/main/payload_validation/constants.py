@@ -444,6 +444,9 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     },
     "jsonschema/type_alias_lookaround/annotated_root.json": {PayloadBackend.PYDANTIC_V2: ("--use-annotated",)},
     "jsonschema/discriminator_msgspec_wire_name.json": {PayloadBackend.MSGSPEC: ("--tag-msgspec-by-payload-name",)},
+    "jsonschema/discriminator_mapped_variant_several_values.json": dict.fromkeys(
+        PayloadBackend, ("--use-unmapped-variant-tag-values",)
+    ),
     "jsonschema/redundant_constraints.json": {
         backend: (
             "--use-non-positive-negative-number-constrained-types",

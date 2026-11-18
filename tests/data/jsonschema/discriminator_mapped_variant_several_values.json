@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pet",
+  "oneOf": [
+    {"$ref": "#/$defs/Cat"},
+    {"$ref": "#/$defs/Dog"}
+  ],
+  "discriminator": {
+    "propertyName": "kind",
+    "mapping": {"cat": "#/$defs/Cat", "dog": "#/$defs/Dog"}
+  },
+  "$defs": {
+    "Cat": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["cat", "kitty"]},
+        "name": {"type": "string"}
+      }
+    },
+    "Dog": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["dog"]},
+        "bark": {"type": "boolean"}
+      }
+    }
+  }
+}

@@ -47,6 +47,36 @@
   > GET https://api.example.com/animals
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   animal dog = {'kind': 'dog', 'fed': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline cat = {'kind': 'cat', 'born': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline kitty = {'kind': 'kitty', 'born': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getFeline', reason='invalid_value') [operation_id='getFeline', body_bytes=b'{"kind":"Feline","born":"2024-01-02"}', truncated=False, cause=KeyError('Feline')] invalid_value
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline dog = {'kind': 'dog', 'fed': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline cat = {'kind': 'cat', 'born': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline kitty ! DecodeError: DecodeError(status_code=200, operation_id='getMappedFeline', reason='invalid_value') [operation_id='getMappedFeline', body_bytes=b'{"kind":"kitty","born":"2024-01-02"}', truncated=False, cause=KeyError('kitty')] invalid_value
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline dog = {'kind': 'dog', 'fed': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade 1 = {'grade': 1, 'since': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade 2 = {'grade': 2, 'until': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade '1' is no integer ! DecodeError: DecodeError(status_code=200, operation_id='getGrade', reason='invalid_value') [operation_id='getGrade', body_bytes=b'{"grade":"1","since":"2024-01-02"}', truncated=False, cause=KeyError('1')] invalid_value
 # discriminator-values dataclasses.dataclass
   > GET https://api.example.com/levels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -96,6 +126,36 @@
   > GET https://api.example.com/animals
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   animal dog = Dog(kind=<DogKind.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline cat = Feline(kind=<Kind.cat: 'cat'>, born=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline kitty = Feline(kind=<Kind.kitty: 'kitty'>, born=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getFeline', reason='invalid_value') [operation_id='getFeline', body_bytes=b'{"kind":"Feline","born":"2024-01-02"}', truncated=False, cause=KeyError('Feline')] invalid_value
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline dog = Canine(kind=<Kind1.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline cat = MappedFeline(kind=<Kind2.cat: 'cat'>, born=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline kitty ! DecodeError: DecodeError(status_code=200, operation_id='getMappedFeline', reason='invalid_value') [operation_id='getMappedFeline', body_bytes=b'{"kind":"kitty","born":"2024-01-02"}', truncated=False, cause=KeyError('kitty')] invalid_value
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline dog = MappedCanine(kind=<Kind3.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade 1 = Pass(grade=<Grade.integer_1: 1>, since=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade 2 = Fail(grade=<Grade.integer_2: 2>, until=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade '1' is no integer ! DecodeError: DecodeError(status_code=200, operation_id='getGrade', reason='invalid_value') [operation_id='getGrade', body_bytes=b'{"grade":"1","since":"2024-01-02"}', truncated=False, cause=KeyError('1')] invalid_value
 # discriminator-values pydantic_v2.BaseModel
   > GET https://api.example.com/levels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -147,3 +207,39 @@
   > GET https://api.example.com/animals
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   animal dog = AnimalsGetResponse(root=Dog(kind=<DogKind.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline cat = FelinesGetResponse(root=Feline(kind=<Kind.cat: 'cat'>, born=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline kitty = FelinesGetResponse(root=Feline(kind=<Kind.kitty: 'kitty'>, born=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getFeline', reason='invalid_value') [operation_id='getFeline', body_bytes=b'{"kind":"Feline","born":"2024-01-02"}', truncated=False, cause=1 validation error for FelinesGetResponse
+  Input tag 'Feline' found using 'kind' does not match any of the expected tags: <Kind.cat: 'cat'>, <Kind.kitty: 'kitty'>, <Kind1.dog: 'dog'> [type=union_tag_invalid, input_value={'kind': 'Feline', 'born': '2024-01-02'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] invalid_value
+  > GET https://api.example.com/felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  feline dog = FelinesGetResponse(root=Canine(kind=<Kind1.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline cat = MappedFelinesGetResponse(root=MappedFeline(kind=<Kind2.cat: 'cat'>, born=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline kitty ! DecodeError: DecodeError(status_code=200, operation_id='getMappedFeline', reason='invalid_value') [operation_id='getMappedFeline', body_bytes=b'{"kind":"kitty","born":"2024-01-02"}', truncated=False, cause=1 validation error for MappedFelinesGetResponse
+  Input tag 'kitty' found using 'kind' does not match any of the expected tags: <Kind2.cat: 'cat'>, <Kind3.dog: 'dog'> [type=union_tag_invalid, input_value={'kind': 'kitty', 'born': '2024-01-02'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] invalid_value
+  > GET https://api.example.com/mapped-felines
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mapped feline dog = MappedFelinesGetResponse(root=MappedCanine(kind=<Kind3.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade 1 = GradesGetResponse(root=Pass(grade=<Grade.integer_1: 1>, since=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade 2 = GradesGetResponse(root=Fail(grade=<Grade.integer_2: 2>, until=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))
+  > GET https://api.example.com/grades
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  grade '1' is no integer ! DecodeError: DecodeError(status_code=200, operation_id='getGrade', reason='invalid_value') [operation_id='getGrade', body_bytes=b'{"grade":"1","since":"2024-01-02"}', truncated=False, cause=1 validation error for GradesGetResponse
+  Input tag '1' found using 'grade' does not match any of the expected tags: <Grade.integer_1: 1>, <Grade.integer_2: 2> [type=union_tag_invalid, input_value={'grade': '1', 'since': '2024-01-02'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] invalid_value

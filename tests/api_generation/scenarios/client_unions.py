@@ -47,6 +47,16 @@ _MEMBERS: Final = (
     ("get_odd", "odd object", {"kind": {"a": 1}, "until": "2024-01-02T03:04:05Z"}),
     ("get_animal", "animal cat", {"kind": "cat", "born": "2024-01-02"}),
     ("get_animal", "animal dog", {"kind": "dog", "fed": "2024-01-02T03:04:05Z"}),
+    ("get_feline", "feline cat", {"kind": "cat", "born": "2024-01-02"}),
+    ("get_feline", "feline kitty", {"kind": "kitty", "born": "2024-01-02"}),
+    ("get_feline", "feline named as its schema", {"kind": "Feline", "born": "2024-01-02"}),
+    ("get_feline", "feline dog", {"kind": "dog", "fed": "2024-01-02T03:04:05Z"}),
+    ("get_mapped_feline", "mapped feline cat", {"kind": "cat", "born": "2024-01-02"}),
+    ("get_mapped_feline", "mapped feline kitty", {"kind": "kitty", "born": "2024-01-02"}),
+    ("get_mapped_feline", "mapped feline dog", {"kind": "dog", "fed": "2024-01-02T03:04:05Z"}),
+    ("get_grade", "grade 1", {"grade": 1, "since": "2024-01-02"}),
+    ("get_grade", "grade 2", {"grade": 2, "until": "2024-01-02T03:04:05Z"}),
+    ("get_grade", "grade '1' is no integer", {"grade": "1", "since": "2024-01-02"}),
 )
 
 

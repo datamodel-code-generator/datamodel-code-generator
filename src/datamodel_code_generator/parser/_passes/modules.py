@@ -202,6 +202,7 @@ from datamodel_code_generator.parser._tag_plan import (
     nested_variant_tags,
     settle_site,
     shared_site_names,
+    site_tag_values,
     site_validity,
     tag_msgspec_unions,
     tag_satisfies_pattern,
@@ -474,6 +475,10 @@ class InlineVariantHost(Protocol):
     @property
     def merge_shared_variant_tags(self) -> bool:
         """Whether a variant that discriminated unions tag differently takes every tag they give it."""
+
+    @property
+    def use_unmapped_variant_tag_values(self) -> bool:
+        """Whether a variant a mapping names also takes the values of its tag field that nothing else claims."""
 
     @property
     def _collapsed_reuse_users(self) -> dict[int, tuple[DataType, Reference]]:
@@ -1050,18 +1055,21 @@ def tag_reading(parser: InlineVariantHost) -> TagReading:
     plan = parser._tag_plan
     namer = field_namer(parser.model_resolver, parser.field_name_model_type)
     enum_member_tags = parser.use_enum_values_in_discriminator
+    every_value = parser.use_unmapped_variant_tag_values
     return TagReading(
-        plan.inline_variant_tags(parser.results, namer, enum_member_tags=enum_member_tags),
+        plan.inline_variant_tags(parser.results, namer, enum_member_tags=enum_member_tags, every_value=every_value),
         plan.union_written,
         enum_member_tags,
         plan.merged_variant_tags(
             parser.results,
             namer,
             enum_member_tags=enum_member_tags,
+            every_value=every_value,
             collapsed_users=parser._collapsed_reuse_users,
         )
         if parser.merge_shared_variant_tags
         else {},
+        every_value,
     )
 
 
@@ -2156,7 +2164,19 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
         if site_reading.writes_argument:
             decision.names = names = shared_site_names(names, field.data_type.data_types, namer)
             discriminator["propertyName"] = names.field_name
-        view = UnionView(names, mapping, site_reading.view_mode, reading)
+        view = UnionView(
+            names,
+            mapping,
+            site_reading.view_mode,
+            reading,
+            site_tag_values(
+                field.data_type.data_types,
+                names.field_name,
+                site_reading.view_mode,
+                property_name=names.property_name,
+                reading=reading,
+            ),
+        )
         field_name = names.field_name
 
         tags: list[DiscriminatorTag] = []

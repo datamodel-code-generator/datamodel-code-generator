@@ -18,7 +18,7 @@ class ComparisonFilter(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Literal['ComparisonFilter']
+    type: Literal['eq', 'ne']
     key: str
     value: str
 
@@ -32,7 +32,7 @@ class CompoundFilter(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Literal['CompoundFilter']
+    type: Literal['and', 'or']
     filters: list[Filters]
 
 

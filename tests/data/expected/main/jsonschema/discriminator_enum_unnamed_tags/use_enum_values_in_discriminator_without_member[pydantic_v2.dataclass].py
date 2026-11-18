@@ -101,7 +101,7 @@ class Base:
 @dataclass
 class I(Base):
     i: int | None = None
-    k: Literal['I']
+    k: Literal['p', 'q']
 
 
 class K7(str, Enum):

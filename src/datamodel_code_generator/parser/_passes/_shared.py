@@ -54,6 +54,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     mapped_tags,
     tag_field_kept,
     tag_field_matches,
+    tag_key,
 )
 from datamodel_code_generator.model.base import (
     ConstraintsBase,
@@ -1287,6 +1288,27 @@ class _FieldTagFacts:
         """
         fields = enum_source.fields if (enum_source := _annotated_enum(self.field.data_type)) else []
         return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
+
+    def values(self) -> tuple[object, ...] | None:
+        """Return every value the field admits, or None where its type admits values of a kind beside those.
+
+        They are its ``const``, else, through the unions of its type and the root models and type aliases it names
+        (``_iter_discriminator_data_types``), the values of each ``Literal``, of the Enum members written as one and of
+        each Enum, each once (``type-and-value``), as ``_written_tag_keys`` reads a written tag field.
+        """
+        if self.has_const():
+            return (self.const(),)
+        found: dict[object, object] = {}
+        for leaf, _, _ in _iter_discriminator_data_types((self.field.data_type,)):
+            source = None if leaf.reference is None else leaf.reference.source
+            if isinstance(source, Enum):
+                values = [get_raw_enum_member_value(member.default) for member in source.fields]
+            elif (members := enum_member_literal_values(leaf)) is not None or leaf.literals:
+                values = [*leaf.literals, *(() if members is None else members[1])]
+            else:
+                return None
+            found |= {tag_key(value, "type-and-value"): value for value in values}
+        return tuple(found.values())
 
     def referenced_tag(self) -> FieldTag | None:
         """Return the tag of the root model or type alias the field's type names, as ``variant-field`` reads its field.

@@ -1,0 +1,9 @@
+[[change]]
+id = "variant-tag-values-payload-inputs"
+extends = "annotated-model-default-cast"
+covers = [
+    "main/openapi/variant_tag_values/msgspec_lone_union_of_two_mapping_keys.payloads.txt",
+    "main/openapi/variant_tag_values/msgspec_lone_union_of_two_mapping_keys.py",
+    "payloads/native_numeric_empty_errors.txt",
+    "yaml_fast_constructor/parity.txt",
+]

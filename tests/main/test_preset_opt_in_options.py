@@ -132,6 +132,7 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
     "--use-validate-default-for-root-model-type-aliases",
     "--read-ref-siblings-in-closed-allof-members",
+    "--use-unmapped-variant-tag-values",
 )
 """The options the 20261118 presets set beyond the 20261113 presets."""
 
@@ -547,6 +548,12 @@ CASES_20261118: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-ref-siblings-in-closed-allof-members",
     ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "discriminator_mapped_variant_several_values.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-unmapped-variant-tag-values",
+    ),
 )
 """The inputs each opt-in option of the 20261118 presets changes."""
 
@@ -880,6 +887,13 @@ def test_preset_sets_opt_in_option(
             "--read-ref-siblings-in-closed-allof-members",
             "--no-read-ref-siblings-in-closed-allof-members",
             id="read-ref-siblings-in-closed-allof-members",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "discriminator_mapped_variant_several_values.json",
+            [],
+            "--use-unmapped-variant-tag-values",
+            "--no-use-unmapped-variant-tag-values",
+            id="use-unmapped-variant-tag-values",
         ),
     ],
 )
