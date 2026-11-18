@@ -1,0 +1,2 @@
+exit status 2
+related_tests: git merge-base nobody HEAD failed with status 128
