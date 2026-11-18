@@ -33,6 +33,8 @@ from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
+import tomllib
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
@@ -47,6 +49,10 @@ NAMESPACE_HOOKS = frozenset({"__getattr__", "__dir__"})
 CUT_METHODS = frozenset({"split", "rsplit", "partition", "rpartition", "find", "rfind", "index", "rindex"})
 ENUMERATING_METHODS = frozenset({"values", "items", "keys", "copy"})
 UNUSED_IMPORT = ("F401", "unused-import")
+TESTS = "tests"
+TESTS_STORED = "tests/data/expected/"
+SLEEP_ALLOWLIST = "scripts/test_sleep_allowlist.toml"
+RERUN_MODULES = frozenset({"flaky", "pytest_rerunfailures", "rerunfailures"})
 _CODES = r"(?::\s*(?P<codes>[A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*))?"
 _NOQA = re.compile(rf"#\s*noqa(?![\w-]){_CODES}", re.IGNORECASE)
 _FILE_NOQA = re.compile(rf"#\s*(?:ruff|flake8):\s*noqa(?![\w-]){_CODES}")
@@ -54,6 +60,9 @@ _RUFF_RULES = re.compile(r"#\s*ruff:\s*(?P<action>ignore|disable|enable)\[(?P<ru
 _FILE_CITATION = re.compile(r"`([A-Za-z_][\w/]*\.py):([A-Za-z_][\w.]*)")
 _CLASS_CITATION = re.compile(r"`([A-Z][A-Za-z0-9_]*)\.([A-Za-z_]\w*)")
 _WORD = re.compile(r"\w+")
+_RERUN_OPTION = re.compile(
+    r"(?:-p\s*)?(?:pytest_)?rerunfailures|--(?:reruns|reruns-delay|only-rerun|rerun-except)(?:[=\s]\S*)?"
+)
 _DOTTED_PATH = re.compile(r"[A-Za-z_]\w*(?:[.:][A-Za-z_]\w*)*")
 _STRING_PATH = re.compile(r"(?P<module>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)[.:](?P<name>[A-Za-z_]\w*)")
 
@@ -139,6 +148,15 @@ class Tree:
     def scripts(self) -> list[Module]:
         """Return the repository scripts."""
         return self._modules("scripts")
+
+    @cached_property
+    def tests(self) -> list[Module]:
+        """Return the Python files of ``tests`` (stored expected output aside)."""
+        return [
+            Module(self.root, rel)
+            for path in sorted((self.root / TESTS).rglob("*.py"))
+            if not (rel := path.relative_to(self.root).as_posix()).startswith(TESTS_STORED)
+        ]
 
     @cached_property
     def words(self) -> dict[str, frozenset[str]]:
@@ -437,6 +455,8 @@ class _Bindings:
         self.tree = tree
         self.reads: set[tuple[ast.AST, str]] = set()
         self.scope_of: dict[ast.AST, ast.AST] = {}
+        self.read_scope: dict[ast.Name, ast.AST] = {}
+        self.origins: dict[tuple[ast.AST, str], str] = {}
         self._visit(tree, (_Scope(tree, frozenset(), is_class=False),))
 
     def global_reads(self) -> set[str]:
@@ -446,6 +466,21 @@ class _Bindings:
     def import_is_read(self, node: ast.Import | ast.ImportFrom, name: str) -> bool:
         """Return whether the scope that holds the import ``node`` reads the ``name`` it binds."""
         return (self.scope_of[node], name) in self.reads
+
+    def origin(self, node: ast.expr) -> str | None:
+        """Return the dotted path of the module member that ``node`` reads through an import, else None.
+
+        ``sleep`` after ``from time import sleep`` and ``clock.sleep`` after ``import time as clock`` are both
+        ``time.sleep``; a name that an enclosing function binds in another way (a parameter, an assignment) has none.
+        """
+        attrs: list[str] = []
+        while isinstance(node, ast.Attribute):
+            attrs.append(node.attr)
+            node = node.value
+        if not isinstance(node, ast.Name) or node not in self.read_scope:
+            return None
+        root = self.origins.get((self.read_scope[node], node.id))
+        return None if root is None else ".".join([root, *reversed(attrs)])
 
     def _enter(
         self,
@@ -491,11 +526,25 @@ class _Bindings:
             self._enter(node, chain)
             return
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-            self.reads.add((self._scope(node.id, chain), node.id))
+            self.read_scope[node] = self._scope(node.id, chain)
+            self.reads.add((self.read_scope[node], node.id))
         elif isinstance(node, (ast.Import, ast.ImportFrom)):
             self.scope_of[node] = chain[-1].node
+            self._bind_origins(node, chain[-1].node)
         for child in ast.iter_child_nodes(node):
             self._visit(child, chain)
+
+    def _bind_origins(self, node: ast.Import | ast.ImportFrom, scope: ast.AST) -> None:
+        if isinstance(node, ast.ImportFrom) and (node.module is None or node.level):
+            return
+        for alias in node.names:
+            if isinstance(node, ast.ImportFrom):
+                self.origins[scope, alias.asname or alias.name] = f"{node.module}.{alias.name}"
+            elif alias.asname:
+                self.origins[scope, alias.asname] = alias.name
+            else:
+                root = alias.name.split(".")[0]
+                self.origins[scope, root] = root
 
     @staticmethod
     def _scope(name: str, chain: tuple[_Scope, ...]) -> ast.AST:
@@ -885,6 +934,58 @@ def lost_last_caller(tree: Tree, base: Tree | None) -> Iterator[Finding]:
             )
 
 
+def _retry_form(node: ast.AST, bindings: _Bindings) -> str | None:
+    """Return what kind of rerun or flaky marker, plugin or option ``node`` is, if it is one.
+
+    A marker is ``pytest.mark.flaky`` or a name that an import from the ``flaky`` package binds, read where that
+    import binds it.
+    """
+    match node:
+        case ast.Attribute(attr="flaky"):
+            return "flaky marker" if bindings.origin(node) == "pytest.mark.flaky" else None
+        case ast.Name(ctx=ast.Load()):
+            return "flaky marker" if (bindings.origin(node) or "").split(".")[0] == "flaky" else None
+        case ast.Import(names=aliases):
+            hit = any(alias.name.split(".")[0] in RERUN_MODULES for alias in aliases)
+        case ast.ImportFrom(module=str() as name, level=0):
+            hit = name.split(".")[0] in RERUN_MODULES
+        case ast.Constant(value=str() as text):
+            hit = _RERUN_OPTION.fullmatch(text.strip()) is not None
+        case _:
+            hit = False
+    return "rerun plugin or option" if hit else None
+
+
+def _allowed_sleeps(tree: Tree) -> dict[str, int]:
+    path = tree.root / SLEEP_ALLOWLIST
+    if not path.exists():
+        return {}
+    return {name: entry["count"] for name, entry in tomllib.loads(path.read_text(encoding="utf-8")).items()}
+
+
+def flaky_test_workarounds(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report rerun or flaky markers and plugins in the tests, and ``time.sleep`` calls beyond the allowlist.
+
+    Review class: a test that is retried or slept into passing hides a race that a deterministic wait fixes. The
+    allowlist ``scripts/test_sleep_allowlist.toml`` counts today's sleeps per file with the reason; a count above it
+    or an entry the file no longer needs is reported, so the list only shrinks.
+    """
+    allowed = _allowed_sleeps(tree)
+    found: Counter[str] = Counter()
+    for module in tree.tests:
+        bindings = module.bindings
+        for node in module.nodes:
+            if form := _retry_form(node, bindings):
+                yield Finding(module.rel, node.lineno, "flaky-test-workarounds", form)
+            elif isinstance(node, ast.Call) and bindings.origin(node.func) == "time.sleep":
+                found[module.rel] += 1
+                if found[module.rel] > allowed.get(module.rel, 0):
+                    yield Finding(module.rel, node.lineno, "flaky-test-workarounds", "time.sleep beyond the allowlist")
+    for name, count in allowed.items():
+        if found[name] < count:
+            yield Finding(SLEEP_ALLOWLIST, 1, "flaky-test-workarounds", f"{name} allows {count}, holds {found[name]}")
+
+
 RULES: tuple[Rule, ...] = (
     Rule(
         "hash-split",
@@ -932,6 +1033,13 @@ RULES: tuple[Rule, ...] = (
         "or route its tests through the code that replaced the callers",
         needs_base=True,
         coverage=undecided_callers,
+    ),
+    Rule(
+        "flaky-test-workarounds",
+        flaky_test_workarounds,
+        "fix the race the retry or sleep hides (wait on an event, a condition or an injected clock) or delete the test "
+        "with the reason in the commit; never add an entry to scripts/test_sleep_allowlist.toml",
+        absolute=True,
     ),
 )
 
