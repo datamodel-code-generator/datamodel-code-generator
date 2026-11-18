@@ -21,6 +21,7 @@ from datamodel_code_generator._constraint_applicability import constrained_type_
 from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import MODELED_SCHEMA_MAPS, SCHEMA_MAP_KEYS, admitted_types, schema_positions
+from datamodel_code_generator._regex_syntax import python_rejects
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
@@ -29,8 +30,10 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,
+    ConditionalBoundsRule,
     ConditionalRequiredRule,
     ConstantTypesRule,
+    ContainsRule,
     IndependentDeclaredPatternPropertiesRule,
     IndependentModelPatternPropertiesRule,
     PatternPropertiesRule,
@@ -41,7 +44,7 @@ from datamodel_code_generator.model.runtime_validation import (
     _is_internal_schema_runtime_validation,
     conditional_value_uses_json_equality,
 )
-from datamodel_code_generator.parser import _inherited_schemas, _schema_refs
+from datamodel_code_generator.parser import _inherited_schemas, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._inherited_schemas import InheritedSchemasHost
 from datamodel_code_generator.parser._intersection import (
     INTERSECTED_KEYWORDS,
@@ -65,6 +68,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
 )
 from datamodel_code_generator.parser.base import get_special_path
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
@@ -74,12 +78,20 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.model import DataModelFieldBase
-    from datamodel_code_generator.model.runtime_validation import UniqueItemsPath, UniqueItemsPathStep
+    from datamodel_code_generator.model.runtime_validation import (
+        BoundKeyword,
+        Condition,
+        ConditionalBounds,
+        ContainsMatcher,
+        UniqueItemsPath,
+        UniqueItemsPathStep,
+    )
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.reference import Reference
 
 __all__ = [
     "SchemaValidatorsHost",
+    "add_conditional_bounds_validator",
     "add_conditional_validator",
     "add_group_validators",
     "add_path_rules_validator",
@@ -284,7 +296,17 @@ class SchemaValidatorsHost(
 
 _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
 _CONSTANT_TYPES = frozenset({"boolean", "integer", "number"})
-_PathRule: TypeAlias = UniqueItemsRule | ConstantTypesRule
+_PathRule: TypeAlias = UniqueItemsRule | ConstantTypesRule | ContainsRule
+_BOUND_KEYWORDS: tuple[BoundKeyword, ...] = ("minimum", "exclusiveMinimum", "maximum", "exclusiveMaximum")
+_CONTAINS_STRING_KEYWORDS = ("pattern", "minLength", "maxLength")
+_CONTAINS_NUMBER_KEYWORDS = (*_BOUND_KEYWORDS, "multipleOf")
+_CONTAINS_MATCHER_KEYWORDS = frozenset({
+    "type",
+    "const",
+    "enum",
+    *_CONTAINS_STRING_KEYWORDS,
+    *_CONTAINS_NUMBER_KEYWORDS,
+})
 
 
 _UNMATCHED_SCHEMA_KEYWORDS = frozenset(schema_positions("unmatched"))
@@ -670,9 +692,10 @@ def iter_schema_validation_sources(
     visited_refs: frozenset[_TargetNode] = frozenset(),
     *,
     include_references: bool = True,
+    sibling_yield: Literal["ref-less-copy", "applicator-copy"] = "ref-less-copy",
 ) -> Iterator[JsonSchemaObject]:
     for source, _ in iter_scoped_schema_validation_sources(
-        parser, obj, visited_refs, include_references=include_references
+        parser, obj, visited_refs, include_references=include_references, sibling_yield=sibling_yield
     ):
         yield source
 
@@ -722,7 +745,7 @@ def iter_scoped_schema_validation_sources(  # noqa: PLR0913
     *,
     include_references: bool = True,
     ref_siblings: Literal["as-written", "first-read"] = "first-read",
-    sibling_yield: Literal["member", "ref-less-copy"] = "ref-less-copy",
+    sibling_yield: Literal["member", "ref-less-copy", "applicator-copy"] = "ref-less-copy",
     track_scope: bool = True,
 ) -> Iterator[tuple[JsonSchemaObject, str | None]]:
     """Yield the schema and its allOf sources with the document each was read from.
@@ -733,8 +756,10 @@ def iter_scoped_schema_validation_sources(  # noqa: PLR0913
 
     The keywords beside an allOf ``$ref`` are read where ``ref_siblings`` applies them (``_iter_all_of_reads``), as
     ``sibling_yield`` says: ``ref-less-copy`` walks a copy of the member without its ``$ref`` and without following
-    references, only when the member has an applicator, ``if`` or a map keyword; ``member`` yields the member as
-    written (the property counts). Without ``track_scope`` every source keeps ``scope``.
+    references where it has a keyword beside its ``$ref``; ``member`` yields the member as written (the property
+    counts); row ``legacy-closing-ref-siblings-with-applicators`` (``applicator-copy``, what closes an allOf in
+    ``parser/_all_of_values.py``) walks the copy only where the member has an applicator, ``if`` or a map keyword.
+    Without ``track_scope`` every source keeps ``scope``.
     """
     yield obj, scope
     if not obj.allOf:
@@ -753,12 +778,16 @@ def iter_scoped_schema_validation_sources(  # noqa: PLR0913
             if sibling_yield == "member":
                 yield node, node_scope
                 continue
+            if node.model_fields_set == {"ref"}:
+                continue
             has_sibling_constraints = (
                 node.patternProperties
                 or node.additionalProperties is not None
                 or node.unevaluatedProperties is not None
             )
-            if not (node.allOf or node.oneOf or node.anyOf or "if" in node.extras or has_sibling_constraints):
+            if sibling_yield == "applicator-copy" and not (
+                node.allOf or node.oneOf or node.anyOf or "if" in node.extras or has_sibling_constraints
+            ):
                 continue
             source, follows_references = node.model_copy(update={"ref": None}), False
         yield from iter_scoped_schema_validation_sources(
@@ -1113,8 +1142,9 @@ def iter_path_rules(  # noqa: PLR0912, PLR0913
 ) -> Iterator[_PathRule]:
     """Yield the compact path rules required by all applicable union branches.
 
-    A ``uniqueItems`` array yields a ``UniqueItemsRule`` and a const or enum a ``ConstantTypesRule``, also that of a
-    schema it references: an Enum class cannot check it.
+    A ``uniqueItems`` array yields a ``UniqueItemsRule``, a ``contains`` the matcher reads a ``ContainsRule``
+    (``_contains_rule``), and a const or enum a ``ConstantTypesRule``, also that of a schema it references: an Enum
+    class cannot check it.
     """
     if obj.ref:
         if parser.collapse_root_models and (target := _schema_refs.unmapped_ref_target(parser, obj.ref, visited_refs)):
@@ -1134,6 +1164,8 @@ def iter_path_rules(  # noqa: PLR0912, PLR0913
             return
     if obj.uniqueItems is True:
         yield UniqueItemsRule(path=path)
+    if "contains" in obj.extras and (contains_rule := _contains_rule(parser, obj, path)) is not None:
+        yield contains_rule
     if (
         (obj.enum or "const" in obj.extras)
         and (values := _rule_literal_values(parser, obj))
@@ -1230,6 +1262,67 @@ def iter_path_rules(  # noqa: PLR0912, PLR0913
         )
 
 
+def _contains_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject, path: UniqueItemsPath) -> ContainsRule | None:
+    """Return the count check of the ``contains`` of ``obj``, None where no count is set or the matcher reads none.
+
+    A boolean ``contains`` and one that matches every item give item counts instead
+    (``_get_array_items_constraints``); the counts are read as there (``get_contains_count_constraints``:
+    ``minContains`` is 1 when absent). ``minContains`` and ``maxContains`` exist from draft 2019-09 on; before, a
+    ``contains`` needs one match and the two keywords are ignored.
+    """
+    if _value_keywords.contains_matches_every_item(parser, obj):
+        return None
+    features = parser._features_at(obj)
+    min_contains, max_contains = (
+        _value_keywords.get_contains_count_constraints(type(parser), obj) if features.contains_counts else (1, None)
+    )
+    if (min_contains is None and max_contains is None) or not isinstance(
+        contains := get_conditional_schema(parser, obj, "contains"), JsonSchemaObject
+    ):
+        return None
+    if (matcher := _contains_matcher(parser, contains, const_support=features.const_support)) is None:
+        return None
+    return ContainsRule(path=path, matcher=matcher, min_contains=min_contains, max_contains=max_contains)
+
+
+def _contains_matcher(
+    parser: SchemaValidatorsHost, schema: JsonSchemaObject, *, const_support: bool
+) -> ContainsMatcher | None:
+    """Return the keywords of a ``contains`` schema that the generated matcher checks exactly, as (keyword, value).
+
+    The matcher reads ``type``, ``const``, ``enum``, ``pattern``, ``minLength``, ``maxLength``, the numeric bounds and
+    ``multipleOf``, beside metadata only; any other keyword, a pattern Python's ``re`` rejects, a
+    ``multipleOf`` that is not an integer (float division and the mathematical multiple disagree), an enum that
+    ``--ignore-enum-constraints`` drops and a const the draft does not define give None, so that no count is checked
+    with a matcher that accepts other items than the schema. An integral ``multipleOf`` is the integer it spells.
+    """
+    if not _is_empty_property_schema(schema, allowed_keywords=_CONTAINS_MATCHER_KEYWORDS):
+        return None
+    matcher: list[tuple[str, object]] = []
+    if schema.type is not None:
+        matcher.append(("type", declared_types(schema.type)))
+    if "const" in schema.extras:
+        if not const_support:
+            return None
+        matcher.append(("const", schema.extras["const"]))
+    if "enum" in schema.model_fields_set:
+        if parser.ignore_enum_constraints:
+            return None
+        matcher.append(("enum", tuple(schema.enum)))
+    if schema.pattern is not None and python_rejects(schema.pattern):
+        return None
+    for keyword, value in _constraint_values(
+        schema, (*_CONTAINS_STRING_KEYWORDS, *_CONTAINS_NUMBER_KEYWORDS), as_numbers=True
+    ).items():
+        if keyword == "multipleOf" and isinstance(value, float):
+            if not value.is_integer():
+                return None
+            matcher.append((keyword, int(value)))
+        else:
+            matcher.append((keyword, value))
+    return tuple(matcher)
+
+
 def add_path_rules_validator(  # noqa: PLR0913
     parser: SchemaValidatorsHost,
     reference_path: str,
@@ -1307,7 +1400,7 @@ def add_path_rules_validator(  # noqa: PLR0913
         }
         add_rules(obj, (), property_input_names=names_by_property)
         overridden_properties: set[str] = set()
-        for source in parser._iter_schema_validation_sources(obj):
+        for source in iter_schema_validation_sources(parser, obj):
             if not source.properties:
                 continue
             for property_name, property_schema in source.properties.items():
@@ -1341,16 +1434,21 @@ def _register_path_rules(
     parser: SchemaValidatorsHost, reference_path: str, rules: list[_PathRule], replaced_kinds: set[type[_PathRule]]
 ) -> None:
     """Add the rules of each kind that has some, or whose inherited rules the model replaces, to its validation."""
+    if not rules and not replaced_kinds:
+        return
+    runtime_validation = parser._schema_runtime_validation(reference_path)
     unique_items = [rule for rule in rules if isinstance(rule, UniqueItemsRule)]
     constant_types = [rule for rule in rules if isinstance(rule, ConstantTypesRule)]
+    contains = [rule for rule in rules if isinstance(rule, ContainsRule)]
     if unique_items or UniqueItemsRule in replaced_kinds:
-        runtime_validation = parser._schema_runtime_validation(reference_path)
         runtime_validation.unique_items.extend(unique_items)
         runtime_validation.replace_unique_items = UniqueItemsRule in replaced_kinds
     if constant_types or ConstantTypesRule in replaced_kinds:
-        runtime_validation = parser._schema_runtime_validation(reference_path)
         runtime_validation.constant_types.extend(constant_types)
         runtime_validation.replace_constant_types = ConstantTypesRule in replaced_kinds
+    if contains or ContainsRule in replaced_kinds:
+        runtime_validation.contains.extend(contains)
+        runtime_validation.replace_contains = ContainsRule in replaced_kinds
 
 
 def pattern_rule_additional_properties(
@@ -1674,12 +1772,8 @@ def add_conditional_validator(
     if not then_groups and not else_groups:
         return
 
-    condition = tuple(
-        (names_by_property.get(property_name, (property_name,)), expected_values)
-        for property_name, expected_values in predicate
-    )
     rule = ConditionalRequiredRule(
-        condition=condition,
+        condition=_condition_input_names(predicate, names_by_property),
         then_groups=parser._required_group_input_names(then_groups, names_by_property),
         else_groups=parser._required_group_input_names(else_groups, names_by_property),
     )
@@ -1714,6 +1808,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
     ):
         parser._add_required_groups_validator(reference_path, "anyOf", [missing_required], names_by_property)
     add_group_validators(parser, reference_path, obj, names_by_property)
+    add_conditional_bounds_validator(parser, reference_path, obj, names_by_property)
     if include_property_count:
         parser._add_property_count_validator(reference_path, obj)
     parser._add_path_rules_validator(reference_path, obj, fields, base_classes, is_root_model=False)
@@ -1868,6 +1963,81 @@ def pattern_checks_declared_key(
         for property_name, input_names in names_by_property.items()
         for pattern, pattern_schema, pattern_scope in patterns
     )
+
+
+def _condition_input_names(
+    predicate: tuple[tuple[str, tuple[object, ...]], ...], names_by_property: Mapping[str, tuple[str, ...]]
+) -> Condition:
+    """Return the condition of an if/then/else rule: each property of ``predicate`` by its raw input names."""
+    return tuple((_input_names(names_by_property, property_name), values) for property_name, values in predicate)
+
+
+def add_conditional_bounds_validator(
+    parser: SchemaValidatorsHost,
+    reference_path: str,
+    obj: JsonSchemaObject,
+    names_by_property: dict[str, tuple[str, ...]],
+) -> None:
+    """Register the numeric bounds the then and else of each if/then/else of ``obj`` and its allOf sources put.
+
+    The sources include the references, as for the path rules: a model whose own rules replace those of its base
+    class still checks the base's. The condition is that of the conditional required rule; rules are told apart by
+    what they write (``stable_repr``), where a boolean is no number.
+    """
+    for source in iter_schema_validation_sources(parser, obj):
+        if (predicate := get_conditional_predicate(parser, source)) is None:
+            continue
+        then_bounds, else_bounds = (
+            _branch_bounds(parser, branch, names_by_property)
+            if isinstance(branch := get_conditional_schema(parser, source, keyword), JsonSchemaObject)
+            else ()
+            for keyword in ("then", "else")
+        )
+        if not then_bounds and not else_bounds:
+            continue
+        rule = ConditionalBoundsRule(
+            condition=_condition_input_names(predicate, names_by_property),
+            then_bounds=then_bounds,
+            else_bounds=else_bounds,
+        )
+        runtime_validation = parser._schema_runtime_validation(reference_path)
+        if all(stable_repr(rule) != stable_repr(existing) for existing in runtime_validation.conditional_bounds):
+            runtime_validation.conditional_bounds.append(rule)
+
+
+def _branch_bounds(
+    parser: SchemaValidatorsHost, branch: JsonSchemaObject, names_by_property: Mapping[str, tuple[str, ...]]
+) -> ConditionalBounds:
+    """Return the numeric bounds a then or else branch puts on properties, by their raw input names."""
+    bounds: list[tuple[tuple[str, ...], BoundKeyword, int | float]] = []
+    for source in _bound_sources(parser, branch):
+        for property_name, property_schema in (source.properties or {}).items():
+            if not isinstance(property_schema, JsonSchemaObject):
+                continue
+            input_names = _input_names(names_by_property, property_name)
+            for property_source in _bound_sources(parser, property_schema):
+                limits = _constraint_values(property_source, _BOUND_KEYWORDS, as_numbers=True)
+                for keyword in _BOUND_KEYWORDS:
+                    if keyword in limits and (bound := (input_names, keyword, limits[keyword])) not in bounds:
+                        bounds.append(bound)
+    return tuple(bounds)
+
+
+def _bound_sources(
+    parser: SchemaValidatorsHost, schema: JsonSchemaObject, visited_refs: frozenset[_TargetNode] = frozenset()
+) -> Iterator[JsonSchemaObject]:
+    """Yield the schemas whose keywords apply to the instance of ``schema``: its allOf sources and what a $ref names.
+
+    The keywords beside a ``$ref`` count where they apply to it (``_ref_siblings_apply_to``).
+    """
+    for source in iter_schema_validation_sources(parser, schema, visited_refs):
+        if not source.ref:
+            yield source
+            continue
+        if parser._ref_siblings_apply_to(source, legacy="first-read"):
+            yield source
+        if (target := _schema_refs.unmapped_ref_target(parser, source.ref, visited_refs)) is not None:
+            yield from _bound_sources(parser, *target)
 
 
 def get_conditional_predicate(

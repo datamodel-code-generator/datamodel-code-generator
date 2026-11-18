@@ -75,7 +75,7 @@ class Choice:
 
     kinds: tuple[tuple[JSONKind, Shape], ...] = ()
     tag: str | None = None
-    tags: tuple[tuple[str, type], ...] = ()
+    tags: tuple[tuple[str | int | bool, type], ...] = ()
 
 
 def _kind(value: object) -> JSONKind:
@@ -91,6 +91,11 @@ def _kind(value: object) -> JSONKind:
     else:
         kind = "object"
     return kind
+
+
+def _tag_key(tag: object) -> tuple[JSONKind, object]:
+    value = tag.value if isinstance(tag, Enum) else tag
+    return _kind(value), value
 
 
 class TypedDictCodec(ModelCodec[T]):
@@ -151,7 +156,10 @@ class TypedDictCodec(ModelCodec[T]):
             selected = dict(shape.kinds).get(kind)
             if kind == "object" and shape.tag is not None:
                 tag = cast("Mapping[str, object]", value)[shape.tag]
-                selected = dict(shape.tags)[cast("str", tag)]
+                key = _tag_key(tag)
+                selected = next((type_ for name, type_ in shape.tags if _tag_key(name) == key), None)
+                if selected is None:
+                    raise KeyError(tag)
             return self._load(value, selected)
         if isinstance(shape, Items):
             return _CONTAINERS[shape.kind](self._load(item, shape.item) for item in cast("list[object]", value))
@@ -188,7 +196,7 @@ class TypedDictCodec(ModelCodec[T]):
                 for tag, type_ in shape.tags:
                     model = self.models[type_]
                     name = next((field.name for field in model.fields if field.wire == shape.tag), shape.tag)
-                    if value[name] == tag:
+                    if _tag_key(value[name]) == _tag_key(tag):
                         return model
             selected = dict(shape.kinds).get("object")
             return self.models.get(selected) if isinstance(selected, type) else None

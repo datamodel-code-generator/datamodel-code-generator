@@ -1544,33 +1544,71 @@ def _inherits_schema_runtime_validation_base(model: DataModel, local_model_ids: 
     )
 
 
-_HELPER_SUFFIXES: dict[tuple[bool, ...], str] = {
-    (True, False, False): "Core",
-    (False, True, False): "PropertyCount",
-    (True, True, False): "Combined",
-    (False, False, True): "ConstantTypes",
-    (True, False, True): "CoreConstantTypes",
-    (False, True, True): "PropertyCountConstantTypes",
-    (True, True, True): "CombinedConstantTypes",
+_HELPER_LAYER_NAMES: tuple[str, ...] = ("Core", "PropertyCount", "ConstantTypes", "ConditionalBounds", "Contains")
+"""The helper layers, innermost first: the core helper template, then the Python-rendered layers."""
+_HELPER_PREFIXES: dict[tuple[bool, ...], str] = {
+    (True, False): "Core",
+    (False, True): "PropertyCount",
+    (True, True): "Combined",
+    (False, False): "",
 }
-_PRIMARY_HELPERS: tuple[tuple[bool, ...], ...] = (
-    (True, True, True),
-    (True, True, False),
-    (False, True, True),
-    (False, True, False),
-    (True, False, True),
-    (False, False, True),
-    (True, False, False),
+
+
+def _helper_capability_sets() -> dict[tuple[bool, ...], str]:
+    """Return each non-empty set of helper layers with the suffix of its helper's name, in rendering order.
+
+    A set is numbered by its layers as bits, the core the lowest, so a helper follows the helper it extends; the
+    name is that of its core and property-count part, then the names of its later layers.
+    """
+    count = len(_HELPER_LAYER_NAMES)
+    sets: dict[tuple[bool, ...], str] = {}
+    for number in range(1, 2**count):
+        capabilities = tuple(bool(number >> index & 1) for index in range(count))
+        sets[capabilities] = _HELPER_PREFIXES[capabilities[:2]] + "".join(
+            name for name, capability in zip(_HELPER_LAYER_NAMES[2:], capabilities[2:], strict=True) if capability
+        )
+    return sets
+
+
+_HELPER_SUFFIXES: dict[tuple[bool, ...], str] = _helper_capability_sets()
+_CORE_CAPABILITIES: tuple[bool, ...] = (True, *(False for _ in _HELPER_LAYER_NAMES[1:]))
+_PRIMARY_HELPERS: tuple[tuple[bool, ...], ...] = tuple(
+    dict.fromkeys((
+        *(
+            (*capabilities, *(False for _ in _HELPER_LAYER_NAMES[3:]))
+            for capabilities in (
+                (True, True, True),
+                (True, True, False),
+                (False, True, True),
+                (False, True, False),
+                (True, False, True),
+                (False, False, True),
+                (True, False, False),
+            )
+        ),
+        *_HELPER_SUFFIXES,
+    ))
 )
+"""The helper sets in the order that gives the plain base class name to the first one a module needs."""
 
 
 def _helper_inner_capabilities(capabilities: tuple[bool, ...]) -> tuple[bool, ...]:
     """Return the capabilities of the helper the outermost layer of ``capabilities`` is rendered on.
 
-    The core helper is innermost, then the property-count layer, then the constant-type layer.
+    The layers are those of ``_HELPER_LAYER_NAMES``, innermost first.
     """
     outermost = max(index for index, capability in enumerate(capabilities) if capability)
     return tuple(capability and index != outermost for index, capability in enumerate(capabilities))
+
+
+def _python_layer_rules(runtime_validation: SchemaRuntimeValidation) -> tuple[bool, ...]:
+    """Return whether a model has rules of each Python-rendered layer (``_HELPER_LAYER_NAMES`` after the core)."""
+    return (
+        bool(runtime_validation.property_count),
+        bool(runtime_validation.constant_types),
+        bool(runtime_validation.conditional_bounds),
+        bool(runtime_validation.contains),
+    )
 
 
 def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -> dict[str, bool]:
@@ -1598,12 +1636,22 @@ def _helper_template_facts(runtime_validations: list[SchemaRuntimeValidation]) -
             for rule in runtime_validation.conditional_required
             for _names, expected in rule.condition
         ),
-        "has_conditional_json_equality": any(
-            conditional_value_uses_json_equality(value)
+        "has_json_value": any(
+            runtime_validation.conditional_required
+            or runtime_validation.conditional_bounds
+            or runtime_validation.contains
             for runtime_validation in runtime_validations
-            for rule in runtime_validation.conditional_required
-            for _names, expected in rule.condition
-            for value in expected
+        ),
+        "has_conditional_json_equality": any(
+            runtime_validation.conditional_bounds
+            or any(rule.uses_json_equality for rule in runtime_validation.contains)
+            or any(
+                conditional_value_uses_json_equality(value)
+                for rule in runtime_validation.conditional_required
+                for _names, expected in rule.condition
+                for value in expected
+            )
+            for runtime_validation in runtime_validations
         ),
         "has_unique_items": any(runtime_validation.unique_items for runtime_validation in runtime_validations),
         "has_unique_items_regex_paths": any(
@@ -1996,6 +2044,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     _CORE_VALIDATION_BASE_MARKER: ClassVar[str] = "_core_validation_base"
     _PROPERTY_COUNT_VALIDATION_BASE_MARKER: ClassVar[str] = "_property_count_validation_base"
     _CONSTANT_TYPES_VALIDATION_BASE_MARKER: ClassVar[str] = "_constant_types_validation_base"
+    _CONDITIONAL_BOUNDS_VALIDATION_BASE_MARKER: ClassVar[str] = "_conditional_bounds_validation_base"
+    _CONTAINS_VALIDATION_BASE_MARKER: ClassVar[str] = "_contains_validation_base"
     BASE_CLASS: ClassVar[str] = "pydantic.BaseModel"
     BASE_CLASS_NAME: ClassVar[str] = "BaseModel"
     _READ_BY_PYDANTIC: ClassVar[bool] = True
@@ -2147,11 +2197,10 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             id(model): runtime_validations[index] for index, model in enumerate(runtime_models)
         }
         plans_capabilities = any(
-            runtime_validation.property_count or runtime_validation.constant_types
-            for runtime_validation in runtime_validations
+            any(_python_layer_rules(runtime_validation)) for runtime_validation in runtime_validations
         )
         uses_generated_generic_base_class = cls._has_generated_generic_base_class(models)
-        local_helpers: tuple[bool, ...] | None = (True, False, False)
+        local_helpers: tuple[bool, ...] | None = _CORE_CAPABILITIES
         if not plans_capabilities:
             local_model_ids = {id(model) for model in models}
             for model in runtime_models:
@@ -2315,14 +2364,13 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     ) -> None:
         """Add imports only when this module renders a shared runtime helper.
 
-        ``local_helpers`` says whether the module renders the core, the property-count and the constant-type helper.
+        ``local_helpers`` says whether the module renders each helper layer (``_HELPER_LAYER_NAMES``).
         """
-        has_local_core_helper, has_local_property_count_helper, has_local_constant_types_helper = local_helpers
+        has_local_core_helper, _, has_local_constant_types_helper, _, has_local_contains_helper = local_helpers
         additional_imports = model._additional_imports  # noqa: SLF001
         helper_imports = (IMPORT_MODEL_VALIDATOR, IMPORT_ANY, IMPORT_CLASSVAR)
         if (
-            has_local_property_count_helper
-            or has_local_constant_types_helper
+            any(local_helpers[1:])
             or not cls._has_custom_schema_runtime_validation_helper(model)
             or (model.custom_template_dir is not None and not overrides_builtin_templates(model.custom_template_dir))
         ):
@@ -2332,12 +2380,16 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if not uses_generated_generic_base_class:
             helper_imports += (IMPORT_BASE_MODEL,)
         facts = _helper_template_facts(runtime_validations)
-        if has_local_constant_types_helper or (
-            has_local_core_helper and (facts["has_pattern_properties"] or facts["has_unique_items_regex_paths"])
+        if (
+            has_local_constant_types_helper
+            or has_local_contains_helper
+            or (has_local_core_helper and (facts["has_pattern_properties"] or facts["has_unique_items_regex_paths"]))
         ):
             helper_imports += (Import(import_="re"),)
         if has_local_core_helper and facts["has_pattern_properties"]:
             helper_imports += (IMPORT_TYPE_ADAPTER,)
+        if has_local_core_helper and facts["has_json_value"]:
+            helper_imports += (Import(from_="enum", import_="Enum", alias="_Enum", keep_unaliased=True),)
         for import_ in helper_imports:
             if import_ not in additional_imports:
                 additional_imports.append(import_)
@@ -2367,12 +2419,19 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
 
     @staticmethod
     def _has_core_schema_runtime_validation(runtime_validation: SchemaRuntimeValidation) -> bool:
-        """Return whether a validation needs the existing template-rendered helper."""
+        """Return whether a validation needs the existing template-rendered helper.
+
+        A conditional bounds rule and a contains rule need it for the JSON value of a Python value
+        (``_json_schema_json_value``) and the JSON equality of a condition or a matcher
+        (``_json_schema_conditional_equal``), which their layers call on the core helper they are rendered on.
+        """
         return bool(
             runtime_validation.pattern_properties
             or runtime_validation.required_groups
             or runtime_validation.conditional_required
             or runtime_validation.unique_items
+            or runtime_validation.conditional_bounds
+            or runtime_validation.contains
         )
 
     @classmethod
@@ -2381,15 +2440,28 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
 
         Core helpers are specialized to the rules rendered in their module;
         reusing one could shadow a child rule with a method it does not have.
-        Property-count and constant-type helpers are invariant, so they remain reusable.
+        The Python-rendered layers are invariant, so they remain reusable.
         """
         runtime_validation = _internal_runtime_validation(model)
+        markers = cls._validation_base_markers()[1:]
+        rules = _python_layer_rules(runtime_validation) if runtime_validation else (False,) * len(markers)
         return (
             False,
-            bool(runtime_validation and runtime_validation.property_count)
-            or bool(model._internal_template_data.get(cls._PROPERTY_COUNT_VALIDATION_BASE_MARKER)),  # noqa: SLF001
-            bool(runtime_validation and runtime_validation.constant_types)
-            or bool(model._internal_template_data.get(cls._CONSTANT_TYPES_VALIDATION_BASE_MARKER)),  # noqa: SLF001
+            *(
+                rule or bool(model._internal_template_data.get(marker))  # noqa: SLF001
+                for rule, marker in zip(rules, markers, strict=True)
+            ),
+        )
+
+    @classmethod
+    def _validation_base_markers(cls) -> tuple[str, ...]:
+        """Return the template data key that records each helper layer of a model's base (``_HELPER_LAYER_NAMES``)."""
+        return (
+            cls._CORE_VALIDATION_BASE_MARKER,
+            cls._PROPERTY_COUNT_VALIDATION_BASE_MARKER,
+            cls._CONSTANT_TYPES_VALIDATION_BASE_MARKER,
+            cls._CONDITIONAL_BOUNDS_VALIDATION_BASE_MARKER,
+            cls._CONTAINS_VALIDATION_BASE_MARKER,
         )
 
     @classmethod
@@ -2403,15 +2475,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         if base_class_name is not None:
             model._set_internal_template_data("schema_runtime_validation_base_class_name", base_class_name)  # noqa: SLF001
         model._set_internal_template_data("schema_runtime_validation_use_base", any(capabilities))  # noqa: SLF001
-        for marker, capability in zip(
-            (
-                cls._CORE_VALIDATION_BASE_MARKER,
-                cls._PROPERTY_COUNT_VALIDATION_BASE_MARKER,
-                cls._CONSTANT_TYPES_VALIDATION_BASE_MARKER,
-            ),
-            capabilities,
-            strict=True,
-        ):
+        for marker, capability in zip(cls._validation_base_markers(), capabilities, strict=True):
             model._set_internal_template_data(marker, capability)  # noqa: SLF001
 
     @classmethod
@@ -2420,12 +2484,11 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         model: DataModel,
         runtime_validation: SchemaRuntimeValidation,
     ) -> tuple[bool, ...]:
-        """Return the helper capabilities required by one generated model: core, property count, constant types."""
+        """Return the helper layers one generated model requires (``_HELPER_LAYER_NAMES``)."""
         return (
             cls._has_core_schema_runtime_validation(runtime_validation)
             or (bool(runtime_validation.property_count) and cls._has_custom_schema_runtime_validation_helper(model)),
-            bool(runtime_validation.property_count),
-            bool(runtime_validation.constant_types),
+            *_python_layer_rules(runtime_validation),
         )
 
     @classmethod
@@ -2490,12 +2553,22 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     ) -> str:
         """Render only the shared helpers needed for local missing capabilities.
 
-        The helper of a set of capabilities is the core helper, or the property-count and then the constant-type layer
-        (``_HELPER_LAYERS``) on the helper of the set without that layer; a set no model needs is named for its layers.
+        The helper of a set of capabilities is the core helper, or its outermost Python-rendered layer
+        (``_HELPER_LAYER_NAMES``) on the helper of the set without that layer; a set no model needs is named for its
+        layers.
         """
         from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (  # noqa: PLC0415
+            render_conditional_bounds_validation_base,
             render_constant_types_validation_base,
+            render_contains_validation_base,
             render_property_count_validation_base,
+        )
+
+        layer_renderers = (
+            render_property_count_validation_base,
+            render_constant_types_validation_base,
+            render_conditional_bounds_validation_base,
+            render_contains_validation_base,
         )
 
         names = dict(helper_base_class_names)
@@ -2511,7 +2584,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 names[capabilities] = cls._get_unique_schema_runtime_validation_base_class_name(
                     base_class_name, suffix, models, set(names.values())
                 )
-            if capabilities == (True, False, False):
+            if capabilities == _CORE_CAPABILITIES:
                 core_runtime_validations = [
                     runtime_validation
                     for runtime_validation in runtime_validations
@@ -2524,7 +2597,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 )
                 continue
             inner = _helper_inner_capabilities(capabilities)
-            render = render_constant_types_validation_base if capabilities[2] else render_property_count_validation_base
+            render = layer_renderers[max(index for index, capability in enumerate(capabilities) if capability) - 1]
             helpers.append(render(names[capabilities], names[inner] if any(inner) else "BaseModel"))
         return "\n\n\n".join(helpers) + "\n"
 
@@ -2698,29 +2771,32 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
                 self._append_internal_template_data("class_body_lines", property_count_line)
 
         from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (  # noqa: PLC0415
+            render_conditional_bounds_rules,
             render_constant_types_rules,
+            render_contains_rules,
             render_unique_items_rules,
         )
 
-        for rule_lines in (
+        rule_lines_by_kind = (
             render_unique_items_rules(runtime_validation.unique_items)
             if runtime_validation.unique_items or runtime_validation.replace_unique_items
             else (),
             render_constant_types_rules(runtime_validation.constant_types)
             if runtime_validation.constant_types or runtime_validation.replace_constant_types
             else (),
-        ):
+            render_conditional_bounds_rules(runtime_validation.conditional_bounds)
+            if runtime_validation.conditional_bounds
+            else (),
+            render_contains_rules(runtime_validation.contains)
+            if runtime_validation.contains or runtime_validation.replace_contains
+            else (),
+        )
+        for rule_lines in rule_lines_by_kind:
             if rule_lines and rule_lines[0] not in self._internal_template_data.get("class_body_lines", ()):
                 for line in rule_lines:
                     self._append_internal_template_data("class_body_lines", line)
 
-        if (
-            runtime_validation.property_count is not None
-            or runtime_validation.unique_items
-            or runtime_validation.replace_unique_items
-            or runtime_validation.constant_types
-            or runtime_validation.replace_constant_types
-        ):
+        if runtime_validation.property_count is not None or any(rule_lines_by_kind):
             self._additional_imports.append(IMPORT_ANY)
             self._additional_imports.append(IMPORT_CLASSVAR)
 

@@ -403,6 +403,7 @@ The following features are tracked in the codebase with their implementation sta
 | `const` | Draft 6 | ✅ Supported | Single constant value constraint |
 | `propertyNames` | Draft 6 | ✅ Supported | Dict key type constraints via pattern, enum, or $ref |
 | `contains` | Draft 6 | ⚠️ Partial | Count constraints are modeled when contains matches every item; general schema-valued contains is not supported |
+| `minContains/maxContains` | 2019-09 | ⚠️ Partial | Count limits on the items `contains` matches (a `contains` needs one match before 2019-09) |
 | `deprecated` | 2019-09 | ⚠️ Partial | Marks schema elements as deprecated |
 | `if/then/else` | Draft 7 | ❌ Not Supported | Conditional schema validation |
 | `contentMediaType/contentEncoding` | Draft 7 | ⚠️ Partial | Content type and encoding hints for strings |

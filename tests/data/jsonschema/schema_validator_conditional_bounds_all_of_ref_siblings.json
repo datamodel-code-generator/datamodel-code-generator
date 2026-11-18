@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Siblings",
+  "type": "object",
+  "$defs": {
+    "Open": {
+      "type": "object"
+    },
+    "Count": {
+      "type": "integer"
+    }
+  },
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "value": {
+      "type": "integer"
+    },
+    "size": {
+      "type": "integer"
+    }
+  },
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "a"
+      }
+    },
+    "required": [
+      "kind"
+    ]
+  },
+  "then": {
+    "allOf": [
+      {
+        "$ref": "#/$defs/Open",
+        "properties": {
+          "value": {
+            "minimum": 10
+          }
+        }
+      }
+    ]
+  },
+  "else": {
+    "properties": {
+      "size": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Count",
+            "minimum": 10
+          }
+        ]
+      }
+    }
+  }
+}

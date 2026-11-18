@@ -245,8 +245,10 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    ConditionalBoundsRule,
     ConditionalRequiredRule,
     ConstantTypesRule,
+    ContainsRule,
     IndependentDeclaredPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     IndependentModelPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     PatternPropertiesRule,
@@ -504,6 +506,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
+    from datamodel_code_generator.model._decisions.tag_value import MappingPath
     from datamodel_code_generator.parser._inherited_schemas import (
         InheritedOrderRow,
         InheritedParentRow,
@@ -1259,11 +1262,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if isinstance(discriminator := extras.get("discriminator"), dict) and isinstance(
             mapping := discriminator.get("mapping"), dict
         ):
-            refs = _union_tags.discriminator_mapping_refs(self, mapping)
-            extras["discriminator"] = {
-                **discriminator,
-                "mapping": _union_tags.located_mapping_paths(self, mapping, refs),
-            }
+            extras["discriminator"] = {**discriminator, "mapping": self._located_mapping(mapping)}
         if self.default_field_extras:
             extras.update(self.default_field_extras)
         if (default_factory := extras.get("default_factory", UNDEFINED)) is not UNDEFINED:
@@ -2117,6 +2116,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             property_count=source.property_count,
             unique_items=[],
         )
+        target.conditional_bounds = [
+            bounds_rule
+            for rule in source.conditional_bounds
+            if all(keep_names(input_names) for input_names, _ in rule.condition)
+            and (
+                bounds_rule := ConditionalBoundsRule(
+                    condition=rule.condition,
+                    then_bounds=tuple(bound for bound in rule.then_bounds if keep_names(bound[0])),
+                    else_bounds=tuple(bound for bound in rule.else_bounds if keep_names(bound[0])),
+                )
+            ).then_bounds
+            + bounds_rule.else_bounds
+        ]
         if target:
             self.extra_template_data[target_path]["schema_runtime_validation"] = target
         self._add_path_rules_validator(target_path, obj, fields, [], is_root_model=is_root_model)
@@ -3014,6 +3026,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
         return _schema_refs.derived_ref(self, value, mapping, name, value)
+
+    def _located_mapping(
+        self, mapping: dict[str, str], *, text: Literal["written", "reference"] = "written"
+    ) -> dict[str, MappingPath]:
+        """Return the paths of a discriminator mapping, each located as the tag passes read it.
+
+        Each path keeps ``text``: the value the mapping writes, or the reference it names
+        (``discriminator_mapping_refs``); its location is the one ``located_mapping_paths`` gives.
+        """
+        refs = _union_tags.discriminator_mapping_refs(self, mapping)
+        return _union_tags.located_mapping_paths(self, mapping if text == "written" else refs, refs)
 
     def _reference_location(self, documents: Container[str], holder: str, ref: str) -> SchemaLocation | None:
         """Return the schema a `$ref` or `$dynamicRef` of a loaded schema names, as the parser resolves it.
@@ -4117,9 +4140,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode] = frozenset(),
         *,
         include_references: bool = True,
+        sibling_yield: Literal["ref-less-copy", "applicator-copy"] = "ref-less-copy",
     ) -> Iterator[JsonSchemaObject]:
         return _schema_validators.iter_schema_validation_sources(
-            self, obj, visited_refs, include_references=include_references
+            self, obj, visited_refs, include_references=include_references, sibling_yield=sibling_yield
         )
 
     def _schema_item_may_accept_container(
@@ -4146,8 +4170,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode],
         property_input_names: Mapping[str, tuple[str, ...]] | None,
     ) -> tuple[
-        list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule | ConstantTypesRule, ...]]],
-        list[UniqueItemsRule | ConstantTypesRule],
+        list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule | ConstantTypesRule | ContainsRule, ...]]],
+        list[UniqueItemsRule | ConstantTypesRule | ContainsRule],
     ]:
         return _schema_validators.get_union_path_branch_rules(self, items, path, visited_refs, property_input_names)
 
@@ -4158,7 +4182,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         visited_refs: frozenset[_TargetNode],
         *,
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule | ContainsRule]:
         return _schema_validators.iter_union_path_rules(
             self, items, path, visited_refs, property_input_names=property_input_names
         )
@@ -4198,7 +4222,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
         *,
         include_properties: bool = False,
-    ) -> Iterator[UniqueItemsRule | ConstantTypesRule]:
+    ) -> Iterator[UniqueItemsRule | ConstantTypesRule | ContainsRule]:
         return _schema_validators.iter_path_rules(
             self, obj, path, visited_refs, property_input_names, include_properties=include_properties
         )

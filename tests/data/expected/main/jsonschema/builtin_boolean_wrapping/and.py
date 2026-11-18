@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections import abc as _collections_abc
+from enum import Enum as _Enum
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, model_validator
