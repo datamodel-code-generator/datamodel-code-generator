@@ -6,6 +6,8 @@ summary = "The standard and practical 20261118 presets add --use-validate-defaul
 refs = ["#7065"]
 surface = ["preset:20261118"]
 covers = [
+    "main/help/color.txt",
+    "main/help/no_color.txt",
     "main/main_recommend_options/recommend_options.stdout.txt",
     "main/main_recommend_options/recommend_options_compares_candidates[candidate-limit].stdout.txt",
     "main/main_recommend_options/recommend_options_compares_candidates[definitions-and-defs].stdout.txt",
@@ -107,8 +109,18 @@ covers = [
     "main/main_recommend_options/recommend_options_without_schema_rules[graphql].stdout.txt",
     "main/main_recommend_options/recommend_options_without_schema_rules[input-model].stdout.txt",
     "main/recommend_options/titled_variants.txt",
+    "main_kr/generate_prompt/basic.txt",
+    "main_kr/generate_prompt/json_output.txt",
+    "main_kr/generate_prompt/with_list_options.txt",
+    "main_kr/generate_prompt/with_options.txt",
+    "main_kr/generate_prompt/with_question.txt",
+    "main_kr/help_shows_new_options.txt",
     "preset_docs/preset_names.txt",
     "preset_docs/presets_json.txt",
     "preset_docs/presets_markdown.txt",
+    "recommender_calibrate_script/calibration_cases[inexpressible].txt",
+    "recommender_calibrate_script/calibration_cases[partial_parallel].txt",
+    "recommender_calibrate_script/calibration_cases[ratio_threshold].txt",
+    "recommender_calibrate_script/calibration_run.txt",
     "skills/datamodel-code-generator/skill_recipes/skill_recommend_options_recipe.txt",
 ]
