@@ -14,12 +14,13 @@
 # maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
 # in a run of the whole tier, on an entry that covers no cell; an entry that names no release of the gate's base is
 # no error and does nothing. Remove the entry once the input stops mattering for the gate's base.
-base = "0.95.0"
+base = "0.97.0"
 
 [[accepted]]
-input = "*"
-aspects = [ "constraints" ]
-match = "^\\[constraints\\] [\\w:]+: .*StringConstraints\\(pattern=.*\\\\\\\\(?:\\\\)?'.* -> .*StringConstraints\\(pattern=.*$"
-reason = "a pattern holding a single quote was written in a raw literal with the quote escaped (r'^it\\'s$'), so the constr or StringConstraints held the pattern with an extra backslash, which Python's re matches the same way but model_json_schema() published, and ECMA-262 engines in unicode mode reject; the raw literal takes a quote the pattern does not hold, and a pattern holding both quotes is a plain literal (same matches: every valid payload parses to the same value; class names, field names and structure stay; the published pattern now equals the schema's)"
-decision = "#6789"
-migration = "pattern-quote-literal"
+input = [ "tests/data/openapi/recursive_ref_discriminator.yaml", "tests/data/openapi/variant_tag_values", "tests/data/openapi/variant_tag_values/*.yaml" ]
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "type" ]
+match = "^\\[type\\] [\\w:]+: Literal\\['\\w+'\\] -> Literal\\[.+\\]$"
+reason = "a variant of a discriminated union whose tag property admits several values, and that no mapping key names, was tagged by its schema name (Literal['Cat']), which refused every document of the variant the schema accepts and accepted the one it rejects; it is tagged by the values no other variant admits (Literal['cat', 'kitty']), so schema-valid documents that were refused now decode (names and structure stay)"
+decision = "#7089"
+migration = "variant-tag-values-of-their-field"
