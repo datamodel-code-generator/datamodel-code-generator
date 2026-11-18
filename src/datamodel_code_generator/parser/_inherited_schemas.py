@@ -2190,7 +2190,7 @@ def iter_inherited_schema_objects(
             raise
         except Exception:  # pragma: no cover  # noqa: BLE001, S112
             continue
-        if (node := _schema_node(parent_schema, resolved_ref)) in visited:  # pragma: no cover
+        if (node := _schema_node(parent_schema, resolved_ref)) in visited:
             continue
         yield parent_schema, visited | {node}, resolved_ref
 

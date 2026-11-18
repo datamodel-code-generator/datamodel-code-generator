@@ -96,7 +96,7 @@ def merge_primitive_schemas_for_allof(
 ) -> JsonSchemaObject | None:
     """Merge primitive schemas for allOf, respecting allof_merge_mode setting."""
     if len(items) == 1:
-        return items[0]  # pragma: no cover
+        return items[0]
 
     formats = {item.format for item in items if item.format}
     if len(formats) > 1:

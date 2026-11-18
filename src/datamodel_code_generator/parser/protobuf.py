@@ -171,7 +171,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
     try:
         import grpc_tools  # noqa: PLC0415
         from grpc_tools import protoc  # noqa: PLC0415
-    except ImportError as exc:  # pragma: no cover
+    except ImportError as exc:
         msg = f"protobuf input requires grpcio-tools. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return protoc, Path(grpc_tools.__file__).parent / "_proto"
