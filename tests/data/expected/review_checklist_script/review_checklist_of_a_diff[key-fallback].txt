@@ -1,0 +1,9 @@
+exit status 0
+Review checklist against base up to main: 1 of 6 items.
+
+1. A site moved into a home reads what it read before [home-keeps-site-reading]
+   Rule (docs/architecture.md): A new exception to a home is a new named row, never an anonymous `if`.
+   Ask: The diff replaces a site's own lookup (a key, a path, a name, a default) with a shared one. Does the shared one read the same at this site, with no fallback, legacy row or default the site did not apply? Where it differs, keep the site's reading as a named row with an input whose output shows it, or argue from the code why no input can tell them apart.
+   Triggered by:
+     src/datamodel_code_generator/parser/base.py:2 replaces `return positions.get(model_key_of(reference), -1) >= index`
+   Pull requests: #6547, #7118

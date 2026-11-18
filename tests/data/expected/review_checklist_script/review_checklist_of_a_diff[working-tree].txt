@@ -1,0 +1,17 @@
+exit status 0
+Review checklist against base: 2 of 6 items.
+
+1. A comparison judges a stand-in for the output [comparison-reads-output]
+   Rule (docs/development-contributing.md): Prefer full expected-file or inline snapshot comparisons for generated output over substring checks.
+   Ask: What does each side of the comparison read: the output this code generates, or a stand-in (a stored file, a signature, a transformed, normalized or masked text)? Name an output change a user would see that the comparison now calls equal, and run it; a normalization replaces only what differs by host or run (paths, commit ids, line numbers of warnings).
+   Triggered by:
+     scripts/_change_records.py:1 adds `def text_problems(base, head, labels):`
+     scripts/_change_records.py:2 adds `return [label for label in labels if base.output(label) != head.output(label)]`
+   Pull requests: #5403, #6121
+
+2. An upgrade-guide entry claims what no run proves [guide-entry-claims]
+   Rule (docs/development-contributing.md): `keep` (the output changes and `keep.flags` restore it
+   Ask: `--verify` runs only the entries with `source = "run"`. For the others, was each claim run: do the `keep.flags` restore the earlier output (every field, not only the one the entry names), do `before` and `after` appear in the outputs?
+   Triggered by:
+     docs/data/migration/unreleased/graphql-typename-property.toml:5 adds `keep = { flags = ["--graphql-no-typename"], note = "The option also leaves out the `typename__` f...`
+   Pull requests: #6832, #7027
