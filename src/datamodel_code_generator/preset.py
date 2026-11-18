@@ -2016,7 +2016,7 @@ def _coerce_preset_name(preset: PresetName | str) -> PresetName:
     """Return a typed preset name or raise a user-facing preset error."""
     try:
         return PresetName(preset)
-    except ValueError as exc:  # pragma: no cover
+    except ValueError as exc:
         names = ", ".join(get_preset_names())
         msg = f"Unknown preset: {stable_repr(preset)}. Available presets: {names}"
         raise PresetError(msg) from exc

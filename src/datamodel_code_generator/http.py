@@ -1198,7 +1198,7 @@ def _get_body(  # noqa: PLR0913, PLR0914
     # Decode the raw entity explicitly. HTTP client charset heuristics must not
     # change how the same locked bytes are interpreted between runs.
     body = response.content
-    if not isinstance(body, bytes):  # pragma: no cover - compatibility for text-only HTTP client test doubles
+    if not isinstance(body, bytes):
         body = response.text.encode(encoding)
     if response_observer is not None:
         # Redirects are transport details. The lock identity remains the

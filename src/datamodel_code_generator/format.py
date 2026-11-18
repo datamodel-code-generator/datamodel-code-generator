@@ -428,7 +428,7 @@ def _get_black_python_version_map() -> dict[PythonVersion, Any]:
     }
 
 
-def is_supported_in_black(python_version: PythonVersion) -> bool:  # pragma: no cover
+def is_supported_in_black(python_version: PythonVersion) -> bool:
     """Check if a Python version is supported by the installed black version."""
     return python_version in _get_black_python_version_map()
 
@@ -616,10 +616,10 @@ class CodeFormatter:
             black_kwargs: dict[str, Any] = {}
             if wrap_string_literal is not None:
                 experimental_string_processing = wrap_string_literal
-            elif black.__version__ < "24.1.0":  # pragma: no cover
+            elif black.__version__ < "24.1.0":
                 experimental_string_processing = config.get("experimental-string-processing")
             else:
-                experimental_string_processing = config.get("preview", False) and (  # pragma: no cover
+                experimental_string_processing = config.get("preview", False) and (
                     config.get("unstable", False) or "string_processing" in config.get("enable-unstable-feature", [])
                 )
 

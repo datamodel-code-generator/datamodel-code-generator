@@ -1915,7 +1915,7 @@ class ModelResolver:  # noqa: PLR0904
 
         if is_url(ref):
             file_part, path_part = ref.split("#", 1)
-            if file_part == self.root_id:  # pragma: no cover
+            if file_part == self.root_id:
                 return f"{self.current_document}#{path_part}"
             target_url: ParseResult = urlparse(file_part)
             if not (self.root_id and self.current_base_path):
@@ -1924,7 +1924,7 @@ class ModelResolver:  # noqa: PLR0904
             if (target_url.scheme, target_url.netloc) == (
                 root_id_url.scheme,
                 root_id_url.netloc,
-            ):  # pragma: no cover
+            ):
                 target_url_path = Path(target_url.path)
                 target_path = (
                     self.current_base_path
@@ -2224,7 +2224,7 @@ class ModelResolver:  # noqa: PLR0904
             name = self.get_valid_field_name(name, model_type=ModelType.CLASS)
             if singular_name:  # pragma: no cover
                 name = self._singular_name(name, singular_name_suffix)
-            elif unique:  # pragma: no cover
+            elif unique:
                 unique_name = self._get_unique_name(name, path=joined_path)
                 if unique_name != name:
                     duplicate_name = name

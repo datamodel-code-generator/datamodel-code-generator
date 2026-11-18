@@ -1326,14 +1326,14 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-posit
     --reuse-every-reached-input-model-type also a type the Python type of a field names by its import, of which the
     output would otherwise hold an unused copy.
     """
-    if "$defs" not in schema:  # pragma: no cover
+    if "$defs" not in schema:
         return schema
 
     new_defs: dict[str, Any] = {}
     native_paths = None
 
     for def_name, def_schema in schema["$defs"].items():
-        if def_name not in nested_models:  # pragma: no cover
+        if def_name not in nested_models:
             new_defs[def_name] = def_schema
             continue
 

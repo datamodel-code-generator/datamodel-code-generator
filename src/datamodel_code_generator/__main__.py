@@ -241,7 +241,7 @@ class Exit(IntEnum):
     KeyboardInterrupt = _ExitCode.INTERRUPTED
 
 
-def sig_int_handler(_: int, __: Any) -> None:  # pragma: no cover
+def sig_int_handler(_: int, __: Any) -> None:
     """Handle SIGINT signal gracefully."""
     sys.exit(Exit.OK)
 
@@ -1730,7 +1730,7 @@ def _apply_model_run_options(config: Config) -> Exit | None:
         print(_unsupported_black_message(config.target_python_version), file=sys.stderr)  # noqa: T201
         return Exit.ERROR
 
-    if config.debug:  # pragma: no cover
+    if config.debug:
         enable_debug_message()
 
     if config.disable_warnings:
@@ -2421,7 +2421,7 @@ def _main(
 
         argcomplete.autocomplete(arg_parser)
 
-    if args is None:  # pragma: no cover
+    if args is None:
         args = sys.argv[1:]
 
     arg_parser.parse_args(args, namespace=namespace)

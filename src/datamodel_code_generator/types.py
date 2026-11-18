@@ -869,7 +869,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return the module name from the reference source."""
         if self.reference and (module_name := getattr(self.reference.source, "module_name", None)) is not None:
             return module_name
-        return None  # pragma: no cover
+        return None
 
     @property
     def full_name(self) -> str:
@@ -904,12 +904,12 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def find_source(self, source_type: type[SourceT]) -> SourceT | None:  # ty: ignore[invalid-type-form]
         """Find the first reference source matching the given type from all nested data types."""
         for data_type in self.all_data_types:
-            if not data_type.reference:  # pragma: no cover
+            if not data_type.reference:
                 continue
             source = data_type.reference.source
-            if isinstance(source, source_type):  # pragma: no cover
+            if isinstance(source, source_type):
                 return source
-        return None  # pragma: no cover
+        return None
 
     @property
     def all_imports(self) -> Iterator[Import]:
