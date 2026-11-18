@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 
@@ -101,6 +101,10 @@ class Model(BaseModel):
     two_refs: TwoRefs | None = None
     m: NullableMap | None = None
     m2: M2 | None = None
-    path_a: Annotated[PathA | None, Field(validate_default=True)] = 'base'
+    path_a: Annotated[PathA | None, Field(validate_default=True)] = cast(
+        'PathA | None', 'base'
+    )
     root_multi: RootMulti | None = None
-    inline_root: Annotated[InlineRoot | None, Field(validate_default=True)] = 'zz'
+    inline_root: Annotated[InlineRoot | None, Field(validate_default=True)] = cast(
+        'InlineRoot | None', 'zz'
+    )

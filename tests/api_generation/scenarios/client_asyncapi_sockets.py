@@ -339,6 +339,24 @@ def asyncapi_messages(package: ModuleType, lines: list[str]) -> None:
         server.stop()
 
 
+def asyncapi_optional_tags(package: ModuleType, lines: list[str]) -> None:
+    """Receive the messages of a channel told apart by an optional constant property, and one without it."""
+    server = SocketServer()
+    sent = ({"kind": "join", "who": "ann"}, {"kind": "leave", "who": "bob"}, {"who": "cid"})
+    try:
+        (played,) = server.play(Play(talk=_sending(*map(json.dumps, sent))))
+        with (
+            httpx2.Client(verify=client_context()) as http,
+            package.Client(base_url=server.url, http_client=http) as client,
+            client.room.connect() as session,
+        ):
+            lines.extend(f"    room {_message(session.receive())}" for _ in range(2))
+            record(lines, "room without a kind", session.receive)
+        lines.append(played.report())
+    finally:
+        server.stop()
+
+
 def asyncapi_union_sends(package: ModuleType, lines: list[str]) -> None:
     """Send items and a note on a channel whose JSON messages the Pydantic models encode as one union."""
     models = _models(package)

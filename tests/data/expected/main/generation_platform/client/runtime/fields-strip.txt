@@ -1,0 +1,26 @@
+# fields-strip pydantic_v2.BaseModel
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"id":1,"tag":"t"}'
+  create from the fields the class requires = Pet(id=1, tag='t', note=None)
+  create without the tag the class requires ! TypeError: create_pet() missing required field arguments for application/json: 'tag' []
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"id":1,"tag":"t","note":null}'
+  create with a null note = Pet(id=1, tag='t', note=None)
+  > GET https://api.example.com/pages
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pages of a null wrap [] ! ProtocolDataError: ProtocolDataError(operation_id='listPages', reason='missing') [operation_id='listPages', location=BodySelector(pointer='/wrap/data')] missing
+  > GET https://api.example.com/pages
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pages of a wrap ['2']
+# fields-strip dataclasses.dataclass
+  create from the fields the class requires ! TypeError: create_pet() missing required field arguments for application/json: 'note' []
+  create without the tag the class requires ! TypeError: create_pet() missing required field arguments for application/json: 'tag', 'note' []
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"id":1,"tag":"t","note":null}'
+  create with a null note = Pet(id=1, tag='t', note=None)
+  > GET https://api.example.com/pages
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pages of a null wrap [] ! ProtocolDataError: ProtocolDataError(operation_id='listPages', reason='missing') [operation_id='listPages', location=BodySelector(pointer='/wrap/data')] missing
+  > GET https://api.example.com/pages
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pages of a wrap ['2']

@@ -172,6 +172,9 @@ asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/pyd
 asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/typing_TypedDict//*.py
 asyncapi-messages-aliases	main/generation_platform/client/asyncapi-messages-aliases.txt
 asyncapi-messages-aliases	main/generation_platform/client/packages/asyncapi-messages-aliases/pydantic_v2_BaseModel//*.py
+asyncapi-optional-tags	main/generation_platform/client/asyncapi-optional-tags.txt
+asyncapi-optional-tags	main/generation_platform/client/packages/asyncapi-optional-tags/dataclasses_dataclass//*.py
+asyncapi-optional-tags	main/generation_platform/client/packages/asyncapi-optional-tags/pydantic_v2_BaseModel//*.py
 asyncapi-perspective	main/generation_platform/client/asyncapi-perspective.txt
 asyncapi-perspective	main/generation_platform/client/packages/asyncapi-perspective/pydantic_v2_BaseModel//*.py
 asyncapi-relative-v2	main/generation_platform/client/asyncapi-relative-v2.txt
@@ -267,6 +270,12 @@ fields-cycle	main/generation_platform/client/fields-cycle.txt
 fields-errors	main/generation_platform/client/fields-errors.txt
 fields-optional-models	main/generation_platform/client/fields-optional-models.txt
 fields-optional-models	main/generation_platform/client/packages/fields-optional-models/pydantic_v2_BaseModel//*.py
+fields-strip	main/generation_platform/client/fields-strip.txt
+fields-strip	main/generation_platform/client/packages/fields-strip/dataclasses_dataclass//*.py
+fields-strip	main/generation_platform/client/packages/fields-strip/pydantic_v2_BaseModel//*.py
+fields-strip-nullable	main/generation_platform/client/fields-strip-nullable.txt
+fields-strip-nullable	main/generation_platform/client/packages/fields-strip-nullable/pydantic_v2_BaseModel//*.py
+fields-strip-nullable	main/generation_platform/client/packages/fields-strip-nullable/pydantic_v2_dataclass//*.py
 fields-structural	main/generation_platform/client/fields-structural.txt
 fields-structural	main/generation_platform/client/packages/fields-structural/dataclasses_dataclass//*.py
 fields-structural	main/generation_platform/client/packages/fields-structural/typing_TypedDict//*.py

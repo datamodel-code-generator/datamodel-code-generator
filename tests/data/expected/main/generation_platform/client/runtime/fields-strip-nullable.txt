@@ -1,0 +1,8 @@
+# fields-strip-nullable pydantic_v2.BaseModel, pydantic_v2.dataclass
+  create without the nullable property ! TypeError: create_pet() missing required field arguments for application/json: 'dn' []
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"id":1,"dn":null}'
+  create with a null nullable property = Pet(id=1, dn=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 17] b'{"id":1,"dn":"d"}'
+  create with a nullable property = Pet(id=1, dn=None)

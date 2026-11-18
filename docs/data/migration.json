@@ -1375,6 +1375,25 @@
      "cli-option.generate-client"
     ]
    },
+   "after": "tag: str,",
+   "before": "tag: str | UNSET = UNSET,",
+   "id": "client-fields-follow-the-constructor",
+   "kind": "experimental",
+   "refs": [
+    "#7069"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "With `--generate-client` and `--strip-default-none`, a property the schema leaves optional whose Pydantic model field has no default (`tag: str | None`) is a required field argument of the call that sends the body (`tag: str`, README `tag (required)`, `FieldArguments` flag true): `create_pet(id=1)` raises `TypeError: create_pet() missing required field arguments for application/json: 'tag'` before any request, where it raised `DecodeError(reason='unencodable')` from the model. A property whose schema type includes null (OpenAPI 3.1 `type: [string, \"null\"]`) keeps its `= None` default and stays optional; an OpenAPI 3.0 `nullable: true` property, which the model writes without a default, becomes required like the others. The same holds for the `pydantic_v2.dataclass` output: an OpenAPI 3.0 optional `nullable: true` property with `default: null` under `--strip-default-none` becomes required (the class writes `dn: str | None` without a default). A required property marked `x-is-classvar` (`--field-include-all-keys`) becomes optional in the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` outputs, because a `ClassVar` is not a constructor argument. An AsyncAPI channel whose messages are told apart by such a property (`kind: {const: join}`, optional) routes received messages by it (`MessageRoute(..., tag='join')`) instead of decoding them as the union of the messages' models: a message without it is refused as `missing` instead of `value`, and a message whose `kind` is null, which the union decoder accepted as the first member, is refused with reason `null`. Server-sent event streams under `--strip-default-none --force-optional` route events by the body tag (`BodySelector(pointer=\"/type\")`) instead of one union codec. The other backends already followed their classes.",
+   "title": "Generated clients take a body field as required exactly where the model's constructor requires it"
+  },
+  {
+   "action": "review",
+   "affects": {
+    "experimental": [
+     "cli-option.generate-client"
+    ]
+   },
    "id": "client-name-collision-report",
    "kind": "experimental",
    "refs": [
@@ -1491,6 +1510,28 @@
    "source": "release-note",
    "summary": "Whether a form body, a client's form or query object parameter, or a multipart body typed by a Pydantic model or dataclass takes members besides its properties now also follows the configuration the model applies, with its bases as Pydantic applies them: where it says `extra='forbid'` or `'ignore'` (a class that sets no `extra` ignores them) the body takes none; otherwise, `--extra-fields allow` included, it takes what the first `additionalProperties` among its schema and its bases' gives, as before, and nothing changes under `--extra-fields allow`. An object without `additionalProperties`, or any object under `--extra-fields forbid` or `ignore`, no longer has `additional=FieldPlan('', 'string')` in a client's form or query plan, `additional=PartPlan('', 'json')` (and its `parts=`) in a client's multipart body sent whole, nor `additional=JsonPart('', TypeAdapter(object), untyped=True)` in a server's; the model held no other members to write, and unknown parts still reach it on a server (`forbid` answers 422, `ignore` drops them), so the requests sent and the values handled do not change, and a client call option no longer counts the undeclared names of such an object as written by its pagination. With `--extra-fields ignore` or `forbid`, a server no longer checks other members against the type their `additionalProperties` gives them: under `ignore` the model drops them and the request is served, under `forbid` it is still answered with 422 (`extra_forbidden` or `unexpected_keyword_argument`). With both backends, a multipart body whose other members are typed as an object gets `x=abc` served under `ignore` (before 422 `json_invalid`, and `model_type` or `dict_type` for `x=5`); with `pydantic_v2.dataclass`, a URL-encoded or multipart body typed `{type: integer}` gets `x=abc` served too (before 422 `int_parsing`). Three refusals go. A URL-encoded body whose `additionalProperties` is an object, refused under `ignore` and `forbid` (\"A parameter value needs one unambiguous scalar kind\"), now generates. Under the default options, `ignore` and `forbid`, a URL-encoded or multipart body with an exploded object member without `additionalProperties` beside another such member or beside a member that allows other properties (such as a map), and one beside a `deepObject` member, which were refused (\"The exploded form member ... allows other properties ...\"), now generate: `size=1&k=v&j=w` reaches the handler as `page=Page(size=1)`, `filter={'k': 'v', 'j': 'w'}`. Under `--extra-fields ignore` and `forbid` this also holds for exploded members typed by a model whose schema says `additionalProperties: true` or gives a schema. A multipart body the client sends as parts (`MultipartBody`) and a multipart response it reads into `MultipartData` keep the other parts the schema allows, as before. With `pydantic_v2.dataclass`, a dataclass with a configuration of its own that sets no `extra` no longer takes the typed other members of a base's schema.",
    "title": "Generated clients and servers no longer take other members of a form or multipart body, or a client query object, that the model drops"
+  },
+  {
+   "action": "none",
+   "affects": {
+    "options": [
+     "--use-annotated"
+    ],
+    "output_model_types": [
+     "pydantic_v2.BaseModel"
+    ]
+   },
+   "after": "flags: Annotated[Flags | None, Field(validate_default=True)] = cast('Flags | None', {'enabled': False})",
+   "before": "flags: Annotated[Flags | None, Field(validate_default=True)] = {'enabled': False}",
+   "id": "annotated-model-default-cast",
+   "kind": "output-text",
+   "refs": [
+    "#7016"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "Under `--use-annotated`, a field whose type holds a model or a root model, which Pydantic validates its default into (`validate_default=True`), was assigned the schema default as it is in the class body: an object or an array for a model, a list or dict of objects for a list or dict of models, an object for a union of models, a number or string for a root model such as a constrained `integer`, or a string for a union of a model with a format such as a URL or a date. mypy (with the Pydantic plugin) and pyright expect the field's type there, so both reported the assignment. Such a value is now written as `cast('<the field type>', <value>)`, and the module imports `cast` from `typing`. Pydantic still validates the value at instantiation (`validate_default=True` is unchanged), so the models behave as before: the same values, the same JSON Schema defaults, the same error for a default the model rejects. A default the type already takes, such as an empty list for a list of models, a string for a union with `str` or enum members for a list of enums (`--set-default-enum-member`), is written as before.",
+   "title": "`--use-annotated` casts a model field's default to the field's type"
   },
   {
    "action": "none",
