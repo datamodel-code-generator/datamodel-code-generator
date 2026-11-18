@@ -1,0 +1,86 @@
+# discriminator-values typing.TypedDict
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level 1 = {'level': 1, 'since': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level 2 = {'level': 2, 'certified': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":"Basic","since":"2024-01-02"}', truncated=False, cause=KeyError('Basic')] invalid_value
+  > GET https://api.example.com/ranks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  rank 1 = {'rank': 1, 'since': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/ranks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  rank 2 = {'rank': 2, 'certified': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+  > GET https://api.example.com/switches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  switch on = {'enabled': True, 'since': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/switches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  switch off = {'enabled': False, 'until': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+  > GET https://api.example.com/animals
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  animal cat = {'kind': 'cat', 'born': datetime.date(2024, 1, 2)}
+  > GET https://api.example.com/animals
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  animal dog = {'kind': 'dog', 'fed': datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)}
+# discriminator-values dataclasses.dataclass
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level 1 = Basic(level=1, since=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level 2 = Expert(level=2, certified=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":"Basic","since":"2024-01-02"}', truncated=False, cause=KeyError('Basic')] invalid_value
+  > GET https://api.example.com/ranks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  rank 1 = Junior(rank=1, since=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/ranks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  rank 2 = Senior(rank=2, certified=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+  > GET https://api.example.com/switches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  switch on = On(enabled=True, since=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/switches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  switch off = Off(enabled=False, until=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+  > GET https://api.example.com/animals
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  animal cat = Cat(kind=<CatKind.cat: 'cat'>, born=datetime.date(2024, 1, 2))
+  > GET https://api.example.com/animals
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  animal dog = Dog(kind=<DogKind.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc))
+# discriminator-values pydantic_v2.BaseModel
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level 1 = LevelsGetResponse(root=Basic(level=1, since=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level 2 = LevelsGetResponse(root=Expert(level=2, certified=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))
+  > GET https://api.example.com/levels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  level named as its schema ! DecodeError: DecodeError(status_code=200, operation_id='getLevel', reason='invalid_value') [operation_id='getLevel', body_bytes=b'{"level":"Basic","since":"2024-01-02"}', truncated=False, cause=1 validation error for LevelsGetResponse
+  Input tag 'Basic' found using 'level' does not match any of the expected tags: 1, 2 [type=union_tag_invalid, input_value={'level': 'Basic', 'since': '2024-01-02'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid] invalid_value
+  > GET https://api.example.com/ranks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  rank 1 = RanksGetResponse(root=Junior(rank=1, since=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/ranks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  rank 2 = RanksGetResponse(root=Senior(rank=2, certified=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))
+  > GET https://api.example.com/switches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  switch on = SwitchesGetResponse(root=On(enabled=True, since=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/switches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  switch off = SwitchesGetResponse(root=Off(enabled=False, until=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))
+  > GET https://api.example.com/animals
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  animal cat = AnimalsGetResponse(root=Cat(kind=<CatKind.cat: 'cat'>, born=datetime.date(2024, 1, 2)))
+  > GET https://api.example.com/animals
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  animal dog = AnimalsGetResponse(root=Dog(kind=<DogKind.dog: 'dog'>, fed=datetime.datetime(2024, 1, 2, 3, 4, 5, tzinfo=TzInfo(0))))

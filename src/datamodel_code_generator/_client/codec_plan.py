@@ -20,7 +20,6 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralType,
     UnionType,
-    literal_text,
 )
 from datamodel_code_generator._target_operations import UNSPELLABLE, Refusal, native_type
 from datamodel_code_generator._target_types import container_slot, is_none, is_wrapper, present
@@ -137,7 +136,7 @@ class Choice:
 
     kinds: tuple[tuple[JSONKind, Shape], ...]
     tag: str | None = None
-    tags: tuple[tuple[str, SymbolId], ...] = ()
+    tags: tuple[tuple[str | int | bool, SymbolId], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -334,12 +333,8 @@ class _Planner:
 
     def discriminator(
         self, models: list[SymbolId], declared: UnionDiscriminator | None
-    ) -> tuple[str | None, tuple[tuple[str, SymbolId], ...]]:
-        """Return a union's discriminator property and the model of each of its values.
-
-        A model takes the values of its literal field of that property, else the values mapped to it, else the last
-        segment of the path of the schema it is generated from.
-        """
+    ) -> tuple[str | None, tuple[tuple[str | int | bool, SymbolId], ...]]:
+        """Return a union's discriminator property and the model of each of its values: the tags the model reads."""
         if declared is None:
             self.report(
                 f"The union of {english_list((self.symbols[item].name for item in models), 'and', 'each')} "
@@ -347,21 +342,10 @@ class _Planner:
             )
             return None, ()
         tag = declared.property_name
-        mapped: dict[str, list[str]] = {}
-        for name, target in declared.mapping:
-            mapped.setdefault(target, []).append(name)
-        tags: dict[str, SymbolId] = {}
+        variants = dict(declared.variants)
+        tags: dict[str | int | bool, SymbolId] = {}
         for symbol in models:
-            field = next((field for field in self.facts.fields(symbol) if field.wire_name == tag), None)
-            type_ = None if field is None else field.type
-            values = (
-                [text for item in type_.values if (text := literal_text(item)) is not None]
-                if isinstance(type_, LiteralType)
-                else []
-            )
-            source = self.symbols[symbol].source
-            values = values or mapped.get(source, []) or [source.rsplit("/", 1)[-1]]
-            for name in values:
+            for name in variants.get(self.symbols[symbol].source, ()):
                 if name in tags and tags[name] != symbol:
                     self.report(f"The discriminator {tag} gives {name} to two union models")
                 tags[name] = symbol

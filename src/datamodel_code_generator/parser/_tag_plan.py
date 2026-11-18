@@ -162,6 +162,7 @@ __all__ = [
     "collapsed_duplicate",
     "collapsed_item_site",
     "declared_union_tags",
+    "declared_variant_tags",
     "field_namer",
     "has_any_variant",
     "has_reused_variant",
@@ -982,6 +983,23 @@ class UnionView:
     def inherited_enum(self, variant: DataModel) -> Enum | None:
         """Return the Enum typing the tag field a variant inherits (``_inherited_tag_enum``)."""
         return _inherited_tag_enum(variant, self.names.field_name, self.mode)
+
+
+def declared_variant_tags(
+    property_name: str, mapping: dict[str, str], members: Sequence[DataType], namer: FieldNamer, reading: TagReading
+) -> Iterator[tuple[DataModel, list[DiscriminatorValue]]]:
+    """Yield the variants of a union that declares a discriminator, each with its tags as L5 reads them at a site.
+
+    The union's field writes no ``discriminator=`` (``_SITE_MODES``). Read on the finished models, a variant the union
+    lists takes the tags of ``variant``, the tag field the union wrote first; a variant a nested choice gives it takes
+    those of ``nested``. The mapping paths keep the location of their variants' schemas (``located_mapping``).
+    """
+    view = UnionView(
+        site_names(property_name, namer), located_mapping(mapping, members), _SITE_MODES[False][1], reading
+    )
+    for data_type, listed, _ in _iter_discriminator_data_types(members):
+        if data_type.reference and isinstance(variant := data_type.reference.source, DataModel):
+            yield variant, view.tags("variant" if listed else "nested", variant)
 
 
 def _is_any_variant(data_type: DataType) -> bool:

@@ -5897,6 +5897,32 @@
       "reuse_model": true
     }
   },
+  "discriminator-values": {
+    "input": "discriminator-values.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "output_datetime_class": "datetime",
+      "use_enum_values_in_discriminator": true
+    },
+    "config": {}
+  },
+  "discriminator-shared-tags": {
+    "input": "discriminator-shared-tags.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "modules": false
+  },
   "discriminator-forms": {
     "input": "discriminator-forms.yaml",
     "backends": [

@@ -75,7 +75,7 @@ class Choice:
 
     kinds: tuple[tuple[JSONKind, Shape], ...] = ()
     tag: str | None = None
-    tags: tuple[tuple[str, type], ...] = ()
+    tags: tuple[tuple[str | int | bool, type], ...] = ()
 
 
 def _kind(value: object) -> JSONKind:
@@ -151,7 +151,7 @@ class TypedDictCodec(ModelCodec[T]):
             selected = dict(shape.kinds).get(kind)
             if kind == "object" and shape.tag is not None:
                 tag = cast("Mapping[str, object]", value)[shape.tag]
-                selected = dict(shape.tags)[cast("str", tag)]
+                selected = dict(shape.tags)[cast("str | int | bool", tag)]
             return self._load(value, selected)
         if isinstance(shape, Items):
             return _CONTAINERS[shape.kind](self._load(item, shape.item) for item in cast("list[object]", value))

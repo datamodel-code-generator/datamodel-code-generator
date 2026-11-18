@@ -1065,6 +1065,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     ),
     "discriminator-variants": ("discriminator-variants", ("typing.TypedDict",), copied_unions),
     "discriminator-reuse": ("discriminator-reuse", ("typing.TypedDict", "dataclasses.dataclass"), copied_unions),
+    "discriminator-values": (
+        "discriminator-values",
+        ("typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.BaseModel"),
+        unions,
+    ),
 }
 
 

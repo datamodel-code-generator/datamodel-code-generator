@@ -29,6 +29,15 @@ _MEMBERS: Final = (
     ("get_holder", "holder square", {"b": 1, "shape": {"side": 2}}),
     ("get_inline", "inline circle", {"b": 1, "shape": {"radius": 1}}),
     ("get_inline", "inline square", {"b": 1, "shape": {"side": 2}}),
+    ("get_level", "level 1", {"level": 1, "since": "2024-01-02"}),
+    ("get_level", "level 2", {"level": 2, "certified": "2024-01-02T03:04:05Z"}),
+    ("get_level", "level named as its schema", {"level": "Basic", "since": "2024-01-02"}),
+    ("get_rank", "rank 1", {"rank": 1, "since": "2024-01-02"}),
+    ("get_rank", "rank 2", {"rank": 2, "certified": "2024-01-02T03:04:05Z"}),
+    ("get_switch", "switch on", {"enabled": True, "since": "2024-01-02"}),
+    ("get_switch", "switch off", {"enabled": False, "until": "2024-01-02T03:04:05Z"}),
+    ("get_animal", "animal cat", {"kind": "cat", "born": "2024-01-02"}),
+    ("get_animal", "animal dog", {"kind": "dog", "fed": "2024-01-02T03:04:05Z"}),
 )
 _COPIES: Final = (
     ("get_child", "inherited pet c", {"pet": {"kind": "c", "mane": True}, "pets_by_name": {"a": {"kind": "d"}}}),
