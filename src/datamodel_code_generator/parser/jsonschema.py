@@ -188,6 +188,7 @@ from datamodel_code_generator._source import (
     load_data,  # noqa: F401  # Preserve the established parser.jsonschema export.
     load_data_from_path,
 )
+from datamodel_code_generator._source import decoding_from as _decoding_from
 from datamodel_code_generator._url_redaction import named_location, redact_path, redact_reference, redact_url
 from datamodel_code_generator._user_keys import ClassScope, class_key, template_data_keys
 from datamodel_code_generator._user_keys import class_scope as _class_scope_of
@@ -9089,8 +9090,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             raise InvalidFileFormatError(exc, self._input_file_type, source=source_path) from exc
 
     def _load_source_dict(self, source: Source) -> dict[str, YamlValue]:
-        """Load a source into a schema dictionary."""
-        return _schema_documents.load_source_dict(self, source)
+        """Load a source into a schema dictionary, reading the input as decoded where the run hands it over."""
+        with _decoding_from(self._source_context.decoded_input):
+            return _schema_documents.load_source_dict(self, source)
 
     @contextmanager
     def _parsing_session(self, resolve: Callable[[], None] | None = None) -> Generator[None, None, None]:

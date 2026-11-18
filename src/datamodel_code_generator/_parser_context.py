@@ -14,12 +14,16 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datamodel_code_generator._shared_types import DefaultPutDict, ResponseObserver
-    from datamodel_code_generator._source import DirectoryInputFilter
+    from datamodel_code_generator._source import DecodedInput, DirectoryInputFilter
 
 
 @dataclass(frozen=True, slots=True)
 class ParserSourceContext:
-    """Immutable source and reference policy shared by parser entry points."""
+    """Immutable source and reference policy shared by parser entry points.
+
+    ``decoded_input`` is the input as its type inference decoded it, which the first parser of a generation run reads
+    instead of decoding its text again.
+    """
 
     base_path: Path | None = None
     encoding: str = DEFAULT_ENCODING
@@ -37,6 +41,7 @@ class ParserSourceContext:
     http_timeout: float | None = None
     external_ref_mapping: Mapping[str, str] | None = None
     remote_response_observer: ResponseObserver | None = None
+    decoded_input: DecodedInput | None = None
 
     @classmethod
     def of(
@@ -44,6 +49,7 @@ class ParserSourceContext:
         options: Mapping[str, Any] | object,
         remote_lock: Any,
         directory_input_filter: DirectoryInputFilter | None = None,
+        decoded_input: DecodedInput | None = None,
     ) -> ParserSourceContext:
         """Build the policy from a mapping or a config of option values; an option a mapping lacks keeps its default.
 
@@ -55,6 +61,7 @@ class ParserSourceContext:
         return cls(
             **{name: values[name] for name in _SOURCE_OPTION_NAMES if name in values},
             directory_input_filter=directory_input_filter,
+            decoded_input=decoded_input,
             remote_response_observer=remote_lock.record_response if remote_lock is not None else None,
         )
 

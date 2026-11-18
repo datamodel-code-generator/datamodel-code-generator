@@ -37,6 +37,7 @@ from datamodel_code_generator._shared_types import (
     LiteralType,
     _CollapseRootModelsRecursionError,
 )
+from datamodel_code_generator._source import DecodedInput as _DecodedInput
 from datamodel_code_generator._source import (
     _clear_parser_source_data_cache as _clear_parser_source_data_cache,
 )
@@ -45,6 +46,7 @@ from datamodel_code_generator._source import (
     _is_json_text,
     _is_protobuf_text,
     _is_xml_text,
+    _load_json,
     _load_json_document,
     enable_parsed_source_cache,
     load_data,
@@ -66,6 +68,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._source import (
     _read_parser_source_data_from_path as _read_parser_source_data_from_path,
 )
+from datamodel_code_generator._source import decoding_from as _decoding_from
 from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator._url_redaction import redact_path, redact_url
 from datamodel_code_generator._warning_control import held, quiet
@@ -1342,15 +1345,19 @@ def _warn_on_input_string_path_failure(
 def _create_parser_config(
     generate_config: GenerateConfig,
     additional_options: ParserConfigDict,
+    decoded_input: _DecodedInput | None = None,
 ) -> Any:
     """Create the lightweight config for already-validated generation options."""
-    return _create_typed_parser_config(generate_config, _get_internal_parser_config_model(), additional_options)
+    return _create_typed_parser_config(
+        generate_config, _get_internal_parser_config_model(), additional_options, decoded_input
+    )
 
 
 def _configure_parser_config_context(
     parser_config: ParserConfigT,
     values: Mapping[str, Any],
     generate_config: GenerateConfig,
+    decoded_input: _DecodedInput | None = None,
 ) -> ParserConfigT:
     """Attach neutral source and retry policies without importing typed config models."""
     from datamodel_code_generator._parser_context import ParserSourceContext  # noqa: PLC0415
@@ -1359,6 +1366,7 @@ def _configure_parser_config_context(
         values,
         generate_config.remote_lock,
         generate_config._directory_input_filter,  # noqa: SLF001
+        decoded_input,
     )
     if type(parser_config) is _get_internal_parser_config_model():
         return parser_config
@@ -1373,6 +1381,7 @@ def _create_typed_parser_config(
     generate_config: GenerateConfig,
     parser_config_type: type[ParserConfigT],
     additional_options: ParserConfigDict,
+    decoded_input: _DecodedInput | None = None,
 ) -> ParserConfigT:
     """Create a parser config from GenerateConfig with additional options.
 
@@ -1388,7 +1397,7 @@ def _create_typed_parser_config(
     # ``extra="forbid"`` makes model_construct ignore non-parser generation
     # fields without allocating a second filtered dictionary.
     parser_config = parser_config_type.model_construct(**values)
-    return _configure_parser_config_context(parser_config, values, generate_config)
+    return _configure_parser_config_context(parser_config, values, generate_config, decoded_input)
 
 
 def _resolve_schema_version(input_file_type: InputFileType, schema_version: str | None) -> dict[str, Enum | None]:
@@ -1468,7 +1477,7 @@ def _normalize_raw_input(  # noqa: PLR0912
             if input_file_type == InputFileType.Yaml:
                 obj = load_yaml(text)
             elif input_file_type == InputFileType.Json:
-                obj = json.loads(text)
+                obj = _load_json(text)
             else:
                 import ast  # noqa: PLC0415
 
@@ -1638,11 +1647,12 @@ def _build_parser(  # noqa: PLR0913
     schema_version: Mapping[str, Enum | None],
     python_type_expressions: _PythonTypeExpressions | None = None,
     parser_factory: TargetParserFactory | None = None,
+    decoded_input: _DecodedInput | None = None,
 ) -> Any:
     """Build the parser of an input type from its row of `_INPUT_TYPES`, or the target's parser for its input.
 
     The options of a type come before the shared ones, except those of a type that skips root models, which come after
-    them.
+    them. The parser reads the input as decoded (``decoded_input``) instead of decoding its text again.
     """
     row = _INPUT_TYPES[input_file_type]
     graphql = (
@@ -1655,7 +1665,7 @@ def _build_parser(  # noqa: PLR0913
         if row.skips_root_model
         else {**schema_version, **graphql, **additional_options}
     )
-    parser_config = _create_parser_config(config, cast("ParserConfigDict", options))
+    parser_config = _create_parser_config(config, cast("ParserConfigDict", options), decoded_input)
     if parser_factory is not None:
         return parser_factory(source=source, config=parser_config)
     name = (
@@ -2104,7 +2114,7 @@ def _build_generation_parser(
     Every parser takes its own copy of a mapping source and fresh template data (the parser copies the template data it
     is given and never writes it); a parse again takes the ``caches`` it is given (those of the parser before it,
     ``_reparse_caches``; the read-again of YAML 1.1-only numbers without its documents), the first parser those of
-    the run.
+    the run and the input as decoded.
     """
     options = run.parser_options.copy()
     options["extra_template_data"] = _prepare_generation_extra_template_data(run.config)
@@ -2123,6 +2133,7 @@ def _build_generation_parser(
             run.data_model_types,
             schema_version=run.schema_version,
             python_type_expressions=run.python_type_expressions,
+            decoded_input=run.decoded_input if caches is None else None,
         )
     if reference_cache is not None and hasattr(parser, "remote_object_cache"):
         parser.remote_object_cache = reference_cache
@@ -2227,6 +2238,7 @@ class _RunInput(NamedTuple):
     prefetched_source: tuple[Path, bytes] | None
     skip_root_model: bool
     owned_remote_lock: RemoteReferenceLock | None
+    decoded_input: _DecodedInput | None
 
 
 class _GenerationRun(NamedTuple):
@@ -2234,7 +2246,8 @@ class _GenerationRun(NamedTuple):
 
     The parser options are prepared once (``_prepare_parser_common_options``), each parser builds from them
     (``_build_generation_parser``), and every parse again goes through ``_parse_again``; a parse again that changes the
-    config, or the class-key run of ``_parse_generation``, parses a copy of the run with its own config.
+    config, or the class-key run of ``_parse_generation``, parses a copy of the run with its own config. The input as
+    its type inference decoded it (``decoded_input``) is read by the first parser built, and decoded again by the rest.
     """
 
     config: GenerateConfig
@@ -2257,6 +2270,7 @@ class _GenerationRun(NamedTuple):
     emit_settings_path: Path
     owned_remote_lock: RemoteReferenceLock | None
     allow_empty_api: bool
+    decoded_input: _DecodedInput | None
 
 
 def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
@@ -2321,6 +2335,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     diagnostic_source_path: Path | None = None
     prefetched_source = _read_once_input(input_, input_file_type)
     read_once_data = None if prefetched_source is None else prefetched_source[1]
+    decoded_input: _DecodedInput | None = None
     if input_file_type == InputFileType.Auto:
         try:
             match input_:
@@ -2351,7 +2366,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         try:
             with _warn_on_input_string_path_failure(input_):
                 assert isinstance(input_text_, str)
-                input_file_type, swagger_2 = _infer_input(input_text_)
+                input_file_type, swagger_2, decoded_input = _infer_input(input_text_)
         except Exception as exc:
             raise InvalidFileFormatError(exc) from exc
         else:
@@ -2366,8 +2381,10 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             if isinstance(input_, Path) and not input_.is_dir() and input_file_type not in RAW_DATA_TYPES:
                 input_text = input_text_
                 diagnostic_source_path = Path(input_.name)
+            if isinstance(input_, list) or (isinstance(input_, Path) and input_.is_dir()):
+                decoded_input = None
 
-    with _warn_on_input_string_path_failure(input_):
+    with _warn_on_input_string_path_failure(input_), _decoding_from(decoded_input):
         input_text = _normalize_raw_input(input_, input_text, input_file_type, config, read_once_data)
 
     if input_file_type == InputFileType.MCPTools:
@@ -2393,6 +2410,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         prefetched_source,
         skip_root_model,
         owned_remote_lock,
+        decoded_input,
     )
 
 
@@ -2673,6 +2691,7 @@ def _parse_generation(run: _GenerationRun) -> _ParsedGeneration:
             record = None
         if record is not None:
             model_name_keys = translate_class_keys(model_name_map, record)
+        run = run._replace(decoded_input=None)
     return _parse_generation_run(run, model_name_keys=model_name_keys)[0]
 
 
@@ -2992,6 +3011,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
         emit_settings_path=emit_settings_path,
         owned_remote_lock=prepared.owned_remote_lock,
         allow_empty_api=allow_empty_api,
+        decoded_input=prepared.decoded_input,
     )
     return run, _parse_generation(run)
 
@@ -3048,56 +3068,63 @@ def infer_input_type(text: str) -> InputFileType:
     return _infer_input(text)[0]
 
 
-def _infer_input(text: str) -> tuple[InputFileType, bool]:  # noqa: PLR0911, PLR0912
-    """Detect the input file type from text content, and whether the input is a Swagger 2.0 document read as data."""
-    from datamodel_code_generator.util import get_yaml_parse_errors  # noqa: PLC0415
+def _infer_input(text: str) -> tuple[InputFileType, bool, _DecodedInput | None]:  # noqa: PLR0911, PLR0912
+    """Detect the input file type from text content, and whether the input is a Swagger 2.0 document read as data.
+
+    Beside them comes the document as decoded where the reader of the type decodes the text the same way: a mapping of
+    OpenAPI, AsyncAPI, JSON Schema, JSON or YAML (the Avro parser reads its text as YAML, whatever the inference read).
+    """
+    from datamodel_code_generator.util import get_yaml_parse_errors, yaml_deprecated_bools_recorded  # noqa: PLC0415
 
     if _is_xml_text(text):
         from datamodel_code_generator._xmlschema_detection import is_xml_schema_text  # noqa: PLC0415
 
         if is_xml_schema_text(text):
-            return InputFileType.XMLSchema, False
+            return InputFileType.XMLSchema, False, None
 
     protobuf_declaration = _has_protobuf_declaration(text)
 
+    yaml_bools: list[str] = []
     if not (is_json_document := (data := _load_json_document(text)) is not None):
         try:
-            data = load_yaml(text)
+            with yaml_deprecated_bools_recorded() as yaml_bools:
+                data = load_yaml(text)
         except get_yaml_parse_errors() as exc:
             if not _is_json_text(text) and _looks_like_csv_text(text):
-                return InputFileType.CSV, False
+                return InputFileType.CSV, False, None
             if protobuf_declaration:
-                return InputFileType.Protobuf, False
+                return InputFileType.Protobuf, False, None
             msg = _infer_input_type_error_message(parse_error=exc)
             raise Error(msg) from exc
     if isinstance(data, dict):
+        decoded = _DecodedInput(text, data, "json" if is_json_document else "yaml", tuple(yaml_bools))
         if is_asyncapi(data):
-            return InputFileType.AsyncAPI, False
+            return InputFileType.AsyncAPI, False, decoded
         if is_openapi(data):
-            return InputFileType.OpenAPI, False
+            return InputFileType.OpenAPI, False, decoded
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro, False
+            return InputFileType.Avro, False, None
         if is_schema(data):
-            return InputFileType.JsonSchema, False
-        return (InputFileType.Json if is_json_document else InputFileType.Yaml), is_swagger_2(data)
+            return InputFileType.JsonSchema, False, decoded
+        return (InputFileType.Json if is_json_document else InputFileType.Yaml), is_swagger_2(data), decoded
     if _is_protobuf_text(text):
-        return InputFileType.Protobuf, False
+        return InputFileType.Protobuf, False, None
     if isinstance(data, list):
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro, False
+            return InputFileType.Avro, False, None
     if isinstance(data, str):
         if _looks_like_csv_text(text):
-            return InputFileType.CSV, False
+            return InputFileType.CSV, False, None
         if protobuf_declaration:
-            return InputFileType.Protobuf, False
+            return InputFileType.Protobuf, False, None
         from datamodel_code_generator._avro_detection import is_avro_schema_data  # noqa: PLC0415
 
         if is_avro_schema_data(data):
-            return InputFileType.Avro, False
+            return InputFileType.Avro, False, None
     msg = _infer_input_type_error_message()
     raise Error(msg)
 

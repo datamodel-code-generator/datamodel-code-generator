@@ -342,18 +342,37 @@ def reject_unsupported_yaml_tags(text: str) -> None:
             raise yaml.YAMLError(msg)
 
 
+_YAML_DEPRECATED_BOOLS_READ: Final[ContextVar[list[str] | None]] = ContextVar(
+    "yaml_deprecated_bools_read", default=None
+)
+
+
+@contextlib.contextmanager
+def yaml_deprecated_bools_recorded() -> Generator[list[str]]:
+    """Record the details of each deprecated YAML bool that PyYAML reads in the block, as it warns for them."""
+    recorded: list[str] = []
+    with context_values({_YAML_DEPRECATED_BOOLS_READ: recorded}):
+        yield recorded
+
+
+def warn_deprecated_yaml_bools(details: Iterable[str]) -> None:
+    """Warn for deprecated YAML bools that PyYAML read, by their details (``yaml_deprecated_bools_recorded``)."""
+    for detail in details:
+        warn_deprecated("config.yaml-non-lowercase-bool", details=detail)
+
+
 def _construct_yaml_bool_with_warning(loader: Any, node: Any) -> bool:
     value = loader.construct_scalar(node)
     if value in _YAML_DEPRECATED_BOOL_VALUES:
         from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
 
-        warn_deprecated(
-            "config.yaml-non-lowercase-bool",
-            details=(
-                f"YAML bool {stable_repr(value)} is deprecated. In a future version, only lowercase booleans will be "
-                "recognized."
-            ),
+        details = (
+            f"YAML bool {stable_repr(value)} is deprecated. In a future version, only lowercase booleans will be "
+            "recognized."
         )
+        if (recorded := _YAML_DEPRECATED_BOOLS_READ.get()) is not None:
+            recorded.append(details)
+        warn_deprecated_yaml_bools((details,))
     return value in {"true", "True", "TRUE"}
 
 

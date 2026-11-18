@@ -3171,6 +3171,7 @@ def test_main_invalid_dotted_unsafe_retry_preserves_legacy(
                 mocker.ANY,
                 schema_version=mocker.ANY,
                 python_type_expressions=mocker.ANY,
+                decoded_input=mocker.ANY,
             )
             expected_calls = [expected_call, expected_call]
         case "source_mismatch":
