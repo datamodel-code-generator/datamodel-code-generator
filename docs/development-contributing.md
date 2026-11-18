@@ -392,7 +392,8 @@ methods on `GenerationStore` are deprecated:
   `update_model_reference(...)`.
 - Report models whose fields, base classes, or data types changed without the
   store, for example through a model method, with `note_changed_models(...)`.
-  A refresh records again only the models the store knows have changed.
+  A refresh records again only the field types and base lists the store knows
+  have changed.
 
 Parser code should not directly assign `data_type.reference`, `model.fields`,
 `model.base_classes`, `model.reference.name`, or call reference child mutation

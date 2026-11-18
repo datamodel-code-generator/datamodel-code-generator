@@ -14,10 +14,10 @@ Contributor guide:
   references, fields, base classes, model paths, or model names. Do not assign
   ``data_type.reference``, ``model.fields``, ``model.base_classes``, or
   ``model.reference.name`` directly in parser code.
-* A refresh records again only the models that changed since the last one.
-  Code that changes a tracked model's fields, base classes, or data types
-  without the store, such as a model method that rewrites its own types, must
-  report the model with ``GraphBuilder.note_changed_models()``.
+* A refresh records again only the field types and base lists that changed
+  since the last one. Code that changes a tracked model's fields, base classes,
+  or data types without the store, such as a model method that rewrites its own
+  types, must report the model with ``GraphBuilder.note_changed_models()``.
 * Read dependency facts through ``GenerationIndex``. Parser post-processing
   should not treat ``Reference.children`` as the source of truth.
 * Treat output template metadata as opaque. Read model-owned dependency
@@ -40,11 +40,11 @@ with the public parser-facing surface, and give ``GraphBuilder`` its delegating 
 
 from __future__ import annotations
 
-from bisect import insort
+from bisect import bisect_left, insort
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import field, replace
-from itertools import chain
+from itertools import chain, groupby, pairwise
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, SupportsIndex, TypeAlias, TypeVar, final, overload
 
@@ -87,7 +87,7 @@ from datamodel_code_generator.parser._sites import (
 from datamodel_code_generator.types import _hint_null
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
     from pathlib import Path
 
@@ -353,9 +353,10 @@ class GenerationFacts:
     """A complete snapshot of derived generation facts.
 
     A model's data type ids increase in traversal order, so ``(owner parse order, id)`` orders occurrences
-    as a full rebuild traverses them. The reference sites of the type trees (`RefSite`) take the id of their
-    occurrence as their key, and ``sites_by_target`` lists them per target in that order, ``base_sites_by_target``
-    the sites of bases among them.
+    as a full rebuild traverses them: an id is its slot, the index of its field or `_BASE_SLOT` for the base list,
+    above a sequence number (`_SLOT_BITS`), so a refresh that records one slot again keeps the ids of the others.
+    The reference sites of the type trees (`RefSite`) take the id of their occurrence as their key, and
+    ``sites_by_target`` lists them per target in that order, ``base_sites_by_target`` the sites of bases among them.
     """
 
     model_facts: dict[ModelId, ModelFact] = field(default_factory=dict)
@@ -611,10 +612,19 @@ class _SiteHistory:
 
 
 _NO_HISTORY: Final = _SiteHistory((), _SiteEffects(), PARSED)
+_SLOT_BITS: Final = 40
+"""The bits of a data type id below its slot."""
+_BASE_SLOT: Final = 1 << 20
+"""The slot of a model's base list, after the slot of every field."""
+_NO_IDS: Final = iter(())
+"""The ids of a slot that had none."""
 
 
 class GenerationIndexBuilder:
     """Record generation facts from live parser objects, in full or for changed models."""
+
+    _slots: Mapping[ModelId, Collection[int]] = MappingProxyType({})
+    """The slots `update` records again of the changed models it names; every slot of the others."""
 
     def __init__(
         self, model_key: Callable[[Reference], ModelKey] = model_key_of, history: _SiteHistory | None = None
@@ -647,9 +657,7 @@ class GenerationIndexBuilder:
         self._record_models()
         previous_sites = self._history.previous_sites()
         for model_id, model_fact in self._facts.model_facts.items():
-            occurrences, sites = self._occurrences(model_fact.model)
-            self._record_data_types(model_id, occurrences)
-            self._record_sites(model_id, sites, previous_sites)
+            self._record_slots(model_id, None, self._walk(model_fact.model, None), previous_sites)
 
         return GenerationBuildResult(
             facts=self._facts,
@@ -672,14 +680,15 @@ class GenerationIndexBuilder:
     ) -> GenerationBuildResult:
         """Record the models appended to ``models`` and the changed and renamed ones in ``facts``.
 
-        Every model is read before ``facts`` changes, so a traversal that raises leaves the facts as they were.
+        A changed model is recorded again in the slots `_slots` names for it, in every slot without. Every model is read
+        before ``facts`` changes, so a traversal that raises leaves the facts as they were.
         """
         self._facts = facts
         self._next_data_type_id = next_data_type_id
         model_facts = facts.model_facts
         first_appended = len(models) - appended_count
         appended = [
-            (parse_order, model, *self._occurrences(model))
+            (parse_order, model, self._walk(model, None))
             for parse_order, model in enumerate(models[first_appended:], first_appended)
         ]
         renamed_facts = [
@@ -687,21 +696,21 @@ class GenerationIndexBuilder:
             for model_id in renamed_model_ids
         ]
         changes = [
-            (model_id, *self._occurrences(model_facts[model_id].model))
+            (model_id, slots := self._slots.get(model_id), self._walk(model_facts[model_id].model, slots))
             for model_id in sorted(changed_model_ids, key=facts.parse_order)
         ]
-        for model_id, (parse_order, model, occurrences, sites) in enumerate(appended, next_model_id):
+        for model_id, (parse_order, model, walk) in enumerate(appended, next_model_id):
             model_ids_by_object[id(model)] = model_id
             self._record_model(model_id, parse_order, model)
-            self._record_data_types_again(model_id, occurrences, sites)
+            self._record_slots(model_id, None, walk)
         if renamed_facts:
             model_facts.update((model_fact.id, model_fact) for model_fact in renamed_facts)
             facts.model_by_path = {model_fact.path: model_id for model_id, model_fact in model_facts.items()}
             facts.model_by_ref_id = {
                 self._model_key(model_fact.reference): model_id for model_id, model_fact in model_facts.items()
             }
-        for model_id, occurrences, sites in changes:
-            self._record_data_types_again(model_id, occurrences, sites)
+        for model_id, slots, walk in changes:
+            self._record_slots(model_id, slots, walk)
         return GenerationBuildResult(
             facts=facts,
             model_ids_by_object=model_ids_by_object,
@@ -724,27 +733,60 @@ class GenerationIndexBuilder:
         facts.model_by_path[model.path] = model_id
         facts.model_by_ref_id[self._model_key(model.reference)] = model_id
 
-    def _occurrences(self, model: DataModel) -> tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]:
-        """Return the data type occurrences of ``model`` and its reference sites, from one walk of its type trees.
+    def _walk(self, model: DataModel, slots: Collection[int] | None) -> _Walk:
+        """Return the occurrences of ``slots`` of ``model``, of every slot for None, and the sites among them."""
+        owner = self._model_key(model.reference)
+        if slots is None:
+            return model_occurrences(model, owner, self._model_key)
+        return _walk_slots(model, sorted(slots), owner, self._model_key)
 
-        Each site comes with the position of its node among the occurrences.
+    def _record_slots(
+        self, model_id: ModelId, slots: Collection[int] | None, walk: _Walk, old_sites: _OldSites | None = None
+    ) -> None:
+        """Record the occurrences ``walk`` holds for ``slots`` of a model (every slot for None) in the ids they had.
+
+        The sites of ``walk`` replace those of the slots; one whose occurrence ``old_sites`` (by default the old sites
+        of the slots) holds keeps its provenance, a new one takes what the history gives it.
         """
-        return model_occurrences(model, self._model_key(model.reference), self._model_key)
+        facts = self._facts
+        recorded = facts.data_types_by_model.get(model_id, ())
+        bounds = [(0, len(recorded))] if slots is None else [_slot_bounds(recorded, slot) for slot in sorted(slots)]
+        old_ids = [key for start, end in bounds for key in recorded[start:end]]
+        if old_sites is None:
+            old_sites = _OldSites(site for key in old_ids if (site := facts.sites.pop(SiteKey(key), None)) is not None)
+        occurrences, sites = walk
+        data_type_ids = self._record_data_types(model_id, old_ids, occurrences)
+        kept = (recorded[end:start] for (_, end), (start, _) in pairwise(((0, 0), *bounds, (len(recorded), 0))))
+        facts.data_types_by_model[model_id] = tuple(sorted(chain(*kept, data_type_ids)))
+        for index, occurrence in sites:
+            key = SiteKey(data_type_ids[index])
+            if (old := old_sites.by_occurrence.get(occurrence)) is None:
+                provenance = self._history.provenance(facts, model_id, occurrence, old_sites)
+                facts.sites[key] = site_of(key, occurrence, provenance)
+            elif old.key == key:
+                facts.sites[key] = old
+            else:
+                facts.sites[key] = site_of(key, occurrence, old.provenance)
 
-    def _record_data_types(self, model_id: ModelId, occurrences: list[DataTypeOccurrence]) -> None:
-        """Record the data type occurrences of a model in the ids it had, replacing only the occurrences that differ.
+    def _record_data_types(
+        self, model_id: ModelId, old_ids: Sequence[DataTypeId], occurrences: list[DataTypeOccurrence]
+    ) -> list[DataTypeId]:
+        """Record ``occurrences`` in the ``old_ids`` of their slots, replacing only those that differ; return the ids.
 
-        Keeping the ids keeps the dictionaries from growing with every change; occurrences beyond the old
-        count get new ids, which still follow every id the model keeps. A full build records each model this way,
-        with no old ids.
+        Keeping the ids keeps the dictionaries from growing with every change: the n-th occurrence of a slot keeps the
+        n-th id of the slot, the occurrences beyond the old count get new ids, which follow every id the slot keeps.
         """
         data_type_facts = self._facts.data_type_facts
-        old_ids = self._facts.data_types_by_model.get(model_id, ())
-        data_type_ids = list(old_ids[: len(occurrences)])
-        for _ in range(len(occurrences) - len(old_ids)):
-            data_type_ids.append(self._next_data_type_id)
-            self._next_data_type_id += 1
-        stale_facts = [data_type_facts[data_type_id] for data_type_id in old_ids[len(occurrences) :]]
+        unused = {slot: iter([*slot_ids]) for slot, slot_ids in groupby(old_ids, key=_slot_of)}
+        data_type_ids: list[DataTypeId] = []
+        for _, owner_field_index, _ in occurrences:
+            slot = _BASE_SLOT if owner_field_index is None else owner_field_index
+            if (data_type_id := next(unused.get(slot, _NO_IDS), None)) is None:
+                data_type_id = slot << _SLOT_BITS | self._next_data_type_id
+                self._next_data_type_id += 1
+            data_type_ids.append(data_type_id)
+        dropped_ids = [*chain.from_iterable(unused.values())]
+        stale_facts = [data_type_facts[data_type_id] for data_type_id in dropped_ids]
         fresh_facts: list[DataTypeFact] = []
         for data_type_id, occurrence in zip(data_type_ids, occurrences, strict=True):
             data_type, owner_field_index, role = occurrence
@@ -762,46 +804,11 @@ class GenerationIndexBuilder:
             self._update_base_owners(model_id, old_ids, occurrences)
         for fact in stale_facts:
             self._forget_fact(fact)
-        for data_type_id in old_ids[len(occurrences) :]:
+        for data_type_id in dropped_ids:
             del data_type_facts[data_type_id]
         for fact in fresh_facts:
             self._record_fact(fact)
-        self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
-
-    def _record_data_types_again(
-        self, model_id: ModelId, occurrences: list[DataTypeOccurrence], sites: list[tuple[int, SiteOccurrence]]
-    ) -> None:
-        """Record a changed or appended model in the ids it had; its ``sites`` replace its old ones."""
-        all_sites = self._facts.sites
-        old_sites = _OldSites(
-            site
-            for data_type_id in self._facts.data_types_by_model.get(model_id, ())
-            if (site := all_sites.pop(SiteKey(data_type_id), None)) is not None
-        )
-        self._record_data_types(model_id, occurrences)
-        self._record_sites(model_id, sites, old_sites)
-
-    def _record_sites(
-        self,
-        model_id: ModelId,
-        sites: list[tuple[int, SiteOccurrence]],
-        old_sites: _OldSites,
-    ) -> None:
-        """Record the sites of a model under the ids of their occurrences.
-
-        A site whose occurrence ``old_sites`` holds keeps its provenance; a new one takes what the history gives it.
-        """
-        facts = self._facts
-        data_type_ids = facts.data_types_by_model[model_id]
-        for index, occurrence in sites:
-            key = SiteKey(data_type_ids[index])
-            if (old := old_sites.by_occurrence.get(occurrence)) is None:
-                provenance = self._history.provenance(facts, model_id, occurrence, old_sites)
-                facts.sites[key] = site_of(key, occurrence, provenance)
-            elif old.key == key:
-                facts.sites[key] = old
-            else:
-                facts.sites[key] = site_of(key, occurrence, old.provenance)
+        return data_type_ids
 
     def _record_fact(self, fact: DataTypeFact) -> None:
         self._facts.data_type_facts[fact.id] = fact
@@ -829,7 +836,7 @@ class GenerationIndexBuilder:
     def _update_base_owners(
         self,
         model_id: ModelId,
-        old_ids: tuple[DataTypeId, ...],
+        old_ids: Sequence[DataTypeId],
         occurrences: list[DataTypeOccurrence],
     ) -> None:
         data_type_facts = self._facts.data_type_facts
@@ -870,7 +877,8 @@ class GenerationIndexBuilder:
         if not site_keys or facts.order_key(next(reversed(site_keys))) < facts.order_key(site_key):
             site_keys[site_key] = None
             return
-        ordered_keys = sorted((*site_keys, site_key), key=facts.order_key)
+        ordered_keys = list(site_keys)
+        insort(ordered_keys, site_key, key=facts.order_key)
         site_keys.clear()
         site_keys.update(dict.fromkeys(ordered_keys))
 
@@ -893,6 +901,21 @@ class GenerationIndexBuilder:
             owners[base_class_id] = model_ids[0]
 
 
+@final
+class _SlotIndexBuilder(GenerationIndexBuilder):
+    """A builder whose `update` records again only the slots the store noted of a model it noted no more of."""
+
+    def __init__(
+        self,
+        model_key: Callable[[Reference], ModelKey],
+        history: _SiteHistory,
+        slots: Mapping[ModelId, Collection[int]],
+    ) -> None:
+        """Create a builder as `GenerationIndexBuilder` does, recording again only ``slots`` of the models they name."""
+        super().__init__(model_key, history)
+        self._slots = slots
+
+
 def model_occurrences(
     model: DataModel, owner: ModelKey, target_of: Callable[[Reference], ModelKey]
 ) -> tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]:
@@ -901,14 +924,41 @@ def model_occurrences(
     The nodes are walked once, in the store's order: each field's tree, then each base class's, every tree in preorder
     with the items of a node before its dict key. A site comes with the position of its node among the occurrences.
     """
+    return _walk_slots(model, (*range(len(model.fields)), _BASE_SLOT), owner, target_of)
+
+
+_Walk: TypeAlias = tuple[list[DataTypeOccurrence], list[tuple[int, SiteOccurrence]]]
+
+
+def _slot_of(data_type_id: DataTypeId) -> int:
+    """Return the slot of a data type id."""
+    return data_type_id >> _SLOT_BITS
+
+
+def _slot_bounds(data_type_ids: Sequence[DataTypeId], slot: int) -> tuple[int, int]:
+    """Return where the ids of ``slot`` start and end among the ascending ids of a model."""
+    return bisect_left(data_type_ids, slot << _SLOT_BITS), bisect_left(data_type_ids, (slot + 1) << _SLOT_BITS)
+
+
+def _walk_slots(
+    model: DataModel, slots: Iterable[int], owner: ModelKey, target_of: Callable[[Reference], ModelKey]
+) -> _Walk:
+    """Return the occurrences of ``slots`` (ascending) of ``model`` and the sites among them.
+
+    A slot is a field's tree, or the trees of the base classes; each is walked as `model_occurrences` walks it.
+    """
     occurrences: list[DataTypeOccurrence] = []
     sites: list[tuple[int, SiteOccurrence]] = []
     kind: RefKind = "alias_body" if model.IS_ALIAS else "type"
-    for field_index, field_ in enumerate(model.fields):
-        field_key = FieldKey(id(field_))
-        _walk_tree(field_.data_type, field_index, "field", field_key, kind, owner, target_of, occurrences, sites)
-    for base_class in model.base_classes:
-        _walk_tree(base_class, None, "base", None, "base", owner, target_of, occurrences, sites)
+    for slot in slots:
+        if slot == _BASE_SLOT:
+            for base_class in model.base_classes:
+                _walk_tree(base_class, None, "base", None, "base", owner, target_of, occurrences, sites)
+        else:
+            field_ = model.fields[slot]
+            _walk_tree(
+                field_.data_type, slot, "field", FieldKey(id(field_)), kind, owner, target_of, occurrences, sites
+            )
     return occurrences, sites
 
 
@@ -1228,6 +1278,7 @@ class GenerationStore:  # noqa: PLR0904
         self._rebuild_required = True
         self._appended_model_ids: set[int] = set()
         self._changed_model_ids: set[ModelId] = set()
+        self._changed_slots: dict[ModelId, set[int]] = {}
         self._renamed_model_ids: set[ModelId] = set()
         self._renames: list[ModelRename] = []
         self._defer_refresh_depth = 0
@@ -1688,21 +1739,25 @@ class GenerationStore:  # noqa: PLR0904
         The facts stay as they are until that refresh, as they did when every refresh rebuilt them all. The new sites of
         ``models`` are overridden, and their revisions move.
         """
-        for model in models:
-            bump_model(model)
-        self._state_model_sites("note_changed_models", *models)
+        self._note_model_revision(*models)
         if self._rebuild_required:
             return
         for model in models:
             if (model_id := self._tracked_model_id(model)) is not None:
                 self._changed_model_ids.add(model_id)
 
-    def _note_changed_data_types(self, data_types: Iterable[object]) -> None:
-        """Record again, at the next refresh, the models whose recorded facts contain ``data_types``.
+    def _note_model_revision(self, *models: object) -> None:
+        """Move the revisions of ``models`` and state that their new sites are overridden (`note_changed_models`)."""
+        for model in models:
+            bump_model(model)
+        self._state_model_sites("note_changed_models", *models)
 
-        A data type that joined a model's tree after the last refresh did so through a mutation that
-        already noted that model, so the recorded owners are the only ones left to note. What reads the data types
-        is bumped (`bump_node`).
+    def _note_changed_data_types(self, data_types: Iterable[object]) -> None:
+        """Record again, at the next refresh, the slots whose recorded facts contain ``data_types``.
+
+        A data type that joined a slot after the last refresh did so through a mutation that already noted that slot
+        or its model, so the recorded occurrences are the only ones left to note. What reads the data types is bumped
+        (`bump_node`).
         """
         data_types = tuple(data_types)
         for data_type in data_types:
@@ -1712,17 +1767,19 @@ class GenerationStore:  # noqa: PLR0904
         facts = self._facts
         for data_type in data_types:
             object_id = id(data_type)
-            if (data_type_ids := facts.shared_data_type_fact_ids.get(object_id)) is not None:
-                self._changed_model_ids.update(
-                    facts.data_type_facts[data_type_id].owner_model for data_type_id in data_type_ids
-                )
-            elif (fact := facts.data_type_fact_by_object.get(object_id)) is not None and fact.data_type is data_type:
-                self._changed_model_ids.add(fact.owner_model)
+            if (data_type_ids := facts.shared_data_type_fact_ids.get(object_id)) is None:
+                if (fact := facts.data_type_fact_by_object.get(object_id)) is None or fact.data_type is not data_type:
+                    continue
+                data_type_ids = (fact.id,)
+            for data_type_id in data_type_ids:
+                owner_model = facts.data_type_facts[data_type_id].owner_model
+                self._changed_slots.setdefault(owner_model, set()).add(_slot_of(data_type_id))
 
     def _clear_pending(self) -> None:
         """Forget the models appended, changed and renamed since the last refresh."""
         self._appended_model_ids.clear()
         self._changed_model_ids.clear()
+        self._changed_slots.clear()
         self._renamed_model_ids.clear()
 
     def refresh(self) -> None:
@@ -1735,8 +1792,8 @@ class GenerationStore:  # noqa: PLR0904
     def refresh_now(self) -> None:
         """Bring facts up to date immediately, even inside a deferred mutation block.
 
-        Appended models and the models that mutations noted are recorded on their own; any other change of the
-        model list rebuilds every fact.
+        Appended models and the slots or models that mutations noted are recorded on their own; any other change of
+        the model list rebuilds every fact.
         """
         if not self._dirty:
             return
@@ -1750,11 +1807,13 @@ class GenerationStore:  # noqa: PLR0904
             )
         else:
             try:
-                result = GenerationIndexBuilder(self.model_key, history).update(
+                changed_model_ids = self._changed_model_ids
+                slots = {key: slots for key, slots in self._changed_slots.items() if key not in changed_model_ids}
+                result = _SlotIndexBuilder(self.model_key, history, slots).update(
                     self._facts,
                     self.models,
                     appended_count=len(self._appended_model_ids),
-                    changed_model_ids=self._changed_model_ids,
+                    changed_model_ids=changed_model_ids.union(slots),
                     renamed_model_ids=self._renamed_model_ids,
                     model_ids_by_object=self._model_ids_by_object,
                     next_model_id=self._next_model_id,
@@ -1912,7 +1971,7 @@ class GenerationStore:  # noqa: PLR0904
         old_data_type = field_.data_type
         field_.replace_data_type(new_data_type)
         self._note_changed_data_types((old_data_type,))
-        self._builder.note_changed_models(field_.parent)
+        self._note_model_revision(field_.parent)
         self._refresh_after_write(refresh)
 
     @deprecated("Use GenerationStore.builder().swap_data_type() instead.", category=None)
@@ -1935,8 +1994,10 @@ class GenerationStore:  # noqa: PLR0904
         """
         self._state_model_sites("apply_const", field_.parent)
         _bump_field_tree(field_)
+        old_data_type = field_.data_type
         field_.process_const()
-        self._builder.note_changed_models(field_.parent)
+        self._note_changed_data_types((old_data_type,))
+        self._note_model_revision(field_.parent)
         self._refresh_after_write(refresh)
 
     @staticmethod
