@@ -13,7 +13,7 @@ from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_python_na
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Hashable, Iterator
 
 
 class PythonTypeExpr:
@@ -495,6 +495,26 @@ def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
             yield from iter_literal_members(child)
 
 
+def iter_union_choices(expression: PythonTypeExpr) -> Iterator[Hashable]:
+    """Yield the types other than None that an annotation joins in its unions, the unions it nests spread.
+
+    An ``Annotated`` type that annotates a union joins the choices of that union; one that annotates another type is
+    a choice of its own. A ``Literal`` yields the set of its values, so equal ``Literal`` types, as Python compares
+    them (in any order), are one choice.
+    """
+    if is_union_python_type_expr(expression):
+        for argument in python_type_expr_arguments(expression):
+            yield from iter_union_choices(argument)
+    elif _annotation_metadata(expression) and is_union_python_type_expr(
+        annotated := python_type_expr_arguments(expression)[0]
+    ):
+        yield from iter_union_choices(annotated)
+    elif is_literal_python_type_expr(expression):
+        yield frozenset(literal_values(expression.arguments))
+    elif expression != python_type_name("None"):
+        yield expression
+
+
 def literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
     """Yield the values of a ``Literal``, those of a ``Literal`` it nests included."""
     for argument in arguments:
@@ -650,6 +670,7 @@ __all__ = [
     "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
+    "iter_union_choices",
     "literal_values",
     "literal_values_as_text",
     "parse_python_type_annotation",
