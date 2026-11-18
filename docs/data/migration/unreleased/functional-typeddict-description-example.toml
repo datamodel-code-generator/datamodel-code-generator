@@ -1,0 +1,13 @@
+[[change]]
+id = "functional-typeddict-description-example"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "A functional TypedDict writes no field examples into its dict literal"
+summary = "A TypedDict written in the functional form (a key that is not a Python name) under --use-field-description-example, also set by the practical presets, now leaves the field examples out as it leaves out the field descriptions, so the module parses instead of failing with a syntax error."
+refs = ["#7000"]
+covers = [
+    "main/openapi/typed_dict_functional_description_example/typed_dict_functional_description_example[option].py",
+    "main/openapi/typed_dict_functional_description_example/typed_dict_functional_description_example[practical-preset].py",
+]

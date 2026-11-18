@@ -423,7 +423,13 @@ class TypedDict(DataModel):
     def all_fields(self) -> Iterator[DataModelFieldBase]:
         """Iterate over all fields, without docstrings the functional dict literal cannot hold."""
         for field in self._flattened_fields():
-            yield field.model_copy(update={"use_field_description": False, "use_inline_field_description": False})
+            yield field.model_copy(
+                update={
+                    "use_field_description": False,
+                    "use_field_description_example": False,
+                    "use_inline_field_description": False,
+                }
+            )
 
     @override
     def fields_evaluated_at_definition(self) -> list[DataModelFieldBase]:
