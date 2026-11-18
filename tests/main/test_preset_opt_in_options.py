@@ -3,7 +3,8 @@
 The 20261027 presets add the opt-in options of 0.87.0 to the 20261017 presets, the 20261104 presets add those of
 0.90.0 to the 20261027 presets, the 20261106 presets add those of 0.91.0 to the 20261104 presets, the 20261111
 presets add those of the next release to the 20261106 presets, the 20261112 presets add the opt-in options after
-them to the 20261111 presets, and the 20261113 presets add the opt-in options after those to the 20261112 presets.
+them to the 20261111 presets, the 20261113 presets add the opt-in options after those to the 20261112 presets, and the
+20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets.
 """
 
 from __future__ import annotations
@@ -128,8 +129,12 @@ OPT_IN_OPTIONS_20261113: tuple[str, ...] = (
 )
 """The options the 20261113 presets set beyond the 20261112 presets."""
 
+OPT_IN_OPTIONS_20261118: tuple[str, ...] = ("--use-validate-default-for-root-model-type-aliases",)
+"""The options the 20261118 presets set beyond the 20261113 presets."""
+
 PRACTICAL_OPT_IN_OPTIONS: dict[str, tuple[str, ...]] = {
     "20261113": ("--untyped-value-type", "pydantic.JsonValue"),
+    "20261118": ("--untyped-value-type", "pydantic.JsonValue"),
 }
 """The options the practical presets of a date set beyond its standard options, for Pydantic output."""
 
@@ -140,6 +145,7 @@ PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261111": ("20261106", OPT_IN_OPTIONS_20261111),
     "20261112": ("20261111", OPT_IN_OPTIONS_20261112),
     "20261113": ("20261112", OPT_IN_OPTIONS_20261113),
+    "20261118": ("20261113", OPT_IN_OPTIONS_20261118),
 }
 """The preset before each dated preset and the options it adds to it."""
 
@@ -525,11 +531,22 @@ CASES_20261113: tuple[pytest.ParameterSet, ...] = (
 )
 """The inputs each opt-in option of the 20261113 presets changes."""
 
+CASES_20261118: tuple[pytest.ParameterSet, ...] = (
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "root_model_type_alias_defaults.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--use-root-model-type-alias", "--no-collapse-root-models"],
+        id="use-validate-default-for-root-model-type-aliases",
+    ),
+)
+"""The inputs each opt-in option of the 20261118 presets changes."""
+
 
 @pytest.mark.parametrize("family", ["standard", "practical"])
 @pytest.mark.parametrize(
     ("release", "input_path", "input_file_type", "extra_args"),
     [
+        *(pytest.param("20261118", *case.values, id=case.id, marks=case.marks) for case in CASES_20261118),
         *(pytest.param("20261113", *case.values, id=case.id, marks=case.marks) for case in CASES_20261113),
         *(pytest.param("20261112", *case.values, id=case.id, marks=case.marks) for case in CASES_20261112),
         *(pytest.param("20261111", *case.values, id=case.id, marks=case.marks) for case in CASES_20261111),
@@ -841,20 +858,27 @@ def test_preset_sets_opt_in_option(
             "--no-read-single-allof-refs-in-their-documents",
             id="read-single-allof-refs-in-their-documents",
         ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "root_model_type_alias_defaults.json",
+            ["--use-root-model-type-alias", "--no-collapse-root-models"],
+            "--use-validate-default-for-root-model-type-aliases",
+            "--no-use-validate-default-for-root-model-type-aliases",
+            id="use-validate-default-for-root-model-type-aliases",
+        ),
     ],
 )
 def test_preset_option_turned_off(
     input_path: Path, extra_args: list[str], option: str, off: str, source: str, tmp_path: Path
 ) -> None:
-    """Turn off one option of a 20261113 preset: the output is that of the preset without the option.
+    """Turn off one option of a 20261118 preset: the output is that of the preset without the option.
 
     The --no- form on the command line, or false for the option in the pyproject.toml that selects the preset, gives
-    the output of the 20261017 preset plus every option the 20261027, 20261104, 20261106, 20261111, 20261112 and
-    20261113 presets add but that one; an alias of the option has a --no- form and a key too.
+    the output of the 20261017 preset plus every option the 20261027, 20261104, 20261106, 20261111, 20261112, 20261113
+    and 20261118 presets add but that one; an alias of the option has a --no- form and a key too.
     """
     project = tmp_path / "project"
     project.mkdir()
-    preset = "standard-py312-20261113"
+    preset = "standard-py312-20261118"
     preset_args = ["--preset", preset, off]
     if source == "pyproject":
         (project / "pyproject.toml").write_text(
@@ -880,6 +904,7 @@ def test_preset_option_turned_off(
             *OPT_IN_OPTIONS_20261111,
             *OPT_IN_OPTIONS_20261112,
             *OPT_IN_OPTIONS_20261113,
+            *OPT_IN_OPTIONS_20261118,
         )
         if item != option
     ]
