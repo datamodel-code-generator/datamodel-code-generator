@@ -1,0 +1,43 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Annotated: import-from@6 [always]; origin typing.Annotated
+  collect: def@9 [always]
+scope function collect#0 'collect': code yes; first line 9
+  opened by a node evaluated in <module>#0
+  values: annassign@10 [function:body@9]; value []
+  names: annassign@11 [function:body@9]; value []
+scope lambda collect.<locals>.<lambda>#0 '<lambda>': code no; first line 10; in never annotation
+  opened by a node evaluated in collect#0
+scope comprehension collect.<locals>.<lambda>.<locals>.<listcomp>#0 '<listcomp>': code no; first line 10; in never annotation
+  opened by a node evaluated in collect.<locals>.<lambda>#0
+  i: comprehension@10 [function:body@9|function:body@10|loop:body@10]
+scope comprehension collect.<locals>.<listcomp>#0 '<listcomp>': code no; first line 11; in never annotation
+  opened by a node evaluated in collect#0
+  j: comprehension@11 [function:body@9|loop:body@11]
+== references
+9:17 list load (evaluated annotation) in <module> -> builtin; origin builtins.list
+9:22 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+10:4 values store in collect -> local collect @10
+10:12 Annotated load (never annotation) in collect -> global <module> @6; origin typing.Annotated
+10:22 list load (never annotation) in collect -> builtin; origin builtins.list
+10:27 int load (never annotation) in collect -> builtin; origin builtins.int
+10:48 i store in collect.<locals>.<lambda>.<locals>.<listcomp> -> local collect.<locals>.<lambda>.<locals>.<listcomp> @10
+10:42 i load in collect.<locals>.<lambda>.<locals>.<listcomp> -> local collect.<locals>.<lambda>.<locals>.<listcomp> @10
+11:4 names store in collect -> local collect @11
+11:11 Annotated load (never annotation) in collect -> global <module> @6; origin typing.Annotated
+11:21 list load (never annotation) in collect -> builtin; origin builtins.list
+11:26 str load (never annotation) in collect -> builtin; origin builtins.str
+11:39 j store in collect.<locals>.<listcomp> -> local collect.<locals>.<listcomp> @11
+11:33 j load in collect.<locals>.<listcomp> -> local collect.<locals>.<listcomp> @11
+12:11 values load in collect -> local collect @10
+12:21 len load in collect -> builtin; origin builtins.len
+12:25 names load in collect -> local collect @11
+uses of <module>:Annotated@6: read@10, read@11
+uses of collect:values@10: read@12
+uses of collect:names@11: read@12
+uses of collect.<locals>.<lambda>.<locals>.<listcomp>:i@10: read@10
+uses of collect.<locals>.<listcomp>:j@11: read@11
+type positions @9: list, int
+type positions @10: Annotated, list, int
+type positions @11: Annotated, list, str
+== code objects: one per scope that compiles on this Python

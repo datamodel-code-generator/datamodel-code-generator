@@ -1,0 +1,19 @@
+"""Review R07, must M4 (80 stored generated files): type statements bind a name and evaluate their value lazily.
+
+min-python: 3.12
+questions: references
+"""
+
+
+type Alias = list[int]
+type Pair[T] = tuple[T, T]
+type Tree = dict[str, Tree | None]
+
+
+class Holder:
+    Unit = int
+    type Inner = list[Unit]
+
+
+def use() -> Alias:
+    return []

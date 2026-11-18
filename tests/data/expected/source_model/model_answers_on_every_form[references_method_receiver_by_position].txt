@@ -1,0 +1,62 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  C: class@7 [always]
+scope class C#0 'C': code yes; first line 7
+  opened by a node evaluated in <module>#0
+  plain: def@8 [always]
+  renamed: def@11 [always]
+  positional_only: def@14 [always]
+  build: def@18 [always]
+  make: def@22 [always]
+  closure: def@25 [always]
+  none: def@31 [always]
+  members: a, b, build, c, closure, d, make, none, plain, positional_only, renamed, value
+scope function C.plain#0 'plain': code yes; first line 8
+  opened by a node evaluated in C#0
+  self: param@8 [function:body@8]
+  receiver: self@8
+scope function C.renamed#0 'renamed': code yes; first line 11
+  opened by a node evaluated in C#0
+  this: param@11 [function:body@11]
+  receiver: this@11
+scope function C.positional_only#0 'positional_only': code yes; first line 14
+  opened by a node evaluated in C#0
+  self: param@14 [function:body@14]
+  value: param@14 [function:body@14]
+  receiver: self@14
+scope function C.build#0 'build': code yes; first line 17
+  opened by a node evaluated in C#0
+  cls: param@18 [function:body@18]
+  receiver: cls@18
+scope function C.make#0 'make': code yes; first line 21
+  opened by a node evaluated in C#0
+  other: param@22 [function:body@22]
+scope function C.closure#0 'closure': code yes; first line 25
+  opened by a node evaluated in C#0
+  self: param@25 [function:body@25]
+  inner: def@26 [function:body@25]
+  receiver: self@25
+scope function C.closure.<locals>.inner#0 'inner': code yes; first line 26
+  opened by a node evaluated in C.closure#0
+scope function C.none#0 'none': code yes; first line 31
+  opened by a node evaluated in C#0
+== references
+9:8 self load in C.plain -> local C.plain @8
+12:8 this load in C.renamed -> local C.renamed @11
+15:8 self load in C.positional_only -> local C.positional_only @14
+15:21 value load in C.positional_only -> local C.positional_only @14
+17:5 classmethod load in C -> builtin; origin builtins.classmethod
+19:8 cls load in C.build -> local C.build @18
+21:5 staticmethod load in C -> builtin; origin builtins.staticmethod
+23:8 other load in C.make -> local C.make @22
+27:12 self load in C.closure.<locals>.inner -> enclosing C.closure @25
+29:15 inner load in C.closure -> local C.closure @26
+uses of C.plain:self@8: attribute-store@9
+uses of C.renamed:this@11: attribute-store@12
+uses of C.positional_only:self@14: attribute-store@15
+uses of C.positional_only:value@14: read@15
+uses of C.build:cls@18: attribute-store@19
+uses of C.make:other@22: attribute-store@23
+uses of C.closure:self@25: attribute-store@27
+uses of C.closure:inner@26: read@29
+== code objects: one per scope that compiles on this Python

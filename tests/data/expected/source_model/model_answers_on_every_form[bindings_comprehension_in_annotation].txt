@@ -1,0 +1,59 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Annotated: import-from@6 [always]; origin typing.Annotated
+  Literal: import-from@6 [always]; origin typing.Literal
+  f: def@9 [always]
+  Box: class@13 [always]
+  TOP: annassign@17 [always]; value 1
+scope comprehension <genexpr>#0 '<genexpr>': code yes; first line 9; in evaluated annotation
+  opened by a node evaluated in <module>#0
+  i: comprehension@9 [loop:body@9]
+scope comprehension <listcomp>#0 '<listcomp>': code 3.11 only; first line 9; in evaluated annotation
+  opened by a node evaluated in <module>#0
+  j: comprehension@9 [loop:body@9]
+scope function f#0 'f': code yes; first line 9
+  opened by a node evaluated in <module>#0
+  x: param@9 [function:body@9]
+  y: param@9 [function:body@9]
+scope class Box#0 'Box': code yes; first line 13
+  opened by a node evaluated in <module>#0
+  size: annassign@14 [always]; value 0
+  members: size
+scope comprehension Box.<dictcomp>#0 '<dictcomp>': code 3.11, 3.14+; first line 14; in evaluated annotation
+  opened by a node evaluated in Box#0
+  k: comprehension@14 [loop:body@14]
+scope comprehension <listcomp>#1 '<listcomp>': code 3.11 only; first line 17; in evaluated annotation
+  opened by a node evaluated in <module>#0
+  m: comprehension@17 [loop:body@17]
+== references
+9:9 Literal load (evaluated annotation) in <module> -> local <module> @6; origin typing.Literal
+9:17 tuple load (evaluated annotation) in <module> -> builtin; origin builtins.tuple
+9:29 i store in <genexpr> -> local <genexpr> @9
+9:23 i load in <genexpr> -> local <genexpr> @9
+9:45 Annotated load (evaluated annotation) in <module> -> local <module> @6; origin typing.Annotated
+9:55 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+9:67 j store in <listcomp> -> local <listcomp> @9
+9:61 j load in <listcomp> -> local <listcomp> @9
+14:4 size store in Box -> local Box @14, else unbound
+14:10 Annotated load (evaluated annotation) in Box -> global <module> @6; origin typing.Annotated
+14:20 int load (evaluated annotation) in Box -> builtin; origin builtins.int
+14:35 k store in Box.<dictcomp> -> local Box.<dictcomp> @14
+14:29 k load in Box.<dictcomp> -> local Box.<dictcomp> @14
+14:26 k load in Box.<dictcomp> -> local Box.<dictcomp> @14
+17:0 TOP store in <module> -> local <module> @17
+17:5 Annotated load (evaluated annotation) in <module> -> local <module> @6; origin typing.Annotated
+17:15 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+17:27 m store in <listcomp> -> local <listcomp> @17
+17:21 m load in <listcomp> -> local <listcomp> @17
+uses of <module>:Annotated@6: read@9, read@14, read@17
+uses of <module>:Literal@6: read@9
+uses of <genexpr>:i@9: read@9
+uses of <listcomp>:j@9: read@9
+uses of Box.<dictcomp>:k@14: read@14, read@14
+uses of <listcomp>:m@17: read@17
+type positions @9: -
+type positions @17: Annotated, int
+type positions @14: Annotated, int
+type positions @9: Literal
+type positions @9: Annotated, int
+== code objects: one per scope that compiles on this Python

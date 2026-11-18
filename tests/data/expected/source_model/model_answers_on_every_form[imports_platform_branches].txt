@@ -1,0 +1,8 @@
+== imports
+import@3 os as os from os in <module> [always]; unconditional
+import@4 platform as platform from platform in <module> [always]; unconditional
+import@5 sys as sys from sys in <module> [always]; unconditional
+import@9 winreg as winreg from winreg in <module> [platform:body@7]
+import@13 msvcrt as msvcrt from msvcrt in <module> [platform:body@12]
+import@15 fcntl as fcntl from fcntl in <module> [platform:body@14]
+== code objects: one per scope that compiles on this Python

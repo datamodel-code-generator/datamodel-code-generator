@@ -1,0 +1,14 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  os: import@3 [always]; origin os
+  os: import@4 [always]; origin os
+  xml: import@5 [always]; origin xml
+  _json: import@6 [always]; origin json
+  Counter: import-from@7 [always]; origin collections.Counter
+  Ordered: import-from@8 [always]; origin collections.OrderedDict
+  f: def@11 [always]
+scope function f#0 'f': code yes; first line 11
+  opened by a node evaluated in <module>#0
+  shutil: import@12 [function:body@11]; origin shutil
+  _chain: import-from@13 [function:body@11]; origin itertools.chain
+== code objects: one per scope that compiles on this Python

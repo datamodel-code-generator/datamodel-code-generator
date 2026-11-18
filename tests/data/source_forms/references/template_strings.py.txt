@@ -1,0 +1,8 @@
+"""Review R31: names read inside the interpolations of a template string (3.14 grammar).
+
+min-python: 3.14
+"""
+
+
+def f(name):
+    return t"hello {name} {len(name)!r:>{name}}"

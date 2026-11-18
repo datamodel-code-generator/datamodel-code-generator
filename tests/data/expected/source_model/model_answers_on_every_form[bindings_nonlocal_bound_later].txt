@@ -1,0 +1,22 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  outer: def@4 [always]
+  chain: def@14 [always]
+scope function outer#0 'outer': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  bump: def@5 [function:body@4]
+  total: assign@9 [function:body@4]; value 0
+  total: augassign@7 [function:body@4|function:body@5]
+scope function outer.<locals>.bump#0 'bump': code yes; first line 5; nonlocal total
+  opened by a node evaluated in outer#0
+scope function chain#0 'chain': code yes; first line 14
+  opened by a node evaluated in <module>#0
+  value: assign@15 [function:body@14]; value 0
+  value: assign@22 [function:body@14|function:body@17|function:body@20]; value 2
+  middle: def@17 [function:body@14]
+scope function chain.<locals>.middle#0 'middle': code yes; first line 17; nonlocal value
+  opened by a node evaluated in chain#0
+  inner: def@20 [function:body@14|function:body@17]
+scope function chain.<locals>.middle.<locals>.inner#0 'inner': code yes; first line 20; nonlocal value
+  opened by a node evaluated in chain.<locals>.middle#0
+== code objects: one per scope that compiles on this Python

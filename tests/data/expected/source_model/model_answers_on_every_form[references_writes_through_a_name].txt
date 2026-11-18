@@ -1,0 +1,20 @@
+== references
+3:0 JUSTIFIED_VIOLATIONS store in <module> -> local <module> @3
+4:0 JUSTIFIED_VIOLATIONS load in <module> -> local <module> @3; origin forms.references.writes_through_a_name.JUSTIFIED_VIOLATIONS
+5:0 JUSTIFIED_VIOLATIONS load in <module> -> local <module> @3; origin forms.references.writes_through_a_name.JUSTIFIED_VIOLATIONS
+6:0 JUSTIFIED_VIOLATIONS load in <module> -> local <module> @3; origin forms.references.writes_through_a_name.JUSTIFIED_VIOLATIONS
+7:0 JUSTIFIED_VIOLATIONS load in <module> -> local <module> @3; origin forms.references.writes_through_a_name.JUSTIFIED_VIOLATIONS
+8:4 JUSTIFIED_VIOLATIONS load in <module> -> local <module> @3; origin forms.references.writes_through_a_name.JUSTIFIED_VIOLATIONS
+9:0 ITEMS store in <module> -> local <module> @9
+10:0 ITEMS load in <module> -> local <module> @9; origin forms.references.writes_through_a_name.ITEMS
+11:0 REGISTRY store in <module> -> local <module> @11
+11:11 type load in <module> -> builtin; origin builtins.type
+12:0 REGISTRY load in <module> -> local <module> @11; origin forms.references.writes_through_a_name.REGISTRY
+13:0 FROZEN store in <module> -> local <module> @13
+17:11 JUSTIFIED_VIOLATIONS load in read -> global <module> @3; origin forms.references.writes_through_a_name.JUSTIFIED_VIOLATIONS
+17:38 FROZEN load in read -> global <module> @13; origin forms.references.writes_through_a_name.FROZEN
+uses of <module>:JUSTIFIED_VIOLATIONS@3: subscript-store@4, subscript-store@5, call:update@6, call:setdefault@7, subscript-del@8, read@17
+uses of <module>:ITEMS@9: call:append@10
+uses of <module>:REGISTRY@11: attribute-store@12
+uses of <module>:FROZEN@13: read@17
+== code objects: one per scope that compiles on this Python

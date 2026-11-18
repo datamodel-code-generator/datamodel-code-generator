@@ -1,0 +1,26 @@
+== references
+5:0 T store in <module> -> local <module> @5
+5:4 TypeVar load in <module> -> local <module> @3; origin typing.TypeVar
+6:0 S store in <module> -> local <module> @6
+6:4 TypeVar load in <module> -> local <module> @3; origin typing.TypeVar
+7:0 Alias store in <module> -> local <module> @7
+7:7 TypeAlias load (evaluated annotation) in <module> -> local <module> @3; origin typing.TypeAlias
+8:0 Forward store in <module> -> local <module> @8
+11:9 object load (evaluated annotation) in <module> -> builtin; origin builtins.object
+12:11 cast load in f -> global <module> @3; origin typing.cast
+12:25 x load in f -> local f @11
+5:23 Later load (string annotation) in <module> -> local <module> @15; origin forms.references.typevar_string_bound_and_cast.Later
+6:17 Later load (string annotation) in <module> -> local <module> @15; origin forms.references.typevar_string_bound_and_cast.Later
+6:26 int load (string annotation) in <module> -> builtin; origin builtins.int
+12:16 Later load (string annotation) in f -> global <module> @15; origin forms.references.typevar_string_bound_and_cast.Later
+7:19 list load (string annotation) in <module> -> builtin; origin builtins.list
+7:19 Later load (string annotation) in <module> -> local <module> @15; origin forms.references.typevar_string_bound_and_cast.Later
+uses of <module>:TypeAlias@3: read@7
+uses of <module>:TypeVar@3: call@5, call@6
+uses of <module>:cast@3: call@12
+uses of <module>:Later@15: read@5, read@6, read@12, read@7
+uses of f:x@11: read@12
+type positions @7: TypeAlias
+type positions @8: list, Later
+type positions @11: object
+== code objects: one per scope that compiles on this Python

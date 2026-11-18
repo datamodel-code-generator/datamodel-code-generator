@@ -1,0 +1,10 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  foo: import@4 [import-error:body@3]; origin foo
+  helper: def@6 [import-error:except@5]
+  helper: def@9 [import-error:else@3]
+scope function helper#0 'helper': code yes; first line 6
+  opened by a node evaluated in <module>#0
+scope function helper#1 'helper': code yes; first line 9
+  opened by a node evaluated in <module>#0
+== code objects: one per scope that compiles on this Python

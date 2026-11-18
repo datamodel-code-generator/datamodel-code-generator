@@ -1,0 +1,27 @@
+== extents
+Expr@1 lines 1
+FunctionDef@4 lines 4-13: function 4/5-13
+Match@5 lines 5-13: match 5/6-13; case 6/7; case 8-11/12; case 13/13
+Return@7 lines 7
+Return@12 lines 12
+Return@13 lines 13
+code lines: 1,4-13
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: -; owner <module>#0; tokens -
+line 4: FunctionDef@4; owner f#0; tokens f#0:header
+line 5: Match@5; owner f#0; tokens f#0:body
+line 6: Match@5; owner f#0; tokens f#0:body
+line 7: Return@7; owner f#0; tokens f#0:body
+line 8: Match@5; owner f#0; tokens f#0:body
+line 9: Match@5; owner f#0; tokens f#0:body
+line 10: Match@5; owner f#0; tokens f#0:body
+line 11: Match@5; owner f#0; tokens f#0:body
+line 12: Return@12; owner f#0; tokens f#0:body
+line 13: Return@13; owner f#0; tokens f#0:body
+header f: 4
+source @1: """match and case clauses: headers, suites and case guards across lines."""
+source @7: return 1
+source @12: return 2
+source @13: return 3
+== code objects: one per scope that compiles on this Python

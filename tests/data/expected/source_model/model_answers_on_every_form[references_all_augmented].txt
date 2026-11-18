@@ -1,0 +1,9 @@
+== references
+8:0 __all__ store in <module> -> local <module> @8,9
+9:0 __all__ load in <module> -> local <module> @8,9
+9:0 __all__ store in <module> -> local <module> @8,9
+10:0 __all__ load in <module> -> local <module> @8,9
+uses of <module>:__all__@8: augassign@9, call:extend@10
+uses of <module>:__all__@9: augassign@9, call:extend@10
+constant __all__: Unreadable(reason='__all__ is not bound exactly once by an assignment', lines=(8, 9))
+== code objects: one per scope that compiles on this Python

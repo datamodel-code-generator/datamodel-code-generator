@@ -1,0 +1,2 @@
+pkg/late.py:2: the compiler rejects the module, which ast reads (from __future__ imports must occur at the beginning of the file)
+pkg/late.py:2: the compiler rejects the module, which ast reads (from __future__ imports must occur at the beginning of the file)

@@ -1,0 +1,5 @@
+== imports
+import@3 os.path as osp from os.path in <module> [always]; unconditional
+import@4 xml.dom as xml from xml.dom in <module> [always]; unconditional
+import@5 xml.etree.ElementTree as xml from xml.etree.ElementTree in <module> [always]; unconditional
+== code objects: one per scope that compiles on this Python

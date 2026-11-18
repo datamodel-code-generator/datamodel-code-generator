@@ -1,0 +1,20 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Exported: import-from@6 [always]; origin forms.references._home.Exported
+  Other: import-from@6 [always]; origin forms.references._home.Other
+  _cls: for@9 [loop:body@9]
+  _cls: del@11 [always]
+== references
+8:0 Exported load in <module> -> local <module> @6; origin forms.references._home.Exported
+8:22 __name__ load in <module> -> global <module>
+9:4 _cls store in <module> -> local <module> @9,11
+9:13 Exported load in <module> -> local <module> @6; origin forms.references._home.Exported
+9:23 Other load in <module> -> local <module> @6; origin forms.references._home.Other
+10:4 _cls load in <module> -> local <module> @9,11
+10:22 __name__ load in <module> -> global <module>
+11:4 _cls del in <module> -> local <module> @9,11
+uses of <module>:Exported@6: attribute-store@8, read@9
+uses of <module>:Other@6: read@9
+uses of <module>:_cls@9: attribute-store@10
+uses of <module>:_cls@11: attribute-store@10
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,14 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  sys: import@6 [always]; origin sys
+  SafeLoader: import-from@9 [import-error:body@8]; origin yaml.CSafeLoader
+  SafeLoader: import-from@11 [import-error:except@10]; origin yaml.SafeLoader
+  LIMIT: assign@14 [version:body@13]; value 12
+  LIMIT: assign@16 [version:else@13]; value 11
+  graphql: import@19 [import-error:body@18]; origin graphql
+== imports
+import@6 sys as sys from sys in <module> [always]; unconditional
+from@9 yaml.CSafeLoader as SafeLoader from yaml in <module> [import-error:body@8]
+from@11 yaml.SafeLoader as SafeLoader from yaml in <module> [import-error:except@10]
+import@19 graphql as graphql from graphql in <module> [import-error:body@18]
+== code objects: one per scope that compiles on this Python

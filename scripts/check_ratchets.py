@@ -17,6 +17,9 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
+- ``private-scope-walk``, in ``scripts`` and ``tests``: a check that reads bindings, scopes, imports or comments with
+  ``ast``, ``symtable`` or ``tokenize`` itself instead of through ``scripts/_source_model.py`` (`scope_walk_sites`),
+  read by origin with the model; the model and its test are not counted.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
   (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
@@ -54,6 +57,9 @@ from pathlib import Path
 
 import tomllib
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._source_model import SourceModule
+
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
@@ -84,6 +90,45 @@ CALL_HINT = re.compile(
 PRIVATE_READERS = {"getattr": 1, "setattr": 1, "hasattr": 1, "delattr": 1, "attrgetter": 0, "__getattribute__": 1}
 WARNING_FILTERS = frozenset({"filterwarnings", "simplefilter", "catch_warnings"})
 MARKERS = {"abnormal_path": "abnormal-path", "no_type_check": "no-type-check"}
+SCOPE_WALK_FORMS = frozenset({
+    "Name",
+    "Store",
+    "Del",
+    "Global",
+    "Nonlocal",
+    "NamedExpr",
+    "MatchAs",
+    "MatchStar",
+    "MatchMapping",
+    "ExceptHandler",
+    "arg",
+    "arguments",
+    "alias",
+    "comprehension",
+    "Lambda",
+    "ListComp",
+    "SetComp",
+    "DictComp",
+    "GeneratorExp",
+    "Import",
+    "ImportFrom",
+    "FunctionDef",
+    "AsyncFunctionDef",
+    "ClassDef",
+    "Assign",
+    "AnnAssign",
+    "AugAssign",
+    "For",
+    "AsyncFor",
+    "With",
+    "AsyncWith",
+    "withitem",
+})
+"""The `ast` classes of bindings, scopes and imports, which `scripts/_source_model.py` reads for every check."""
+SCOPE_WALK_HINT = re.compile(r"\b(?:ast|symtable|tokenize)\b")
+SCOPE_WALK_AREAS = frozenset({"scripts", "tests"})
+SOURCE_MODEL_HOME = frozenset({"scripts/_source_model.py", "tests/test_source_model.py"})
+"""The model and the test of its answers, the one place that reads these forms itself."""
 ALLOWLISTS = (
     (
         "tests/assert_helper_allowlists.py",
@@ -122,6 +167,10 @@ ADVICE = {
     "dynamic-import": "importlib and __import__ hide an import from the lint and the cycle checks: import it by name.",
     "filterwarnings-ignore": "Fix the warning's cause, or assert it with pytest.warns, instead of ignoring it.",
     "abnormal-path": "Reach the path end to end through the public entry points instead of marking it abnormal.",
+    "private-scope-walk": (
+        "Read bindings, references, imports, suppressions and extents through scripts/_source_model.py; add a form "
+        "to tests/data/source_forms/ when it lacks one."
+    ),
     "coverage-config": "An omitted or excluded file is never measured: reach it with tests instead.",
     "ty-config": "A ty rule set below error hides its findings: fix them and keep the rule an error.",
     "pytest-config": "Fix the warning's cause, or assert it with pytest.warns, instead of filtering it for all tests.",
@@ -500,12 +549,53 @@ def _source_sites(data: bytes) -> list[tuple[str, int]]:
     ]
 
 
+def scope_walk_sites(text: str, path: str) -> list[int]:
+    """Return the lines where a module reads bindings, scopes, imports or comments itself, not through the model.
+
+    Read by origin through `scripts/_source_model.py`: a load of one of `SCOPE_WALK_FORMS` from `ast` that is not the
+    callee of a call (building a node reads nothing), a ``visit_<form>`` method, a ``symtable`` read and
+    ``tokenize.COMMENT``; ``import ast as a; a.Name`` counts like ``ast.Name``. None where the module does not parse.
+    """
+    try:
+        model = SourceModule(text, path)
+    except (SyntaxError, ValueError):
+        return []
+    nodes = list(ast.walk(model.tree))
+    callees = {id(node.func) for node in nodes if isinstance(node, ast.Call)}
+    chained = {id(node.value) for node in nodes if isinstance(node, ast.Attribute)}
+    loads = [reference.node for reference in model.references if reference.context == "load"]
+    loads += [node for node in nodes if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load)]
+    lines = []
+    for node in loads:
+        head, _, form = (model.origin(node) or "").partition(".")
+        node_class = head == "ast" and form in SCOPE_WALK_FORMS and id(node) not in callees
+        reads = node_class or (head == "symtable" and bool(form)) or (head, form) == ("tokenize", "COMMENT")
+        lines += [node.lineno] if reads and id(node) not in chained else []
+    visitors = [
+        binding.line
+        for binding in model.bindings()
+        if binding.kind == "def"
+        and binding.scope.kind == "class"
+        and binding.name.startswith("visit_")
+        and binding.name.removeprefix("visit_") in SCOPE_WALK_FORMS
+    ]
+    return sorted([*lines, *visitors])
+
+
 def _source_tally(tally: Tally, root: Path, files: list[str]) -> None:
-    """Count the hatch comments and calls of every Python file, whether ruff checks it or not."""
+    """Count the hatch comments and calls of every Python file, whether ruff checks it or not.
+
+    The scope walks (`scope_walk_sites`) are counted in ``scripts`` and ``tests``, outside the model's own files.
+    """
     for path in files:
         if path.endswith((".py", ".pyi")) and not path.startswith(UNCHECKED):
-            for key, line in _source_sites((root / path).read_bytes()):
+            data = (root / path).read_bytes()
+            for key, line in _source_sites(data):
                 tally.add(f"{key}@{_area(path)}", path, line)
+            text = data.decode("utf-8", "replace")
+            walked = _area(path) in SCOPE_WALK_AREAS and path not in SOURCE_MODEL_HOME and SCOPE_WALK_HINT.search(text)
+            for line in scope_walk_sites(text, path) if walked else []:
+                tally.add(f"private-scope-walk@{_area(path)}", path, line)
 
 
 def _ruff_files(tally: Tally, root: Path, files: list[str]) -> None:

@@ -1,0 +1,12 @@
+== references
+8:11 ref load in cut -> local cut @7
+8:43 ref load in cut -> local cut @7
+8:63 str load in cut -> builtin; origin builtins.str
+8:73 ref load in cut -> local cut @7
+8:84 ref load in cut -> local cut @7
+uses of cut:ref@7: call:split@8, call:rsplit@8, read@8, call:split@8
+call @8 ref.split: 0=None 1=None 2=None sep="#"
+call @8 ref.rsplit: 0="#" 1=1 2=None sep=None
+call @8 builtins.str.split: 0=ref 1="#" 2=None sep=None
+call @8 ref.split: 0=None 1=None 2=None sep=None
+== code objects: one per scope that compiles on this Python

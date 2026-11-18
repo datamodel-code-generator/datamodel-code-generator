@@ -1,0 +1,18 @@
+=== module modules_in_written_order.Models
+== imports
+definition modules_in_written_order.Models:Pet -> assign modules_in_written_order.Models:Pet@3 via modules_in_written_order.Models [always]
+=== module modules_in_written_order
+== imports
+from@3 modules_in_written_order.Models.Pet as Pet from modules_in_written_order.Models in <module> [always]; level 1; unconditional
+from@4 modules_in_written_order.views.show as show from modules_in_written_order.views in <module> [always]; level 1; unconditional
+definition modules_in_written_order:PUBLIC -> assign modules_in_written_order:PUBLIC@6 via modules_in_written_order [always]
+definition modules_in_written_order:Pet -> assign modules_in_written_order.Models:Pet@3 via modules_in_written_order [always] > modules_in_written_order.Models [always]
+definition modules_in_written_order:show -> def modules_in_written_order.views:show@6 via modules_in_written_order [always] > modules_in_written_order.views [always]
+=== module modules_in_written_order.views
+== imports
+from@3 modules_in_written_order.Models.Pet as Pet from modules_in_written_order.Models in <module> [always]; unconditional
+definition modules_in_written_order.views:Pet -> assign modules_in_written_order.Models:Pet@3 via modules_in_written_order.views [always] > modules_in_written_order.Models [always]
+definition modules_in_written_order.views:show -> def modules_in_written_order.views:show@6 via modules_in_written_order.views [always]
+edge modules_in_written_order -> modules_in_written_order.Models @3 via from (module) [always]
+edge modules_in_written_order -> modules_in_written_order.views @4 via from (module) [always]
+edge modules_in_written_order.views -> modules_in_written_order.Models @3 via from (module) [always]

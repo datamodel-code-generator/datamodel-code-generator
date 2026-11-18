@@ -1,0 +1,43 @@
+== references
+8:0 PLAIN store in <module> -> local <module> @8
+9:0 NESTED store in <module> -> local <module> @9
+9:15 frozenset load in <module> -> builtin; origin builtins.frozenset
+9:56 set load in <module> -> builtin; origin builtins.set
+9:68 dict load in <module> -> builtin; origin builtins.dict
+10:0 NEGATIVE store in <module> -> local <module> @10
+11:0 FINAL store in <module> -> local <module> @11
+11:7 Final load (evaluated annotation) in <module> -> local <module> @6; origin typing.Final
+12:0 WRITTEN store in <module> -> local <module> @12
+13:0 WRITTEN load in <module> -> local <module> @12; origin forms.references.literal_constants_and_late_writes.WRITTEN
+14:0 APPENDED store in <module> -> local <module> @14
+15:0 APPENDED load in <module> -> local <module> @14; origin forms.references.literal_constants_and_late_writes.APPENDED
+16:0 REBOUND store in <module> -> local <module> @16,17
+17:0 REBOUND store in <module> -> local <module> @16,17
+18:0 CALLED store in <module> -> local <module> @18
+18:9 sorted load in <module> -> builtin; origin builtins.sorted
+19:0 STARRED store in <module> -> local <module> @19
+19:13 PLAIN load in <module> -> local <module> @8; origin forms.references.literal_constants_and_late_writes.PLAIN
+20:0 UNHASHABLE store in <module> -> local <module> @20
+21:0 MALFORMED store in <module> -> local <module> @21
+21:12 dict load in <module> -> builtin; origin builtins.dict
+22:0 TUPLE_CALL store in <module> -> local <module> @22
+22:13 tuple load in <module> -> builtin; origin builtins.tuple
+uses of <module>:Final@6: read@11
+uses of <module>:PLAIN@8: read@19
+uses of <module>:WRITTEN@12: subscript-store@13
+uses of <module>:APPENDED@14: call:append@15
+type positions @11: Final
+constant PLAIN: tuple('a', 'b')
+constant NESTED: {'v': {}, 'w': set(), 'x': frozenset({'y'}), 'z': list(1, tuple(2, 3))}
+constant NEGATIVE: tuple(-1, 2.5)
+constant FINAL: {'k': None}
+constant WRITTEN: Unreadable(reason='WRITTEN is written through', lines=(13,))
+constant APPENDED: Unreadable(reason='APPENDED is written through', lines=(15,))
+constant REBOUND: Unreadable(reason='REBOUND is not bound exactly once by an assignment', lines=(16, 17))
+constant CALLED: Unreadable(reason='CALLED is not a literal: a Call at line 18', lines=(18,))
+constant STARRED: Unreadable(reason='STARRED is not a literal: a ** entry', lines=(19,))
+constant UNHASHABLE: Unreadable(reason='UNHASHABLE is not a literal: an unhashable key or member', lines=(20,))
+constant MALFORMED: Unreadable(reason='MALFORMED is not a literal: an entry that is not a key and a value', lines=(21,))
+constant MISSING: Unreadable(reason='MISSING is not bound exactly once by an assignment', lines=())
+constant TUPLE_CALL: tuple('a')
+== code objects: one per scope that compiles on this Python

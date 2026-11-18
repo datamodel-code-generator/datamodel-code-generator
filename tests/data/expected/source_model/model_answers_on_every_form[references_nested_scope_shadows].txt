@@ -1,0 +1,19 @@
+== references
+6:14 value load in outer.<locals>.nested -> local outer.<locals>.nested @5
+11:15 OSError load in outer.<locals>.nested -> builtin; origin builtins.OSError
+15:15 result load in outer.<locals>.nested -> local outer.<locals>.nested @7
+15:23 error load in outer.<locals>.nested -> local outer.<locals>.nested @11
+15:30 json load in outer.<locals>.nested -> local outer.<locals>.nested @13; origin json
+17:11 nested load in outer -> local outer @5
+17:19 result load in outer -> local outer @4
+17:27 error load in outer -> local outer @4
+17:34 json load in outer -> local outer @4
+uses of outer:result@4: read@17
+uses of outer:error@4: read@17
+uses of outer:json@4: read@17
+uses of outer:nested@5: read@17
+uses of outer.<locals>.nested:value@5: read@6
+uses of outer.<locals>.nested:result@7: read@15
+uses of outer.<locals>.nested:error@11: read@15
+uses of outer.<locals>.nested:json@13: read@15
+== code objects: one per scope that compiles on this Python
