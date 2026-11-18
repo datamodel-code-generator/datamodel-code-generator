@@ -1,6 +1,7 @@
 [[change]]
 id = "asyncapi-client-messages-walked-by-parser"
 category = "experimental"
+refs = ["#7163"]
 kind = "experimental"
 action = "review"
 title = "Generated AsyncAPI clients carry the messages the models are generated for"

@@ -1,6 +1,7 @@
 [[change]]
 id = "asyncapi-client-reads-models-version"
 category = "experimental"
+refs = ["#7163"]
 kind = "experimental"
 action = "review"
 title = "Generated AsyncAPI clients read channels by the version the models are read by"
