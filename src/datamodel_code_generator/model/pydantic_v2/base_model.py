@@ -99,10 +99,6 @@ from datamodel_code_generator.model.pydantic_base import Constraints as _Constra
 from datamodel_code_generator.model.pydantic_base import (
     DataModelField as _PydanticBaseDataModelField,
 )
-from datamodel_code_generator.model.pydantic_v2._annotated_types import (
-    AnnotatedConstraintDataType,
-    annotated_constraint_metadata,
-)
 from datamodel_code_generator.model.pydantic_v2._config import (
     ConfigAttribute,
     build_base_config_parameters,
@@ -134,7 +130,13 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
-from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager, EncodedTextDataType, PydanticV2DataType
+from datamodel_code_generator.model.pydantic_v2.types import (
+    AnnotatedConstraintDataType,
+    DataTypeManager,
+    EncodedTextDataType,
+    PydanticV2DataType,
+    annotated_constraint_metadata,
+)
 from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,

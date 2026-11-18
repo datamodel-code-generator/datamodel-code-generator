@@ -74,7 +74,7 @@ from datamodel_code_generator._target_render import (
 from datamodel_code_generator._target_templates import roles, templated
 from datamodel_code_generator._target_types import admits_none, styled_without_none
 from datamodel_code_generator._target_unicode import casefold
-from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
+from datamodel_code_generator.model.pydantic_v2.types import annotated_constraint_metadata
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
