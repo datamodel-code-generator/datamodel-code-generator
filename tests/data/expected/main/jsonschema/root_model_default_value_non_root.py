@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -18,8 +18,10 @@ class PersonType(BaseModel):
 
 
 class Model(BaseModel):
-    root_model_field: Annotated[CountType | None, Field(validate_default=True)] = 10
-    non_root_model_field: Annotated[PersonType | None, Field(validate_default=True)] = {
-        'name': 'John'
-    }
+    root_model_field: Annotated[CountType | None, Field(validate_default=True)] = cast(
+        'CountType | None', 10
+    )
+    non_root_model_field: Annotated[PersonType | None, Field(validate_default=True)] = (
+        cast('PersonType | None', {'name': 'John'})
+    )
     primitive_field: str | None = 'hello'

@@ -2,7 +2,7 @@
 #   filename:  annotated_forward_reference.json
 #   timestamp: 2019-07-26T00:00:00+00:00
 
-from typing import Annotated, Optional
+from typing import Annotated, Optional, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -17,8 +17,12 @@ class Tree(BaseModel):
     spare_node: Annotated[Optional["Node"], Field(alias='spare-node')] = None
     nodes: Annotated[Optional[list["Node"]], Field(min_length=1)] = None
     labels: Optional[Labels] = None
-    pick: Annotated[Optional["Node"], Field(title='Pick', validate_default=True)] = {}
-    spare: Annotated[Optional["Node"], Field(validate_default=True)] = {'nodeValue': 8}
+    pick: Annotated[Optional["Node"], Field(title='Pick', validate_default=True)] = (
+        cast('Optional["Node"]', {})
+    )
+    spare: Annotated[Optional["Node"], Field(validate_default=True)] = cast(
+        'Optional["Node"]', {'nodeValue': 8}
+    )
     branches: Optional["Branches"] = None
 
 

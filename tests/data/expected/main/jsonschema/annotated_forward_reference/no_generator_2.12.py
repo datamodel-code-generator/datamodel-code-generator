@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -19,8 +19,12 @@ class Tree(BaseModel):
     spare_node: Annotated[Node | None, Field(alias='spare-node')] = None
     nodes: Annotated[list[Node] | None, Field(min_length=1)] = None
     labels: Labels | None = None
-    pick: Annotated[Node | None, Field(title='Pick', validate_default=True)] = {}
-    spare: Annotated[Node | None, Field(validate_default=True)] = {'nodeValue': 8}
+    pick: Annotated[Node | None, Field(title='Pick', validate_default=True)] = cast(
+        'Node | None', {}
+    )
+    spare: Annotated[Node | None, Field(validate_default=True)] = cast(
+        'Node | None', {'nodeValue': 8}
+    )
     branches: Branches | None = None
 
 

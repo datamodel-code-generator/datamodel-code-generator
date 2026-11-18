@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from my_app import AliasA
 from pydantic import BaseModel, Field
@@ -15,4 +15,6 @@ class B(BaseModel):
 
 
 class Model(BaseModel):
-    x: Annotated[AliasA | B | None, Field(validate_default=True)] = {'type': 'b'}
+    x: Annotated[AliasA | B | None, Field(validate_default=True)] = cast(
+        'AliasA | B | None', {'type': 'b'}
+    )

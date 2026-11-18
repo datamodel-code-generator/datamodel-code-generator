@@ -418,13 +418,15 @@ class CallPlan:
 class FieldDefault:
     """The default a field writes: its value, or Pydantic's ``MISSING`` sentinel (``--use-missing-sentinel``).
 
-    ``items`` are the declared items a default written alone (``FieldRenderPlan.bare_default``) writes.
+    ``items`` are the declared items a default written alone (``FieldRenderPlan.bare_default``) writes. ``casts`` is
+    whether the class body casts the value to the field's type (``typing.cast``), which names the type when it is read.
     """
 
     value: object
     missing_sentinel: bool
     why: Why
     items: tuple[str, ...] = ()
+    casts: bool = False
 
 
 AnnotationForm: TypeAlias = Literal["plain", "annotated", "classvar"]

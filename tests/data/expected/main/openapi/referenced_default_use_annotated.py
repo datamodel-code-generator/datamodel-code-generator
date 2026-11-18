@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -15,4 +15,6 @@ class ModelSettingB(RootModel[float]):
 
 class Model(BaseModel):
     settingA: Annotated[float | None, Field(ge=0.0, le=10.0)] = 5
-    settingB: Annotated[ModelSettingB | None, Field(validate_default=True)] = 5
+    settingB: Annotated[ModelSettingB | None, Field(validate_default=True)] = cast(
+        'ModelSettingB | None', 5
+    )
