@@ -1,0 +1,9 @@
+[[change]]
+id = "fast-path-context-scope"
+extends = "decoded-document-to-first-parser"
+refs = ["#7134"]
+covers = [
+    "main/cli_fast_paths/fast_paths_load_these_modules[import].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-model-metadata].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[version].txt",
+]

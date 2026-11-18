@@ -3,7 +3,7 @@ id = "decoded-document-to-first-parser"
 category = "harness"
 refs = ["#7134"]
 title = "Hand the decoded document to the first parser"
-summary = "Stored test output of the warnings an auto run with deprecated YAML bools raises at its inference and its parse; the package writes the same output for the same call."
+summary = "Stored test output of the warnings an auto run with deprecated YAML bools raises at its inference and its parse; the package writes the same output for the same call. The stored module lists of three CLI fast paths gain the standard-library-only `datamodel_code_generator._context_scope`, which the decoded-input context imports at module level."
 covers = [
     "main/main_yaml/deprecated_bool_auto_warns_at_inference_and_parse[pyyaml].py",
     "main/main_yaml/deprecated_bool_auto_warns_at_inference_and_parse[pyyaml].txt",
