@@ -710,6 +710,9 @@ strict-nullable	main/openapi/main_openapi/annotated_model_container_defaults[str
 strict-nullable	main/openapi/main_openapi/annotated_model_container_defaults[strict-nullable].py
 unique-items-as-set	main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].payloads.txt
 unique-items-as-set	main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].py
+[test_main_openapi_annotated_model_default_literals]
+	main/openapi/main_openapi/annotated_model_default_literals.payloads.txt
+	main/openapi/main_openapi/annotated_model_default_literals.py
 [test_main_openapi_annotated_model_defaults]
 nullable	main/openapi/main_openapi/annotated_model_defaults[nullable].payloads.txt
 nullable	main/openapi/main_openapi/annotated_model_defaults[nullable].py

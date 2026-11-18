@@ -41,6 +41,8 @@ covers = [
     "main/openapi/main_openapi/annotated_model_container_defaults[strict-nullable].py",
     "main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].payloads.txt",
     "main/openapi/main_openapi/annotated_model_container_defaults[unique-items-as-set].py",
+    "main/openapi/main_openapi/annotated_model_default_literals.payloads.txt",
+    "main/openapi/main_openapi/annotated_model_default_literals.py",
     "main/openapi/main_openapi/annotated_model_defaults[nullable].payloads.txt",
     "main/openapi/main_openapi/annotated_model_defaults[nullable].py",
     "main/openapi/main_openapi/annotated_model_defaults[strict-nullable].payloads.txt",

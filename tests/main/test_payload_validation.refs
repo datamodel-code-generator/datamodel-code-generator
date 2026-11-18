@@ -1273,6 +1273,7 @@ openapi/annotated_model_container_defaults.yaml::components.schemas.Color	payloa
 openapi/annotated_model_container_defaults.yaml::components.schemas.Count	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_container_defaults.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_container_defaults.yaml::components.schemas.Toy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/annotated_model_default_literals.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_defaults.yaml::components.schemas.Flags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_defaults.yaml::components.schemas.Limits	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_defaults.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3443,6 +3444,7 @@ openapi/annotated_model_container_defaults.yaml::components.schemas.Color	payloa
 openapi/annotated_model_container_defaults.yaml::components.schemas.Count	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_container_defaults.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_container_defaults.yaml::components.schemas.Toy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/annotated_model_default_literals.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_defaults.yaml::components.schemas.Flags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_defaults.yaml::components.schemas.Limits	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/annotated_model_defaults.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

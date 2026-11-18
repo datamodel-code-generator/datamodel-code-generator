@@ -190,7 +190,7 @@ def _value_has_type(value: object, data_type: DataType) -> bool:
         if data_type.data_types:
             return any(_value_has_type(value, member) for member in data_type.data_types)
         return (
-            value in data_type.literals
+            any(type(value) is type(literal) and value == literal for literal in data_type.literals)
             if data_type.literals
             else data_type.type == "Any" or data_type.type in _LITERAL_TYPES.get(type(value), ())
         )

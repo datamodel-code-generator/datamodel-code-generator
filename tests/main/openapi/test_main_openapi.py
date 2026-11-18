@@ -11829,6 +11829,25 @@ def test_main_openapi_annotated_model_container_defaults(output_file: Path, extr
     )
 
 
+def test_main_openapi_annotated_model_default_literals(output_file: Path) -> None:
+    """Cast a float or boolean default of an integer Literal, and keep the cast clear of a field named ``cast``."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "annotated_model_default_literals.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--target-python-version", "3.10"),
+            *("--disable-timestamp", "--enum-field-as-literal", "all"),
+        ],
+    )
+    with _generated_model(output_file, "annotated_model_default_literals", "Film") as film:
+        first = film()
+    assert_output(
+        f"{first!r}\n{[type(getattr(first, name)).__name__ for name in type(first).model_fields]}\n",
+        name="payloads",
+    )
+
+
 def test_main_openapi_root_model_default_primitive(output_file: Path) -> None:
     """Test RootModel with primitive default value in union type."""
     run_main_and_assert(
