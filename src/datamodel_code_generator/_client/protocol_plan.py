@@ -10,7 +10,7 @@ from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
-from datamodel_code_generator._target_contract import SourceLocation, parameter_place, schema_uses
+from datamodel_code_generator._target_contract import SourceLocation, parameter_place
 from datamodel_code_generator._target_contract import label as _label
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
 from datamodel_code_generator._url_redaction import redact_url
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage
+    from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocols import Helper, Link
     from datamodel_code_generator._format_types import PythonVersion
@@ -174,12 +175,12 @@ class _Resolver:
 class HelperPlanner:
     """Check a client target's helpers against the selected operations and the value uses of their schemas."""
 
-    def __init__(self, protocols: Protocols, plan: ClientPlan, request: TargetRequest) -> None:
-        """Index the selected operations by identity and the value use of each schema by its location and direction."""
+    def __init__(self, protocols: Protocols, plan: ClientPlan, request: TargetRequest, facts: ModelFacts) -> None:
+        """Index the selected operations by identity, and keep the models' facts, which give the use of each schema."""
         self.protocols = protocols
         self.request = request
+        self.facts = facts
         self.operations = {spec.contract.id: spec for spec in plan.operations}
-        self.schemas = schema_uses(request.batch.type_uses)
 
     def spec(self, reference: OperationRef) -> OperationSpec:
         """Return the selected operation a helper reference names."""
@@ -199,7 +200,7 @@ class HelperPlanner:
 
         if (location := self.location(reference)) is None:
             return "missing"
-        return None if (use := schema_use(self.schemas, location, direction)) is None else use.type
+        return None if (use := schema_use(self.facts.schemas, location, direction)) is None else use.type
 
     def each(
         self, kinds: Container[str], check: Callable[[Helper, OperationSpec], tuple[_SpecT | None, list[Diagnostic]]]
@@ -267,22 +268,20 @@ def helper_operations(protocols: Protocols | None) -> frozenset[OperationId]:
     )
 
 
-def helper_problems(
-    protocols: Protocols | None, plan: ClientPlan, checked: Mapping[str, list[Diagnostic]]
-) -> Iterator[Diagnostic]:
+def helper_problems(planner: HelperPlanner | None, checked: Mapping[str, list[Diagnostic]]) -> Iterator[Diagnostic]:
     """Refuse enabled helpers whose entry operation names an argument as the helper's or whose name gives a taken class.
 
     Only an explicit name can take a helper's argument: the planner names the others apart. Webhook helpers send
     nothing, so neither applies to them. Then report each enabled helper's own problems in
     declaration order; every kind an enabled helper can have is checked, since validation refuses the later kinds.
     """
-    if protocols is None:
+    if planner is None:
         return
+    protocols = planner.protocols
     enabled = tuple(helper for helper in protocols.helpers if helper.enabled)
     sending = tuple(helper for helper in enabled if helper.links)
-    specs = {spec.contract.id: spec for spec in plan.operations}
     for helper in sending:
-        spec = specs[protocols.operations[helper.links[0].ref].id]
+        spec = planner.spec(helper.links[0].ref)
         names = (*(parameter.python_name for parameter in spec.parameters), *spec.field_names)
         if taken := sorted(HELPER_ARGUMENTS.intersection(names)):
             message = (

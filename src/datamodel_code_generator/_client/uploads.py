@@ -14,7 +14,6 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import (
     _label,
     _overlaps,
-    _Pages,
     _problem,
     _relation,
     _target_key,
@@ -25,14 +24,10 @@ from datamodel_code_generator._runtime.model_codecs.parameters import parameter_
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator, Mapping
+    from collections.abc import Iterator, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._client.model_facts import ModelFacts
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ParameterSpec
-    from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.plan import OperationSpec, ParameterSpec
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._target_contract import TypeUseId
 
 __all__ = ("UploadSpec", "plan_uploads")
 
@@ -283,15 +278,8 @@ class _Uploads:
         return spec
 
 
-def plan_uploads(
-    protocols: Protocols | None,
-    plan: ClientPlan,
-    facts: ModelFacts,
-    codecs: Container[TypeUseId],
-    request: TargetRequest,
-) -> tuple[tuple[UploadSpec, ...], dict[str, list[Diagnostic]]]:
+def plan_uploads(polls: _Polls | None) -> tuple[tuple[UploadSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled upload helper, returning them and each checked helper's problems."""
-    if protocols is None:
+    if polls is None:
         return (), {}
-    uploads = _Uploads(_Polls(_Pages(protocols, plan, facts, codecs, request)))
-    return uploads.pages.each(("resumable_upload",), uploads.helper)
+    return polls.pages.each(("resumable_upload",), _Uploads(polls).helper)

@@ -61,7 +61,6 @@ from datamodel_code_generator._target_contract import (
     property_members,
     request_media,
     type_uses,
-    uses_by_id,
 )
 from datamodel_code_generator._target_naming import (
     PATH_PLACEHOLDER,
@@ -403,7 +402,7 @@ class Planner:
         self.config = config
         self.wire = wire
         self.facts = facts
-        self.uses = uses_by_id(request.batch)
+        self.uses = wire.tables.uses
         self.parameter_plans = parameter_plans(wire)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
@@ -411,7 +410,7 @@ class Planner:
         self.documents = {document.id: document.uri for document in request.batch.documents}
         self.resource_names = {item.tag: item.namespace for item in config.resource_names}
         self.problems: list[Diagnostic] = []
-        self.security = SecurityPlanner(request.batch, self.problems)
+        self.security = SecurityPlanner(request.batch, wire.tables.schemes, self.problems)
         self.settings = self.resolved()
         tags = {group_tag(operation) for operation in selected}
         self.problems.extend(
