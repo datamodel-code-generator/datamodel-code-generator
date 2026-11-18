@@ -36,8 +36,11 @@ def module_hooks(
     ``__getattr__`` serves exactly the keys of ``table``, and with ``cache`` stores each value in the module the first
     time it is read. Any other name raises ``AttributeError``: with the message ``module 'x' has no attribute 'y'``
     (``"standard"``) or with the name alone (``"name"``). ``__dir__`` lists the names of the module and the keys of
-    ``table``, each once, whichever of them were read before.
+    ``table``, each once, whichever of them were read before. Both hooks keep the module object that is imported when
+    they are made, so a module object no longer in ``sys.modules`` still lists and caches its own names; hooks made
+    for a module not imported yet look it up when they are called.
     """
+    made_for = sys.modules.get(module_name)
 
     def module_getattr(name: str) -> Any:
         if name not in table:
@@ -45,10 +48,10 @@ def module_hooks(
             raise AttributeError(msg)
         value = _load(name, table[name])
         if cache:
-            setattr(sys.modules[module_name], name, value)
+            setattr(made_for or sys.modules[module_name], name, value)
         return value
 
     def module_dir() -> list[str]:
-        return sorted({*vars(sys.modules[module_name]), *table})
+        return sorted({*vars(made_for or sys.modules[module_name]), *table})
 
     return module_getattr, module_dir

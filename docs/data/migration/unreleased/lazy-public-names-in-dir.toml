@@ -2,7 +2,7 @@
 id = "lazy-public-names-in-dir"
 category = "api"
 title = "dir() lists every public name a module exports lazily, once"
-summary = "Each module with lazy exports answers dir() from the table its __getattr__ reads: the package root, types, util, parser.avro, parser.asyncapi, parser.base, parser.jsonschema and __main__ now list their lazily exported public names, and datamodel_code_generator.reference lists a name read before dir() or __all__ once instead of twice. The plain imports create_module_getattr of types and parser.asyncapi, which only the old hooks used, are gone; import it from datamodel_code_generator.util."
+summary = "Each module with lazy exports answers dir() from the table its __getattr__ reads: the package root, types, util, parser.avro, parser.asyncapi, parser.base, parser.jsonschema and __main__ now list their lazily exported public names, and datamodel_code_generator.reference lists a name read before dir() or __all__ once instead of twice. The plain imports create_module_getattr of types and parser.asyncapi, which only the old hooks used, are gone; import it from datamodel_code_generator.util; star imports of those two modules no longer bind it. inspect.getmembers(), help() and completion on a module with lazy exports now import the modules its lazy names come from."
 refs = ["#7154", "#7152"]
 decision = ["#7154"]
 kind = "python-api"
