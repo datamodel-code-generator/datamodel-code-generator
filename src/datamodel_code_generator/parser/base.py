@@ -61,6 +61,7 @@ from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._model_keys import ModelKey, is_item_counts_site, model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
@@ -283,6 +284,7 @@ from datamodel_code_generator.util import record_watch_dependency, yaml_number_r
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Hashable, Iterable, Iterator, Mapping, Sequence
+    from types import ModuleType
 
     from datamodel_code_generator._format_types import Formatter, PythonVersion
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
@@ -342,28 +344,28 @@ def _get_field_dependency_ordering_model_type(model_type: type[DataModel]) -> ty
     return model_type if model_type.REQUIRES_FIELD_DEPENDENCY_ORDERING else None
 
 
-def __getattr__(name: str) -> Any:
-    """Return compatibility model modules without importing them on parser load."""
-    match name:
-        case "dataclass_model":
-            from datamodel_code_generator.model import dataclass as dataclass_model  # noqa: PLC0415
+def _dataclass_model() -> ModuleType:
+    """Return the dataclass model module, imported on the first read of ``dataclass_model``."""
+    from datamodel_code_generator.model import dataclass as dataclass_model  # noqa: PLC0415
 
-            return dataclass_model
-        case "msgspec_model":
-            from datamodel_code_generator.model import msgspec as msgspec_model  # noqa: PLC0415
+    return dataclass_model
 
-            return msgspec_model
-        case "Child" | "T" | "to_hashable":
-            from datamodel_code_generator._internal_utils import Child, T, to_hashable  # noqa: PLC0415
 
-            match name:
-                case "Child":
-                    return Child
-                case "T":
-                    return T
-                case _:
-                    return to_hashable
-    raise AttributeError(name)
+def _msgspec_model() -> ModuleType:
+    """Return the msgspec model module, imported on the first read of ``msgspec_model``."""
+    from datamodel_code_generator.model import msgspec as msgspec_model  # noqa: PLC0415
+
+    return msgspec_model
+
+
+_LAZY_EXPORTS = {
+    "dataclass_model": _dataclass_model,
+    "msgspec_model": _msgspec_model,
+    "Child": "datamodel_code_generator._internal_utils",
+    "T": "datamodel_code_generator._internal_utils",
+    "to_hashable": "datamodel_code_generator._internal_utils",
+}
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS, missing_message="name")
 
 
 DroppedConstraintFields: TypeAlias = frozenset[tuple[ModulePath, str]]

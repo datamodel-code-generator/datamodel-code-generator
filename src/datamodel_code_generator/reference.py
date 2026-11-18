@@ -46,6 +46,7 @@ from datamodel_code_generator._format_types import (
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, join_pointer
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._message_text import printable_text
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._python_target_names import target_builtin_type_attributes
@@ -904,33 +905,27 @@ def _default_field_name_resolver_class(model_type: ModelType) -> type[FieldNameR
     return resolver_class
 
 
-_LAZY_EXPORTS: Final = ("PydanticFieldNameResolver", "MsgspecFieldNameResolver", "DEFAULT_FIELD_NAME_RESOLVERS")
+_LAZY_EXPORTS = {
+    "PydanticFieldNameResolver": lambda: _default_field_name_resolver_class(ModelType.PYDANTIC),
+    "MsgspecFieldNameResolver": lambda: _default_field_name_resolver_class(ModelType.MSGSPEC),
+    "DEFAULT_FIELD_NAME_RESOLVERS": lambda: {
+        model_type: _default_field_name_resolver_class(model_type) for model_type in _FIELD_NAME_RESOLVER_MODEL_TYPES
+    },
+}
+_lazy_getattr, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS, cache=True)
 
 
 def __getattr__(name: str) -> Any:
-    """Lazily preserve legacy resolver imports without owning output policy."""
-    match name:
-        case "PydanticFieldNameResolver":
-            value = _default_field_name_resolver_class(ModelType.PYDANTIC)
-        case "MsgspecFieldNameResolver":
-            value = _default_field_name_resolver_class(ModelType.MSGSPEC)
-        case "DEFAULT_FIELD_NAME_RESOLVERS":
-            value = {
-                model_type: _default_field_name_resolver_class(model_type)
-                for model_type in _FIELD_NAME_RESOLVER_MODEL_TYPES
-            }
-        case "__all__":
-            value = (*(public_name for public_name in globals() if not public_name.startswith("_")), *_LAZY_EXPORTS)
-        case _:
-            msg = f"module {__name__!r} has no attribute {name!r}"
-            raise AttributeError(msg)
+    """Lazily preserve legacy resolver imports without owning output policy.
+
+    ``__all__`` lists the public names of the module, then the lazy ones, each once whichever were read before.
+    """
+    if name != "__all__":
+        return _lazy_getattr(name)
+    public_names = (public_name for public_name in globals() if not public_name.startswith("_"))
+    value = (*(public_name for public_name in public_names if public_name not in _LAZY_EXPORTS), *_LAZY_EXPORTS)
     globals()[name] = value
     return value
-
-
-def __dir__() -> list[str]:
-    """Include lazily preserved exports in module discovery."""
-    return sorted((*globals(), *_LAZY_EXPORTS))
 
 
 class _FieldNameResolverOptions(NamedTuple):

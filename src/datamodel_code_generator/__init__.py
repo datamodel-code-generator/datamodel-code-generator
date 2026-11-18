@@ -31,6 +31,7 @@ from typing import (
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._generation_timestamp import current_timestamp
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
@@ -3176,7 +3177,7 @@ def detect_xmlschema_version(source: Any) -> XMLSchemaVersion:
     return _detect_xmlschema_version(source)
 
 
-_LAZY_IMPORTS = {
+_LAZY_EXPORTS = {
     "load_pyproject_config": "datamodel_code_generator._project_config",
     "clear_dynamic_models_cache": "datamodel_code_generator.dynamic",
     "detect_jsonschema_version": "datamodel_code_generator.parser.schema_version",
@@ -3197,16 +3198,7 @@ _LAZY_IMPORTS = {
 }
 
 
-def __getattr__(name: str) -> Any:
-    if name in _LAZY_IMPORTS:
-        import importlib  # noqa: PLC0415
-
-        module = importlib.import_module(_LAZY_IMPORTS[name])
-        value = getattr(module, name)
-        globals()[name] = value
-        return value
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS, cache=True)
 
 
 __all__ = [

@@ -1,0 +1,7 @@
+convert_avro_schema_data datamodel_code_generator.parser.avro convert_avro_schema_data
+convert_protobuf_schema_data datamodel_code_generator.parser.protobuf convert_protobuf_schema_data
+convert_xml_schema_data datamodel_code_generator.parser.xmlschema convert_xml_schema_data
+dir lists each name once: True
+__all__ lists each name once: True
+in this process: dir lists each name once: True, __all__ lists each name once: True
+missing name: module 'datamodel_code_generator.parser.asyncapi' has no attribute 'no_such_name'

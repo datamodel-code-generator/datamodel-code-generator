@@ -25,6 +25,7 @@ from datamodel_code_generator._document_reader import (
 )
 from datamodel_code_generator._json_pointer import escape_token
 from datamodel_code_generator._json_schema import definition_ref
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._name_words import (
     ASCII_WORD as NAME_PART_PATTERN,  # noqa: F401  # Keep the public asyncapi name.
 )
@@ -43,7 +44,7 @@ from datamodel_code_generator.parser.jsonschema import (
 )
 from datamodel_code_generator.parser.openapi import OpenAPIParser, _DiscriminatorScan
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.util import BaseModel, create_module_getattr
+from datamodel_code_generator.util import BaseModel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator
@@ -96,17 +97,12 @@ SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE: dict[str, str] = {
     **dict.fromkeys(XML_SCHEMA_FORMATS, "xmlschema"),
 }
 INTERNAL_SCHEMA_CONTAINER = "x-datamodel-code-generator-asyncapi-schemas"
-__getattr__ = create_module_getattr(
-    __name__,
-    {
-        "convert_avro_schema_data": ("datamodel_code_generator.parser.avro", "convert_avro_schema_data"),
-        "convert_protobuf_schema_data": (
-            "datamodel_code_generator.parser.protobuf",
-            "convert_protobuf_schema_data",
-        ),
-        "convert_xml_schema_data": ("datamodel_code_generator.parser.xmlschema", "convert_xml_schema_data"),
-    },
-)
+_LAZY_EXPORTS = {
+    "convert_avro_schema_data": "datamodel_code_generator.parser.avro",
+    "convert_protobuf_schema_data": "datamodel_code_generator.parser.protobuf",
+    "convert_xml_schema_data": "datamodel_code_generator.parser.xmlschema",
+}
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS)
 
 
 @record(slots=False)

@@ -75,6 +75,7 @@ from datamodel_code_generator._format_types import (
     PythonVersionMin,
 )
 from datamodel_code_generator._graph_links import add_child, drop_child, link_members, type_children
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._model_keys import NodeKey
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
@@ -103,7 +104,6 @@ from datamodel_code_generator.imports import (
 )
 from datamodel_code_generator.python_literal import represent_python_value, stable_repr
 from datamodel_code_generator.reference import Reference, _BaseModel
-from datamodel_code_generator.util import create_module_getattr
 
 T = TypeVar("T")
 SourceT = TypeVar("SourceT")
@@ -209,12 +209,8 @@ NOT_REQUIRED_PREFIX = f"{NOT_REQUIRED}["
 READ_ONLY = "ReadOnly"
 READ_ONLY_PREFIX = f"{READ_ONLY}["
 
-__getattr__ = create_module_getattr(
-    __name__,
-    {
-        "StrictTypes": ("datamodel_code_generator.enums", "StrictTypes"),
-    },
-)
+_LAZY_EXPORTS = {"StrictTypes": "datamodel_code_generator.enums"}
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS)
 
 if TYPE_CHECKING:
     import builtins

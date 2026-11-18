@@ -109,6 +109,7 @@ from datamodel_code_generator import (
     InputFileType,
     InvalidClassNameError,
     NamingHintWarning,
+    _lazy_exports,
     _run_option_stages,
     _validate_generation_path_conflicts,
     enable_debug_message,
@@ -172,13 +173,8 @@ from datamodel_code_generator.arguments import _reset_namespace, arg_parser, nam
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
 from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, _ExitCode
 
-
-def __getattr__(name: str) -> Any:
-    """Load the deferred config model without adding it to no-lock imports."""
-    if name == "Config":
-        return _get_config_class()
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
+_LAZY_EXPORTS = {"Config": _get_config_class}
+__getattr__, __dir__ = _lazy_exports.module_hooks(__name__, _LAZY_EXPORTS)
 
 
 if TYPE_CHECKING:

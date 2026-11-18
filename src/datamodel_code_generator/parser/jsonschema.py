@@ -154,6 +154,7 @@ from datamodel_code_generator._json_schema import (
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
     subschema_entries,
 )
+from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import (
     FIELDLESS_SITE_KEY,
@@ -891,14 +892,15 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
     )
 
 
-def __getattr__(name: str) -> Any:
-    """Return compatibility model classes without importing them on parser load."""
-    match name:
-        case "TypedDictModel":
-            from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel  # noqa: PLC0415
+def _typed_dict_model() -> type[DataModel]:
+    """Return the TypedDict model class, imported on the first read of ``TypedDictModel``."""
+    from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel  # noqa: PLC0415
 
-            return TypedDictModel
-    raise AttributeError(name)
+    return TypedDictModel
+
+
+_LAZY_EXPORTS = {"TypedDictModel": _typed_dict_model}
+__getattr__, __dir__ = _module_hooks(__name__, _LAZY_EXPORTS, missing_message="name")
 
 
 def _null_sources(

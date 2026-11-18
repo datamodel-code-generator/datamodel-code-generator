@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect
+import subprocess
 import sys
 import types
 from typing import TYPE_CHECKING, Annotated, Any, ForwardRef, Union, get_args, get_origin
@@ -12,7 +13,9 @@ from typing import TYPE_CHECKING, Annotated, Any, ForwardRef, Union, get_args, g
 import pytest
 from typing_extensions import NotRequired
 
-from datamodel_code_generator import DEFAULT_SHARED_MODULE_NAME, generate
+from datamodel_code_generator import DEFAULT_SHARED_MODULE_NAME, generate, reference, util
+from datamodel_code_generator import __main__ as main_module
+from datamodel_code_generator import types as types_module
 from datamodel_code_generator.enums import (
     AliasGenerator,
     AllExportsCollisionStrategy,
@@ -48,6 +51,8 @@ from datamodel_code_generator.enums import (
 )
 from datamodel_code_generator.format import PythonVersionMin
 from datamodel_code_generator.model.pydantic_v2 import BaseModel, DataModelField, DataTypeManager, RootModel
+from datamodel_code_generator.parser import asyncapi, avro, jsonschema
+from datamodel_code_generator.parser import base as parser_base
 from datamodel_code_generator.parser.base import YamlValue, title_to_class_name
 from tests.conftest import assert_output
 
@@ -1123,6 +1128,69 @@ def test_de_facto_public_attributes_remain_available(object_path: str, expected_
     missing_attributes = sorted(attribute for attribute in expected_attributes if not hasattr(owner, attribute))
 
     assert missing_attributes == [], f"{object_path} no longer exposes de facto public attributes: {missing_attributes}"
+
+
+_LAZY_NAMES_PROBE = """
+import importlib
+import sys
+
+module_name = sys.argv.pop()
+module = importlib.import_module(module_name)
+for name in sorted(set(dir(module)) - vars(module).keys()):
+    value = getattr(module, name)
+    print(name, getattr(value, "__module__", None), getattr(value, "__qualname__", getattr(value, "__name__", None)))
+listed = dir(module)
+exported = list(getattr(module, "__all__", ()))
+print("dir lists each name once:", len(listed) == len(set(listed)))
+print("__all__ lists each name once:", len(exported) == len(set(exported)))
+"""
+
+
+@pytest.mark.parametrize(
+    "module",
+    [
+        pytest.param(module, id=module.__name__)
+        for module in (
+            sys.modules[generate.__module__],
+            main_module,
+            asyncapi,
+            avro,
+            parser_base,
+            jsonschema,
+            reference,
+            types_module,
+            util,
+        )
+    ],
+)
+def test_lazy_public_names_are_listed_once_by_dir(module: types.ModuleType) -> None:
+    """List every lazy name of a module in ``dir()``, each name once in ``dir()`` and ``__all__`` after it was read.
+
+    A fresh process lists the names ``dir()`` gives that the module has not bound yet and reads each of them, so
+    ``dir()`` and ``__all__`` are then built after the reads (#7152). The same holds in this process, which removes
+    afterwards only the lazy names and ``__all__`` that its reads stored in the module. A missing name keeps its
+    ``AttributeError`` text.
+    """
+    result = subprocess.run(
+        [sys.executable, "-c", _LAZY_NAMES_PROBE, module.__name__], check=True, capture_output=True, text=True
+    )
+    bound = set(vars(module))
+    unbound = {*dir(module), "__all__"} - bound
+    try:
+        for name in unbound - {"__all__"}:
+            getattr(module, name)
+        listed = dir(module)
+        exported = list(getattr(module, "__all__", ()))
+        with pytest.raises(AttributeError) as missing:
+            _ = module.no_such_name
+    finally:
+        for name in unbound:
+            vars(module).pop(name, None)
+
+    assert_output(
+        f"{result.stdout}in this process: dir lists each name once: {len(listed) == len(set(listed))}, "
+        f"__all__ lists each name once: {len(exported) == len(set(exported))}\nmissing name: {missing.value}\n"
+    )
 
 
 @pytest.mark.abnormal_path("downstream code assigns this module attribute, so the assignment is the contract pinned")
