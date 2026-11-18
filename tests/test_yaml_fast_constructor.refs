@@ -731,6 +731,7 @@ openapi/typed_dict_functional_forward_references/self_reference.yaml	yaml_fast_c
 openapi/typed_dict_functional_forward_references/type_aliases.yaml	yaml_fast_constructor/parity.txt
 openapi/unevaluated_properties_referenced_objects.yaml	yaml_fast_constructor/parity.txt
 openapi/union_default_object.yaml	yaml_fast_constructor/parity.txt
+openapi/union_mode_constrained_union.yaml	yaml_fast_constructor/parity.txt
 openapi/unique_items_default_set.yaml	yaml_fast_constructor/parity.txt
 openapi/unquoted_null.yaml	yaml_fast_constructor/parity.txt
 openapi/unrelated_invalid_dotted_model.yaml	yaml_fast_constructor/parity.txt

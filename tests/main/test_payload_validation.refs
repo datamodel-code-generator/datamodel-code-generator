@@ -2167,6 +2167,8 @@ openapi/typed_dict_extra_items_final_name/variant.yaml::components.schemas.Bar	p
 openapi/typed_dict_functional_description_example.yaml::components.schemas.Headers	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_functional_forward_references/inherited_fields.yaml::components.schemas.Early	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/union_default_object.yaml::components.schemas.Interval	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/union_mode_constrained_union.yaml::components.schemas.CountOrText	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/union_mode_constrained_union.yaml::components.schemas.ListOrText	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unique_items_default_set.yaml::components.schemas.TestModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unsorted_optional_fields.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/untyped_value_type/task_api.yaml::components.schemas.JsonValue	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -4344,6 +4346,8 @@ openapi/typed_dict_extra_items_final_name/variant.yaml::components.schemas.Bar	p
 openapi/typed_dict_functional_description_example.yaml::components.schemas.Headers	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/typed_dict_functional_forward_references/inherited_fields.yaml::components.schemas.Early	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/union_default_object.yaml::components.schemas.Interval	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/union_mode_constrained_union.yaml::components.schemas.CountOrText	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/union_mode_constrained_union.yaml::components.schemas.ListOrText	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unique_items_default_set.yaml::components.schemas.TestModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unsorted_optional_fields.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/untyped_value_type/task_api.yaml::components.schemas.JsonValue	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
