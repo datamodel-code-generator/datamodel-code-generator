@@ -153,6 +153,11 @@ OPTION_RELATIONS: Final[tuple[OptionRelation, ...]] = (
         f"{_KW_ONLY}+",
     ),
     OptionRelation(
+        ("--use-validate-default-for-root-model-type-aliases", "requires", "--use-root-model-type-alias"),
+        "`--use-validate-default-for-root-model-type-aliases` acts only with `--use-root-model-type-alias`.",
+        value=True,
+    ),
+    OptionRelation(
         ("--all-exports-collision-strategy", "requires", "--all-exports-scope"),
         "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`.",
         AllExportsScope.Recursive.value,
