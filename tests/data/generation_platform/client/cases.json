@@ -6496,6 +6496,37 @@
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
     "modules": [["client", "_operations.py"], ["client", "protocols", "_plans.py"]]
     },
+  "asyncapi-unloaded-references": {
+    "input": "asyncapi-unloaded-references.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {
+      "input_file_type": "asyncapi",
+      "openapi_scopes": ["schemas"],
+      "external_ref_mapping": {"asyncapi-other.yaml": "shared.models"}
+    },
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-unloaded-references-v2": {
+    "input": "asyncapi-unloaded-references-v2.yaml",
+    "references": ["asyncapi-other.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-reference-cycles": {
+    "input": "asyncapi-reference-cycles.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-reference-cycles-operations": {
+    "input": "asyncapi-reference-cycles-operations.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
+  },
+  "asyncapi-imported-entries": {
+    "input": "asyncapi-imported-entries.yaml",
+    "references": ["asyncapi-imported-entries-shared.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"], ["client", "_generated", "security.py"], ["client", "protocols", "_plans.py"]]
+  },
   "asyncapi-schema-formats": {
     "input": "asyncapi-schema-formats.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},

@@ -1,0 +1,65 @@
+asyncapi: 3.0.0
+info:
+  title: References into documents the run does not load
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+  remote:
+    $ref: 'asyncapi-other.yaml#/servers/remote'
+channels:
+  quotes:
+    address: /quotes
+    messages:
+      quote:
+        payload:
+          type: string
+  relayed:
+    address: /relayed
+    messages:
+      order:
+        payload:
+          type: string
+  queried:
+    address: /queried
+    bindings:
+      ws:
+        query:
+          $ref: 'asyncapi-other.yaml#/components/schemas/Report'
+    messages:
+      line:
+        payload:
+          type: string
+  partnered:
+    address: /partnered
+    messages:
+      line:
+        payload:
+          type: string
+operations:
+  readQuotes:
+    action: receive
+    channel:
+      $ref: '#/channels/quotes'
+  takeRelayed:
+    action: receive
+    channel:
+      $ref: '#/channels/relayed'
+    reply:
+      channel:
+        $ref: 'asyncapi-other.yaml#/channels/alerts'
+  readQueried:
+    action: receive
+    channel:
+      $ref: '#/channels/queried'
+  readPartnered:
+    action: receive
+    channel:
+      $ref: '#/channels/partnered'
+    security:
+      - $ref: '#/components/securitySchemes/partner'
+components:
+  securitySchemes:
+    partner:
+      $ref: 'asyncapi-other.yaml#/components/securitySchemes/partner'

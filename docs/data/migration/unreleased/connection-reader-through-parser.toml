@@ -1,0 +1,33 @@
+[[change]]
+id = "connection-reader-through-parser"
+category = "experimental"
+refs = ["#7136"]
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients follow references into the other loaded documents"
+summary = "With `--generate-client` and AsyncAPI input, a channel, operation, message, trait, binding, parameter, reply, server or security scheme written in another loaded document is read where the parser resolves its `$ref`, so its connection is generated instead of skipped with \"... references another document\" (an operation in another document no longer leaves every channel out). A `#/...` reference inside such a declaration names its own document, and a reference to a server or security scheme names the entry of the root document that leads to the same object (such as `#/servers/socket` in a document whose `socket` server the root imports by `$ref`). A reference to nothing in another loaded document reads as one in the same document does (`it has no address`, `declares no payload`, an empty reply or scheme). A reference into a document the generation did not load (such as a security scheme, the channel of a reply, a trait of an AsyncAPI 2 operation, or a schema `--external-ref-mapping` maps) or one that loops still leaves the channel out."
+affects = { experimental = ["cli-option.generate-client"] }
+before = "Skipping channel 'notes', which the client cannot generate: /channels/notes: a message of it references another document"
+after = "SOCKET_2: Final[ChannelPlan[models.NotePayload, Never]] = ChannelPlan(helper_id='notes', ...)"
+source = "release-note"
+covers = [
+    "main/generation_platform/client/asyncapi-connections.txt",
+    "main/generation_platform/client/asyncapi-foreign-operations.txt",
+    "main/generation_platform/client/asyncapi-imported-entries.txt",
+    "main/generation_platform/client/asyncapi-reference-cycles-operations.txt",
+    "main/generation_platform/client/asyncapi-reference-cycles.txt",
+    "main/generation_platform/client/asyncapi-skips-v2.txt",
+    "main/generation_platform/client/asyncapi-skips.txt",
+    "main/generation_platform/client/asyncapi-unloaded-references-v2.txt",
+    "main/generation_platform/client/asyncapi-unloaded-references.txt",
+    "main/generation_platform/client/packages/asyncapi-connections/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-connections/typing_TypedDict//*.py",
+    "main/generation_platform/client/packages/asyncapi-foreign-operations/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-imported-entries/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-reference-cycles/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-skips-v2/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-skips/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-unloaded-references-v2/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-unloaded-references/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/runtime/asyncapi-connections.txt",
+]

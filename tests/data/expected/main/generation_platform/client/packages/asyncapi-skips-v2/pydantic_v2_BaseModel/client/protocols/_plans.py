@@ -29,30 +29,50 @@ SOCKET_0: Final[
 )
 
 
-SOCKET_1: Final[ChannelPlan[Never, str]] = ChannelPlan(
+SOCKET_1: Final[ChannelPlan[Never, models.NotePayload]] = ChannelPlan(
+    helper_id='notes',
+    operation=OperationRef(pointer='/channels/~1notes'),
+    call=_operations.OPERATION_1,
+    fingerprint='66e7af65e7e6633b819677bd777cd2d36bf16e049d00f0afdd39d2ec3668d83e',
+    send_codec='none',
+    decoder=model_bindings.codec_2,
+)
+
+
+SOCKET_2: Final[ChannelPlan[Never, str]] = ChannelPlan(
     helper_id='root',
     operation=OperationRef(pointer='/channels/~1'),
-    call=_operations.OPERATION_1,
+    call=_operations.OPERATION_2,
     fingerprint='77f2b9aff306793b3b577c4cda6d9791bd6f034f85623f1c823e7de9f8a57463',
     send_codec='none',
     receive_codec='utf8',
 )
 
 
-SOCKET_2: Final[ChannelPlan[Never, models.GuardedSubscribePayload]] = ChannelPlan(
+SOCKET_3: Final[ChannelPlan[Never, models.GuardedSubscribePayload]] = ChannelPlan(
     helper_id='guarded',
     operation=OperationRef(pointer='/channels/~1guarded'),
-    call=_operations.OPERATION_2,
+    call=_operations.OPERATION_3,
     fingerprint='ae18d094216464143b159b92b95d90c113b7fb7cd04da82b70a6fcca9368bf7b',
     send_codec='none',
-    decoder=model_bindings.codec_2,
+    decoder=model_bindings.codec_3,
 )
 
 
-SOCKET_3: Final[ChannelPlan[Never, bytes]] = ChannelPlan(
+SOCKET_4: Final[ChannelPlan[Never, models.DelegatedSubscribePayload]] = ChannelPlan(
+    helper_id='delegated',
+    operation=OperationRef(pointer='/channels/~1delegated'),
+    call=_operations.OPERATION_4,
+    fingerprint='c1b1b7681631a41fe5259bdc52682d0710310bdf0f4e666fd52f26c140eede39',
+    send_codec='none',
+    decoder=model_bindings.codec_4,
+)
+
+
+SOCKET_5: Final[ChannelPlan[Never, bytes]] = ChannelPlan(
     helper_id='packed',
     operation=OperationRef(pointer='/channels/~1packed'),
-    call=_operations.OPERATION_3,
+    call=_operations.OPERATION_5,
     fingerprint='a8c9ec12c0fedf5f8416360674ff4f63ce5ad52ce276b4df90210060341dde43',
     send_codec='none',
     receive_codec='bytes',
