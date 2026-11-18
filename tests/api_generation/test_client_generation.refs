@@ -177,6 +177,11 @@ asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/pyd
 asyncapi-messages	main/generation_platform/client/packages/asyncapi-messages/typing_TypedDict//*.py
 asyncapi-messages-aliases	main/generation_platform/client/asyncapi-messages-aliases.txt
 asyncapi-messages-aliases	main/generation_platform/client/packages/asyncapi-messages-aliases/pydantic_v2_BaseModel//*.py
+asyncapi-missing-messages	main/generation_platform/client/asyncapi-missing-messages.txt
+asyncapi-missing-messages	main/generation_platform/client/packages/asyncapi-missing-messages/pydantic_v2_BaseModel//*.py
+asyncapi-missing-messages-external	main/generation_platform/client/asyncapi-missing-messages-external.txt
+asyncapi-missing-messages-external	main/generation_platform/client/packages/asyncapi-missing-messages-external/pydantic_v2_BaseModel//*.py
+asyncapi-missing-messages-v2	main/generation_platform/client/asyncapi-missing-messages-v2.txt
 asyncapi-nested-messages-v2	main/generation_platform/client/asyncapi-nested-messages-v2.txt
 asyncapi-nested-messages-v2	main/generation_platform/client/packages/asyncapi-nested-messages-v2/pydantic_v2_BaseModel//*.py
 asyncapi-optional-tags	main/generation_platform/client/asyncapi-optional-tags.txt

@@ -6733,5 +6733,20 @@
     "input": "asyncapi-nested-messages-v2.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
     "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-missing-messages": {
+    "input": "asyncapi-missing-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-missing-messages-v2": {
+    "input": "asyncapi-missing-messages-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": false
+  },
+  "asyncapi-missing-messages-external": {
+    "input": "asyncapi-missing-messages-external.yaml",
+    "references": ["asyncapi-missing-messages-library.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
   }
 }

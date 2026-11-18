@@ -142,7 +142,7 @@ from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as P
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _writes_serialize_as_any
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
-from datamodel_code_generator.parser.asyncapi import AsyncAPIParser, AsyncAPISchema
+from datamodel_code_generator.parser.asyncapi import AsyncAPIParser, AsyncAPIResolvedRef, AsyncAPISchema
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi import HeaderObject, OpenAPIParser, ParameterObject, RequestBodyObject
@@ -836,6 +836,7 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
         self._api_roots: set[str] = set()
         self._declaration_types: dict[SchemaLocation, DataType] = {}
         self.ignored_declarations: list[ApiIgnoredDeclaration] = []
+        self._missing_messages: dict[int, tuple[dict[str, YamlValue], SchemaLocation]] = {}
         self.walked_messages: dict[SchemaLocation, tuple[WalkedMessage, ...]] = {}
         """The messages the walk reached from each message value, after every `$ref` and `oneOf`, by its location."""
         self._message_frames: list[list[WalkedMessage]] = []
@@ -875,9 +876,33 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
         if payload is not None and (location := payload.location) is not None:
             with self._asyncapi_context(payload.context):
                 ref = self._reference_use(payload.raw_schema, payload.path)[0]
-        walked = WalkedMessage(self._declared(message), location, ref)
+        declaration = self._raw_location(message) or self._missing_messages[id(message)][1]
+        walked = WalkedMessage(declaration, location, ref)
         for frame in self._message_frames:
             frame.append(walked)
+
+    @override
+    def _resolve_ref_object(self, value: object, seen_paths: set[tuple[str, ...]]) -> AsyncAPIResolvedRef | None:
+        """Note the location a reference names where its target is missing, which reads as an empty message."""
+        resolved = super()._resolve_ref_object(value, seen_paths)
+        if (
+            resolved is None
+            or not isinstance(resolved.value, dict)
+            or self._raw_location(resolved.value) is not None
+            or not isinstance(value, dict)
+        ):
+            return resolved
+        source = self._raw_location(value)
+        named = source and self._schema_reference_location(source.document, value["$ref"])
+        self._missing_messages.update({id(resolved.value): (resolved.value, named)} if named is not None else {})
+        return resolved
+        source = self._raw_location(value)
+        if (
+            source is not None
+            and (named := self._schema_reference_location(source.document, value["$ref"])) is not None
+        ):
+            self._missing_messages[id(resolved.value)] = (resolved.value, named)
+        return resolved
 
     @override
     def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
@@ -911,6 +936,7 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
         """Drop the recorded graph anchors, the loaded documents and the messages their walk reached."""
         super().release_records()
         self._api_documents.clear()
+        self._missing_messages.clear()
         self._api_roots.clear()
         self.walked_messages.clear()
 

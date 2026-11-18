@@ -18,4 +18,5 @@ covers = [
     "main/generation_platform/client/asyncapi-unloaded-references-v2.txt",
     "main/generation_platform/client/packages/asyncapi-nested-messages-v2/pydantic_v2_BaseModel//*.py",
     "main/generation_platform/client/packages/asyncapi-payload-siblings/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/runtime/asyncapi-connections.txt",
 ]
