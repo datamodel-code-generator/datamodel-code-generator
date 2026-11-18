@@ -21,6 +21,7 @@ entrypoint-report-missing-input	ci_coverage/report-missing-input.txt
 entrypoint-report-missing-lines	ci_coverage/report-missing-lines.txt
 entrypoint-report-no-source	ci_coverage/report-no-source.txt
 entrypoint-report-pull-request	ci_coverage/report-pull-request.txt
+entrypoint-report-stale-data	ci_coverage/report-stale-data.txt	= ci_coverage/report-missing-input.txt
 entrypoint-stale-destination	ci_coverage/stale-destination.txt
 entrypoint-unexpected	ci_coverage/unexpected.txt
 entrypoint-wrong-name	ci_coverage/wrong-name.txt	= ci_coverage/wrong-run.txt
@@ -46,11 +47,17 @@ subprocess-report-missing-input	ci_coverage/report-missing-input.txt
 subprocess-report-missing-lines	ci_coverage/report-missing-lines.txt
 subprocess-report-no-source	ci_coverage/report-no-source.txt
 subprocess-report-pull-request	ci_coverage/report-pull-request.txt
+subprocess-report-stale-data	ci_coverage/report-stale-data.txt	= ci_coverage/report-missing-input.txt
 subprocess-stale-destination	ci_coverage/stale-destination.txt
 subprocess-unexpected	ci_coverage/unexpected.txt
 subprocess-wrong-name	ci_coverage/wrong-name.txt	= ci_coverage/wrong-run.txt
 subprocess-wrong-run	ci_coverage/wrong-run.txt
 subprocess-wrong-sha	ci_coverage/wrong-sha.txt	= ci_coverage/wrong-run.txt
 [test_executed_exclusions]
+absolute-path	ci_coverage_script/executed_exclusions[absolute-path].txt
+clause-kinds	ci_coverage_script/executed_exclusions[clause-kinds].txt
+decorated-uncalled	ci_coverage_script/executed_exclusions[decorated-uncalled].txt
+multi-line-statement	ci_coverage_script/executed_exclusions[multi-line-statement].txt
+nested-regions	ci_coverage_script/executed_exclusions[nested-regions].txt
 report-executed-exclusion	ci_coverage_script/executed_exclusions[report-executed-exclusion].txt
 report-no-source	ci_coverage_script/executed_exclusions[report-no-source].txt

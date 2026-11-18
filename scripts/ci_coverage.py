@@ -111,7 +111,10 @@ def _run(commands: list[list[str]]) -> tuple[int, str]:
 
 
 def _report(root: Path, compare_branch: str, expected: frozenset[str]) -> int:
-    """Combine the prepared inputs in parallel groups, then write the XML and diff report beside the summary gate."""
+    """Combine the prepared inputs in parallel groups, then write the XML and diff report beside the summary gate.
+
+    The executed exclusions are listed once the checks start, so only from the data file this run's combine wrote.
+    """
     coverage = [sys.executable, "-m", "coverage"]
     names = sorted(expected)
     parts = [str(root / f".coverage.part{index}") for index in range(COMBINE_GROUPS)]
@@ -137,15 +140,16 @@ def _report(root: Path, compare_branch: str, expected: frozenset[str]) -> int:
             [[*coverage, "report", data, "--fail-under=100", "--skip-covered", "--show-missing"]],
         ],
     )
-    code = 0
+    code, combined = 0, False
     for stage in stages:
+        combined = stage is stages[-1]
         with ThreadPoolExecutor(len(stage)) as pool:
             results = list(pool.map(_run, stage))
         for _, output in results:
             print(output, end="", flush=True)
         if code := next((code for code, _ in results if code), 0):
             break
-    if (root / ".coverage").is_file():
+    if combined:
         script = Path(__file__).with_name("coverage_exclusions.py")
         print(_run([[sys.executable, str(script), str(root / ".coverage")]])[1], end="", flush=True)
     return code
