@@ -12,6 +12,7 @@
     "datamodel_code_generator._json_config_fields",
     "datamodel_code_generator._json_limits",
     "datamodel_code_generator._json_output",
+    "datamodel_code_generator._lazy_exports",
     "datamodel_code_generator._message_text",
     "datamodel_code_generator._module_paths",
     "datamodel_code_generator._option_names",
