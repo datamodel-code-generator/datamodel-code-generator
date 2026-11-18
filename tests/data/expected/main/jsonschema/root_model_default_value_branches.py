@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -14,8 +14,10 @@ class CountType(RootModel[int]):
 
 
 class Model(BaseModel):
-    count_with_default: Annotated[CountType | None, Field(validate_default=True)] = 10
+    count_with_default: Annotated[CountType | None, Field(validate_default=True)] = (
+        cast('CountType | None', 10)
+    )
     count_no_default: CountType | None = None
     count_list_default: Annotated[
         list[CountType] | None, Field(validate_default=True)
-    ] = [1, 2, 3]
+    ] = cast('list[CountType] | None', [1, 2, 3])

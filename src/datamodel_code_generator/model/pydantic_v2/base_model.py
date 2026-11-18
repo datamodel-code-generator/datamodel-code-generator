@@ -59,11 +59,8 @@ from datamodel_code_generator.model._decisions.hashability import (
 )
 from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
-    DEFAULT_VALUE,
-    MISSING_DEFAULT,
     RENDER_READY,
     CallPlan,
-    FieldDefault,
     FieldRenderPlan,
     Kwarg,
     Omitted,
@@ -156,7 +153,6 @@ from datamodel_code_generator.python_literal import (
     _normalize_string,
     _normalized_safe_python_name,
     _text_constructor_expression,
-    represent_python_value,
     represent_untrusted_python_value,
     stable_repr,
 )
@@ -898,10 +894,9 @@ class DataModelField(_PydanticBaseDataModelField):
         """Get the rendered default value for the field."""
         if (plan := frozen_render_plan(self)) is not None:
             default = plan.default
-            return _MISSING_SENTINEL if default.missing_sentinel else represent_python_value(default.value)
-        if self.use_missing_sentinel_default:
-            return _MISSING_SENTINEL
-        return super().represented_default
+        else:
+            default = self._field_default(missing=self.use_missing_sentinel_default)
+        return _MISSING_SENTINEL if default.missing_sentinel else self._written_default(default)
 
     @override
     def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
@@ -942,10 +937,9 @@ class DataModelField(_PydanticBaseDataModelField):
     def _build_render_plan(self) -> FieldRenderPlan:
         """Include the explicit null default required by Pydantic v2; a field without metadata writes no call."""
         if _writes_no_call_without_plan(self):
-            missing = self._uses_missing_sentinel(factory_present=False)
             return self._field_render_plan(
                 None,
-                FieldDefault(self.default, missing, MISSING_DEFAULT if missing else DEFAULT_VALUE),
+                self._field_default(missing=self._uses_missing_sentinel(factory_present=False)),
                 has_default_factory_in_field=False,
                 omitted=tuple(self._warned_omissions()[0]),
             )

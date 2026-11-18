@@ -87,6 +87,19 @@ Whether a form body, a client's form or query object parameter, or a multipart b
 +form=MultipartForm(members=True),
 ```
 
+### `--use-annotated` casts a model field's default to the field's type (unreleased) { #annotated-model-default-cast }
+
+Under `--use-annotated`, a field whose type holds a model or a root model, which Pydantic validates its default into (`validate_default=True`), was assigned the schema default as it is in the class body: an object or an array for a model, a list or dict of objects for a list or dict of models, an object for a union of models, a number or string for a root model such as a constrained `integer`, or a string for a union of a model with a format such as a URL or a date. mypy (with the Pydantic plugin) and pyright expect the field's type there, so both reported the assignment. Such a value is now written as `cast('<the field type>', <value>)`, and the module imports `cast` from `typing`. Pydantic still validates the value at instantiation (`validate_default=True` is unchanged), so the models behave as before: the same values, the same JSON Schema defaults, the same error for a default the model rejects. A default the type already takes, such as an empty list for a list of models, a string for a union with `str` or enum members for a list of enums (`--set-default-enum-member`), is written as before.
+
+- **Affects:** output model types: `pydantic_v2.BaseModel`; only with: `--use-annotated`
+- **Pull requests and issues:** [#7016](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7016)
+- **Source:** the release notes
+
+```diff
+-flags: Annotated[Flags | None, Field(validate_default=True)] = {'enabled': False}
++flags: Annotated[Flags | None, Field(validate_default=True)] = cast('Flags | None', {'enabled': False})
+```
+
 ### Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties (unreleased) { #read-the-write-walk-from-the-parse-main }
 
 Generation of request and response models with an intersect option no longer fails with "A Parser can not resolve classes" for a $ref to a closed object beside a schema-valued additionalProperties.

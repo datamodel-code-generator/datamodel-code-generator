@@ -11755,6 +11755,99 @@ def test_main_openapi_referenced_default_use_annotated(output_file: Path) -> Non
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param((), id="nullable"),
+        pytest.param(("--strict-nullable", "--use-standard-collections", "--use-union-operator"), id="strict-nullable"),
+    ],
+)
+def test_main_openapi_annotated_model_defaults(output_file: Path, extra_args: tuple[str, ...]) -> None:
+    """Cast the object and array defaults of model fields under --use-annotated, which Pydantic still validates."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "annotated_model_defaults.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--target-python-version", "3.10"),
+            *("--disable-timestamp", *extra_args),
+        ],
+    )
+    with _generated_model(output_file, "annotated_model_defaults", "Settings") as settings:
+        namespace = vars(sys.modules[settings.__module__])
+        first, second = settings(), settings()
+        folder = namespace["Folder"]()
+        with pytest.raises(pydantic.ValidationError) as broken:
+            namespace["Broken"]()
+        properties = settings.model_json_schema()["properties"]
+    assert_output(
+        f"{first.model_dump_json(by_alias=True)}\n"
+        f"{[type(getattr(first, name)).__name__ for name in type(first).model_fields]}\n"
+        f"shared: {first.flags is second.flags or first.outer.inner is second.outer.inner}\n"
+        f"{folder!r}\n"
+        f"{json.dumps({name: value.get('default') for name, value in properties.items()})}\n"
+        f"{broken.value.title}: {[(error['type'], error['loc']) for error in broken.value.errors()]}\n",
+        name="payloads",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param((), id="nullable"),
+        pytest.param(
+            ("--strict-nullable", "--use-standard-collections", "--use-union-operator", "--set-default-enum-member"),
+            id="strict-nullable",
+        ),
+        pytest.param(("--use-unique-items-as-set",), id="unique-items-as-set"),
+    ],
+)
+def test_main_openapi_annotated_model_container_defaults(output_file: Path, extra_args: tuple[str, ...]) -> None:
+    """Cast the defaults of lists, dicts and unions of models, scalar root models and formats under --use-annotated."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "annotated_model_container_defaults.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--target-python-version", "3.10"),
+            *("--disable-timestamp", *extra_args),
+        ],
+    )
+    with _generated_model(output_file, "annotated_model_container_defaults", "Shelter") as shelter:
+        kennel = vars(sys.modules[shelter.__module__])["Kennel"]
+        first, second = shelter(), shelter()
+        with pytest.raises(pydantic.ValidationError) as broken:
+            kennel()
+        properties = shelter.model_json_schema()["properties"]
+    assert_output(
+        f"{first!r}\n"
+        f"{first.model_dump_json(by_alias=True)}\n"
+        f"shared: {first.pets is second.pets or first.pets[0] is second.pets[0]}\n"
+        f"{json.dumps({name: value.get('default') for name, value in properties.items()})}\n"
+        f"{broken.value.title}: {[(error['type'], error['loc']) for error in broken.value.errors()]}\n",
+        name="payloads",
+    )
+
+
+def test_main_openapi_annotated_model_default_literals(output_file: Path) -> None:
+    """Cast a float or boolean default of an integer Literal, and keep the cast clear of a field named ``cast``."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "annotated_model_default_literals.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--target-python-version", "3.10"),
+            *("--disable-timestamp", "--enum-field-as-literal", "all"),
+        ],
+    )
+    with _generated_model(output_file, "annotated_model_default_literals", "Film") as film:
+        first = film()
+    assert_output(
+        f"{first!r}\n{[type(getattr(first, name)).__name__ for name in type(first).model_fields]}\n",
+        name="payloads",
+    )
+
+
 def test_main_openapi_root_model_default_primitive(output_file: Path) -> None:
     """Test RootModel with primitive default value in union type."""
     run_main_and_assert(

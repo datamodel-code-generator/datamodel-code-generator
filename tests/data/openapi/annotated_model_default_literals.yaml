@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Model defaults beside literals and field names
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+    Film:
+      type: object
+      properties:
+        cast:
+          type: string
+          default: actors
+        pet:
+          $ref: '#/components/schemas/Pet'
+          default:
+            name: rex
+        petOrLevel:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: integer
+              enum: [1, 2]
+          default: 1
+        petOrFloat:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: integer
+              enum: [1, 2]
+          default: 1.0
+        petOrFlag:
+          anyOf:
+            - $ref: '#/components/schemas/Pet'
+            - type: integer
+              enum: [1, 2]
+          default: true
