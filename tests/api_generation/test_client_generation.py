@@ -238,6 +238,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-unloaded-references-v2",
         "asyncapi-reference-cycles",
         "asyncapi-reference-cycles-operations",
+        "asyncapi-imported-entries",
         "asyncapi-schema-formats",
         "asyncapi-message-codecs",
         "asyncapi-handshake-models",

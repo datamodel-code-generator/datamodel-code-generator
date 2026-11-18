@@ -279,14 +279,22 @@ class _Document:
         return value, at
 
     def named(self, item: YamlValue, at: SchemaLocation, holder: tuple[str, ...]) -> str | None:
-        """Return the name of the object of the document's `holder` that a reference at `at` names, else None."""
+        """Return the name of the object of the document's `holder` that a reference at `at` names, else None.
+
+        A reference names the entry it is written to, else the first entry that leads where the reference leads.
+        """
         ref = as_mapping(item).get("$ref")
-        target = self.target(at.document, ref) if isinstance(ref, str) else None
-        return (
-            target.tokens[-1]
-            if target is not None and target.document == self.root.document and target.tokens[:-1] == holder
-            else None
-        )
+        if not isinstance(ref, str) or (target := self.target(at.document, ref)) is None:
+            return None
+        catalogue = self.root.child(*holder)
+        if target.document == catalogue.document and target.tokens[:-1] == catalogue.tokens:
+            return target.tokens[-1]
+        if (leads := self.resolved(self.value(target), target)) is None:
+            return None
+        for key, value in as_mapping(self.value(catalogue)).items():
+            if (entry := self.resolved(value, catalogue.child(name := str(key)))) is not None and entry[1] == leads[1]:
+                return name
+        return None
 
 
 def _media(message: Mapping[str, YamlValue], default: str) -> str:

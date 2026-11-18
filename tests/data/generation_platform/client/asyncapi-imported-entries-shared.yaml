@@ -1,0 +1,104 @@
+asyncapi: 3.0.0
+info:
+  title: Shared servers, channels and operations
+  version: 1.0.0
+servers:
+  socket:
+    host: socket.example.com
+    protocol: wss
+  relay:
+    host: relay.example.com
+    protocol: wss
+  private:
+    host: private.example.com
+    protocol: wss
+  guarded:
+    host: guarded.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/key'
+  hiddenguard:
+    host: hidden.example.com
+    protocol: wss
+    security:
+      - $ref: '#/components/securitySchemes/hidden'
+  faraway:
+    $ref: 'asyncapi-other.yaml#/servers/remote'
+channels:
+  served:
+    address: /served
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      note:
+        $ref: '#/components/messages/note'
+  relayed:
+    address: /relayed
+    servers:
+      - $ref: '#/servers/relay'
+    messages:
+      note:
+        $ref: '#/components/messages/note'
+  private:
+    address: /private
+    servers:
+      - $ref: '#/servers/private'
+    messages:
+      note:
+        $ref: '#/components/messages/note'
+  keyed:
+    address: /keyed
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      note:
+        $ref: '#/components/messages/note'
+  hidden:
+    address: /hidden
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      note:
+        $ref: '#/components/messages/note'
+  far:
+    address: /far
+    servers:
+      - $ref: '#/servers/faraway'
+    messages:
+      note:
+        $ref: '#/components/messages/note'
+operations:
+  sendKeyed:
+    action: send
+    channel:
+      $ref: '#/channels/keyed'
+    security:
+      - $ref: '#/components/securitySchemes/key'
+  sendHidden:
+    action: send
+    channel:
+      $ref: '#/channels/hidden'
+    security:
+      - $ref: '#/components/securitySchemes/hidden'
+components:
+  messages:
+    note:
+      payload:
+        type: object
+        properties:
+          text:
+            type: string
+        required: [text]
+  operationTraits:
+    secured:
+      security:
+        - $ref: '#/components/securitySchemes/key'
+  securitySchemes:
+    key:
+      type: httpApiKey
+      in: header
+      name: X-Key
+    hidden:
+      type: httpApiKey
+      in: header
+      name: X-Hidden

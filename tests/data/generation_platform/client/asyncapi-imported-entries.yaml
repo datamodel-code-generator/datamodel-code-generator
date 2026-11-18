@@ -1,0 +1,140 @@
+asyncapi: 3.0.0
+info:
+  title: Servers and security schemes imported from another document
+  version: 1.0.0
+servers:
+  socket:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/servers/socket'
+  main:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/servers/relay'
+  guarded:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/servers/guarded'
+  hiddenguard:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/servers/hiddenguard'
+  spare:
+    $ref: '#/components/servers/spare'
+  faraway:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/servers/faraway'
+channels:
+  served:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/channels/served'
+  relayed:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/channels/relayed'
+  private:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/channels/private'
+  direct:
+    address: /direct
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      note:
+        $ref: 'asyncapi-imported-entries-shared.yaml#/components/messages/note'
+  external:
+    address: /external
+    servers:
+      - $ref: 'asyncapi-imported-entries-shared.yaml#/servers/socket'
+    messages:
+      note:
+        $ref: 'asyncapi-imported-entries-shared.yaml#/components/messages/note'
+  listed:
+    address: /listed
+    servers:
+      - $ref: '#/components/servers/spare'
+    messages:
+      note:
+        $ref: 'asyncapi-imported-entries-shared.yaml#/components/messages/note'
+  keyed:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/channels/keyed'
+  hidden:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/channels/hidden'
+  traited:
+    address: /traited
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      note:
+        $ref: 'asyncapi-imported-entries-shared.yaml#/components/messages/note'
+  keydirect:
+    address: /keydirect
+    servers:
+      - $ref: '#/servers/socket'
+    messages:
+      note:
+        $ref: 'asyncapi-imported-entries-shared.yaml#/components/messages/note'
+  onguarded:
+    address: /guarded
+    servers:
+      - $ref: '#/servers/guarded'
+    messages:
+      note:
+        $ref: 'asyncapi-imported-entries-shared.yaml#/components/messages/note'
+  onhidden:
+    address: /onhidden
+    servers:
+      - $ref: '#/servers/hiddenguard'
+    messages:
+      note:
+        $ref: 'asyncapi-imported-entries-shared.yaml#/components/messages/note'
+  far:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/channels/far'
+operations:
+  sendServed:
+    action: send
+    channel:
+      $ref: '#/channels/served'
+  sendRelayed:
+    action: send
+    channel:
+      $ref: '#/channels/relayed'
+  sendPrivate:
+    action: send
+    channel:
+      $ref: '#/channels/private'
+  sendDirect:
+    action: send
+    channel:
+      $ref: '#/channels/direct'
+  sendExternal:
+    action: send
+    channel:
+      $ref: '#/channels/external'
+  sendListed:
+    action: send
+    channel:
+      $ref: '#/channels/listed'
+  sendKeyed:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/operations/sendKeyed'
+  sendHidden:
+    $ref: 'asyncapi-imported-entries-shared.yaml#/operations/sendHidden'
+  sendTraited:
+    action: send
+    channel:
+      $ref: '#/channels/traited'
+    traits:
+      - $ref: 'asyncapi-imported-entries-shared.yaml#/components/operationTraits/secured'
+  sendKeyDirect:
+    action: send
+    channel:
+      $ref: '#/channels/keydirect'
+    security:
+      - $ref: '#/components/securitySchemes/key'
+  sendGuarded:
+    action: send
+    channel:
+      $ref: '#/channels/onguarded'
+  sendOnHidden:
+    action: send
+    channel:
+      $ref: '#/channels/onhidden'
+  sendFar:
+    action: send
+    channel:
+      $ref: '#/channels/far'
+components:
+  servers:
+    spare:
+      host: spare.example.com
+      protocol: wss
+  securitySchemes:
+    key:
+      $ref: 'asyncapi-imported-entries-shared.yaml#/components/securitySchemes/key'

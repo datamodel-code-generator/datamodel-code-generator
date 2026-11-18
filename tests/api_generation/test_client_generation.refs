@@ -153,6 +153,8 @@ asyncapi-handshake-siblings-v2-ignored	main/generation_platform/client/asyncapi-
 asyncapi-handshake-siblings-v2-ignored	main/generation_platform/client/packages/asyncapi-handshake-siblings-v2-ignored/pydantic_v2_BaseModel//*.py
 asyncapi-handshake-v2	main/generation_platform/client/asyncapi-handshake-v2.txt
 asyncapi-handshake-v2	main/generation_platform/client/packages/asyncapi-handshake-v2/pydantic_v2_BaseModel//*.py
+asyncapi-imported-entries	main/generation_platform/client/asyncapi-imported-entries.txt
+asyncapi-imported-entries	main/generation_platform/client/packages/asyncapi-imported-entries/pydantic_v2_BaseModel//*.py
 asyncapi-mapped-payloads	main/generation_platform/client/asyncapi-mapped-payloads.txt
 asyncapi-mapped-payloads	main/generation_platform/client/packages/asyncapi-mapped-payloads/pydantic_v2_BaseModel//*.py
 asyncapi-market-v2	main/generation_platform/client/asyncapi-market-v2.txt

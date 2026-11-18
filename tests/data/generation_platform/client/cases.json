@@ -6521,6 +6521,12 @@
     "input": "asyncapi-reference-cycles-operations.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
   },
+  "asyncapi-imported-entries": {
+    "input": "asyncapi-imported-entries.yaml",
+    "references": ["asyncapi-imported-entries-shared.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "_operations.py"], ["client", "_generated", "security.py"], ["client", "protocols", "_plans.py"]]
+  },
   "asyncapi-schema-formats": {
     "input": "asyncapi-schema-formats.yaml",
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
