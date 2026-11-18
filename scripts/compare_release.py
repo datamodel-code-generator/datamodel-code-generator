@@ -711,10 +711,20 @@ class Runner:
         self.workers: dict[int, Worker] = {}
         self.lock = threading.Lock()
 
-    def _worker(self) -> Worker:
-        """Return this thread's worker: a new one in place of one that ran `recycle` jobs or has ended."""
+    def _worker(self, *, fresh: bool = False) -> Worker:
+        """Return this thread's worker: a new one in place of one that ran `recycle` jobs or has ended.
+
+        A `fresh` job (one that changes process-wide state, as `--debug` does by wrapping the classes imported after
+        it) also gets a new worker in place of one that ran any job: a run in a used process would not behave like one
+        in a process of its own.
+        """
         worker = self.workers.get(thread := threading.get_ident())
-        if worker is None or worker.jobs >= self.recycle or worker.process.poll() is not None:
+        if (
+            worker is None
+            or worker.jobs >= self.recycle
+            or worker.process.poll() is not None
+            or (fresh and worker.jobs)
+        ):
             if worker is not None:
                 worker.close()
             worker = Worker(self.side.python, self.env, self.side.package)
@@ -737,15 +747,16 @@ class Runner:
             "memory_mb": self.memory_mb,
             "args": [*args, "--output", str(out / "model.py")],
         }
-        rc = (worker := self._worker()).run(job)
+        fresh = bool(PROCESS_STATE_OPTIONS.intersection(args))
+        rc = (worker := self._worker(fresh=fresh)).run(job)
         first: Record = {}
         if rc != 0 and any(text in log.read_text(encoding="utf-8", errors="replace") for text in MODULAR_OUTPUT_ERRORS):
             first = _attempt(rc, log, record, (out, tmp, worker.package))
             job["args"] = [*args, "--output", str(out / "pkg")]
-            rc = (worker := self._worker()).run(job)
+            rc = (worker := self._worker(fresh=fresh)).run(job)
         if rc > 0 and self.memory_mb and ran_out_of_memory(_last_line(log)):
             rc = OUT_OF_MEMORY
-        if rc == OUT_OF_MEMORY or PROCESS_STATE_OPTIONS.intersection(args):
+        if rc == OUT_OF_MEMORY or fresh:
             worker.close()
         facts = _attempt(rc, log, record, (out, tmp, worker.package)) | {"first": first}
         if rc != 0:

@@ -249,12 +249,17 @@ if resource.getrlimit(resource.RLIMIT_DATA)[0] == 3000 << 20:
     raise ImportError("the cap of the run stayed")
 '''
 
+RUNS = []
+
 
 def main(argv):
+    RUNS.append(argv)
     kind = Path(argv[argv.index("--input") + 1]).read_text(encoding="utf-8")
     if kind == "memory":
         bytearray(64 << 20)
     warnings.warn("an old option", DeprecationWarning, stacklevel=1)
+    if "--debug" in argv:
+        warnings.warn(f"{len(RUNS) - 1} earlier runs in this process", UserWarning, stacklevel=1)
     re.compile("[[a]")
     broken = "raise ImportError('broken')\\n" if kind == "broken" else ""
     Path(argv[argv.index("--output") + 1]).write_text(MODEL + broken, encoding="utf-8")
@@ -298,7 +303,8 @@ def _worker_runs(runner: compare_release.Runner, tmp_path: Path, steps: list[Ste
 def test_a_worker_runs_each_job_as_a_fresh_process(tmp_path: Path) -> None:
     """Later runs of a worker record the warnings, import checks and memory cap a fresh process would.
 
-    A run that turns on process state (`--debug`) closes its worker, and a worker runs at most `recycle` jobs.
+    A run that turns on process state (`--debug`) starts in a worker that ran no job and closes it, and a worker runs
+    at most `recycle` jobs.
     """
     runner = _fake_runner(tmp_path, 3000, import_check=True)
     steps: list[Step] = [({}, "plain", ()), ({}, "broken", ()), ({}, "plain", ("--debug",)), ({}, "plain", ())]
