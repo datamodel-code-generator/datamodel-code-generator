@@ -161,6 +161,7 @@
   "read_nullable_beside_type_list",
   "read_object_keywords_by_type",
   "read_only_write_only_model_type",
+  "read_ref_siblings_in_closed_allof_members",
   "read_schema_version_per_document",
   "read_single_allof_refs_in_their_documents",
   "read_unevaluated_properties",
@@ -276,6 +277,8 @@
   "use_union_operator",
   "use_unique_items_as_set",
   "use_unique_items_as_set_by_value",
+  "use_unmapped_variant_tag_values",
+  "use_validate_default_for_root_model_type_aliases",
   "use_x_python_import_for_every_ref",
   "use_x_python_type_as_written",
   "validation",
@@ -1176,6 +1179,7 @@
     "practical-py310-20261111",
     "practical-py310-20261112",
     "practical-py310-20261113",
+    "practical-py310-20261118",
     "practical-py311-20260619",
     "practical-py311-20260826",
     "practical-py311-20260909",
@@ -1187,6 +1191,7 @@
     "practical-py311-20261111",
     "practical-py311-20261112",
     "practical-py311-20261113",
+    "practical-py311-20261118",
     "practical-py312-20260619",
     "practical-py312-20260826",
     "practical-py312-20260909",
@@ -1198,6 +1203,7 @@
     "practical-py312-20261111",
     "practical-py312-20261112",
     "practical-py312-20261113",
+    "practical-py312-20261118",
     "practical-py313-20260619",
     "practical-py313-20260826",
     "practical-py313-20260909",
@@ -1209,6 +1215,7 @@
     "practical-py313-20261111",
     "practical-py313-20261112",
     "practical-py313-20261113",
+    "practical-py313-20261118",
     "practical-py314-20260619",
     "practical-py314-20260826",
     "practical-py314-20260909",
@@ -1220,6 +1227,7 @@
     "practical-py314-20261111",
     "practical-py314-20261112",
     "practical-py314-20261113",
+    "practical-py314-20261118",
     "practical-py315-20261015",
     "practical-py315-20261017",
     "practical-py315-20261027",
@@ -1228,6 +1236,7 @@
     "practical-py315-20261111",
     "practical-py315-20261112",
     "practical-py315-20261113",
+    "practical-py315-20261118",
     "standard-py310-20260619",
     "standard-py310-20260826",
     "standard-py310-20260909",
@@ -1239,6 +1248,7 @@
     "standard-py310-20261111",
     "standard-py310-20261112",
     "standard-py310-20261113",
+    "standard-py310-20261118",
     "standard-py311-20260619",
     "standard-py311-20260826",
     "standard-py311-20260909",
@@ -1250,6 +1260,7 @@
     "standard-py311-20261111",
     "standard-py311-20261112",
     "standard-py311-20261113",
+    "standard-py311-20261118",
     "standard-py312-20260619",
     "standard-py312-20260826",
     "standard-py312-20260909",
@@ -1261,6 +1272,7 @@
     "standard-py312-20261111",
     "standard-py312-20261112",
     "standard-py312-20261113",
+    "standard-py312-20261118",
     "standard-py313-20260619",
     "standard-py313-20260826",
     "standard-py313-20260909",
@@ -1272,6 +1284,7 @@
     "standard-py313-20261111",
     "standard-py313-20261112",
     "standard-py313-20261113",
+    "standard-py313-20261118",
     "standard-py314-20260619",
     "standard-py314-20260826",
     "standard-py314-20260909",
@@ -1283,6 +1296,7 @@
     "standard-py314-20261111",
     "standard-py314-20261112",
     "standard-py314-20261113",
+    "standard-py314-20261118",
     "standard-py315-20261015",
     "standard-py315-20261017",
     "standard-py315-20261027",
@@ -1290,7 +1304,8 @@
     "standard-py315-20261106",
     "standard-py315-20261111",
     "standard-py315-20261112",
-    "standard-py315-20261113"
+    "standard-py315-20261113",
+    "standard-py315-20261118"
    ]
   },
   "--profile": {
@@ -1387,6 +1402,12 @@
     "all",
     "request-response"
    ]
+  },
+  "--read-ref-siblings-in-closed-allof-members": {
+   "aliases": [
+    "--no-read-ref-siblings-in-closed-allof-members"
+   ],
+   "choices": null
   },
   "--read-schema-version-per-document": {
    "aliases": [
@@ -2008,6 +2029,18 @@
   "--use-unique-items-as-set-by-value": {
    "aliases": [
     "--no-use-unique-items-as-set-by-value"
+   ],
+   "choices": null
+  },
+  "--use-unmapped-variant-tag-values": {
+   "aliases": [
+    "--no-use-unmapped-variant-tag-values"
+   ],
+   "choices": null
+  },
+  "--use-validate-default-for-root-model-type-aliases": {
+   "aliases": [
+    "--no-use-validate-default-for-root-model-type-aliases"
    ],
    "choices": null
   },

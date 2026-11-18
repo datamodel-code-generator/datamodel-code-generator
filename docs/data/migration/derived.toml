@@ -14,6 +14,7 @@
 "20261111" = "0.94.0"
 "20261112" = "0.95.0"
 "20261113" = "0.97.0"
+"20261118" = "0.98.0"
 
 [options]
 "--infer-union-discriminators" = "0.97.0"
@@ -24,7 +25,10 @@
 "--read-implied-options-from-merged-values" = "0.97.0"
 "--read-inherited-property-schemas-in-mro-order" = "0.97.0"
 "--read-kubernetes-extensions" = "0.97.0"
+"--read-ref-siblings-in-closed-allof-members" = "0.98.0"
 "--read-single-allof-refs-in-their-documents" = "0.97.0"
 "--read-yaml-1-1-numbers-as-text" = "0.97.0"
 "--untyped-value-type" = "0.97.0"
+"--use-unmapped-variant-tag-values" = "0.98.0"
+"--use-validate-default-for-root-model-type-aliases" = "0.98.0"
 "--use-x-python-import-for-every-ref" = "0.97.0"
