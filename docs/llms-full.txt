@@ -90926,6 +90926,13 @@ With `--generate-client`, explicit argument names (`parameter_names`, `--aliases
 - **Pull requests and issues:** [#6979](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6979)
 - **Source:** the release notes
 
+### Root models every use of which is collapsed are no longer written as unused aliases under msgspec (unreleased) { #collapsed-root-unused-alias }
+
+With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root model whose references are all collapsed into their users (several fields, some naming it inside a union) was still written as an unused module-level type alias (`NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None`); it is no longer written. Nothing named the alias, so the models that used it are unchanged and validate the same payloads.
+
+- **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
+- **Source:** the release notes
+
 ### Schema validators reject a boolean for a numeric const or enum value and a number for a boolean one (unreleased) { #schema-validators-constant-types }
 
 With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), a const or enum that holds a number equal to a boolean (`0`, `1`) or a boolean gets a check on the raw input: `true` for `const: 1`, for `enum: [1, 2]` or for `enum: [1, "x"]`, and `1` for `const: true`, which Python's `True == 1` let the Literal or Enum take, are now rejected, as JSON Schema rejects them; `1.0` for `const: 1` is still accepted, and an enum that holds both (`[1, true]`) takes both. The check holds for properties, array items and mapping values, for an Enum class a property references, for the consts of a oneOf or anyOf (with branches that take no boolean or number, such as `null`), and for root models; models gain `__json_schema_constant_types__` and a shared base with `_validate_json_schema_constant_types`. Without the option nothing changes.
@@ -90998,6 +91005,13 @@ Under `--use-annotated`, a field whose type holds a model or a root model, which
 -flags: Annotated[Flags | None, Field(validate_default=True)] = {'enabled': False}
 +flags: Annotated[Flags | None, Field(validate_default=True)] = cast('Flags | None', {'enabled': False})
 ```
+
+### No dropped-constraints warning for a collapsed root model that is no longer written (unreleased) { #collapsed-root-unused-alias-warning }
+
+With `--collapse-root-models` under msgspec.Struct, the warning that a root-model alias whose references are all collapsed is generated without some member constraints (`... Parted is generated without these constraints.`) is no longer printed, since that unused alias is no longer written (see collapsed-root-unused-alias); the warnings of the fields that use it stay.
+
+- **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
+- **Source:** the release notes
 
 ### Request/response models no longer crash on a $ref to a closed object beside a schema-valued additionalProperties (unreleased) { #read-the-write-walk-from-the-parse-main }
 

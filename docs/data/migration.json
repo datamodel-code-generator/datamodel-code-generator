@@ -1406,6 +1406,18 @@
   },
   {
    "action": "review",
+   "id": "collapsed-root-unused-alias",
+   "kind": "default-output",
+   "refs": [
+    "#6915"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root model whose references are all collapsed into their users (several fields, some naming it inside a union) was still written as an unused module-level type alias (`NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None`); it is no longer written. Nothing named the alias, so the models that used it are unchanged and validate the same payloads.",
+   "title": "Root models every use of which is collapsed are no longer written as unused aliases under msgspec"
+  },
+  {
+   "action": "review",
    "affects": {
     "experimental": [
      "cli-option.generate-schema-validators"
@@ -1520,6 +1532,18 @@
    "source": "release-note",
    "summary": "Under `--use-annotated`, a field whose type holds a model or a root model, which Pydantic validates its default into (`validate_default=True`), was assigned the schema default as it is in the class body: an object or an array for a model, a list or dict of objects for a list or dict of models, an object for a union of models, a number or string for a root model such as a constrained `integer`, or a string for a union of a model with a format such as a URL or a date. mypy (with the Pydantic plugin) and pyright expect the field's type there, so both reported the assignment. Such a value is now written as `cast('<the field type>', <value>)`, and the module imports `cast` from `typing`. Pydantic still validates the value at instantiation (`validate_default=True` is unchanged), so the models behave as before: the same values, the same JSON Schema defaults, the same error for a default the model rejects. A default the type already takes, such as an empty list for a list of models, a string for a union with `str` or enum members for a list of enums (`--set-default-enum-member`), is written as before.",
    "title": "`--use-annotated` casts a model field's default to the field's type"
+  },
+  {
+   "action": "none",
+   "id": "collapsed-root-unused-alias-warning",
+   "kind": "warning",
+   "refs": [
+    "#6915"
+   ],
+   "release": "unreleased",
+   "source": "release-note",
+   "summary": "With `--collapse-root-models` under msgspec.Struct, the warning that a root-model alias whose references are all collapsed is generated without some member constraints (`... Parted is generated without these constraints.`) is no longer printed, since that unused alias is no longer written (see collapsed-root-unused-alias); the warnings of the fields that use it stay.",
+   "title": "No dropped-constraints warning for a collapsed root model that is no longer written"
   },
   {
    "action": "none",
