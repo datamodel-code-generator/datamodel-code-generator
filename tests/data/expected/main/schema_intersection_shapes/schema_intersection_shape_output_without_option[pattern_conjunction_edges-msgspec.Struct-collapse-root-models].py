@@ -80,7 +80,7 @@ class Model(Struct):
     trailing_newline_enum: TrailingNewlineEnum | UnsetType = UNSET
     python_rejected_enum: PythonRejectedEnum | UnsetType = UNSET
     non_alike_enum: NonAlikeEnum | UnsetType = UNSET
-    python_group_name: str | UnsetType = UNSET
+    python_group_name: Annotated[str, Meta(pattern='a')] | UnsetType = UNSET
     non_portable_enum: NonPortableEnum | UnsetType = UNSET
     bad_range_enum: BadRangeEnum | UnsetType = UNSET
     non_identifier_group_name: str | UnsetType = UNSET

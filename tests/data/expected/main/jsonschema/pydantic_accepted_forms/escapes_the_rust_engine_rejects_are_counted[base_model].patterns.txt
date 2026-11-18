@@ -1,0 +1,13 @@
+The pattern '^a\\cJb$' of the schema at rust_rejected_escapes.json#/properties/control_letter is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[\\cJ]$' of the schema at rust_rejected_escapes.json#/properties/control_letter_in_class is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^\\e$' of the schema at rust_rejected_escapes.json#/properties/escape_letter is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[\\k]x$' of the schema at rust_rejected_escapes.json#/properties/key_letter_in_class is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^(?<q>["\'])[^"\']*\\k<q>$' of the schema at rust_rejected_escapes.json#/properties/named_reference is left out: no regex engine of the output compiles it, so the generated code does not check it.
+named_reference '^(?<q>["\'])[^"\']*\\k<q>$': Python's re rejects it, the model leaves it out
+control_letter '^a\\cJb$': Python's re rejects it, the model leaves it out
+escape_letter '^\\e$': Python's re rejects it, the model leaves it out
+control_letter_in_class '^[\\cJ]$': Python's re rejects it, the model leaves it out
+key_letter_in_class '^[\\k]x$': Python's re rejects it, the model leaves it out
+accented_escape '^\\é$': Python's re compiles it, the model checks it
+accented_escape_in_class '^[\\é]$': Python's re compiles it, the model checks it
+plain '^[a-z]+$': Python's re compiles it, the model checks it

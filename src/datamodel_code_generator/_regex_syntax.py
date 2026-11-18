@@ -77,8 +77,8 @@ _REGEX_CLASS_TOKEN: Final = rf"(?s)\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P
 _REGEX_VERBOSE_TOKEN: Final = rf"{_regex_token(_counted_repetition(_VERBOSE_SPACE))}|(?P<comment>#[^\n]*)"
 _REGEX_VERBOSE_CLASS_TOKEN: Final = rf"{_REGEX_CLASS_TOKEN}|(?P<comment>#[^\n]*)"
 _VERBOSE_FLAGS: Final = r"\(\?(?P<flags>[A-Za-z]*x[A-Za-z]*(?:-[A-Za-wyz]+)?)\)"
-_RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
-_RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
+_RUST_REJECTED_ESCAPES = frozenset("0123456789ceghijklmoqyCEFGHIJKLMNOQRTVXYZ")
+_RUST_REJECTED_CLASS_ESCAPES = _RUST_REJECTED_ESCAPES | {"b"}
 _RUST_REJECTED_FLAGS = frozenset("aL")
 _FIRST_SURROGATE = 0xD800
 _LAST_SURROGATE = 0xDFFF
@@ -118,12 +118,17 @@ def _names_no_scalar_value(code: str | None) -> bool:
     return _FIRST_SURROGATE <= value <= _LAST_SURROGATE or value > _LAST_CODE_POINT
 
 
+def _rust_rejects_escape(escape: str | None, rejected: frozenset[str]) -> bool:
+    """Return whether Rust rejects the character after a backslash: one of ``rejected`` or a non-ASCII one."""
+    return escape is not None and (escape in rejected or not escape.isascii())
+
+
 def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
     """Return whether a token outside character classes is Rust-rejected and the Python its syntax needs."""
     if (code := match["code"]) is not None:
         return _names_no_scalar_value(code), _PY_310
     if (escape := match["escape"]) is not None:
-        return escape in _RUST_REJECTED_ESCAPES, _PY_314 if escape == "z" else _PY_310
+        return _rust_rejects_escape(escape, _RUST_REJECTED_ESCAPES), _PY_314 if escape == "z" else _PY_310
     if (flags := match["flags"]) is not None:
         return None if "x" in flags else (not _RUST_REJECTED_FLAGS.isdisjoint(flags), _PY_310)
     if group := match["group"]:
@@ -139,8 +144,9 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
     pattern Rust accepts. Capture names such as ``(?P<ids[]>...)``, nested and POSIX character classes, braced
     escapes such as ``\p{L}``, ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are
     consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
-    octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
-    ``a`` and ``L`` flags, braces that cannot start a counted repetition, counted repetitions whose minimum
+    octal escapes, ``\N{...}``, ``\Z``, the letters it reads after a backslash nowhere (``\k``, ``\c``, ``\e``) and a
+    non-ASCII character there (``\é``), ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the ``a`` and
+    ``L`` flags, braces that cannot start a counted repetition, counted repetitions whose minimum
     exceeds their maximum (``a{ 3 , 2 }``, which Python's ``re`` reads as text), hexadecimal escapes of a
     surrogate or of a code point past U+10FFFF (``\uD800``, which Python's ``re`` reads as that surrogate) and, in a
     pattern that is not verbose, what ``_rust_rejects_beyond_tokens`` reads: Unicode properties Rust does not
@@ -173,7 +179,8 @@ def _scan_tokens(pattern: str, *, read_verbose: bool) -> tuple[bool, tuple[int, 
         position = match.end()
         if depth or match["open"]:
             depth += bool(match["open"]) - bool(depth and match["close"])
-            rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES or _names_no_scalar_value(match["code"])
+            rejected |= _rust_rejects_escape(match["escape"], _RUST_REJECTED_CLASS_ESCAPES)
+            rejected |= _names_no_scalar_value(match["code"])
             continue
         if (requirements := _regex_token_requirements(match)) is None:
             return None
@@ -337,6 +344,19 @@ _SIZE_QUANTIFIER: Final = r"\{\s*(?P<lower>[0-9]+)\s*(?:(?P<comma>,)\s*(?P<upper
 _ASCII_FLAG_GROUP: Final = r"\(\?[A-Za-z]*-[A-Za-z]*u"
 _VERBOSE_FLAG_GROUP: Final = r"\(\?[A-Za-z-]*x"
 _PYTHON_REJECTED_FLAGS: Final = r"\(\?[A-Za-z]*-[A-Za-z]*[auL]"
+_PYTHON_GRAMMAR_PART: Final = (
+    r"(?s)\\(?:[1-7][0-7]{2}|(?P<reference>[1-9][0-9]?)|0[0-7]{0,2}|x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}"
+    r"|N\{[^}]*\}?|(?P<assertion>[bBAZz])|.?)"
+    r"|\[\^?\]?(?:[^\\\]]|\\.)*(?:\]|(?P<unclosed>))"
+    r"|\(\?P=(?P<named_reference>[^)]*)\)"
+    r"|(?P<open>\((?:\?(?:(?P<behind><[=!])|(?P<ahead>[=!])|P<(?P<name>[^>]*)>"
+    r"|(?P<skipped>#(?:[^\\)]|\\.)*\)|[aiLmsux-]*\))|[aiLmsux-]*:|>|(?P<other>.?)))?)"
+    r"|(?P<repeat>(?:[*+?]|\{(?:(?P<count>[0-9]+)|(?P<lower>[0-9]*),(?P<upper>[0-9]*))\})[?+]?)"
+    r"|(?P<edge>[\^$])|(?P<bar>\|)|(?P<close>\))|."
+)
+"""A part of Python's grammar outside a class: an escape whole, a class, a group's start or end, a repetition."""
+_PYTHON_REPEATS: Final = MappingProxyType({"*": (0, math.inf), "+": (1, math.inf), "?": (0, 1)})
+"""The least and the greatest count of each repetition of one character."""
 _SIZE_ESCAPE: Final = rf"{_ESCAPE}|\\"
 """An escape (``_ESCAPE``), or the backslash that ends a pattern alone."""
 _ZERO_WIDTH_ESCAPES: Final = frozenset("bBAzZ<>")
@@ -412,11 +432,141 @@ def _class_escape_ranges(pattern: str, *, rust: bool) -> bool:
     return False
 
 
+@final
+class _PythonGroup:
+    """A group the reader of Python's grammar is in: what it captures, its lookaround and the widths read so far."""
+
+    def __init__(self, index: int | None, lookaround: str, outer_behind: int | None) -> None:
+        self.index = index
+        self.lookaround = lookaround
+        self.outer_behind = outer_behind
+        self.branches: list[tuple[int, float]] = []
+        self.low = 0
+        self.high: float = 0
+        self.last: tuple[int, float] = (0, 0)
+
+    def add(self, width: tuple[int, float]) -> None:
+        """Count the last atom of the branch and start the next one, of ``width``."""
+        self.low += self.last[0]
+        self.high += self.last[1]
+        self.last = width
+
+    def repeat(self, lower: int, upper: float) -> None:
+        """Repeat the last atom from ``lower`` to ``upper`` times, counting its width as Python's ``re`` does."""
+        low, high = self.last
+        self.last = (low * lower, 0 if 0 in {high, upper} else high * upper)
+
+    def branch(self) -> None:
+        """End a branch of the group."""
+        self.add((0, 0))
+        self.branches.append((self.low, self.high))
+        self.low, self.high = 0, 0
+
+    def width(self) -> tuple[int, float]:
+        """End the last branch and return the least and the greatest width of the group."""
+        self.branch()
+        return min(low for low, _ in self.branches), max(high for _, high in self.branches)
+
+
+@final
+class _PythonGrammar:
+    """Read the groups, references and widths of a pattern as Python's parser does, one part at a time."""
+
+    def __init__(self) -> None:
+        self.groups = [_PythonGroup(None, "", None)]
+        self.widths: dict[int, tuple[int, float] | None] = {}
+        self.names: dict[str, int] = {}
+        self.behind: int | None = None
+
+    def read(self, part: re.Match[str]) -> bool | None:
+        """Return True where the part makes Python reject the pattern, False where it ends the reading undecided."""
+        if part["unclosed"] is not None:
+            return True
+        if part["other"] is not None:
+            return part["other"] == "<"
+        group = self.groups[-1]
+        if part["reference"] or part["named_reference"] is not None:
+            return self._reference(part)
+        if part["close"]:
+            return self._close()
+        if part["open"] is not None:
+            if part["skipped"] is None:
+                self._open(part)
+        elif part["bar"]:
+            group.branch()
+        elif part["repeat"] is not None:
+            group.repeat(*(_PYTHON_REPEATS.get(part["repeat"][0]) or _counted(part)))
+        else:
+            group.add((0, 0) if part["assertion"] or part["edge"] else (1, 1))
+        return None
+
+    def _reference(self, part: re.Match[str]) -> bool | None:
+        """Read a reference, which needs its group closed before it and, in a lookbehind, defined before that."""
+        index = int(part["reference"]) if part["reference"] else self.names.get(part["named_reference"], 0)
+        if (width := self.widths.get(index)) is None or (self.behind is not None and index > self.behind):
+            return True
+        self.groups[-1].add(width)
+        return None
+
+    def _open(self, part: re.Match[str]) -> None:
+        """Open a group, numbering it where it captures."""
+        index = None
+        if part["open"] == "(" or part["name"] is not None:
+            index = len(self.widths) + 1
+            self.widths[index] = None
+            if part["name"] is not None:
+                self.names[part["name"]] = index
+        lookaround = "behind" if part["behind"] else "ahead" if part["ahead"] else ""
+        self.groups.append(_PythonGroup(index, lookaround, self.behind))
+        if lookaround == "behind" and self.behind is None:
+            self.behind = len(self.widths)
+
+    def _close(self) -> bool | None:
+        """Close a group: a lookbehind needs one width, and a ``)`` that closes no group is rejected."""
+        if len(self.groups) == 1:
+            return True
+        closed = self.groups.pop()
+        low, high = closed.width()
+        if closed.lookaround == "behind":
+            if low != high:
+                return True
+            self.behind = closed.outer_behind
+        if closed.index is not None:
+            self.widths[closed.index] = (low, high)
+        self.groups[-1].add((0, 0) if closed.lookaround else (low, high))
+        return None
+
+
+def _counted(part: re.Match[str]) -> tuple[int, float]:
+    """Return the least and the greatest count of a counted repetition that Python's ``re`` reads."""
+    if part["count"]:
+        return int(part["count"]), int(part["count"])
+    return int(part["lower"] or 0), int(part["upper"]) if part["upper"] else math.inf
+
+
+def _python_grammar_rejects(pattern: str) -> bool:
+    r"""Return whether Python's ``re`` rejects a pattern that is not verbose for its groups, classes or repetitions.
+
+    A named group of ECMA-262 (``(?<name>...)``), a class the first ``]`` leaves open (``[^]``, ``[]``), a reference
+    to a group not closed before it (``\1(a)``, ``(a\1)``) or defined in its lookbehind (``(?<=(a)\1)``), a
+    lookbehind whose width varies (``(?<=a+)``) and a ``)`` that closes no group fail on every Python from 3.10 on.
+    The reader follows Python's parser on a pattern it compiles, so it reports none of those there; a conditional
+    group or another extension ends the reading undecided. Each part holds a character at least, so the parts found
+    one after another cover the pattern.
+    """
+    grammar = _PythonGrammar()
+    for part in _compiled(_PYTHON_GRAMMAR_PART).finditer(pattern):
+        if (decided := grammar.read(part)) is not None:
+            return decided
+    return False
+
+
 def python_rejects(pattern: str) -> bool:
     r"""Return whether Python's ``re`` rejects a pattern on every Python from 3.10 on, decided statically.
 
     It rejects any ``\p`` or ``\P``, a braced hexadecimal escape (``\x{41}``), a class escape as the start of a range,
-    a flag group that turns ``a``, ``u`` or ``L`` off and the letters it reads after a backslash nowhere. A verbose
+    a flag group that turns ``a``, ``u`` or ``L`` off, the letters it reads after a backslash nowhere and what its
+    grammar refuses (``_python_grammar_rejects``), such as the named group ``(?<name>...)`` of ECMA-262. A verbose
     pattern is never decided, as a comment may hold any text.
     """
     if _compiled(_VERBOSE_FLAG_GROUP).search(pattern) is not None:
@@ -425,6 +575,7 @@ def python_rejects(pattern: str) -> bool:
         _class_escape_ranges(pattern, rust=False)
         or _compiled(_PYTHON_REJECTED_FLAGS).search(pattern) is not None
         or any(escape[1] in _PYTHON_REJECTED_ESCAPES or escape[1:] in _BRACED_CODES for escape in _escapes(pattern))
+        or _python_grammar_rejects(pattern)
     )
 
 
