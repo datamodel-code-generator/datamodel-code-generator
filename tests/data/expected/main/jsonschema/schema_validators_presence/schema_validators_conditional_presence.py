@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping as _Mapping
+from enum import Enum as _Enum
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, model_validator
@@ -25,7 +26,11 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(
                 any(
-                    name in data and (not expected or data[name] in expected)
+                    name in data
+                    and (
+                        not expected
+                        or cls._json_schema_json_value(data[name]) in expected
+                    )
                     for name in names
                 )
                 for names, expected in rule['condition']
@@ -40,6 +45,18 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     continue
                 raise ValueError('Conditional required properties are missing')
         return data
+
+    @classmethod
+    def _json_schema_json_value(cls, value: Any) -> Any:
+        if isinstance(value, _Enum):
+            return cls._json_schema_json_value(value.value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(cls._json_schema_json_value(item) for item in value)
+        if isinstance(value, dict) or isinstance(value, _Mapping):
+            return {
+                key: cls._json_schema_json_value(item) for key, item in value.items()
+            }
+        return value
 
 
 class ConditionalPresence(_JsonSchemaRuntimeValidationBase):

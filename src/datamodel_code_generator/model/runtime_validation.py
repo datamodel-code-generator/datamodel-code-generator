@@ -233,6 +233,35 @@ class ConstantTypesRule:
         object.__setattr__(self, "booleans", tuple(isinstance(value, bool) for value in self.values))
 
 
+ContainsMatcher: TypeAlias = tuple[tuple[str, object], ...]
+CONTAINS_EQUALITY_KEYWORDS: Final = frozenset({"const", "enum"})
+
+
+@record
+class ContainsRule:
+    """Runtime rule that counts the items of the array at ``path`` that ``matcher`` accepts.
+
+    ``matcher`` holds the keywords of the ``contains`` schema as (keyword, value) pairs; the count must be at least
+    ``min_contains`` and at most ``max_contains`` where each is set. ``key`` writes the matcher, so that a rule whose
+    const is ``1`` never equals or hashes as one whose const is ``true``.
+    """
+
+    path: UniqueItemsPath
+    matcher: ContainsMatcher = field(compare=False)
+    min_contains: int | None
+    max_contains: int | None
+    key: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Derive ``key`` from ``matcher``."""
+        object.__setattr__(self, "key", stable_repr(self.matcher))
+
+    @property
+    def uses_json_equality(self) -> bool:
+        """Return whether the matcher compares items with JSON values (``const``, ``enum``)."""
+        return any(keyword in CONTAINS_EQUALITY_KEYWORDS for keyword, _ in self.matcher)
+
+
 def unique_items_path_uses_regex(path: UniqueItemsPath) -> bool:
     """Return whether a compact uniqueItems path needs regex key selection."""
     for step in path:
@@ -257,6 +286,8 @@ class SchemaRuntimeValidation:
     constant_types: list[ConstantTypesRule] = field(default_factory=list, init=False)
     replace_constant_types: bool = field(default=False, init=False)
     conditional_bounds: list[ConditionalBoundsRule] = field(default_factory=list, init=False)
+    contains: list[ContainsRule] = field(default_factory=list, init=False)
+    replace_contains: bool = field(default=False, init=False)
 
     def __bool__(self) -> bool:
         """Return whether any runtime validation rule is registered."""
@@ -270,6 +301,8 @@ class SchemaRuntimeValidation:
             or self.constant_types
             or self.replace_constant_types
             or self.conditional_bounds
+            or self.contains
+            or self.replace_contains
         )
 
     @property
@@ -299,6 +332,8 @@ class SchemaRuntimeValidation:
             stable_repr(self.constant_types),
             self.replace_constant_types,
             stable_repr(self.conditional_bounds),
+            stable_repr(self.contains),
+            self.replace_contains,
         )
 
     def _replace_pattern_properties(self, pattern_properties: list[PatternPropertiesRule]) -> SchemaRuntimeValidation:

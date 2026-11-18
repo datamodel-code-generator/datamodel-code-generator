@@ -16337,6 +16337,20 @@ def test_main_jsonschema_allof_unevaluated_closed_member(
         )
 
 
+def test_main_jsonschema_allof_unevaluated_closed_member_ref_siblings(output_file: Path) -> None:
+    """Test a closed allOf member ignores a dependentSchemas beside a ``$ref`` it evaluates, as it always has.
+
+    The keywords beside that ``$ref`` are read only where the member holds an applicator or a map keyword (row
+    ``legacy-closing-ref-siblings-with-applicators``), so the member still closes the model.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_unevaluated_closed_member_ref_siblings.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"],
+    )
+
+
 def test_main_jsonschema_allof_closed_member_pattern(output_file: Path) -> None:
     """Test a closed allOf member with patternProperties keeps the combined model open.
 
@@ -30125,6 +30139,12 @@ exclusiveMinimum and exclusiveMaximum that their then/else branches put on
 properties, uniqueItems array validation, and the JSON type of const and enum
 values: a boolean for a numeric value and a number for a boolean one, which
 Python's `True == 1` lets through, are rejected.
+The minContains (1 when absent) and maxContains of a contains are checked by
+counting the items the contains schema accepts, read as JSON Schema reads it,
+where that schema holds only type, const, enum, pattern, minLength, maxLength,
+minimum, maximum, exclusiveMinimum, exclusiveMaximum and multipleOf besides
+metadata; a contains with any other keyword (such as a `$ref`, `properties` or
+`format`) gets no count check.
 This feature is experimental and may change as JSON Schema coverage is expanded.
 
 With standard models and templates, required names absent from generated fields

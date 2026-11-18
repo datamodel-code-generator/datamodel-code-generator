@@ -3081,6 +3081,12 @@ exclusiveMinimum and exclusiveMaximum that their then/else branches put on
 properties, uniqueItems array validation, and the JSON type of const and enum
 values: a boolean for a numeric value and a number for a boolean one, which
 Python's `True == 1` lets through, are rejected.
+The minContains (1 when absent) and maxContains of a contains are checked by
+counting the items the contains schema accepts, read as JSON Schema reads it,
+where that schema holds only type, const, enum, pattern, minLength, maxLength,
+minimum, maximum, exclusiveMinimum, exclusiveMaximum and multipleOf besides
+metadata; a contains with any other keyword (such as a `$ref`, `properties` or
+`format`) gets no count check.
 This feature is experimental and may change as JSON Schema coverage is expanded.
 
 With standard models and templates, required names absent from generated fields
@@ -3286,6 +3292,7 @@ are unsupported and generation fails fast.
 
     import re
     from collections.abc import Mapping as _Mapping
+    from enum import Enum as _Enum
     from typing import Any, ClassVar
 
     from pydantic import BaseModel, ConfigDict, RootModel, TypeAdapter, model_validator
@@ -3396,7 +3403,10 @@ are unsupported and generation fails fast.
                 return data
             for rule in cls.__json_schema_conditional_required__:
                 condition_matches = all(
-                    any(name in data and data[name] in expected for name in names)
+                    any(
+                        name in data and cls._json_schema_json_value(data[name]) in expected
+                        for name in names
+                    )
                     for names, expected in rule['condition']
                 )
                 required_groups = (
@@ -3409,6 +3419,18 @@ are unsupported and generation fails fast.
                         continue
                     raise ValueError('Conditional required properties are missing')
             return data
+
+        @classmethod
+        def _json_schema_json_value(cls, value: Any) -> Any:
+            if isinstance(value, _Enum):
+                return cls._json_schema_json_value(value.value)
+            if isinstance(value, (list, tuple)):
+                return type(value)(cls._json_schema_json_value(item) for item in value)
+            if isinstance(value, dict) or isinstance(value, _Mapping):
+                return {
+                    key: cls._json_schema_json_value(item) for key, item in value.items()
+                }
+            return value
 
 
     class First(BaseModel):
@@ -4538,6 +4560,7 @@ additional validator backends without adding them in this release.
 
     import re
     from collections.abc import Mapping as _Mapping
+    from enum import Enum as _Enum
     from typing import Any, ClassVar
 
     from pydantic import BaseModel, ConfigDict, RootModel, TypeAdapter, model_validator
@@ -4648,7 +4671,10 @@ additional validator backends without adding them in this release.
                 return data
             for rule in cls.__json_schema_conditional_required__:
                 condition_matches = all(
-                    any(name in data and data[name] in expected for name in names)
+                    any(
+                        name in data and cls._json_schema_json_value(data[name]) in expected
+                        for name in names
+                    )
                     for names, expected in rule['condition']
                 )
                 required_groups = (
@@ -4661,6 +4687,18 @@ additional validator backends without adding them in this release.
                         continue
                     raise ValueError('Conditional required properties are missing')
             return data
+
+        @classmethod
+        def _json_schema_json_value(cls, value: Any) -> Any:
+            if isinstance(value, _Enum):
+                return cls._json_schema_json_value(value.value)
+            if isinstance(value, (list, tuple)):
+                return type(value)(cls._json_schema_json_value(item) for item in value)
+            if isinstance(value, dict) or isinstance(value, _Mapping):
+                return {
+                    key: cls._json_schema_json_value(item) for key, item in value.items()
+                }
+            return value
 
 
     class First(BaseModel):

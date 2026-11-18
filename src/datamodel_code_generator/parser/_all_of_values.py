@@ -319,6 +319,7 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
         visited_refs: frozenset[_TargetNode] = frozenset(),
         *,
         include_references: bool = True,
+        sibling_yield: Literal["ref-less-copy", "applicator-copy"] = "ref-less-copy",
     ) -> Iterator[JsonSchemaObject]:
         """Yield the schema and its allOf sources, without the document each was read from."""
 
@@ -1000,7 +1001,9 @@ def _closes_unevaluated_properties(parser: AllOfValuesHost, member: JsonSchemaOb
 
     It says so with unevaluatedProperties false and no additionalProperties, beside a ``$ref`` only where the keywords
     beside it apply, and the schemas it evaluates, the one its ``$ref`` names among them, evaluate no property that no
-    ``properties`` names (``_evaluates_unnamed_properties``).
+    ``properties`` names (``_evaluates_unnamed_properties``). Row ``legacy-closing-ref-siblings-with-applicators``:
+    of the allOf ``$ref`` members it evaluates, it reads the keywords beside the ``$ref`` only where the member has an
+    applicator, ``if`` or a map keyword.
     """
     if member.unevaluatedProperties is not False or member.additionalProperties is not None:
         return False
@@ -1009,7 +1012,8 @@ def _closes_unevaluated_properties(parser: AllOfValuesHost, member: JsonSchemaOb
         islice(parser._iter_schema_validation_sources(held, include_references=False), 1, None),
         None,
     ) is not None and not any(
-        _evaluates_unnamed_properties(source) for source in parser._iter_schema_validation_sources(held)
+        _evaluates_unnamed_properties(source)
+        for source in parser._iter_schema_validation_sources(held, sibling_yield="applicator-copy")
     )
 
 

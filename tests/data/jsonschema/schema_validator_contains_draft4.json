@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Probe",
+  "type": "array",
+  "items": {
+    "type": "string"
+  },
+  "contains": {
+    "const": "target"
+  },
+  "maxContains": 1
+}

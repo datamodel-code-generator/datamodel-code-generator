@@ -1,0 +1,11 @@
+[[change]]
+id = "contains-on-7075"
+extends = "schema-validators-conditional-bounds"
+covers = [
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[read_only].py",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[ref_siblings].py",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option0].py",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option1].py",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option2].py",
+    "main/jsonschema/schema_validators_inherit_runtime_base_through_plain_model.py",
+]

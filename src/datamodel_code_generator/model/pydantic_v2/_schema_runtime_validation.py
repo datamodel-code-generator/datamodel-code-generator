@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.runtime_validation import (
         ConditionalBoundsRule,
         ConstantTypesRule,
+        ContainsRule,
         PropertyCountRule,
         SchemaRuntimeValidation,
         UniqueItemsRule,
@@ -114,6 +115,14 @@ def render_constant_types_rules(rules: Iterable[ConstantTypesRule]) -> tuple[str
     return _render_path_rules("__json_schema_constant_types__", ((rule.path, rule.values) for rule in rules))
 
 
+def render_contains_rules(rules: Iterable[ContainsRule]) -> tuple[str, ...]:
+    """Render the raw path of each contains check with its matcher and its counts through ``class_body_lines``."""
+    return _render_path_rules(
+        "__json_schema_contains__",
+        ((rule.path, (rule.matcher, rule.min_contains, rule.max_contains)) for rule in rules),
+    )
+
+
 def render_conditional_bounds_rules(rules: Iterable[ConditionalBoundsRule]) -> tuple[str, ...]:
     """Render the condition and the then and else bounds of each conditional bounds check."""
     return _render_path_rules(
@@ -157,26 +166,12 @@ def render_constant_types_validation_base(class_name: str, base_class_name: str)
     A path takes the steps of the uniqueItems paths; the value at its end is rejected where it is a boolean equal
     only to numbers of the constants, or a number equal only to booleans of them.
     """
-    return f"""class {class_name}({base_class_name}):
-    __json_schema_constant_types__: ClassVar[tuple[tuple[object, ...], ...]] = ()
-
-    @model_validator(mode='before')
-    @classmethod
-    def _validate_json_schema_constant_types(cls, data: Any) -> Any:
-        for path, values in cls.__json_schema_constant_types__:
-            cls._validate_json_schema_constant_types_path(data, path, 0, values)
-        return data
-
-    @classmethod
-    def _validate_json_schema_constant_types_path(
-        cls,
-        value: Any,
-        path: tuple[object, ...],
-        position: int,
-        values: tuple[object, ...],
-    ) -> None:
-        if position == len(path):
-            if (
+    return _render_path_validation_base(
+        class_name,
+        base_class_name,
+        "constant_types",
+        "values",
+        """            if (
                 isinstance(value, (int, float))
                 and value in values
                 and not any(
@@ -184,7 +179,119 @@ def render_constant_types_validation_base(class_name: str, base_class_name: str)
                     for expected in values
                 )
             ):
-                raise ValueError('Expected the JSON type of the schema constant')
+                raise ValueError('Expected the JSON type of the schema constant')""",
+    )
+
+
+def render_contains_validation_base(class_name: str, base_class_name: str) -> str:
+    """Render the shared validator base that counts the items of the arrays on raw paths that a matcher accepts.
+
+    A path takes the steps of the uniqueItems paths. The matcher holds the keywords of the ``contains`` schema and
+    reads them as JSON Schema does: a boolean is no number, ``1.0`` is an integer, a string keyword applies to a string
+    only and a numeric one to a number only; ``const`` and ``enum`` use the JSON equality of the core helper this layer
+    is then rendered on (``_json_schema_conditional_equal``).
+    """
+    walk = _render_path_validation_base(
+        class_name,
+        base_class_name,
+        "contains",
+        "counts",
+        """            if not isinstance(value, (list, tuple)):
+                return
+            matcher, min_contains, max_contains = counts
+            count = sum(1 for item in value if cls._json_schema_contains_matches(item, matcher))
+            if min_contains is not None and count < min_contains:
+                raise ValueError(f'Expected at least {min_contains} items to match contains')
+            if max_contains is not None and count > max_contains:
+                raise ValueError(f'Expected at most {max_contains} items to match contains')""",
+    )
+    return f"""{walk}
+
+    @classmethod
+    def _json_schema_contains_matches(cls, item: Any, matcher: tuple[tuple[str, Any], ...]) -> bool:
+        item = cls._json_schema_json_value(item)
+        number = isinstance(item, (int, float)) and not isinstance(item, bool)
+        string = isinstance(item, str)
+        for keyword, expected in matcher:
+            match keyword:
+                case 'type':
+                    if not any(
+                        (name == 'null' and item is None)
+                        or (name == 'boolean' and isinstance(item, bool))
+                        or (name == 'integer' and number and (isinstance(item, int) or item.is_integer()))
+                        or (name == 'number' and number)
+                        or (name == 'string' and string)
+                        or (name == 'array' and isinstance(item, (list, tuple)))
+                        or (name == 'object' and (isinstance(item, dict) or isinstance(item, _Mapping)))
+                        for name in expected
+                    ):
+                        return False
+                case 'const':
+                    if not cls._json_schema_conditional_equal(item, expected):
+                        return False
+                case 'enum':
+                    if not any(cls._json_schema_conditional_equal(item, value) for value in expected):
+                        return False
+                case 'pattern' | 'minLength' | 'maxLength' if string:
+                    if (
+                        (keyword == 'pattern' and not re.search(expected, item))
+                        or (keyword == 'minLength' and len(item) < expected)
+                        or (keyword == 'maxLength' and len(item) > expected)
+                    ):
+                        return False
+                case 'minimum' | 'exclusiveMinimum' | 'maximum' | 'exclusiveMaximum' | 'multipleOf' if number:
+                    if (
+                        (keyword == 'minimum' and item < expected)
+                        or (keyword == 'exclusiveMinimum' and item <= expected)
+                        or (keyword == 'maximum' and item > expected)
+                        or (keyword == 'exclusiveMaximum' and item >= expected)
+                        or (
+                            keyword == 'multipleOf'
+                            and (
+                                not (item / expected).is_integer()
+                                if isinstance(expected, float)
+                                else item % expected != 0
+                            )
+                        )
+                    ):
+                        return False
+        return True"""
+
+
+def _render_path_validation_base(
+    class_name: str,
+    base_class_name: str,
+    stem: str,
+    rule_argument: str,
+    end_check: str,
+) -> str:
+    """Render a shared validator base that walks each rule's raw path and runs ``end_check`` on the value at its end.
+
+    The steps are those of the uniqueItems paths; a rule is a ``path`` and the ``rule_argument`` that ``end_check``
+    reads.
+    """
+    method = f"_validate_json_schema_{stem}_path"
+    call = f"cls.{method}({{}}, path, position + 1, {rule_argument})"
+    return f"""class {class_name}({base_class_name}):
+    __json_schema_{stem}__: ClassVar[tuple[tuple[object, ...], ...]] = ()
+
+    @model_validator(mode='before')
+    @classmethod
+    def _validate_json_schema_{stem}(cls, data: Any) -> Any:
+        for path, {rule_argument} in cls.__json_schema_{stem}__:
+            cls.{method}(data, path, 0, {rule_argument})
+        return data
+
+    @classmethod
+    def {method}(
+        cls,
+        value: Any,
+        path: tuple[object, ...],
+        position: int,
+        {rule_argument}: tuple[object, ...],
+    ) -> None:
+        if position == len(path):
+{end_check}
             return
 
         match path[position]:
@@ -192,26 +299,26 @@ def render_constant_types_validation_base(class_name: str, base_class_name: str)
                 if not isinstance(value, (list, tuple)):
                     return
                 for item in value:
-                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+                    {call.format("item")}
             case ('__json_schema_array_tail__', int() as start):
                 if not isinstance(value, (list, tuple)):
                     return
                 for item in value[start:]:
-                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+                    {call.format("item")}
             case int() as index:
                 if isinstance(value, (list, tuple)) and index < len(value):
-                    cls._validate_json_schema_constant_types_path(value[index], path, position + 1, values)
+                    {call.format("value[index]")}
             case '__json_schema_mapping_values__':
                 if not (isinstance(value, dict) or isinstance(value, _Mapping)):
                     return
                 for item in value.values():
-                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+                    {call.format("item")}
             case ('__json_schema_mapping_pattern_values__', str() as pattern, None):
                 if not (isinstance(value, dict) or isinstance(value, _Mapping)):
                     return
                 for name, item in value.items():
                     if re.search(pattern, name):
-                        cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+                        {call.format("item")}
             case ('__json_schema_mapping_additional_values__', tuple() as declared_name_groups, tuple() as patterns):
                 if not (isinstance(value, dict) or isinstance(value, _Mapping)):
                     return
@@ -222,22 +329,22 @@ def render_constant_types_validation_base(class_name: str, base_class_name: str)
                 for name, item in value.items():
                     if name in declared_names or any(re.search(pattern, name) for pattern in patterns):
                         continue
-                    cls._validate_json_schema_constant_types_path(item, path, position + 1, values)
+                    {call.format("item")}
             case tuple() as input_names:
                 if not (isinstance(value, dict) or isinstance(value, _Mapping)):
                     return
                 for name in input_names:
                     if name in value:
-                        cls._validate_json_schema_constant_types_path(value[name], path, position + 1, values)
+                        {call.format("value[name]")}
                         return"""
 
 
 def render_conditional_bounds_validation_base(class_name: str, base_class_name: str) -> str:
     """Render the shared validator base that checks the numeric bounds of the branch an if/then/else selects.
 
-    The condition is read as the conditional required rule reads it, with the JSON equality of the core helper this
-    layer is rendered on (``_json_schema_conditional_equal``: a boolean is no number); a bound applies to a JSON number
-    only.
+    The condition is read with the JSON equality of the core helper this layer is rendered on
+    (``_json_schema_conditional_equal``: a boolean is no number); it and a bound read a property by the first of its
+    input names the input holds, the one the field's value comes from. A bound applies to a JSON number only.
     """
     return f"""class {class_name}({base_class_name}):
     __json_schema_conditional_bounds__: ClassVar[tuple[tuple[object, ...], ...]] = ()
@@ -249,21 +356,19 @@ def render_conditional_bounds_validation_base(class_name: str, base_class_name: 
             return data
         for condition, then_bounds, else_bounds in cls.__json_schema_conditional_bounds__:
             condition_matches = all(
-                any(
-                    name in data
-                    and (
+                next(
+                    (
                         not expected
-                        or any(
-                            cls._json_schema_conditional_equal(data[name], value)
-                            for value in expected
-                        )
-                    )
-                    for name in names
+                        or cls._json_schema_conditional_any(data[name], expected)
+                        for name in names
+                        if name in data
+                    ),
+                    False,
                 )
                 for names, expected in condition
             )
             for names, keyword, limit in then_bounds if condition_matches else else_bounds:
-                value = next((data[name] for name in names if name in data), None)
+                value = cls._json_schema_json_value(next((data[name] for name in names if name in data), None))
                 if isinstance(value, bool) or not isinstance(value, (int, float)):
                     continue
                 if (

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping as _Mapping
+from enum import Enum as _Enum
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, model_validator
@@ -26,10 +27,7 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
             condition_matches = all(
                 any(
                     name in data
-                    and any(
-                        cls._json_schema_conditional_equal(data[name], value)
-                        for value in expected
-                    )
+                    and cls._json_schema_conditional_any(data[name], expected)
                     for name in names
                 )
                 for names, expected in rule['condition']
@@ -44,6 +42,23 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                     continue
                 raise ValueError('Conditional required properties are missing')
         return data
+
+    @classmethod
+    def _json_schema_json_value(cls, value: Any) -> Any:
+        if isinstance(value, _Enum):
+            return cls._json_schema_json_value(value.value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(cls._json_schema_json_value(item) for item in value)
+        if isinstance(value, dict) or isinstance(value, _Mapping):
+            return {
+                key: cls._json_schema_json_value(item) for key, item in value.items()
+            }
+        return value
+
+    @classmethod
+    def _json_schema_conditional_any(cls, value: Any, expected: Any) -> bool:
+        value = cls._json_schema_json_value(value)
+        return any(cls._json_schema_conditional_equal(value, item) for item in expected)
 
     @classmethod
     def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
@@ -88,23 +103,23 @@ class _JsonSchemaRuntimeValidationBase(_JsonSchemaRuntimeValidationBaseCore):
             else_bounds,
         ) in cls.__json_schema_conditional_bounds__:
             condition_matches = all(
-                any(
-                    name in data
-                    and (
+                next(
+                    (
                         not expected
-                        or any(
-                            cls._json_schema_conditional_equal(data[name], value)
-                            for value in expected
-                        )
-                    )
-                    for name in names
+                        or cls._json_schema_conditional_any(data[name], expected)
+                        for name in names
+                        if name in data
+                    ),
+                    False,
                 )
                 for names, expected in condition
             )
             for names, keyword, limit in (
                 then_bounds if condition_matches else else_bounds
             ):
-                value = next((data[name] for name in names if name in data), None)
+                value = cls._json_schema_json_value(
+                    next((data[name] for name in names if name in data), None)
+                )
                 if isinstance(value, bool) or not isinstance(value, (int, float)):
                     continue
                 if (
