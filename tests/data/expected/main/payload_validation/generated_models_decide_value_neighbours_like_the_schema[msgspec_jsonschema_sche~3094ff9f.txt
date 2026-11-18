@@ -1,0 +1,3 @@
+[
+  "/picked enum \"a\": invalid, model accepts"
+]

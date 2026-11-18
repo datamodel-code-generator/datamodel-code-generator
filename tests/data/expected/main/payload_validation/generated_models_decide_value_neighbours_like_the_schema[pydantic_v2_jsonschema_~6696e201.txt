@@ -1,0 +1,9 @@
+[
+  "/choice enum null: invalid, model accepts",
+  "/free enum null: invalid, model accepts",
+  "/kept enum null: invalid, model accepts",
+  "/kept enum true: invalid, model accepts",
+  "/listed enum [\"c\"]: invalid, model accepts",
+  "/listed enum null: invalid, model accepts",
+  "/mapped enum null: invalid, model accepts"
+]

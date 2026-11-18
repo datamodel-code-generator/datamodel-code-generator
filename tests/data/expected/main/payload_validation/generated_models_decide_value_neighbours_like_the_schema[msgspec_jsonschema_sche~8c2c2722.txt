@@ -1,0 +1,3 @@
+[
+  "/fixed enum 2: invalid, model accepts"
+]

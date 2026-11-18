@@ -1,0 +1,17 @@
+[
+  "/aliased enum null: invalid, model accepts",
+  "/bools enum 0: invalid, model accepts",
+  "/bools enum 1: invalid, model accepts",
+  "/bools enum null: invalid, model accepts",
+  "/floats enum null: invalid, model accepts",
+  "/letters enum null: invalid, model accepts",
+  "/list_only enum null: invalid, model accepts",
+  "/listed enum null: invalid, model accepts",
+  "/mixed enum null: invalid, model accepts",
+  "/mixed enum true: invalid, model accepts",
+  "/nullable_mixed enum true: invalid, model accepts",
+  "/numbers enum null: invalid, model accepts",
+  "/typed_mixed enum 1: invalid, model accepts",
+  "/typed_mixed enum null: invalid, model accepts",
+  "/typed_mixed enum true: invalid, model accepts"
+]

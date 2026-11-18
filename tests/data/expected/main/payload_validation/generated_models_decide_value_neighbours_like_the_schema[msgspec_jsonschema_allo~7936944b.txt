@@ -1,0 +1,4 @@
+[
+  "/ maxLength \"2020-01-02T03:04:05ZZZZZZZZZZZZ\": invalid, model accepts",
+  "/ minLength \"\": invalid, model accepts"
+]

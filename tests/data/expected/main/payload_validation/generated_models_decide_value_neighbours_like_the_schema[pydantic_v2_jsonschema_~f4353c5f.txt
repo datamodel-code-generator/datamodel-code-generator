@@ -1,0 +1,3 @@
+[
+  "/flags/0 enum 0: invalid, model accepts"
+]

@@ -1,0 +1,10 @@
+[
+  "/v discriminator {\"k\": \"1.5\"}: invalid, model accepts",
+  "/v discriminator {\"k\": true}: invalid, model accepts",
+  "/v/k const \"1.5\": invalid, model accepts",
+  "/v/k const \"2.5\": invalid, model accepts",
+  "/v/k const true: invalid, model accepts",
+  "/w discriminator {\"on\": 0}: invalid, model accepts",
+  "/w/on const 0: invalid, model accepts",
+  "/w/on const 1: invalid, model accepts"
+]

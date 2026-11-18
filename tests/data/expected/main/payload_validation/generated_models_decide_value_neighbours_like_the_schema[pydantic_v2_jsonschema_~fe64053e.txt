@@ -1,0 +1,5 @@
+[
+  "/flagged/flag const 1: invalid, model accepts",
+  "/negated const 1: invalid, model accepts",
+  "/negated const null: invalid, model accepts"
+]

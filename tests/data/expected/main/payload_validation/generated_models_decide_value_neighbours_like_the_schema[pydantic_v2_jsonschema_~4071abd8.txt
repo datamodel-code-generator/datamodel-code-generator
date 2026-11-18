@@ -1,0 +1,8 @@
+[
+  "/fixed const null: invalid, model accepts",
+  "/fixed const true: invalid, model accepts",
+  "/fixed enum null: invalid, model accepts",
+  "/fixed enum true: invalid, model accepts",
+  "/flag enum null: invalid, model accepts",
+  "/flag enum true: invalid, model accepts"
+]

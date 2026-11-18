@@ -1,0 +1,7 @@
+[
+  "/shared enum \"1\": invalid, model accepts",
+  "/shared enum \"2\": invalid, model accepts",
+  "/shared enum 1: invalid, model accepts",
+  "/shared enum null: invalid, model accepts",
+  "/shared enum true: invalid, model accepts"
+]

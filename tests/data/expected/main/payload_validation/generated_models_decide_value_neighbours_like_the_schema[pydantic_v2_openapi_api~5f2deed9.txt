@@ -1,0 +1,3 @@
+[
+  "/0/apiUrl minLength \"h\": valid, model rejects"
+]

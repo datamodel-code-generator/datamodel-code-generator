@@ -1,0 +1,9 @@
+[
+  "/c2/0 const true: invalid, model accepts",
+  "/c2/0 enum true: invalid, model accepts",
+  "/c3/0 const true: invalid, model accepts",
+  "/c3/0 enum 2: invalid, model accepts",
+  "/c3/0 enum true: invalid, model accepts",
+  "/counts/0 const true: invalid, model accepts",
+  "/counts/0 enum true: invalid, model accepts"
+]

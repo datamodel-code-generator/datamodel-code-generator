@@ -1,0 +1,4 @@
+[
+  "/ maxLength \"aaaa\": valid, model rejects",
+  "/ maxLength \"aaaaa\": valid, model rejects"
+]

@@ -1,0 +1,7 @@
+[
+  "/boolean enum 1: invalid, model accepts",
+  "/kind enum null: invalid, model accepts",
+  "/number enum \"1\": invalid, model accepts",
+  "/number enum true: invalid, model accepts",
+  "/type enum null: invalid, model accepts"
+]

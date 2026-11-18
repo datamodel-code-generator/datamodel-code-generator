@@ -1,0 +1,3 @@
+[
+  "/kind enum \"b\": invalid, model accepts"
+]

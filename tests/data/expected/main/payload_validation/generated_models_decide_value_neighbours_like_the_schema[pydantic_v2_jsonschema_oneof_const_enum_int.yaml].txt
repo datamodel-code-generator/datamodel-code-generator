@@ -1,0 +1,5 @@
+[
+  "/ const \"200\": invalid, model accepts",
+  "/ const \"404\": invalid, model accepts",
+  "/ const \"500\": invalid, model accepts"
+]

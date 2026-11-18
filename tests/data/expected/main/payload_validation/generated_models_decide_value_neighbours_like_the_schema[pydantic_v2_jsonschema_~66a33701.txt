@@ -1,0 +1,3 @@
+[
+  "/ minItems []: invalid, model accepts"
+]

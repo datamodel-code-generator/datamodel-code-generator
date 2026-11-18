@@ -1,0 +1,4 @@
+[
+  "/ maximum 9.223372036854776e+18: valid, model rejects",
+  "/ minimum -9.223372036854776e+18: valid, model rejects"
+]

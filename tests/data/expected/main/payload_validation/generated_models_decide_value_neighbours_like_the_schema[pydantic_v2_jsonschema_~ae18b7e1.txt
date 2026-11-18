@@ -1,0 +1,3 @@
+[
+  "/ const \"ignored\": invalid, model accepts"
+]

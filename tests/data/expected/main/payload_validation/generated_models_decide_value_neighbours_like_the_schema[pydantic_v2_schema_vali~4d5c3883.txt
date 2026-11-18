@@ -1,0 +1,15 @@
+[
+  "/consts const \"1\": invalid, model accepts",
+  "/consts const \"5\": invalid, model accepts",
+  "/consts const 5: invalid, model accepts",
+  "/consts const null: invalid, model accepts",
+  "/nullable enum \"bb\": invalid, model accepts",
+  "/referenced_consts const \"bb\": invalid, model accepts",
+  "/referenced_consts const null: invalid, model accepts",
+  "/short enum \"bb\": invalid, model accepts",
+  "/short enum null: invalid, model accepts",
+  "/small enum \"1\": invalid, model accepts",
+  "/small enum \"5\": invalid, model accepts",
+  "/small enum 5: invalid, model accepts",
+  "/small enum null: invalid, model accepts"
+]

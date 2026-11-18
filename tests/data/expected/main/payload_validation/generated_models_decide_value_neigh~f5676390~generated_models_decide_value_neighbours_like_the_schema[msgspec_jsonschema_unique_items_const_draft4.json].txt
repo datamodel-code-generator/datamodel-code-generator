@@ -1,0 +1,7 @@
+[
+  "/ const 1: valid, model rejects",
+  "/ const [\"scalar\"]: valid, model rejects",
+  "/ const null: valid, model rejects",
+  "/ const true: valid, model rejects",
+  "/ const {\"a\": \"scalar\"}: valid, model rejects"
+]

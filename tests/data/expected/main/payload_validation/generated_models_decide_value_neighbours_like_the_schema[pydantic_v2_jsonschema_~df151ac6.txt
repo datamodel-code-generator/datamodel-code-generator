@@ -1,0 +1,4 @@
+[
+  "/inline minLength \"https://exa\": invalid, model accepts",
+  "/link minLength \"https://exa\": invalid, model accepts"
+]

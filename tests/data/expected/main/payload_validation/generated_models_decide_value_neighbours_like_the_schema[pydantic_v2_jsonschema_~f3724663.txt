@@ -1,0 +1,4 @@
+[
+  "/narrow minimum 1234567890123456768: invalid, model accepts",
+  "/wide minimum 1234567890123456699: invalid, model accepts"
+]

@@ -91,6 +91,17 @@ from .payload_validation.native_numeric import (
     native_float_multiple_errors,
     pydantic_payload_result,
 )
+from .payload_validation.neighbours import (
+    SEED_KEYWORD,
+    differing_line,
+    has_value_neighbour_keywords,
+    has_value_neighbour_seed,
+    model_verdict,
+    neighbour_is_asserted,
+    schema_validator_case,
+    schema_verdict,
+    value_neighbours,
+)
 from .payload_validation.schema import _schema_for_payload_generation
 from .payload_validation.strategy import (
     _bound_float_multiples,
@@ -1138,6 +1149,74 @@ def test_generated_payload_backend_rejects_representative_schema_invalid_payload
 
     runtime = load_generated_payload_runtime(case, generated_model_cache, backend)
     runtime.assert_rejects_python(mutation.payload)
+
+
+VALUE_NEIGHBOUR_CASES = [case for case in SCHEMA_CASES if has_value_neighbour_keywords(case)]
+
+
+def _value_neighbour_param(
+    backend: PayloadBackend, case: SchemaCase, *, schema_validators: bool = False
+) -> pytest.ParameterSet:
+    variant = f"{backend.value}_schema_validators" if schema_validators else backend.value
+    return pytest.param(
+        backend,
+        case,
+        schema_validators,
+        id=f"{variant}:{case.id}",
+        marks=_pydantic_v2_legacy_runtime_skip_marks(case, backend),
+    )
+
+
+VALUE_NEIGHBOUR_PARAMS = [
+    *(
+        _value_neighbour_param(PayloadBackend.PYDANTIC_V2, case, schema_validators=schema_validators)
+        for schema_validators in (False, True)
+        for case in VALUE_NEIGHBOUR_CASES
+    ),
+    *(
+        _value_neighbour_param(backend, case)
+        for backend in (PayloadBackend.PYDANTIC_V2_DATACLASS, PayloadBackend.MSGSPEC)
+        for case in VALUE_NEIGHBOUR_CASES
+        if case.id in BACKEND_ACCEPTANCE_CASE_IDS[backend] or backend_acceptance_exclusion_reason(case, backend) is None
+    ),
+]
+
+
+@pytest.mark.parametrize(("backend", "case", "schema_validators"), VALUE_NEIGHBOUR_PARAMS)
+@pytest.mark.allow_direct_assert(
+    "an asserted value neighbour fails outright: a stored list would let a fix run accept the regression"
+)
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
+def test_generated_models_decide_value_neighbours_like_the_schema(
+    backend: PayloadBackend,
+    case: SchemaCase,
+    schema_validators: bool,
+    generated_model_cache: dict[str, object],
+) -> None:
+    """Value neighbours get the validator's verdict where asserted; the backend's other differing ones are stored.
+
+    A model that decides the seed otherwise than the validator stores that line alone. The stored lists only shrink:
+    a neighbour that a change starts to decide otherwise than the validator is a defect for the issue groups, not a
+    line to add.
+    """
+    runtime = load_generated_payload_runtime(
+        schema_validator_case(case) if schema_validators else case, generated_model_cache, backend
+    )
+    defaults = load_generated_payload_runtime(case, generated_model_cache, backend) if schema_validators else None
+    asserted: list[str] = []
+    unasserted: list[str] = [] if has_value_neighbour_seed(case) else ["no source-valid seed"]
+    for neighbour in value_neighbours(case):
+        if (verdict := model_verdict(runtime, neighbour.payload)) == (expected := schema_verdict(neighbour)):
+            continue
+        default_agrees = defaults is not None and model_verdict(defaults, neighbour.payload) == expected
+        asserted_here = neighbour_is_asserted(
+            neighbour, backend, schema_validators=schema_validators, default_agrees=default_agrees
+        )
+        (asserted if asserted_here else unasserted).append(differing_line(neighbour, verdict))
+        if neighbour.keyword == SEED_KEYWORD:
+            break
+    assert not asserted, f"{case.id}: the models decide asserted value neighbours otherwise:\n" + "\n".join(asserted)
+    assert_output(json.dumps(unasserted, indent=2))
 
 
 LITERAL_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "literal_witnesses_schemas.json"

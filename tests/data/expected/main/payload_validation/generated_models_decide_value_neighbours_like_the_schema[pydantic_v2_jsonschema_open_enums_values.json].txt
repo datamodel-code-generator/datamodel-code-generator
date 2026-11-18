@@ -1,0 +1,13 @@
+[
+  "/code enum null: invalid, model accepts",
+  "/flag enum 0: invalid, model accepts",
+  "/flag enum 1: invalid, model accepts",
+  "/flag enum null: invalid, model accepts",
+  "/mixed enum null: invalid, model accepts",
+  "/mixed enum true: invalid, model accepts",
+  "/nullable enum true: invalid, model accepts",
+  "/ratio enum null: invalid, model accepts",
+  "/unit enum null: invalid, model accepts",
+  "/untyped enum null: invalid, model accepts",
+  "/uuid enum null: invalid, model accepts"
+]

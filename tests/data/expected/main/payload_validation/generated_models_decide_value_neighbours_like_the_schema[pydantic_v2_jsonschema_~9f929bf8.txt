@@ -1,0 +1,4 @@
+[
+  "/ maximum 9.9: invalid, model accepts",
+  "/ minimum 0.1: invalid, model accepts"
+]

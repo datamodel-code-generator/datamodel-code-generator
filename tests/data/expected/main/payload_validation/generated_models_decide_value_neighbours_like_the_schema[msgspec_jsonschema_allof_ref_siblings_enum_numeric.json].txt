@@ -1,0 +1,3 @@
+[
+  "/ minimum 3: invalid, model accepts"
+]

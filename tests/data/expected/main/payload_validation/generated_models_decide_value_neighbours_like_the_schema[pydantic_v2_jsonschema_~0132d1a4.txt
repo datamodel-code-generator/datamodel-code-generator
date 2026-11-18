@@ -1,0 +1,3 @@
+[
+  "/untyped minLength \"a\": invalid, model accepts"
+]

@@ -1,0 +1,6 @@
+[
+  "/l/0 enum \"a\": invalid, model accepts",
+  "/lu/0 enum \"a\": invalid, model accepts",
+  "/p enum \"a\": invalid, model accepts",
+  "/u enum \"a\": invalid, model accepts"
+]

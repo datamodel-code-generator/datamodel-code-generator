@@ -1,0 +1,7 @@
+[
+  "/ enum 0: invalid, model accepts",
+  "/ enum 1: invalid, model accepts",
+  "/ enum false: invalid, model accepts",
+  "/ enum null: invalid, model accepts",
+  "/ enum true: invalid, model accepts"
+]

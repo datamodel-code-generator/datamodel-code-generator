@@ -1,0 +1,6 @@
+[
+  "/textOrDuration enum 1: invalid, model accepts",
+  "/textOrDuration enum null: invalid, model accepts",
+  "/textOrDuration enum true: invalid, model accepts",
+  "/textOrIntLiteral const null: invalid, model accepts"
+]
