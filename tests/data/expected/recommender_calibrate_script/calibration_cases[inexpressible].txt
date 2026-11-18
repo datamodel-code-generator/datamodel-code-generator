@@ -29,7 +29,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 12,
-        "preset": "standard-py310-20261113",
+        "preset": "standard-py310-20261118",
         "problems": 0
       },
       "diff_against": null,
@@ -38,7 +38,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "--naming-strategy",
           "enclosing-model",
           "--preset",
-          "standard-py310-20261113"
+          "standard-py310-20261118"
         ],
         "median_length": 17,
         "problems": 0
@@ -56,7 +56,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 4,
-        "preset": "standard-py310-20261113",
+        "preset": "standard-py310-20261118",
         "problems": 0
       },
       "diff_against": null,
@@ -65,7 +65,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "--naming-strategy",
           "enclosing-model",
           "--preset",
-          "standard-py310-20261113"
+          "standard-py310-20261118"
         ],
         "median_length": 11,
         "problems": 0
@@ -79,7 +79,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
   },
   "settings": {
     "output_model_type": "pydantic_v2.BaseModel",
-    "preset": "standard-py310-20261113",
+    "preset": "standard-py310-20261118",
     "target_python_version": "3.10"
   }
 }
@@ -89,7 +89,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
 
 - Rules: revision 2026-10-19, calibrated on 20261017 presets
 - Settings: pydantic_v2.BaseModel, target Python 3.10
-- Grid: 12 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261113
+- Grid: 12 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261118
 - Schemas: 2 (1 calibration, 1 holdout)
 
 ## Schemas
@@ -153,10 +153,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 
 | Schema | Configurations | Arguments | Result |
 |---|---|---|---|
-| shop | recommended | `--input-file-type openapi --naming-strategy enclosing-model --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261113 --target-python-version 3.10` | ok |
-| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261113 --enum-field-as-literal all` | ok |
-| config | recommended | `--input-file-type jsonschema --naming-strategy enclosing-model --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261113 --target-python-version 3.10` | ok |
-| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261113 --enum-field-as-literal all` | ok |
+| shop | recommended | `--input-file-type openapi --naming-strategy enclosing-model --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261118 --target-python-version 3.10` | ok |
+| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261118 --enum-field-as-literal all` | ok |
+| config | recommended | `--input-file-type jsonschema --naming-strategy enclosing-model --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261118 --target-python-version 3.10` | ok |
+| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261118 --enum-field-as-literal all` | ok |
 
 ## Changes since the last calibration
 
@@ -206,7 +206,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "all"
           ],
           "median_length": 12,
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "problems": 0
         },
         "diff_against": null,
@@ -215,7 +215,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "--naming-strategy",
             "enclosing-model",
             "--preset",
-            "standard-py310-20261113"
+            "standard-py310-20261118"
           ],
           "median_length": 17,
           "problems": 0
@@ -233,7 +233,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "all"
           ],
           "median_length": 4,
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "problems": 0
         },
         "diff_against": null,
@@ -242,7 +242,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "--naming-strategy",
             "enclosing-model",
             "--preset",
-            "standard-py310-20261113"
+            "standard-py310-20261118"
           ],
           "median_length": 11,
           "problems": 0
@@ -256,7 +256,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     },
     "settings": {
       "output_model_type": "pydantic_v2.BaseModel",
-      "preset": "standard-py310-20261113",
+      "preset": "standard-py310-20261118",
       "target_python_version": "3.10"
     }
   },
@@ -326,7 +326,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261113",
+        "standard-py310-20261118",
         "--target-python-version",
         "3.10"
       ],
@@ -345,7 +345,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261113",
+        "standard-py310-20261118",
         "--enum-field-as-literal",
         "all"
       ],
@@ -365,7 +365,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261113",
+        "standard-py310-20261118",
         "--target-python-version",
         "3.10"
       ],
@@ -384,7 +384,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261113",
+        "standard-py310-20261118",
         "--enum-field-as-literal",
         "all"
       ],
@@ -489,7 +489,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -519,7 +519,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -553,7 +553,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -566,7 +566,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "enum_field_as_literal": "all",
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -601,7 +601,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -638,7 +638,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -651,7 +651,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -686,7 +686,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -723,7 +723,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -739,7 +739,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -777,7 +777,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -817,7 +817,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         }
       ],
@@ -830,7 +830,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261113",
+          "standard-py310-20261118",
           "--target-python-version",
           "3.10"
         ],
@@ -838,7 +838,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261113"
+          "preset": "standard-py310-20261118"
         },
         "calibrated_presets": "20261017",
         "context": {
@@ -1092,7 +1092,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261113",
+              "preset": "standard-py310-20261118",
               "selectable": true,
               "set": {},
               "stability": null
@@ -1130,7 +1130,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261113",
+              "preset": "standard-py310-20261118",
               "selectable": true,
               "set": {
                 "class_name": "Config",
@@ -1169,7 +1169,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261113",
+              "preset": "standard-py310-20261118",
               "selectable": true,
               "set": {
                 "class_name": "Config"
@@ -1207,7 +1207,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261113",
+              "preset": "standard-py310-20261118",
               "selectable": true,
               "set": {
                 "naming_strategy": "enclosing-model"
@@ -1265,7 +1265,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -1295,7 +1295,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -1329,7 +1329,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -1342,7 +1342,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "enum_field_as_literal": "all",
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -1377,7 +1377,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -1414,7 +1414,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -1427,7 +1427,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -1462,7 +1462,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -1499,7 +1499,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -1515,7 +1515,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "wrap_string_literal": false
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
@@ -1553,7 +1553,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         },
         {
@@ -1593,7 +1593,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261113",
+          "preset": "standard-py310-20261118",
           "renamed": null
         }
       ],
@@ -1606,7 +1606,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261113",
+          "standard-py310-20261118",
           "--target-python-version",
           "3.10"
         ],
@@ -1614,7 +1614,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261113"
+          "preset": "standard-py310-20261118"
         },
         "calibrated_presets": "20261017",
         "context": {
@@ -1844,7 +1844,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261113",
+              "preset": "standard-py310-20261118",
               "selectable": true,
               "set": {},
               "stability": null
@@ -1880,7 +1880,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261113",
+              "preset": "standard-py310-20261118",
               "selectable": true,
               "set": {
                 "naming_strategy": "enclosing-model"
@@ -2068,7 +2068,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261113",
+        "preset": "standard-py310-20261118",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -2081,7 +2081,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--naming-strategy",
           "enclosing-model",
           "--preset",
-          "standard-py310-20261113"
+          "standard-py310-20261118"
         ],
         "metrics": {
           "component": 2,
@@ -2146,7 +2146,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261113",
+        "preset": "standard-py310-20261118",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -2159,7 +2159,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--naming-strategy",
           "enclosing-model",
           "--preset",
-          "standard-py310-20261113"
+          "standard-py310-20261118"
         ],
         "metrics": {
           "component": 1,

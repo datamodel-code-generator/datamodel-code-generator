@@ -10,7 +10,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 |-------|---------|-------------|
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
-| [Type Alias](#type-alias) | 4 | TypeAlias and root-model alias output. |
+| [Type Alias](#type-alias) | 5 | TypeAlias and root-model alias output. |
 | [Type Mapping](#type-mapping) | 23 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
@@ -48,6 +48,7 @@ TypeAlias and root-model alias output.
 | [`--use-root-model-type-alias`](../typing-customization.md#use-root-model-type-alias) | Generate RootModel as type alias format for better mypy support. |
 | [`--use-type-alias`](../typing-customization.md#use-type-alias) | Use TypeAlias instead of root models for type definitions (experimental). |
 | [`--use-type-alias-type`](../typing-customization.md#use-type-alias-type) | Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental). |
+| [`--use-validate-default-for-root-model-type-aliases`](../typing-customization.md#use-validate-default-for-root-model-type-aliases) | Validate the default of a field that names a root model written as an alias. |
 
 ## Type Mapping {#type-mapping}
 

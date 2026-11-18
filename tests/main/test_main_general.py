@@ -2075,6 +2075,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_tuple_for_fixed_items",
         "use_tuple_for_closed_arrays",
         "use_closed_typed_dict",
+        "use_validate_default_for_root_model_type_aliases",
         "use_plain_alias_for_recursive_models",
         "read_format_as_annotation",
         "type_overrides_replace_whole_type",

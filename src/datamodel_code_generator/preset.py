@@ -255,6 +255,19 @@ class PresetName(str, Enum):
     PracticalPy31420261113 = "practical-py314-20261113"
     PracticalPy31520261113 = "practical-py315-20261113"
 
+    StandardPy31020261118 = "standard-py310-20261118"
+    StandardPy31120261118 = "standard-py311-20261118"
+    StandardPy31220261118 = "standard-py312-20261118"
+    StandardPy31320261118 = "standard-py313-20261118"
+    StandardPy31420261118 = "standard-py314-20261118"
+    StandardPy31520261118 = "standard-py315-20261118"
+    PracticalPy31020261118 = "practical-py310-20261118"
+    PracticalPy31120261118 = "practical-py311-20261118"
+    PracticalPy31220261118 = "practical-py312-20261118"
+    PracticalPy31320261118 = "practical-py313-20261118"
+    PracticalPy31420261118 = "practical-py314-20261118"
+    PracticalPy31520261118 = "practical-py315-20261118"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -646,6 +659,7 @@ _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]]
     "20261111": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261112": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261113": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
+    "20261118": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1381,6 +1395,20 @@ _STANDARD_20261113_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The 20261112 groups and the opt-in options added after them."""
 
+_STANDARD_20261118_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261113_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Validated defaults of root model type aliases",
+        config=PresetConfig(use_validate_default_for_root_model_type_aliases=True),
+        description=(
+            "Under --use-root-model-type-alias, validate the default of a field whose type names a root model written "
+            "as an alias into that root model, as for a root model class, instead of keeping the raw value."
+        ),
+        output_model_types=frozenset({DataModelType.PydanticV2BaseModel}),
+    ),
+)
+"""The 20261113 groups and the opt-in options added after them."""
+
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
     "20260826": _STANDARD_20260826_OPTION_GROUPS,
@@ -1393,6 +1421,7 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261111": _STANDARD_20261111_OPTION_GROUPS,
     "20261112": _STANDARD_20261112_OPTION_GROUPS,
     "20261113": _STANDARD_20261113_OPTION_GROUPS,
+    "20261118": _STANDARD_20261118_OPTION_GROUPS,
 }
 
 
