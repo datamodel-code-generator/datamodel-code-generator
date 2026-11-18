@@ -1464,7 +1464,7 @@ _OPENAPI_POSITIONAL_FIELDS = (
 def test_schema_features_keep_the_positional_parameters_of_0_97_0(
     features_class: type[JsonSchemaFeatures], fields: tuple[str, ...]
 ) -> None:
-    """Pass the fields by position in 0.97.0's order: each value lands on its field; ``contains_counts`` is by keyword."""
+    """Pass the fields by position in 0.97.0's order: each lands on its field; ``contains_counts`` is by keyword."""
     features = features_class(*(f"value {name}" for name in fields))
     assert {name: getattr(features, name) for name in fields} == {name: f"value {name}" for name in fields}
     assert features.contains_counts is False
