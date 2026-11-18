@@ -220,13 +220,16 @@ def test_review_checklist_refuses_a_malformed_table(
 def test_review_checklist_reads_an_untracked_symlink_as_its_link_text(
     kind: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """An untracked symlink is judged by its own path and link text, never through its target."""
+    """An untracked symlink is judged by its own path and link text, never through its target.
+
+    The targets sit beside the link and are ignored, so the link text is a bare name on every platform.
+    """
     repository = _repository(tmp_path, {"head": {}})
-    target = {"file": tmp_path / "outside.txt", "dangling": tmp_path / "missing.txt", "directory": tmp_path}[kind]
-    if kind == "file":
-        target.write_text("target text that must stay unread\n", encoding="utf-8")
-    (repository / "notes").mkdir()
-    (repository / "notes" / "link").symlink_to(target)
+    notes = repository / "notes"
+    _write(notes, {"outside.txt": "target text that must stay unread\n", "folder/inside.txt": "unread\n"})
+    (repository / ".git" / "info" / "exclude").write_text("notes/outside.txt\nnotes/folder/\n", encoding="utf-8")
+    target = {"file": "outside.txt", "dangling": "missing.txt", "directory": "folder"}[kind]
+    (notes / "link").symlink_to(target, target_is_directory=kind == "directory")
     _write(tmp_path, {"table.toml": ITEM + TRIGGER})
     monkeypatch.chdir(repository)
     code = review_checklist.main(["--base", "base", "--table", str(tmp_path / "table.toml")])
