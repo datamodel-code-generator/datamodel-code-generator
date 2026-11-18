@@ -2,3 +2,5 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_import_secret_str_assignment_changes_the_generated_import]
 	main/public_api_signature_baseline/import_secret_str_assignment_changes_the_generated_import.txt
+[test_public_api_surface_matches_stored_output]
+	main/public_api_signature_baseline/public_api_surface_matches_stored_output.txt

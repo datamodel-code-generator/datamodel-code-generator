@@ -5,13 +5,16 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect
+import pkgutil
 import sys
 import types
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, ForwardRef, Union, get_args, get_origin
 
 import pytest
 from typing_extensions import NotRequired
 
+import datamodel_code_generator
 from datamodel_code_generator import DEFAULT_SHARED_MODULE_NAME, generate
 from datamodel_code_generator.enums import (
     AliasGenerator,
@@ -54,7 +57,7 @@ from tests.conftest import assert_output
 if TYPE_CHECKING:
     from collections import defaultdict
     from collections.abc import Callable, Iterable, Mapping, Sequence
-    from pathlib import Path
+    from types import ModuleType
     from typing import Unpack
     from urllib.parse import ParseResult
 
@@ -73,300 +76,138 @@ if TYPE_CHECKING:
     from datamodel_code_generator.validators import ModelValidators
 
 
-_PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
-    "datamodel_code_generator": frozenset({
-        "DEFAULT_FORMATTERS",
-        "DEFAULT_SHARED_MODULE_NAME",
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "AllExportsCollisionStrategy",
-        "AllExportsScope",
-        "AllOfClassHierarchy",
-        "AllOfMergeMode",
-        "AliasGenerator",
-        "AsyncAPIVersion",
-        "ClassNameAffixScope",
-        "ClientAsyncAPIPerspective",
-        "ClientBodyArguments",
-        "ClientSignatureStyle",
-        "ClientType",
-        "CollapseRootModelsNameStrategy",
-        "ConstructorFieldOrder",
-        "CustomFileHeaderMode",
-        "DanglingRefWarning",
-        "DateClassType",
-        "DatetimeClassType",
-        "DefaultValueType",
-        "DefaultValueTypeWarning",
-        "DefaultPutDict",
-        "DocumentationAnnotationWarning",
-        "DynamicModule",
-        "LeftoverFilesWarning",
-        "NamingHintWarning",
-        "Error",
-        "FieldTypeCollisionStrategy",
-        "GenerateConfig",
-        "GeneratedModules",
-        "load_pyproject_config",
-        "GraphQLScope",
-        "HTTPBackend",
-        "InputFileType",
-        "InputModelRefStrategy",
-        "InvalidClassNameError",
-        "InvalidFileFormatError",
-        "JsonSchemaVersion",
-        "LiteralType",
-        "ModuleSplitMode",
-        "NamingStrategy",
-        "OpenAPIAsDefinitions",
-        "OpenAPIScope",
-        "OpenAPIVersion",
-        "OpenEnums",
-        "ProtobufVersion",
-        "PythonVersion",
-        "PythonVersionMin",
-        "ReadOnlyWriteOnlyModelType",
-        "ReuseScope",
-        "SchemaValidatorType",
-        "SchemaParseError",
-        "SchemaResourceRefWarning",
-        "ServerBodyMode",
-        "ServerHandlerMode",
-        "ServerLayout",
-        "ServerType",
-        "TargetPydanticVersion",
-        "VersionMode",
-        "XMLSchemaVersion",
-        "clear_dynamic_models_cache",
-        "detect_jsonschema_version",
-        "detect_openapi_version",
-        "detect_xmlschema_version",
-        "enable_parsed_source_cache",
-        "generate",
-        "generate_dynamic_models",
-        "generate_dynamic_module",
-    }),
-    "datamodel_code_generator._types": frozenset({
-        "AsyncAPIParserConfigDict",
-        "AvroParserConfigDict",
-        "GenerateConfigDict",
-        "GraphQLParserConfigDict",
-        "JSONSchemaParserConfigDict",
-        "ModelDict",
-        "OpenAPIParserConfigDict",
-        "ParseConfigDict",
-        "ParserConfigDict",
-        "ProtobufParserConfigDict",
-        "XMLSchemaParserConfigDict",
-    }),
-    "datamodel_code_generator.arguments": frozenset({"DEFAULT_ENCODING", "arg_parser", "namespace"}),
-    "datamodel_code_generator.enums": frozenset({
-        "DEFAULT_SHARED_MODULE_NAME",
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "AllExportsCollisionStrategy",
-        "AllExportsScope",
-        "AllOfClassHierarchy",
-        "AllOfMergeMode",
-        "AliasGenerator",
-        "AsyncAPIVersion",
-        "ClassNameAffixScope",
-        "ClientAsyncAPIPerspective",
-        "ClientBodyArguments",
-        "ClientSignatureStyle",
-        "ClientType",
-        "CollapseRootModelsNameStrategy",
-        "ConstructorFieldOrder",
-        "CustomFileHeaderMode",
-        "DataModelType",
-        "DataclassArguments",
-        "DefaultValueType",
-        "FieldTypeCollisionStrategy",
-        "GraphQLScope",
-        "HTTPBackend",
-        "InputFileType",
-        "InputModelRefStrategy",
-        "JsonSchemaVersion",
-        "ModuleSplitMode",
-        "NamingStrategy",
-        "OpenAPIAsDefinitions",
-        "OpenAPIScope",
-        "OpenAPIVersion",
-        "OpenEnums",
-        "ProtobufVersion",
-        "ReadOnlyWriteOnlyModelType",
-        "ReuseScope",
-        "SchemaValidatorType",
-        "ServerBodyMode",
-        "ServerHandlerMode",
-        "ServerLayout",
-        "ServerType",
-        "StrictTypes",
-        "TargetPydanticVersion",
-        "UnionMode",
-        "VersionMode",
-        "XMLSchemaVersion",
-    }),
-    "datamodel_code_generator.model": frozenset({
-        "DEFAULT_TARGET_PYTHON_VERSION",
-        "UNDEFINED",
-        "ConstraintsBase",
-        "DataModel",
-        "DataModelFieldBase",
-        "DataModelSet",
-        "_rebuild_model_with_datamodel_namespace",
-        "get_data_model_types",
-    }),
-    "datamodel_code_generator.model.pydantic_v2": frozenset({
-        "BaseModel",
-        "DataModelField",
-        "DataTypeManager",
-        "RootModel",
-        "RootModelTypeAlias",
-        "UnionMode",
-        "dump_resolve_reference_action",
-    }),
-    "datamodel_code_generator.parser": frozenset({"DefaultPutDict", "LiteralType"}),
-    "datamodel_code_generator.parser.avro": frozenset({
-        "AvroParser",
-        "convert_avro_schema_data",
-        "is_avro_schema_data",
-    }),
-    "datamodel_code_generator.parser.protobuf": frozenset({"ProtobufParser", "convert_protobuf_schema_data"}),
-    "datamodel_code_generator.parser.schema_version": frozenset({
-        "DataFormatMapping",
-        "DocumentDialect",
-        "FeatureMetadata",
-        "JsonSchemaFeatures",
-        "OpenAPISchemaFeatures",
-        "SchemaFeaturesT",
-        "SchemaKind",
-        "detect_asyncapi_version",
-        "detect_jsonschema_version",
-        "detect_openapi_version",
-        "document_dialect",
-        "get_data_formats",
-    }),
-    "datamodel_code_generator.parser.xmlschema": frozenset({
-        "XMLSchemaParser",
-        "convert_xml_schema_data",
-        "detect_xmlschema_version",
-        "is_xml_schema_text",
-    }),
-}
+_PUBLIC_PACKAGE = "datamodel_code_generator"
+_PUBLIC_DUNDERS = frozenset({"__init__", "__new__", "__call__"})
+_KIND_DECORATORS = frozenset({
+    "staticmethod",
+    "classmethod",
+    "property",
+    "abstractmethod",
+    "overload",
+    "cached_property",
+})
+_KIND_DECORATOR_SUFFIXES = (".setter", ".getter", ".deleter", ".abstractmethod", ".overload")
+_SCALAR_TYPES = (bool, int, float, str, bytes, type(None))
 
 
-_DE_FACTO_PUBLIC_SYMBOLS: dict[str, frozenset[str]] = {
-    "datamodel_code_generator": frozenset({
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "DataModelType",
-        "DatetimeClassType",
-        "DefaultPutDict",
-        "Error",
-        "GenerateConfig",
-        "GraphQLScope",
-        "InputFileType",
-        "InvalidClassNameError",
-        "LiteralType",
-        "OpenAPIScope",
-        "PythonVersion",
-        "chdir",
-        "generate",
-        "get_version",
-        "snooper_to_methods",
-    }),
-    "datamodel_code_generator.config": frozenset({"JSONSchemaParserConfig"}),
-    "datamodel_code_generator.enums": frozenset({"DataModelType", "InputFileType", "StrictTypes"}),
-    "datamodel_code_generator.format": frozenset({
-        "DEFAULT_FORMATTERS",
-        "CodeFormatter",
-        "CustomCodeFormatter",
-        "DatetimeClassType",
-        "Formatter",
-        "PythonVersion",
-        "PythonVersionMin",
-    }),
-    "datamodel_code_generator.imports": frozenset({
-        "IMPORT_ANNOTATIONS",
-        "Import",
-        "Imports",
-    }),
-    "datamodel_code_generator.model": frozenset({
-        "DataModel",
-        "DataModelFieldBase",
-        "get_data_model_types",
-        "pydantic_v2",
-    }),
-    "datamodel_code_generator.model.pydantic_v2": frozenset({
-        "BaseModel",
-        "DataModelField",
-        "DataTypeManager",
-        "RootModel",
-        "UnionMode",
-        "types",
-    }),
-    "datamodel_code_generator.model.pydantic_v2.types": frozenset({"IMPORT_SECRET_STR"}),
-    "datamodel_code_generator.parser": frozenset({"DefaultPutDict", "LiteralType"}),
-    "datamodel_code_generator.parser.base": frozenset({
-        "Parser",
-        "Result",
-        "SPECIAL_PATH_FORMAT",
-        "Source",
-        "YamlValue",
-        "title_to_class_name",
-    }),
-    "datamodel_code_generator.parser.graphql": frozenset({"GraphQLParser"}),
-    "datamodel_code_generator.parser.jsonschema": frozenset({
-        "JsonSchemaObject",
-        "JsonSchemaParser",
-        "get_model_by_path",
-        "get_special_path",
-    }),
-    "datamodel_code_generator.parser.openapi": frozenset({
-        "MediaObject",
-        "OpenAPIParser",
-        "Operation",
-        "ParameterLocation",
-        "ParameterObject",
-        "ReferenceObject",
-        "RequestBodyObject",
-        "ResponseObject",
-    }),
-    "datamodel_code_generator.reference": frozenset({
-        "ModelResolver",
-        "Reference",
-        "snake_to_upper_camel",
-    }),
-    "datamodel_code_generator.types": frozenset({
-        "DataType",
-        "DataTypeManager",
-        "StrictTypes",
-        "Types",
-    }),
-}
+def _public_module_names(package: ModuleType) -> list[str]:
+    """Name the package and every module below it whose path has no part with a leading underscore."""
+    names = [package.__name__]
+    for info in pkgutil.iter_modules(package.__path__):
+        if info.name.startswith("_"):
+            continue
+        name = f"{package.__name__}.{info.name}"
+        names.extend(_public_module_names(importlib.import_module(name)) if info.ispkg else [name])
+    return names
 
 
-_DE_FACTO_PUBLIC_ATTRIBUTES: dict[str, frozenset[str]] = {
-    "datamodel_code_generator.DataModelType": frozenset({
-        "DataclassesDataclass",
-        "PydanticV2BaseModel",
-        "TypingTypedDict",
-    }),
-    "datamodel_code_generator.DatetimeClassType": frozenset({"Awaredatetime", "Datetime"}),
-    "datamodel_code_generator.InputFileType": frozenset({"JsonSchema"}),
-    "datamodel_code_generator.LiteralType": frozenset({"All", "One", "Off"}),
-    "datamodel_code_generator.OpenAPIScope": frozenset({"Parameters", "Paths", "Schemas", "Tags"}),
-    "datamodel_code_generator.PythonVersion": frozenset({"PY_310", "PY_311", "PY_312"}),
-    "datamodel_code_generator.format.CustomCodeFormatter": frozenset({"apply"}),
-    "datamodel_code_generator.imports.Import": frozenset({"from_full_path"}),
-    "datamodel_code_generator.parser.jsonschema.JsonSchemaObject": frozenset({"model_validate"}),
-    "datamodel_code_generator.parser.jsonschema.JsonSchemaParser": frozenset({"parse"}),
-    "datamodel_code_generator.parser.openapi.OpenAPIParser": frozenset({"parse"}),
-    "datamodel_code_generator.parser.openapi.ParameterLocation": frozenset({"cookie", "header", "path", "query"}),
-    "datamodel_code_generator.types.StrictTypes": frozenset({"bool", "bytes", "float", "int", "str"}),
-    "datamodel_code_generator.types.Types": frozenset({"date_time", "uri", "uuid"}),
-}
+def _is_public_member(name: str) -> bool:
+    return not name.startswith("_") or name in _PUBLIC_DUNDERS
+
+
+def _decorator_texts(node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef, *, every: bool) -> list[str]:
+    texts = [ast.unparse(decorator) for decorator in node.decorator_list]
+    return [
+        f"@{text}" for text in texts if every or text in _KIND_DECORATORS or text.endswith(_KIND_DECORATOR_SUFFIXES)
+    ]
+
+
+def _function_text(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
+    keyword = "async def" if isinstance(node, ast.AsyncFunctionDef) else "def"
+    returns = f" -> {ast.unparse(node.returns)}" if node.returns else ""
+    signature = f"{keyword} {node.name}({ast.unparse(node.args)}){returns}"
+    return " ".join([*_decorator_texts(node, every=False), signature])
+
+
+def _assignment_texts(node: ast.Assign | ast.AnnAssign, indent: str, *, whole_value: bool) -> list[str]:
+    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+    annotation = f": {ast.unparse(node.annotation)}" if isinstance(node, ast.AnnAssign) else ""
+    value = ""
+    if node.value is not None and (
+        whole_value or (isinstance(node.value, ast.Constant) and isinstance(node.value.value, _SCALAR_TYPES))
+    ):
+        value = f" = {ast.unparse(node.value)}"
+    return [
+        f"{indent}{target.id}{annotation}{value}"
+        for target in targets
+        if isinstance(target, ast.Name) and _is_public_member(target.id)
+    ]
+
+
+def _definition_texts(node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef, indent: str) -> list[str]:
+    if isinstance(node, ast.ClassDef):
+        return _class_texts(node, indent)
+    return [f"{indent}{_function_text(node)}"]
+
+
+def _class_texts(node: ast.ClassDef, indent: str) -> list[str]:
+    bases = ", ".join(ast.unparse(base) for base in [*node.bases, *node.keywords])
+    texts = [f"{indent}class {node.name}({bases})"]
+    texts.extend(f"{indent}  {decorator}" for decorator in _decorator_texts(node, every=True))
+    for item in node.body:
+        match item:
+            case ast.FunctionDef() | ast.AsyncFunctionDef() | ast.ClassDef() if _is_public_member(item.name):
+                texts.extend(_definition_texts(item, f"{indent}  "))
+            case ast.Assign() | ast.AnnAssign():
+                texts.extend(_assignment_texts(item, f"{indent}  ", whole_value=True))
+    return texts
+
+
+def _import_origin(module_name: str, *, is_package: bool, node: ast.ImportFrom) -> str:
+    if not node.level:
+        return node.module or ""
+    parts = module_name.split(".")
+    parts = parts[: len(parts) - node.level + (1 if is_package else 0)]
+    return ".".join([*parts, *([node.module] if node.module else [])])
+
+
+def _module_entries(module: ModuleType) -> dict[str, list[str]]:
+    """Read the names a module defines or re-exports from its own package, as the source writes them."""
+    path = Path(inspect.getfile(module))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    entries: dict[str, list[str]] = {}
+    for node in tree.body:
+        match node:
+            case ast.FunctionDef() | ast.AsyncFunctionDef() | ast.ClassDef() if not node.name.startswith("_"):
+                entries.setdefault(node.name, []).extend(_definition_texts(node, ""))
+            case ast.Assign() | ast.AnnAssign():
+                for text in _assignment_texts(node, "", whole_value=False):
+                    entries[text.split(":")[0].split(" =")[0]] = [text]
+            case ast.ImportFrom():
+                origin = _import_origin(module.__name__, is_package=path.name == "__init__.py", node=node)
+                for alias in node.names:
+                    name = alias.asname or alias.name
+                    if origin.split(".")[0] == _PUBLIC_PACKAGE and not name.startswith("_") and name != "*":
+                        entries[name] = [f"{name} = import {origin}.{alias.name}"]
+    return entries
+
+
+def _runtime_entry(name: str, value: object) -> str:
+    """Describe a name that only exists at run time (a lazy export or a name in ``__all__`` from elsewhere)."""
+    owner = str(getattr(value, "__module__", None))
+    if (inspect.isclass(value) or inspect.isroutine(value)) and owner.split(".", maxsplit=1)[0] == _PUBLIC_PACKAGE:
+        return f"{name} = lazy {owner}.{value.__qualname__}"
+    return f"{name} = lazy"
+
+
+def _module_surface(module_name: str) -> list[str]:
+    module = importlib.import_module(module_name)
+    declared = sorted(getattr(module, "__all__", ()))
+    entries = _module_entries(module)
+    texts = [f"[{module_name}]"]
+    if hasattr(module, "__all__"):
+        texts.append(f"__all__ = {declared}")
+    for name in sorted({*declared, *entries}):
+        texts.extend(entries[name] if name in entries else [_runtime_entry(name, getattr(module, name, None))])
+    return texts
+
+
+def _public_surface() -> str:
+    """Write the names, kinds and signatures of every public module as one text."""
+    texts: list[str] = []
+    for module_name in sorted(_public_module_names(datamodel_code_generator)):
+        texts.extend([*_module_surface(module_name), ""])
+    return "\n".join(texts)
 
 
 def _baseline_generate(
@@ -1089,40 +930,9 @@ def _types_match(config_type: Any, dict_type: Any) -> bool:
     return _normalize_type(config_type) == _normalize_type(dict_type)
 
 
-@pytest.mark.parametrize(("module_name", "expected_exports"), _PUBLIC_MODULE_EXPORTS.items())
-def test_public_module_all_exports_match_baseline(module_name: str, expected_exports: frozenset[str]) -> None:
-    """Pin focused public module export surfaces used by compatibility shims."""
-    module = importlib.import_module(module_name)
-    module_exports = list(module.__all__)
-    actual_exports = set(module_exports)
-    missing_exports = [name for name in module_exports if not hasattr(module, name)]
-
-    assert len(module_exports) == len(actual_exports), f"{module_name}.__all__ contains duplicate names"
-    assert actual_exports == expected_exports, (
-        f"{module_name}.__all__ changed:\n"
-        f"  removed: {sorted(expected_exports - actual_exports)}\n"
-        f"  added: {sorted(actual_exports - expected_exports)}"
-    )
-    assert missing_exports == [], f"{module_name}.__all__ contains non-importable names: {missing_exports}"
-
-
-@pytest.mark.parametrize(("module_name", "expected_symbols"), _DE_FACTO_PUBLIC_SYMBOLS.items())
-def test_de_facto_public_symbols_remain_importable(module_name: str, expected_symbols: frozenset[str]) -> None:
-    """Pin importable symbols used downstream without requiring module __all__ changes."""
-    module = importlib.import_module(module_name)
-    missing_symbols = sorted(name for name in expected_symbols if not hasattr(module, name))
-
-    assert missing_symbols == [], f"{module_name} no longer exposes de facto public symbols: {missing_symbols}"
-
-
-@pytest.mark.parametrize(("object_path", "expected_attributes"), _DE_FACTO_PUBLIC_ATTRIBUTES.items())
-def test_de_facto_public_attributes_remain_available(object_path: str, expected_attributes: frozenset[str]) -> None:
-    """Pin the attributes downstream code reads from de facto public classes and enums."""
-    module_name, _, name = object_path.rpartition(".")
-    owner = getattr(importlib.import_module(module_name), name)
-    missing_attributes = sorted(attribute for attribute in expected_attributes if not hasattr(owner, attribute))
-
-    assert missing_attributes == [], f"{object_path} no longer exposes de facto public attributes: {missing_attributes}"
+def test_public_api_surface_matches_stored_output() -> None:
+    """Store every public module's names, kinds and signatures: a diff of the stored file is a public change."""
+    assert_output(_public_surface())
 
 
 @pytest.mark.abnormal_path("downstream code assigns this module attribute, so the assignment is the contract pinned")
