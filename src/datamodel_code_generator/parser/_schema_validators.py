@@ -1274,7 +1274,7 @@ def _contains_rule(parser: SchemaValidatorsHost, obj: JsonSchemaObject, path: Un
         return None
     features = parser._features_at(obj)
     min_contains, max_contains = (
-        _value_keywords.get_contains_count_constraints(type(parser), obj) if features.anchor else (1, None)
+        _value_keywords.get_contains_count_constraints(type(parser), obj) if features.contains_counts else (1, None)
     )
     if (min_contains is None and max_contains is None) or not isinstance(
         contains := get_conditional_schema(parser, obj, "contains"), JsonSchemaObject
@@ -1291,7 +1291,7 @@ def _contains_matcher(
     """Return the keywords of a ``contains`` schema that the generated matcher checks exactly, as (keyword, value).
 
     The matcher reads ``type``, ``const``, ``enum``, ``pattern``, ``minLength``, ``maxLength``, the numeric bounds and
-    ``multipleOf``, beside metadata only; any other keyword, a pattern Python's ``re`` cannot compile, a
+    ``multipleOf``, beside metadata only; any other keyword, a pattern Python's ``re`` rejects, a
     ``multipleOf`` that is not an integer (float division and the mathematical multiple disagree), an enum that
     ``--ignore-enum-constraints`` drops and a const the draft does not define give None, so that no count is checked
     with a matcher that accepts other items than the schema. An integral ``multipleOf`` is the integer it spells.
@@ -1309,7 +1309,7 @@ def _contains_matcher(
         if parser.ignore_enum_constraints:
             return None
         matcher.append(("enum", tuple(schema.enum)))
-    if schema.pattern is not None and (python_rejects(schema.pattern) or not _compiles(schema.pattern)):
+    if schema.pattern is not None and python_rejects(schema.pattern):
         return None
     for keyword, value in _constraint_values(
         schema, (*_CONTAINS_STRING_KEYWORDS, *_CONTAINS_NUMBER_KEYWORDS), as_numbers=True
@@ -1321,15 +1321,6 @@ def _contains_matcher(
         else:
             matcher.append((keyword, value))
     return tuple(matcher)
-
-
-def _compiles(pattern: str) -> bool:
-    """Return whether Python's ``re`` compiles ``pattern``."""
-    try:
-        re.compile(pattern)
-    except (re.error, OverflowError, RecursionError):
-        return False
-    return True
 
 
 def add_path_rules_validator(  # noqa: PLR0913

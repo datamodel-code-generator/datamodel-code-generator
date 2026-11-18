@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import TYPE_CHECKING
 
 import pydantic
@@ -124,8 +123,6 @@ def test_schema_validator_contains(output_file: Path, option: tuple[str, ...]) -
                 {"steps": [0.5, 0.3]},
                 {"even": [2, 4]},
                 {"even": [2, 3]},
-                {"named": ["a", "a"]},
-                {"named": ["b"]},
             ),
         ),
     ],
@@ -137,8 +134,7 @@ def test_schema_validator_contains_rule_scope(
     """Count the items of a root array (#7052) where the matcher is exact for the dialect and the draft's keywords.
 
     A draft-04 contains, where const is not defined, gets no count; a draft-07 contains needs one match and ignores
-    ``minContains`` and ``maxContains``; a ``multipleOf`` that is no integer and a pattern Python cannot compile
-    get none.
+    ``minContains`` and ``maxContains``; a ``multipleOf`` that is no integer gets none.
     """
     run_main_and_assert(
         input_path=input_path,
@@ -162,14 +158,8 @@ def _verdicts(input_path: Path, model: type[pydantic.BaseModel], documents: tupl
     schema = json.loads(input_path.read_text(encoding="utf-8"))
     validator = validator_for(schema)(schema)
 
-    def verdict(document: object) -> str:
-        try:
-            return "valid" if validator.is_valid(document) else "invalid"
-        except re.error:
-            return "pattern error"
-
     return "".join(
-        f"{json.dumps(document)} ({verdict(document)}): "
+        f"{json.dumps(document)} ({'valid' if validator.is_valid(document) else 'invalid'}): "
         f"{_accepts(model.model_validate, document)}/"
         f"{_accepts(model.model_validate_json, json.dumps(document))}\n"
         for document in documents

@@ -73,6 +73,7 @@ _DRAFT_FLAG_CHANGES: tuple[tuple[JsonSchemaVersion, dict[str, Any]], ...] = (
             "anchor": True,
             "recursive_ref": True,
             "ref_sibling_keywords": True,
+            "contains_counts": True,
         },
     ),
     (JsonSchemaVersion.Draft202012, {"prefix_items": True, "dynamic_ref": True}),
@@ -200,6 +201,15 @@ class JsonSchemaFeatures:
                 "Count constraints are modeled when contains matches every item; "
                 "general schema-valued contains is not supported"
             ),
+            status="partial",
+        ),
+    )
+    contains_counts: bool = field(
+        default=False,
+        metadata=FeatureMetadata(
+            introduced="2019-09",
+            doc_name="minContains/maxContains",
+            description="Count limits on the items `contains` matches (a `contains` needs one match before 2019-09)",
             status="partial",
         ),
     )

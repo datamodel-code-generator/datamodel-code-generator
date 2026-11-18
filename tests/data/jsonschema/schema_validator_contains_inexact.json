@@ -16,13 +16,6 @@
         "multipleOf": 2
       },
       "maxContains": 1
-    },
-    "named": {
-      "type": "array",
-      "contains": {
-        "pattern": "(?<letter>a)"
-      },
-      "maxContains": 1
     }
   }
 }

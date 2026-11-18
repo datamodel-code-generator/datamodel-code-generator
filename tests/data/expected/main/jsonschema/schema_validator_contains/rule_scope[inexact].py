@@ -184,4 +184,3 @@ class Probe(_JsonSchemaRuntimeValidationBase):
 
     steps: list[Any] | None = None
     even: list[Any] | None = None
-    named: list[Any] | None = None
