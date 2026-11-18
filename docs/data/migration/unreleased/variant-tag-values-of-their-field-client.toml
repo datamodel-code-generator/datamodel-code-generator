@@ -1,8 +1,0 @@
-[[change]]
-id = "variant-tag-values-of-their-field-client"
-extends = "client-tags-follow-the-model"
-covers = [
-    "main/generation_platform/client/packages/discriminator-values/dataclasses_dataclass//*.py",
-    "main/generation_platform/client/packages/discriminator-values/typing_TypedDict//*.py",
-    "main/generation_platform/client/runtime/discriminator-values.txt",
-]
