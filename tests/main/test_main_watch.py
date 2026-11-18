@@ -2964,7 +2964,8 @@ def _watch_in_steps(
 
     Each generation runs the next step after it ends (an ``_OnceHandled`` step starts in the background), and the
     generation after the last step stops watch mode. With ``late_events``, each batch of events arrives after two polls
-    without events, as on a slow runner.
+    without events, as on a slow runner: when a dependency changed, those polls start a fingerprint fallback, and the
+    batch arrives once the generation it started has ended.
     """
     import watchfiles
 
@@ -2979,11 +2980,22 @@ def _watch_in_steps(
     background_steps: list[threading.Thread] = []
     handled_before_steps: list[tuple[Path, bool]] = []
 
+    def wait_for_a_generation_after(ended_generations: int) -> None:
+        with handled:
+            handled.wait_for(
+                lambda: len(generations) > ended_generations or watch_ended.is_set(), WATCH_STEPS_TIMEOUT_SECONDS
+            )
+
     def observed_watch(*paths: Path, **options: object) -> Iterator[set[tuple[watchfiles.Change, str]]]:
         for changes in prompt_watch(*paths, **options):
             if late_events and changes:
+                with handled:
+                    ended_generations = len(generations)
+                falls_back = dependencies._polling_dependencies_changed()
                 yield set()
                 yield set()
+                if falls_back:
+                    wait_for_a_generation_after(ended_generations)
             yield changes
             with handled:
                 handled_paths.update(Path(path).resolve() for _change, path in changes)
@@ -3003,7 +3015,9 @@ def _watch_in_steps(
     def regenerate() -> Exit:
         with dependencies.generation():
             observed = observed_path.exists()
-        generations.append(observed)
+        with handled:
+            generations.append(observed)
+            handled.notify_all()
         if (step := next(pending_steps, None)) is None:
             raise KeyboardInterrupt
         if isinstance(step, _OnceHandled):
