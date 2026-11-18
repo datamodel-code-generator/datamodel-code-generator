@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._recommend._signals import Signals
     from datamodel_code_generator._recommend._trial import CandidateOutcome, TrialCandidate, TrialInput
     from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
+    from datamodel_code_generator._source import DecodedInput
     from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.parser.schema_version import SchemaKind
 
@@ -194,22 +195,24 @@ def _read_input(request: RecommendRequest) -> tuple[str | None, InputSource, str
     return request.read_stdin(), "stdin", None
 
 
-def _input_file_type(config: Any, text: str | None) -> str | None:
-    """Return the configured input file type, or the detected one for auto."""
-    from datamodel_code_generator import InputFileType, infer_input_type  # noqa: PLC0415
+def _input_file_type(config: Any, text: str | None) -> tuple[str | None, DecodedInput | None]:
+    """Return the configured input file type, or the detected one for auto with the document as detection decoded it."""
+    from datamodel_code_generator import InputFileType, _infer_input  # noqa: PLC0415
 
     if config.input_file_type != InputFileType.Auto:
-        return config.input_file_type.value
+        return config.input_file_type.value, None
     if text is None:
-        return None
-    return infer_input_type(text).value
+        return None, None
+    file_type, _, decoded = _infer_input(text)
+    return file_type.value, decoded
 
 
-def _load(text: str) -> dict[str, Any]:
-    """Load a JSON or YAML mapping, raising the loader's error."""
-    from datamodel_code_generator._source import load_data  # noqa: PLC0415
+def _load(text: str, decoded: DecodedInput | None = None) -> dict[str, Any]:
+    """Load a JSON or YAML mapping, raising the loader's error; the text of ``decoded`` is not decoded again."""
+    from datamodel_code_generator._source import decoding_from, load_data  # noqa: PLC0415
 
-    return load_data(text)
+    with decoding_from(decoded):
+        return load_data(text)
 
 
 def _load_errors() -> tuple[type[Exception], ...]:
@@ -218,9 +221,9 @@ def _load_errors() -> tuple[type[Exception], ...]:
     return TypeError, ValueError, *get_yaml_parse_errors()
 
 
-def _document(text: str, kind: SchemaKind, what: str) -> dict[str, Any]:
+def _document(text: str, kind: SchemaKind, what: str, decoded: DecodedInput | None = None) -> dict[str, Any]:
     try:
-        return _load(text)
+        return _load(text, decoded)
     except _load_errors() as e:
         msg = f"Unable to read {what} as {_DOCUMENT_NAMES[kind]} document: {e}"
         raise Error(msg) from e
@@ -259,10 +262,10 @@ class _Input:
 def _analyse(request: RecommendRequest) -> _Input:
     """Read and analyse the input; a Swagger 2.0 document typed as OpenAPI generates nothing, so it is not analysed."""
     text, source, stem = _read_input(request)
-    file_type = _input_file_type(request.config, text)
+    file_type, decoded = _input_file_type(request.config, text)
     if text is None or (kind := _ANALYSED_TYPES.get(file_type or "")) is None:
         return _Input(text, source, stem, file_type, None, None, None)
-    document = _document(text, kind, "the input")
+    document = _document(text, kind, "the input", decoded)
     if kind == "openapi" and is_swagger_2(document):
         return _Input(text, source, stem, file_type, None, document, None, swagger=True)
     return _Input(text, source, stem, file_type, kind, document, _measure(document, kind, request.config))

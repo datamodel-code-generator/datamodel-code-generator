@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import linecache
 import sys
 import warnings
+from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
@@ -24,7 +26,6 @@ from tests.main.conftest import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
 assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 
@@ -146,6 +147,31 @@ def test_main_yaml_deprecated_bool(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="openapi",
         )
+
+
+@pytest.mark.parametrize("yaml_backend", ["pyyaml", "ryaml"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_deprecated_bool_auto_warns_at_inference_and_parse(
+    output_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Under auto, the inference and the parse each warn for a deprecated YAML bool, from their own lines.
+
+    The parser reads the document that the inference decoded, without decoding it again, and warns as a decode does:
+    ryaml's scan from the line of the parse, PyYAML's warnings again. One generation is recorded, so the second one of
+    the formatter parity check is left out.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(input_path=YAML_DATA_PATH / "deprecated_bool.yaml", output_path=output_file)
+    assert_output(
+        "".join(
+            f"{Path(record.filename).name}: {linecache.getline(record.filename, record.lineno).strip()}: "
+            f"{record.message}\n"
+            for record in recorded
+            if "YAML bool" in str(record.message)
+        )
+    )
 
 
 @pytest.mark.usefixtures("yaml_backend")

@@ -4,19 +4,22 @@ from __future__ import annotations
 
 import contextlib
 import sys
+from contextvars import ContextVar
 from dataclasses import dataclass
 from functools import lru_cache
 from hashlib import sha256
 from importlib.util import source_from_cache
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, TextIO, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, TextIO, TypeAlias, cast
 
 from datamodel_code_generator._caches import BoundedLru, SeenKeys
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._module_paths import is_package_init
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
+    from contextlib import AbstractContextManager
 
 # Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
 if sys.version_info >= (3, 14):
@@ -46,6 +49,39 @@ _parser_source_data_seen_keys: SeenKeys[_ParserSourceDataSeenKey] = SeenKeys()
 _parser_source_data_cache_lock = RLock()
 _parsed_source_cache_enable_count = 0
 _enable_parsed_source_cache = False
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DecodedInput:
+    """The input document as input type inference decoded it, which the first parser of a run reads instead of its text.
+
+    ``decoder`` names the decode that read ``text`` to ``value``; ``yaml_bools`` are the details of the deprecated YAML
+    bools PyYAML warned for as it read them, which a decode of the text from the record warns for again.
+    """
+
+    text: str
+    value: dict[str, YamlValue]
+    decoder: Literal["json", "yaml"]
+    yaml_bools: tuple[str, ...] = ()
+
+
+_DECODED_INPUT: Final[ContextVar[DecodedInput | None]] = ContextVar("decoded_input", default=None)
+
+
+def decoding_from(decoded: DecodedInput | None) -> AbstractContextManager[None]:
+    """Return the block in which a decode of the text of ``decoded`` gives its value instead of decoding it again.
+
+    That decode warns as the decode of the record did: the ryaml text scan runs at its place in ``load_yaml``, and the
+    deprecated bools PyYAML read are warned for again.
+    """
+    return contextlib.nullcontext() if decoded is None else context_values({_DECODED_INPUT: decoded})
+
+
+def _decoded_input_of(text: str, decoder: Literal["json", "yaml"]) -> DecodedInput | None:
+    """Return the record of the ``decoding_from`` block when ``decoder`` decodes its text, else None."""
+    if (decoded := _DECODED_INPUT.get()) is not None and decoded.decoder == decoder and decoded.text == text:
+        return decoded
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,18 +192,27 @@ def load_yaml(stream: str | TextIO) -> YamlValue:
 
     PyYAML reads a document that ryaml cannot, such as one holding an integer outside 64 bits; when PyYAML cannot
     read it either, such as an integer beyond Python's digit limit or nesting beyond the stack, ryaml's error is raised.
+    The text of a decoded input is not decoded again (``decoding_from``): it warns as its decode did.
     """
-    from datamodel_code_generator.util import get_yaml_backend, reject_unsupported_yaml_tags  # noqa: PLC0415
+    from datamodel_code_generator.util import (  # noqa: PLC0415
+        get_yaml_backend,
+        reject_unsupported_yaml_tags,
+        warn_deprecated_yaml_bools,
+        warn_yaml_deprecated_bool_values,
+    )
 
     text = stream if isinstance(stream, str) else stream.read()
-    reject_unsupported_yaml_tags(text)
+    if (decoded := _decoded_input_of(text, "yaml")) is None:
+        reject_unsupported_yaml_tags(text)
 
-    if get_yaml_backend() == "ryaml":
+    if ryaml_backend := get_yaml_backend() == "ryaml":
+        warn_yaml_deprecated_bool_values(text)
+    if decoded is not None:
+        warn_deprecated_yaml_bools(decoded.yaml_bools)
+        return decoded.value
+    if ryaml_backend:
         import ryaml  # noqa: PLC0415  # ty: ignore[import-not-found]
 
-        from datamodel_code_generator.util import warn_yaml_deprecated_bool_values  # noqa: PLC0415
-
-        warn_yaml_deprecated_bool_values(text)
         try:
             return ryaml.loads(text)
         except ryaml.InvalidYamlError:
@@ -233,6 +278,15 @@ def _is_json_text(text: str) -> bool:
     return _first_significant_text_char(text) in {"{", "["}
 
 
+def _load_json(text: str) -> YamlValue:
+    """Decode text as JSON; the text of a decoded input is not decoded again (``decoding_from``)."""
+    if (decoded := _decoded_input_of(text, "json")) is not None:
+        return decoded.value
+    import json  # noqa: PLC0415
+
+    return json.loads(text)
+
+
 def _load_json_document(text: str) -> YamlValue | None:
     """Return the value of text when it is a JSON document, or None when it is not (it may still be YAML)."""
     if not _is_json_text(text):
@@ -240,7 +294,7 @@ def _load_json_document(text: str) -> YamlValue | None:
     import json  # noqa: PLC0415
 
     try:
-        return json.loads(text)
+        return _load_json(text)
     except json.JSONDecodeError:
         return None
 

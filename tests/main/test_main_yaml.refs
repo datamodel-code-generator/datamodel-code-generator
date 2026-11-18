@@ -39,6 +39,11 @@ pyyaml	main/main_yaml/1_1_numbers_still_refused[pyyaml].txt	= main/jsonschema/op
 	main/main_yaml/bool_word_does_not_warn.py
 [test_main_yaml_deprecated_bool]
 	main/main_yaml/deprecated_bool.py
+[test_main_yaml_deprecated_bool_auto_warns_at_inference_and_parse]
+pyyaml	main/main_yaml/deprecated_bool_auto_warns_at_inference_and_parse[pyyaml].py	= main/main_yaml/deprecated_bool.py
+pyyaml	main/main_yaml/deprecated_bool_auto_warns_at_inference_and_parse[pyyaml].txt
+ryaml	main/main_yaml/deprecated_bool_auto_warns_at_inference_and_parse[ryaml].py	= main/main_yaml/deprecated_bool.py
+ryaml	main/main_yaml/deprecated_bool_auto_warns_at_inference_and_parse[ryaml].txt
 [test_main_yaml_integer_beyond_int64]
 pyyaml	main/main_yaml/integer_beyond_int64[pyyaml].py
 ryaml	main/main_yaml/integer_beyond_int64[ryaml].py	= main/main_yaml/integer_beyond_int64[pyyaml].py
