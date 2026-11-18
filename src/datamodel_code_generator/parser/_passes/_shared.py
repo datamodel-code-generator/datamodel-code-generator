@@ -284,7 +284,7 @@ def _restore_inherited_field_names_for_unique_aliases(
     """Keep the Python name of every required inherited field when wire aliases must be unique; True when one moved."""
     restored = False
     for field in fields:
-        if not (original_name := field.original_name):  # pragma: no cover - msgspec fields come from named properties
+        if not (original_name := field.original_name):
             continue
         inherited_field = inherited_fields.get(original_name)
         if (

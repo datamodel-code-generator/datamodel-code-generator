@@ -425,7 +425,7 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         if not alias_extras and not raw_extras:
             return values
         extras = {**alias_extras, **raw_extras}
-        if "const" in alias_extras:  # pragma: no cover
+        if "const" in alias_extras:
             extras["const"] = alias_extras["const"]
         return {**values, cls.__extra_key__: extras}
 

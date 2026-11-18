@@ -41,7 +41,7 @@ from datamodel_code_generator.types import Types, build_union
 
 try:
     import graphql
-except ImportError as exc:  # pragma: no cover
+except ImportError as exc:
     msg = f"Please run {install_command('graphql')} to generate data-model from a GraphQL schema."
     raise Exception(msg) from exc  # noqa: TRY002
 
@@ -403,7 +403,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
         extras = {} if self.default_field_extras is None else self.default_field_extras.copy()
 
-        if field.description is not None:  # pragma: no cover
+        if field.description is not None:
             extras["description"] = field.description
 
         return self._build_field(

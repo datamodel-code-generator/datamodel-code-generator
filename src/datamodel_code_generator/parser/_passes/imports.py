@@ -1683,7 +1683,7 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
         models, imports = ctx.models, ctx.imports
         imported_names = _imported_names(models, imports, shared_names)
         for model in models:
-            if model.class_name not in imported_names:  # pragma: no cover
+            if model.class_name not in imported_names:
                 continue
             if model.class_name == IMPORT_LITERAL.import_ and alias_reused_variant_literal(parser, models, imports):
                 continue

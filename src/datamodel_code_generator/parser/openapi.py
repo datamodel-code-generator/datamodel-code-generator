@@ -1178,7 +1178,7 @@ class OpenAPIParser(JsonSchemaParser):
         if isinstance(ref := parameter.get("$ref"), str):
             parameter = self.get_ref_model(ref, "parameter")
         if not isinstance(name := parameter.get("name"), str) or not isinstance(location := parameter.get("in"), str):
-            return None  # pragma: no cover - OpenAPI validation rejects malformed parameters
+            return None
         return name, location
 
     def parse_schema(
@@ -1688,7 +1688,7 @@ class OpenAPIParser(JsonSchemaParser):
                         else [*resolver.current_root, "#/components", "schemas", schema_name],
                         self._member_location(schemas, schema_name),
                     )
-                    continue  # pragma: no cover - validation always raises for non-schema values
+                    continue
             local_ref = (
                 "#" + _pointer_fragment(("components", "schemas", schema_name))
                 if scan.canonical_keys

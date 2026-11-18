@@ -863,7 +863,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
     Only applies to named schema definitions, not inline properties.
     """
     if any(_is_special_path(path_element) for path_element in path):
-        return None  # pragma: no cover
+        return None
 
     ref_items = [item for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]
 
@@ -1059,7 +1059,7 @@ def merge_all_of_object(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonS
     resolved_items: list[JsonSchemaObject] = []
     property_signatures: dict[str, set[str | bool]] = {}
     for item in obj.allOf:
-        if not isinstance(item, JsonSchemaObject):  # pragma: no cover
+        if not isinstance(item, JsonSchemaObject):
             continue
         resolved_item = parser._load_ref_schema_object(item.ref) if item.ref else item
         if resolved_item.is_boolean_schema_false:

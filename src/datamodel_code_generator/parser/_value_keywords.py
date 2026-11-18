@@ -497,7 +497,7 @@ def extract_const_enum_from_combined(  # noqa: PLR0912
         if inferred_type is None and literal_value_kind(const_value) not in _UNTYPED_CONST_KINDS:
             inferred_type = json_type(const_value)
 
-    if not enum_values:  # pragma: no cover
+    if not enum_values:
         return None
     if read_as_const and (
         len(values := [value for value in enum_values if value is not None]) == 1

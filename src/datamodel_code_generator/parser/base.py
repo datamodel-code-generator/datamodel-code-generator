@@ -1665,7 +1665,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for source in cached_sources:
                 if source.raw_data is None:
                     yield Source(path=source.path, text=source.text)
-                else:  # pragma: no cover
+                else:
                     yield source.model_copy(deep=True)
             return
         yield from self._iter_source_uncached()
@@ -1682,7 +1682,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         yield self._source_from_path(source_path, data=data)
                 else:
                     yield self._source_from_path(path)
-            case list() as paths:  # pragma: no cover
+            case list() as paths:
                 for path in paths:
                     yield self._source_from_path(path)
             case _:

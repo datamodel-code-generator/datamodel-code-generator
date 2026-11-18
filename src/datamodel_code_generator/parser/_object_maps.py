@@ -310,7 +310,7 @@ def flatten_additional_properties_all_of(
             or "const" in schema.extras
             or isinstance(schema.type, list)
         ):
-            return None  # pragma: no cover
+            return None
         schemas.append(schema)
     return schemas
 
@@ -321,8 +321,8 @@ def _merge_additional_properties_all_of(parser: ObjectMapsHost, obj: JsonSchemaO
         return None
 
     schema_types = {schema.type for schema in schemas if schema.type}
-    if not schema_types or not schema_types <= {"integer", "number", "string"}:  # pragma: no cover
-        return None  # pragma: no cover
+    if not schema_types or not schema_types <= {"integer", "number", "string"}:
+        return None
     if len(schema_types) > 1 and schema_types != {"integer", "number"}:  # pragma: no cover
         return None  # pragma: no cover
     if (merged_schema := parser._merge_primitive_schemas_for_allof(schemas)) is None:  # pragma: no cover
