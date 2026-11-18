@@ -495,6 +495,15 @@ def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
             yield from iter_literal_members(child)
 
 
+def iter_union_choices(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]:
+    """Yield the types other than None that an annotation joins in its unions, the unions it nests spread."""
+    if is_union_python_type_expr(expression):
+        for argument in python_type_expr_arguments(expression):
+            yield from iter_union_choices(argument)
+    elif expression != python_type_name("None"):
+        yield expression
+
+
 def literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
     """Yield the values of a ``Literal``, those of a ``Literal`` it nests included."""
     for argument in arguments:
@@ -650,6 +659,7 @@ __all__ = [
     "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
+    "iter_union_choices",
     "literal_values",
     "literal_values_as_text",
     "parse_python_type_annotation",

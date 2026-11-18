@@ -23,7 +23,7 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
-from datamodel_code_generator._container_kinds import UNHASHABLE_CONTAINERS
+from datamodel_code_generator._container_kinds import CONTAINERS, UNHASHABLE_CONTAINERS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach, reaching
@@ -40,7 +40,7 @@ from datamodel_code_generator._regex_syntax import (
     selects_python_engine,
 )
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, form_path
-from datamodel_code_generator.enums import AliasGenerator
+from datamodel_code_generator.enums import AliasGenerator, DataModelType
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_ANY,
@@ -157,7 +157,7 @@ from datamodel_code_generator.python_literal import (
     stable_repr,
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType, keep_node_records
-from datamodel_code_generator.types import _is_value_literal, chain_as_tuple
+from datamodel_code_generator.types import NONE, _is_value_literal, chain_as_tuple
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -753,6 +753,28 @@ def _remove_compiled_pattern_metadata(args: _FieldArguments) -> None:
         args.pop(_COMPILED_PATTERN_KEY, "compiled-pattern-metadata", _COMPILED_PATTERN)
 
 
+def _validates_as_union(data_type: DataType) -> bool:
+    """Return whether Pydantic validates a type as a union of two or more choices, the one schema ``union_mode`` takes.
+
+    Pydantic validates a union beside None as the union, and a type alias as its value: a type is one when its members,
+    None aside, write two or more types or one that is such a union, when it names a type alias whose value is one, or
+    when the annotation it is given (``x-python-type``) joins two or more types. Any other type is a single choice.
+    """
+    if data_type in CONTAINERS:
+        return False
+    if not (data_type.alias or data_type.type):
+        if data_type.data_types:
+            choices = [*{member.type_hint: member for member in data_type.data_types if member.type != NONE}.values()]
+            return len(choices) > 1 or (len(choices) == 1 and _validates_as_union(choices[0]))
+        if (reference := data_type.reference) is not None and (source := reference.source) is not None:
+            return source.is_alias and any(_validates_as_union(field.data_type) for field in source.fields[:1])
+    if (bound := data_type.python_type) is None:
+        return False
+    from datamodel_code_generator._python_type_annotation import iter_union_choices  # noqa: PLC0415
+
+    return len({*iter_union_choices(bound.expression)}) > 1
+
+
 class DataModelField(_PydanticBaseDataModelField):
     """Pydantic v2 field with Field() constraints and json_schema_extra support."""
 
@@ -1040,7 +1062,12 @@ class DataModelField(_PydanticBaseDataModelField):
         match args.take("union_mode"):
             case None:
                 pass
-            case union_mode if union_mode.value and self.data_type.is_union and "discriminator" not in args:
+            case union_mode if (
+                union_mode.value
+                and self.data_type.is_union
+                and "discriminator" not in args
+                and _validates_as_union(self.data_type)
+            ):
                 args.put("union_mode", cast("Any", union_mode.value).value, _UNION_MODE, union_mode.items)
             case union_mode:
                 args.omit_entry(union_mode, "union-mode-inapplicable", _UNION_MODE)
@@ -2119,7 +2146,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         """Replace a RootModel wrapper with the alias form that --use-type-alias selects."""
         if not configured_root_model_type.IS_ROOT_MODEL:
             return configured_root_model_type
-        from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
         from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
 
         return get_data_model_types(

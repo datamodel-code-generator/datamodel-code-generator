@@ -1,0 +1,13 @@
+[[change]]
+id = "union-mode-single-choice"
+category = "crash-fix"
+kind = "default-output"
+action = "none"
+source = "release-note"
+title = "--union-mode no longer writes union_mode on a field of one choice beside None"
+summary = "With --union-mode, a field whose type is one choice beside None (a nullable $ref to a union model, whose RootModel Pydantic validates as one model, or a nullable scalar, constrained type, Literal, enum, model or list) was given Field(union_mode=...), and the module failed at import with \"Unable to apply constraint 'union_mode'\". union_mode is now written only where Pydantic validates a union of two or more choices; a type alias whose value is a union keeps it."
+refs = ["#6815"]
+covers = [
+    "main/jsonschema/union_mode_single_choice/union_mode_on_one_choice_beside_none[root-model].py",
+    "main/jsonschema/union_mode_single_choice/union_mode_on_one_choice_beside_none[type-alias].py",
+]
