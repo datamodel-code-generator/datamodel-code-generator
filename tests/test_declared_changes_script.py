@@ -81,13 +81,17 @@ def _commit(repository: Path, message: str) -> None:
 def _repository(tmp_path: Path, spec: dict[str, Any]) -> Path:
     """Commit the release and tag it, commit the base on branch `base`, then the head on branch `fix-the-thing`.
 
-    With `origin`, origin/main points at the base, so the base is the default one.
+    The `steps` are commits of main between the release and the base. With `origin`, origin/main points at the base,
+    so the base is the default one.
     """
     repository = tmp_path / "repository"
     _write(repository, RELEASED | spec.get("release", {}))
     subprocess.run([*GIT, "init", "-q", "-b", "main"], cwd=repository, check=True)
     _commit(repository, "release")
     subprocess.run([*GIT, "tag", "0.1.0"], cwd=repository, check=True)
+    for number, step in enumerate(spec.get("steps", []), 1):
+        _write(repository, step)
+        _commit(repository, f"step {number}")
     _write(repository, spec.get("base", {}))
     _commit(repository, "base")
     subprocess.run([*GIT, "switch", "-q", "-c", "base"], cwd=repository, check=True)
@@ -350,6 +354,68 @@ CASES: dict[str, dict[str, Any]] = {
         "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
     },
     "report only": {"head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}, "args": ["--report-only"]},
+    "a test-only change adds an output after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+            f"{EXPECTED}/models/new.py": "N = 1\n",
+        },
+    },
+    "a test-only change renames a test after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar({
+                "test_model_renamed" if key == "test_model" else key: lines for key, lines in REFS.items()
+            })
+        },
+    },
+    "a test-only change renames a stored file with its test after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar(
+                {key: lines for key, lines in REFS.items() if key != "test_warn"}
+                | {"test_warning": ["\tmodels/warning.warnings.txt", REFS["test_warn"][1]]}
+            ),
+            f"{EXPECTED}/models/w.warnings.txt": None,
+            f"{EXPECTED}/models/warning.warnings.txt": "UserWarning: w\n",
+        },
+    },
+    "a test-only change removes an output after a src change": {
+        "base": SRC,
+        "head": {
+            "tests/test_models.refs": _sidecar(REFS | {"test_warn": REFS["test_warn"][1:]}),
+            f"{EXPECTED}/models/w.warnings.txt": None,
+        },
+    },
+    "main after a test-only change added an output and a src change": {
+        "steps": [
+            {
+                "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+                f"{EXPECTED}/models/new.py": "N = 1\n",
+            }
+        ],
+        "base": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-two", ["models/b.py"], **OUTPUT_TEXT),
+        "args": ["--main"],
+    },
+    "main after a src change moved a test-added output": {
+        "steps": [
+            {
+                "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+                f"{EXPECTED}/models/new.py": "N = 1\n",
+            }
+        ],
+        "base": SRC | {f"{EXPECTED}/models/new.py": "N = 2\n"},
+        "args": ["--main"],
+    },
+    "main after a src change and a test-only rename": {
+        "steps": [SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-two", ["models/b.py"], **OUTPUT_TEXT)],
+        "base": {
+            "tests/test_models.refs": _sidecar({
+                "test_model_renamed" if key == "test_model" else key: lines for key, lines in REFS.items()
+            })
+        },
+        "args": ["--main"],
+    },
     "many outputs": {
         "head": SRC
         | {"tests/test_many.refs": _sidecar({"test_many": [f"{index}\tmany/{index:02}.py" for index in range(25)]})}
@@ -405,6 +471,14 @@ PRINTED: dict[str, dict[str, Any]] = {
     "an output text record does not take a warning": {
         "head": {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("b-text", ["models/b.py"], **OUTPUT_TEXT),
         "worktree": {f"{EXPECTED}/models/w.warnings.txt": "UserWarning: other\n"},
+    },
+    "a test-only change moves and adds outputs after a src change": {
+        "base": SRC,
+        "worktree": {
+            "tests/test_models.refs": _sidecar(REFS | {"test_new": ["\tmodels/new.py"]}),
+            f"{EXPECTED}/models/new.py": "N = 1\n",
+            f"{EXPECTED}/models/b.py": "B = 2\n",
+        },
     },
     "the branch's record among others": {
         "head": SRC
