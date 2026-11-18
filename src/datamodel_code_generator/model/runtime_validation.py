@@ -171,6 +171,22 @@ class ConditionalRequiredRule:
     else_groups: RequiredGroups
 
 
+BoundKeyword: TypeAlias = Literal["minimum", "exclusiveMinimum", "maximum", "exclusiveMaximum"]
+ConditionalBounds: TypeAlias = tuple[tuple[InputNames, BoundKeyword, int | float], ...]
+
+
+@record(slots=False)
+class ConditionalBoundsRule:
+    """Runtime rule for the numeric bounds the ``then`` and ``else`` of an if/then/else put on properties.
+
+    Each bound is (input names, keyword, limit); the condition is that of ``ConditionalRequiredRule``.
+    """
+
+    condition: Condition
+    then_bounds: ConditionalBounds
+    else_bounds: ConditionalBounds
+
+
 def conditional_value_uses_json_equality(value: object) -> bool:
     """Identify condition literals for which Python conflates booleans and numbers."""
     match value:
@@ -240,6 +256,7 @@ class SchemaRuntimeValidation:
     replace_unique_items: bool = False
     constant_types: list[ConstantTypesRule] = field(default_factory=list, init=False)
     replace_constant_types: bool = field(default=False, init=False)
+    conditional_bounds: list[ConditionalBoundsRule] = field(default_factory=list, init=False)
 
     def __bool__(self) -> bool:
         """Return whether any runtime validation rule is registered."""
@@ -252,6 +269,7 @@ class SchemaRuntimeValidation:
             or self.replace_unique_items
             or self.constant_types
             or self.replace_constant_types
+            or self.conditional_bounds
         )
 
     @property
@@ -280,6 +298,7 @@ class SchemaRuntimeValidation:
             self.replace_unique_items,
             stable_repr(self.constant_types),
             self.replace_constant_types,
+            stable_repr(self.conditional_bounds),
         )
 
     def _replace_pattern_properties(self, pattern_properties: list[PatternPropertiesRule]) -> SchemaRuntimeValidation:

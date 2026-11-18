@@ -47,6 +47,14 @@ With `--collapse-root-models` and `--output-model-type msgspec.Struct`, a root m
 - **Pull requests and issues:** [#6915](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6915)
 - **Source:** the release notes
 
+### Schema validators check the numeric bounds an if/then/else puts on properties (unreleased) { #schema-validators-conditional-bounds }
+
+With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` that the `then` or `else` of an if/then/else puts on a property are checked on the raw input when the `if` is one the conditional required check reads (required properties with `const` or `enum` values, or presence only): `{"kind": "a", "value": 1}` is now rejected for `then: {properties: {value: {minimum: 10}}}` under `if: kind = "a"`, as JSON Schema rejects it. The bounds are read from the branch, its allOf members and the schema a branch or property references; a bound applies to a JSON number only, and the condition tells a boolean from a number. A model also checks the bounds of its base class. Models gain `__json_schema_conditional_bounds__` and a shared base with `_validate_json_schema_conditional_bounds`. Without the option nothing changes.
+
+- **Affects:** experimental features: `cli-option.generate-schema-validators`
+- **Pull requests and issues:** [#7054](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/7054)
+- **Source:** the release notes
+
 ### Schema validators reject a boolean for a numeric const or enum value and a number for a boolean one (unreleased) { #schema-validators-constant-types }
 
 With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), a const or enum that holds a number equal to a boolean (`0`, `1`) or a boolean gets a check on the raw input: `true` for `const: 1`, for `enum: [1, 2]` or for `enum: [1, "x"]`, and `1` for `const: true`, which Python's `True == 1` let the Literal or Enum take, are now rejected, as JSON Schema rejects them; `1.0` for `const: 1` is still accepted, and an enum that holds both (`[1, true]`) takes both. The check holds for properties, array items and mapping values, for an Enum class a property references, for the consts of a oneOf or anyOf (with branches that take no boolean or number, such as `null`), and for root models; models gain `__json_schema_constant_types__` and a shared base with `_validate_json_schema_constant_types`. Without the option nothing changes.

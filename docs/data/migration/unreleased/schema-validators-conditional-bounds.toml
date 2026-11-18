@@ -1,0 +1,23 @@
+[[change]]
+id = "schema-validators-conditional-bounds"
+category = "experimental"
+kind = "experimental"
+action = "review"
+title = "Schema validators check the numeric bounds an if/then/else puts on properties"
+summary = "With `--generate-schema-validators` (or `--schema-validator-type pydantic-v2`), the `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` that the `then` or `else` of an if/then/else puts on a property are checked on the raw input when the `if` is one the conditional required check reads (required properties with `const` or `enum` values, or presence only): `{\"kind\": \"a\", \"value\": 1}` is now rejected for `then: {properties: {value: {minimum: 10}}}` under `if: kind = \"a\"`, as JSON Schema rejects it. The bounds are read from the branch, its allOf members and the schema a branch or property references; a bound applies to a JSON number only, and the condition tells a boolean from a number. A model also checks the bounds of its base class. Models gain `__json_schema_conditional_bounds__` and a shared base with `_validate_json_schema_conditional_bounds`. Without the option nothing changes."
+affects = { experimental = ["cli-option.generate-schema-validators"] }
+refs = ["#7054"]
+decision = ["#7054"]
+source = "release-note"
+covers = [
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[read_only].py",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[read_only].txt",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[ref_siblings].py",
+    "main/jsonschema/schema_validator_conditional_bounds/rule_scope[ref_siblings].txt",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option0].payloads.txt",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option0].py",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option1].payloads.txt",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option1].py",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option2].payloads.txt",
+    "main/jsonschema/schema_validator_conditional_bounds/schema_validator_conditional_bounds[option2].py",
+]

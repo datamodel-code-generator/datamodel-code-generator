@@ -29,6 +29,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,
+    ConditionalBoundsRule,
     ConditionalRequiredRule,
     ConstantTypesRule,
     IndependentDeclaredPatternPropertiesRule,
@@ -65,6 +66,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
 )
 from datamodel_code_generator.parser.base import get_special_path
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
@@ -74,12 +76,19 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.model import DataModelFieldBase
-    from datamodel_code_generator.model.runtime_validation import UniqueItemsPath, UniqueItemsPathStep
+    from datamodel_code_generator.model.runtime_validation import (
+        BoundKeyword,
+        Condition,
+        ConditionalBounds,
+        UniqueItemsPath,
+        UniqueItemsPathStep,
+    )
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.reference import Reference
 
 __all__ = [
     "SchemaValidatorsHost",
+    "add_conditional_bounds_validator",
     "add_conditional_validator",
     "add_group_validators",
     "add_path_rules_validator",
@@ -285,6 +294,7 @@ class SchemaValidatorsHost(
 _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
 _CONSTANT_TYPES = frozenset({"boolean", "integer", "number"})
 _PathRule: TypeAlias = UniqueItemsRule | ConstantTypesRule
+_BOUND_KEYWORDS: tuple[BoundKeyword, ...] = ("minimum", "exclusiveMinimum", "maximum", "exclusiveMaximum")
 
 
 _UNMATCHED_SCHEMA_KEYWORDS = frozenset(schema_positions("unmatched"))
@@ -1307,7 +1317,7 @@ def add_path_rules_validator(  # noqa: PLR0913
         }
         add_rules(obj, (), property_input_names=names_by_property)
         overridden_properties: set[str] = set()
-        for source in parser._iter_schema_validation_sources(obj):
+        for source in iter_schema_validation_sources(parser, obj):
             if not source.properties:
                 continue
             for property_name, property_schema in source.properties.items():
@@ -1674,12 +1684,8 @@ def add_conditional_validator(
     if not then_groups and not else_groups:
         return
 
-    condition = tuple(
-        (names_by_property.get(property_name, (property_name,)), expected_values)
-        for property_name, expected_values in predicate
-    )
     rule = ConditionalRequiredRule(
-        condition=condition,
+        condition=_condition_input_names(predicate, names_by_property),
         then_groups=parser._required_group_input_names(then_groups, names_by_property),
         else_groups=parser._required_group_input_names(else_groups, names_by_property),
     )
@@ -1714,6 +1720,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
     ):
         parser._add_required_groups_validator(reference_path, "anyOf", [missing_required], names_by_property)
     add_group_validators(parser, reference_path, obj, names_by_property)
+    add_conditional_bounds_validator(parser, reference_path, obj, names_by_property)
     if include_property_count:
         parser._add_property_count_validator(reference_path, obj)
     parser._add_path_rules_validator(reference_path, obj, fields, base_classes, is_root_model=False)
@@ -1868,6 +1875,81 @@ def pattern_checks_declared_key(
         for property_name, input_names in names_by_property.items()
         for pattern, pattern_schema, pattern_scope in patterns
     )
+
+
+def _condition_input_names(
+    predicate: tuple[tuple[str, tuple[object, ...]], ...], names_by_property: Mapping[str, tuple[str, ...]]
+) -> Condition:
+    """Return the condition of an if/then/else rule: each property of ``predicate`` by its raw input names."""
+    return tuple((_input_names(names_by_property, property_name), values) for property_name, values in predicate)
+
+
+def add_conditional_bounds_validator(
+    parser: SchemaValidatorsHost,
+    reference_path: str,
+    obj: JsonSchemaObject,
+    names_by_property: dict[str, tuple[str, ...]],
+) -> None:
+    """Register the numeric bounds the then and else of each if/then/else of ``obj`` and its allOf sources put.
+
+    The sources include the references, as for the path rules: a model whose own rules replace those of its base
+    class still checks the base's. The condition is that of the conditional required rule; rules are told apart by
+    what they write (``stable_repr``), where a boolean is no number.
+    """
+    for source in iter_schema_validation_sources(parser, obj):
+        if (predicate := get_conditional_predicate(parser, source)) is None:
+            continue
+        then_bounds, else_bounds = (
+            _branch_bounds(parser, branch, names_by_property)
+            if isinstance(branch := get_conditional_schema(parser, source, keyword), JsonSchemaObject)
+            else ()
+            for keyword in ("then", "else")
+        )
+        if not then_bounds and not else_bounds:
+            continue
+        rule = ConditionalBoundsRule(
+            condition=_condition_input_names(predicate, names_by_property),
+            then_bounds=then_bounds,
+            else_bounds=else_bounds,
+        )
+        runtime_validation = parser._schema_runtime_validation(reference_path)
+        if all(stable_repr(rule) != stable_repr(existing) for existing in runtime_validation.conditional_bounds):
+            runtime_validation.conditional_bounds.append(rule)
+
+
+def _branch_bounds(
+    parser: SchemaValidatorsHost, branch: JsonSchemaObject, names_by_property: Mapping[str, tuple[str, ...]]
+) -> ConditionalBounds:
+    """Return the numeric bounds a then or else branch puts on properties, by their raw input names."""
+    bounds: list[tuple[tuple[str, ...], BoundKeyword, int | float]] = []
+    for source in _bound_sources(parser, branch):
+        for property_name, property_schema in (source.properties or {}).items():
+            if not isinstance(property_schema, JsonSchemaObject):
+                continue
+            input_names = _input_names(names_by_property, property_name)
+            for property_source in _bound_sources(parser, property_schema):
+                limits = _constraint_values(property_source, _BOUND_KEYWORDS, as_numbers=True)
+                for keyword in _BOUND_KEYWORDS:
+                    if keyword in limits and (bound := (input_names, keyword, limits[keyword])) not in bounds:
+                        bounds.append(bound)
+    return tuple(bounds)
+
+
+def _bound_sources(
+    parser: SchemaValidatorsHost, schema: JsonSchemaObject, visited_refs: frozenset[_TargetNode] = frozenset()
+) -> Iterator[JsonSchemaObject]:
+    """Yield the schemas whose keywords apply to the instance of ``schema``: its allOf sources and what a $ref names.
+
+    The keywords beside a ``$ref`` count where they apply to it (``_ref_siblings_apply_to``).
+    """
+    for source in iter_schema_validation_sources(parser, schema, visited_refs):
+        if not source.ref:
+            yield source
+            continue
+        if parser._ref_siblings_apply_to(source, legacy="first-read"):
+            yield source
+        if (target := _schema_refs.unmapped_ref_target(parser, source.ref, visited_refs)) is not None:
+            yield from _bound_sources(parser, *target)
 
 
 def get_conditional_predicate(

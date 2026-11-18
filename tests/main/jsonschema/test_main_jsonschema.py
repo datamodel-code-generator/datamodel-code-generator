@@ -30120,9 +30120,11 @@ The `--generate-schema-validators` option emits schema-derived model validators
 for object constraints that cannot be represented as type hints alone, including
 minProperties/maxProperties on named object models, patternProperties on
 composed object models, required-only oneOf/anyOf groups, simple
-if/then/else required-property conditions, uniqueItems array validation, and
-the JSON type of const and enum values: a boolean for a numeric value and a
-number for a boolean one, which Python's `True == 1` lets through, are rejected.
+if/then/else required-property conditions and the minimum, maximum,
+exclusiveMinimum and exclusiveMaximum that their then/else branches put on
+properties, uniqueItems array validation, and the JSON type of const and enum
+values: a boolean for a numeric value and a number for a boolean one, which
+Python's `True == 1` lets through, are rejected.
 This feature is experimental and may change as JSON Schema coverage is expanded.
 
 With standard models and templates, required names absent from generated fields

@@ -1,0 +1,25 @@
+{"kind": "a", "value": 10} (valid): accepted/accepted
+{"kind": "a", "value": 1} (invalid): rejected/rejected
+{"kind": "b", "value": 5} (valid): accepted/accepted
+{"kind": "b", "value": 10} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "flagged": {"flag": true, "size": 11}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "flagged": {"flag": true, "size": 10}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "flagged": {"flag": 1, "size": 1}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "readings": [{"unit": "c", "temp": 99.5}, {"unit": "f", "temp": 212}]} (valid): accepted/accepted
+{"kind": "b", "value": 5, "readings": [{"unit": "c", "temp": 100}]} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "child": {"mode": "few", "count": 3}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "child": {"mode": "few", "count": 4}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "child": {"mode": "many", "count": 4, "limit": 100}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "child": {"mode": "many", "limit": 99}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "combo": {"t": "x", "n": 3}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "combo": {"t": "x", "n": 4}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "combo": {"t": "x"}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "combo": {"t": "y", "n": 4}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "derived": {"p": 0}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "derived": {"p": 4}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "derived": {"p": 5}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "gate": {"open": true}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "gate": {"open": true, "key": "k"}} (valid): accepted/accepted
+{"kind": "b", "value": 5, "diamond": {"mode": "few", "count": 4}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "diamond": {"mode": "many", "limit": 1}} (invalid): rejected/rejected
+{"kind": "b", "value": 5, "diamond": {"mode": "many", "limit": 100}} (valid): accepted/accepted
