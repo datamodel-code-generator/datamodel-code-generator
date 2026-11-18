@@ -157,3 +157,10 @@ incident = "a new module under tests/data/python failed the test-layout check on
 paths = ["tests/*"]
 exclude = ["tests/data/expected/*"]
 tests = ["tests/test_assert_helper_usage.py"]
+
+[[rule]]
+id = "behaviour-diff-helpers"
+prs = [7161]
+incident = "a change of the behaviour signature moved two stored classify_trees outputs that no selected test ran"
+paths = ["scripts/_behaviour_*.py"]
+tests = ["tests/test_behaviour_diff_script.py"]
