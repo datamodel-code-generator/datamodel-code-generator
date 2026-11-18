@@ -16,3 +16,6 @@ read_only	main/jsonschema/schema_validator_conditional_bounds/rule_scope[read_on
 read_only	main/jsonschema/schema_validator_conditional_bounds/rule_scope[read_only].txt
 ref_siblings	main/jsonschema/schema_validator_conditional_bounds/rule_scope[ref_siblings].py
 ref_siblings	main/jsonschema/schema_validator_conditional_bounds/rule_scope[ref_siblings].txt
+[test_schema_validator_enum_members]
+	main/jsonschema/schema_validator_conditional_bounds/schema_validator_enum_members.py
+	main/jsonschema/schema_validator_conditional_bounds/schema_validator_enum_members.txt

@@ -183,7 +183,7 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
                             for value in expected
                         )
 {%- else %}
-                        or data[name] in expected
+                        or (data[name].value if isinstance(data[name], _Enum) else data[name]) in expected
 {%- endif %}
                     )
                     for name in names
@@ -198,7 +198,11 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
                     for name in names
                 )
 {%- else %}
-                any(name in data and data[name] in expected for name in names)
+                any(
+                    name in data
+                    and (data[name].value if isinstance(data[name], _Enum) else data[name]) in expected
+                    for name in names
+                )
 {%- endif %}
                 for names, expected in rule['condition']
             )
@@ -217,6 +221,8 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
 
     @classmethod
     def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
+        if isinstance(value, _Enum):
+            value = value.value
         match expected:
             case bool():
                 return isinstance(value, bool) and value == expected

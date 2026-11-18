@@ -1,0 +1,8 @@
+{"kind": "a", "value": 10, "name": "n"} (valid): accepted/accepted
+{"kind": "a", "value": 1, "name": "n"} (invalid): rejected/rejected
+{"kind": "a", "value": 10} (invalid): rejected/rejected
+{"kind": "b", "value": 1} (valid): accepted/accepted
+{"kind": "b", "value": 10} (invalid): rejected/rejected
+{"kind": "b", "value": 1, "marks": ["p", "q"]} (valid): accepted/accepted
+{"kind": "b", "value": 1, "marks": ["p", "p"]} (invalid): rejected/rejected
+{"kind": "b", "value": 1, "marks": ["q"]} (invalid): rejected/rejected

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import enum
 import json
+import typing
 from typing import TYPE_CHECKING
 
 import pydantic
@@ -206,3 +208,66 @@ def _accepts(validate: Callable[..., object], value: object) -> str:
     except pydantic.ValidationError:
         return "rejected"
     return "accepted"
+
+
+ENUM_MEMBERS_PATH = JSON_SCHEMA_DATA_PATH / "schema_validator_enum_members.json"
+ENUM_MEMBER_DOCUMENTS = (
+    {"kind": "a", "value": 10, "name": "n"},
+    {"kind": "a", "value": 1, "name": "n"},
+    {"kind": "a", "value": 10},
+    {"kind": "b", "value": 1},
+    {"kind": "b", "value": 10},
+    {"kind": "b", "value": 1, "marks": ["p", "q"]},
+    {"kind": "b", "value": 1, "marks": ["p", "p"]},
+    {"kind": "b", "value": 1, "marks": ["q"]},
+)
+
+
+def test_schema_validator_enum_members(output_file: Path) -> None:
+    """Judge a model built with enum members as the same document in JSON: conditions, required and contains (#7054)."""
+    run_main_and_assert(
+        input_path=ENUM_MEMBERS_PATH,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--generate-schema-validators",
+        ],
+    )
+    validator = Draft202012Validator(json.loads(ENUM_MEMBERS_PATH.read_text(encoding="utf-8")))
+    with _generated_model(output_file, ENUM_MEMBERS_PATH.stem, "Probe") as model:
+        assert_output(
+            "".join(
+                f"{json.dumps(document)} ({'valid' if validator.is_valid(document) else 'invalid'}): "
+                f"{_accepts(model.model_validate, _with_members(model, document))}/"
+                f"{_accepts(model.model_validate_json, json.dumps(document))}\n"
+                for document in ENUM_MEMBER_DOCUMENTS
+            ),
+        )
+
+
+def _with_members(model: type[pydantic.BaseModel], document: dict[str, object]) -> dict[str, object]:
+    """Return the document with each value of an enum field, and each item of a list of them, as the enum's member."""
+    members: dict[str, object] = {}
+    for name, value in document.items():
+        annotation = model.model_fields[name].annotation
+        enum_class = next(
+            (
+                candidate
+                for candidate in (annotation, *typing.get_args(annotation))
+                if isinstance(candidate, type) and issubclass(candidate, enum.Enum)
+            ),
+            None,
+        )
+        members[name] = (
+            [enum_class(item) for item in value]
+            if isinstance(value, list) and enum_class
+            else enum_class(value)
+            if enum_class
+            else value
+        )
+    return members

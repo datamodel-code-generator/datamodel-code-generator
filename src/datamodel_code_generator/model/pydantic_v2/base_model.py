@@ -2382,6 +2382,8 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             helper_imports += (Import(import_="re"),)
         if has_local_core_helper and facts["has_pattern_properties"]:
             helper_imports += (IMPORT_TYPE_ADAPTER,)
+        if has_local_core_helper and (facts["has_conditional_required"] or facts["has_conditional_json_equality"]):
+            helper_imports += (Import(from_="enum", import_="Enum", alias="_Enum", keep_unaliased=True),)
         for import_ in helper_imports:
             if import_ not in additional_imports:
                 additional_imports.append(import_)

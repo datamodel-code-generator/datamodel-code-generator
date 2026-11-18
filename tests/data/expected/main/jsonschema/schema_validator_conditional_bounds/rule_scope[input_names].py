@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping as _Mapping
+from enum import Enum as _Enum
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -18,6 +19,8 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
 
     @classmethod
     def _json_schema_conditional_equal(cls, value: Any, expected: Any) -> bool:
+        if isinstance(value, _Enum):
+            value = value.value
         match expected:
             case bool():
                 return isinstance(value, bool) and value == expected

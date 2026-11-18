@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Probe",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "enum": ["a", "b"]
+    },
+    "value": {
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    },
+    "marks": {
+      "type": "array",
+      "items": {
+        "enum": ["p", "q"]
+      },
+      "contains": {
+        "const": "p"
+      },
+      "maxContains": 1
+    }
+  },
+  "if": {
+    "properties": {
+      "kind": {
+        "const": "a"
+      }
+    },
+    "required": ["kind"]
+  },
+  "then": {
+    "required": ["name"],
+    "properties": {
+      "value": {
+        "minimum": 5
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "value": {
+        "maximum": 3
+      }
+    }
+  }
+}
