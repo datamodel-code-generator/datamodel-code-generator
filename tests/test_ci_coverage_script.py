@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts import ci_coverage
+from scripts import ci_coverage, coverage_exclusions
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +29,9 @@ def sign(value):
 
 print(sign(int(sys.argv[1])), sign(int(sys.argv[2])))
 """
+EXCLUDED_MODULE = MODULE.replace("if value < 0:", "if value < 0:  # pragma: no cover").replace(
+    "print(", "def never():  # pragma: no cover\n    return 0\n\n\nprint("
+)
 
 
 def _report_payload(case: str, tmp_path: Path) -> bytes:
@@ -37,7 +40,9 @@ def _report_payload(case: str, tmp_path: Path) -> bytes:
     (tmp_path / ".coveragerc").write_text("[run]\nbranch = true\nrelative_files = true\nsource = .\n", encoding="utf-8")
     for command in (["init", "-q", "-b", "base"], ["add", ".coveragerc"], ["commit", "-q", "-m", "base"]):
         subprocess.run([*git, *command], cwd=tmp_path, check=True)
-    (tmp_path / "sign.py").write_text(MODULE, encoding="utf-8")
+    (tmp_path / "sign.py").write_text(
+        EXCLUDED_MODULE if case == "report-executed-exclusion" else MODULE, encoding="utf-8"
+    )
     subprocess.run([*git, "add", "sign.py"], cwd=tmp_path, check=True)
     data = tmp_path / "seed.coverage"
     values = ("1", "1") if case == "report-missing-lines" else ("1", "-1")
@@ -165,3 +170,16 @@ def test_coverage_artifact_cli(
         + "\n"
     )
     assert_output(output, EXPECTED / f"{case}.txt")
+
+
+@pytest.mark.parametrize("case", ["report-executed-exclusion", "report-no-source"])
+def test_executed_exclusions(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """List the excluded lines the recorded run executed, skipping a source file that is gone."""
+    (tmp_path / ".coverage").write_bytes(_report_payload(case, tmp_path))
+    if case == "report-no-source":
+        (tmp_path / "sign.py").unlink()
+    monkeypatch.chdir(tmp_path)
+    coverage_exclusions.main([".coverage"])
+    assert_output(capsys.readouterr().out)

@@ -16,6 +16,7 @@ entrypoint-record-empty	ci_coverage/record-empty.txt	= ci_coverage/empty.txt
 entrypoint-record-missing	ci_coverage/record-missing.txt	= ci_coverage/empty.txt
 entrypoint-record-unknown	ci_coverage/record-unknown.txt
 entrypoint-report-complete	ci_coverage/report-complete.txt
+entrypoint-report-executed-exclusion	ci_coverage/report-executed-exclusion.txt
 entrypoint-report-missing-input	ci_coverage/report-missing-input.txt
 entrypoint-report-missing-lines	ci_coverage/report-missing-lines.txt
 entrypoint-report-no-source	ci_coverage/report-no-source.txt
@@ -40,6 +41,7 @@ subprocess-record-empty	ci_coverage/record-empty.txt	= ci_coverage/empty.txt
 subprocess-record-missing	ci_coverage/record-missing.txt	= ci_coverage/empty.txt
 subprocess-record-unknown	ci_coverage/record-unknown.txt
 subprocess-report-complete	ci_coverage/report-complete.txt
+subprocess-report-executed-exclusion	ci_coverage/report-executed-exclusion.txt
 subprocess-report-missing-input	ci_coverage/report-missing-input.txt
 subprocess-report-missing-lines	ci_coverage/report-missing-lines.txt
 subprocess-report-no-source	ci_coverage/report-no-source.txt
@@ -49,3 +51,6 @@ subprocess-unexpected	ci_coverage/unexpected.txt
 subprocess-wrong-name	ci_coverage/wrong-name.txt	= ci_coverage/wrong-run.txt
 subprocess-wrong-run	ci_coverage/wrong-run.txt
 subprocess-wrong-sha	ci_coverage/wrong-sha.txt	= ci_coverage/wrong-run.txt
+[test_executed_exclusions]
+report-executed-exclusion	ci_coverage_script/executed_exclusions[report-executed-exclusion].txt
+report-no-source	ci_coverage_script/executed_exclusions[report-no-source].txt
