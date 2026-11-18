@@ -11,8 +11,6 @@ before the fetch, and names the option.
 
 from __future__ import annotations
 
-import sys
-import warnings
 from typing import TYPE_CHECKING
 
 import pytest
@@ -35,17 +33,6 @@ READABLE_COPY = '{"$schema": "http://json-schema.org/draft-04/schema#", "type": 
 """A remote copy the generator reads, which becomes a module of its own."""
 UNRELATED_OUTPUT = ("DeprecationWarning: Pydantic v2 with --use-annotated is recommended",)
 """The lines the stored text leaves out: the notice every Pydantic v2 run without --use-annotated shows."""
-
-
-@pytest.fixture
-def warnings_on_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Show every warning, as ``<category>: <message>`` on stderr, in the order the run shows it."""
-    warnings.simplefilter("always")
-
-    def show(message: Warning | str, category: type[Warning], *_: object, **__: object) -> None:
-        sys.stderr.write(f"{category.__name__}: {message}\n")
-
-    monkeypatch.setattr(warnings, "showwarning", show)
 
 
 @pytest.mark.cli_doc(

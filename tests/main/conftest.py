@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import hashlib
 import importlib
 import importlib.util
@@ -278,6 +279,22 @@ def auto_freeze_time() -> Generator[None, None, None]:
     """Auto-freeze time for all tests in main/ directory."""
     with freeze_time(DEFAULT_FREEZE_TIME):
         yield
+
+
+@pytest.fixture
+def warnings_on_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Show every warning, as ``<category>: <message>`` on stderr, in the order the run shows it.
+
+    Garbage that earlier tests of the worker left is collected first, so the warnings its collection raises (such as
+    ``ResourceWarning`` of a file an earlier test left open) are not shown as the run's own.
+    """
+    gc.collect()
+    warnings.simplefilter("always")
+
+    def show(message: Warning | str, category: type[Warning], *_: object, **__: object) -> None:
+        sys.stderr.write(f"{category.__name__}: {message}\n")
+
+    monkeypatch.setattr(warnings, "showwarning", show)
 
 
 @pytest.fixture
