@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unions",
+  "type": "object",
+  "properties": {
+    "objects": {
+      "anyOf": [
+        {"type": "object", "properties": {"x": {"const": 1}}, "required": ["x"]},
+        {"type": "object", "properties": {"x": {"const": true}}, "required": ["x"]}
+      ]
+    },
+    "arrays": {
+      "anyOf": [
+        {"type": "array", "items": {"const": 1}},
+        {"type": "array", "items": {"const": true}}
+      ]
+    }
+  }
+}

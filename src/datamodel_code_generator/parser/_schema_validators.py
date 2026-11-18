@@ -12,7 +12,7 @@ import math
 import re
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
 
@@ -30,6 +30,7 @@ from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,
     UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,
     ConditionalRequiredRule,
+    ConstantTypesRule,
     IndependentDeclaredPatternPropertiesRule,
     IndependentModelPatternPropertiesRule,
     PatternPropertiesRule,
@@ -38,6 +39,7 @@ from datamodel_code_generator.model.runtime_validation import (
     SchemaRuntimeValidation,
     UniqueItemsRule,
     _is_internal_schema_runtime_validation,
+    conditional_value_uses_json_equality,
 )
 from datamodel_code_generator.parser import _inherited_schemas, _schema_refs
 from datamodel_code_generator.parser._inherited_schemas import InheritedSchemasHost
@@ -80,11 +82,11 @@ __all__ = [
     "SchemaValidatorsHost",
     "add_conditional_validator",
     "add_group_validators",
+    "add_path_rules_validator",
     "add_pattern_properties_validator",
     "add_property_count_validator",
     "add_required_groups_validator",
     "add_schema_validators",
-    "add_unique_items_validator",
     "data_type_may_accept_array",
     "declared_pattern_rejects_value",
     "field_alias_generator_input_name",
@@ -96,7 +98,7 @@ __all__ = [
     "get_not_required_groups",
     "get_property_count_rule",
     "get_required_groups",
-    "get_union_unique_items_branch_rules",
+    "get_union_path_branch_rules",
     "has_conditional_validator",
     "has_core_schema_runtime_rules",
     "has_pattern_properties_validator",
@@ -104,11 +106,11 @@ __all__ = [
     "has_required_group_validators",
     "has_schema_validator_constraints",
     "iter_conditional_branches",
+    "iter_path_rules",
     "iter_property_count_validation_sources",
     "iter_schema_validation_sources",
     "iter_scoped_schema_validation_sources",
-    "iter_union_unique_items_rules",
-    "iter_unique_items_rules",
+    "iter_union_path_rules",
     "pattern_rejects_declared_value",
     "pattern_rule_additional_properties",
     "pattern_validation_intersection",
@@ -134,6 +136,8 @@ class SchemaValidatorsHost(
     CONDITIONAL_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]]
     _pattern_validation_document_root: JsonSchemaObject | None
+    ignore_enum_constraints: bool
+    _ref_constant_values_cache: dict[int, tuple[JsonSchemaObject, tuple[object, ...] | None]]
     _root_pattern_string_constraints: JsonSchemaObject | None
 
     def parse_item(
@@ -166,7 +170,7 @@ class SchemaValidatorsHost(
     ) -> None:
         """Register a required-property group runtime rule for keyword, deduplicated by value."""
 
-    def _add_unique_items_validator(
+    def _add_path_rules_validator(
         self,
         reference_path: str,
         obj: JsonSchemaObject,
@@ -175,7 +179,7 @@ class SchemaValidatorsHost(
         *,
         is_root_model: bool,
     ) -> None:
-        """Register ``uniqueItems`` checks as compact paths through raw input data."""
+        """Register the ``uniqueItems`` and the constant checks as compact paths through raw input data."""
 
     def _collect_pattern_property_validators(
         self,
@@ -223,15 +227,6 @@ class SchemaValidatorsHost(
     def _get_property_count_rule(self, obj: JsonSchemaObject) -> PropertyCountRule | None:
         """Aggregate one immutable count rule and cache it for this parse only."""
 
-    def _get_union_unique_items_branch_rules(
-        self,
-        items: Sequence[JsonSchemaObject | bool],
-        path: UniqueItemsPath,
-        visited_refs: frozenset[_TargetNode],
-        property_input_names: Mapping[str, tuple[str, ...]] | None,
-    ) -> tuple[list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule, ...]]], list[UniqueItemsRule]]:
-        """Collect ordered uniqueItems rules produced by each union branch."""
-
     def _has_property_count_validator(self, obj: JsonSchemaObject) -> bool:
         """Return whether an object or its allOf sources constrain property counts."""
 
@@ -242,27 +237,6 @@ class SchemaValidatorsHost(
         allow_empty: bool = False,
     ) -> TypeIs[JsonSchemaObject]:
         """Return whether a combined-schema branch is only a property presence rule."""
-
-    def _iter_union_unique_items_rules(
-        self,
-        items: Sequence[JsonSchemaObject | bool],
-        path: UniqueItemsPath,
-        visited_refs: frozenset[_TargetNode],
-        *,
-        property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-    ) -> Iterator[UniqueItemsRule]:
-        """Yield paths unconditionally required by every shape-compatible union branch."""
-
-    def _iter_unique_items_rules(
-        self,
-        obj: JsonSchemaObject,
-        path: UniqueItemsPath,
-        visited_refs: frozenset[_TargetNode] = frozenset(),
-        property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-        *,
-        include_properties: bool = False,
-    ) -> Iterator[UniqueItemsRule]:
-        """Yield compact uniqueItems rules required by all applicable union branches."""
 
     def _parse_additional_properties_value(
         self,
@@ -309,6 +283,8 @@ class SchemaValidatorsHost(
 
 
 _IMPLIED_SUBSCHEMA_KEYWORDS = frozenset({"items", "propertyNames"})
+_CONSTANT_TYPES = frozenset({"boolean", "integer", "number"})
+_PathRule: TypeAlias = UniqueItemsRule | ConstantTypesRule
 
 
 _UNMATCHED_SCHEMA_KEYWORDS = frozenset(schema_positions("unmatched"))
@@ -811,7 +787,7 @@ def schema_item_may_accept_container(
 
 def schema_literal_values(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> tuple[object, ...] | None:
     """Return direct const/enum values after their JSON Schema intersection."""
-    has_const = parser._features_at(obj).const_support and "const" in obj.extras
+    has_const = "const" in obj.extras and parser._features_at(obj).const_support
     const = obj.extras.get("const") if has_const else None
     has_enum = "enum" in obj.model_fields_set
     if not has_const and not has_enum:
@@ -868,16 +844,16 @@ def unique_items_path_container_type(
     return "object"
 
 
-def get_union_unique_items_branch_rules(
+def get_union_path_branch_rules(
     parser: SchemaValidatorsHost,
     items: Sequence[JsonSchemaObject | bool],
     path: UniqueItemsPath,
     visited_refs: frozenset[_TargetNode],
     property_input_names: Mapping[str, tuple[str, ...]] | None,
-) -> tuple[list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule, ...]]], list[UniqueItemsRule]]:
-    """Collect ordered uniqueItems rules produced by each union branch."""
-    branch_rules: list[tuple[JsonSchemaObject | bool, tuple[UniqueItemsRule, ...]]] = []
-    candidates: list[UniqueItemsRule] = []
+) -> tuple[list[tuple[JsonSchemaObject | bool, tuple[_PathRule, ...]]], list[_PathRule]]:
+    """Collect ordered path rules produced by each union branch."""
+    branch_rules: list[tuple[JsonSchemaObject | bool, tuple[_PathRule, ...]]] = []
+    candidates: list[_PathRule] = []
     for item in items:
         if item is False:
             continue
@@ -886,13 +862,7 @@ def get_union_unique_items_branch_rules(
             continue
         branch = item
         rules = tuple(
-            parser._iter_unique_items_rules(
-                branch,
-                path,
-                visited_refs,
-                property_input_names,
-                include_properties=True,
-            )
+            iter_path_rules(parser, branch, path, visited_refs, property_input_names, include_properties=True)
         )
         if (
             branch.ref
@@ -901,37 +871,116 @@ def get_union_unique_items_branch_rules(
         ):
             rules = (
                 *rules,
-                *parser._iter_unique_items_rules(
-                    target[0], path, target[1], property_input_names, include_properties=True
-                ),
+                *iter_path_rules(parser, target[0], path, target[1], property_input_names, include_properties=True),
             )
         branch_rules.append((branch, rules))
-        candidates.extend(rule for rule in rules if all(rule.path != candidate.path for candidate in candidates))
+        candidates.extend(rule for rule in rules if rule not in candidates)
     return branch_rules, candidates
 
 
-def iter_union_unique_items_rules(
+def iter_union_path_rules(
     parser: SchemaValidatorsHost,
     items: Sequence[JsonSchemaObject | bool],
     path: UniqueItemsPath,
     visited_refs: frozenset[_TargetNode],
     *,
     property_input_names: Mapping[str, tuple[str, ...]] | None = None,
-) -> Iterator[UniqueItemsRule]:
-    """Yield paths unconditionally required by every shape-compatible union branch."""
-    branch_rules, candidates = parser._get_union_unique_items_branch_rules(
-        items, path, visited_refs, property_input_names
-    )
+) -> Iterator[_PathRule]:
+    """Yield paths unconditionally required by every shape-compatible union branch.
+
+    The constants of the union itself are one rule over the values of every branch (``_union_constant_values``).
+    """
+    branch_rules, candidates = get_union_path_branch_rules(parser, items, path, visited_refs, property_input_names)
 
     for candidate in candidates:
-        container_type = parser._unique_items_path_container_type(candidate.path[len(path) :])
+        relative_path = candidate.path[len(path) :]
+        if isinstance(candidate, ConstantTypesRule) and not relative_path:
+            continue
+        container_type = parser._unique_items_path_container_type(relative_path)
         for branch, rules in branch_rules:
             if not parser._schema_item_may_accept_container(branch, container_type, visited_refs):
                 continue
-            if not any(rule.path == candidate.path for rule in rules):
+            if candidate not in rules:
                 break
         else:
             yield candidate
+    if rule := _constant_types_rule(path, _union_constant_values(parser, items, visited_refs)):
+        yield rule
+
+
+def _rule_literal_values(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> tuple[object, ...] | None:
+    """Return the const or enum values a constant rule checks; ``--ignore-enum-constraints`` leaves out the enum."""
+    if not parser.ignore_enum_constraints:
+        return parser._schema_literal_values(obj)
+    if "const" in obj.extras and parser._features_at(obj).const_support:
+        return (obj.extras["const"],)
+    return None
+
+
+def _ref_constant_values(
+    parser: SchemaValidatorsHost, obj: JsonSchemaObject, visited_refs: frozenset[_TargetNode]
+) -> tuple[object, ...] | None:
+    """Return the const or enum values of the schema ``obj`` references, through references to references.
+
+    Each referring schema object is read once in a parse (``_ref_constant_values_cache``).
+    """
+    if not obj.ref:
+        return None
+    if (cached := parser._ref_constant_values_cache.get(id(obj))) is not None and cached[0] is obj:
+        return cached[1]
+    values = None
+    if (target := _schema_refs.unmapped_ref_target(parser, obj.ref, visited_refs)) is not None:
+        values = _rule_literal_values(parser, target[0])
+        if values is None:
+            values = _ref_constant_values(parser, target[0], target[1])
+    parser._ref_constant_values_cache[id(obj)] = obj, values
+    return values
+
+
+def _union_constant_values(
+    parser: SchemaValidatorsHost, items: Sequence[JsonSchemaObject | bool], visited_refs: frozenset[_TargetNode]
+) -> tuple[object, ...]:
+    """Return the const and enum values of a union's branches, none where a branch may hold any boolean or number.
+
+    A branch whose ``type`` admits neither a boolean nor a number, such as ``null``, holds none of them.
+    """
+    values: list[object] = []
+    for item in items:
+        if item is False:
+            continue
+        if item is True:
+            return ()
+        if (item_values := _rule_literal_values(parser, item)) is not None or (
+            item_values := _ref_constant_values(parser, item, visited_refs)
+        ) is not None:
+            values.extend(item_values)
+        elif item.ref or item.type is None or admitted_types(declared_types(item.type)) & _CONSTANT_TYPES:
+            return ()
+    return tuple(values)
+
+
+def _same_json_value(value: object, other: object) -> bool:
+    """Return whether two booleans or numbers are one JSON value: equal, and both booleans or both numbers."""
+    return isinstance(value, bool) is isinstance(other, bool) and value == other
+
+
+def _constant_types_rule(path: UniqueItemsPath, values: Iterable[object]) -> ConstantTypesRule | None:
+    """Return the rule that rejects the other JSON type for ``values``, None where Python conflates none of them.
+
+    It keeps the booleans and the numbers equal to one (``conditional_value_uses_json_equality``) and is written only
+    where one of them has no value of the other type equal to it: ``[1, true]`` admits both ``1`` and ``true``.
+    """
+    kept: list[bool | float] = []
+    for value in values:
+        if (
+            isinstance(value, int | float)
+            and conditional_value_uses_json_equality(value)
+            and not any(_same_json_value(value, other) for other in kept)
+        ):
+            kept.append(value)
+    if all(any(value == other and not _same_json_value(value, other) for other in kept) for value in kept):
+        return None
+    return ConstantTypesRule(path=path, values=tuple(kept))
 
 
 def get_common_executable_unique_items_paths(
@@ -1053,7 +1102,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
         visited.remove(data_type_id)
 
 
-def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
+def iter_path_rules(  # noqa: PLR0912, PLR0913
     parser: SchemaValidatorsHost,
     obj: JsonSchemaObject,
     path: UniqueItemsPath,
@@ -1061,23 +1110,43 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
     property_input_names: Mapping[str, tuple[str, ...]] | None = None,
     *,
     include_properties: bool = False,
-) -> Iterator[UniqueItemsRule]:
-    """Yield compact uniqueItems rules required by all applicable union branches."""
+) -> Iterator[_PathRule]:
+    """Yield the compact path rules required by all applicable union branches.
+
+    A ``uniqueItems`` array yields a ``UniqueItemsRule`` and a const or enum a ``ConstantTypesRule``, also that of a
+    schema it references: an Enum class cannot check it.
+    """
     if obj.ref:
         if parser.collapse_root_models and (target := _schema_refs.unmapped_ref_target(parser, obj.ref, visited_refs)):
-            yield from parser._iter_unique_items_rules(
-                target[0], path, target[1], property_input_names, include_properties=include_properties
+            yield from iter_path_rules(
+                parser,
+                target[0],
+                path,
+                target[1],
+                property_input_names,
+                include_properties=include_properties,
             )
+        elif (values := _ref_constant_values(parser, obj, visited_refs)) and (
+            rule := _constant_types_rule(path, values)
+        ):
+            yield rule
         if not parser._ref_siblings_apply_to(obj, legacy="first-read"):
             return
     if obj.uniqueItems is True:
         yield UniqueItemsRule(path=path)
+    if (
+        (obj.enum or "const" in obj.extras)
+        and (values := _rule_literal_values(parser, obj))
+        and (rule := _constant_types_rule(path, values))
+    ):
+        yield rule
 
     if obj.allOf:
         for node, node_visited_refs, _, _ in _iter_all_of_reads(
             parser, obj, visited_refs, "", include_references=True, ref_siblings=None, track_scope=False
         ):
-            yield from parser._iter_unique_items_rules(
+            yield from iter_path_rules(
+                parser,
                 node,
                 path,
                 node_visited_refs,
@@ -1087,14 +1156,15 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
 
     for members in (obj.anyOf, obj.oneOf):
         if members:
-            yield from parser._iter_union_unique_items_rules(
-                members, path, visited_refs, property_input_names=property_input_names
+            yield from iter_union_path_rules(
+                parser, members, path, visited_refs, property_input_names=property_input_names
             )
 
     if include_properties:
         for property_name, property_schema in (obj.properties or {}).items():
             if isinstance(property_schema, JsonSchemaObject):
-                yield from parser._iter_unique_items_rules(
+                yield from iter_path_rules(
+                    parser,
                     property_schema,
                     (*path, _input_names(property_input_names, property_name)),
                     visited_refs,
@@ -1107,16 +1177,16 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             if parser._features_at(obj).prefix_items and obj.prefixItems
             else None
         )
-        yield from parser._iter_unique_items_rules(
-            obj.items, (*path, items_path_step), visited_refs, include_properties=include_properties
+        yield from iter_path_rules(
+            parser, obj.items, (*path, items_path_step), visited_refs, include_properties=include_properties
         )
     for index, item in chain(
         enumerate(obj.items if isinstance(obj.items, list) else ()),
         enumerate((obj.prefixItems or ()) if parser._features_at(obj).prefix_items else ()),
     ):
         if isinstance(item, JsonSchemaObject):
-            yield from parser._iter_unique_items_rules(
-                item, (*path, index), visited_refs, include_properties=include_properties
+            yield from iter_path_rules(
+                parser, item, (*path, index), visited_refs, include_properties=include_properties
             )
 
     if (
@@ -1124,7 +1194,8 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
         and isinstance(obj.additionalItems, JsonSchemaObject)
         and isinstance(obj.items, list)
     ):
-        yield from parser._iter_unique_items_rules(
+        yield from iter_path_rules(
+            parser,
             obj.additionalItems,
             (*path, (UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP, len(obj.items))),
             visited_refs,
@@ -1133,7 +1204,8 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
 
     for pattern, item in (obj.patternProperties or {}).items():
         if isinstance(item, JsonSchemaObject):
-            yield from parser._iter_unique_items_rules(
+            yield from iter_path_rules(
+                parser,
                 item,
                 (*path, (UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP, pattern, None)),
                 visited_refs,
@@ -1149,7 +1221,8 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             )
         else:
             additional_path_step = UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP
-        yield from parser._iter_unique_items_rules(
+        yield from iter_path_rules(
+            parser,
             obj.additionalProperties,
             (*path, additional_path_step),
             visited_refs,
@@ -1157,7 +1230,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
         )
 
 
-def add_unique_items_validator(  # noqa: PLR0913
+def add_path_rules_validator(  # noqa: PLR0913
     parser: SchemaValidatorsHost,
     reference_path: str,
     obj: JsonSchemaObject,
@@ -1166,9 +1239,12 @@ def add_unique_items_validator(  # noqa: PLR0913
     *,
     is_root_model: bool,
 ) -> None:
-    """Register ``uniqueItems`` checks as compact paths through raw input data."""
-    rules: list[UniqueItemsRule] = []
-    replace_inherited_rules = False
+    """Register the ``uniqueItems`` and the constant checks as compact paths through raw input data.
+
+    The constant checks are not left to the models a path reaches, as uniqueItems checks are: an Enum class has none.
+    """
+    rules: list[_PathRule] = []
+    replaced_kinds: set[type[_PathRule]] = set()
 
     def is_owned_path(unique_items_path: UniqueItemsPath, owned_paths: set[UniqueItemsPath]) -> bool:
         if unique_items_path in owned_paths:
@@ -1209,14 +1285,10 @@ def add_unique_items_validator(  # noqa: PLR0913
         owned_paths: set[UniqueItemsPath] | None = None,
         property_input_names: Mapping[str, tuple[str, ...]] | None = None,
     ) -> None:
-        for rule in parser._iter_unique_items_rules(
-            schema,
-            path,
-            property_input_names=property_input_names,
-        ):
-            if owned_paths is not None and is_owned_path(rule.path, owned_paths):
+        for rule in iter_path_rules(parser, schema, path, property_input_names=property_input_names):
+            if owned_paths is not None and isinstance(rule, UniqueItemsRule) and is_owned_path(rule.path, owned_paths):
                 continue
-            if all(existing_rule.path != rule.path for existing_rule in rules):
+            if rule not in rules:
                 rules.append(rule)
 
     if is_root_model:
@@ -1242,8 +1314,7 @@ def add_unique_items_validator(  # noqa: PLR0913
                 if not isinstance(property_schema, JsonSchemaObject):
                     continue
                 if property_name in overridden_properties:
-                    if next(parser._iter_unique_items_rules(property_schema, ()), None) is not None:
-                        replace_inherited_rules = True
+                    replaced_kinds.update(type(rule) for rule in iter_path_rules(parser, property_schema, ()))
                     continue
                 if (input_names := names_by_property.get(property_name)) is not None:
                     field = fields_by_property.get(property_name)
@@ -1263,11 +1334,23 @@ def add_unique_items_validator(  # noqa: PLR0913
                 overridden_properties.update(overrides)
                 overridden_properties.update(overrides.values())
 
-    if not rules and not replace_inherited_rules:
-        return
-    runtime_validation = parser._schema_runtime_validation(reference_path)
-    runtime_validation.unique_items.extend(rules)
-    runtime_validation.replace_unique_items = replace_inherited_rules
+    _register_path_rules(parser, reference_path, rules, replaced_kinds)
+
+
+def _register_path_rules(
+    parser: SchemaValidatorsHost, reference_path: str, rules: list[_PathRule], replaced_kinds: set[type[_PathRule]]
+) -> None:
+    """Add the rules of each kind that has some, or whose inherited rules the model replaces, to its validation."""
+    unique_items = [rule for rule in rules if isinstance(rule, UniqueItemsRule)]
+    constant_types = [rule for rule in rules if isinstance(rule, ConstantTypesRule)]
+    if unique_items or UniqueItemsRule in replaced_kinds:
+        runtime_validation = parser._schema_runtime_validation(reference_path)
+        runtime_validation.unique_items.extend(unique_items)
+        runtime_validation.replace_unique_items = UniqueItemsRule in replaced_kinds
+    if constant_types or ConstantTypesRule in replaced_kinds:
+        runtime_validation = parser._schema_runtime_validation(reference_path)
+        runtime_validation.constant_types.extend(constant_types)
+        runtime_validation.replace_constant_types = ConstantTypesRule in replaced_kinds
 
 
 def pattern_rule_additional_properties(
@@ -1633,13 +1716,7 @@ def add_schema_validators(  # noqa: PLR0913, PLR0917
     add_group_validators(parser, reference_path, obj, names_by_property)
     if include_property_count:
         parser._add_property_count_validator(reference_path, obj)
-    parser._add_unique_items_validator(
-        reference_path,
-        obj,
-        fields,
-        base_classes,
-        is_root_model=False,
-    )
+    parser._add_path_rules_validator(reference_path, obj, fields, base_classes, is_root_model=False)
     if not obj.allOf:
         return
     # Inline rules belong to this model even when it has no other runtime rules.

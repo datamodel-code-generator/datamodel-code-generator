@@ -962,11 +962,11 @@ def test_schema_validator_unique_items_paths_cover_composed_input_shapes() -> No
         )
     )
 
-    parser._add_unique_items_validator("#/Root", root_schema, [], [], is_root_model=True)
-    parser._add_unique_items_validator("#/Mapping", mapping_schema, [], [], is_root_model=True)
-    parser._add_unique_items_validator("#/Tail", prefix_items_tail_schema, [], [], is_root_model=True)
-    parser._add_unique_items_validator("#/Direct", direct_schema, [], [], is_root_model=False)
-    parser._add_unique_items_validator(
+    parser._add_path_rules_validator("#/Root", root_schema, [], [], is_root_model=True)
+    parser._add_path_rules_validator("#/Mapping", mapping_schema, [], [], is_root_model=True)
+    parser._add_path_rules_validator("#/Tail", prefix_items_tail_schema, [], [], is_root_model=True)
+    parser._add_path_rules_validator("#/Direct", direct_schema, [], [], is_root_model=False)
+    parser._add_path_rules_validator(
         "#/Properties",
         property_schema,
         [DataModelFieldBase(name="kept", original_name="kept", data_type=DataType(type="str"))],
@@ -1136,7 +1136,7 @@ def test_schema_validator_unique_items_executable_paths_cover_all_data_type_bran
     )
     cyclic_type = DataType()
     outer_root_type = DataType(is_list=True, data_types=[owner_type])
-    parser._add_unique_items_validator(
+    parser._add_path_rules_validator(
         "#/Outer",
         _json_schema_object({"items": {"type": "array", "uniqueItems": True}}),
         [DataModelFieldBase(name="root", data_type=outer_root_type)],
@@ -1164,7 +1164,7 @@ def test_schema_validator_unique_items_executable_paths_cover_all_data_type_bran
             ]
         ),
     )
-    parser._add_unique_items_validator(
+    parser._add_path_rules_validator(
         "#/Parent",
         _json_schema_object({
             "type": "object",
@@ -1194,7 +1194,7 @@ def test_schema_validator_unique_items_executable_paths_cover_all_data_type_bran
             ]
         ),
     )
-    parser._add_unique_items_validator(
+    parser._add_path_rules_validator(
         "#/UnownedParent",
         _json_schema_object({
             "type": "object",
