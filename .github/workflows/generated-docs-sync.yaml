@@ -100,8 +100,6 @@ jobs:
             docs/performance-benchmarks.md
             docs/output-changes/
             docs/migration/index.md
-            docs/migration/changes.md
-            docs/data/migration.json
             docs/cli-reference/
             skills/datamodel-code-generator/references/cli-options.md
             docs/llms.txt
