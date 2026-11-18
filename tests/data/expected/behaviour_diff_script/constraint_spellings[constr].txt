@@ -1,0 +1,3 @@
+runtime: same: Union[Annotated[str, max_length=4], int] | Union[Annotated[str, max_length=4], int]
+string: same: Union[Annotated[str, max_length=4], int] | Union[Annotated[str, max_length=4], int]
+model-field: same: Union[Annotated[str, max_length=4], int] | Union[Annotated[str, max_length=4], int]

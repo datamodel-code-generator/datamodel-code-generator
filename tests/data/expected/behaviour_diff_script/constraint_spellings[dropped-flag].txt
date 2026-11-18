@@ -1,0 +1,3 @@
+runtime: differs: Annotated[str, to_lower=True] | str
+string: differs: Annotated[str, to_lower=True] | str
+model-field: differs: Annotated[str, to_lower=True] | str

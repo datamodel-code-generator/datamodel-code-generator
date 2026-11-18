@@ -1,0 +1,1 @@
+Literal['a', 'b', undefined_value]

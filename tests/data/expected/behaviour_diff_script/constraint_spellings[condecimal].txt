@@ -1,0 +1,3 @@
+runtime: same: Annotated[decimal.Decimal, ge=Decimal('1'), max_digits=5, multiple_of=Decimal('0.01')] | Annotated[decimal.Decimal, ge=Decimal('1'), max_digits=5, multiple_of=Decimal('0.01')]
+string: same: Annotated[decimal.Decimal, ge=Decimal('1'), max_digits=5, multiple_of=Decimal('0.01')] | Annotated[decimal.Decimal, ge=Decimal('1'), max_digits=5, multiple_of=Decimal('0.01')]
+model-field: same: Annotated[decimal.Decimal, ge=Decimal('1'), max_digits=5, multiple_of=Decimal('0.01')] | Annotated[decimal.Decimal, ge=Decimal('1'), max_digits=5, multiple_of=Decimal('0.01')]
