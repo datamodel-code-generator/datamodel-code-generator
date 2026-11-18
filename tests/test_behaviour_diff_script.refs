@@ -125,6 +125,12 @@ identity_keeps_a_moved_warning_and_error	behaviour_diff_script/gate_against_a_gi
 	behaviour_diff_script/guide_writes_the_page_of_gate_cells.txt
 [test_identity_compares_the_output_of_runs_that_fail_alike]
 	behaviour_diff_script/identity_compares_the_output_of_runs_that_fail_alike.txt
+[test_meta_text_drops_memory_addresses]
+builtin	behaviour_diff_script/meta_text_drops_memory_addresses[builtin].txt
+dataclass-address-dropped	behaviour_diff_script/meta_text_drops_memory_addresses[dataclass-address-dropped].txt	= behaviour_diff_script/example_value[any].txt
+dataclass-empty	behaviour_diff_script/meta_text_drops_memory_addresses[dataclass-empty].txt	= behaviour_diff_script/example_value[any].txt
+dataclass-plain	behaviour_diff_script/meta_text_drops_memory_addresses[dataclass-plain].txt
+repr-address-dropped	behaviour_diff_script/meta_text_drops_memory_addresses[repr-address-dropped].txt	= behaviour_diff_script/example_value[any].txt
 [test_opt_in_reason]
 flag_before_option	behaviour_diff_script/opt_in_reason[flag_before_option].txt
 known	behaviour_diff_script/opt_in_reason[known].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt

@@ -106,9 +106,10 @@ def meta_text(meta: object) -> str | None:
     if dataclasses.is_dataclass(meta) and not isinstance(meta, type):
         values = {field.name: getattr(meta, field.name) for field in dataclasses.fields(meta)}
         values = {key: value for key, value in values.items() if value is not None and key not in DOC_ONLY_KEYS}
-        return f"{kind.__name__}(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")" if values else None
-    text = repr(meta)
-    return None if " at 0x" in text else text
+        text = f"{kind.__name__}(" + ",".join(f"{k}={v!r}" for k, v in sorted(values.items())) + ")" if values else None
+    else:
+        text = repr(meta)
+    return None if text is None or " at 0x" in text else text
 
 
 def split_top_level(text: str) -> list[str]:

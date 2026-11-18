@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 from contextlib import redirect_stderr, redirect_stdout
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -22,7 +22,7 @@ import pytest
 
 from scripts import behaviour_diff
 from scripts._behaviour_classify import Allowlist, Side, classify_base_skipped, classify_cell, diff
-from scripts._behaviour_signature import example_value
+from scripts._behaviour_signature import example_value, meta_text
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -2055,3 +2055,23 @@ def test_shard_argument_and_shard_part_records(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as part:
         behaviour_diff.main(["query", "0.0.1", "0.0.2", "--records", str(tmp_path)])
     assert_output("\n".join(usage) + f"\nshard part: {str(part.value.code).replace(str(tmp_path), '<records>')}\n")
+
+
+@dataclass(frozen=True)
+class _MetaWithCallable:
+    check: object = None
+
+
+@pytest.mark.parametrize(
+    "meta",
+    [
+        pytest.param(_MetaWithCallable(check=3), id="dataclass-plain"),
+        pytest.param(_MetaWithCallable(check=len), id="builtin"),
+        pytest.param(_MetaWithCallable(check=lambda: 1), id="dataclass-address-dropped"),
+        pytest.param(_MetaWithCallable(), id="dataclass-empty"),
+        pytest.param(object(), id="repr-address-dropped"),
+    ],
+)
+def test_meta_text_drops_memory_addresses(meta: object) -> None:
+    """Metadata whose text carries a memory address is dropped, whether it is a dataclass or not."""
+    assert_output(json.dumps(meta_text(meta)) + "\n")
