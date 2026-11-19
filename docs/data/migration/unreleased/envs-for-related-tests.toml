@@ -1,0 +1,14 @@
+[[change]]
+id = "envs-for-related-tests"
+category = "harness"
+title = "Print the environments a change needs from the rows of related_tests.toml"
+refs = ["#7182"]
+summary = "Stored test output of the where command: its tests section lists the related-tests rows that name a file, and rows that only ask for environments now print them; the related_tests.py lines and functions it cites follow the script's split of select. The package writes the same output."
+covers = [
+    "where_script/where_grammar[ambiguous-name].txt",
+    "where_script/where_grammar[kind-symbol].txt",
+    "where_script/where_grammar[line-in-a-comprehension].txt",
+    "where_script/where_grammar[line-in-a-script].txt",
+    "where_script/where_matches_a_note_by_the_file_it_cites.txt",
+    "where_script/where_reads_other_inputs[line-past-the-file].txt",
+]

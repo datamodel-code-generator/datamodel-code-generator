@@ -1,4 +1,4 @@
-"""Print the test node ids a diff selects: mirrors of changed modules, fast-path tests and related_tests.toml rows."""
+"""Print the test node ids and the environments a diff selects: mirrors, fast-path tests and related_tests.toml rows."""
 
 from __future__ import annotations
 
@@ -16,6 +16,10 @@ SRC = "src/datamodel_code_generator/"
 FAST_PATH_TEST = "tests/main/test_cli_fast_paths.py"
 FAST_PATH_LISTS = "tests/data/expected/main/cli_fast_paths/"
 MODULE_NAME = re.compile(r'"(datamodel_code_generator[\w.]*)"')
+TOX = "tox.ini"
+TOX_SECTION = re.compile(r"^\[testenv:([^\]]+)\]", re.MULTILINE)
+TOX_FACTORS = re.compile(r"\{([^{}]*)\}")
+LANES = frozenset({"nightly-tier", "dispatch"})
 
 
 class GitError(Exception):
@@ -106,19 +110,9 @@ def _fast_path_modules(root: Path, base: str, head: str | None) -> set[str]:
     return {name for text in files for name in MODULE_NAME.findall(text)}
 
 
-def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[str]:
-    """Return the sorted node ids the diff selects: the mirrors of changed modules and every row that fires."""
-    changed = _changes(root, base, head)
-    nodes: set[str] = set()
-    for path, letter in changed.items():
-        if letter == "D":
-            continue
-        nodes.update(next(([test] for test in mirrors(path) if _exists(root, head, test)), []))
-    listed = _fast_path_modules(root, base, head)
-    if any(_module_name(path) in listed for path, letter in changed.items() if letter != "D") and _exists(
-        root, head, FAST_PATH_TEST
-    ):
-        nodes.add(FAST_PATH_TEST)
+def _fired(root: Path, base: str, head: str | None, changed: dict[str, str], rules: list[dict]) -> list[dict]:
+    """Return the rows a change fires: a changed path matches, and an added or removed line matches the pattern."""
+    fired = []
     for rule in rules:
         status = rule.get("status")
         hit = [
@@ -132,21 +126,68 @@ def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[s
             pattern = re.compile(rule["pattern"])
             hit = [line for line in _changed_lines(root, base, head, hit) if pattern.search(line)]
         if hit:
-            nodes.update(test for test in rule["tests"] if _exists(root, head, test.partition("::")[0]))
+            fired.append(rule)
+    return fired
+
+
+def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[str]:
+    """Return the sorted node ids the diff selects: the mirrors of changed modules and every row that fires."""
+    changed = _changes(root, base, head)
+    nodes: set[str] = set()
+    for path, letter in changed.items():
+        if letter == "D":
+            continue
+        nodes.update(next(([test] for test in mirrors(path) if _exists(root, head, test)), []))
+    listed = _fast_path_modules(root, base, head)
+    if any(_module_name(path) in listed for path, letter in changed.items() if letter != "D") and _exists(
+        root, head, FAST_PATH_TEST
+    ):
+        nodes.add(FAST_PATH_TEST)
+    for rule in _fired(root, base, head, changed, rules):
+        nodes.update(test for test in rule.get("tests", []) if _exists(root, head, test.partition("::")[0]))
     return sorted(nodes)
 
 
+def select_envs(root: Path, base: str, head: str | None, rules: list[dict]) -> dict[str, list[str]]:
+    """Map each environment the diff needs, sorted by name, to the ids of the rows that ask for it."""
+    envs: dict[str, list[str]] = {}
+    for rule in _fired(root, base, head, _changes(root, base, head), rules):
+        for env in rule.get("envs", []):
+            envs.setdefault(env, []).append(rule["id"])
+    return dict(sorted(envs.items()))
+
+
+def _expand(name: str) -> list[str]:
+    """Expand the `{a,b}` factor groups of a tox section name, an empty option included."""
+    if not (group := TOX_FACTORS.search(name)):
+        return [name]
+    head, tail = name[: group.start()], name[group.end() :]
+    return [expanded for option in group[1].split(",") for expanded in _expand(f"{head}{option}{tail}")]
+
+
+def _tox_envs(root: Path) -> set[str]:
+    """Return the environment names tox.ini defines, factor groups expanded."""
+    text = (root / TOX).read_text(encoding="utf-8") if (root / TOX).exists() else ""
+    return {env for section in TOX_SECTION.findall(text) for env in _expand(section)}
+
+
 def problems(root: Path, rules: list[dict]) -> list[str]:
-    """One line per row without an incident, with a repeated id, or with a target missing in the working tree."""
+    """One line per row without an incident, with a repeated id, an unknown environment or a missing target."""
     found: list[str] = []
     seen: set[str] = set()
+    known = (_tox_envs(root) if any(rule.get("envs") for rule in rules) else set()) | LANES
     for rule in rules:
         if rule["id"] in seen:
             found.append(f"{rule['id']}: the id is used twice")
         seen.add(rule["id"])
         if not rule.get("incident"):
             found.append(f"{rule['id']}: no incident")
-        for test in rule["tests"]:
+        if not (rule.get("tests") or rule.get("envs")):
+            found.append(f"{rule['id']}: selects no test and no environment")
+        if rule.get("envs") and not rule.get("prs"):
+            found.append(f"{rule['id']}: envs without the pull requests of their incident (prs)")
+        found.extend(f"{rule['id']}: unknown environment {env}" for env in rule.get("envs", []) if env not in known)
+        for test in rule.get("tests", []):
             file, _, function = test.partition("::")
             path = root / file
             if not path.exists() or (
@@ -165,7 +206,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="list the rows with a problem (missing target, no incident) and exit 1 if any",
+        help="list the rows with a problem (missing target, unknown environment, no incident) and exit 1 if any",
+    )
+    parser.add_argument(
+        "--envs",
+        action="store_true",
+        help="print the environments the change needs, each with the rows that ask for it, instead of the tests",
     )
     args = parser.parse_args(argv)
     rules = tomllib.loads(args.rules.read_text(encoding="utf-8"))["rule"]
@@ -177,11 +223,15 @@ def main(argv: list[str] | None = None) -> int:
     if not args.base:
         parser.error("--base is required unless --check is given")
     try:
-        nodes = select(root, args.base, args.head, rules)
+        lines = (
+            [f"{env}\t{','.join(ids)}" for env, ids in select_envs(root, args.base, args.head, rules).items()]
+            if args.envs
+            else select(root, args.base, args.head, rules)
+        )
     except GitError as error:
         sys.stderr.write(f"related_tests: {error}\n")
         return 2
-    sys.stdout.write("".join(f"{node}\n" for node in nodes))
+    sys.stdout.write("".join(f"{line}\n" for line in lines))
     return 0
 
 

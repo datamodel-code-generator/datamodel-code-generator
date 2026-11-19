@@ -36,6 +36,42 @@ incident = "a change to patterns failed a test"
 paths = ["src/*"]
 pattern = "(pattern|regex)"
 tests = ["tests/test_guide.py::test_one"]
+envs = ["dispatch"]
+
+[[rule]]
+id = "guide-envs"
+prs = [2]
+incident = "a guide fragment needed the nightly lane"
+paths = ["docs/data/*"]
+envs = ["nightly-tier", "py312-nocov-parallel"]
+
+[[rule]]
+id = "removed-tests-envs"
+prs = [3]
+incident = "a deleted test stayed listed in a pinned lane"
+paths = ["tests/*.py"]
+status = "D"
+envs = ["client-httpx2-min-e2e"]
+
+[[rule]]
+id = "source-envs"
+prs = [4]
+incident = "a change to patterns failed on a lane"
+paths = ["src/*"]
+pattern = "(pattern|regex)"
+envs = ["py312-nocov-parallel", "client-httpx2-min-e2e"]
+"""
+TOX = """[tox]
+env_list = fix
+
+[testenv]
+deps = x
+
+[testenv:fix]
+
+[testenv:py{311,312}{,-nocov}-parallel]
+
+[testenv:client-httpx2-{min,max}-e2e]
 """
 BASE = {
     f"{SRC}/__init__.py": "",
@@ -60,6 +96,7 @@ BASE = {
     "docs/data/a.json": "{}\n",
     "tests/data/old.json": "{}\n",
     "related_tests.toml": RULES,
+    "tox.ini": TOX,
 }
 CASES: dict[str, dict[str, dict[str, str | None]]] = {
     "mirror-of-a-module": {"head": {f"{SRC}/parser/jsonschema.py": "value = 2\n"}},
@@ -87,6 +124,17 @@ CASES: dict[str, dict[str, dict[str, str | None]]] = {
     "fast-path-list-edited": {
         "head": {"tests/data/expected/main/cli_fast_paths/fast_paths_load_these_modules[version].txt": "{}\n"}
     },
+    "nothing-changed": {"head": {}},
+}
+ENV_CASES: dict[str, dict[str, dict[str, str | None]]] = {
+    "row-by-path": {"head": {"docs/data/a.json": '{"a": 1}\n'}},
+    "row-by-pattern": {"head": {f"{SRC}/parser/other.py": "value = 2  # the regex\n"}},
+    "environment-asked-by-two-rows": {
+        "head": {"docs/data/a.json": '{"a": 1}\n', f"{SRC}/parser/other.py": "value = 2  # the regex\n"}
+    },
+    "row-by-deleted-status": {"head": {"tests/test_guide.py": None}},
+    "row-pattern-absent": {"head": {f"{SRC}/parser/other.py": "value = 2\n"}},
+    "row-with-tests-only": {"head": {"tests/data/new.json": "{}\n"}},
     "nothing-changed": {"head": {}},
 }
 
@@ -137,6 +185,15 @@ def test_related_tests_select_the_diff(
     spec = CASES[case]
     repository = _repository(tmp_path, spec.get("base", {}), spec["head"])
     assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD"))
+
+
+@pytest.mark.parametrize("case", ENV_CASES)
+def test_related_tests_print_the_environments_of_the_diff(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--envs prints each environment the fired rows ask for, once, with the rows that ask for it, and no tests."""
+    repository = _repository(tmp_path, {}, ENV_CASES[case]["head"])
+    assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", "--envs"))
 
 
 WORKING_TREES = {
@@ -219,3 +276,59 @@ def test_related_tests_rows_select_with_the_repository_rules(
     repository = _repository(tmp_path, {}, {".github/workflows/test.yaml": "name: test\n"})
     (repository / "related_tests.toml").write_text((ROOT / "scripts/related_tests.toml").read_text("utf-8"), "utf-8")
     assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD"))
+
+
+def test_related_tests_check_reports_unknown_environments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An environment tox.ini does not define and is not a lane, a row with envs and no prs, and an empty row fail."""
+    repository = _repository(tmp_path, {}, {})
+    rows = """
+[[rule]]
+id = "known"
+prs = [1]
+incident = "x"
+paths = ["a"]
+envs = ["dispatch", "nightly-tier", "fix", "py311-nocov-parallel", "py312-parallel", "client-httpx2-max-e2e"]
+
+[[rule]]
+id = "unknown"
+prs = [1]
+incident = "x"
+paths = ["a"]
+envs = ["py313-parallel", "nightly", "client-httpx2-e2e", "py312-nocov"]
+
+[[rule]]
+id = "no-prs"
+incident = "x"
+paths = ["a"]
+envs = ["dispatch"]
+
+[[rule]]
+id = "empty"
+incident = "x"
+paths = ["a"]
+"""
+    (repository / "related_tests.toml").write_text(rows, encoding="utf-8")
+    assert_output(_select(repository, monkeypatch, capsys, "--check"))
+
+
+def test_related_tests_rows_print_the_environments_of_the_repository_rules(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The shipped rows ask for the client and typing environments, the nightly tier and the dispatch run."""
+    base = {
+        "tests/data/expected/main/generation_platform/MsgspecStruct.txt": "calls 273\n",
+        "tests/data/expected/main/jsonschema/model.py": "value = 1\n",
+        ".github/workflows/test.yaml": "python-version: 3.14\n",
+        f"{SRC}/_runtime/client/transport.py": "value = 1\n",
+    }
+    head = {
+        "tests/data/expected/main/generation_platform/MsgspecStruct.txt": "calls 265\n",
+        "tests/data/expected/main/jsonschema/model.py": "value = 2\n",
+        ".github/workflows/test.yaml": "python-version: 3.15\n",
+        f"{SRC}/_runtime/client/transport.py": "value = 2\n",
+    }
+    repository = _repository(tmp_path, base, head)
+    (repository / "related_tests.toml").write_text((ROOT / "scripts/related_tests.toml").read_text("utf-8"), "utf-8")
+    assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", "--envs"))

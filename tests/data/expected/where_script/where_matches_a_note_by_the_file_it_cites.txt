@@ -19,6 +19,8 @@ symbol format.py:DEFAULT_FORMATTERS
     scripts/build_architecture_docs.py: generate_formatter_table
     src/datamodel_code_generator/format.py: <module>, CodeFormatter.__init__
   rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
-  tests (2):
+  tests (4):
     mirror: tests/test_format.py
+    row generated-layout-install-e2e: envs client-e2e, fastapi-e2e, client-install-nocov-e2e, fastapi-install-nocov-e2e
+    row builtin-formatter-old-black: envs py312-black22-parallel, py312-black24-nocov-parallel
     other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...
