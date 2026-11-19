@@ -14,5 +14,7 @@ covers = [
     "compare_release/path_option.txt",
     "compare_release/referenced_files.txt",
     "compare_release_script/compare_release_resolves_the_base.txt",
+    "source_model/every_rule_states_its_verdicts[coverage-exclusions].txt",
+    "source_model/every_rule_states_its_verdicts[generated-import-closure].txt",
     "source_model/every_rule_states_its_verdicts[source-rules].txt",
 ]
