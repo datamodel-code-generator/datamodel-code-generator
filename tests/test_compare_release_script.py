@@ -1303,7 +1303,7 @@ def _verdict(code: int, stdout: str) -> str:
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="Python 3.11 has no sys.monitoring: nothing can be measured")
+@needs("sys-monitoring")
 @pytest.mark.parametrize("case", sorted(ORACLES))
 def test_compare_release_evidence_oracle(case: str, tmp_path: Path) -> None:
     """Against a git revision, each oracle shape gives its verdict: the evidence names what no compared run ran.
@@ -1333,7 +1333,7 @@ def test_compare_release_evidence_oracle(case: str, tmp_path: Path) -> None:
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
-@pytest.mark.skipif(sys.version_info >= (3, 12), reason="Python 3.12+ measures with sys.monitoring")
+@needs("no-sys-monitoring")
 def test_compare_release_measures_nothing_without_sys_monitoring(tmp_path: Path) -> None:
     """On Python 3.11 a change with code objects to run cannot be measured: the evidence is incomplete."""
     repo, command = _oracle_project(tmp_path, ORACLES["f3_ternary_arm"])

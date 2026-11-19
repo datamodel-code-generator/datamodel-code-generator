@@ -1905,7 +1905,7 @@ def _identity_argv(tmp_path: Path, selection: str) -> tuple[list[str], str]:
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
 @needs("posix")
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="Python 3.11 has no sys.monitoring: nothing can be measured")
+@needs("sys-monitoring")
 @pytest.mark.parametrize("case", sorted(GATE_ORACLES))
 def test_identity_evidence_oracle(case: str, tmp_path: Path) -> None:
     """Identity against a revision is complete only where a compared cell ran every changed code object.
