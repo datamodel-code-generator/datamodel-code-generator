@@ -1,0 +1,6 @@
+[[change]]
+id = "anchor-search-reads-the-record-2"
+extends = "annotated-constrained-union-members"
+covers = [
+    "payloads/native_numeric_empty_errors.txt",
+]

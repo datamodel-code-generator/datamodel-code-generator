@@ -389,7 +389,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/main/conftest.py::datamodel_code_generator.model.base._clear_custom_template_caches",
         "private-import:tests/main/conftest.py::datamodel_code_generator.model.base._get_environment_with_absolute_path",
         "private-import:tests/main/conftest.py::datamodel_code_generator.model.base._get_template_with_absolute_path",
-        "private-import:tests/main/jsonschema/test_external_anchor.py::datamodel_code_generator.parser.jsonschema._find_json_schema_anchor_pointer",
         "private-import:tests/main/jsonschema/test_main_jsonschema.py::datamodel_code_generator._clear_parser_source_data_cache",
         "private-import:tests/main/jsonschema/test_main_jsonschema.py::datamodel_code_generator.model.base._clear_custom_template_caches",
         "private-import:tests/main/jsonschema/test_main_jsonschema.py::datamodel_code_generator.model.base._get_environment",

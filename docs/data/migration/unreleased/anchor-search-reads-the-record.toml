@@ -1,0 +1,13 @@
+[[change]]
+id = "anchor-search-reads-the-record"
+category = "harness"
+title = "Read the external anchor search from the document record"
+summary = "Stored test output of the external anchor search: two unit tests of the removed private search function become e2e runs of the same inputs, and two new e2e cases pin the released search, an anchor in a namespace of definitions among them; the package writes the same models for these inputs as before the change."
+refs = ["#7166"]
+covers = [
+    "main/jsonschema/anchor_keyword_locations.txt",
+    "main/jsonschema/anchor_nested_resource.txt",
+    "main/jsonschema/external_anchor/main_jsonschema_external_anchor_in_passed_namespace.py",
+    "main/jsonschema/external_anchor/main_jsonschema_external_anchor_in_schema_keyword_locations.py",
+    "main/jsonschema/external_anchor/main_jsonschema_external_anchor_released_search.py",
+]
