@@ -17,12 +17,14 @@ scripts/ratchet_approvals.toml entry 1: it is not a table: write it as an `[[app
 
 scripts/ratchet_approvals.toml entry 2: `pr` is missing (`pr` is the number of the pull request the rise is approved for, a positive integer); `decision` is missing (`decision` lists the public references of the owner decision, such as ["#7172"]); `reason` is missing (`reason` says why the rise is needed); `extra` is not a field of an approval.
 
-scripts/ratchet_approvals.toml entry 3: `key` is an escape-hatch key such as allowlist:JUSTIFIED_VIOLATIONS (an unreadable key cannot be approved), not "allowlist:X:unreadable"; `head` is the approved count of the key, a positive integer, not 0; `pr` is the number of the pull request the rise is approved for, a positive integer, not "7172"; `decision` lists the public references of the owner decision, such as ["#7172"], not ["7172"]; `reason` says why the rise is needed, not " ".
+scripts/ratchet_approvals.toml entry 3: `key` is an escape-hatch key such as allowlist:JUSTIFIED_VIOLATIONS (an unreadable key, or the key of an absolute rule, cannot be approved), not "allowlist:X:unreadable"; `head` is the approved count of the key, a positive integer, not 0; `pr` is the number of the pull request the rise is approved for, a positive integer, not "7172"; `decision` lists the public references of the owner decision, such as ["#7172"], not ["7172"]; `reason` says why the rise is needed, not " ".
 
 scripts/ratchet_approvals.toml entry 5: `decision` lists the public references of the owner decision, such as ["#7172"], not [].
 
 scripts/ratchet_approvals.toml entry 6: a second approval of allowlist:JUSTIFIED_VIOLATIONS for #7172.
 
 scripts/ratchet_approvals.toml entry 7: `head` is the approved count of the key, a positive integer, not 2026-11-19; `reason` says why the rise is needed, not 07:32:00.
+
+scripts/ratchet_approvals.toml entry 8: `key` is an escape-hatch key such as allowlist:JUSTIFIED_VIOLATIONS (an unreadable key, or the key of an absolute rule, cannot be approved), not "source-rule:unused-private-global".
 
 No key rose, but scripts/ratchet_approvals.toml needs the changes above. Exit status 0 unless --enforce is given.

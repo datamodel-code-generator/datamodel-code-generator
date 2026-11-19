@@ -291,11 +291,11 @@ def test_fact_finality_reports_known_violations_without_raising(
     assert_output(_reported(report), name="violations")
 
 
+@pytest.mark.allow_direct_assert("a soundness gate fails on its own, never through a stored output a fix run accepts")
 def test_known_violations_are_made_by_their_witnesses(capsys: pytest.CaptureFixture[str]) -> None:
     """The declarations are sound and every known violation is still made by its witness, so the list only shrinks."""
-    exit_statuses = (check_fact_finality.main([]), check_fact_finality.main(["--witnesses"]))
-
-    assert_output(f"exit statuses: {exit_statuses}\n{capsys.readouterr().err}")
+    assert check_fact_finality.main([]) == 0, capsys.readouterr().err
+    assert check_fact_finality.main(["--witnesses"]) == 0, capsys.readouterr().err
 
 
 def test_declaration_problems_report_unsound_declarations() -> None:

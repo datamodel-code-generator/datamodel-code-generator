@@ -137,14 +137,14 @@ def test_every_declared_pass_runs() -> None:
     assert_output("".join(f"{name}\n" for name in check_pass_pipeline.unrun_passes(traces)) or "every pass runs\n")
 
 
+@pytest.mark.allow_direct_assert("a pipeline gate fails on its own, never through a stored output a fix run accepts")
 def test_pipeline_tables_follow_the_rules(capsys: pytest.CaptureFixture[str]) -> None:
     """The tables run the declarations in order, in their phases and scopes, ordered by the order rule.
 
     The provisional reads are the explicit edges that run a reader before a writer of what it reads.
     """
-    exit_status = check_pass_pipeline.main([])
+    assert check_pass_pipeline.main([]) == 0, capsys.readouterr().err
 
-    assert_output(f"exit status: {exit_status}\n{capsys.readouterr().err}", name="checks")
     assert_output("".join(f"{read}\n" for read in check_pass_pipeline.provisional_reads()), name="provisional_reads")
 
 

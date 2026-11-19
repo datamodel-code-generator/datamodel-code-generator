@@ -21,6 +21,7 @@ import tomllib
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import check_ratchets, where
+from tests import test_checks_are_run as checks_are_run
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
@@ -618,6 +619,21 @@ def _import_cycle(form: Path) -> list[str]:
     return [f"{measure}: {', '.join(cycle)}" for measure, cycles in found.items() for cycle in cycles]
 
 
+def _check_runs(form: Path) -> list[str]:
+    """Return the check calls a form's tests assert, with their arguments, as `tests.test_checks_are_run` finds them.
+
+    Each module of the form stands as a test module of a repository that holds nothing else.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            name = path.name.removesuffix(".txt")
+            target = root / "tests" / (path.relative_to(form).parent if form.is_dir() else "") / f"test_{name}"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        return [f"{node}: {script} {list(argv)}" for node, script, argv in checks_are_run._tree_tests(root)]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -627,6 +643,7 @@ RULES: dict[str, RuleRun] = {
         "scripts.where", frozenset({"bindings", "references", "imports", "extents"}), _where_disagreements
     ),
     "import-cycle": RuleRun("scripts._import_cycles", frozenset({"imports", "references"}), _import_cycle),
+    "check-run-on-the-tree": RuleRun("tests.test_checks_are_run", frozenset({"bindings", "references"}), _check_runs),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 

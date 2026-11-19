@@ -1,0 +1,18 @@
+scripts/check_architecture_boundaries.py: hook .pre-commit-config.yaml
+scripts/check_fact_finality.py: test tests/parser/test_fact_finality.py::test_known_violations_are_made_by_their_witnesses
+scripts/check_generation_store_usage.py: hook .pre-commit-config.yaml
+scripts/check_overview_sync.py: tox docs-check-all (run by .github/workflows/llms-txt.yaml), tox generated-docs (run by .github/workflows/generated-docs-sync.yaml)
+scripts/check_pass_pipeline.py: test tests/parser/test_pipeline.py::test_pipeline_tables_follow_the_rules
+scripts/check_ratchets.py: workflow .github/workflows/test.yaml
+scripts/check_sdist_test_support.py: tox pkg_meta (run by .github/workflows/test.yaml)
+scripts/check_source_rules.py: ratchet
+scripts/check_source_rules.py::hash-split: ratchet
+scripts/check_source_rules.py::doc-citations: ratchet
+scripts/check_source_rules.py::ellipsis-statement: ratchet
+scripts/check_source_rules.py::private-reexport: ratchet
+scripts/check_source_rules.py::globals-registry: ratchet
+scripts/check_source_rules.py::unused-private-global: ratchet
+scripts/check_source_rules.py::redundant-local-import: ratchet
+scripts/check_source_rules.py::clone-bodies: ratchet
+scripts/check_source_rules.py::lost-last-caller: ratchet (report only)
+scripts/check_source_rules.py::flaky-test-workarounds: ratchet
