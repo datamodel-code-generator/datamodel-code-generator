@@ -1,0 +1,53 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  first: assign@6 [always]
+  first: del@20 [always]
+  second: assign@6 [always]
+  rest: assign@6 [always]
+  left: assign@7 [always]; value make()
+  right: assign@7 [always]; value make()
+  ok: assign@8 [always]
+  bad: assign@8 [always]
+  key: for@9 [loop:body@9]
+  value: for@9 [loop:body@9]
+  one: for@11 [loop:body@11]
+  two: for@11 [loop:body@11]
+  handle: with@13 [always]
+  other: with@13 [always]
+  total: annassign@17 [always]; value 1
+  total: augassign@18 [always]
+  bare: annotation-only@19 [always]
+  found: walrus@21 [always]
+scope comprehension <listcomp>#0 '<listcomp>': code 3.11 only; first line 15
+  opened by a node evaluated in <module>#0
+  item: comprehension@15 [loop:body@15]
+  _: comprehension@15 [loop:body@15]
+first, (second, *rest) @6:0 takes (assign) 1, (2, 3) of 1, (2, 3)
+first @6:0 takes (assign) 1 of 1, (2, 3)
+(second, *rest) @6:7 takes (assign) (2, 3) of 1, (2, 3)
+second @6:8 takes (assign) 2 of 1, (2, 3)
+*rest @6:16 takes (assign) 3 of 1, (2, 3)
+rest @6:17 takes (assign) 3 of 1, (2, 3)
+left @7:0 takes (assign) make() of make()
+right @7:7 takes (assign) make() of make()
+ok, bad @8:0 takes (assign) values of values
+ok @8:0 takes (assign) values of values
+bad @8:4 takes (assign) values of values
+key, value @9:4 takes (for) {"a": 1}.items() of {"a": 1}.items()
+key @9:4 takes (for) {"a": 1}.items() of {"a": 1}.items()
+value @9:9 takes (for) {"a": 1}.items() of {"a": 1}.items()
+one, two @11:4 takes (for) [(1, 2)] of [(1, 2)]
+one @11:4 takes (for) [(1, 2)] of [(1, 2)]
+two @11:9 takes (for) [(1, 2)] of [(1, 2)]
+(handle, other) @13:18 takes (with) open("f") of open("f")
+handle @13:19 takes (with) open("f") of open("f")
+other @13:27 takes (with) open("f") of open("f")
+item, _ @15:10 takes (comprehension) pairs of pairs
+item @15:10 takes (comprehension) pairs of pairs
+_ @15:16 takes (comprehension) pairs of pairs
+holder.attribute, holder["key"] @16:0 takes (assign) 1, 2 of 1, 2
+holder.attribute @16:0 takes (assign) 1 of 1, 2
+holder["key"] @16:18 takes (assign) 2 of 1, 2
+total @17:0 takes (annassign) 1 of 1
+found @21:4 takes (walrus) make() of make()
+== code objects: one per scope that compiles on this Python

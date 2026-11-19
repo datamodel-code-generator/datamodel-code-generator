@@ -27,6 +27,8 @@ bindings/name_mangling: name_mangling.py:7: __slots__ with a value
 bindings/name_mangling: name_mangling.py:8: __limit with a value
 bindings/name_mangling: name_mangling.py:22: __kept with a value
 references/annotation_modes: annotation_modes.py:12: size no value
+references/annotations_and_string_reads: annotations_and_string_reads.py:20: field no value
+references/annotations_and_string_reads: annotations_and_string_reads.py:21: pending no value
 references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:8: kind with a value
 references/class_body_comprehension: class_body_comprehension.py:7: n with a value
 references/class_body_comprehension: class_body_comprehension.py:8: xs with a value

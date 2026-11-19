@@ -1,0 +1,78 @@
+== references
+8:3 TYPE_CHECKING load in <module> -> local <module> @6; origin typing.TYPE_CHECKING
+11:0 Alias store in <module> -> local <module> @11
+11:7 TypeAlias load (evaluated annotation) in <module> -> local <module> @6; origin typing.TypeAlias
+12:0 plain store in <module> -> local <module> @12
+13:0 chosen store in <module> -> local <module> @13
+13:8 Literal load (evaluated annotation) in <module> -> local <module> @6; origin typing.Literal
+14:0 broken store in <module> -> local <module> @14
+15:0 spaced store in <module> -> local <module> @15
+16:0 letter store in <module> -> local <module> @16
+20:4 field store in Later -> local Later @20, else unbound
+21:4 pending store in Later -> local Later @21, else unbound
+21:13 int load (evaluated annotation) in Later -> builtin; origin builtins.int
+23:46 bool load (evaluated annotation) in Later -> builtin; origin builtins.bool
+24:8 local store in Later.method -> local Later.method @24
+25:25 local load in Later.method -> local Later.method @24
+25:40 flag load in Later.method -> local Later.method @23
+25:55 other load in Later.method -> local Later.method @23
+12:7 Later load (string annotation) in <module> -> local <module> @19; origin forms.references.annotations_and_string_reads.Later
+16:8 Laterx load (string annotation) in <module> -> unbound
+20:11 Later load (string annotation) in Later -> global <module> @19; origin forms.references.annotations_and_string_reads.Later
+23:28 Later load (string annotation) in Later -> global <module> @19; origin forms.references.annotations_and_string_reads.Later
+23:62 Mapping load (string annotation) in Later -> global <module> @9; origin collections.abc.Mapping
+23:62 str load (string annotation) in Later -> builtin; origin builtins.str
+23:62 int load (string annotation) in Later -> builtin; origin builtins.int
+24:15 Missing load (string annotation) in Later.method -> unbound
+11:19 Mapping load (string annotation) in <module> -> local <module> @9; origin collections.abc.Mapping
+11:19 str load (string annotation) in <module> -> builtin; origin builtins.str
+11:19 Later load (string annotation) in <module> -> local <module> @19; origin forms.references.annotations_and_string_reads.Later
+uses of <module>:TYPE_CHECKING@6: read@8
+uses of <module>:Literal@6: read@13
+uses of <module>:TypeAlias@6: read@11
+uses of <module>:Mapping@9: read@23, read@11
+uses of <module>:Later@19: read@12, read@20, read@23, read@11
+uses of Later.method:other@23: read@25
+uses of Later.method:flag@23: read@25
+uses of Later.method:local@24: read@25
+type positions @11: TypeAlias
+type positions @12: Later
+type positions @13: Literal
+type positions @14: -
+type positions @15: -
+type positions @16: Laterx
+type positions @20: Later
+type positions @21: int
+type positions @23: Mapping, str, int
+type positions @24: Missing
+type positions @23: Later
+type positions @23: bool
+annotation TypeAlias @11 (evaluated) in <module>: Alias; value "Mapping[str, Later]"
+annotation "Later | None" @12 (evaluated) in <module>: plain; value None
+annotation Literal["value", "other"] @13 (evaluated) in <module>: chosen; value "value"
+annotation "not valid(" @14 (evaluated) in <module>: broken; value None
+annotation " Later" @15 (evaluated) in <module>: spaced; value None
+annotation "Later͸" @16 (evaluated) in <module>: letter; value None
+annotation "Later" @20 (evaluated) in Later: field
+annotation int @21 (evaluated) in Later: pending
+annotation "Later" @23 (evaluated) in Later: other
+annotation bool @23 (evaluated) in Later: flag
+annotation "Mapping[str, int]" @23 (evaluated) in Later: return
+annotation "Missing" @24 (never) in Later.method: local; value 1
+string 'Annotations with their modes, and the names a string reads where it stands (as typing compiles a forward reference).\n\nannotations: yes\n' @1:0 does not parse
+string 'Mapping[str, Later]' @11:19 reads Mapping -> local <module> @9, str -> builtin, Later -> local <module> @19
+string 'Later | None' @12:7 reads Later -> local <module> @19
+string 'value' @13:16 reads value -> unbound
+string 'other' @13:25 reads other -> unbound
+string 'value' @13:36 reads value -> unbound
+string 'not valid(' @14:8 does not parse
+string ' Later' @15:8 does not parse
+string 'Later\u0378' @16:8 reads Laterx -> unbound
+string 'Later' @20:11 reads Later -> global <module> @19
+string 'Later' @23:28 reads Later -> global <module> @19
+string 'Mapping[str, int]' @23:62 reads Mapping -> global <module> @9, str -> builtin, int -> builtin
+string 'Missing' @24:15 reads Missing -> unbound
+string 'local' @25:16 reads local -> local Later.method @24
+string 'flag' @25:32 reads flag -> local Later.method @23
+string 'other' @25:46 reads other -> local Later.method @23
+== code objects: one per scope that compiles on this Python

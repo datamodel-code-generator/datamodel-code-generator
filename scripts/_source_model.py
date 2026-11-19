@@ -3,10 +3,12 @@
 A check asks five questions of a module, and this module is the only place that answers them:
 
 - **bindings**: which scopes exist (the language's scopes, each with the code object it compiles to), which names each
-  binds, where, by which form and under which guard, a class's members and a method's receiver;
+  binds, where, by which form and under which guard, what each assignment target takes (`SourceModule.assignment`), a
+  class's members and a method's receiver;
 - **references**: what each name occurrence reads (by the language's scoping rules), the dotted origin of a name or an
-  attribute chain through imports and simple aliases, how a read is used, the type positions of annotations, literal
-  tables (`SourceModule.constant`) and the argument a call passes for a parameter (`argument`);
+  attribute chain through imports and simple aliases, how a read is used, the annotations and the type positions in
+  them, what a name read in a scope resolves to (`SourceModule.lookup`, for the names a string reads: `string_type`,
+  `name_reads`), literal tables (`SourceModule.constant`) and the argument a call passes for a parameter (`argument`);
 - **imports**: each import with its absolute target, scope and guard (``TYPE_CHECKING``, version, platform,
   ``ImportError`` fallback, ...), and across modules (`SourceTree`) the definitions names reach and the import graph;
 - **suppressions**: the suppression comments (``noqa``, ``ruff: ignore/disable``, ``type: ignore`` and its siblings,
@@ -33,8 +35,8 @@ and back, per name and symbol table (a second read of a name in the same table s
 kind of each read (local, enclosing, global or builtin). A module the compiler rejects though `ast` reads it (a late
 ``from __future__`` import) is a disagreement too.
 The forms in ``tests/data/source_forms/`` alone stand behind the other answers: guards, origins, uses (of names and of
-any expression), the binding of a node, class members, receivers, type positions and expressions, constants, imports,
-suppressions and extents.
+any expression), the binding of a node, what an assignment target takes, class members, receivers, annotations, type
+positions and expressions, the names a string reads, constants, imports, suppressions and extents.
 
 The compiler differs by version, and the check normalizes the differences in one place (`SourceModule._compare`): on
 3.11 list, set and dict comprehensions have tables of their own, from 3.12 they are inlined into the enclosing table
@@ -65,6 +67,7 @@ import symtable
 import sys
 import tokenize
 import types
+import unicodedata
 from bisect import bisect_left
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
@@ -759,6 +762,39 @@ class Edge:
     via: str
 
 
+@dataclass(frozen=True, slots=True)
+class Assignment:
+    """What a target of an assignment, a ``for``, a comprehension's ``for``, a ``with`` item or a walrus takes.
+
+    ``value`` is the expression the statement evaluates for it: the assigned value, the iterable, the context
+    expression. ``element`` is the part of it the target takes: where the target and the value are tuples or lists of
+    one length, each item takes the item at its position (at every level of unpacking, a starred item too), else the
+    whole value. ``kind`` is ``assign``, ``annassign``, ``for``, ``comprehension``, ``with`` or ``walrus``. An
+    augmented assignment, a deletion and an annotation without a value assign nothing.
+    """
+
+    kind: str
+    value: ast.expr = field(repr=False)
+    element: ast.expr = field(repr=False)
+
+
+@dataclass(frozen=True, eq=False, slots=True)
+class Annotation:
+    """An annotation the source writes, the scope it is evaluated in, and when it is evaluated.
+
+    ``mode`` is ``evaluated``, ``deferred`` (future import) or ``never`` (a function-local variable's). ``target`` is
+    the annotated assignment target or parameter (None for a return annotation), ``value`` the value an annotated
+    assignment assigns.
+    """
+
+    node: ast.expr = field(repr=False)
+    scope: Scope
+    mode: str
+    line: int
+    target: ast.AST | None = field(default=None, repr=False)
+    value: ast.expr | None = field(default=None, repr=False)
+
+
 UNKNOWN = ast.Constant(value=Ellipsis)
 """What `argument` returns where ``*args`` or ``**kwargs`` may supply the parameter."""
 
@@ -1362,7 +1398,78 @@ class _CompilerCheck(_Suppressions):
         return pairs
 
 
-class SourceModule(_CompilerCheck):
+class _Reads(_CompilerCheck):
+    """Annotations a module writes, what its assignment targets take, and what a name read in a scope resolves to."""
+
+    _annotations: list[Annotation]
+
+    def lookup(self, name: str, scope: Scope) -> Resolution:
+        """Return what a name read in a scope resolves to, as `SourceModule.resolve` answers for an occurrence there.
+
+        For reads the tree does not hold as names: the names of a parsed string (`name_reads`), ``__all__`` entries.
+        """
+        _ask("references")
+        return self._resolve(_mangle(name, scope), scope)
+
+    @property
+    def annotations(self) -> list[Annotation]:
+        """Every annotation: of a parameter, a return and an annotated assignment, in the order the walk meets them."""
+        _ask("references")
+        return self._annotations
+
+    def assignment(self, target: ast.AST) -> Assignment | None:
+        """Return what a target node takes (`Assignment`): a name, attribute, subscript, starred or unpacking target.
+
+        None for any other node, and for the target of an augmented assignment, a deletion or a bare annotation.
+        """
+        _ask("bindings")
+        return self._assignments.get(target)
+
+    @cached_property
+    def _assignments(self) -> dict[ast.AST, Assignment]:
+        found: dict[ast.AST, Assignment] = {}
+        for node in ast.walk(self.tree):
+            for kind, target, value in _assigned(node):
+                _pair(found, kind, target, value, value)
+        return found
+
+    def _resolve(self, mangled: str, scope: Scope) -> Resolution:
+        if mangled in scope.declared_global:
+            return self._global(mangled)
+        if mangled in scope.bindings:
+            fallback = self._global(mangled) if scope.kind == "class" else None
+            return Resolution("local", scope, tuple(scope.bindings[mangled]), fallback)
+        class_cell = mangled == "__class__" and scope.kind != "class"
+        sees_class = scope.sees_class
+        probe = scope.parent
+        while probe is not None and probe.kind != "module":
+            if probe.kind == "class" and class_cell:
+                return Resolution("class-cell", probe, ())
+            if probe.kind == "class" and sees_class and mangled in probe.bindings:
+                return Resolution("enclosing", probe, tuple(probe.bindings[mangled]), self._global(mangled))
+            if probe.kind != "class" and (mangled in probe.declared_global or mangled in probe.bindings):
+                declared = mangled in probe.declared_global
+                return (
+                    self._global(mangled)
+                    if declared
+                    else Resolution("enclosing", probe, tuple(probe.bindings[mangled]))
+                )
+            sees_class = sees_class and probe.kind in _ANNOTATION_SCOPES
+            probe = probe.parent
+        return self._global(mangled)
+
+    def _global(self, mangled: str) -> Resolution:
+        module = self._module_scope
+        if mangled in module.bindings:
+            return Resolution("global", module, tuple(module.bindings[mangled]))
+        if mangled in MODULE_ATTRIBUTES:
+            return Resolution("global", module, ())
+        if module.star_import:
+            return Resolution("star", module, ())
+        return Resolution("builtin" if mangled in _BUILTIN_NAMES else "unbound", None, ())
+
+
+class SourceModule(_Reads):
     """The answers for one module's source text.
 
     ``path`` names the file in messages (``__init__.py`` marks a package), ``module`` is its dotted name (relative
@@ -1389,6 +1496,7 @@ class SourceModule(_CompilerCheck):
         self._tests: list[tuple[_Test, ast.expr]] = []
         self._tries: list[tuple[_Test, ast.Try | ast.TryStar]] = []
         self._roots: list[tuple[ast.expr, Scope, Guard]] = []
+        self._annotations: list[Annotation] = []
         self._aliases: list[tuple[ast.expr, ast.expr, Scope, Guard]] = []
         self._pending: list[Binding] = []
         self._augmented: set[ast.Name] = set()
@@ -1722,10 +1830,11 @@ class SourceModule(_CompilerCheck):
     def _annotation_mode(self) -> str:
         return "deferred" if self.future_annotations else "evaluated"
 
-    def _annotation(self, node: ast.expr | None, scope: Scope, mode: str, guard: Guard) -> None:
-        if node is not None:
-            self._roots.append((node, scope, guard))
-            self._expr(node, scope, guard, mode)
+    def _annotation(self, annotation: Annotation | None, guard: Guard) -> None:
+        if annotation is not None:
+            self._annotations.append(annotation)
+            self._roots.append((annotation.node, annotation.scope, guard))
+            self._expr(annotation.node, annotation.scope, guard, annotation.mode)
 
     def _annotated_assignment(self, node: ast.AnnAssign, scope: Scope, guard: Guard) -> None:
         kind: BindingKind = "annassign" if node.value is not None else "annotation-only"
@@ -1734,7 +1843,8 @@ class SourceModule(_CompilerCheck):
         else:
             self._node_scope[node.target] = scope
         local = scope.kind not in {"module", "class"}
-        self._annotation(node.annotation, scope, "never" if local else self._annotation_mode(), guard)
+        mode = "never" if local else self._annotation_mode()
+        self._annotation(_annotated(node.annotation, scope, mode, node.target, node.value), guard)
         if node.value is not None:
             self._aliases.append((node.annotation, node.value, scope, guard))
             self._expr(node.value, scope, guard)
@@ -1750,8 +1860,8 @@ class SourceModule(_CompilerCheck):
         outer = self._type_params(node, node.name, scope, guard)
         parameters = _parameters(node.args)
         for parameter in parameters:
-            self._annotation(parameter.annotation, outer, self._annotation_mode(), guard)
-        self._annotation(node.returns, outer, self._annotation_mode(), guard)
+            self._annotation(_annotated(parameter.annotation, outer, self._annotation_mode(), parameter), guard)
+        self._annotation(_annotated(node.returns, outer, self._annotation_mode()), guard)
         self._bind(scope, node.name, "def", node, guard)
         inner = self._new_scope("function", node, outer, node.name, node.lineno)
         call = (*guard, Condition(_Test("function"), "body", node, node.lineno))
@@ -1927,41 +2037,6 @@ class SourceModule(_CompilerCheck):
         )
 
     # ---- pass 2: resolution and classification -------------------------------------------------------------------
-    def _resolve(self, mangled: str, scope: Scope) -> Resolution:
-        if mangled in scope.declared_global:
-            return self._global(mangled)
-        if mangled in scope.bindings:
-            fallback = self._global(mangled) if scope.kind == "class" else None
-            return Resolution("local", scope, tuple(scope.bindings[mangled]), fallback)
-        class_cell = mangled == "__class__" and scope.kind != "class"
-        sees_class = scope.sees_class
-        probe = scope.parent
-        while probe is not None and probe.kind != "module":
-            if probe.kind == "class" and class_cell:
-                return Resolution("class-cell", probe, ())
-            if probe.kind == "class" and sees_class and mangled in probe.bindings:
-                return Resolution("enclosing", probe, tuple(probe.bindings[mangled]), self._global(mangled))
-            if probe.kind != "class" and (mangled in probe.declared_global or mangled in probe.bindings):
-                declared = mangled in probe.declared_global
-                return (
-                    self._global(mangled)
-                    if declared
-                    else Resolution("enclosing", probe, tuple(probe.bindings[mangled]))
-                )
-            sees_class = sees_class and probe.kind in _ANNOTATION_SCOPES
-            probe = probe.parent
-        return self._global(mangled)
-
-    def _global(self, mangled: str) -> Resolution:
-        module = self._module_scope
-        if mangled in module.bindings:
-            return Resolution("global", module, tuple(module.bindings[mangled]))
-        if mangled in MODULE_ATTRIBUTES:
-            return Resolution("global", module, ())
-        if module.star_import:
-            return Resolution("star", module, ())
-        return Resolution("builtin" if mangled in _BUILTIN_NAMES else "unbound", None, ())
-
     def _origin(self, node: ast.expr, active: frozenset[Binding] = frozenset()) -> str | None:
         head, parts = _chain(node)
         resolution = self._resolved.get(head) if head is not None else None
@@ -2133,9 +2208,8 @@ class SourceModule(_CompilerCheck):
                     self._type_positions(child, scope, guard, found, record=record)
 
     def _parse_string(self, node: ast.Constant, scope: Scope, guard: Guard, *, record: bool) -> list[_TypeName]:
-        try:
-            inner = ast.parse(str(node.value).strip(), mode="eval").body
-        except SyntaxError:
+        inner = _string_expression(node)
+        if inner is None:
             return []
         for part in ast.walk(inner):
             if isinstance(part, ast.expr):
@@ -2203,6 +2277,65 @@ class SourceModule(_CompilerCheck):
     @cached_property
     def _binding_nodes(self) -> dict[ast.AST, Binding]:
         return {binding.node: binding for binding in self.bindings()}
+
+
+def _annotated(
+    node: ast.expr | None, scope: Scope, mode: str, target: ast.AST | None = None, value: ast.expr | None = None
+) -> Annotation | None:
+    """Return the annotation a node is, or None where the source writes none."""
+    return None if node is None else Annotation(node, scope, mode, node.lineno, target, value)
+
+
+def _assigned(node: ast.AST) -> list[tuple[str, ast.expr, ast.expr]]:
+    """Return the targets a node assigns, each with its form and the expression it evaluates for them."""
+    if isinstance(node, ast.Assign):
+        return [("assign", target, node.value) for target in node.targets]
+    if isinstance(node, ast.AnnAssign) and node.value is not None:
+        return [("annassign", node.target, node.value)]
+    if isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
+        return [("for" if isinstance(node, (ast.For, ast.AsyncFor)) else "comprehension", node.target, node.iter)]
+    if isinstance(node, ast.withitem) and node.optional_vars is not None:
+        return [("with", node.optional_vars, node.context_expr)]
+    return [("walrus", node.target, node.value)] if isinstance(node, ast.NamedExpr) else []
+
+
+def _pair(found: dict[ast.AST, Assignment], kind: str, target: ast.expr, value: ast.expr, element: ast.expr) -> None:
+    """Record what a target takes, and pair the items of an unpacking target with the items of a value as long."""
+    found[target] = Assignment(kind, value, element)
+    if isinstance(target, ast.Starred):
+        _pair(found, kind, target.value, value, element)
+    elif isinstance(target, (ast.Tuple, ast.List)):
+        same = isinstance(element, (ast.Tuple, ast.List)) and len(element.elts) == len(target.elts)
+        for item, part in zip(target.elts, element.elts if same else [element] * len(target.elts), strict=True):
+            _pair(found, kind, item, value, part)
+
+
+def string_type(node: ast.Constant) -> ast.expr | None:
+    """Return the expression a string reads as when it is evaluated as a type; None where nothing parses it.
+
+    It is parsed as `typing` compiles a forward reference (leading whitespace does not parse), except that a character
+    the running Python's Unicode tables do not assign is read as a letter, so a name of a newer Python's identifiers
+    parses on every version. `SourceModule.type_positions` reads the names of a string in a type position from it.
+    """
+    _ask("references")
+    return _string_expression(node)
+
+
+def _string_expression(node: ast.Constant) -> ast.expr | None:
+    text = "".join("x" if unicodedata.category(character) == "Cn" else character for character in str(node.value))
+    try:
+        return ast.parse(text, mode="eval").body
+    except SyntaxError:
+        return None
+
+
+def name_reads(node: ast.expr) -> list[ast.Name]:
+    """Return the names an expression outside a module's tree reads (one `string_type` parsed), in walk order.
+
+    Resolve each with `SourceModule.lookup` in the scope the expression is evaluated in.
+    """
+    _ask("references")
+    return [part for part in ast.walk(node) if isinstance(part, ast.Name) and isinstance(part.ctx, ast.Load)]
 
 
 def _receiver_use(parent: ast.Subscript | ast.Attribute, grandparent: ast.AST | None) -> str:
