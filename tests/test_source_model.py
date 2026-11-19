@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import typing
+from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -540,12 +541,25 @@ def test_builtins_are_the_tables_on_this_python() -> None:
 
 
 @dataclass(frozen=True)
+class Finding:
+    """One finding of a rule on a form: the rule (or the part of it) that reports it, its site, and the stored line.
+
+    The site is a line of a one-module form, ``<module>:<line>`` in a package form (each prefixed by the folder a rule
+    places the form in when it places it in several), or what a rule reports instead of a line.
+    """
+
+    rule: str
+    site: str
+    text: str
+
+
+@dataclass(frozen=True)
 class RuleRun:
     """A rule that reads Python through the model: its module, the questions it asks, and its run over one form."""
 
     module: str
     asks: frozenset[str]
-    run: Callable[[Path], list[str]]
+    run: Callable[[Path], list[Finding]]
 
 
 def _form_files(form: Path) -> list[tuple[str, str]]:
@@ -554,21 +568,30 @@ def _form_files(form: Path) -> list[tuple[str, str]]:
     return [(path.name.removesuffix(".txt"), path.read_text(encoding="utf-8")) for path in files]
 
 
-def _compiler_check(form: Path) -> list[str]:
+def _site(form: Path, place: str, line: object) -> str:
+    """Return the site of a finding at ``line`` of ``place``, a path that holds the form's name where the form is."""
+    own = form.name.removesuffix(".txt")
+    parts = [part for part in place.split("/") if part != own]
+    return ":".join([*(["/".join(parts)] if parts else []), str(line)])
+
+
+def _compiler_check(form: Path) -> list[Finding]:
     return [
-        problem
+        Finding("disagreement", _site(form, name, problem.split(":")[1]), problem)
         for name, text in _form_files(form)
         for problem in source_model.SourceModule(text, name, "forms.form", verify=False).disagreements()
     ]
 
 
-def _private_scope_walk(form: Path) -> list[str]:
+def _private_scope_walk(form: Path) -> list[Finding]:
     return [
-        f"{name}:{line}" for name, text in _form_files(form) for line in check_ratchets.scope_walk_sites(text, name)
+        Finding("private-scope-walk", _site(form, name, line), f"{name}:{line}")
+        for name, text in _form_files(form)
+        for line in check_ratchets.scope_walk_sites(text, name)
     ]
 
 
-def _source_rules(form: Path) -> list[str]:
+def _source_rules(form: Path) -> list[Finding]:
     """Run every source rule that needs no base over a form, placed as a module of the package, scripts and tests.
 
     A form that cites code (the directive ``citations: docstring``) stands in for the architecture page: its docstring
@@ -591,10 +614,14 @@ def _source_rules(form: Path) -> list[str]:
             page.write_text(_form_text(form).split('"""', 2)[1], encoding="utf-8")
         found = check_source_rules.run(check_source_rules.Tree(root), check_source_rules.RULES, None)
         return [
-            f"{finding.path.replace(check_source_rules.PACKAGE, 'src')}:{finding.line}: "
-            f"{finding.rule}: {finding.detail}"
+            Finding(
+                finding.rule,
+                _site(form, place, finding.line),
+                f"{place}:{finding.line}: {finding.rule}: {finding.detail}",
+            )
             for findings in found.values()
             for finding in findings
+            for place in [finding.path.replace(check_source_rules.PACKAGE, "src")]
         ]
 
 
@@ -609,7 +636,7 @@ ARCHITECTURE_LAYERS: tuple[check_architecture_boundaries.Layer, ...] = (
 """The layers a form runs under unless it names its own: those with rules of their own on names."""
 
 
-def _architecture_boundaries(form: Path) -> list[str]:
+def _architecture_boundaries(form: Path) -> list[Finding]:
     """Run the layer rules of the layers above and the host rule over a form's modules, as files of a temporary tree."""
     with tempfile.TemporaryDirectory() as folder:
         root = Path(folder)
@@ -631,9 +658,13 @@ def _architecture_boundaries(form: Path) -> list[str]:
         for name, files, hosts in runs:
             violations = check_architecture_boundaries.check_files(files, allowlist={}, host_files=hosts)
             found += [
-                f"{name}: {violation.path.removeprefix(root.as_posix()).lstrip('/')}:{violation.line}: "
-                f"{violation.rule}: {violation.target} (in {violation.qualname})"
+                Finding(
+                    f"{name}/{violation.rule}",
+                    _site(form, place, violation.line),
+                    f"{name}: {place}:{violation.line}: {violation.rule}: {violation.target} (in {violation.qualname})",
+                )
                 for violation in violations
+                for place in [violation.path.removeprefix(root.as_posix()).lstrip("/")]
             ]
         return found
 
@@ -647,7 +678,7 @@ def test_a_form_names_only_the_layers_the_guard_has(tmp_path: Path) -> None:
     assert_output(str(error.value) + "\n")
 
 
-def _where_disagreements(form: Path) -> list[str]:
+def _where_disagreements(form: Path) -> list[Finding]:
     """Compare what `scripts.where` answers on a form's modules with the model's own answers and with every file read.
 
     The form keeps its layout under ``scripts/`` so that its imports between modules resolve. Each scope is defined
@@ -668,9 +699,10 @@ def _where_disagreements(form: Path) -> list[str]:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
         repo = where.Repo(root, where.Page([], [], [], []))
-        found = []
+        found: list[Finding] = []
         for path in sorted(repo.names):
             model = repo.model(path)
+            place = str(path).removeprefix("scripts/")
             scopes = [scope for scope in model.scopes if scope.kind in where.DEFS and "<locals>" not in scope.qualname]
             names = {scope.qualname for scope in scopes}
             names |= {
@@ -680,17 +712,29 @@ def _where_disagreements(form: Path) -> list[str]:
             }
             definitions = {name: repo.definitions(name) for name in sorted(names)}
             found += [
-                f"{path}:{scope.line}: where does not define {scope.qualname}"
+                Finding(
+                    "definition",
+                    _site(form, place, scope.line),
+                    f"{path}:{scope.line}: where does not define {scope.qualname}",
+                )
                 for scope in scopes
                 if (path, scope.line) not in {(site.path, site.line) for site in definitions[scope.qualname]}
             ]
             found += [
-                f"{path}: {name} is defined in files where does not read: {sorted(set(every) - set(sites))}"
+                Finding(
+                    "definition-files",
+                    _site(form, place, name),
+                    f"{path}: {name} is defined in files where does not read: {sorted(set(every) - set(sites))}",
+                )
                 for name, sites in definitions.items()
                 if sites != (every := repo.definitions(name, everywhere=True))
             ]
             found += [
-                f"{site.path}:{site.line}: {site.qualname} is read in files where does not read: {sorted(every)}"
+                Finding(
+                    "user-files",
+                    _site(form, place, site.line),
+                    f"{site.path}:{site.line}: {site.qualname} is read in files where does not read: {sorted(every)}",
+                )
                 for sites in definitions.values()
                 for site in sites
                 if site.path == path
@@ -698,7 +742,11 @@ def _where_disagreements(form: Path) -> list[str]:
                 and repo.module_users(site) != (every := repo.module_users(site, everywhere=True))
             ]
             found += [
-                f"{path}:{line}: where reports {reported}, the model {expected.qualname!r}"
+                Finding(
+                    "owner",
+                    _site(form, place, line),
+                    f"{path}:{line}: where reports {reported}, the model {expected.qualname!r}",
+                )
                 for line, text in enumerate(repo.text(path).splitlines(), 1)
                 if text.strip()
                 and (expected := model.owner(line, len(text) - len(text.lstrip()))).kind in where.SCOPES
@@ -713,26 +761,39 @@ def _where_disagreements(form: Path) -> list[str]:
     return found
 
 
-def _import_cycle(form: Path) -> list[str]:
-    """Return the import cycles of a package form by measure; a one-module form has no import between modules."""
+def _import_cycle(form: Path) -> list[Finding]:
+    """Return the import cycles of a package form by measure; a one-module form has no import between modules.
+
+    The site of a cycle is its modules, named inside the form and joined by ``+``.
+    """
     if not form.is_dir():
         return []
     found = import_cycles.tree_cycles(source_model.SourceTree(form.parent, [form.name]))
-    return [f"{measure}: {', '.join(cycle)}" for measure, cycles in found.items() for cycle in cycles]
-
-
-def _template_assignment_lines(form: Path) -> list[str]:
     return [
-        f"{name}:{binding.line}: {binding.name} {'no value' if binding.value is None else 'with a value'}"
-        for name, text in _form_files(form)
-        for binding in field_lines(text) or ()
+        Finding(
+            measure, "+".join(name.removeprefix(f"{form.name}.") for name in cycle), f"{measure}: {', '.join(cycle)}"
+        )
+        for measure, cycles in found.items()
+        for cycle in cycles
     ]
 
 
-def _check_runs(form: Path) -> list[str]:
+def _template_assignment_lines(form: Path) -> list[Finding]:
+    return [
+        Finding(
+            kind.replace(" ", "-"), _site(form, name, binding.line), f"{name}:{binding.line}: {binding.name} {kind}"
+        )
+        for name, text in _form_files(form)
+        for binding in field_lines(text) or ()
+        for kind in ["no value" if binding.value is None else "with a value"]
+    ]
+
+
+def _check_runs(form: Path) -> list[Finding]:
     """Return the check calls a form's tests assert, with their arguments, as `tests.test_checks_are_run` finds them.
 
-    Each module of the form stands as a test module of a repository that holds nothing else.
+    Each module of the form stands as a test module of a repository that holds nothing else. A call is reported under
+    the script it runs, at the test that runs it.
     """
     with tempfile.TemporaryDirectory() as folder:
         root = Path(folder)
@@ -741,7 +802,10 @@ def _check_runs(form: Path) -> list[str]:
             target = root / "tests" / (path.relative_to(form).parent if form.is_dir() else "") / f"test_{name}"
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-        return [f"{node}: {script} {list(argv)}" for node, script, argv in checks_are_run._tree_tests(root)]
+        return [
+            Finding(script, node.rpartition("::")[2], f"{node}: {script} {list(argv)}")
+            for node, script, argv in checks_are_run._tree_tests(root)
+        ]
 
 
 RULES: dict[str, RuleRun] = {
@@ -771,16 +835,47 @@ RULES: dict[str, RuleRun] = {
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 
 
-def verdict_problems(findings: dict[str, list[str]], entries: dict[str, str]) -> list[str]:
-    """Compare a rule's findings per form with its verdict entries (``finding`` or ``no finding: <reason>``)."""
+def _sites(found: Counter[tuple[str, str]]) -> str:
+    """Render sites the way a verdict lists them: ``<rule> <site> <site>; <rule> <site>``, rules and sites sorted."""
+    rules = sorted({rule for rule, _ in found.elements()})
+    return "; ".join(
+        " ".join([rule, *sorted((site for name, site in found.elements() if name == rule), key=_site_key)])
+        for rule in rules
+    )
+
+
+def _site_key(site: str) -> tuple[str, int, str]:
+    """Order sites by place, then by line as a number."""
+    place, _, line = site.rpartition(":")
+    return (place, int(line), "") if line.isdigit() else (site, 0, site)
+
+
+def _stated_sites(listed: str) -> Counter[tuple[str, str]]:
+    """Read the sites a ``finding: <rule> <site> <site>; <rule> <site>`` verdict lists after its colon."""
+    groups = [group.split() for group in listed.split(";") if group.strip()]
+    return Counter((words[0], site) for words in groups for site in words[1:])
+
+
+def verdict_problems(findings: dict[str, list[Finding]], entries: dict[str, str]) -> list[str]:
+    """Compare a rule's findings per form with its verdict entries.
+
+    A verdict is ``no finding: <reason>`` or ``finding: <rule> <site> <site>; <rule> <site>``, which lists every
+    finding by the rule (or part of the rule) that reports it and its site, once per finding. A finding the verdict does
+    not list and a listed one the rule no longer gives are both problems, so a rule that loses one site of a form fails
+    here and not only in the stored findings, which a fix run accepts.
+    """
     missing = [f"{form}: no verdict" for form in sorted(set(findings) - set(entries))]
     stale = [f"{form}: verdict for a form the rule does not read" for form in sorted(set(entries) - set(findings))]
-    stated = {form: entries[form].partition(":")[0].strip() for form in set(findings) & set(entries)}
-    wrong = [
-        f"{form}: verdict {stated[form]!r}, the rule gives {'finding' if findings[form] else 'no finding'!r}"
-        for form in sorted(stated)
-        if stated[form] != ("finding" if findings[form] else "no finding")
-    ]
+    wrong = []
+    for form in sorted(set(findings) & set(entries)):
+        kind, _, listed = entries[form].partition(":")
+        found = Counter((finding.rule, finding.site) for finding in findings[form])
+        stated = _stated_sites(listed) if kind.strip() == "finding" else Counter()
+        if kind.strip() not in {"finding", "no finding"} or (kind.strip() == "finding" and not stated):
+            wrong.append(f"{form}: verdict {entries[form]!r} is neither 'finding: <rule> <site>' nor 'no finding: ...'")
+            continue
+        wrong += [f"{form}: the rule gives no finding at {_sites(stated - found)}"] * bool(stated - found)
+        wrong += [f"{form}: the verdict does not list {_sites(found - stated)}"] * bool(found - stated)
     return [*missing, *stale, *wrong]
 
 
@@ -803,24 +898,40 @@ def test_every_rule_states_its_verdicts(rule: str) -> None:
     assert not problems, f"{rule}: {problems}; state the rule's verdict on each form in {VERDICTS.relative_to(ROOT)}"
     assert not undeclared, f"{rule} asks {undeclared}; add them to its RuleRun.asks"
     every_python = {_form_id(form) for form in forms if _min_python(form) == OLDEST_PYTHON}
-    found = [f"{form}: {finding}" for form, items in findings.items() if form in every_python for finding in items]
+    found = [f"{form}: {finding.text}" for form, items in findings.items() if form in every_python for finding in items]
     report = [f"verdict problems: {problems or 'none'}", f"undeclared questions: {undeclared or 'none'}", *found]
     assert_output("\n".join(report) + "\n")
 
 
 def test_verdict_problems() -> None:
-    """A missing, stale or wrong verdict is a problem; a matching one is not."""
+    """A missing, stale or wrong verdict is a problem, and so is a lost, added or moved site; a matching one is not.
+
+    The form ``a/x`` has three findings: two of one rule (one line twice) and one of another.
+    """
+    three = [Finding("hit", "3", "a"), Finding("hit", "3", "b"), Finding("other", "src:7", "c")]
     cases = [
-        ({"a/x": []}, {"a/x": "no finding: clean"}),
-        ({"a/x": ["1: hit"]}, {"a/x": "finding"}),
-        ({"a/x": []}, {}),
-        ({}, {"a/x": "finding"}),
-        ({"a/x": []}, {"a/x": "finding"}),
-        ({"a/x": ["1: hit"]}, {"a/x": "no finding: clean"}),
+        ([], "no finding: clean"),
+        (three, "finding: hit 3 3; other src:7"),
+        (three, "finding: other src:7; hit 3 3"),
+        ([], None),
+        (None, "finding: hit 3"),
+        ([], "finding: hit 3"),
+        (three, "no finding: clean"),
+        (three, "finding"),
+        (three, "found: hit 3 3; other src:7"),
+        (three[1:], "finding: hit 3 3; other src:7"),
+        (three[:2], "finding: hit 3 3; other src:7"),
+        (three, "finding: hit 3; other src:7"),
+        ([*three[:2], Finding("other", "src:8", "c")], "finding: hit 3 3; other src:7"),
+        ([*three[:2], Finding("hit", "src:7", "c")], "finding: hit 3 3; other src:7"),
     ]
-    assert_output(
-        "".join(f"{findings} {entries}: {verdict_problems(findings, entries)}\n" for findings, entries in cases)
-    )
+    rendered = []
+    for found, verdict in cases:
+        findings = {} if found is None else {"a/x": found}
+        entries = {} if verdict is None else {"a/x": verdict}
+        sites = [f"{finding.rule}@{finding.site}" for finding in found or []]
+        rendered.append(f"{sites} {entries}: {verdict_problems(findings, entries)}")
+    assert_output("\n".join(rendered) + "\n")
 
 
 @pytest.mark.allow_direct_assert("a verdict gate fails on its own, never through a stored output a fix run accepts")

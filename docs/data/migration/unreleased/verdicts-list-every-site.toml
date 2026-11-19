@@ -1,0 +1,8 @@
+[[change]]
+id = "verdicts-list-every-site"
+category = "harness"
+title = "List every site of a finding in the source form verdicts"
+summary = "A verdict of a rule on a source form lists each finding by its rule and site, so a rule that loses one site of a form fails the verdict gate; only the test harness changes and the package writes the same output."
+covers = [
+    "source_model/verdict_problems.txt",
+]
