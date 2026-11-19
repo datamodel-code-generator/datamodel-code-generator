@@ -1,4 +1,4 @@
-"""Keep each local pre-commit hook triggered by the code it runs.
+"""Keep each local pre-commit hook, and the behaviour gate's workflow, triggered by the code it runs.
 
 A local hook runs its entry script, and the script runs every module of ``scripts`` and ``tests`` it imports, at
 module level or in a function, directly or through another such module (an import only type checkers run does not
@@ -8,6 +8,7 @@ are read through ``scripts/_source_model.py``.
 
 from __future__ import annotations
 
+import fnmatch
 import re
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ".pre-commit-config.yaml"
+GATE_WORKFLOW = ".github/workflows/behaviour-diff.yaml"
 CHECKER_PACKAGES = ("scripts", "tests")
 ENTRY_SCRIPT = re.compile(r"scripts/[\w/]+\.py")
 MISSING_FAILURE_MESSAGE = (
@@ -96,3 +98,43 @@ def test_a_pattern_without_an_imported_module_misses_it() -> None:
     found = {hook: paths for hook, paths in missing_files(ROOT, config).items() if paths}
     assert any("scripts/_source_model.py" in paths for paths in found.values()), found
     assert_output("".join(f"{hook}: {', '.join(paths)}\n" for hook, paths in found.items()))
+
+
+def gate_misses(root: Path, workflow: dict) -> dict[str, list[str]]:
+    """Return, per event of the gate's workflow, the scripts its steps run that the event's ``paths`` miss.
+
+    The gate's own code is the steps' scripts and every ``scripts`` module they import; the harness modules under
+    ``tests`` they import are the Test workflow's to run on a change, so they are not required here.
+    """
+    steps = [step for job in workflow["jobs"].values() for step in job.get("steps", [])]
+    scripts = sorted({script for step in steps for script in ENTRY_SCRIPT.findall(step.get("run", ""))})
+    ran = sorted({path for script in scripts for path in runs(root, root / script) if path.startswith("scripts/")})
+    events = workflow.get("on", workflow.get(True))
+    return {
+        event: [path for path in ran if not any(fnmatch.fnmatchcase(path, glob) for glob in events[event]["paths"])]
+        for event in ("pull_request", "push")
+    }
+
+
+def _workflow() -> dict:
+    return yaml.safe_load((ROOT / GATE_WORKFLOW).read_text(encoding="utf-8"))
+
+
+@pytest.mark.allow_direct_assert("a gate that misses a module fails on its own, not through a stored output")
+def test_behaviour_gate_runs_when_its_scripts_change() -> None:
+    """The gate workflow's ``paths`` match every script its steps run and every checker module those scripts import."""
+    found = gate_misses(ROOT, _workflow())
+    assert not any(found.values()), f"add these to the paths of {GATE_WORKFLOW}: {found}"
+    assert_output("".join(f"{event}: {', '.join(paths) or 'none missing'}\n" for event, paths in found.items()))
+
+
+@pytest.mark.allow_direct_assert("the seeded gap must be found, not only stored")
+def test_gate_paths_without_an_imported_module_miss_it() -> None:
+    """Gate paths that lack a module a gate script imports, here the comparator, report that module."""
+    workflow = _workflow()
+    events = workflow.get("on", workflow.get(True))
+    for event in ("pull_request", "push"):
+        events[event]["paths"] = [glob for glob in events[event]["paths"] if glob != "scripts/compare_release.py"]
+    found = gate_misses(ROOT, workflow)
+    assert all("scripts/compare_release.py" in paths for paths in found.values()), found
+    assert_output("".join(f"{event}: {', '.join(paths)}\n" for event, paths in found.items()))
