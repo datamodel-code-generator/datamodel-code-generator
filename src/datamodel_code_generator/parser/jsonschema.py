@@ -2261,7 +2261,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if null_facts.rule == "legacy-nullable-as-type-list":
             obj.__dict__[_NULLABLE_TYPE_LIST_KEY] = True
         python_type_override = self._get_python_type_override(obj)
-        if python_type_override:  # pragma: no cover
+        if python_type_override:
             return python_type_override
 
         if "const" in obj.extras:
@@ -3304,14 +3304,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 groups.objects.append(item)
             elif item.allOf or item.anyOf or item.oneOf:
                 nested_type = self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
-                if nested_type is None:  # pragma: no cover
+                if nested_type is None:
                     return None
-                if nested_type.reference:  # pragma: no cover
+                if nested_type.reference:
                     groups.ref_data_types.append(nested_type)
                 else:
                     _rw_split.unregister_temporary_type(self, nested_type)
                     groups.primitives.append(item)
-            elif item.enum:  # pragma: no cover
+            elif item.enum:
                 groups.primitives.append(item)
             elif item.has_constraint:
                 groups.constraint_only.append(item)
@@ -3431,7 +3431,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         max_union_elements: int = _LIGHTWEIGHT_MAX_UNION_ELEMENTS,
     ) -> DataType | None:
         """Build a DataType from schema without generating models."""
-        if depth > max_depth:  # pragma: no cover
+        if depth > max_depth:
             return None
         if visited is None:
             visited = frozenset()
@@ -3465,7 +3465,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         combined_items = schema.anyOf or schema.oneOf
         if combined_items:
-            if len(combined_items) > max_union_elements:  # pragma: no cover
+            if len(combined_items) > max_union_elements:
                 return None
             data_types: list[DataType] = []
             for item in combined_items:
@@ -3476,20 +3476,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 if not isinstance(item, JsonSchemaObject):  # pragma: no cover
                     continue
-                if item.ref:  # pragma: no cover
+                if item.ref:
                     data_types.append(self.get_ref_data_type(item.ref))
                 else:
                     item_type = self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
-                    if item_type is None:  # pragma: no cover
+                    if item_type is None:
                         return None
                     data_types.append(item_type)
             if not data_types:
                 return None
-            if len(data_types) == 1:  # pragma: no cover
+            if len(data_types) == 1:
                 return data_types[0]
             return build_union(self.data_type, data_types)
 
-        if isinstance(schema.additionalProperties, JsonSchemaObject):  # pragma: no cover
+        if isinstance(schema.additionalProperties, JsonSchemaObject):
             value_type = self._build_lightweight_type(
                 schema.additionalProperties, depth + 1, visited, max_depth, max_union_elements
             )
@@ -4434,7 +4434,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = scope
                     self._graph_builder.replace_field_type(field, self.data_type())
             original_class_name = name
-            name = self._apply_title_as_name(name, obj)  # pragma: no cover
+            name = self._apply_title_as_name(name, obj)
             reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
             extra_field = _object_maps.get_typed_additional_properties_field(self, reference, reference.name, obj, path)
             # ignore an undetected object
@@ -4551,7 +4551,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for all_of_item in _inherited_schemas.all_of_members(self, obj):
             if _lightweight_types.is_false_schema_item(self, all_of_item):
                 _all_of_values.raise_unsatisfiable_schema(self, obj, path, "allOf")
-            if not isinstance(all_of_item, JsonSchemaObject):  # pragma: no cover
+            if not isinstance(all_of_item, JsonSchemaObject):
                 continue
             if all_of_item.ref:  # $ref
                 ref_schema = self._load_ref_schema_object(all_of_item.ref)
@@ -7096,7 +7096,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if constraints := obj.__dict__.get(_SITE_CONSTRAINTS_SCHEMA_KEY):
                     self._graph_builder.record_site_constraints(data_type, constraints)
             case "custom-type":
-                data_type = self._custom_type(obj)  # pragma: no cover
+                data_type = self._custom_type(obj)
             case "constrained-type-union":
                 data_type = self._build_constrained_type_union(name, obj, path)
             case "array":
@@ -7106,13 +7106,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     get_special_path("array", path),
                     use_annotated=use_annotated,
                 )
-                data_type = array_field.data_type  # pragma: no cover
+                data_type = array_field.data_type
                 if preserve_constraints:
                     array_constraints = array_field.constraints
             case "combined":
                 combined_items = obj.anyOf or obj.oneOf
                 if const_enum_type := self._parse_combined_const_enum(name, obj, combined_items, path, writes=writes):
-                    data_type = const_enum_type  # pragma: no cover
+                    data_type = const_enum_type
                 else:
                     reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
                     if obj.anyOf:
@@ -7120,11 +7120,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     else:
                         data_types = self.parse_one_of(name, obj, get_special_path("oneOf", path))
 
-                    if len(data_types) > 1:  # pragma: no cover
+                    if len(data_types) > 1:
                         data_type = build_union(self.data_type, data_types)
-                    elif not data_types:  # pragma: no cover
+                    elif not data_types:
                         return EmptyDataType()
-                    else:  # pragma: no cover
+                    else:
                         data_type = data_types[0]
             case "all-of":
                 value_obj, values, parts = obj, _all_of_values.ValueSite(self, obj), []
@@ -7153,7 +7153,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if value_obj.enum and "const" not in value_obj.extras
                     else self._build_lightweight_type(value_obj)
                 )
-                if data_type is None:  # pragma: no cover
+                if data_type is None:
                     data_type = self.data_type_manager.get_data_type(Types.any)
                 elif value_obj is obj and data_type.reference is not None:
                     self._record_site_constraints(values, data_type)

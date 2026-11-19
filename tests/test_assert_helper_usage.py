@@ -1291,7 +1291,7 @@ def test_modules_never_patch_the_complete_module_registry() -> None:
         return
 
     details = "\n".join(f"  tests/{patch.path}:{patch.lineno}: {patch.statement}" for patch in whole_registry_patches)
-    pytest.fail(  # pragma: no cover
+    pytest.fail(
         "patch.dict(sys.modules, ...) restores the complete module registry and invalidates lazy-import caches. "
         "For deterministic static enforcement, imported sys/patch aliases are reserved across every scope, "
         "including when shadowed. "
@@ -1328,7 +1328,7 @@ def test_configured_exempt_files_exist(pytestconfig: pytest.Config) -> None:
     ):
         return
 
-    pytest.fail(  # pragma: no cover
+    pytest.fail(
         "assert_helper_direct_assert_exempt_files contains missing files:\n"
         + "\n".join(f"  - tests/{path}" for path in missing),
         pytrace=False,

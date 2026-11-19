@@ -393,7 +393,7 @@ def _split_json_pointer(
                     matched_key = key
                     matched_end = end
                     break
-            if matched_key is None:  # pragma: no cover
+            if matched_key is None:
                 matched_key = unescape_json_pointer_segment(raw_parts[index])
                 matched_end = index + 1
             parts.append(matched_key)

@@ -280,7 +280,7 @@ def get_version() -> str:
     return __version__
 
 
-def enable_debug_message() -> None:  # pragma: no cover
+def enable_debug_message() -> None:
     """Enable debug tracing with pysnooper."""
     global _debug_snoop  # noqa: PLW0603
     try:
@@ -443,7 +443,7 @@ JSON_SCHEMA_URLS: tuple[str, ...] = (
 def is_schema(data: dict) -> bool:
     """Check if the data dict is a JSON Schema."""
     schema = data.get("$schema")
-    if isinstance(schema, str) and any(schema.startswith(u) for u in JSON_SCHEMA_URLS):  # pragma: no cover
+    if isinstance(schema, str) and any(schema.startswith(u) for u in JSON_SCHEMA_URLS):
         return True
     if isinstance(data.get("type"), str):
         return True
@@ -1864,7 +1864,7 @@ def _emit_results(  # noqa: PLR0913
     allow_empty_api: bool = False,
     models_not_found_hint: str = "",
 ) -> str | GeneratedModules | None:
-    if not input_filename:  # pragma: no cover
+    if not input_filename:
         input_filename = _default_input_filename(input_)
     if not results:
         if allow_empty_api:
@@ -2772,22 +2772,27 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
         refused_bytes_patterns = floors.refused_bytes_patterns_of(parser)
         class_names = parser.generated_class_names
         models_not_found_hint: str = getattr(parser, "models_not_found_hint", "")
+        retry_plan = None
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
-            legacy_inventory = parser.generated_model_inventory
-            legacy_source_fingerprint = parser.source_data_fingerprint
-            retry_caches = _reparse_caches(parser)
-            retry_context = replace(
-                parser.run_context,
-                untyped_nullable_maps=parser.run_context.untyped_nullable_maps or parser.typed_nullable_maps,
-                yielding_names=(),
-                import_cycle_seeds=run_context.import_cycle_seeds,
+            retry_plan = (
+                repair_modules,
+                parser.generated_model_inventory,
+                parser.source_data_fingerprint,
+                _reparse_caches(parser),
+                replace(
+                    parser.run_context,
+                    untyped_nullable_maps=parser.run_context.untyped_nullable_maps or parser.typed_nullable_maps,
+                    yielding_names=(),
+                    import_cycle_seeds=run_context.import_cycle_seeds,
+                ),
             )
         model_name_record = parser.model_resolver.model_name_record
+        frozen_attempt = None
         if capture is None:
             parser.dispose()
         else:
             try:
-                candidate_attempt = capture.freeze_attempt(parser, results)
+                frozen_attempt = (capture, capture.freeze_attempt(parser, results))
             finally:
                 _dispose_capture_parser(parser, capture, discard=False)
         del parser
@@ -2795,7 +2800,9 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
             _dispose_capture_parser(discarded_parser, capture, discard=True)
         floors.report_unmatched_type_override_keys(unmatched_type_override_keys)
 
-        if repair_modules:
+        if retry_plan is not None:
+            repair_modules, legacy_inventory, legacy_source_fingerprint, retry_caches, retry_context = retry_plan
+            del retry_plan
             retry_run = run._replace(
                 config=run.config.model_copy(
                     update={
@@ -2804,15 +2811,13 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
                     }
                 )
             )
-            retry_completed = False
+            retry_parsed = None
             with contextlib.suppress(Exception):
-                retry_parser, retry_results = _parse_again(
-                    retry_run, retry_context, retry_caches, ignored_warnings=DanglingRefWarning
-                )
-                retry_completed = True
+                retry_parsed = _parse_again(retry_run, retry_context, retry_caches, ignored_warnings=DanglingRefWarning)
 
             retry_accepted = False
-            if retry_completed:
+            if retry_parsed is not None:
+                retry_parser, retry_results = retry_parsed
                 # This is a compatibility repair: retain the completed legacy result if it cannot be proven safe.
                 try:
                     if (
@@ -2823,7 +2828,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
                         and retry_parser.source_data_fingerprint == legacy_source_fingerprint
                     ):
                         if capture is not None:
-                            candidate_attempt = capture.freeze_attempt(retry_parser, retry_results)
+                            frozen_attempt = (capture, capture.freeze_attempt(retry_parser, retry_results))
                         retry_accepted = True
                         results = retry_results
                         model_metadata, model_identities = (
@@ -2841,9 +2846,10 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
             if capture is not None:
                 capture.raise_if_failed()
             del retry_caches
-    if capture is not None:
-        capture.raise_if_failed()
-        capture.accept_attempt(candidate_attempt)
+    if frozen_attempt is not None:
+        frozen_capture, candidate_attempt = frozen_attempt
+        frozen_capture.raise_if_failed()
+        frozen_capture.accept_attempt(candidate_attempt)
     from datamodel_code_generator._naming_hint import record_class_names  # noqa: PLC0415
 
     record_class_names(class_names)

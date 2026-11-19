@@ -1104,6 +1104,17 @@ def _literal_scalar(value: object) -> LiteralScalar | None:  # noqa: PLR0911
             return None
 
 
+def _freeze_entry(
+    key: object, item: object, active: set[int], *, document: bool
+) -> tuple[FrozenLiteral, FrozenLiteral]:
+    """Freeze one entry of a mapping, a cycle in its value naming the key as the first token."""
+    try:
+        return _freeze_literal(key, active, document=document), _freeze_literal(item, active, document=document)
+    except _LiteralCycleError as error:
+        error.tokens = (str(key), *error.tokens)
+        raise
+
+
 def _freeze_literal(value: object, active: set[int], *, document: bool = False) -> FrozenLiteral:
     """Freeze a literal; with ``document``, a value read from a loaded document, whose strings freeze as plain ``str``.
 
@@ -1119,17 +1130,9 @@ def _freeze_literal(value: object, active: set[int], *, document: bool = False) 
     try:
         match value:
             case dict() if type(value) is dict:
-                items: list[tuple[FrozenLiteral, FrozenLiteral]] = []
-                try:
-                    for key, item in value.items():
-                        items.append((
-                            _freeze_literal(key, active, document=document),
-                            _freeze_literal(item, active, document=document),
-                        ))
-                except _LiteralCycleError as error:
-                    error.tokens = (str(key), *error.tokens)
-                    raise
-                return LiteralMapping(tuple(items))
+                return LiteralMapping(
+                    tuple(_freeze_entry(key, item, active, document=document) for key, item in value.items())
+                )
             case list() | tuple() | set() | frozenset() if (kind := _SEQUENCES.get(type(value))) is not None:
                 items_sequence: list[FrozenLiteral] = []
                 try:
@@ -1157,12 +1160,12 @@ def _facts(
     raw: dict[str, YamlValue], keys: tuple[str, ...], declaration: SchemaLocation
 ) -> tuple[tuple[str, FrozenLiteral], ...]:
     facts: list[tuple[str, FrozenLiteral]] = []
-    try:
-        for key, value in raw.items():
-            if key in keys:
+    for key, value in raw.items():
+        if key in keys:
+            try:
                 facts.append((key, _freeze_literal(value, set(), document=True)))
-    except _LiteralCycleError as error:
-        raise MetadataCycleError(declaration.document, declaration.child(key, *error.tokens).pointer) from error
+            except _LiteralCycleError as error:
+                raise MetadataCycleError(declaration.document, declaration.child(key, *error.tokens).pointer) from error
     return tuple(facts)
 
 

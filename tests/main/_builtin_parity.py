@@ -102,9 +102,7 @@ def _uses_virtual_output_mode(extra_args: Sequence[str] | None) -> bool:
 
 
 def _uses_default_api_formatters(generate_options: dict[str, Any]) -> bool:
-    if generate_options.get("custom_formatters") or generate_options.get(
-        "custom_formatters_kwargs"
-    ):  # pragma: no cover
+    if generate_options.get("custom_formatters") or generate_options.get("custom_formatters_kwargs"):
         return False
     return (formatters := generate_options.get("formatters")) is None or set(formatters) == _DEFAULT_API_FORMATTERS
 

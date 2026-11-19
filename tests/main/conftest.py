@@ -1232,7 +1232,7 @@ def run_main_and_assert(  # noqa: PLR0912
     # Skip output verification if expected_exit is not OK
     if expected_exit != Exit.OK:
         return
-    if output_should_not_exist or file_should_not_exist is not None:  # pragma: no cover
+    if output_should_not_exist or file_should_not_exist is not None:
         return
 
     # Output verification
@@ -1387,7 +1387,7 @@ def _validate_output_files(
             _import_generated_output(output_path)
         return
 
-    if not output_path.is_dir():  # pragma: no cover
+    if not output_path.is_dir():
         return
     python_files = sorted(output_path.rglob("*.py"))
     _export_older_target_output(output_path, python_files, extra_arguments, force_exec=force_exec_validation)
