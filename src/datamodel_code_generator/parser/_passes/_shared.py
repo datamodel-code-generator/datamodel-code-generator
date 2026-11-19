@@ -94,7 +94,7 @@ from datamodel_code_generator.reference import (
     schema_path_of,
     unique_items_of,
 )
-from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
+from datamodel_code_generator.types import DataType, union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -281,7 +281,7 @@ def _restore_inherited_field_names_for_unique_aliases(
     """Keep the Python name of every required inherited field when wire aliases must be unique; True when one moved."""
     restored = False
     for field in fields:
-        if not (original_name := field.original_name):
+        if not (original_name := field.original_name) or (field_name := field.name) is None:
             continue
         inherited_field = inherited_fields.get(original_name)
         if (
@@ -294,11 +294,7 @@ def _restore_inherited_field_names_for_unique_aliases(
         for colliding_field in fields:
             if colliding_field is field or colliding_field.name != inherited_name:
                 continue
-            if (  # pragma: no cover - each schema object owns one field per wire name
-                colliding_field.original_name == original_name or field.name is None
-            ):
-                continue
-            builder.rename_field(colliding_field, field.name, alias=colliding_field.original_name)
+            builder.rename_field(colliding_field, field_name, alias=colliding_field.original_name)
             builder.rename_field(field, inherited_name)
             restored = True
             break
@@ -649,8 +645,6 @@ def normalize_default_value_constraints(
         if not descriptor.normalize_constraints or has_import_override(
             import_overrides, annotation_import, descriptor.constructor_import
         ):
-            continue
-        if descriptor.recipe is not DefaultValueRecipe.Decimal:  # pragma: no cover - future backend recipe
             continue
         kwargs = data_type.kwargs
         for key, value in kwargs.items():

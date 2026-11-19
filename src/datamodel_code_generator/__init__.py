@@ -26,6 +26,7 @@ from typing import (
     NamedTuple,
     TypeAlias,
     TypeVar,
+    assert_never,
     cast,
 )
 from urllib.parse import ParseResult
@@ -769,7 +770,6 @@ def _missing_sentinel_updates(config: BaseGenerateConfig, _record: RunOptions) -
                 f"{stable_repr(target_version_value)}"
             )
             raise Error(msg)
-    raise AssertionError  # pragma: no cover
 
 
 def _implied_model_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
@@ -1115,9 +1115,7 @@ def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, P
                         statement_end_line = token.end[0]
                     case tokenize.NEWLINE | tokenize.ENDMARKER:
                         if statement_start_line is None:
-                            if token.type == tokenize.ENDMARKER:
-                                return len(header)
-                            continue  # pragma: no cover  # Blank physical lines tokenize as NL.
+                            return len(header)
                         if has_docstring and not parenthesis_depth:
                             statement_end_line = max(statement_end_line, token.start[0])
                             # This is the header boundary. Do not request another token:
@@ -1431,7 +1429,7 @@ def _warn_genson_optional() -> None:
     warn_undeclared_extra("dependency.genson-optional", "genson")
 
 
-def _normalize_raw_input(  # noqa: PLR0912
+def _normalize_raw_input(
     input_: _GenerationInput,
     input_text: str | None,
     input_file_type: InputFileType,
@@ -1474,7 +1472,7 @@ def _normalize_raw_input(  # noqa: PLR0912
                 obj = get_header_and_first_line(io.StringIO(text))
         elif input_file_type == InputFileType.Dict and isinstance(input_, Mapping):
             obj = input_
-        elif input_file_type in {InputFileType.Yaml, InputFileType.Json, InputFileType.Dict}:
+        else:
             text = _input_text(input_, config.encoding, read_once_data) if isinstance(input_, Path) else input_text
             assert text is not None
             if input_file_type == InputFileType.Yaml:
@@ -1485,9 +1483,6 @@ def _normalize_raw_input(  # noqa: PLR0912
                 import ast  # noqa: PLC0415
 
                 obj = ast.literal_eval(text)
-        else:  # pragma: no cover
-            msg = f"Unsupported input file type: {input_file_type}"
-            raise Error(msg)  # noqa: TRY301
 
         from genson import SchemaBuilder  # noqa: PLC0415
 
@@ -1554,8 +1549,8 @@ def _uses_pydantic_v2_schema_validator(config: GenerateConfig) -> bool:
                 return True
             msg = "schema_validator_type='pydantic-v2' is only supported for pydantic_v2.BaseModel"
             raise Error(msg)
-    msg = f"Unsupported schema_validator_type: {schema_validator_type.value}"  # pragma: no cover
-    raise Error(msg)  # pragma: no cover
+        case _:
+            assert_never(schema_validator_type)
 
 
 def _prepare_parser_common_options(

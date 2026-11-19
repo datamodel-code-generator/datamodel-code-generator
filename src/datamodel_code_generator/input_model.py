@@ -785,13 +785,9 @@ def _iter_owned_properties(
 def _add_python_type_for_unserializable(
     schema: dict[str, Any],
     model: type,
-    visited_defs: set[str] | None = None,
     expression_collector: PythonTypeExpressionCollector | None = None,
 ) -> dict[str, Any]:
     """Add x-python-type to ALL fields marked as unserializable."""
-    if visited_defs is None:
-        visited_defs = set()
-
     if "properties" in schema:
         for field_info, prop in _iter_owned_properties(schema["properties"], _pydantic_fields(model) or {}):
             _process_unserializable_property(prop, field_info.annotation, expression_collector)
@@ -802,16 +798,8 @@ def _add_python_type_for_unserializable(
         if model_name:  # pragma: no branch
             nested_models[model_name] = model
         for def_name, def_schema in schema["$defs"].items():
-            if def_name in visited_defs:  # pragma: no cover
-                continue
-            visited_defs.add(def_name)
             if def_name in nested_models:  # pragma: no branch
-                _add_python_type_for_unserializable(
-                    def_schema,
-                    nested_models[def_name],
-                    visited_defs,
-                    expression_collector,
-                )
+                _add_python_type_for_unserializable(def_schema, nested_models[def_name], expression_collector)
 
     return schema
 
@@ -852,9 +840,7 @@ def _preserved_python_type_expr(tp: type, generic_names: dict[type, str] | None 
         return PythonTypeUnion(arguments) if (arguments := _with_full_fallback(args, generic_names)) else None
 
     if origin is Annotated:
-        if args:
-            return _preserved_python_type_expr(args[0], generic_names) or _imported_python_type_expr(args[0])
-        return None  # pragma: no cover
+        return _preserved_python_type_expr(args[0], generic_names) or _imported_python_type_expr(args[0])
 
     type_name: str | None = None
     if origin is not None:

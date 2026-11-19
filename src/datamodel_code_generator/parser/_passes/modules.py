@@ -1707,7 +1707,6 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                     root_type_model.reference, data_type
                 )
 
-                replacement_context = None
                 shared_holders: tuple[DataType, ...] = ()
                 if isinstance(field_ := data_type.parent, parser.data_model_field_type):
                     # for field
@@ -1739,7 +1738,8 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                         replacement_kind="field",
                     )
 
-                elif isinstance(parent_data_type := data_type.parent, DataType):
+                else:
+                    parent_data_type = cast("DataType", data_type.parent)
                     shared_holders, kept_holders = shared_member_holders(parser, data_type, copied_data_type)
                     has_remaining_root_references = has_remaining_root_references or bool(kept_holders)
                     if parent_data_type.is_list:
@@ -1777,11 +1777,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                         replacement_kind="nested",
                         holders=(shared_holders, kept_holders),
                     )
-                else:  # pragma: no cover
-                    continue
 
-                if replacement_context is None:  # pragma: no cover
-                    continue
                 model_field.inherit_unconstrained_union_members(root_type_field)
                 model_field.inherit_untaken_constraints(
                     root_type_field, whole_type=isinstance(field_, parser.data_model_field_type)
@@ -2379,13 +2375,10 @@ def get_collapsed_unions(
         return unions
     index = model.fields.index(field)
     for duplicate in duplicates:
-        if len(duplicate.fields) != len(model.fields):  # pragma: no cover
-            continue
         duplicate_field = duplicate.fields[index]
-        if not isinstance(discriminator := duplicate_field.extras.get("discriminator"), dict) or len(
-            data_types := duplicate_field.data_type.data_types
-        ) != len(field.data_type.data_types):  # pragma: no cover
+        if not isinstance(discriminator := duplicate_field.extras.get("discriminator"), dict):
             continue
+        data_types = duplicate_field.data_type.data_types
         unions.append((
             site_display_name(parser, duplicate, duplicate_field),
             data_types,

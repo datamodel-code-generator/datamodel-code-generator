@@ -655,12 +655,10 @@ class _ProtobufDescriptorConverter:
             return dict(SCALAR_SCHEMAS[field.type])
         if field.type == TYPE_ENUM:
             return self._reference_schema(_type_name(field.type_name))
-        if field.type in {TYPE_MESSAGE, TYPE_GROUP}:
-            type_name = _type_name(field.type_name)
-            if type_name in WELL_KNOWN_SCHEMAS:
-                return deepcopy(WELL_KNOWN_SCHEMAS[type_name])
-            return self._reference_schema(type_name)
-        return {}  # pragma: no cover
+        type_name = _type_name(field.type_name)
+        if type_name in WELL_KNOWN_SCHEMAS:
+            return deepcopy(WELL_KNOWN_SCHEMAS[type_name])
+        return self._reference_schema(type_name)
 
     def _map_field_schema(self, field: Any) -> dict[str, Any] | None:
         if field.type != TYPE_MESSAGE:
@@ -668,16 +666,9 @@ class _ProtobufDescriptorConverter:
         entry = self.map_entries.get(_type_name(field.type_name))
         if entry is None:
             return None
-        key_field = next((item for item in entry.field if item.name == "key"), None)
-        if key_field is None:  # pragma: no cover
-            return None
-        map_key_python_type = MAP_KEY_PYTHON_TYPES.get(key_field.type)
-        if map_key_python_type is None:  # pragma: no cover
-            msg = f"Protocol Buffers map field {stable_repr(field.name)} uses unsupported key type"
-            raise SchemaParseError(msg)
-        value_field = next((item for item in entry.field if item.name == "value"), None)
-        if value_field is None:  # pragma: no cover
-            return None
+        key_field = next(item for item in entry.field if item.name == "key")
+        map_key_python_type = MAP_KEY_PYTHON_TYPES[key_field.type]
+        value_field = next(item for item in entry.field if item.name == "value")
         return {
             "type": "object",
             "propertyNames": {"type": "string", "x-python-type": map_key_python_type},

@@ -368,13 +368,8 @@ class _AvroSchemaConverter:
             converted = self._convert_record(raw_schema, fullname, as_root=as_root)
         elif type_value == "enum":
             converted = self._convert_enum(raw_schema, fullname)
-        elif type_value == "fixed":
+        else:
             converted = self._convert_fixed(raw_schema, fullname)
-        else:  # pragma: no cover
-            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
-            msg = f"Unsupported Avro named type: {stable_repr(type_value)}"
-            raise Error(msg)
         converted.setdefault("title", definition_key)
         self._building_definitions.remove(fullname)
         self.definitions[definition_key] = converted
@@ -540,8 +535,6 @@ class _AvroSchemaConverter:
         self, value: Any, schema: Any, namespace: str | None, type_override: Import | None = None
     ) -> Any:
         """Resolve named defaults in their record scope and decode bytes leaves."""
-        if not isinstance(schema, str):  # pragma: no cover - rejected while converting the field schema
-            return value
         if schema not in {"bytes", "fixed"}:
             fullname = self._resolve_fullname(schema, namespace)
             if (named_schema := self.named_schemas.get(fullname)) is None:

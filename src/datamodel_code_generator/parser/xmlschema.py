@@ -487,9 +487,6 @@ class _XMLSchemaConverter:
 
     def convert(self, source: Source, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
         if source.raw_data is not None:
-            if not isinstance(source.raw_data, dict):  # pragma: no cover
-                msg = f"Expected dict, got {type(source.raw_data).__name__}"
-                raise TypeError(msg)
             return source.raw_data
         source_path = self.base_path / source.path
         self.loaded_source_paths.add(source_path.resolve())
@@ -664,14 +661,10 @@ class _XMLSchemaConverter:
                         if root is None:
                             root = element
                         self._element_namespaces[id(element)] = active_namespaces.copy()
-                    case _:  # pragma: no cover
-                        pass
         except ET.ParseError as exc:
             msg = f"Invalid XML Schema document {source_path}: {exc}"
             raise Error(msg) from exc
-        if root is None:  # pragma: no cover
-            msg = f"Invalid XML Schema document {source_path}: empty document"
-            raise Error(msg)
+        assert root is not None
         if root.tag != XML_SCHEMA_TAG:
             msg = f"XML Schema root element must be xs:schema: {source_path}"
             raise Error(msg)

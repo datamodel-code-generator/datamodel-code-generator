@@ -287,8 +287,6 @@ def flatten_additional_properties_all_of(
             if parser._load_ref_schema_object(schema.ref).is_boolean_schema_false:
                 return None
             schema = parser._merge_ref_with_schema(schema)
-            if schema.ref:  # pragma: no cover
-                return None  # pragma: no cover
         if schema.title:
             schema = parser._schema_object(schema.model_dump(exclude={"title"}, exclude_unset=True, by_alias=True))
         if schema.allOf:

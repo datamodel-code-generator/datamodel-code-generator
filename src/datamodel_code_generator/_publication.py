@@ -525,32 +525,23 @@ def _open_file_at(path: str | Path, flags: int, mode: int, directory_fd: int | N
     return os.open(path, flags, mode) if directory_fd is None else os.open(path, flags, mode, dir_fd=directory_fd)
 
 
-def _chmod_backup_at(backup: str | Path, backup_fd: int, mode: int, directory_fd: int | None) -> None:
+def _chmod_backup_at(backup: str | Path, backup_fd: int, mode: int) -> None:
     """Apply destination mode bits through the safest handle supported by the platform."""
     if (fchmod := getattr(os, "fchmod", None)) is not None:
         fchmod(backup_fd, mode)
     elif os.chmod in os.supports_fd:
         os.chmod(backup_fd, mode)
-    elif directory_fd is not None:  # pragma: no cover - POSIX exposes fchmod
-        os.chmod(backup, mode, dir_fd=directory_fd, follow_symlinks=False)
     elif os.chmod in os.supports_follow_symlinks:  # pragma: no cover - platform-specific fallback
         Path(backup).chmod(mode, follow_symlinks=False)
     else:  # pragma: no cover - Windows lacks fd/no-follow chmod
         Path(backup).chmod(mode)
 
 
-def _set_backup_times_at(
-    backup: str | Path,
-    backup_fd: int,
-    target_stat: os.stat_result,
-    directory_fd: int | None,
-) -> None:
+def _set_backup_times_at(backup: str | Path, backup_fd: int, target_stat: os.stat_result) -> None:
     """Preserve destination timestamps through a descriptor or no-follow operation."""
     timestamps = (target_stat.st_atime_ns, target_stat.st_mtime_ns)
     if os.utime in os.supports_fd:
         os.utime(backup_fd, ns=timestamps)
-    elif directory_fd is not None:  # pragma: no cover - POSIX exposes fd-based utime
-        os.utime(backup, ns=timestamps, dir_fd=directory_fd, follow_symlinks=False)
     elif os.utime in os.supports_follow_symlinks:  # pragma: no cover - platform-specific fallback
         os.utime(backup, ns=timestamps, follow_symlinks=False)
     else:  # pragma: no cover - legacy Windows fallback
@@ -573,8 +564,8 @@ def _copy_target(
         )
         with os.fdopen(os.dup(source_fd), "rb") as source_file, os.fdopen(os.dup(backup_fd), "wb") as backup_file:
             shutil.copyfileobj(source_file, backup_file)
-        _chmod_backup_at(backup, backup_fd, stat.S_IMODE(target_stat.st_mode), directory_fd)
-        _set_backup_times_at(backup, backup_fd, target_stat, directory_fd)
+        _chmod_backup_at(backup, backup_fd, stat.S_IMODE(target_stat.st_mode))
+        _set_backup_times_at(backup, backup_fd, target_stat)
     except BaseException:
         if backup_fd is not None:
             with suppress(OSError):

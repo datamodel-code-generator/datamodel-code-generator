@@ -784,14 +784,11 @@ def get_flattenable_inherited_constraint_items(
 ) -> list[dict[str, Any]] | None:
     """Return normalized constraint-only branches when composition flattening is equivalent."""
     items = raw_items
-    match keyword:
-        case "allOf":
-            if any(item is False for item in raw_items):
-                return None
-        case "anyOf" | "oneOf":
-            items = [item for item in raw_items if item is not False]
-        case _:  # pragma: no cover
+    if keyword == "allOf":
+        if any(item is False for item in raw_items):
             return None
+    else:
+        items = [item for item in raw_items if item is not False]
     if len(items) != 1:
         return None
     if (item := items[0]) is True:
@@ -2063,9 +2060,7 @@ def get_inherited_field_owner_reference(
     if schema.allOf or (owner_name := parser._apply_title_as_name(reference.name, schema)) == reference.name:
         return reference
 
-    source_path, marker, fragment = reference.path.partition("#")
-    if not marker:  # pragma: no cover
-        return reference
+    source_path, _, fragment = reference.path.partition("#")
     path = [f"{source_path}#", *fragment.removeprefix("/").split("/")]
     return parser.model_resolver.add(
         path,
@@ -2178,8 +2173,6 @@ def iter_inherited_schema_objects(
 ) -> Iterator[tuple[JsonSchemaObject, frozenset[_TargetNode], str]]:
     """Yield inherited schema objects not visited yet, with the visited schema nodes they add to."""
     for base in sort_inherited_base_classes_for_mro(parser, base_classes):
-        if not base.path:  # pragma: no cover
-            continue
         resolved_ref = base.path
         try:
             parent_schema = load_inherited_schema_object(parser, resolved_ref)

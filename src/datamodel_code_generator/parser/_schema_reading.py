@@ -291,10 +291,7 @@ def _get_model_by_decoded_path(
     through a value that is no container as a target that cannot be loaded, so it raises ``NotImplementedError``.
     """
     if not keys:
-        if isinstance(schema, dict):
-            return schema
-        msg = f"Does not support json pointer to array. schema={schema}, key={keys}"  # pragma: no cover
-        raise NotImplementedError(msg)  # pragma: no cover
+        return schema
     current: YamlValue = schema
     for index, key in enumerate(keys):
         try:

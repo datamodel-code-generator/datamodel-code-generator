@@ -857,7 +857,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             new_data_type.parent = parent
             if is_data_model_field(parent):
                 parent.data_type = new_data_type
-            elif isinstance(parent, DataType):  # pragma: no cover
+            else:
                 parent.data_types = [new_data_type if d is self else d for d in parent.data_types]
 
     @property
@@ -1260,7 +1260,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             case "empty-union":
                 self.import_ = self.import_ or IMPORT_ANY
                 return
-            case _:  # pragma: no cover
+            case _:
                 assert_never(write)
         self.is_optional = True
         if null == "reference":

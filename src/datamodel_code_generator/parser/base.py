@@ -1511,7 +1511,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 return None, validation_aliases
             case single_alias:
                 return single_alias, None
-        raise AssertionError  # pragma: no cover
 
     def _effective_default_state(
         self,
@@ -1753,8 +1752,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Resolve base class(es) with priority: base_class_map (each name of a scope) > customBasePath > base_class."""
 
         def normalize(value: str | list[str] | None) -> str | list[str] | None:
-            if value is None:  # pragma: no cover
-                return None
             if isinstance(value, list):
                 result = list(dict.fromkeys(v for v in value if isinstance(v, str) and v))
                 if not result:
@@ -2723,8 +2720,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         shared_imports_str: str,
     ) -> None:
         """Generate exports for empty __init__.py files."""
-        if (scope := config.all_exports_scope) is None:  # pragma: no cover
-            return
+        scope = config.all_exports_scope
+        assert scope is not None
         processed_init_modules = {ctx.module for ctx in contexts if is_package_init(ctx.module[-1])}
         for init_module, init_result in list(results.items()):
             if not is_package_init(init_module[-1]) or init_module in processed_init_modules or init_result.body:

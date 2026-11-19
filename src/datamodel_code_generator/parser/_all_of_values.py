@@ -301,7 +301,6 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
         self,
         allof_items: Sequence[JsonSchemaObject],
         depth: int,
-        visited: frozenset[int],
         max_depth: int,
         max_union_elements: int,
     ) -> _AllOfItemGroups | None:
@@ -488,9 +487,7 @@ def all_of_value_row(parser: AllOfValuesHost, obj: JsonSchemaObject) -> dict[str
     if len(items) == 1:
         return items[0].model_dump(exclude_unset=True, by_alias=True)
     if (
-        groups := parser._group_allof_items(
-            items, 0, frozenset(), _LIGHTWEIGHT_MAX_DEPTH, _LIGHTWEIGHT_MAX_UNION_ELEMENTS
-        )
+        groups := parser._group_allof_items(items, 0, _LIGHTWEIGHT_MAX_DEPTH, _LIGHTWEIGHT_MAX_UNION_ELEMENTS)
     ) is None or not groups.primitives:
         return {}
     return _lightweight_types.merge_primitive_schemas(parser, [*groups.primitives, *groups.constraint_only]).model_dump(

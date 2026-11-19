@@ -1005,12 +1005,10 @@ json_schema_data_formats: dict[str, dict[str, Types]] = get_data_formats(is_open
 
 def _get_type(
     type_: str,
-    format__: str | None = None,
-    data_formats: dict[str, dict[str, Types]] | None = None,
+    format__: str | None,
+    data_formats: dict[str, dict[str, Types]],
 ) -> Types:
     """Get the appropriate Types enum for a given JSON Schema type and format."""
-    if data_formats is None:  # pragma: no cover
-        data_formats = json_schema_data_formats
     if type_ not in data_formats:
         return Types.any
     if (type_format := data_formats[type_].get("default" if format__ is None else format__)) is not None:
@@ -3289,7 +3287,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self,
         allof_items: Sequence[JsonSchemaObject],
         depth: int,
-        visited: frozenset[int],
         max_depth: int,
         max_union_elements: int,
     ) -> _AllOfItemGroups | None:
@@ -3303,7 +3300,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             elif item.properties or item.additionalProperties or item.type == "object":
                 groups.objects.append(item)
             elif item.allOf or item.anyOf or item.oneOf:
-                nested_type = self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
+                nested_type = self._build_lightweight_type(item, depth + 1, max_depth, max_union_elements)
                 if nested_type is None:
                     return None
                 if nested_type.reference:
@@ -3317,11 +3314,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 groups.constraint_only.append(item)
         return groups
 
-    def _build_allof_type(  # noqa: PLR0911, PLR0912, PLR0913, PLR0917
+    def _build_allof_type(  # noqa: PLR0911, PLR0912
         self,
         allof_items: Sequence[JsonSchemaObject | bool],
         depth: int,
-        visited: frozenset[int],
         max_depth: int,
         max_union_elements: int,
         warn_on_ref_constraints: bool = True,  # noqa: FBT001, FBT002
@@ -3336,11 +3332,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             item = allof_effective_items[0]
             if item.ref:
                 return self.get_ref_data_type(item.ref)
-            return self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
+            return self._build_lightweight_type(item, depth + 1, max_depth, max_union_elements)
 
-        if (
-            groups := self._group_allof_items(allof_effective_items, depth, visited, max_depth, max_union_elements)
-        ) is None:
+        if (groups := self._group_allof_items(allof_effective_items, depth, max_depth, max_union_elements)) is None:
             return None
         ref_items, ref_data_types, primitive_items, constraint_only_items, object_items = groups
 
@@ -3357,7 +3351,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if primitive_items and not object_items:
             all_primitives = primitive_items + constraint_only_items
             merged_schema = _lightweight_types.merge_primitive_schemas(self, all_primitives)
-            return self._build_lightweight_type(merged_schema, depth + 1, visited, max_depth, max_union_elements)
+            return self._build_lightweight_type(merged_schema, depth + 1, max_depth, max_union_elements)
 
         if object_items:
             additional_props_types: list[DataType] = []
@@ -3365,7 +3359,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for obj_item in object_items:
                 if isinstance(obj_item.additionalProperties, JsonSchemaObject):
                     ap_type = self._build_lightweight_type(
-                        obj_item.additionalProperties, depth + 1, visited, max_depth, max_union_elements
+                        obj_item.additionalProperties, depth + 1, max_depth, max_union_elements
                     )
                     if ap_type:
                         additional_props_types.append(ap_type)
@@ -3389,18 +3383,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self,
         item_schema: JsonSchemaObject | bool,  # noqa: FBT001
         depth: int,
-        visited: frozenset[int],
         max_depth: int,
         max_union_elements: int,
     ) -> DataType | None:
-        if item_schema is False:
-            return None  # pragma: no cover
         if item_schema is True:
             return untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
+        assert isinstance(item_schema, JsonSchemaObject)
         if item_schema.ref:
             return self.get_ref_data_type(item_schema.ref)
         return self._build_lightweight_type(
-            item_schema, depth + 1, visited, max_depth, max_union_elements
+            item_schema, depth + 1, max_depth, max_union_elements
         ) or untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
 
     def _enforced_value_keywords(
@@ -3426,20 +3418,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self,
         schema: JsonSchemaObject,
         depth: int = 0,
-        visited: frozenset[int] | None = None,
         max_depth: int = _LIGHTWEIGHT_MAX_DEPTH,
         max_union_elements: int = _LIGHTWEIGHT_MAX_UNION_ELEMENTS,
     ) -> DataType | None:
         """Build a DataType from schema without generating models."""
         if depth > max_depth:
             return None
-        if visited is None:
-            visited = frozenset()
-
-        schema_id = id(schema)
-        if schema_id in visited:  # pragma: no cover
-            return None
-        visited |= {schema_id}
 
         if schema.ref:
             return self.get_ref_data_type(schema.ref)
@@ -3451,13 +3435,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._enum_literal(schema)
 
         if schema.is_array:
-            return _lightweight_types.build_lightweight_array_type(
-                self, schema, depth, visited, max_depth, max_union_elements
-            )
+            return _lightweight_types.build_lightweight_array_type(self, schema, depth, max_depth, max_union_elements)
 
         if schema.allOf:
             return self._build_allof_type(
-                _all_of_values.allof_lightweight_items(self, schema), depth, visited, max_depth, max_union_elements
+                _all_of_values.allof_lightweight_items(self, schema), depth, max_depth, max_union_elements
             )
 
         if isinstance(schema.type, list) or (schema.type and schema.type != "object"):
@@ -3474,12 +3456,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if item is True:
                     data_types.append(untyped_value_data_type(DataType, self.data_type_manager.untyped_value))
                     continue
-                if not isinstance(item, JsonSchemaObject):  # pragma: no cover
-                    continue
+                assert isinstance(item, JsonSchemaObject)
                 if item.ref:
                     data_types.append(self.get_ref_data_type(item.ref))
                 else:
-                    item_type = self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
+                    item_type = self._build_lightweight_type(item, depth + 1, max_depth, max_union_elements)
                     if item_type is None:
                         return None
                     data_types.append(item_type)
@@ -3491,7 +3472,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         if isinstance(schema.additionalProperties, JsonSchemaObject):
             value_type = self._build_lightweight_type(
-                schema.additionalProperties, depth + 1, visited, max_depth, max_union_elements
+                schema.additionalProperties, depth + 1, max_depth, max_union_elements
             )
             if value_type is None:
                 value_type = untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
@@ -7679,8 +7660,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if literal_values:
             data_types.append(self.data_type(literals=literal_values))
         data_types.extend(self._get_data_type_from_json_value(i) for i in non_literal_values)
-        if not data_types:  # pragma: no cover
-            data_types.append(self.data_type_manager.get_data_type(Types.null))
         return self._widened(build_union(self.data_type, data_types, nullable=has_null), non_literal_values)
 
     def _get_enum_model_class(self, type_: Types | None, enum_values: list[Any]) -> tuple[type[Enum], Types | None]:
