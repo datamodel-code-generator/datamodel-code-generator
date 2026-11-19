@@ -8,13 +8,15 @@ A check asks five questions of a module, and this module is the only place that 
 - **references**: what each name occurrence reads (by the language's scoping rules), the dotted origin of a name or an
   attribute chain through imports and simple aliases, how a read is used, the annotations and the type positions in
   them, what a name read in a scope resolves to (`SourceModule.lookup`, for the names a string reads: `string_type`,
-  `name_reads`), literal tables (`SourceModule.constant`) and the argument a call passes for a parameter (`argument`);
+  `name_reads`), literal tables (`SourceModule.constant`), the argument a call passes for a parameter (`argument`) and
+  the parts of a module only type checkers read (`SourceModule.typing_only`);
 - **imports**: each import with its absolute target, scope and guard (``TYPE_CHECKING``, version, platform,
   ``ImportError`` fallback, ...), and across modules (`SourceTree`) the definitions names reach and the import graph;
 - **suppressions**: the suppression comments (``noqa``, ``ruff: ignore/disable``, ``type: ignore`` and its siblings,
   coverage pragmas) and the lines each one covers;
 - **extents**: statement extents, the clauses of compound statements, the statement that holds a line, the lines with
-  code, the innermost scope region that holds a position, and folded source text.
+  code, the innermost scope region that holds a position, the header and the nodes that hold one, the `Segment` (a
+  statement or a part of one that may be skipped) that holds one, and folded source text.
 
 Answers come from `ast` by the language reference's rules, so they are the same on every supported Python. Nothing of
 `symtable` reaches a caller. The only per-version answer is `SourceModule.compiled`, the code objects of the running
@@ -61,6 +63,8 @@ from __future__ import annotations
 
 import ast
 import dis
+import itertools
+import operator
 import os
 import re
 import symtable
@@ -75,6 +79,8 @@ from functools import cached_property
 from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, NoReturn
+
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Generator, Iterable, Iterator
@@ -299,6 +305,8 @@ BindingKind = Literal[
     "type-alias",
 ]
 Region = tuple[tuple[int, int], tuple[int, int]]
+Positioned = ast.expr | ast.stmt | ast.pattern | ast.arg | ast.keyword | ast.excepthandler | ast.alias
+"""A node with a position of its own that `_Extents.nodes_at` and `_Extents.segment` read."""
 
 _COMPREHENSION_NAMES = {ast.ListComp: "<listcomp>", ast.SetComp: "<setcomp>", ast.DictComp: "<dictcomp>"}
 _INLINED_KINDS = (ast.ListComp, ast.SetComp, ast.DictComp)
@@ -322,6 +330,13 @@ _IMPORT_ERRORS = frozenset({
 _LITERAL_HEADS = frozenset({"typing.Literal", "typing_extensions.Literal"})
 _ANNOTATED_HEADS = frozenset({"typing.Annotated", "typing_extensions.Annotated"})
 _CASTS = frozenset({"typing.cast", "typing_extensions.cast"})
+_OVERLOADS = frozenset({"typing.overload", "typing_extensions.overload"})
+_TYPING_DECORATORS = frozenset({
+    "typing.override",
+    "typing_extensions.override",
+    "typing.final",
+    "typing_extensions.final",
+})
 _TYPE_VARS = frozenset({"typing.TypeVar", "typing_extensions.TypeVar"})
 _TYPE_ALIASES = frozenset({"typing.TypeAlias", "typing_extensions.TypeAlias"})
 _NAMESPACE_CALLS = {
@@ -734,6 +749,23 @@ class SourceToken:
     role: str
 
 
+@dataclass(frozen=True, eq=False, slots=True)
+class Segment:
+    """A part of the code that runs as a unit when the code around it runs: the innermost one at a position.
+
+    Kinds: ``statement``; ``arm`` (the ``body`` or ``orelse`` of a conditional expression); ``operand`` (an operand of
+    ``and``/``or`` after the first); ``element`` (a comprehension's element, a dict comprehension's key and value as
+    one); ``target`` (a ``for`` clause's target with its first condition: two spans, since 3.13+ fuses the store of
+    the target with the first load of the condition); ``condition`` (a later condition of a ``for`` clause);
+    ``iterable`` (the iterable of a ``for`` clause after the first). ``spans`` are ``(start, end)`` positions
+    (columns in characters, ends exclusive); ``node`` is the statement or the expression the segment starts with.
+    """
+
+    kind: str
+    spans: tuple[Region, ...]
+    node: ast.AST = field(repr=False)
+
+
 @dataclass(frozen=True, slots=True)
 class Definition:
     """Where a name leads: the module and name of the statement that defines it, its kind, and the hops on the way.
@@ -881,10 +913,10 @@ class _SourceText:
         text = self.lines[line - 1]
         return offset if text.isascii() else len(text.encode()[:offset].decode(errors="replace"))
 
-    def _position(self, node: ast.expr | ast.stmt | ast.pattern) -> tuple[int, int]:
+    def _position(self, node: Positioned) -> tuple[int, int]:
         return node.lineno, self._column(node.lineno, node.col_offset)
 
-    def _end(self, node: ast.expr | ast.stmt) -> tuple[int, int]:
+    def _end(self, node: Positioned) -> tuple[int, int]:
         line = node.end_lineno or node.lineno
         return line, self._column(line, node.end_col_offset or 0)
 
@@ -983,6 +1015,99 @@ class _Extents(_SourceText):
                 parts.append(self._slice(first, token.end))
                 previous = token.end
         return "".join(parts)
+
+    def nodes_at(self, line: int, column: int) -> list[ast.expr | ast.stmt]:
+        """Return the expressions and statements that hold a position, innermost first (a def's from its ``@``)."""
+        _ask("extents")
+        return [node for node in reversed(self._holders((line, column))) if isinstance(node, (ast.expr, ast.stmt))]
+
+    def segment(self, line: int, column: int) -> Segment:
+        """Return the innermost `Segment` that holds a position: a statement, or a part of one that may be skipped."""
+        _ask("extents")
+        chain = self._holders((line, column))
+        if not chain:
+            self._refuse(line, "a position outside every statement")
+        found = Segment("statement", (self._span(chain[0]),), chain[0])
+        for node, inner in itertools.pairwise(chain):
+            found = self._segment_of(node, inner) or found
+        return found
+
+    def _segment_of(self, node: Positioned, inner: Positioned) -> Segment | None:
+        """Return the segment that `inner`, the child of `node` on the way to a position, opens, if any."""
+        kind, spans = "", (self._span(inner),)
+        if isinstance(inner, ast.stmt):
+            kind = "statement"
+        elif isinstance(node, ast.IfExp):
+            kind = "arm" if inner is not node.test else ""
+        elif isinstance(node, ast.BoolOp):
+            kind = "operand" if inner is not node.values[0] else ""
+        elif isinstance(node, ast.DictComp) and inner in {node.key, node.value}:
+            kind, spans = "element", ((self._position(node.key), self._end(node.value)),)
+        elif isinstance(node, _COMPREHENSIONS):
+            kind, spans = self._comprehension_part(node, inner)
+        return Segment(kind, spans, inner) if kind else None
+
+    def _comprehension_part(
+        self, node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp, inner: Positioned
+    ) -> tuple[str, tuple[Region, ...]]:
+        """Return the kind and spans of the part of a comprehension that `inner` opens (none: its first iterable)."""
+        found: tuple[str, tuple[Region, ...]] = ("element", (self._span(inner),))
+        for index, clause in enumerate(node.generators):
+            first = clause.ifs[:1]
+            if inner is clause.target or any(inner is condition for condition in first):
+                found = ("target", tuple(self._span(part) for part in [clause.target, *first]))
+            elif any(inner is condition for condition in clause.ifs[1:]):
+                found = ("condition", (self._span(inner),))
+            elif inner is clause.iter:
+                found = ("iterable", (self._span(inner),)) if index else ("", ())
+        return found
+
+    def header_of(self, line: int, column: int) -> Scope | None:
+        """Return the scope whose header holds a position: decorators, signature or bases, a generator's first iterable.
+
+        The innermost scope region holding the position decides (a list, set or dict comprehension is looked through:
+        it runs where it stands); None where that region holds it in its body, and at module level.
+        """
+        _ask("extents")
+        position = (line, column)
+        holding = [(scope, start) for scope, (start, end) in self._regions if start <= position < end]
+        for scope, _ in sorted(holding, key=operator.itemgetter(1), reverse=True):
+            node = scope.node
+            if isinstance(node, _INLINED_KINDS):
+                continue
+            if isinstance(node, ast.GeneratorExp):
+                start, end = self._span(node.generators[0].iter)
+                return scope if start <= position < end else None
+            body = self._body_start(scope)
+            return scope if body is not None and position < body else None
+        return None
+
+    def span(self, node: Positioned) -> Region:
+        """Return where a node starts and ends (columns in characters, the end exclusive; a def's from its ``@``)."""
+        _ask("extents")
+        return self._span(node)
+
+    def _span(self, node: Positioned) -> Region:
+        start = self._statement_start(node) if isinstance(node, ast.stmt) else self._position(node)
+        return start, self._end(node)
+
+    def _holders(self, position: tuple[int, int]) -> list[Positioned]:
+        """Return the nodes with a position that hold `position`, outermost first; nodes without one are looked into.
+
+        A type parameter is looked into too: its bound and default have positions of their own.
+        """
+        chain: list[Positioned] = []
+        children = list(ast.iter_child_nodes(self.tree))
+        while children:
+            child = children.pop(0)
+            if not isinstance(
+                child, (ast.expr, ast.stmt, ast.pattern, ast.arg, ast.keyword, ast.excepthandler, ast.alias)
+            ):
+                children[:0] = ast.iter_child_nodes(child)
+            elif (span := self._span(child))[0] <= position < span[1]:
+                chain.append(child)
+                children = list(ast.iter_child_nodes(child))
+        return chain
 
     def _refuse(self, line: int, message: str) -> NoReturn:
         statement = self._line_statements.get(line)
@@ -1473,7 +1598,67 @@ class _Reads(_CompilerCheck):
         return Resolution("builtin" if mangled in _BUILTIN_NAMES else "unbound", None, ())
 
 
-class SourceModule(_Reads):
+class _TypingForms(_Reads):
+    """The parts of a module only type checkers read, by the origin of what decides it."""
+
+    _guards: dict[ast.stmt, Guard]
+    _node_scope: dict[ast.AST, Scope]
+
+    def _origin(self, node: ast.expr, active: frozenset[Binding] = frozenset()) -> str | None:
+        """Return the one dotted path a name or attribute chain names (`SourceModule.origin`)."""
+        raise NotImplementedError
+
+    def typing_only(self, line: int, column: int) -> str | None:
+        """Return the form that makes a position code only type checkers read, or None where it may run.
+
+        Forms: ``type-checking`` (a statement only type checkers run, `Import.typing_only`'s rule), ``overload`` (a
+        ``def`` decorated with ``typing.overload``, from its ``@``), ``typing-decorator`` (a ``typing.override`` or
+        ``typing.final`` decorator, which only sets an attribute), ``local-annotation`` (the annotation of an annotated
+        assignment in a function, never evaluated) and ``deferred-annotation`` (a parameter or return annotation of a
+        function under ``from __future__ import annotations``: a string only an annotation reader evaluates). Each
+        decorator is read by origin (the ``typing_extensions`` names too).
+        """
+        _ask("references")
+        chain = self._holders((line, column))
+        position = (line, column)
+        pairs = zip(chain, [*chain[1:], None], strict=True)
+        forms = (self._typing_form(node, inner, position) for node, inner in pairs)
+        return next((form for form in forms if form is not None), None)
+
+    def _typing_form(self, node: Positioned, inner: Positioned | None, position: tuple[int, int]) -> str | None:
+        """Return the typing-only form `node` makes of its child `inner` (None: `position` itself), if any.
+
+        The ``@`` of a decorator belongs to the decorator.
+        """
+        guard = self._guards.get(node, ()) if isinstance(node, ast.stmt) else ()
+        function = node if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) else None
+        decorators = function.decorator_list if function is not None else []
+        if inner is None:
+            starts = {self._code_token_before(self._position(item)).start: item for item in decorators}
+            inner = starts.get(position)
+        origins = {self._origin(item.func if isinstance(item, ast.Call) else item) for item in decorators}
+        annotation = (function is not None and inner is function.returns) or (
+            isinstance(node, ast.arg) and inner is node.annotation
+        )
+        forms = (
+            ("type-checking", any(item.kind == "type-checking" and item.branch == "body" for item in guard)),
+            ("overload", bool(_OVERLOADS & origins)),
+            (
+                "typing-decorator",
+                any(item is inner and self._origin(item) in _TYPING_DECORATORS for item in decorators),
+            ),
+            ("deferred-annotation", self.future_annotations and inner is not None and annotation),
+            (
+                "local-annotation",
+                isinstance(node, ast.AnnAssign)
+                and inner is node.annotation
+                and self._node_scope[node].kind == "function",
+            ),
+        )
+        return next((form for form, holds in forms if holds), None)
+
+
+class SourceModule(_TypingForms):
     """The answers for one module's source text.
 
     ``path`` names the file in messages (``__init__.py`` marks a package), ``module`` is its dotted name (relative
@@ -1505,6 +1690,7 @@ class SourceModule(_Reads):
         self._pending: list[Binding] = []
         self._augmented: set[ast.Name] = set()
         self._node_scope: dict[ast.AST, Scope] = {}
+        self._guards: dict[ast.stmt, Guard] = {}
         self._defined: dict[ast.AST, Scope] = {}
         self._string_refs: dict[ast.Constant, list[_TypeName]] = {}
         self._module_scope = self._new_scope("module", self.tree, None, "<module>", 0)
@@ -1762,6 +1948,7 @@ class SourceModule(_Reads):
 
     def _statement(self, node: ast.stmt, scope: Scope, guard: Guard) -> None:
         self._node_scope[node] = scope
+        self._guards[node] = guard
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             self._function(node, scope, guard)
         elif isinstance(node, ast.ClassDef):
@@ -2041,6 +2228,7 @@ class SourceModule(_Reads):
         )
 
     # ---- pass 2: resolution and classification -------------------------------------------------------------------
+    @override
     def _origin(self, node: ast.expr, active: frozenset[Binding] = frozenset()) -> str | None:
         head, parts = _chain(node)
         resolution = self._resolved.get(head) if head is not None else None
