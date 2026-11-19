@@ -332,17 +332,15 @@ def _number_validator(kind: str, keywords: dict[str, object]) -> Validator:
     )
 
 
-_SCHEMA_DATA_KEYWORDS: Final = frozenset({"const", "default", "enum", "example", "examples"})
-"""The keywords whose values are JSON data, not schemas."""
-
-
-def _read_as_number(node: dict[str, object], kind: str) -> None:
-    """Make the node's ``string`` type the number kind."""
+def _read_as_number(node: dict[str, object], kind: str, *, names_format: bool) -> None:
+    """Make the node's ``string`` type the number kind; the node that names the format has a type."""
     types = node.get("type")
     if types == "string":
         node["type"] = kind
     elif isinstance(types, list) and "string" in types:
         node["type"] = [kind if name == "string" else name for name in types]
+    elif names_format and types is None:
+        node["type"] = kind
 
 
 def numeric_text_schema(schema: object) -> object:
@@ -350,21 +348,18 @@ def numeric_text_schema(schema: object) -> object:
 
     The generator applies every number keyword of such a string, also those of an ``allOf`` member beside the one that
     names the format, to the number its text writes, which the schema validator ignores for a string. The validator
-    over this schema, given the numbers in place of the texts, decides them by all of their keywords. It reads no
-    code of the generator's.
+    over this schema, given the numbers in place of the texts, decides them by all of their keywords, and a text that
+    writes no number stays a string, which the number kind rejects. It reads no code of the generator's.
     """
-    if isinstance(schema, list):
-        return [numeric_text_schema(item) for item in schema]
-    if not isinstance(schema, dict):
-        return schema
-    node = {key: value if key in _SCHEMA_DATA_KEYWORDS else numeric_text_schema(value) for key, value in schema.items()}
-    members = [node, *(member for member in node.get("allOf", []) if isinstance(member, dict))]
-    if names := [
-        name for member in members if isinstance(name := member.get("format"), str) and name in NUMERIC_FORMAT_KINDS
-    ]:
-        for member in members:
-            _read_as_number(member, NUMERIC_FORMAT_KINDS[names[0]])
-    return node
+    projected = deepcopy(schema)
+    for node in _iter_schema_nodes(projected):
+        members = [node, *(member for member in node.get("allOf", []) if isinstance(member, dict))]
+        if names := [
+            name for member in members if isinstance(name := member.get("format"), str) and name in NUMERIC_FORMAT_KINDS
+        ]:
+            for member in members:
+                _read_as_number(member, NUMERIC_FORMAT_KINDS[names[0]], names_format=member.get("format") in names)
+    return projected
 
 
 def numeric_keywords(node: dict[str, object]) -> dict[str, object]:

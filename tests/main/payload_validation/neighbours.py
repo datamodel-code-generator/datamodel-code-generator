@@ -873,8 +873,17 @@ def _replaced_texts(seed: object, texts: dict[JsonPath, str], path: JsonPath, va
     """Return the seed with the text of every numeric format, and the value at the path, as the numbers they write."""
     payload = seed
     for at, text in {**texts, path: value}.items():
-        payload = _replaced(payload, at, _json_value(_json_number(str(text))))
+        payload = _replaced(payload, at, _number_written_by(str(text)))
     return payload
+
+
+def _number_written_by(text: str) -> object:
+    """Return the JSON number a text writes, or the text itself where it writes none, which no number kind accepts."""
+    try:
+        number = _json_value(_json_number(text))
+    except (ValueError, ArithmeticError):
+        return text
+    return text if number is None else number
 
 
 def _numbers_are_valid(seeds: _Seeds, schema: object, payload: object) -> bool:

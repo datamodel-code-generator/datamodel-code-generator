@@ -1269,6 +1269,23 @@ VALUE_NEIGHBOUR_SHAPES: dict[str, dict[str, object]] = {
         "properties": {"p": {"allOf": [{"type": "string", "format": "decimal", "minimum": 10}, {"maximum": 10.05}]}},
         "required": ["p"],
     },
+    "numeric_text_properties_named_like_keywords": {
+        "type": "object",
+        "properties": {
+            "default": {"type": "string", "format": "decimal", "minimum": 1},
+            "allOf": True,
+            "enum": {"type": "string", "format": "integer", "maximum": 5},
+        },
+        "required": ["default", "enum"],
+    },
+    "numeric_text_that_writes_no_number": {
+        "type": "object",
+        "properties": {
+            "a": {"type": "string", "format": "decimal", "minimum": 5},
+            "b": {"type": "string", "format": "decimal", "enum": ["bad"]},
+        },
+        "required": ["a", "b"],
+    },
     "integer_exclusive_bound": {"type": "integer", "exclusiveMinimum": 1.9999, "maximum": 2},
     "integer_exclusive_bound_draft4": {
         "$schema": "http://json-schema.org/draft-04/schema#",
