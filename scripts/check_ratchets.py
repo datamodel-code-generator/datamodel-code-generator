@@ -22,9 +22,9 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   when their module is imported, ``lazy`` those of every import (function-local and ``TYPE_CHECKING`` ones too) and
   ``largest-lazy`` the largest of those; each module counts once, at its first import into its cycle.
 - ``source-rule:<rule>``: the sites of each rule of `scripts/check_source_rules.py` that runs without a base, as its
-  ``--count`` prints them. An absolute rule fails on any site, whatever the base holds. The base-relative rules
-  (``lost-last-caller``) report candidates that need coverage data to decide: a run with ``--base`` prints them and
-  never fails on them.
+  ``--count`` prints them. A rule absolute in the head or in the base revision (read with the base's own rules) fails
+  on any site, whatever the base holds. The base-relative rules (``lost-last-caller``) report candidates that need
+  coverage data to decide: a run with ``--base`` prints them and never fails on them.
 - ``private-scope-walk``, in ``scripts`` and ``tests``: a check that reads bindings, scopes, imports or comments with
   ``ast``, ``symtable`` or ``tokenize`` itself instead of through ``scripts/_source_model.py`` (`scope_walk_sites`),
   read by origin with the model; the model and its test are not counted.
@@ -56,9 +56,9 @@ sites and how to fix it. The exit status is 0 unless ``--enforce`` is given and 
 ``scripts/ratchet_approvals.toml`` lists the rises the owner approved, each for one pull request; it is read from the
 base revision, so a change cannot approve itself. A run of that pull request on GitHub Actions accepts the key up to the
 approved count; every other run fails as before. An entry that the tree already reaches accepts no rise and is stale,
-and a stale or malformed entry fails under ``--enforce`` (`_judged_pull_requests`, `_approval_problems`). No entry
-approves the key of a rule that is absolute in the head or in the base revision (read with the base's own rules): such
-an entry is malformed.
+and a stale or malformed entry fails under ``--enforce`` (`_judged_pull_requests`, `_approval_problems`). No entry, in
+either table, approves the key of a rule that is absolute in the head or in the base revision: such an entry is
+malformed.
 
 ``--count <dir>`` prints the counts of one tree as JSON, ``{key: {file: count}}``; a later copy of this script reads it
 from the base revision's copy, so its form stays.
@@ -184,7 +184,7 @@ SOURCE_RULES = tuple(rule for rule in RULES if not rule.needs_base)
 REPORTED_RULES = tuple(rule for rule in RULES if rule.needs_base)
 """The base-relative source rules: their sites are candidates, printed by a run with a base and never failing it."""
 ABSOLUTE_KEYS = frozenset(f"source-rule:{rule.name}" for rule in SOURCE_RULES if rule.absolute)
-"""The keys that fail on any site, whatever the base holds; no approval covers one."""
+"""The keys of the head's absolute rules; a run judges with these and the base revision's (`_absolute_keys`)."""
 ABSOLUTE_RULES_OF_TREE = (
     "import json, sys; sys.path.insert(0, sys.argv[1]); from scripts.check_source_rules import RULES; "
     "print(json.dumps([rule.name for rule in RULES if rule.absolute and not rule.needs_base]))"
@@ -912,14 +912,17 @@ def _totals(counts: dict[str, dict[str, int]]) -> dict[str, int]:
     return {key: sum(files.values()) for key, files in counts.items()}
 
 
-def _rises(base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals) -> list[str]:
+def _rises(
+    base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals, absolute: frozenset[str]
+) -> list[str]:
+    """Return the keys that rose, those of ``absolute`` whenever they hold a site, the others beyond their approval."""
     base_totals, head_totals = _totals(base), _totals(head)
     return [
         key
         for key, total in sorted(head_totals.items())
         if _kind(key) != "unreadable"
         and (
-            key in ABSOLUTE_KEYS
+            key in absolute
             or (
                 (bool(_risen(key, base, head)) if _kind(key) == STORED_LIST else total > base_totals.get(key, 0))
                 and not approvals.covering(key, total)
@@ -1011,12 +1014,16 @@ def _change_table(base: dict[str, int], head: dict[str, int]) -> list[str]:
 
 
 def _rise_lines(
-    key: str, base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], sites: dict[str, list[int]]
+    key: str,
+    base: dict[str, dict[str, int]],
+    head: dict[str, dict[str, int]],
+    sites: dict[str, list[int]],
+    absolute: frozenset[str],
 ) -> list[str]:
     """Describe one key that rose: its totals, how to fix it, and each file whose count rose with its sites."""
     before, after = sum(base.get(key, {}).values()), sum(head[key].values())
     advice = ADVICE.get(key, ADVICE.get(_kind(key), ""))
-    if key in ABSOLUTE_KEYS:
+    if key in absolute:
         lines = ["", f"{key} is absolute and holds {after} sites (the base {before}): it must be 0. {advice}"]
         changes = [(path, base.get(key, {}).get(path, 0), count) for path, count in sorted(head[key].items())]
     else:
@@ -1030,10 +1037,10 @@ def _rise_lines(
     return lines
 
 
-def _report_rises(base: Tally, head: Tally, approvals: Approvals) -> list[str]:
+def _report_rises(base: Tally, head: Tally, approvals: Approvals, absolute: frozenset[str]) -> list[str]:
     base_counts, head_counts = base.counts(), head.counts()
-    rises = _rises(base_counts, head_counts, approvals)
-    return [line for key in rises for line in _rise_lines(key, base_counts, head_counts, head.sites[key])]
+    rises = _rises(base_counts, head_counts, approvals, absolute)
+    return [line for key in rises for line in _rise_lines(key, base_counts, head_counts, head.sites[key], absolute)]
 
 
 def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: str) -> dict[str, dict[str, int]]:
@@ -1050,26 +1057,38 @@ def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: 
     return json.loads(output.stdout)
 
 
-def _report_copy(
-    base_root: Path, head_root: Path, ruff_args: list[str], settled: Callable[[str, int], bool], base_commit: str
-) -> list[str]:
-    """Count both trees with the base revision's copy of this script and report the rises only it sees.
-
-    ``settled`` tells the keys this copy already judged, and the approved rises, from a key and its total.
-    """
+def _copy_tallies(
+    base_root: Path, head_root: Path, ruff_args: list[str], base_commit: str
+) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+    """Count both trees with the base revision's copy of this script; nothing where the base has no copy."""
     copy = base_root / SCRIPT
     if not copy.is_file():
-        return []
-    base = _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit)
-    head = _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit)
-    unseen = [key for key in _rises(base, head, NO_APPROVALS) if not settled(key, sum(head[key].values()))]
+        return {}, {}
+    return (
+        _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit),
+        _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit),
+    )
+
+
+def _report_copy(
+    base: dict[str, dict[str, int]],
+    head: dict[str, dict[str, int]],
+    settled: Callable[[str, int], bool],
+    absolute: frozenset[str],
+) -> list[str]:
+    """Report the rises only the base revision's copy of this script sees in its counts of both trees.
+
+    ``settled`` tells the keys this copy already judged, and the approved rises, from a key and its total; the keys of
+    ``absolute`` are judged as in this copy.
+    """
+    unseen = [key for key in _rises(base, head, NO_APPROVALS, absolute) if not settled(key, sum(head[key].values()))]
     hidden = {key: files for key, files in head.items() if not settled(key, sum(files.values()))}
     header = [
         "",
         f"The base revision's {SCRIPT} also counts these rises, which this copy does not: the change weakens the",
         "counter that judges it. Keep the counter's rules (changes to it are reviewed) and fix the hatches:",
     ]
-    body = [line for key in unseen for line in _rise_lines(key, base, head, {})]
+    body = [line for key in unseen for line in _rise_lines(key, base, head, {}, absolute)]
     body += _unreadable_lines(hidden)
     return [*header, *body] if body else []
 
@@ -1191,9 +1210,15 @@ def _judged_pull_requests(head_root: Path, fork: str) -> frozenset[int]:
 
 
 def _approval_lines(
-    base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals, head_root: Path
+    base: dict[str, dict[str, int]],
+    head: dict[str, dict[str, int]],
+    approvals: Approvals,
+    head_root: Path,
+    absolute: frozenset[str],
 ) -> tuple[list[str], list[str]]:
     """Describe the rises an approval covers or names, and the problems of the head's table (stale or malformed).
+
+    An entry of the head's table for a key of ``absolute`` (absolute in the head or the base) is malformed.
 
     The head's table is judged because it becomes the base: an entry whose key the head already counts at its approved
     count accepts no rise afterwards, so the pull request that reaches the count removes it.
@@ -1201,7 +1226,7 @@ def _approval_lines(
     base_totals, head_totals = _totals(base), _totals(head)
     judged = ", ".join(f"#{number}" for number in sorted(approvals.pull_requests)) or "no pull request"
     notes: list[str] = []
-    for key in _rises(base, head, NO_APPROVALS):
+    for key in _rises(base, head, NO_APPROVALS, absolute):
         before, after = base_totals.get(key, 0), head_totals[key]
         if covering := approvals.covering(key, after):
             notes += [
@@ -1223,7 +1248,7 @@ def _approval_lines(
                 ),
             )
         ]
-    entries, problems = _read_approvals(head_root, ABSOLUTE_KEYS)
+    entries, problems = _read_approvals(head_root, absolute)
     problems += [
         f"{APPROVALS}: the approval of {entry.key} up to {entry.head} for #{entry.pr} is stale: this tree already "
         f"counts {head_totals.get(entry.key, 0)}, so it accepts no rise. Remove it (in #{entry.pr} itself when that "
@@ -1246,20 +1271,18 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         base, head = count_tree(base_root, ruff), count_tree(head_root, ruff)
         absolute = ABSOLUTE_KEYS | _absolute_keys(base_root)
         approvals = Approvals(_read_approvals(base_root, absolute)[0], _judged_pull_requests(head_root, fork))
-        head_rises = set(_rises(base.counts(), head.counts(), approvals))
+        head_rises = set(_rises(base.counts(), head.counts(), approvals, absolute))
         lines = [f"Escape hatches: {base_ref} (merge-base {fork}) -> working tree", ""]
         lines += _change_table(_totals(base.counts()), _totals(head.counts()))
-        lines += _report_rises(base, head, approvals)
-        notes, table_problems = _approval_lines(base.counts(), head.counts(), approvals, head_root)
+        lines += _report_rises(base, head, approvals, absolute)
+        notes, table_problems = _approval_lines(base.counts(), head.counts(), approvals, head_root, absolute)
         unreadable = _unreadable_lines(head.counts())
         lines += [*notes, *unreadable, *table_problems]
         seen = head_rises | {key for key in head.counts() if _kind(key) == "unreadable"}
         copy_lines = _report_copy(
-            base_root,
-            head_root,
-            ruff_args,
+            *_copy_tallies(base_root, head_root, ruff_args, fork),
             lambda key, total: key in seen or approvals.covering(key, total) is not None,
-            fork,
+            absolute,
         )
         candidates = _candidate_lines(base_root, head_root)
     rose = bool(head_rises or copy_lines or unreadable)

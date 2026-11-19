@@ -620,7 +620,7 @@ def _import_cycle(form: Path) -> list[str]:
 
 
 def _check_runs(form: Path) -> list[str]:
-    """Return the check scripts a form's tests run on the repository tree, as `tests.test_checks_are_run` finds them.
+    """Return the check calls a form's tests assert, with their arguments, as `tests.test_checks_are_run` finds them.
 
     Each module of the form stands as a test module of a repository that holds nothing else.
     """
@@ -631,7 +631,7 @@ def _check_runs(form: Path) -> list[str]:
             target = root / "tests" / (path.relative_to(form).parent if form.is_dir() else "") / f"test_{name}"
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-        return [f"{node}: {script}" for node, script in checks_are_run._tree_tests(root)]
+        return [f"{node}: {script} {list(argv)}" for node, script, argv in checks_are_run._tree_tests(root)]
 
 
 RULES: dict[str, RuleRun] = {

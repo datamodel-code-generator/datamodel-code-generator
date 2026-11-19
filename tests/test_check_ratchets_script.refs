@@ -18,6 +18,8 @@ approved-rise-merged	check_ratchets_script/check_ratchets_against_base[approved-
 approved-rise-other-pull-request	check_ratchets_script/check_ratchets_against_base[approved-rise-other-pull-request].txt
 block-style-args	check_ratchets_script/check_ratchets_against_base[block-style-args].txt
 coverage-omit-widened	check_ratchets_script/check_ratchets_against_base[coverage-omit-widened].txt
+demoted-absolute-rule	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule].txt
+demoted-absolute-rule-approved-in-head	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule-approved-in-head].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
 exempt-files-listed	check_ratchets_script/check_ratchets_against_base[exempt-files-listed].txt
 explicit-preview-rules	check_ratchets_script/check_ratchets_against_base[explicit-preview-rules].txt

@@ -419,8 +419,9 @@ data to decide, so the ratchet prints its candidates without failing on them.
 rule that nothing runs on the repository tree: a workflow `run:` step or a hook
 `entry` that executes it, a `commands` line of a tox environment a workflow
 runs, a ratchet key, or a test that asserts the exit status of its `main` on
-the tree. A mention, such as a `paths:` filter or a hook `files:` pattern, is no
-run.
+the tree, each with arguments that run it on the tree (read with the check's own
+parser). A mention, such as a `paths:` filter or a hook `files:` pattern, is no
+run, and neither is a lookup such as `check_ratchets.py --ruff-pin`.
 
 Tests for the checker use source fixtures and expected reports under
 `tests/data/architecture_boundaries/` and

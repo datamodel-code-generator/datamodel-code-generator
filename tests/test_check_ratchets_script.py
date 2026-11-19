@@ -650,6 +650,18 @@ def show(flag: bool) -> None:
     "source-rules": {"base": SOURCE_RULES_BASE, "head": SOURCE_RULES_HEAD, "args": ["--enforce"]},
     "source-rules-unchanged": {"base": SOURCE_RULES_BASE, "head": {}, "args": ["--enforce"]},
     "source-rules-unparsable": {"base": SOURCE_RULES_BASE, "head": {"tests/data/python/newer.py": UNPARSABLE}},
+    "demoted-absolute-rule": {
+        "base": {**COUNTER, **SOURCE_RULES_BASE},
+        "head": {"scripts/check_source_rules.py": DEMOTED_RULES},
+        "args": ["--enforce"],
+        "subprocess": True,
+    },
+    "demoted-absolute-rule-approved-in-head": {
+        "base": COUNTER,
+        "head": {"scripts/check_source_rules.py": DEMOTED_RULES, "scripts/ratchet_approvals.toml": ABSOLUTE_APPROVAL},
+        "args": ["--enforce"],
+        "subprocess": True,
+    },
     "weakened-absolute-rule": {
         "base": {**COUNTER, **SOURCE_RULES_BASE, "scripts/ratchet_approvals.toml": ABSOLUTE_APPROVAL},
         "head": {

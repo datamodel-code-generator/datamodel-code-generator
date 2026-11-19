@@ -14,7 +14,8 @@ ruff:PLC0415@src                                   1       1       0
 source-rule:ellipsis-statement                     1       1       0
 source-rule:unused-private-global                  1       2      +1
 
-source-rule:unused-private-global rose by 1 (1 -> 2). Delete the unused name (a move left it behind); `python scripts/check_source_rules.py --rule unused-private-global` prints each site with its detail.
+source-rule:unused-private-global is absolute and holds 2 sites (the base 1): it must be 0. Delete the unused name (a move left it behind); `python scripts/check_source_rules.py --rule unused-private-global` prints each site with its detail.
+  src/datamodel_code_generator/hosts.py: 1 -> 1 (lines 5)
   src/datamodel_code_generator/user.py: 0 -> 1 (lines 3)
 
 source-rule:lost-last-caller: 1 candidates (report only, never fails). Check: test every branch of the callable directly (run the command shown and add cases for the missing lines), or route its tests through the code that replaced the callers.
