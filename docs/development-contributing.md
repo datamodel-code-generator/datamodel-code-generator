@@ -622,10 +622,18 @@ delete the cache directory (`~/.cache/datamodel-code-generator/compare-release` 
 goes through warm worker processes that import the generator once and generate in a temporary working directory, so give
 files in `--options` and `--extra` as absolute paths.
 
-The script prints one line for each run that differs, fails on either side, or imports on one side only,
-then a summary. It exits with 1 when any run differs, fails only on your side or imports only on the release
-side, or when every run fails on both sides. Use `--base-python` to compare with another interpreter, such as a build of another branch, and
-`--no-cache` when that build changes without a version change. The script needs a POSIX system.
+Each run's working directory is its output directory, so what a run writes to a relative path (a client's
+`--client-output client`) is compared with the rest of its output. The script prints one line for each run that
+differs, fails on either side, or imports on one side only, then a summary and its evidence: per input group (the
+directory of the inputs, files or directories, output model type and option set) the runs it compared, where both
+sides generated and wrote everything in the run's directory, and the runs that failed on both sides, failed on one
+side or name an output outside that directory (an absolute `--client-output`, which both sides would write), and the
+runs your side refuses where the release generated, a single output file included. It exits with 1 when any run
+differs, fails only on your side or imports only on the release side, or when the inputs matched nothing or an input
+group compared nothing. `--evidence FILE` writes what each run proved: its exit status and a hash of each output file,
+of its warnings and of its other facts on each side. Use `--base-python` to compare with another interpreter, such as
+a build of another branch, and `--no-cache` when that build changes without a version change. The script needs a POSIX
+system.
 
 `--base` also takes a git revision of this repository (`main`, `HEAD~1`, a commit): its `src/` is extracted once with
 `git archive` and runs with your interpreter, so only what your commits changed shows up. Your side is this checkout's
@@ -637,6 +645,25 @@ included), the exception classes the CLI module handled, messages (errors by cla
 frames), exit status, the refusal of a single output file before a modular run, and the options and their values on
 each side, and fails on any difference. A cell that fails alike on both sides is not compared where the timeout or
 the memory cap stopped both or where every cell of its input fails on both sides; the run prints how many.
+
+Against a git revision both scripts also say whether the compared runs ran what your commits change, counted by code
+object (a module or class body, a function, a lambda, a generator expression; `scripts/_change_units.py`). What your
+commits add has to run on your side, what they remove on the base's, in a compared run. The change is read token by
+token, so a comment, a blank line or a reformatted line changes nothing, and a changed part of a line counts only where
+it runs: an arm of a conditional expression, an operand of `and`/`or`, a part of a comprehension. A change of a
+signature, a decorator or a default needs the function to start; a change of a module- or class-level value needs a
+read of the name it binds (or, for a name nothing reads, the import); a removed private function nothing in the base
+package names needs nothing (`removed, unreferenced on base`). Code only type checkers read (`if TYPE_CHECKING:`
+bodies, `@overload` stubs, `@override`/`@final`, local and postponed function annotations) gives no code object to
+run, a statement moved unchanged (with every name it reads leading to the same place) gives none either, and a
+changed `resources/*.json`, a template without a compiled renderer or a file of `_runtime/` has to be read by a
+compared run. What a module's import ran counts for every cell that imports the module, and a `functools` cache
+computed in another cell is computed again, so the order of the cells never changes the verdict. The workers of both
+sides measure (Python 3.12 or later). Evidence that compared nothing never reads as identical: the comparison fails
+where the inputs matched nothing, an input group compared nothing, or a changed code object ran in no compared run on
+its side, is unmeasurable or could not be measured, and names each with the probes that did not run; pass the test
+suite's coverage data file with `--test-coverage` to tell those the tests ran. Identity judges the whole run, so it
+refuses `--shard`.
 
 ## Calibrating the option recommender
 
