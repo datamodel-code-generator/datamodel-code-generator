@@ -77,6 +77,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/checks/schema_graph.py",
         "private-import:tests/checks/schema_locations.py",
     ),
+    "merge-cores": ("private-import:tests/model/test_merge_equivalence.py",),
     "model-test-drivers": (
         "data-logic:tests/data/python/core_special_field_prefix_generate.py",
         "data-logic:tests/data/python/generation_session_inputs.py",
@@ -1124,6 +1125,11 @@ ALLOWLIST_GROUP_REASONS = {
     "invariant-checks": (
         "The debug checks of tests/checks keep the generator's internal invariants without living in src: they wrap "
         "its internals for every test (tests/checks/seams.py lists each attribute) and read the state they check."
+    ),
+    "merge-cores": (
+        "The merge cores of parser/_intersection.py are pure functions that no public entry point reaches alone; the "
+        "merge equivalence check calls each as its site's adapter does, with the adapter's null rules, over a finite "
+        "domain of parts and values against the payload suite's source validator."
     ),
     "model-test-drivers": (
         "Drivers that model tests in tests/main run in a subprocess or import as inputs, kept with the model test "
