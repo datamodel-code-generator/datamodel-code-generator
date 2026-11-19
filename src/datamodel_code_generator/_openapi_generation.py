@@ -16,14 +16,17 @@ class SourceLease:
 
     Consumers learn whether a pointer names a node, never the node: what a target reads of a schema comes from the
     contract batch. The one exception is a document a target serves as documentation, such as the source document a
-    generated server serves, which it copies from `document`. This object never loads, validates, copies, or resolves a
-    document, and it is deliberately excluded from immutable contract batches.
+    generated server serves, which it copies from `documents`, resolving references through the URIs the parser's
+    schema resources name there (`declared`). This object never loads, validates, copies, or resolves a document, and
+    it is deliberately excluded from immutable contract batches.
     """
 
     def __init__(self) -> None:
         """Create an empty lease without retaining an input or parser."""
         self._raw: list[dict[str, YamlValue]] = []
         self._locations: list[str] = []
+        self._declared: dict[str, tuple[int, str]] = {}
+        self._roots: tuple[str, ...] = ()
 
     def register(self, document: dict[str, YamlValue], location: str = "") -> None:
         """Borrow a loaded document and where it was read from; its registration order is its document identity.
@@ -45,10 +48,25 @@ class SourceLease:
         """
         return tuple(zip(self._locations, self._raw, strict=True))
 
+    def declare(self, declared: Mapping[str, tuple[int, str]], roots: tuple[str, ...]) -> None:
+        """Keep what the parser's schema resources name in the held documents, and the base it gives each root."""
+        self._declared = dict(declared)
+        self._roots = roots
+
+    def declared(self) -> Mapping[str, tuple[int, str]]:
+        """Return each URI the parser's schema resources name in a held document, to its identity and a pointer."""
+        return self._declared
+
+    def roots(self) -> tuple[str, ...]:
+        """Return the base URI the parser gives the root of each held document, empty for one it never prepared."""
+        return self._roots
+
     def close(self) -> None:
         """Release all borrowed mappings; repeated cleanup remains harmless."""
         self._raw.clear()
         self._locations.clear()
+        self._declared = {}
+        self._roots = ()
 
 
 class TargetGenerationSession:
@@ -151,6 +169,7 @@ class TargetGenerationSession:
         lease = SourceLease()
         for location, document in bound.documents:
             lease.register(document, location)
+        lease.declare(bound.declared, bound.roots)
         self.close()
         return ModelGenerationProduct(artifacts, allow_empty_api, batch, lease, self._model_imports)
 
@@ -175,6 +194,7 @@ class ModelGenerationProduct:
 
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
     from datamodel_code_generator import _ParserSource

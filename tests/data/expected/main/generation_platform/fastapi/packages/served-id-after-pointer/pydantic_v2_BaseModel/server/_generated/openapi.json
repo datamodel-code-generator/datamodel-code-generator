@@ -1,0 +1,43 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "A parameter document with an id that a pointer into it loaded first",
+  "version": "1.0"
+ },
+ "paths": {
+  "/notes": {
+   "get": {
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/page"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The notes."
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "parameters": {
+   "page": {
+    "name": "page",
+    "in": "query",
+    "schema": {
+     "title": "Page",
+     "type": "object",
+     "properties": {
+      "size": {
+       "type": "integer"
+      },
+      "limit": {
+       "$ref": "#/properties/size"
+      }
+     }
+    }
+   }
+  }
+ }
+}

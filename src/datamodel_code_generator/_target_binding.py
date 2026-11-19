@@ -432,6 +432,14 @@ class _TargetRecording(OpenAPIParser):
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
         super().__init__(source, config=config)
 
+    def registered_names(self) -> tuple[Mapping[str, str], Mapping[str, str]]:
+        """Return the schema resources' URIs to the locations they name, and the root base of each document, by name.
+
+        Both are the registry's answers merged over every load of the attempt, final once it is parsed.
+        """
+        registry = self._schema_resource_registry
+        return registry.locations, registry.root_bases
+
     def _reads_ref_siblings_at(self, location: SchemaLocation) -> bool:
         """Return whether the models read the keywords beside a ``$ref`` at a location with the schema it names.
 
@@ -4442,6 +4450,10 @@ class BoundAttempt:
 
     batch: GeneratedTypeContractBatch
     documents: tuple[tuple[str, dict[str, YamlValue]], ...]
+    declared: Mapping[str, tuple[int, str]]
+    """Each URI the parser's schema resources name in ``documents``, to a document's index there and a pointer."""
+    roots: tuple[str, ...]
+    """The base URI the parser gives the root of each of ``documents``, empty for one it never prepared."""
 
 
 def _used_variables(server: ReadServer) -> dict[str, YamlValue]:
@@ -4500,7 +4512,8 @@ def bind_operations(
             names=TargetNames.of(parser.model_resolver),
             channels=channels,
         ),
-        _pristine(parser, documents.documents),
+        (pristine := _pristine(parser, documents.documents)),
+        *_registered(parser, pristine),
     )
 
 
@@ -4542,6 +4555,26 @@ def _pristine(
     seen = {id(document) for _, document in walked}
     loaded = (*walked, *((name, record.loaded) for name, record in prepared if id(record.loaded) not in seen and name))
     return tuple((location, as_written(document)) for location, document in loaded)
+
+
+def _registered(
+    parser: TargetParser, documents: tuple[tuple[str, dict[str, YamlValue]], ...]
+) -> tuple[dict[str, tuple[int, str]], tuple[str, ...]]:
+    """Return the URIs the parser's schema resources name in the documents of a source lease, and each root's base.
+
+    A URI (a document's root base, an identifier, an `$anchor` or a `$dynamicAnchor`) maps to the first document the
+    lease holds from the location the registry names, and the pointer there, as the registry merged them over every
+    load; one in a document the lease does not hold is left out. The registry names a document read as text ``""``.
+    """
+    locations, root_bases = parser.registered_names()
+    unnamed = _unnamed(parser)
+    names = tuple("" if location == unnamed else location for location, _ in documents)
+    held: dict[str, int] = {}
+    for index, name in enumerate(names):
+        held.setdefault(name, index)
+    located = ((uri, *location.partition("#")[::2]) for uri, location in locations.items())
+    declared = {uri: (held[document], pointer) for uri, document, pointer in located if document in held}
+    return declared, tuple(root_bases.get(name, "") for name in names)
 
 
 def _unnamed(parser: TargetParser) -> str:

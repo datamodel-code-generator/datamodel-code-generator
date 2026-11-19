@@ -452,6 +452,56 @@
   "pointer-references": {
     "input": "pointer-references.yaml"
   },
+  "served-self-names": {
+    "input": "served-self-names.yaml"
+  },
+  "served-root-id": {
+    "input": "served-root-id.yaml",
+    "files": [
+      "served-root-id-pet.json"
+    ]
+  },
+  "served-ids-30": {
+    "input": "served-ids-30.yaml",
+    "model": {
+      "allow_remote_refs": false
+    }
+  },
+  "served-embedded-id": {
+    "input": "served-embedded-id.yaml",
+    "files": [
+      "served-embedded-id-pet.json"
+    ]
+  },
+  "served-same-root-id": {
+    "input": "served-same-root-id.yaml",
+    "files": [
+      "served-same-root-id-v1.json",
+      "served-same-root-id-v2.json"
+    ]
+  },
+  "served-relative-root-id": {
+    "input": "served-relative-root-id.yaml",
+    "files": [
+      "served-relative-root-id-pet.json"
+    ]
+  },
+  "served-inline-id": {
+    "input": "served-inline-id.yaml"
+  },
+  "served-held-by-path-item": {
+    "input": "openapi/anchor_object_documents/held_by_path_item/api.yaml",
+    "files": [
+      "openapi/anchor_object_documents/held_by_path_item/path_item.yaml",
+      "openapi/anchor_object_documents/held_by_path_item/parameter.yaml"
+    ]
+  },
+  "served-id-after-pointer": {
+    "input": "openapi/anchor_object_documents/held_after_pointer/id_api.yaml",
+    "files": [
+      "openapi/anchor_object_documents/held_after_pointer/id_parameter.yaml"
+    ]
+  },
   "link-errors": {
     "input": "link-errors.yaml",
     "files": [

@@ -1,0 +1,72 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Schemas that the Path Item Object a reference names holds",
+  "version": "1.0"
+ },
+ "paths": {
+  "/tags": {
+   "$ref": "#/components/pathItems/path_item"
+  }
+ },
+ "components": {
+  "pathItems": {
+   "path_item": {
+    "get": {
+     "parameters": [
+      {
+       "name": "tag",
+       "in": "query",
+       "schema": {
+        "type": "object",
+        "properties": {
+         "label": {
+          "$anchor": "label",
+          "type": "string",
+          "maxLength": 5
+         },
+         "alias": {
+          "$ref": "#/components/schemas/label"
+         }
+        }
+       }
+      },
+      {
+       "$ref": "#/components/parameters/page",
+       "schema": {
+        "$anchor": "label",
+        "type": "integer"
+       }
+      }
+     ],
+     "responses": {
+      "200": {
+       "description": "The tags.",
+       "content": {
+        "text/plain": {
+         "schema": true
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "schemas": {
+   "label": {
+    "$anchor": "label",
+    "type": "string",
+    "maxLength": 5
+   }
+  },
+  "parameters": {
+   "page": {
+    "name": "page",
+    "in": "query",
+    "schema": {
+     "type": "integer"
+    }
+   }
+  }
+ }
+}

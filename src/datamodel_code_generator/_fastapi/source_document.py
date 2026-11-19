@@ -15,19 +15,19 @@ import math
 import re
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit
 
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, discriminator_mapping_ref
 from datamodel_code_generator._free_names import first_free
-from datamodel_code_generator._json_pointer import document_part, join_pointer, reference_tokens
-from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS, subschema_entries
-from datamodel_code_generator._openapi_objects import COMPONENT_KINDS, COMPONENT_ROLES, OBJECT_MEMBERS, object_members
+from datamodel_code_generator._json_pointer import join_pointer, pointer_tokens, reference_tokens, uri_entry
+from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS
+from datamodel_code_generator._openapi_objects import COMPONENT_KINDS, COMPONENT_ROLES, OBJECT_MEMBERS
 from datamodel_code_generator._paths import file_uri
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import OpenAPIVersion
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Mapping
 
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._openapi_objects import Member
@@ -37,7 +37,6 @@ if TYPE_CHECKING:
 JSON: TypeAlias = "bool | int | float | str | list[JSON] | dict[str, JSON] | None"
 Key: TypeAlias = "tuple[int, tuple[str, ...]]"
 
-_DECLARING: Final = frozenset({"root", "schema"})
 _SINCE: Final = {
     "pathItems": frozenset({OpenAPIVersion.V31, OpenAPIVersion.V32}),
     "mediaTypes": frozenset({OpenAPIVersion.V32}),
@@ -51,11 +50,13 @@ class SourceDocument:
     """Copy the selected operations' part of the loaded documents into one JSON document."""
 
     def __init__(self, lease: SourceLease, version: OpenAPIVersion) -> None:
-        """Index the loaded documents, and the schema resources and anchors they declare, by their URIs.
+        """Name the loaded documents, and what their schemas declare, by the URIs the parser's schema resources name.
 
-        A document is a resource at the location it was read from and at its `$self`; from OpenAPI 3.1 on, a schema's
-        `$id` declares a resource, and `$anchor` and `$dynamicAnchor` a name in the resource around them. `version` is
-        the OpenAPI version the parser reads the root document by.
+        A document is named by the location it was read from and by its `$self`, each standing for the base the parser
+        gives its root (``SourceLease.roots``) when that base names the document itself: two documents that declare
+        one root `$id` keep their own locations, as the parser reads a reference by location. A schema's identifier,
+        `$anchor` and `$dynamicAnchor` name what the parser's schema resources name (``SourceLease.declared``).
+        `version` is the OpenAPI version the parser reads the root document by.
         """
         held = lease.documents()
         self.uris = [_uri(location) for location, _ in held]
@@ -66,10 +67,17 @@ class SourceDocument:
             urljoin(uri, own) if isinstance(own := document.get("$self"), str) else uri
             for uri, document in zip(self.uris, self.documents, strict=True)
         ]
-        self.resources: dict[str, tuple[int, tuple[str, ...]]] = {}
-        self.anchors: dict[tuple[str, str], tuple[int, tuple[str, ...]]] = {}
-        for index in range(len(self.documents)):
-            self.index(index, "root")
+        self.declared = dict(lease.declared())
+        self.aliases: dict[str, str] = {}
+        self.roots = lease.roots()
+        named = zip(self.uris, self.bases, self.roots, strict=True)
+        for index, (*names, given) in enumerate(named):
+            owner = self.declared.get(given) if given else None
+            own = owner is not None and self.uris[owner[0]] == self.uris[index]
+            for name in names:
+                self.declared.setdefault(name, (index, ""))
+                if own and name != given:
+                    self.aliases.setdefault(name, given)
         self.schemas = as_mapping(as_mapping(root.get("components")).get("schemas"))
         self.problems: dict[str, None] = {}
         self.wanted: dict[tuple[str, str], None] = {}
@@ -78,61 +86,22 @@ class SourceDocument:
         self.stack: set[int] = set()
         self.selected: frozenset[str] = frozenset()
 
-    def index(self, document: int, role: str) -> None:
-        """Record a document's resources and anchors, walking its schemas once with the resource each belongs to.
-
-        The walk visits the objects that can hold schemas (see ``_holders``), never the data of `examples`, `default`
-        and the like, from the document's root as an object of ``role``: ``root``, an OpenAPI document or a schema, or
-        the object a reference names the document as (``held``).
-        """
-        names = (self.uris[document], self.bases[document])
-        pending: list[tuple[tuple[str, ...], YamlValue, tuple[str, ...], str]] = [
-            ((), self.documents[document], names, role)
-        ]
-        seen: set[tuple[int, str]] = set()
-        for name in names:
-            self.resources.setdefault(name, (document, ()))
-        while pending:
-            at, node, around, role = pending.pop()
-            if not isinstance(node, dict) or (identity := (id(node), role)) in seen:
-                continue
-            seen.add(identity)
-            if role == "schema" and isinstance(own := node.get("$id"), str) and self.version != OpenAPIVersion.V30:
-                around = (document_part(urljoin(around[0], own)),)
-                self.resources.setdefault(around[0], (document, at))
-            if role in _DECLARING:
-                for keyword in ("$anchor", "$dynamicAnchor"):
-                    if isinstance(anchor := node.get(keyword), str):
-                        for name in around:
-                            self.anchors.setdefault((name, anchor), (document, at))
-            pending.extend(((*at, *path), child, around, member) for path, child, member in _holders(node, role))
-
-    def held(self, document: int, tokens: tuple[str, ...], role: str) -> None:
-        """Index a document that a reference to an object of ``role`` names at its root as that object.
-
-        Its root holds the object the reference's position expects, so the schemas of that object declare its resources
-        and anchors; a root read as a schema is indexed as ``root`` already. What an earlier walk recorded stays.
-        """
-        if not tokens and role not in _DECLARING:
-            self.index(document, role)
-
     def resolve(self, document: int, base: str, ref: str) -> tuple[int, tuple[str, ...], str] | None:
         """Return the document, pointer tokens, and resource base of what a reference names, or None.
 
         The reference resolves against its schema resource's base, then, as the parser does for compatibility, against
-        where its document was read: a pointer that names nothing in the resource is the document's.
+        where its document was read: a pointer that names nothing in the resource is the document's. The resource base
+        is the one the parser gives the resource, so an identifier the copy meets below it joins as the parser joins it.
         """
         for start in (base, self.uris[document]):
-            resource, _, fragment = urljoin(start, ref).partition("#")
-            if (found := self.resources.get(resource)) is None:
+            resource, mark, fragment = urljoin(start, ref).partition("#")
+            resource = self.aliases.get(resource, resource)
+            if (found := uri_entry(self.declared, f"{resource}{mark}{fragment}")) is None:
                 continue
-            if (pointer := reference_tokens(fragment)) is None:
-                target = self.anchors.get((resource, unquote(fragment)))
-            else:
-                tokens = (*found[1], *pointer)
-                target = (found[0], tokens) if self.exists(found[0], tokens) else None
-            if target is not None:
-                return target[0], target[1], resource
+            (target, pointer), below = found
+            tokens = (*pointer_tokens(pointer), *(reference_tokens(below) or ()))
+            if self.exists(target, tokens):
+                return target, tokens, resource
         return None
 
     def exists(self, document: int, tokens: tuple[str, ...]) -> bool:
@@ -240,10 +209,12 @@ class SourceDocument:
         """Return a JSON copy of a mapping of one role.
 
         A schema's `$id` only sets the base its references resolve against, which the copy has applied to them, so the
-        copy leaves it out: every reference in the document is relative to the document itself.
+        copy leaves it out: every reference in the document is relative to the document itself. The `$id` of a
+        document's root sets the base the parser gives that root, however the copy reached it, so it applies once.
         """
         if role == "schema" and isinstance(own := value.get("$id"), str) and self.version != OpenAPIVersion.V30:
-            base = urljoin(base, own)
+            root = self.roots[document] if value is self.documents[document] else ""
+            base = root or urljoin(base, own)
         children = OBJECT_MEMBERS.get(role, {})
         copied: dict[str, JSON] = {}
         for key, child in value.items():
@@ -341,7 +312,6 @@ class SourceDocument:
             or (resolved := self.resolve(document, base, ref)) is None
         ):
             return None
-        self.held(resolved[0], resolved[1], role)
         found = self.node(resolved[0], resolved[1])
         return (resolved[0], resolved[2], found) if isinstance(found, dict) and id(found) not in self.stack else None
 
@@ -381,26 +351,12 @@ class SourceDocument:
         unique, _ = first_free(name, lambda name: name in items or name in root, "underscore-from-2")
         self.bundled[key] = bundled = "#" + join_pointer(("components", kind, unique))
         items[unique] = None
-        self.held(target, tokens, role)
         items[unique] = self.copy(node, target, resource, tokens, role)
         return bundled
 
     def node(self, document: int, tokens: tuple[str, ...]) -> YamlValue:
         """Return the node a pointer names in a loaded document, which ``exists`` or the index found there."""
         return descend(self.documents[document], tokens, "canonical")
-
-
-def _holders(node: dict[str, YamlValue], role: str) -> Iterator[tuple[tuple[str, ...], YamlValue, str]]:
-    """Yield the members of an object of one role that can hold schemas, with their paths and roles.
-
-    A schema holds subschemas at its schema keywords only, so what `examples` and `default` hold is data; the other
-    objects hold what ``object_members`` reads.
-    """
-    if role in _DECLARING:
-        for keyword, value in node.items():
-            for path, subschema in subschema_entries(str(keyword), value):
-                yield tuple(map(str, path)), subschema, "schema"
-    yield from object_members(node, role)
 
 
 def _uri(location: str) -> str:

@@ -1,0 +1,79 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "A schema document with a root id",
+  "version": "1"
+ },
+ "paths": {
+  "/pets": {
+   "get": {
+    "operationId": "getPet",
+    "responses": {
+     "200": {
+      "description": "The pet.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/served-root-id-pet"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/names": {
+   "get": {
+    "operationId": "getName",
+    "responses": {
+     "200": {
+      "description": "The name.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Name"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "served-root-id-pet": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "name": {
+      "$ref": "#/components/schemas/Name"
+     },
+     "nick": {
+      "$ref": "#/components/schemas/Nick"
+     }
+    },
+    "$defs": {
+     "Name": {
+      "$anchor": "petname",
+      "type": "string",
+      "maxLength": 20
+     },
+     "Nick": {
+      "type": "string",
+      "maxLength": 10
+     }
+    }
+   },
+   "Name": {
+    "$anchor": "petname",
+    "type": "string",
+    "maxLength": 20
+   },
+   "Nick": {
+    "type": "string",
+    "maxLength": 10
+   }
+  }
+ }
+}

@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info: {title: Component ids under 3.0, version: "1"}
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+components:
+  schemas:
+    Pet:
+      $id: https://example.com/pet.json
+      type: object
+      properties:
+        owner: {$ref: "https://example.com/owner.json"}
+        name: {type: string}
+    Owner:
+      $id: https://example.com/owner.json
+      type: object
+      properties:
+        name: {type: string}

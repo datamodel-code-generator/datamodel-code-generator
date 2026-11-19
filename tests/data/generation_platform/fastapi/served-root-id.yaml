@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info: {title: A schema document with a root id, version: "1"}
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "served-root-id-pet.json"}
+  /names:
+    get:
+      operationId: getName
+      responses:
+        "200":
+          description: The name.
+          content:
+            application/json:
+              schema: {$ref: "served-root-id-pet.json#petname"}

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 SOURCE = Path(__file__).parents[2] / "data" / "generation_platform" / "fastapi"
 CLIENT_SOURCE = SOURCE.parent / "client"
+DATA = SOURCE.parents[1]
 PACKAGE = "server"
 RUNTIME = Path(_runtime.__file__).parent
 BUILTIN_TEMPLATES = RUNTIME.parent / "_fastapi" / "templates"
@@ -25,8 +26,11 @@ Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
 def fixture_path(name: str) -> Path:
-    """Return a FastAPI fixture, or the client fixture of that name: documents both targets read are stored once."""
-    return source if (source := SOURCE / name).exists() else CLIENT_SOURCE / name
+    """Return a FastAPI fixture, else the client fixture, else the test input of that name below tests/data.
+
+    Documents that both targets or the model tests read are stored once.
+    """
+    return next((path for folder in (SOURCE, CLIENT_SOURCE) if (path := folder / name).exists()), DATA / name)
 
 
 def _copied(name: str, root: Path) -> Path:
@@ -81,9 +85,9 @@ def _render(
     if builtin_sources:
         shutil.copytree(BUILTIN_TEMPLATES, root / "builtin-sources" / "fastapi")
         model["custom_template_dir"] = root / "builtin-sources"
-    source = shutil.copy2(fixture_path(case["input"]), root / case["input"])
+    source = _copied(case["input"], root)
     for name in case.get("files", ()):
-        shutil.copy2(fixture_path(name), root / name)
+        _copied(name, root)
     try:
         with in_directory(root):
             files = generate(source, **model, **server_options(case))
