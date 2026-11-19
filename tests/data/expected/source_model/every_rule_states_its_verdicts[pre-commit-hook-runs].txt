@@ -24,6 +24,8 @@ imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/__i
 imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/inner/deep.py runs scripts/submodule_and_parent_packages/__init__.py
 imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/inner/deep.py runs scripts/submodule_and_parent_packages/inner/__init__.py
 imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/inner/deep.py runs scripts/submodule_and_parent_packages/leaf.py
+references/legacy_row_reading_lines: scripts/legacy_row_reading_lines/reader.py runs scripts/legacy_row_reading_lines/__init__.py
+references/legacy_row_reading_lines: scripts/legacy_row_reading_lines/reader.py runs scripts/legacy_row_reading_lines/rows.py
 references/reexport_chain_across_modules: scripts/reexport_chain_across_modules/__init__.py runs scripts/reexport_chain_across_modules/_format_types.py
 references/reexport_chain_across_modules: scripts/reexport_chain_across_modules/__init__.py runs scripts/reexport_chain_across_modules/format.py
 references/reexport_chain_across_modules: scripts/reexport_chain_across_modules/__init__.py runs scripts/reexport_chain_across_modules/loop.py

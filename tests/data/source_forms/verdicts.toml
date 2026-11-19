@@ -1452,6 +1452,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: every load is bound by the time it runs"
 "references/writes_through_a_name" = "no finding: every load is bound by the time it runs"
 "references/skip_markers_by_origin" = "no finding: every load is bound by the time it runs"
+"references/legacy_row_reading_lines" = "no finding: every load is bound by the time it runs"
 
 ["assert-helper-usage"]
 "bindings/annotation_without_value" = "no finding: no assert, mock or private access the guard reports"
@@ -1590,6 +1591,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no assert, mock or private access the guard reports"
 "references/writes_through_a_name" = "no finding: no assert, mock or private access the guard reports"
 "references/skip_markers_by_origin" = "finding: disguised-assert 24"
+"references/legacy_row_reading_lines" = "no finding: no assert, mock or private access the guard reports"
 
 ["expected-access"]
 "bindings/annotation_without_value" = "no finding: no path below the stored expected output is read or listed"
@@ -1728,6 +1730,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no path below the stored expected output is read or listed"
 "references/writes_through_a_name" = "no finding: no path below the stored expected output is read or listed"
 "references/skip_markers_by_origin" = "no finding: no path below the stored expected output is read or listed"
+"references/legacy_row_reading_lines" = "no finding: no path below the stored expected output is read or listed"
 
 ["pre-commit-hook-runs"]
 "bindings/binding_of_a_node" = "no finding: no module of the form imports another of its modules"
@@ -1826,6 +1829,7 @@
 "references/typevar_string_bound_and_cast" = "no finding: no module of the form imports another of its modules"
 "references/writes_through_a_name" = "no finding: no module of the form imports another of its modules"
 "references/skip_markers_by_origin" = "no finding: no module of the form imports another of its modules"
+"references/legacy_row_reading_lines" = "finding: runs __init__.py rows.py"
 
 ["ci-test-targets"]
 "bindings/annotation_without_value" = "finding: defines Fields Fields::name Fields::size count f g"
@@ -1948,6 +1952,7 @@
 "references/typevar_string_bound_and_cast" = "finding: defines Alias Forward Later S T TypeAlias TypeVar cast f"
 "references/writes_through_a_name" = "finding: defines FROZEN ITEMS JUSTIFIED_VIOLATIONS REGISTRY read"
 "references/skip_markers_by_origin" = "finding: defines REFERENCE TestCase TestCase::* TestCase::skip TestCase::test_method importorskip marks pt sys test_aliased test_local test_parameter ut when"
+"references/legacy_row_reading_lines" = "finding: defines AT_IMPORT KEPT read read_attribute ATTRIBUTE_READ DOCUMENTED KEPT Literal Policy Policy::choose Policy::row TABLE TypeAlias UNREAD branch collect decide documented empty hand"
 
 ["legacy-row-reads"]
 "bindings/annotation_without_value" = "no finding: the form names no legacy row"
@@ -2094,3 +2099,7 @@
 "references/type_expressions_and_any_aliases" = "no finding: the form names no legacy row"
 "references/typevar_string_bound_and_cast" = "no finding: the form names no legacy row"
 "references/writes_through_a_name" = "no finding: the form names no legacy row"
+"bindings/assignment_targets_take" = "no finding: the form names no legacy row"
+"references/annotations_and_string_reads" = "no finding: the form names no legacy row"
+"references/expected_paths_through_bindings" = "no finding: the form names no legacy row"
+"references/skip_markers_by_origin" = "no finding: the form names no legacy row"
