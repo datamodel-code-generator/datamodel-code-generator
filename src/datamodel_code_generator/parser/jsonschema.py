@@ -347,7 +347,10 @@ from datamodel_code_generator.parser._origins import (
     with_unique_items,
 )
 from datamodel_code_generator.parser._passes._keys import (
+    _DEFERRED_INHERITED_CLASS_KEY,
+    _DEFERRED_INHERITED_TYPE_KEY,
     _DERIVED_FROM_KEY,
+    _RAW_SCHEMA_DEFAULT_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
     declares_type_list_unique_items,
     with_type_list_unique_items,
@@ -428,7 +431,6 @@ from datamodel_code_generator.parser._schema_reading import (
     _intersect_parts,
     _merges_ref_siblings,
     _numeric_type_domain,
-    _split_json_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
     unescape_json_pointer_segment,
     unescaped_slash_pointer,
 )
@@ -439,7 +441,6 @@ from datamodel_code_generator.parser._schema_refs import (
     _MERGED_REF_TARGET_KEY,
     _REPORTED_VALUE_CONFLICT_KEY,
     _DynamicEdges,
-    _DynamicSpecialization,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _DynamicTarget,
     _ref_path_parts,
     _Worklist,
@@ -454,15 +455,12 @@ from datamodel_code_generator.parser._value_keywords import (
     _literal_constraints,
     _literal_met,
 )
+from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT as SPECIAL_PATH_FORMAT
 from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_TYPE_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
     Parser,
     Source,
     _ConstNarrowing,
 )
-from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT as SPECIAL_PATH_FORMAT
 from datamodel_code_generator.parser.base import get_special_path as get_special_path
 from datamodel_code_generator.parser.base import title_to_class_name as title_to_class_name
 from datamodel_code_generator.parser.schema_version import (

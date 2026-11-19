@@ -344,16 +344,14 @@ def _plan_module_imports(imports_mode: Mode, parser: Any, run: Any) -> None:
     A model's final module is the module that writes it.
     """
     from datamodel_code_generator._model_keys import model_key_of
+    from datamodel_code_generator._module_paths import dotted_module
     from datamodel_code_generator.parser._graph_ids import keyed_models
-    from datamodel_code_generator.parser._passes._shared import _module_name_from_module_path
     from datamodel_code_generator.parser._passes.imports import submodules_hidden_by_packages
 
     hidden = submodules_hidden_by_packages(parser, run.contexts, run, run.config) if run.args.with_import else {}
     emitted = keyed_models((model for ctx in run.contexts for model in ctx.models), "module import plan")
     names = NameTable({
-        model_key_of(model.reference): FinalName(
-            model.reference.short_name, _module_name_from_module_path(ctx.module_key), ctx.module
-        )
+        model_key_of(model.reference): FinalName(model.reference.short_name, dotted_module(ctx.module_key), ctx.module)
         for ctx in run.contexts
         for model in ctx.models
     })

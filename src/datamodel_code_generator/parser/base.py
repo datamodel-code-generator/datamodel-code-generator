@@ -199,7 +199,6 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
-    _TYPE_DEPENDENT_CONSTRAINTS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     DiscriminatorValue,
     _assign_module_name,
     _data_types_beside_fields,

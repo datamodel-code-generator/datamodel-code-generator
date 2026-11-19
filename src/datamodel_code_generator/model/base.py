@@ -123,7 +123,6 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model._rendered_names import (
     FieldNameBindings,
-    _bare_loads_of,  # noqa: F401  # Preserve the established model.base export.
     _bind_bare_loads,
     _bind_field_expressions,
 )

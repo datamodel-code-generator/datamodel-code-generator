@@ -32,9 +32,6 @@ from datamodel_code_generator._graph import post_order, reach
 from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
 from datamodel_code_generator._module_paths import (
-    dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
-)
-from datamodel_code_generator._module_paths import (
     dotted_name,
     exact_import,  # noqa: F401  # Preserve the established _shared name.
     is_ancestor_package_reference,  # noqa: F401  # Preserve the established _shared name.
