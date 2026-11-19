@@ -7,24 +7,30 @@ change the owner accepted, and the behaviour changes the gate has to stop.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import subprocess
 import sys
 from contextlib import redirect_stderr, redirect_stdout
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from io import StringIO
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from scripts import behaviour_diff
+from scripts import behaviour_diff, declared_changes
 from scripts._behaviour_classify import Allowlist, Side, classify_base_skipped, classify_cell, diff
 from scripts._behaviour_signature import Context, _pydantic_item, canonical, example_value, meta_items
+from scripts._change_records import covers_block
 from tests.capabilities import needs
 from tests.conftest import assert_output
+from tests.units import REFS_HEADER
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 SIGNATURE_SCRIPT = ROOT / "scripts" / "_behaviour_signature.py"
@@ -2225,3 +2231,763 @@ def test_annotation_text_of_other_metadata(annotation: str) -> None:
     module = ModuleType("generated")
     exec(CONSTRAINT_SPELLING_NAMESPACE, module.__dict__)
     assert_output(canonical(annotation, Context(module), meta=True) + "\n")
+
+
+CELLS_TAG = "0.1.0"
+CELLS_PACKAGE = "src/datamodel_code_generator"
+CELLS_INPUTS = "tests/data/jsonschema"
+CELLS_FRAGMENTS = "docs/data/migration/unreleased"
+CELLS_EXPECTED = "tests/data/expected"
+CELLS_PRESETS = ("standard-py310-20260101", "standard-py312-20260101", "standard-py314-20260101")
+CELLS_UNRELEASED_PRESETS = (*CELLS_PRESETS, "standard-py310-20260201", "standard-py314-20260201")
+CELLS_FLAGS = (
+    "--disable-timestamp",
+    "--strip-default-none",
+    "--keyword-only",
+    "--use-default-factory-for-optional-nested-models",
+    "--use-annotated",
+    "--generate-client",
+    "--old-flag",
+)
+"""The flags of the stand-in generator at the release: `OPTION_SETS`, one released option, the experimental client and
+one option a case removes."""
+CELLS_ARGUMENTS = """import argparse
+
+from datamodel_code_generator._behaviour import FLAGS
+from datamodel_code_generator.preset_names import PresetName, get_args
+
+arg_parser = argparse.ArgumentParser()
+for option in ("--input", "--input-file-type", "--output", "--output-model-type", "--target-python-version"):
+    arg_parser.add_argument(option)
+arg_parser.add_argument("--class-name", default="Model")
+arg_parser.add_argument("--formatters", nargs="*")
+arg_parser.add_argument("--preset", choices=get_args(PresetName))
+for flag in FLAGS:
+    arg_parser.add_argument(flag, action="store_true")
+"""
+CELLS_MAIN = '''import json
+import random
+import warnings
+from pathlib import Path
+
+from datamodel_code_generator._behaviour import CHANGES
+from datamodel_code_generator.arguments import arg_parser
+
+try:
+    from datamodel_code_generator._version import __version__
+except ImportError:
+    __version__ = "0.0.0"
+
+CLASSES = {
+    "pydantic_v2.BaseModel": ("from pydantic import BaseModel", "class {}(BaseModel):"),
+    "pydantic_v2.dataclass": ("from pydantic.dataclasses import dataclass", "@dataclass\\nclass {}:"),
+    "dataclasses.dataclass": ("from dataclasses import dataclass", "@dataclass\\nclass {}:"),
+    "typing.TypedDict": ("from typing import TypedDict", "class {}(TypedDict):"),
+    "msgspec.Struct": ("from msgspec import Struct", "class {}(Struct):"),
+}
+BODIES = {
+    "": "return value",
+    "body": "return value + 0",
+    "reject-big": "if value > 5:\\n            raise ValueError(value)\\n        return value",
+}
+VALIDATOR = """
+
+    @field_validator("a")
+    @classmethod
+    def check_a(cls, value):
+        {}
+"""
+
+
+def main(argv):
+    """Write one model of the schema's `type`, changed as the `CHANGES` of its `name` under the given options say."""
+    ns = arg_parser.parse_args(argv)
+    spec = json.loads(Path(ns.input).read_text(encoding="utf-8"))
+    effects = [effect for name, when, effect in CHANGES if name == spec["name"] and when in (None, *argv)]
+    if "fail" in spec and "fixed" not in effects:
+        print(f"Error: {spec['fail']}")
+        return 1
+    if ("memory" in spec and "fixed" not in effects) or "memory" in effects:
+        raise MemoryError
+    for effect in effects:
+        if effect.startswith("warn:"):
+            warnings.warn(effect.removeprefix("warn:"), UserWarning, stacklevel=1)
+    kind = next((effect.removeprefix("type:") for effect in effects if effect.startswith("type:")), spec["type"])
+    note = "  # note" * ("comment" in effects) + f"  # {random.random()}" * ("random" in effects)
+    backend = ns.output_model_type or "pydantic_v2.BaseModel"
+    imports, header = CLASSES[backend]
+    validated = spec.get("validator", False) and backend.startswith("pydantic")
+    imports += "\\nfrom pydantic import field_validator" * validated
+    text = f"{imports}\\n\\n\\n{header.format(ns.class_name)}\\n    a: {kind}{note}\\n"
+    body = next((BODIES[effect] for effect in effects if effect in BODIES), BODIES[""])
+    text += VALIDATOR.format(body) * validated + "a = (\\n" * ("broken" in effects)
+    text = f"#   version:   {__version__}\\n" * spec.get("header", False) + text
+    out = Path(ns.output)
+    out.write_text(text, encoding="utf-8")
+    if "file" in effects:
+        (out.parent / "notes.txt").write_text("notes\\n", encoding="utf-8")
+    return 0
+'''
+CELLS_HARNESS = {
+    "tests/__init__.py": "",
+    "tests/main/__init__.py": "",
+    "tests/main/payload_validation/__init__.py": """import json
+from dataclasses import dataclass
+from pathlib import Path
+
+from hypothesis import strategies as st
+
+ROOT = Path(__file__).resolve().parents[3]
+PAYLOAD_INPUTS = ("plain.json", "checked.json")
+
+
+@dataclass(frozen=True)
+class SchemaCase:
+    id: str
+    codegen_schema: dict
+    input_file_type: str = "jsonschema"
+
+
+@dataclass(frozen=True)
+class Mutation:
+    payload: object
+    constraint: str
+
+
+class Validator:
+    def is_valid(self, payload):
+        return type(payload.get("a")) is int
+
+
+SCHEMA_CASES = [
+    SchemaCase(f"jsonschema/{name}", json.loads(path.read_text(encoding="utf-8")))
+    for name in PAYLOAD_INPUTS
+    if (path := ROOT / "tests" / "data" / "jsonschema" / name).exists()
+]
+
+
+def source_schema_validator(case):
+    return Validator()
+
+
+def payload_strategy(case):
+    return st.fixed_dictionaries({"a": st.integers(0, 9)})
+
+
+def invalid_payload_mutations(case, payload):
+    return [Mutation({"a": str(payload["a"])}, "type")]
+""",
+    "tests/main/payload_validation/codegen.py": """import json
+
+
+def _write_input_schema(case, directory):
+    path = directory / "input.json"
+    path.write_text(json.dumps(case.codegen_schema), encoding="utf-8")
+    return path
+
+
+def _payload_codegen_args(case, input_path, output_path, backend):
+    return [
+        "--input", str(input_path), "--input-file-type", case.input_file_type, "--output", str(output_path),
+        "--output-model-type", backend.output_model_type, "--target-python-version", "3.14",
+        "--class-name", "Payload", "--disable-timestamp", "--formatters", "builtin",
+    ]
+""",
+    "tests/main/payload_validation/models.py": """from enum import Enum
+
+
+class PayloadBackend(Enum):
+    PYDANTIC_V2 = "pydantic_v2.BaseModel"
+    PYDANTIC_V2_DATACLASS = "pydantic_v2.dataclass"
+    MSGSPEC = "msgspec.Struct"
+    DATACLASSES = "dataclasses.dataclass"
+
+    @property
+    def output_model_type(self):
+        return self.value
+""",
+    "tests/main/payload_validation/native_numeric.py": (
+        "def native_float_multiple_errors(case, payload):\n    return False\n"
+    ),
+}
+"""The payload-validation harness of the stand-in project: one case per payload input, `a` drawn from 0..9."""
+CELLS_MODULE = "from pydantic import BaseModel\n\n\nclass Model(BaseModel):\n    a: {}\n"
+CELLS_COMPANION = 'valid: {"a": 1}\ninvalid {"a": "x"}: rejected (int_parsing)\n'
+CELLS_REFS = {
+    "test_plain": ["\tmain/jsonschema/plain.py"],
+    "test_plain_payloads": ["\tmain/jsonschema/plain.txt"],
+    "test_listing": ["\tmain/jsonschema/listing.txt"],
+}
+
+
+def _cells_refs(sections: dict[str, list[str]]) -> str:
+    return REFS_HEADER + "".join(
+        f"[{test}]\n" + "".join(f"{line}\n" for line in lines) for test, lines in sections.items()
+    )
+
+
+def _cells_src(
+    *changes: tuple[str, str | None, str],
+    flags: tuple[str, ...] = CELLS_FLAGS,
+    presets: tuple[str, ...] = CELLS_PRESETS,
+    helper: str = "",
+) -> dict[str, str]:
+    """Return the stand-in's changing source: its flags, its presets and its output changes.
+
+    A change is the input's `name`, the option that shows it (None: every cell) and its effect; `helper` changes the
+    source and no output.
+    """
+    names = "".join(f'    "{name}",\n' for name in presets)
+    return {
+        f"{CELLS_PACKAGE}/_behaviour.py": f"FLAGS = {flags!r}\nCHANGES = {changes!r}\n{helper}",
+        f"{CELLS_PACKAGE}/preset_names.py": "from typing import Literal, TypeAlias, get_args\n\n"
+        f"PresetName: TypeAlias = Literal[\n{names}]\n",
+    }
+
+
+def _cells_input(name: str, **spec: object) -> dict[str, str]:
+    return {f"{CELLS_INPUTS}/{name}.json": json.dumps({"name": name, **spec})}
+
+
+CELLS_REFACTOR = _cells_src(helper="HELPER = 1\n")
+"""A source change that changes no output."""
+CELLS_RELEASE = {
+    f"{CELLS_PACKAGE}/__init__.py": "",
+    f"{CELLS_PACKAGE}/arguments.py": CELLS_ARGUMENTS,
+    f"{CELLS_PACKAGE}/__main__.py": CELLS_MAIN,
+    **_cells_src(),
+    **CELLS_HARNESS,
+    **_cells_input("plain", type="int"),
+    **_cells_input("other", type="str"),
+    "docs/data/migration/releases.toml": f'[[release]]\nversion = "{CELLS_TAG}"\ndate = "2026-01-01"\n',
+    "tests/main/test_models.refs": _cells_refs(CELLS_REFS),
+    "tests/test_tool_script.refs": _cells_refs({"test_tool": ["\tscripts/tool.txt"]}),
+    f"{CELLS_EXPECTED}/main/jsonschema/plain.py": CELLS_MODULE.format("int"),
+    f"{CELLS_EXPECTED}/main/jsonschema/plain.txt": CELLS_COMPANION,
+    f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\n",
+    f"{CELLS_EXPECTED}/scripts/tool.txt": "ran\n",
+}
+"""The tree of the release tag: the stand-in generator, its payload harness, two inputs (`plain` has a payload case,
+`other` none), stored outputs of the models, of a payload companion, of a listing and of a script's test."""
+CELLS_GUIDE = {"source": "release-note", "refs": ["#1"]}
+CELLS_CATEGORY_KEYS: dict[str, dict[str, object]] = {
+    "output-text": {"kind": "output-text", "action": "none", **CELLS_GUIDE},
+    "crash-fix": {"kind": "default-output", "action": "none", **CELLS_GUIDE},
+    "decided-change": {
+        "kind": "default-output",
+        "action": "review",
+        **CELLS_GUIDE,
+        "decision": ["#1"],
+        "keep": {"note": "pin the release"},
+    },
+    "experimental": {
+        "kind": "experimental",
+        "action": "none",
+        **CELLS_GUIDE,
+        "decision": ["#1"],
+        "affects": {"experimental": ["cli-option.generate-client"]},
+    },
+    "notice": {"kind": "warning", "action": "warn", **CELLS_GUIDE},
+    "api": {
+        "kind": "removal",
+        "action": "required",
+        **CELLS_GUIDE,
+        "decision": ["#1"],
+        "affects": {"options": ["--old-flag"]},
+    },
+    "harness": {},
+}
+"""The keys each category's record needs besides `id`, `title` and `summary`."""
+
+
+def _toml(value: object) -> str:
+    if isinstance(value, dict):
+        return "{ " + ", ".join(f"{key} = {_toml(item)}" for key, item in value.items()) + " }"
+    return json.dumps(value)
+
+
+def _cells(*inputs: str, backends: object = "*", options: object = "*", **more: object) -> dict[str, object]:
+    """Return one `[[change.cells]]` selector of fixture inputs (names below tests/data/jsonschema, globs allowed)."""
+    return {"input": [f"{CELLS_INPUTS}/{name}" for name in inputs], "backends": backends, "options": options, **more}
+
+
+def _record(
+    entry_id: str,
+    category: str | None,
+    *cells: dict[str, object],
+    covers: tuple[str, ...] = (),
+    file: str = "",
+    **keys: object,
+) -> dict[str, str]:
+    """Return the fragment of one record (in `file`, by default `<id>.toml`), its `covers` as `declare` writes them."""
+    fields = {"id": entry_id, "category": category, "title": "t", "summary": "s"} | CELLS_CATEGORY_KEYS.get(
+        category, {}
+    )
+    lines = [f"{key} = {_toml(value)}" for key, value in (fields | keys).items() if value is not None]
+    tables = "".join(
+        "\n[[change.cells]]\n" + "".join(f"{key} = {_toml(value)}\n" for key, value in cell.items()) for cell in cells
+    )
+    text = "[[change]]\n" + "\n".join(lines) + "\n" + covers_block(covers) * bool(covers) + tables
+    return {f"{CELLS_FRAGMENTS}/{file or entry_id}.toml": text}
+
+
+@dataclass(frozen=True)
+class CellsCase:
+    """One oracle case of the cell gate: it judges differing cells by the records' `[[change.cells]]` selectors.
+
+    The release is tagged; `base` is main's next commit, `layer` a lower stack layer on it (the PR's base), `head` the
+    PR; `main` is a commit main takes after the PR forked. `against` names the gate's base: the PR's `base` (the
+    layer's tip), main's tip, the release tag, a commit no history has (`unknown`) or one of another history
+    (`orphan`). `records` also runs `declared_changes.py check` on the PR, which fails the harness labels the
+    gate refuses. `shape` names the rule the case pins (a numbered fail-closed rule of the design) or a passing shape.
+    """
+
+    verdict: str
+    shape: str
+    head: dict[str, str | None] = field(default_factory=dict)
+    release: dict[str, str] = field(default_factory=dict)
+    base: dict[str, str | None] = field(default_factory=dict)
+    layer: dict[str, str | None] = field(default_factory=dict)
+    main: dict[str, str | None] = field(default_factory=dict)
+    against: str = "base"
+    tier: str = "pr"
+    records: bool = False
+
+
+COMMENT_PLAIN = _cells_src(("plain", None, "comment"))
+COMMENT_OTHER = _cells_src(("other", None, "comment"))
+FLOAT_OTHER = _cells_src(("other", None, "type:float"))
+OUTPUT_TEXT_OTHER = _record("other-note", "output-text", _cells("other.json"))
+CHECKED = _cells_input("checked", type="int", validator=True)
+MEMORY = _cells_input("memory", type="int", memory=True)
+FAILS = _cells_input("fails", type="int", fail="boom")
+PLAIN_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/plain.py"
+CELLS_CASES: dict[str, CellsCase] = {
+    "pass: no src change": CellsCase("pass", "9.9 shortcut", {"docs/notes.md": "notes\n"}),
+    "pass: a refactor, every cell equal": CellsCase(
+        "pass", "refactor, 9.7 both stop", CELLS_REFACTOR, release=FAILS | MEMORY
+    ),
+    "pass: output-text with a payload case": CellsCase(
+        "pass", "output-text, payload case", COMMENT_PLAIN | _record("plain-note", "output-text", _cells("plain.json"))
+    ),
+    "pass: output-text without a payload case": CellsCase(
+        "pass", "output-text, signature only", COMMENT_OTHER | OUTPUT_TEXT_OTHER
+    ),
+    "pass: output-text with a covered stored module": CellsCase(
+        "pass",
+        "output-text, 6.2",
+        COMMENT_PLAIN
+        | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
+    ),
+    "pass: output-text with an added stored module": CellsCase(
+        "pass",
+        "output-text, added module",
+        COMMENT_PLAIN
+        | {
+            "tests/main/test_models.refs": _cells_refs(CELLS_REFS | {"test_note": ["\tmain/jsonschema/note.py"]}),
+            f"{CELLS_EXPECTED}/main/jsonschema/note.py": CELLS_MODULE.format("int  # note"),
+        }
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/note.py",)),
+    ),
+    "pass: options * covers the preset cells": CellsCase(
+        "pass",
+        "M2 options = *",
+        _cells_src(("plain", "--preset", "comment")) | _record("preset-note", "output-text", _cells("plain.json")),
+    ),
+    "pass: crash-fix": CellsCase(
+        "pass",
+        "crash-fix",
+        _cells_src(("fails", None, "fixed")) | _record("fails-fixed", "crash-fix", _cells("fails.json")),
+        release=FAILS,
+    ),
+    "pass: decided-change inside aspects and match": CellsCase(
+        "pass",
+        "decided-change",
+        FLOAT_OTHER
+        | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match=r"str -> float")),
+    ),
+    "pass: experimental with an equal companion": CellsCase(
+        "pass",
+        "experimental, S3",
+        _cells_src(("plain", "--generate-client", "type:float"))
+        | _record("client-float", "experimental", _cells("plain.json", options=[["--generate-client"]])),
+    ),
+    "pass: notice inside match": CellsCase(
+        "pass",
+        "notice",
+        _cells_src(("plain", None, "warn:mind the gap"))
+        | _record("plain-warns", "notice", _cells("plain.json", match="mind the gap")),
+    ),
+    "pass: api for a removed option": CellsCase(
+        "pass",
+        "api",
+        _cells_src(flags=CELLS_FLAGS[:-1]) | _record("old-flag", "api", _cells("plain.json", options=[["--old-flag"]])),
+    ),
+    "pass: the version header line is normalised": CellsCase(
+        "pass", "2 normalisation", CELLS_REFACTOR, release=_cells_input("header", type="int", header=True)
+    ),
+    "pass: a lagging branch is judged from its merge base": CellsCase(
+        "pass", "M1 lag7108", {"docs/notes.md": "notes\n"}, main=FLOAT_OTHER, against="main"
+    ),
+    "pass: a stack layer extends the record below": CellsCase(
+        "pass",
+        "5.5 extends",
+        _cells_src(("plain", None, "comment"), ("other", None, "comment"))
+        | _record("other-note", None, _cells("other.json"), extends="plain-note", title=None, summary=None),
+        layer=COMMENT_PLAIN | _record("plain-note", "output-text", _cells("plain.json")),
+    ),
+    "pass: a renamed fragment is no PR record": CellsCase(
+        "pass",
+        "5.5 rename",
+        _cells_src(("other", None, "comment"), helper="HELPER = 1\n")
+        | {f"{CELLS_FRAGMENTS}/other-note.toml": None}
+        | _record("other-note", "output-text", _cells("other.json"), file="renamed"),
+        base=COMMENT_OTHER | OUTPUT_TEXT_OTHER,
+    ),
+    "pass: the release run covers by unreleased records": CellsCase(
+        "pass", "5 release run", base=COMMENT_OTHER | OUTPUT_TEXT_OTHER, against="tag", tier="nightly"
+    ),
+    "pass: a decision record beside an output-text record": CellsCase(
+        "pass",
+        "9.14 composition",
+        FLOAT_OTHER
+        | OUTPUT_TEXT_OTHER
+        | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match=r"str -> float")),
+    ),
+    "pass: an oracle-file change runs the base's gate, which passes": CellsCase(
+        "pass",
+        "9.9 oracle files",
+        {"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)  # changed\n"},
+        release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)\n"},
+    ),
+    "pass: the base stops, the head generates": CellsCase(
+        "pass",
+        "9.7 crash-fix",
+        _cells_src(("memory", None, "fixed")) | _record("memory-fixed", "crash-fix", _cells("memory.json")),
+        release=MEMORY,
+    ),
+    "pass: harness covers an internal label": CellsCase(
+        "pass",
+        "6.4 internal",
+        CELLS_REFACTOR
+        | {f"{CELLS_EXPECTED}/scripts/tool.txt": "ran twice\n"}
+        | _record("tool", "harness", covers=("scripts/tool.txt",)),
+        records=True,
+    ),
+    "pass: harness covers a modified module the proof holds for": CellsCase(
+        "pass",
+        "6.4 module",
+        CELLS_REFACTOR
+        | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
+        | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        records=True,
+    ),
+    "pass: harness covers an added label": CellsCase(
+        "pass",
+        "6.4 added",
+        CELLS_REFACTOR
+        | {
+            "tests/main/test_models.refs": _cells_refs(CELLS_REFS | {"test_note": ["\tmain/jsonschema/note.py"]}),
+            f"{CELLS_EXPECTED}/main/jsonschema/note.py": CELLS_MODULE.format("int"),
+        }
+        | _record("note-test", "harness", covers=("main/jsonschema/note.py",)),
+        records=True,
+    ),
+    "fail: an uncovered differing cell": CellsCase("fail", "9.1", FLOAT_OTHER),
+    "fail: a kind no covering record admits": CellsCase(
+        "fail",
+        "9.1 kinds",
+        _cells_src(("other", None, "comment"), ("other", None, "warn:mind the gap")) | OUTPUT_TEXT_OTHER,
+    ),
+    "fail: output-text with a signature change": CellsCase("fail", "9.2 signature", FLOAT_OTHER | OUTPUT_TEXT_OTHER),
+    "fail: output-text with a differing non-model file": CellsCase(
+        "fail", "9.2 non-model file", _cells_src(("other", None, "file")) | OUTPUT_TEXT_OTHER
+    ),
+    "fail: output-text whose output does not import": CellsCase(
+        "fail", "9.2 SIGNATURE_FAILED", _cells_src(("other", None, "broken")) | OUTPUT_TEXT_OTHER
+    ),
+    "fail: output-text against rule (b)": CellsCase(
+        "fail",
+        "9.2 rule (b)",
+        _cells_src(("checked", None, "body")) | _record("checked-body", "output-text", _cells("checked.json")),
+        release=CHECKED,
+    ),
+    "fail: output-text whose payload verdicts change": CellsCase(
+        "fail",
+        "9.2 payload cells",
+        _cells_src(("checked", None, "reject-big")) | _record("checked-big", "output-text", _cells("checked.json")),
+        release=CHECKED,
+    ),
+    "fail: crash-fix on a cell that was no crash": CellsCase(
+        "fail", "9.2 crash-fix", COMMENT_PLAIN | _record("plain-note", "crash-fix", _cells("plain.json"))
+    ),
+    "fail: decided-change outside its match": CellsCase(
+        "fail",
+        "9.2 decided-change",
+        FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match=r"-> int")),
+    ),
+    "fail: experimental whose companion differs": CellsCase(
+        "fail",
+        "9.2 experimental, S3",
+        _cells_src(("plain", "--use-annotated", "type:float"))
+        | _record(
+            "client-float", "experimental", _cells("plain.json", options=[["--generate-client", "--use-annotated"]])
+        ),
+    ),
+    "fail: notice outside its match": CellsCase(
+        "fail",
+        "9.2 notice",
+        _cells_src(("plain", None, "warn:mind the gap"))
+        | _record("plain-warns", "notice", _cells("plain.json", match="other text")),
+    ),
+    "fail: a selector that matches no input": CellsCase(
+        "fail",
+        "9.3",
+        COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json"), _cells("missing.json")),
+    ),
+    "fail: a selector that matches equal cells only": CellsCase(
+        "fail",
+        "9.3",
+        COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json"), _cells("plain.json")),
+    ),
+    "fail: the release run's stale selector": CellsCase(
+        "fail",
+        "9.3 staleness",
+        base=CELLS_REFACTOR | _record("plain-note", "output-text", _cells("plain.json")),
+        against="tag",
+        tier="nightly",
+    ),
+    "fail: output-text without cells": CellsCase("fail", "9.4", COMMENT_OTHER | _record("other-note", "output-text")),
+    "fail: a decision selector without aspects or match": CellsCase(
+        "fail", "9.4 S4", FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json"))
+    ),
+    "fail: cells in a harness record": CellsCase(
+        "fail", "9.4", COMMENT_OTHER | _record("other-test", "harness", _cells("other.json"))
+    ),
+    "fail: a selector naming an unreleased preset": CellsCase(
+        "fail",
+        "9.5 M3",
+        _cells_src(("plain", "standard-py314-20260201", "comment"), presets=CELLS_UNRELEASED_PRESETS)
+        | _record(
+            "preset-note", "output-text", _cells("plain.json", options=[["--preset", "standard-py314-20260201"]])
+        ),
+    ),
+    "fail: a selector naming an unreleased option": CellsCase(
+        "fail",
+        "9.5 M3",
+        _cells_src(("plain", "--new-flag", "comment"), flags=(*CELLS_FLAGS, "--new-flag"))
+        | _record("flag-note", "output-text", _cells("plain.json", options=[["--new-flag"]])),
+    ),
+    "fail: a nondeterministic head": CellsCase(
+        "fail", "9.6", _cells_src(("other", None, "random")) | OUTPUT_TEXT_OTHER
+    ),
+    "fail: the head stops where the base generates": CellsCase("fail", "9.7", _cells_src(("plain", None, "memory"))),
+    "fail: an unknown base": CellsCase("fail", "9.8", CELLS_REFACTOR, against="unknown"),
+    "fail: a base without a merge base": CellsCase("fail", "9.8 M1", CELLS_REFACTOR, against="orphan"),
+    "fail: cells without a src change": CellsCase(
+        "fail", "9.9", _record("plain-note", "output-text", _cells("plain.json"))
+    ),
+    "fail: an oracle-file change runs the base's gate, which fails": CellsCase(
+        "fail",
+        "9.9 oracle files",
+        {"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)\n"},
+        release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
+    ),
+    "fail: selectors added to a record of the base": CellsCase(
+        "fail",
+        "9.10 S5",
+        _cells_src(("other", None, "comment"), ("plain", None, "comment"))
+        | _record("other-note", "output-text", _cells("other.json"), _cells("plain.json")),
+        base=COMMENT_OTHER | OUTPUT_TEXT_OTHER,
+    ),
+    "fail: a fragment of the tag covers nothing": CellsCase(
+        "fail",
+        "9.10",
+        release=OUTPUT_TEXT_OTHER,
+        base=COMMENT_OTHER,
+        against="tag",
+        tier="nightly",
+    ),
+    "fail: output-text whose covered module fails the proof": CellsCase(
+        "fail",
+        "9.11 M4",
+        COMMENT_PLAIN
+        | {PLAIN_MODULE: CELLS_MODULE.format("float")}
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
+    ),
+    "fail: output-text whose covered payload companion changed": CellsCase(
+        "fail",
+        "9.11 M4",
+        COMMENT_PLAIN
+        | {f"{CELLS_EXPECTED}/main/jsonschema/plain.txt": 'valid: {"a": 1}\nvalid: {"a": "x"}\n'}
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.txt",)),
+    ),
+    "fail: harness covers a modified module the proof fails for": CellsCase(
+        "fail",
+        "9.12 M4",
+        CELLS_REFACTOR
+        | {PLAIN_MODULE: CELLS_MODULE.format("float")}
+        | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        records=True,
+    ),
+    "fail: harness covers a modified listing": CellsCase(
+        "fail",
+        "9.12 M4",
+        CELLS_REFACTOR
+        | {f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\nOther\n"}
+        | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
+        records=True,
+    ),
+    "fail: a fragment that does not parse": CellsCase(
+        "fail", "9.13", COMMENT_OTHER | OUTPUT_TEXT_OTHER | {f"{CELLS_FRAGMENTS}/broken.toml": "[[change]\nid = \n"}
+    ),
+    "fail: an unknown key in cells": CellsCase(
+        "fail", "9.13", COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json", colour="red"))
+    ),
+    "fail: an empty input list": CellsCase(
+        "fail",
+        "9.13",
+        COMMENT_OTHER | _record("other-note", "output-text", {"input": [], "backends": "*", "options": "*"}),
+    ),
+    "fail: an unknown backend": CellsCase(
+        "fail",
+        "9.13",
+        COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json", backends=["pydantic.BaseModel"])),
+    ),
+    "fail: malformed options": CellsCase(
+        "fail",
+        "9.13",
+        COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json", options=["--use-annotated"])),
+    ),
+    "fail: an unknown aspect": CellsCase(
+        "fail",
+        "9.13",
+        FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json", aspects=["colour"], match="float")),
+    ),
+    "fail: a match that does not compile": CellsCase(
+        "fail",
+        "9.13",
+        FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match="(float")),
+    ),
+    "fail: two records whose evidence fails on one cell": CellsCase(
+        "fail",
+        "9.14 composition",
+        FLOAT_OTHER | OUTPUT_TEXT_OTHER | _record("other-warns", "notice", _cells("other.json", match="float")),
+    ),
+}
+"""Every fail-closed rule of the cell gate and every passing shape it must keep, with the verdict it must give."""
+ALLOWLIST_ONLY = "fails: a behaviour change needs an allowlist entry; a revision base reads none"
+REPLAYED = "passes: the records check sends harness labels to its replay list, which it never fails"
+CELLS_NOT_BUILT: dict[str, str] = {
+    "fail: a base without a merge base": "passes: it compares the given revision, whatever its history",
+    "fail: a fragment of the tag covers nothing": "passes: records are not read",
+    "fail: a fragment that does not parse": "passes: records are not read",
+    "fail: a kind no covering record admits": "passes: warnings are not compared, and the comment is no behaviour",
+    "fail: a nondeterministic head": "passes: it does not run the head twice",
+    "fail: a selector naming an unreleased option": "passes: records are not read",
+    "fail: a selector naming an unreleased preset": "passes: records are not read",
+    "fail: a selector that matches equal cells only": "passes: records are not read",
+    "fail: a selector that matches no input": "passes: records are not read",
+    "fail: an empty input list": "passes: records are not read",
+    "fail: an oracle-file change runs the base's gate, which fails": "passes: it does not run the base's gate",
+    "fail: an unknown backend": "passes: records are not read",
+    "fail: an unknown key in cells": "passes: records are not read",
+    "fail: cells in a harness record": "passes: records are not read",
+    "fail: cells without a src change": "passes: records are not read",
+    "fail: crash-fix on a cell that was no crash": "passes: records are not read; the comment is no behaviour",
+    "fail: experimental whose companion differs": "passes: the PR tier runs neither option",
+    "fail: harness covers a modified listing": REPLAYED,
+    "fail: harness covers a modified module the proof fails for": REPLAYED,
+    "fail: malformed options": "passes: records are not read",
+    "fail: notice outside its match": "passes: warnings are not compared",
+    "fail: output-text against rule (b)": "passes: the signatures are equal; rule (b) does not exist yet",
+    "fail: output-text whose covered module fails the proof": "passes: records are not read",
+    "fail: output-text whose covered payload companion changed": "passes: records are not read",
+    "fail: output-text whose payload verdicts change": "passes: a fixture cell runs no payload cells",
+    "fail: output-text with a differing non-model file": "passes: the differing file holds no behaviour",
+    "fail: output-text without cells": "passes: records are not read",
+    "fail: selectors added to a record of the base": "passes: records are not read",
+    "fail: the release run's stale selector": "passes: records are not read",
+    "pass: a decision record beside an output-text record": ALLOWLIST_ONLY,
+    "pass: a lagging branch is judged from its merge base": "fails: it compares main's tip, not the merge base",
+    "pass: decided-change inside aspects and match": ALLOWLIST_ONLY,
+}
+"""The cases the gate does not judge yet as the cell gate must, with what it does instead.
+
+They are not collected: the change that builds a case's check moves it out of this table. The collected cases give
+the cell gate's verdict on the gate as it is, many only because it reads no records yet.
+"""
+
+
+def _cells_write(repo: Path, files: dict[str, str | None]) -> None:
+    """Write the files of one commit; None removes one."""
+    for name, text in files.items():
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.unlink(missing_ok=True)
+        with contextlib.suppress(TypeError):
+            path.write_text(text, encoding="utf-8")
+
+
+def _cells_commit(repo: Path, files: dict[str, str | None], message: str) -> str:
+    _cells_write(repo, files)
+    _git("add", "-A", ".", cwd=repo)
+    _git("commit", "-q", "--allow-empty", "-m", message, cwd=repo)
+    return _git("rev-parse", "HEAD", cwd=repo)
+
+
+def _cells_project(case: CellsCase, repo: Path) -> dict[str, str]:
+    """Commit the case's history and return the revisions `against` may name; the working tree is the PR's head."""
+    repo.mkdir()
+    _git("init", "-q", "-b", "main", cwd=repo)
+    release = _cells_commit(repo, CELLS_RELEASE | case.release, "release")
+    _git("tag", CELLS_TAG, cwd=repo)
+    _cells_commit(repo, case.base, "base")
+    _git("switch", "-q", "-c", "layer", cwd=repo)
+    base = _cells_commit(repo, case.layer, "layer")
+    _git("switch", "-q", "main", cwd=repo)
+    main = _cells_commit(repo, case.main, "main after the fork")
+    _git("switch", "-q", "-c", "pr", "layer", cwd=repo)
+    _cells_commit(repo, case.head, "head")
+    orphan = _git("commit-tree", "-m", "another history", f"{release}^{{tree}}", cwd=repo)
+    return {"base": base, "main": main, "tag": f"refs/tags/{CELLS_TAG}", "unknown": "4" * 40, "orphan": orphan}
+
+
+def _cells_exit(run: Callable[[], int], log: StringIO) -> int:
+    """Return a judge's exit status; a refusal by `SystemExit` is one, any other exception fails the case."""
+    try:
+        with redirect_stdout(log), redirect_stderr(log):
+            return run()
+    except SystemExit as stopped:
+        return stopped.code if isinstance(stopped.code, int) else 1
+
+
+def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
+    """Run the gate (and, for `records`, the records check) as CI runs it and return the verdict and the log."""
+    repo = tmp_path / "repo"
+    against = _cells_project(case, repo)[case.against]
+    projects = tmp_path / "projects.json"
+    projects.write_text('{"projects": []}', encoding="utf-8")
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text(f'base = "{CELLS_TAG}"\n', encoding="utf-8")
+    argv = ["gate", against, str(repo), "--tier", case.tier, "--check", "--candidate-python", sys.executable]
+    argv += ["--cache-dir", str(tmp_path / "cache"), "--projects", str(projects), "--allowlist", str(allowlist)]
+    log = StringIO()
+    codes = {"gate": _cells_exit(lambda: behaviour_diff.main([*argv, "-j", "2"]), log)}
+    if case.records:
+        check = ["check", "--base", against, "--head", "HEAD", "--tag", CELLS_TAG]
+        codes["records"] = _cells_exit(lambda: declared_changes.main(check, repo=repo), log)
+    verdict = "pass" if set(codes.values()) == {0} else "fail"
+    return verdict, f"{codes}\n{log.getvalue()}"
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@pytest.mark.parametrize("case", sorted(CELLS_CASES.keys() - CELLS_NOT_BUILT.keys()))
+def test_cells_oracle(case: str, tmp_path: Path) -> None:
+    """The gate gives each oracle case the verdict of the cell gate: a case that fails, fails on that verdict."""
+    verdict, log = cells_verdict(CELLS_CASES[case], tmp_path)
+    assert verdict == CELLS_CASES[case].verdict, log
