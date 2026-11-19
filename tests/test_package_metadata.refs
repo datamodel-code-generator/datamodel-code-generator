@@ -2,6 +2,8 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_formatter_extras_preserve_required_ranges_and_markers]
 	package_metadata/formatter_extras.txt
+[test_no_local_only_file_is_tracked]
+	package_metadata/no_local_only_file_is_tracked.txt
 [test_sdist_include_root_normalizes_entries]
 	package_metadata/sdist_include_roots.txt
 [test_sdist_includes_test_support_imports]

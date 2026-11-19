@@ -4,6 +4,7 @@ __pycache__
 src/datamodel_code_generator/_version.py
 coverage.xml
 .coverage
+.coverage.*
 .idea/
 .vscode/
 site/
