@@ -411,6 +411,10 @@ class SourceModelError(Exception):
     """The model and the compiler disagree, or the source holds a form the model has no rule for."""
 
 
+class CompilerRejectedError(SourceModelError):
+    """The compiler rejects a module that ``ast`` reads (for example ``nonlocal x`` without a binding)."""
+
+
 class _NotLiteralError(Exception):
     """An expression `SourceModule.constant` cannot evaluate from source."""
 
@@ -1267,7 +1271,7 @@ class _CompilerCheck(_Suppressions):
 
     def _rejected(self, error: SyntaxError) -> NoReturn:
         msg = f"{self.path}:{error.lineno or 0}: the compiler rejects the module, which ast reads ({error.msg})"
-        raise SourceModelError(msg) from None
+        raise CompilerRejectedError(msg) from None
 
     def _compare(self, scope: Scope, table: symtable.SymbolTable) -> None:
         group = [member for member in _inlined(scope) if not self._compiled_away(member)]

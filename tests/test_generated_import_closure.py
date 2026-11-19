@@ -31,6 +31,7 @@ from scripts._source_model import (
     BUILTINS,
     CONDITIONAL_BUILTINS,
     MODULE_ATTRIBUTES,
+    CompilerRejectedError,
     SourceModule,
     name_reads,
     string_type,
@@ -369,7 +370,7 @@ def test_generated_modules_bind_the_names_they_use(bucket: int) -> None:
         relative_path = path.relative_to(EXPECTED_ROOT).as_posix()
         try:
             model = SourceModule(path.read_text(encoding="utf-8"), relative_path)
-        except (SyntaxError, ValueError):
+        except (SyntaxError, ValueError, CompilerRejectedError):
             continue
         read.add(relative_path)
         found.update(f"{relative_path}::{name}" for name in unbound_names(model))

@@ -459,6 +459,14 @@ class _ModuleAnalyzer:
             if item.kind != "dynamic":
                 self.imports.setdefault(item.node, []).append(item)
         self.alias_imports = {item.alias: item for item in model.imports if item.alias is not None}
+        self.reserved_aliases = {
+            item.bound: tuple(item.target.split("."))
+            for item in model.imports
+            if item.bound is not None
+            and isinstance(item.target, str)
+            and not item.level
+            and (item.kind == "from" or (item.kind == "import" and item.alias is not None and item.alias.asname))
+        }
         self.bare_targets = {annotation.target for annotation in model.annotations if annotation.value is None}
         self.headers = {
             id(part): scope
@@ -756,13 +764,25 @@ class _ModuleAnalyzer:
             return self.imported_from_outside(call.args[0], scope, instances=True, seen=seen)
         return instances and self.imported_from_outside(call.func, scope, seen=seen)
 
+    def reserved(self, node: ast.AST) -> tuple[str, ...]:
+        """Return the canonical chain, reading a head name no binding gives an alias through the module's imports.
+
+        The registry rule reserves imported aliases across every scope, including where a parameter, a local
+        rebinding or another function's import shadows them.
+        """
+        chain = self.canonical(node)
+        head = self.head(node)
+        if head is not None and self.name_alias(self.model.resolve(head)) is None and chain[0] in self.reserved_aliases:
+            return (*self.reserved_aliases[chain[0]], *chain[1:])
+        return chain
+
     def is_sys_modules(self, node: ast.AST) -> bool:
         if isinstance(node, ast.Constant):
             return node.value == "sys.modules"
-        return self.canonical(node) == SYS_MODULES
+        return self.reserved(node) == SYS_MODULES
 
     def is_whole_sys_modules_patch(self, call: ast.Call) -> bool:
-        if self.canonical(call.func) not in REGISTRY_PATCH_CALLS:
+        if self.reserved(call.func) not in REGISTRY_PATCH_CALLS:
             return False
         return (target := _patch_target(call)) is not None and self.is_sys_modules(target)
 
@@ -1421,6 +1441,41 @@ def test_local_aliases(mocker):
             'imported_mock.patch.dict(system.modules, {"six": None})',
         ),
     ]
+
+
+def test_collect_whole_sys_modules_patches_keeps_imported_aliases_reserved_when_shadowed(tmp_path: Path) -> None:
+    """A parameter, a local rebinding or another function's import does not free an imported sys/patch alias."""
+    test_file = tmp_path / "test_shadowed_module_registry.py"
+    test_file.write_text(
+        """\
+import sys as system
+from unittest.mock import patch as patcher
+
+
+def test_shadowed_by_parameter(system):
+    patcher.dict(system.modules, {"one": None})
+
+
+def test_patch_shadowed_by_parameter(patcher):
+    patcher.dict("sys.modules", {"two": None})
+
+
+def test_shadowed_by_local():
+    system = object()
+    patcher.dict(system.modules, {"three": None})
+
+
+def setup_alias():
+    import sys as other_system
+
+
+def test_alias_of_another_function():
+    patcher.dict(other_system.modules, {"four": None})
+""",
+        encoding="utf-8",
+    )
+
+    assert [patch.lineno for patch in _collect_whole_sys_modules_patches(test_file, tmp_path)] == [6, 10, 15, 23]
 
 
 def test_collect_whole_sys_modules_patches_ignores_unrelated_calls(tmp_path: Path) -> None:
