@@ -1,0 +1,15 @@
+exit status 0
+scripts/related_tests.py:<line>
+  scope chain (2):
+    <module> (module, line <line>)
+    _matches (function, line <line>)
+symbol _matches
+  defined (1):
+    scripts/related_tests.py:<line> function _matches
+  same name elsewhere (1):
+    src/datamodel_code_generator/_runtime/protocols/verification.py:<line> function _matches - Verify with a key, reporting unsupported backend capability withou...
+  users (1):
+    scripts/related_tests.py: select
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (1):
+    mirror: tests/test_related_tests_script.py

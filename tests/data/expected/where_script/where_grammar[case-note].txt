@@ -1,0 +1,4 @@
+exit status 0
+issue #4834
+  case notes (1):
+    #4834 (set and list models merged): L3 deduplication (`delete_duplicate_models` with `--collapse-reuse-models`, `reuse_model_tr...

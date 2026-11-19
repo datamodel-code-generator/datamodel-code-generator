@@ -1,0 +1,6 @@
+exit status 0
+path scripts/where.py
+  Answer where a decision lives and what else touches it, from the repository's own tables.
+  rows: none name this file; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (1):
+    mirror: tests/test_where_script.py

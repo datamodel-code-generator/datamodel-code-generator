@@ -1,0 +1,37 @@
+exit status 0
+option --use-annotated (config field use_annotated)
+  Typing customization; Typing Customization/type-syntax; since -
+  help: Use typing.Annotated for Field(). Also, `--field-constraints` option will be enabled. Will become default for Pydantic v2 in a ...
+  implies --field-constraints=True
+  recommender: not recommended (preset): Set by every dated preset; the recommendation starts from the preset.
+  presets: practical from 20260619 (True); standard from 20260619 (True)
+  docs: docs/cli-reference/typing-customization.md#use-annotated
+  declared as a field in (8):
+    src/datamodel_code_generator/_types/generate_config_dict.py
+    src/datamodel_code_generator/_types/parser_config_dicts.py
+    src/datamodel_code_generator/base_config.py
+    src/datamodel_code_generator/config.py
+    ... 4 more (--all)
+  readers by name (attribute types are not resolved) (17):
+    src/datamodel_code_generator/__main__.py .use_annotated x1
+    src/datamodel_code_generator/base_config.py .use_annotated x1
+    src/datamodel_code_generator/model/_field_imports.py .use_annotated x1
+    src/datamodel_code_generator/model/base.py .use_annotated x4
+    src/datamodel_code_generator/model/msgspec.py .use_annotated x7
+    src/datamodel_code_generator/model/pydantic_base.py .use_annotated x7
+    src/datamodel_code_generator/model/pydantic_v2/base_model.py .use_annotated x1
+    src/datamodel_code_generator/model/pydantic_v2/dataclass.py .use_annotated x4
+    src/datamodel_code_generator/parser/_object_maps.py .use_annotated x1
+    src/datamodel_code_generator/parser/_passes/_tables.py .use_annotated x1
+    src/datamodel_code_generator/parser/_passes/decide.py .use_annotated x1
+    src/datamodel_code_generator/parser/_passes/modules.py .use_annotated x4
+    ... 5 more (--all)
+  decision rows that name it (5):
+    row: what the class body writes after a field's annotation (its call, its default, or nothing) and wha... [Placement Guide]
+    row: which option an enabled option turns on, over any value given for that option (`--use-annotated` ... [Placement Guide]
+    row: which options a run refuses or warns of together (an option that requires another, or a value of ... [Placement Guide]
+    row: whether an option of a run was given, by whom and with which value, and which fields an option st... [Placement Guide]
+    row: which output model types are Pydantic's (`pydantic_v2.BaseModel`, `pydantic_v2.dataclass`): the o... [Placement Guide]
+  legacy rows (2):
+    legacy-alias-option-only [#5588] a required name without a property or an inherited field, and the tag field the discriminator pas...
+    legacy-stdlib-annotated [DC12] a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned
