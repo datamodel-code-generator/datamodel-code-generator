@@ -104,6 +104,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._phases import DecisionOptions
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
+    from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
     OwnerModels: TypeAlias = DataModel | tuple[DataModel, ...] | None
@@ -115,10 +116,10 @@ else:
     DataModelFieldBase: TypeAlias = Any
     DataType: TypeAlias = Any
     Member: TypeAlias = Any
+    Reference: TypeAlias = Any
     OwnerModels: TypeAlias = Any
     CacheOwners: TypeAlias = Any
 
-Reference: TypeAlias = Any
 ModelId: TypeAlias = int
 DataTypeId: TypeAlias = int
 DataTypeRole = Literal["field", "base", "nested", "dict_key"]

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 import pytest
 import tomllib
 
+from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import check_ratchets
 from tests.conftest import assert_output
@@ -29,7 +30,9 @@ FORMS = Path(__file__).parent / "data" / "source_forms"
 VERDICTS = FORMS / "verdicts.toml"
 CHUNKS = 16
 PYTHON = (sys.version_info.major, sys.version_info.minor)
-_DIRECTIVE = re.compile(r"^(questions|min-python|module|path|keywords|constants|codes): *(.*)$", re.MULTILINE)
+_DIRECTIVE = re.compile(
+    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes): *(.*)$", re.MULTILINE
+)
 MODEL_NAMES = frozenset({"scripts._source_model", "_source_model"})
 """The names a module imports the model by: as part of the ``scripts`` package, or beside it when run as a script."""
 
@@ -121,7 +124,12 @@ def _expression(model: source_model.SourceModule, node: ast.expr | None) -> str:
     return "None" if node is None else "UNKNOWN" if node is source_model.UNKNOWN else model.source(node)
 
 
-def _bindings(model: source_model.SourceModule) -> list[str]:
+def _binding_of(model: source_model.SourceModule, node: ast.AST) -> str:
+    binding = model.binding_at(node)
+    return "none" if binding is None else f"{binding.scope.qualname}:{binding.name}@{binding.line} ({binding.kind})"
+
+
+def _bindings(model: source_model.SourceModule, directives: dict[str, str]) -> list[str]:
     out = []
     for scope in model.scopes:
         marks = [f"code {scope.code_object}", f"first line {scope.first_line}"]
@@ -137,17 +145,58 @@ def _bindings(model: source_model.SourceModule) -> list[str]:
             extra = [f"origin {binding.origin}"] * (binding.origin is not None)
             extra += [f"re-export {binding.reexport_form!r}"] * (binding.reexport_form is not None)
             extra += [f"value {model.source(binding.value)}"] if binding.value is not None else []
+            found = model.binding_at(binding.node)
+            extra += [f"its node binds {_binding_of(model, binding.node)}"] if found is not binding else []
             out.append(
                 f"  {name}: {binding.kind}@{binding.line} [{_guard(binding.guard)}]{''.join(f'; {e}' for e in extra)}"
             )
         members = model.class_members(scope) if scope.kind == "class" else {}
         out += [f"  members: {', '.join(sorted(members))}"] * (scope.kind == "class")
+        spelled = model.class_members(scope, spelled=True) if scope.kind == "class" else {}
+        out += [f"  members as spelled: {', '.join(sorted(spelled))}"] * (sorted(spelled) != sorted(members))
         receiver = model.receiver(scope)
         out += [f"  receiver: {receiver.name}@{receiver.line}"] if receiver is not None else []
     out += [
         f"dynamic {site.kind}@{site.line} in {site.scope.qualname} [{_guard(site.guard)}]"
         for site in model.dynamic_sites
     ]
+    kinds = (
+        ast.Name,
+        ast.alias,
+        ast.arg,
+        ast.excepthandler,
+        ast.pattern,
+        ast.FunctionDef,
+        ast.AsyncFunctionDef,
+        ast.ClassDef,
+    )
+    nodes = (
+        [node for node in ast.walk(model.tree) if isinstance(node, kinds)] if directives.get("binding-nodes") else []
+    )
+    out += [
+        f"binding at {type(node).__name__}@{node.lineno}:{node.col_offset}: {_binding_of(model, node)}"
+        for node in sorted(nodes, key=lambda node: (node.lineno, node.col_offset))
+    ]
+    return out
+
+
+def _type_positions(model: source_model.SourceModule) -> list[str]:
+    """Render the type positions of every annotation and string assignment: names, and attribute chains by origin."""
+    out = []
+    for node in ast.walk(model.tree):
+        roots = [node.annotation] if isinstance(node, (ast.AnnAssign, ast.arg)) and node.annotation else []
+        roots += [node.returns] if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.returns else []
+        value = node.value if isinstance(node, ast.Assign) else None
+        roots += [value] if isinstance(value, ast.Constant) and isinstance(value.value, str) else []
+        for root in roots:
+            names = ", ".join(item.name for item in model.type_positions(root)) or "-"
+            chains = [
+                f"{ast.unparse(item)} = {model.origin(item)}"
+                for item in model.type_expressions(root)
+                if isinstance(item, ast.Attribute)
+            ]
+            listed = f"; chains {', '.join(chains)}" if chains else ""
+            out.append(f"type positions @{root.lineno}: {names}{listed}")
     return out
 
 
@@ -168,16 +217,14 @@ def _references(model: source_model.SourceModule, directives: dict[str, str]) ->
     for binding in model.bindings():
         uses = ", ".join(f"{use.kind}@{use.reference.line}" for use in model.uses(binding))
         out += [f"uses of {binding.scope.qualname}:{binding.name}@{binding.line}: {uses}"] if uses else []
-    for node in ast.walk(model.tree):
-        roots = [node.annotation] if isinstance(node, (ast.AnnAssign, ast.arg)) and node.annotation else []
-        roots += [node.returns] if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.returns else []
-        value = node.value if isinstance(node, ast.Assign) else None
-        roots += [value] if isinstance(value, ast.Constant) and isinstance(value.value, str) else []
-        out += [
-            f"type positions @{root.lineno}: {', '.join(item.name for item in model.type_positions(root)) or '-'}"
-            for root in roots
-        ]
+    out += _type_positions(model)
     out += [f"constant {name}: {_value(model.constant(name))}" for name in directives.get("constants", "").split()]
+    if directives.get("consumers"):
+        out += [
+            f"use of {model.source(node)} @{node.lineno}:{node.col_offset}: {model.use_of(node)}"
+            for node in ast.walk(model.tree)
+            if isinstance(node, ast.Call)
+        ]
     keywords = directives.get("keywords", "").split()
     calls = [node for node in ast.walk(model.tree) if isinstance(node, ast.Call)] if keywords else []
     for call in calls:
@@ -196,6 +243,10 @@ def _imports(model: source_model.SourceModule) -> list[str]:
         flags += ["typing only"] * item.typing_only + ["unconditional"] * item.unconditional
         bound = f" as {item.bound}" if item.bound is not None else ""
         line = item.node.lineno
+        binding = model.binding_at(item.alias) if item.alias is not None else None
+        flags += (
+            [f"binds in {binding.scope.qualname}"] if binding is not None and binding.scope is not item.scope else []
+        )
         out.append(
             f"{item.kind}@{line} {item.target}{bound} from {item.source} in {item.scope.qualname} "
             f"[{_guard(item.guard)}]{''.join(f'; {flag}' for flag in flags)}"
@@ -241,7 +292,7 @@ def _extents(model: source_model.SourceModule) -> list[str]:
 
 def _render_module(model: source_model.SourceModule, questions: set[str], directives: dict[str, str]) -> list[str]:
     sections = {
-        "bindings": lambda: _bindings(model),
+        "bindings": lambda: _bindings(model, directives),
         "references": lambda: _references(model, directives),
         "imports": lambda: _imports(model),
         "suppressions": lambda: _suppressions(model, directives),
@@ -492,11 +543,20 @@ def _private_scope_walk(form: Path) -> list[str]:
     ]
 
 
+def _import_cycle(form: Path) -> list[str]:
+    """Return the import cycles of a package form by measure; a one-module form has no import between modules."""
+    if not form.is_dir():
+        return []
+    found = import_cycles.tree_cycles(source_model.SourceTree(form.parent, [form.name]))
+    return [f"{measure}: {', '.join(cycle)}" for measure, cycles in found.items() for cycle in cycles]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
     ),
     "private-scope-walk": RuleRun("scripts.check_ratchets", frozenset({"bindings", "references"}), _private_scope_walk),
+    "import-cycle": RuleRun("scripts._import_cycles", frozenset({"imports", "references"}), _import_cycle),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 

@@ -205,8 +205,29 @@ SCRIPT = (ROOT / "scripts/check_ratchets.py").read_text(encoding="utf-8")
 COUNTER = {
     "scripts/check_ratchets.py": SCRIPT,
     "scripts/_source_model.py": (ROOT / "scripts/_source_model.py").read_text(encoding="utf-8"),
+    "scripts/_import_cycles.py": (ROOT / "scripts/_import_cycles.py").read_text(encoding="utf-8"),
 }
-"""The counter and the model it reads Python with, as a copy of the script in a tree needs them."""
+"""The counter and the modules it reads Python and import cycles with, as a copy of the script in a tree needs them."""
+IMPORT_ONE_WAY = {
+    "scripts/report.py": FUTURE + "\nfrom scripts import guide\n\nTITLE = guide.TITLE\n",
+    "scripts/guide.py": FUTURE + '\nTITLE = "guide"\n',
+    "src/datamodel_code_generator/__init__.py": "",
+    "src/datamodel_code_generator/types.py": FUTURE + "\nfrom datamodel_code_generator import base\n",
+    "src/datamodel_code_generator/base.py": FUTURE + "\nVALUE = 1\n",
+}
+"""Imports one way, in ``scripts`` and in the package: no import cycle."""
+IMPORT_BACK = {
+    "scripts/guide.py": FUTURE + '\nTITLE = "guide"\n\n\ndef load() -> object:\n    from scripts import report\n\n'
+    "    return report\n",
+    "src/datamodel_code_generator/base.py": FUTURE + "\nfrom datamodel_code_generator import types\n\nVALUE = 1\n",
+}
+"""An import back inside a function of ``scripts`` (lazy keys only) and at module level in the package (every key)."""
+IMPORT_IGNORED = {
+    ".gitignore": "scripts/local_*.py\n",
+    "scripts/local_a.py": FUTURE + "\nfrom scripts import local_b\n\nVALUE = local_b.VALUE\n",
+    "scripts/local_b.py": FUTURE + "\nfrom scripts import local_a\n\nVALUE = 1\n",
+}
+"""Two ignored files of ``scripts`` import each other: the ratchet reads the tree's files, so no cycle is counted."""
 SCOPE_WALK = """import ast as syntax
 import symtable
 import tokenize
@@ -453,6 +474,12 @@ def show(flag: bool) -> None:
       - lint.preview = true
 """
         },
+        "args": ["--enforce"],
+    },
+    "import-cycles": {"base": IMPORT_ONE_WAY, "head": IMPORT_BACK, "args": ["--enforce"]},
+    "import-cycles-ignored-files": {
+        "base": IMPORT_ONE_WAY,
+        "head": IMPORT_IGNORED,
         "args": ["--enforce"],
     },
     "ahead-base": {

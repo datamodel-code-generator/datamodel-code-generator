@@ -34,7 +34,7 @@ scope comprehension collect.<locals>.<listcomp>#0 '<listcomp>': code no; first l
 12:25 names load in collect -> local collect @11
 uses of <module>:Annotated@6: read@10, read@11
 uses of collect:values@10: read@12
-uses of collect:names@11: read@12
+uses of collect:names@11: argument@12
 uses of collect.<locals>.<lambda>.<locals>.<listcomp>:i@10: read@10
 uses of collect.<locals>.<listcomp>:j@11: read@11
 type positions @9: list, int

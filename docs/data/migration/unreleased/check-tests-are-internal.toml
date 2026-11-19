@@ -1,0 +1,8 @@
+[[change]]
+id = "check-tests-are-internal"
+category = "internal"
+title = "The declared-changes check counts the tests of repository scripts and checks as internal output"
+refs = ["#7168"]
+covers = [
+    "declared_changes_script/declared_changes_check[kinds by test module and label].txt",
+]
