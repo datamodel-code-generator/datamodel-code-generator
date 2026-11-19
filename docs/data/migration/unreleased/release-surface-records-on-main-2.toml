@@ -1,0 +1,7 @@
+[[change]]
+id = "release-surface-records-on-main-2"
+extends = "recommender-rule-texts-without-numbers"
+covers = [
+    "main/main_recommend_options/recommend_options_for_schemas[ref-siblings-read-as-draft-07].stdout.txt",
+    "main/main_recommend_options/recommend_options_for_schemas[unions-merge-shared-variant-tags-older-preset].stdout.txt",
+]

@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-19)
+Option recommendations (experimental; quick mode; rules 2026-11-19)
 
 Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   components                       2, 0 operations
