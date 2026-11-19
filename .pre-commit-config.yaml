@@ -71,7 +71,7 @@ repos:
     name: Check source rules
     entry: python scripts/check_source_rules.py
     language: python
-    files: ^((src|scripts|tests)/.*\.py|tox\.ini|pyproject\.toml|uv\.lock|\.github/workflows/test\.yaml)$
+    files: ^((src|scripts|tests)/.*\.py|docs/architecture\.md|tox\.ini|pyproject\.toml|uv\.lock|\.github/workflows/test\.yaml)$
     pass_filenames: false
   - id: compiled-templates
     name: Check generated built-in template renderers
