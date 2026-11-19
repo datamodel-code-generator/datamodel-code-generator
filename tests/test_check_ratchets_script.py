@@ -291,6 +291,7 @@ approved = [
   {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 2, pr = 7172, decision = ["#7172"], reason = "kept"},
   {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 3, pr = 7172, decision = [], reason = "again"},
   {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 3, pr = 7172, decision = ["#7172"], reason = "again"},
+  {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 2026-11-19, pr = 7173, decision = ["#7173"], reason = 07:32:00},
 ]
 """
 CASES = {

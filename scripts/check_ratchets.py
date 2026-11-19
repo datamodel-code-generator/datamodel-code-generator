@@ -62,6 +62,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import datetime as dt
 import io
 import json
 import os
@@ -430,10 +431,12 @@ def _ruff_json(ruff: list[str], root: Path, flags: list[str], files: list[str]) 
 
 
 def _toml(value: object) -> str:
-    """Write a value read from a TOML file back as TOML: JSON scalars and lists, inline tables for dicts."""
+    """Write a value read from a TOML file back as TOML: JSON scalars and lists, inline tables, ISO dates and times."""
     if isinstance(value, dict):
         return "{" + ", ".join(f"{json.dumps(key)} = {_toml(item)}" for key, item in value.items()) + "}"
-    return "[" + ", ".join(map(_toml, value)) + "]" if isinstance(value, list) else json.dumps(value)
+    if isinstance(value, list):
+        return "[" + ", ".join(map(_toml, value)) + "]"
+    return value.isoformat() if isinstance(value, (dt.date, dt.time)) else json.dumps(value)
 
 
 def _without_extended_ignores(config: dict, root: Path) -> dict:

@@ -23,4 +23,6 @@ scripts/ratchet_approvals.toml entry 5: `decision` lists the public references o
 
 scripts/ratchet_approvals.toml entry 6: a second approval of allowlist:JUSTIFIED_VIOLATIONS for #7172.
 
+scripts/ratchet_approvals.toml entry 7: `head` is the approved count of the key, a positive integer, not 2026-11-19; `reason` says why the rise is needed, not 07:32:00.
+
 No key rose, but scripts/ratchet_approvals.toml needs the changes above. Exit status 0 unless --enforce is given.
