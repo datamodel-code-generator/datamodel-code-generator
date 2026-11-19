@@ -323,8 +323,9 @@ def _merge_additional_properties_all_of(parser: ObjectMapsHost, obj: JsonSchemaO
         return None
     if len(schema_types) > 1 and schema_types != {"integer", "number"}:
         return None
-    if (merged_schema := parser._merge_primitive_schemas_for_allof(schemas)) is None:  # pragma: no cover
-        return None  # pragma: no cover
+    merged_schema = parser._merge_primitive_schemas_for_allof(schemas)
+    if merged_schema is None:  # pragma: no cover - not proven unreachable: members the merge refuses
+        return None  # pragma: no cover - not proven unreachable: members the merge refuses
 
     metadata = {field: getattr(obj, field) for field in _ALL_OF_METADATA_FIELDS if field in obj.model_fields_set}
     if obj.extras:

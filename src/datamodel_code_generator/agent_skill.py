@@ -26,7 +26,7 @@ def _bundled_skill() -> Traversable:
     if (skill := files("datamodel_code_generator.resources").joinpath(SKILL_NAME)).is_dir():
         # The wheel E2E exercises this branch; editable/source test runs use the repository fallback.
         return skill
-    return Path(__file__).parents[2] / "skills" / SKILL_NAME  # pragma: no cover
+    return Path(__file__).parents[2] / "skills" / SKILL_NAME  # pragma: no cover - the source checkout, not the wheel
 
 
 def _skill_destination(agent: AgentName, scope: SkillScope, cwd: Path) -> Path:

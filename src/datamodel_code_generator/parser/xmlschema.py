@@ -772,7 +772,7 @@ class _XMLSchemaConverter:
     def _build_definition(self, key: DefinitionKey) -> JsonSchema:
         if key in self._built_definitions:
             return self._built_definitions[key]
-        if key in self._building_definitions:  # pragma: no cover
+        if key in self._building_definitions:  # pragma: no cover - not proven unreachable: a type that refers to itself
             return {"$ref": self._ref(key)}
         self._building_definitions.add(key)
         qname_key = key[1:]
@@ -1491,7 +1491,7 @@ class _XMLSchemaConverter:
         return self._ref(self._element_definition_key(key))
 
     def _namespaces_for(self, element: ET.Element | None) -> dict[str, str]:
-        if element is None:  # pragma: no cover
+        if element is None:  # pragma: no cover - not proven unreachable: namespaces asked for no element
             return self.namespaces
         return self._element_namespaces.get(id(element), self.namespaces)
 

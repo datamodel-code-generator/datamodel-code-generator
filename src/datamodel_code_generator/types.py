@@ -544,7 +544,7 @@ def _remove_none_from_union(type_: str, *, use_union_operator: bool) -> str:  # 
     part = current_part.strip()
     if current_part and part != NONE:
         # only UNION_PREFIX might be nested but not union_operator
-        if not use_union_operator and part.startswith(UNION_PREFIX):  # pragma: no cover
+        if not use_union_operator and part.startswith(UNION_PREFIX):  # pragma: no cover - not proven unreachable
             part = _remove_none_from_union(part, use_union_operator=False)
         parts.append(part)
 
@@ -853,7 +853,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         parent = self.parent
         self.parent = None
-        if parent is not None:  # pragma: no cover
+        if parent is not None:  # pragma: no branch
             new_data_type.parent = parent
             if is_data_model_field(parent):
                 parent.data_type = new_data_type
@@ -1019,7 +1019,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def __init__(self, **values: Any) -> None:
         """Initialize DataType with validation and reference setup."""
-        if not TYPE_CHECKING:  # pragma: no cover
+        if not TYPE_CHECKING:  # pragma: no branch
             super().__init__(**values)
         _link_parts(self)
 

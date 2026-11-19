@@ -2176,9 +2176,9 @@ def iter_inherited_schema_objects(
         resolved_ref = base.path
         try:
             parent_schema = load_inherited_schema_object(parser, resolved_ref)
-        except RecursionError:  # pragma: no cover
+        except RecursionError:  # pragma: no cover - a RecursionError must pass the broad guard below
             raise
-        except Exception:  # pragma: no cover  # noqa: BLE001, S112
+        except Exception:  # noqa: BLE001, S112  # pragma: no cover - a broken inherited base is skipped
             continue
         if (node := _schema_node(parent_schema, resolved_ref)) in visited:
             continue

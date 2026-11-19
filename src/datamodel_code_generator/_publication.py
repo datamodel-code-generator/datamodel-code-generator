@@ -363,7 +363,7 @@ class StagingDirectory:
     @classmethod
     def create(cls, anchor: PublicationAnchor, *, prefix: str) -> StagingDirectory:
         """Reserve and open a private child of an already-pinned publication anchor."""
-        if anchor.directory_fd is None:  # pragma: no cover - Windows uses the checked fallback path
+        if anchor.directory_fd is None:
             _validate_anchor_path(anchor)
             path = type(anchor.path)(tempfile.mkdtemp(prefix=prefix, dir=anchor.path))
             try:
@@ -378,7 +378,7 @@ class StagingDirectory:
                         anchor.identity,
                     ),
                 )
-            except BaseException:
+            except BaseException:  # pragma: no cover - cleanup after a failure of the Windows fallback staging
                 with suppress(OSError):
                     _rmdir(path)
                 raise
@@ -414,13 +414,13 @@ class StagingDirectory:
             if parent_fd is not None:
                 os.close(parent_fd)
 
-    def _validate_path_fallback(self) -> None:  # pragma: no cover - Windows lexical fallback
+    def _validate_path_fallback(self) -> None:
         """Fail closed if a Windows lexical staging location no longer names the reserved directory."""
         fallback = cast("_StagingFallback", self._fallback)
         try:
             path_stat = self.path.stat()
             anchor_stat = self.path.parent.stat()
-        except OSError as exc:
+        except OSError as exc:  # pragma: no cover - the staging directory vanished under the Windows fallback
             raise OSError(f"private staging directory changed: {self.path}") from exc
         if (path_stat.st_dev, path_stat.st_ino) != fallback.path_identity or (
             anchor_stat.st_dev,
@@ -531,7 +531,7 @@ def _chmod_backup_at(backup: str | Path, backup_fd: int, mode: int) -> None:
         fchmod(backup_fd, mode)
     elif os.chmod in os.supports_fd:
         os.chmod(backup_fd, mode)
-    elif os.chmod in os.supports_follow_symlinks:  # pragma: no cover - platform-specific fallback
+    elif os.chmod in os.supports_follow_symlinks:  # pragma: no cover - not proven unreachable
         Path(backup).chmod(mode, follow_symlinks=False)
     else:  # pragma: no cover - Windows lacks fd/no-follow chmod
         Path(backup).chmod(mode)
@@ -542,7 +542,7 @@ def _set_backup_times_at(backup: str | Path, backup_fd: int, target_stat: os.sta
     timestamps = (target_stat.st_atime_ns, target_stat.st_mtime_ns)
     if os.utime in os.supports_fd:
         os.utime(backup_fd, ns=timestamps)
-    elif os.utime in os.supports_follow_symlinks:  # pragma: no cover - platform-specific fallback
+    elif os.utime in os.supports_follow_symlinks:  # pragma: no cover - not proven unreachable
         os.utime(backup, ns=timestamps, follow_symlinks=False)
     else:  # pragma: no cover - legacy Windows fallback
         os.utime(backup, ns=timestamps)

@@ -1080,7 +1080,7 @@ class OpenAPIParser(JsonSchemaParser):
         """Return raw schema data from an OpenAPI media type object."""
         try:
             RawMediaObject.model_validate(media_obj)
-        except ValidationError:  # pragma: no cover
+        except ValidationError:  # pragma: no cover - not proven unreachable: a media object refused earlier
             return None
 
         raw_media_obj = cast("dict[str, RawSchema | None]", media_obj)
@@ -1325,7 +1325,7 @@ class OpenAPIParser(JsonSchemaParser):
             )
 
             if isinstance(detail, ReferenceObject):
-                if not detail.ref:  # pragma: no cover
+                if not detail.ref:  # pragma: no cover - not proven unreachable: a response reference with an empty $ref
                     continue
                 ref_model = self.get_ref_model(detail.ref, "response")
                 content = {k: self._validated_target(v, MediaObject) for k, v in ref_model.get("content", {}).items()}
@@ -1581,7 +1581,7 @@ class OpenAPIParser(JsonSchemaParser):
                                 backend="openapi-spec-validator",
                                 encoding=self.encoding,
                             )
-                        except ImportError:  # pragma: no cover
+                        except ImportError:  # pragma: no cover - the prance extra is not installed
                             from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
 
                             warn(

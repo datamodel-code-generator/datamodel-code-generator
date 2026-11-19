@@ -450,7 +450,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
                 model._additional_imports = [i for i in additional_imports if i != original_import]
             if inherits_one_of(model, all_target_models):
                 continue
-            if any(bc.reference for bc in model.base_classes):  # pragma: no cover
+            if any(bc.reference for bc in model.base_classes):  # pragma: no cover - not proven unreachable
                 parser._graph_builder.set_base_classes(model, [base_class_dt, *model.base_classes])
             else:
                 parser._graph_builder.set_base_classes(model, [base_class_dt])

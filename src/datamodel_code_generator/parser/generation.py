@@ -435,12 +435,12 @@ class _GenerationModelList(list["DataModel"]):
         self._invalidate()
 
     @overload
-    def __setitem__(self, index: SupportsIndex, item: Any) -> None:  # pragma: no cover
-        pass
+    def __setitem__(self, index: SupportsIndex, item: Any) -> None:  # noqa: D418 - CodeQL flags an ellipsis body.
+        """Replace one item."""
 
     @overload
-    def __setitem__(self, index: slice, item: Iterable[Any]) -> None:  # pragma: no cover
-        pass
+    def __setitem__(self, index: slice, item: Iterable[Any]) -> None:  # noqa: D418
+        """Replace a slice."""
 
     @override
     def __setitem__(
@@ -452,12 +452,12 @@ class _GenerationModelList(list["DataModel"]):
         self._invalidate()
 
     @overload
-    def __delitem__(self, index: SupportsIndex) -> None:  # pragma: no cover
-        pass
+    def __delitem__(self, index: SupportsIndex) -> None:  # noqa: D418
+        """Delete one item."""
 
     @overload
-    def __delitem__(self, index: slice) -> None:  # pragma: no cover
-        pass
+    def __delitem__(self, index: slice) -> None:  # noqa: D418
+        """Delete a slice."""
 
     @override
     def __delitem__(self, index: SupportsIndex | slice) -> None:  # ty: ignore[invalid-method-override]

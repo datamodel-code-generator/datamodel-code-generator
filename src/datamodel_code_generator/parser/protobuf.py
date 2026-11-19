@@ -178,7 +178,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
 def _load_descriptor_pb2() -> Any:
     try:
         from google.protobuf import descriptor_pb2  # noqa: PLC0415
-    except ImportError as exc:  # pragma: no cover
+    except ImportError as exc:  # pragma: no cover - the protobuf extra is not installed
         msg = f"protobuf input requires google.protobuf. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return descriptor_pb2
@@ -423,7 +423,7 @@ class _ProtoInputPreparer:
         record_watch_dependency(source_path)
         if source_path.is_relative_to(root):
             target = temp_path / source_path.relative_to(root)
-        else:  # pragma: no cover
+        else:  # pragma: no cover - not proven unreachable: a source outside the import root
             target = temp_path / source_path.name
         target.parent.mkdir(parents=True, exist_ok=True)
         encoding = self.parser.encoding

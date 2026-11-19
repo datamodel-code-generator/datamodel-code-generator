@@ -156,7 +156,7 @@ def format_validation_error(error: ValidationError) -> str:
     """Format the first Pydantic validation error as a concise, stable message."""
     errors = error.errors()
     if not errors:
-        return str(error)  # pragma: no cover
+        return str(error)  # pragma: no cover - pydantic never raises a ValidationError without errors
 
     first_error = errors[0]
     location = ".".join(str(part) for part in first_error.get("loc", ()))

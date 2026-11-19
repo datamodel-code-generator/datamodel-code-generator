@@ -3369,7 +3369,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 for ap_type in additional_props_types[1:]:  # pragma: no branch
                     is_better = best_type.type == ANY and ap_type.type != ANY
                     is_better = is_better or (ap_type.reference and not best_type.reference)
-                    if is_better:  # pragma: no cover
+                    if is_better:  # pragma: no cover - not proven unreachable: a later additionalProperties type wins
                         best_type = ap_type
                 return self.data_type(data_types=[best_type], is_dict=True)
 
@@ -4401,7 +4401,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         continue
                     if inherited_field is not None:
                         resolved_field = _rw_split.overlay_inherited_field(self, field, inherited_field, reserved_names)
-                        if resolved_field is None:  # pragma: no cover
+                        if resolved_field is None:  # pragma: no cover - not proven unreachable
                             continue
                         if self.model_resolver.default_value_overrides:
                             self._apply_inherited_field_default(
@@ -7151,7 +7151,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
                             )
                         )
-                    case _:  # pragma: no cover
+                    case _:  # pragma: no cover - not proven unreachable: the class form of an enum root
                         data_type = self.parse_enum(name, obj, path)
             case "typed-nullable-map":
                 typed_values = self._typed_nullable_map_value_schema(obj)

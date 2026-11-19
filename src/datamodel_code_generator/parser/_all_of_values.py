@@ -878,7 +878,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
 
     constraint_items: list[JsonSchemaObject] = []
     for item in obj.allOf:
-        if not isinstance(item, JsonSchemaObject):  # pragma: no cover
+        if not isinstance(item, JsonSchemaObject):  # pragma: no cover - not proven unreachable
             continue
         if item.ref:
             continue

@@ -120,7 +120,7 @@ def _intersect_constraint(parser: LightweightTypesHost, field: str, val1: Any, v
     if field == "multipleOf":
         with suppress(TypeError, ValueError, ZeroDivisionError):
             return intersect_multiple_of(val1, val2)
-        return val1  # pragma: no cover
+        return val1  # pragma: no cover - not proven unreachable: a multipleOf pair no intersection takes
     v1 = val1.value if isinstance(val1, UnionIntFloat) else val1
     v2 = val2.value if isinstance(val2, UnionIntFloat) else val2
     return val1 if intersect_constraint(field, v1, v2) is v1 else val2

@@ -891,7 +891,7 @@ def _simple_type_name(tp: type) -> str:
         return str(tp).replace("typing.", "")
     if hasattr(tp, "__name__"):
         return tp.__name__
-    return str(tp).replace("typing.", "")  # pragma: no cover
+    return str(tp).replace("typing.", "")  # pragma: no cover - not proven unreachable
 
 
 def _full_type_name(tp: type) -> str:
@@ -926,7 +926,7 @@ def _get_type_hints_safe(obj: type) -> dict[str, Any]:
     """Safely get type hints from a class, handling forward references."""
     try:
         return get_type_hints(obj)
-    except Exception:  # noqa: BLE001  # pragma: no cover
+    except Exception:  # noqa: BLE001  # pragma: no cover - get_type_hints of a class whose hints do not resolve
         return getattr(obj, "__annotations__", {})
 
 
@@ -1825,7 +1825,8 @@ def _load_single_model_schema(
 
         if ref_strategy and nested_models is not None:
             model_name = getattr(obj, "__name__", None)
-            if model_name and model_name in cast("dict[str, object]", schema.get("$defs", {})):  # pragma: no cover
+            defs = cast("dict[str, object]", schema.get("$defs", {}))
+            if model_name and model_name in defs:  # pragma: no cover - not proven unreachable: the root model in $defs
                 nested_models[model_name] = model
             schema = _filter_defs_by_strategy(
                 schema, nested_models, output_family, ref_strategy, expression_collector, [model]

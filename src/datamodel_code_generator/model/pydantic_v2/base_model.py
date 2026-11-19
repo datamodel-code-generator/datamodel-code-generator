@@ -891,7 +891,7 @@ class DataModelField(_PydanticBaseDataModelField):
     @field_validator("extras")
     def validate_extras(cls, values: Any) -> dict[str, Any]:  # noqa: N805
         """Validate and convert example to examples list."""
-        if not isinstance(values, dict):  # pragma: no cover
+        if not isinstance(values, dict):  # pragma: no cover - pydantic validates extras to a dict first
             return values
         if "examples" in values:
             return values
