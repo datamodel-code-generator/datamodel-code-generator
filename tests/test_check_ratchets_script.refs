@@ -23,6 +23,7 @@ host-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[host-bas
 host-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 host-baseline-unreadable-shape	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-shape].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 host-baseline-unreadable-value	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-value].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
+import-cycles	check_ratchets_script/check_ratchets_against_base[import-cycles].txt
 moved-line	check_ratchets_script/check_ratchets_against_base[moved-line].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff-config].txt
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt

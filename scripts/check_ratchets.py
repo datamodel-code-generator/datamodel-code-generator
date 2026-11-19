@@ -17,6 +17,10 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
+- ``import-cycle:<measure>@<area>``: the modules on import cycles of the package (``src``) and of ``scripts``, read by
+  `scripts/_import_cycles.py` from the model's import graph: ``module-level`` counts the cycles of the imports that run
+  when their module is imported, ``lazy`` those of every import (function-local and ``TYPE_CHECKING`` ones too) and
+  ``largest-lazy`` the largest of those; each module counts once, at its first import into its cycle.
 - ``private-scope-walk``, in ``scripts`` and ``tests``: a check that reads bindings, scopes, imports or comments with
   ``ast``, ``symtable`` or ``tokenize`` itself instead of through ``scripts/_source_model.py`` (`scope_walk_sites`),
   read by origin with the model; the model and its test are not counted.
@@ -58,6 +62,7 @@ from pathlib import Path
 import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._import_cycles import import_cycles
 from scripts._source_model import SourceModule
 
 SCRIPT = "scripts/check_ratchets.py"
@@ -164,7 +169,15 @@ ADVICE = {
     "any": "Name the type (a Protocol, a TypeVar, object or a union) instead of Any.",
     "no-type-check": "Fix the annotations instead of switching the type checker off for the function.",
     "getattr-private": "A private name read through getattr() hides it from SLF001: give its owner a method instead.",
-    "dynamic-import": "importlib and __import__ hide an import from the lint and the cycle checks: import it by name.",
+    "dynamic-import": (
+        "importlib and __import__ hide an import from the lint, and a computed module name hides it from the "
+        "import-cycle keys: import it by name."
+    ),
+    "import-cycle": (
+        "The lines are each module's first import into its cycle. Move what the modules of the cycle share into a "
+        "module that imports none of them; importing back inside a function or under TYPE_CHECKING still counts for "
+        "the lazy keys, and only the module-level key ignores it."
+    ),
     "filterwarnings-ignore": "Fix the warning's cause, or assert it with pytest.warns, instead of ignoring it.",
     "abnormal-path": "Reach the path end to end through the public entry points instead of marking it abnormal.",
     "private-scope-walk": (
@@ -698,6 +711,13 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
                     tally.add(f"allowlist:{listed}:unreadable", path, statement.lineno)
 
 
+def _import_cycle_tally(tally: Tally, root: Path) -> None:
+    """Count the modules on the import cycles of the package and of ``scripts`` (`scripts/_import_cycles.py`)."""
+    for key, found in import_cycles(root).items():
+        for path, line in (site for cycle in found for site in cycle):
+            tally.add(key, path, line)
+
+
 def count_tree(root: Path, ruff: list[str]) -> Tally:
     """Count every escape hatch of the tree at ``root``."""
     path = root / "pyproject.toml"
@@ -708,6 +728,7 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _ruff_files(tally, root, files)
     _source_tally(tally, root, files)
     _config_tally(tally, root, pyproject)
+    _import_cycle_tally(tally, root)
     return tally
 
 

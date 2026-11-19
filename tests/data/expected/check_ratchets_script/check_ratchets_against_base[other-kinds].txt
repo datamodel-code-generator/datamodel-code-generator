@@ -53,7 +53,7 @@ coverage-config:exclude:if TYPE_CHECKING: rose by 1 (0 -> 1). An omitted or excl
 coverage-config:omit:src/pkg/d.py rose by 1 (0 -> 1). An omitted or excluded file is never measured: reach it with tests instead.
   pyproject.toml: 0 -> 1
 
-dynamic-import@src rose by 1 (0 -> 1). importlib and __import__ hide an import from the lint and the cycle checks: import it by name.
+dynamic-import@src rose by 1 (0 -> 1). importlib and __import__ hide an import from the lint, and a computed module name hides it from the import-cycle keys: import it by name.
   src/pkg/d.py: 0 -> 1 (lines 12)
 
 filterwarnings-ignore@src rose by 2 (0 -> 2). Fix the warning's cause, or assert it with pytest.warns, instead of ignoring it.

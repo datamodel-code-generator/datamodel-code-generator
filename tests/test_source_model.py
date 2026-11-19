@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 import pytest
 import tomllib
 
+from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import check_ratchets
 from tests.conftest import assert_output
@@ -542,11 +543,20 @@ def _private_scope_walk(form: Path) -> list[str]:
     ]
 
 
+def _import_cycle(form: Path) -> list[str]:
+    """Return the import cycles of a package form by measure; a one-module form has no import between modules."""
+    if not form.is_dir():
+        return []
+    found = import_cycles.tree_cycles(source_model.SourceTree(form.parent, [form.name]))
+    return [f"{measure}: {', '.join(cycle)}" for measure, cycles in found.items() for cycle in cycles]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
     ),
     "private-scope-walk": RuleRun("scripts.check_ratchets", frozenset({"bindings", "references"}), _private_scope_walk),
+    "import-cycle": RuleRun("scripts._import_cycles", frozenset({"imports", "references"}), _import_cycle),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 

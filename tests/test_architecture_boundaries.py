@@ -13,11 +13,22 @@ import pytest
 import tomllib
 
 from scripts import check_architecture_boundaries
+from scripts._import_cycles import import_cycles
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[1]
 FIXTURE_ROOT = Path(__file__).parent / "data" / "architecture_boundaries"
 EXPECTED_ROOT = Path(__file__).parent / "data" / "expected" / "architecture_boundaries"
+CHECKER_FILES = ("check_architecture_boundaries.py", "_import_cycles.py", "_source_model.py")
+"""The guard and the modules it reads imports with, as a copy of the guard in a tree needs them."""
+
+
+def _copy_checker(root: Path) -> Path:
+    """Copy the guard and its modules into ``root/scripts`` and return the copied guard."""
+    (root / "scripts").mkdir()
+    for name in CHECKER_FILES:
+        copyfile(ROOT / "scripts" / name, root / "scripts" / name)
+    return root / "scripts" / "check_architecture_boundaries.py"
 
 
 def test_source_tree_respects_architecture_boundaries() -> None:
@@ -223,11 +234,9 @@ def test_host_private_access_baseline_only_shrinks(tmp_path: Path) -> None:
 
 def test_host_private_access_cli_writes_the_baseline(tmp_path: Path) -> None:
     """Write the baseline of a source tree from the executable guard, after which the tree checks clean."""
-    script_path = tmp_path / "scripts" / "check_architecture_boundaries.py"
+    script_path = _copy_checker(tmp_path)
     source_path = tmp_path / "src" / "datamodel_code_generator" / "parser" / "_concern.py"
-    script_path.parent.mkdir()
     source_path.parent.mkdir(parents=True)
-    copyfile(ROOT / "scripts" / "check_architecture_boundaries.py", script_path)
     copyfile(FIXTURE_ROOT / "host_private_access" / "concern.py", source_path)
 
     completed = subprocess.run(
@@ -242,6 +251,23 @@ def test_host_private_access_cli_writes_the_baseline(tmp_path: Path) -> None:
         f"exit: {completed.returncode}\nstderr: {completed.stderr!r}\n"
         f"{(script_path.parent / 'host_private_access_baseline.toml').read_text(encoding='utf-8')}"
     )
+
+
+def test_import_cycles_count_the_imports_that_close_them() -> None:
+    """Each kind of import back raises the import-cycle keys it can close; the fixture's package says why.
+
+    Imports that run when their module is imported close ``module-level`` cycles, which the guard also rejects;
+    function-local and ``TYPE_CHECKING`` imports close ``lazy`` ones only.
+    """
+    lines = []
+    for fixture in sorted((FIXTURE_ROOT / "import_cycles").iterdir()):
+        lines.append(f"== {fixture.name}")
+        for key, found in import_cycles(fixture).items():
+            lines += [f"{key}: {', '.join(f'{path}:{line}' for path, line in cycle)}" for cycle in found]
+        lines.append(
+            check_architecture_boundaries.format_report(check_architecture_boundaries.import_cycle_violations(fixture))
+        )
+    assert_output("\n".join(lines))
 
 
 def test_architecture_boundary_detector_allows_shared_and_composition_model_dependencies() -> None:
@@ -402,11 +428,9 @@ def test_architecture_boundary_cli_reports_shared_model_backend_access(
     expected: Path,
 ) -> None:
     """Run the executable guard against isolated shared-model backend access fixtures."""
-    script_path = tmp_path / "scripts" / "check_architecture_boundaries.py"
+    script_path = _copy_checker(tmp_path)
     source_path = tmp_path / "src" / "datamodel_code_generator" / "model" / "base.py"
-    script_path.parent.mkdir()
     source_path.parent.mkdir(parents=True)
-    copyfile(ROOT / "scripts" / "check_architecture_boundaries.py", script_path)
     copyfile(fixture, source_path)
 
     completed = subprocess.run(
