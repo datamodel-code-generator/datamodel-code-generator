@@ -9,7 +9,7 @@ import re
 import sys
 import unicodedata
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 ALLOWED_BREAKING_CHANGE_HEADINGS = frozenset({
     "Code Generation Changes",
@@ -296,7 +296,7 @@ def _validate_execution_evidence(
     _fail_closed("Claude did not completely read all prepared artifacts; refusing to update the draft.")
 
 
-def _fail_closed(message: str) -> None:
+def _fail_closed(message: str) -> NoReturn:
     """Print a non-sensitive validation error and stop the workflow."""
     print(message, file=sys.stderr)
     raise SystemExit(1)

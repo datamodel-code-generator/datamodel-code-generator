@@ -47,6 +47,8 @@ Layer: TypeAlias = Literal[
     "naming",
     "graph-links",
     "container-kinds",
+    "context-scope",
+    "json-schema",
     "warning-control",
     "message-text",
     "module-paths",

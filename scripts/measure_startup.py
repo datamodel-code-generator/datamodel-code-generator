@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, NotRequired, TypedDict
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = REPO_ROOT / "src"
@@ -23,6 +23,18 @@ class Case(NamedTuple):
     name: str
     args: tuple[str, ...]
     import_statement: str | None = None
+
+
+class CaseResult(TypedDict):
+    """Measurements of one case."""
+
+    name: str
+    runs: int
+    median_ms: float
+    min_ms: float
+    max_ms: float
+    tracemalloc: NotRequired[dict[str, int]]
+    importtime_top: list[dict[str, int | str]]
 
 
 CASES = (
@@ -112,14 +124,15 @@ def _importtime_top(args: tuple[str, ...]) -> list[dict[str, int | str]]:
     return sorted(rows, key=lambda row: int(row["cumulative_us"]), reverse=True)[:IMPORT_TOP_LIMIT]
 
 
-def _measure_case(case: Case, runs: int) -> dict[str, object]:
+def _measure_case(case: Case, runs: int) -> CaseResult:
     elapsed_ms = [_measure_elapsed(case.args) for _ in range(runs)]
-    result: dict[str, object] = {
+    result: CaseResult = {
         "name": case.name,
         "runs": runs,
         "median_ms": statistics.median(elapsed_ms),
         "min_ms": min(elapsed_ms),
         "max_ms": max(elapsed_ms),
+        "importtime_top": [],
     }
     if case.import_statement is not None:
         result["tracemalloc"] = _measure_memory(case.import_statement)

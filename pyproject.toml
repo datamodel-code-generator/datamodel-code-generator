@@ -296,7 +296,30 @@ lint.preview = true
 skip = ".git,*.lock,tests,docs/cli-reference,CHANGELOG.md,docs/changelog.md,docs/llms.txt,docs/llms-full.txt"
 
 [tool.ty]
-src.include = [ "src" ]
+src.include = [
+  "scripts",
+  "src",
+  "tests/checks",
+  "tests/conftest.py",
+  "tests/units.py",
+]
+src.exclude = [
+  "scripts/_template_compiler",
+  "scripts/_source_model.py",
+  "scripts/check_generation_store_usage.py",
+  "scripts/check_pass_pipeline.py",
+  "scripts/coverage_exclusions.py",
+  "scripts/_change_units.py",
+  "scripts/behaviour_diff.py",
+  "scripts/compare_release.py",
+  "scripts/build_architecture_docs.py",
+  "scripts/legacy_rows.py",
+  "scripts/check_ratchets.py",
+  "scripts/build_migration_docs.py",
+  "scripts/build_cli_docs.py",
+  "scripts/build_schema_docs.py",
+]
+environment.extra-paths = [ "scripts" ]
 environment.python-version = "3.11"
 rules.deprecated = "warn"
 

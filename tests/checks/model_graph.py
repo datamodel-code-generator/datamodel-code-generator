@@ -19,7 +19,7 @@ from datamodel_code_generator._graph_links import type_children
 from tests.checks.areas import Area, Mode, mode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Collection, Iterable, Mapping
 
 ParentMismatch: TypeAlias = Literal["recorded field", "dropped field", "data type"]
 """What the ``parent`` of a node is when it does not hold the node: a field of a recorded model, another field, or a
@@ -178,7 +178,7 @@ def collapse_module_root_models(original: Callable[[Any, Any], None]) -> Callabl
 
 
 def _positions_by_target(
-    sites_by_target: Mapping[Any, Iterable[Any]], positions: Mapping[Any, tuple[int, int]]
+    sites_by_target: Mapping[Any, Collection[Any]], positions: Mapping[Any, tuple[int, int]]
 ) -> dict[Any, list[tuple[int, int]]]:
     """Return the positions of the sites listed per target, for the targets that list any."""
     return {

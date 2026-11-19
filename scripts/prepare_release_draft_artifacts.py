@@ -328,7 +328,7 @@ def _public_names(source: str) -> Names | None:
     }
 
 
-REGISTRIES: tuple[tuple[str, str, Callable[[str], Names | None], Callable[[str], bool]], ...] = (
+REGISTRIES: tuple[tuple[str, str, Callable[[str], Names | None], Callable[[str], object]], ...] = (
     ("Experimental features", f"{PACKAGE}/experimental.py", _experimental_features, FEATURE_ID.fullmatch),
     ("Command-line options", "tests/data/expected/main/help/no_color.txt", _options, OPTION.fullmatch),
     ("Presets", f"{PACKAGE}/preset_names.py", _presets, PRESET_NAME.fullmatch),
