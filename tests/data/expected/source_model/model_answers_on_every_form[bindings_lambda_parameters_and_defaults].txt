@@ -1,0 +1,18 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  f: def@4 [always]
+scope function f#0 'f': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  callbacks: param@4 [function:body@4]
+  error: except@7 [function:body@4|try:except@7]
+  keyed: assign@9 [function:body@4]; value lambda key, /, *rest, flag=False, **options: (key, rest, flag, options)
+scope lambda f.<locals>.<lambda>#0 '<lambda>': code yes; first line 8
+  opened by a node evaluated in f#0
+  error: param@8 [function:body@4|try:except@7|function:body@8]
+scope lambda f.<locals>.<lambda>#1 '<lambda>': code yes; first line 9
+  opened by a node evaluated in f#0
+  key: param@9 [function:body@4|function:body@9]
+  rest: param@9 [function:body@4|function:body@9]
+  flag: param@9 [function:body@4|function:body@9]
+  options: param@9 [function:body@4|function:body@9]
+== code objects: one per scope that compiles on this Python

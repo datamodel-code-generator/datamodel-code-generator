@@ -1,0 +1,98 @@
+=== module reexport_chain_across_modules
+== references
+11:0 One store in <module> -> local <module> @11
+11:6 LiteralType load in <module> -> local <module> @8; origin reexport_chain_across_modules.format.LiteralType
+uses of <module>:LiteralType@8: read@11
+== imports
+from@6 reexport_chain_across_modules.sub as sub from reexport_chain_across_modules in <module> [always]; level 1; unconditional
+from@7 reexport_chain_across_modules.format.DEFAULT_LINE_LENGTH as DEFAULT_LINE_LENGTH from reexport_chain_across_modules.format in <module> [always]; level 1; unconditional
+from@8 reexport_chain_across_modules.format.LiteralType as LiteralType from reexport_chain_across_modules.format in <module> [always]; level 1; unconditional
+from@9 reexport_chain_across_modules.loop.first as first from reexport_chain_across_modules.loop in <module> [always]; level 1; unconditional
+definition reexport_chain_across_modules:DEFAULT_LINE_LENGTH -> assign reexport_chain_across_modules._format_types:DEFAULT_LINE_LENGTH@5 via reexport_chain_across_modules [always] > reexport_chain_across_modules.format [always] > reexport_chain_across_modules._format_types [always]
+definition reexport_chain_across_modules:LiteralType -> class reexport_chain_across_modules._format_types:LiteralType@8 via reexport_chain_across_modules [always] > reexport_chain_across_modules.format [always] > reexport_chain_across_modules._format_types [always]
+definition reexport_chain_across_modules:One -> attribute reexport_chain_across_modules.format:LiteralType.One@11 via reexport_chain_across_modules [always]
+definition reexport_chain_across_modules:first -> cycle reexport_chain_across_modules.loop:first@0 via reexport_chain_across_modules [always] > reexport_chain_across_modules.loop [always] > reexport_chain_across_modules.other [always]
+definition reexport_chain_across_modules:sub -> module reexport_chain_across_modules.sub@6 via reexport_chain_across_modules [always]
+=== module reexport_chain_across_modules._format_types
+== references
+5:0 DEFAULT_LINE_LENGTH store in <module> -> local <module> @5
+8:18 enum load in <module> -> local <module> @3; origin enum
+9:4 One store in LiteralType -> local LiteralType @9, else unbound
+uses of <module>:enum@3: read@8
+type positions @9: one
+== imports
+import@3 enum as enum from enum in <module> [always]; unconditional
+definition reexport_chain_across_modules._format_types:DEFAULT_LINE_LENGTH -> assign reexport_chain_across_modules._format_types:DEFAULT_LINE_LENGTH@5 via reexport_chain_across_modules._format_types [always]
+definition reexport_chain_across_modules._format_types:LiteralType -> class reexport_chain_across_modules._format_types:LiteralType@8 via reexport_chain_across_modules._format_types [always]
+definition reexport_chain_across_modules._format_types:enum -> outside enum@3 via reexport_chain_across_modules._format_types [always]
+=== module reexport_chain_across_modules.format
+== references
+8:0 DEFAULT_LINE_LENGTH store in <module> -> local <module> @8
+8:22 _format_types load in <module> -> local <module> @6; origin reexport_chain_across_modules._format_types
+9:0 LiteralType store in <module> -> local <module> @9
+9:14 _format_types load in <module> -> local <module> @6; origin reexport_chain_across_modules._format_types
+10:0 SEP store in <module> -> local <module> @10
+10:6 os load in <module> -> local <module> @3; origin os
+11:3 sys load in <module> -> local <module> @4; origin sys
+14:4 Versioned store in <module> -> local <module> @12,14
+15:0 Choice store in <module> -> local <module> @15
+15:9 Versioned load in <module> -> local <module> @12,14
+  may be reexport_chain_across_modules._format_types.LiteralType [version:body@11]
+uses of <module>:os@3: read@10
+uses of <module>:sys@4: read@11
+uses of <module>:_format_types@6: read@8, read@9
+uses of <module>:Versioned@12: read@15
+uses of <module>:Versioned@14: read@15
+== imports
+import@3 os as os from os in <module> [always]; unconditional
+import@4 sys as sys from sys in <module> [always]; unconditional
+from@6 reexport_chain_across_modules._format_types as _format_types from reexport_chain_across_modules in <module> [always]; level 1; unconditional
+from@12 reexport_chain_across_modules._format_types.LiteralType as Versioned from reexport_chain_across_modules._format_types in <module> [version:body@11]; level 1
+definition reexport_chain_across_modules.format:Choice -> unreadable reexport_chain_across_modules.format:Choice@15 via reexport_chain_across_modules.format [always]
+definition reexport_chain_across_modules.format:DEFAULT_LINE_LENGTH -> assign reexport_chain_across_modules._format_types:DEFAULT_LINE_LENGTH@5 via reexport_chain_across_modules.format [always] > reexport_chain_across_modules._format_types [always]
+definition reexport_chain_across_modules.format:LiteralType -> class reexport_chain_across_modules._format_types:LiteralType@8 via reexport_chain_across_modules.format [always] > reexport_chain_across_modules._format_types [always]
+definition reexport_chain_across_modules.format:SEP -> outside os.sep@10 via reexport_chain_across_modules.format [always]
+definition reexport_chain_across_modules.format:Versioned -> class reexport_chain_across_modules._format_types:LiteralType@8 via reexport_chain_across_modules.format [version:body@11] > reexport_chain_across_modules._format_types [always]; assign reexport_chain_across_modules.format:Versioned@14 via reexport_chain_across_modules.format [version:else@11]
+definition reexport_chain_across_modules.format:_format_types -> module reexport_chain_across_modules._format_types@6 via reexport_chain_across_modules.format [always]
+definition reexport_chain_across_modules.format:os -> outside os@3 via reexport_chain_across_modules.format [always]
+definition reexport_chain_across_modules.format:sys -> outside sys@4 via reexport_chain_across_modules.format [always]
+=== module reexport_chain_across_modules.loop
+== references
+== imports
+from@3 reexport_chain_across_modules.other.second as first from reexport_chain_across_modules.other in <module> [always]; level 1; unconditional
+definition reexport_chain_across_modules.loop:first -> cycle reexport_chain_across_modules.loop:first@0 via reexport_chain_across_modules.loop [always] > reexport_chain_across_modules.other [always]
+=== module reexport_chain_across_modules.other
+== references
+9:11 loop load in late -> local late @7; origin reexport_chain_across_modules.loop
+uses of late:loop@7: read@9
+== imports
+from@3 reexport_chain_across_modules.loop.first as second from reexport_chain_across_modules.loop in <module> [always]; level 1; unconditional
+from@7 reexport_chain_across_modules.loop as loop from reexport_chain_across_modules in late [function:body@6]; level 1
+definition reexport_chain_across_modules.other:late -> def reexport_chain_across_modules.other:late@6 via reexport_chain_across_modules.other [always]
+definition reexport_chain_across_modules.other:second -> cycle reexport_chain_across_modules.other:second@0 via reexport_chain_across_modules.other [always] > reexport_chain_across_modules.loop [always]
+=== module reexport_chain_across_modules.sub
+== references
+5:0 READER store in <module> -> local <module> @5
+5:9 importlib load in <module> -> local <module> @3; origin importlib
+5:44 __name__ load in <module> -> global <module>
+uses of <module>:importlib@3: call:import_module@5
+== imports
+import@3 importlib as importlib from importlib in <module> [always]; unconditional
+dynamic@5 reexport_chain_across_modules.sub.reader from reexport_chain_across_modules.sub.reader in <module> [always]; unconditional
+definition reexport_chain_across_modules.sub:READER -> assign reexport_chain_across_modules.sub:READER@5 via reexport_chain_across_modules.sub [always]
+definition reexport_chain_across_modules.sub:importlib -> outside importlib@3 via reexport_chain_across_modules.sub [always]
+=== module reexport_chain_across_modules.sub.reader
+== references
+3:0 VALUE store in <module> -> local <module> @3
+== imports
+definition reexport_chain_across_modules.sub.reader:VALUE -> assign reexport_chain_across_modules.sub.reader:VALUE@3 via reexport_chain_across_modules.sub.reader [always]
+edge reexport_chain_across_modules -> reexport_chain_across_modules.sub @6 via submodule (module) [always]
+edge reexport_chain_across_modules -> reexport_chain_across_modules.format @7 via from (module) [always]
+edge reexport_chain_across_modules -> reexport_chain_across_modules.format @8 via from (module) [always]
+edge reexport_chain_across_modules -> reexport_chain_across_modules.loop @9 via from (module) [always]
+edge reexport_chain_across_modules.format -> reexport_chain_across_modules._format_types @6 via submodule (module) [always]
+edge reexport_chain_across_modules.format -> reexport_chain_across_modules._format_types @12 via from (module) [version:body@11]
+edge reexport_chain_across_modules.loop -> reexport_chain_across_modules.other @3 via from (module) [always]
+edge reexport_chain_across_modules.other -> reexport_chain_across_modules.loop @3 via from (module) [always]
+edge reexport_chain_across_modules.other -> reexport_chain_across_modules.loop @7 via submodule (function) [function:body@6]
+edge reexport_chain_across_modules.sub -> reexport_chain_across_modules.sub.reader @5 via dynamic-literal (module) [always]

@@ -1,0 +1,5 @@
+== imports
+from@6 __future__.annotations as annotations from __future__ in <module> [always]; unconditional
+from@8 importlib.import_module as import_module from importlib in <module> [always]; unconditional
+dynamic@12 pkg.loaded from pkg.loaded in <module> [always]; unconditional
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,12 @@
+"""Review R32: lazy imports (3.15 grammar) bind like imports and are marked lazy.
+
+min-python: 3.15
+questions: bindings, references
+"""
+
+lazy import json
+lazy from os import path
+
+
+def f():
+    return json.dumps, path

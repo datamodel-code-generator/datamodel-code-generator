@@ -1,0 +1,31 @@
+== references
+5:5 decorate load in factory -> local factory @4
+5:14 kind load in factory -> local factory @4
+6:28 default load in factory -> local factory @4
+6:45 default load in factory -> local factory @4
+6:21 kind load (evaluated annotation) in factory -> local factory @4
+6:57 kind load (evaluated annotation) in factory -> local factory @4
+7:15 value load in factory.<locals>.inner -> local factory.<locals>.inner @6
+9:15 base load in factory -> local factory @4
+9:31 meta load in factory -> local factory @4
+12:4 total store in factory -> local factory @12
+12:28 rows load in factory -> local factory @4
+12:21 row store in factory.<locals>.<listcomp> -> local factory.<locals>.<listcomp> @12
+12:13 row load in factory.<locals>.<listcomp> -> local factory.<locals>.<listcomp> @12
+13:11 inner load in factory -> local factory @6
+13:18 Made load in factory -> local factory @9
+13:24 total load in factory -> local factory @12
+uses of factory:decorate@4: call@5
+uses of factory:default@4: read@6, read@6
+uses of factory:base@4: read@9
+uses of factory:meta@4: read@9
+uses of factory:rows@4: read@12
+uses of factory:kind@4: read@5, read@6, read@6
+uses of factory:inner@6: read@13
+uses of factory:Made@9: read@13
+uses of factory:total@12: read@13
+uses of factory.<locals>.inner:value@6: read@7
+uses of factory.<locals>.<listcomp>:row@12: read@12
+type positions @6: kind
+type positions @6: kind
+== code objects: one per scope that compiles on this Python

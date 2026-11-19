@@ -1,0 +1,28 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Annotated: import-from@6 [always]; origin typing.Annotated
+  f: def@9 [always]
+scope lambda <lambda>#0 '<lambda>': code yes; first line 9; in evaluated annotation
+  opened by a node evaluated in <module>#0
+  v: param@9 [function:body@9]
+scope function f#0 'f': code yes; first line 9
+  opened by a node evaluated in <module>#0
+  x: param@9 [function:body@9]
+  local: annassign@10 [function:body@9]; value 1
+scope lambda f.<locals>.<lambda>#0 '<lambda>': code no; first line 10; in never annotation
+  opened by a node evaluated in f#0
+== references
+9:9 Annotated load (evaluated annotation) in <module> -> local <module> @6; origin typing.Annotated
+9:19 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+9:34 v load in <lambda> -> local <lambda> @9
+10:4 local store in f -> local f @10
+10:11 Annotated load (never annotation) in f -> global <module> @6; origin typing.Annotated
+10:21 int load (never annotation) in f -> builtin; origin builtins.int
+11:11 local load in f -> local f @10
+uses of <module>:Annotated@6: read@9, read@10
+uses of <lambda>:v@9: read@9
+uses of f:local@10: read@11
+type positions @9: -
+type positions @10: Annotated, int
+type positions @9: Annotated, int
+== code objects: one per scope that compiles on this Python

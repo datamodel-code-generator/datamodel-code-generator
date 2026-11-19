@@ -1,0 +1,75 @@
+== references
+14:17 ast load (evaluated annotation) in <module> -> local <module> @7; origin ast
+14:32 list load (evaluated annotation) in <module> -> builtin; origin builtins.list
+14:37 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+15:4 names store in stores -> local stores @15
+16:8 node store in stores -> local stores @16
+16:16 ast load in stores -> global <module> @7; origin ast
+16:25 tree load in stores -> local stores @14
+17:14 node load in stores -> local stores @16
+18:17 syntax load in stores -> global <module> @8; origin ast
+18:33 ast load in stores -> global <module> @7; origin ast
+19:16 names load in stores -> local stores @15
+19:29 node load in stores -> local stores @16
+20:17 ast load in stores -> global <module> @7; origin ast
+22:11 names load in stores -> local stores @15
+25:22 ast load (evaluated annotation) in <module> -> local <module> @7; origin ast
+25:37 list load (evaluated annotation) in <module> -> builtin; origin builtins.list
+25:42 ast load (evaluated annotation) in <module> -> local <module> @7; origin ast
+26:29 ast load in definitions -> global <module> @7; origin ast
+26:38 tree load in definitions -> local definitions @25
+26:21 node store in definitions.<locals>.<listcomp> -> local definitions.<locals>.<listcomp> @26
+26:47 isinstance load in definitions.<locals>.<listcomp> -> builtin; origin builtins.isinstance
+26:58 node load in definitions.<locals>.<listcomp> -> local definitions.<locals>.<listcomp> @26
+26:64 FunctionDef load in definitions.<locals>.<listcomp> -> global <module> @11; origin ast.FunctionDef
+26:12 node load in definitions.<locals>.<listcomp> -> local definitions.<locals>.<listcomp> @26
+29:15 ast load (evaluated annotation) in <module> -> local <module> @7; origin ast
+30:11 syntax load in built -> global <module> @8; origin ast
+30:35 syntax load in built -> global <module> @8; origin ast
+33:16 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+33:24 list load (evaluated annotation) in <module> -> builtin; origin builtins.list
+33:29 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+34:11 symtable load in table -> global <module> @9; origin symtable
+34:29 text load in table -> local table @33
+37:19 tokenize load (evaluated annotation) in <module> -> local <module> @10; origin tokenize
+37:42 bool load (evaluated annotation) in <module> -> builtin; origin builtins.bool
+38:11 token load in comment -> local comment @37
+38:25 tokenize load in comment -> global <module> @10; origin tokenize
+38:46 token load in comment -> local comment @37
+41:13 ast load in <module> -> local <module> @7; origin ast
+42:33 ast load (evaluated annotation) in Finder -> global <module> @7; origin ast
+43:8 self load in Finder.visit_Lambda -> local Finder.visit_Lambda @42
+43:27 node load in Finder.visit_Lambda -> local Finder.visit_Lambda @42
+45:31 ast load (evaluated annotation) in Finder -> global <module> @7; origin ast
+46:8 self load in Finder.visit_Call -> local Finder.visit_Call @45
+46:27 node load in Finder.visit_Call -> local Finder.visit_Call @45
+uses of <module>:ast@7: read@14, call:walk@16, read@18, read@20, read@25, read@25, call:walk@26, read@29, read@41, read@42, read@45
+uses of <module>:syntax@8: read@18, call:Name@30, call:Load@30
+uses of <module>:symtable@9: call:symtable@34
+uses of <module>:tokenize@10: read@37, read@38
+uses of <module>:FunctionDef@11: read@26
+uses of stores:tree@14: read@16
+uses of stores:names@15: call:append@19, read@22
+uses of stores:node@16: read@17, read@19
+uses of definitions:tree@25: read@26
+uses of definitions.<locals>.<listcomp>:node@26: read@26, read@26
+uses of table:text@33: read@34
+uses of comment:token@37: read@38, read@38
+uses of Finder.visit_Lambda:self@42: call:generic_visit@43
+uses of Finder.visit_Lambda:node@42: read@43
+uses of Finder.visit_Call:self@45: call:generic_visit@46
+uses of Finder.visit_Call:node@45: read@46
+type positions @14: list, str
+type positions @25: list, ast
+type positions @29: ast
+type positions @33: list, str
+type positions @37: bool
+type positions @42: -
+type positions @45: -
+type positions @14: ast
+type positions @25: ast
+type positions @33: str
+type positions @37: tokenize
+type positions @42: ast
+type positions @45: ast
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,127 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  f: def@7 [always]
+scope function f#0 'f': code yes; first line 7
+  opened by a node evaluated in <module>#0
+  rows: param@7 [function:body@7]
+  kinds: param@7 [function:body@7]
+  a: assign@8 [function:body@7]; value list(name for name in (item for item in rows))
+  b: assign@9 [function:body@7]; value [name for name in [item for item in rows] if name]
+  c: assign@10 [function:body@7]; value {key: rows for key in (lambda seq: seq)(kinds)}
+  d: assign@11 [function:body@7]; value list( (name, kind) for name, kind in zip( (row.name for row in rows), kinds, strict=True, ) )
+scope comprehension f.<locals>.<genexpr>#0 '<genexpr>': code yes; first line 8
+  opened by a node evaluated in f#0
+  item: comprehension@8 [function:body@7|loop:body@8]
+scope comprehension f.<locals>.<genexpr>#1 '<genexpr>': code yes; first line 8
+  opened by a node evaluated in f#0
+  name: comprehension@8 [function:body@7|loop:body@8]
+scope comprehension f.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 9
+  opened by a node evaluated in f#0
+  item: comprehension@9 [function:body@7|loop:body@9]
+scope comprehension f.<locals>.<listcomp>#1 '<listcomp>': code 3.11 only; first line 9
+  opened by a node evaluated in f#0
+  name: comprehension@9 [function:body@7|loop:body@9]
+scope lambda f.<locals>.<lambda>#0 '<lambda>': code yes; first line 10
+  opened by a node evaluated in f#0
+  seq: param@10 [function:body@7|function:body@10]
+scope comprehension f.<locals>.<dictcomp>#0 '<dictcomp>': code 3.11 only; first line 10
+  opened by a node evaluated in f#0
+  key: comprehension@10 [function:body@7|loop:body@10]
+scope comprehension f.<locals>.<genexpr>#2 '<genexpr>': code yes; first line 14
+  opened by a node evaluated in f#0
+  row: comprehension@14 [function:body@7|loop:body@14]
+scope comprehension f.<locals>.<genexpr>#3 '<genexpr>': code yes; first line 11
+  opened by a node evaluated in f#0
+  name: comprehension@13 [function:body@7|loop:body@11]
+  kind: comprehension@13 [function:body@7|loop:body@11]
+== references
+8:4 a store in f -> local f @8
+8:8 list load in f -> builtin; origin builtins.list
+8:48 rows load in f -> local f @7
+8:40 item store in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @8
+8:31 item load in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @8
+8:22 name store in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @8
+8:13 name load in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @8
+9:4 b store in f -> local f @9
+9:44 rows load in f -> local f @7
+9:36 item store in f.<locals>.<listcomp> -> local f.<locals>.<listcomp> @9
+9:27 item load in f.<locals>.<listcomp> -> local f.<locals>.<listcomp> @9
+9:18 name store in f.<locals>.<listcomp> -> local f.<locals>.<listcomp> @9
+9:53 name load in f.<locals>.<listcomp> -> local f.<locals>.<listcomp> @9
+9:9 name load in f.<locals>.<listcomp> -> local f.<locals>.<listcomp> @9
+10:4 c store in f -> local f @10
+10:43 seq load in f.<locals>.<lambda> -> local f.<locals>.<lambda> @10
+10:48 kinds load in f -> local f @7
+10:23 key store in f.<locals>.<dictcomp> -> local f.<locals>.<dictcomp> @10
+10:14 rows load in f.<locals>.<dictcomp> -> enclosing f @7
+10:9 key load in f.<locals>.<dictcomp> -> local f.<locals>.<dictcomp> @10
+11:4 d store in f -> local f @11
+11:8 list load in f -> builtin; origin builtins.list
+13:26 zip load in f -> builtin; origin builtins.zip
+14:33 rows load in f -> local f @7
+14:26 row store in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @14
+14:13 row load in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @14
+15:12 kinds load in f -> local f @7
+13:12 name store in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @13
+13:18 kind store in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @13
+12:9 name load in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @13
+12:15 kind load in f.<locals>.<genexpr> -> local f.<locals>.<genexpr> @13
+19:11 a load in f -> local f @8
+19:14 b load in f -> local f @9
+19:17 c load in f -> local f @10
+19:20 d load in f -> local f @11
+uses of f:rows@7: read@8, read@9, read@10, read@14
+uses of f:kinds@7: read@10, read@15
+uses of f:a@8: read@19
+uses of f:b@9: read@19
+uses of f:c@10: read@19
+uses of f:d@11: read@19
+uses of f.<locals>.<genexpr>:item@8: read@8
+uses of f.<locals>.<genexpr>:name@8: read@8
+uses of f.<locals>.<listcomp>:item@9: read@9
+uses of f.<locals>.<listcomp>:name@9: read@9, read@9
+uses of f.<locals>.<lambda>:seq@10: read@10
+uses of f.<locals>.<dictcomp>:key@10: read@10
+uses of f.<locals>.<genexpr>:row@14: read@14
+uses of f.<locals>.<genexpr>:name@13: read@12
+uses of f.<locals>.<genexpr>:kind@13: read@12
+== extents
+Expr@1 lines 1-4
+FunctionDef@7 lines 7-19: function 7/8-19
+Assign@8 lines 8
+Assign@9 lines 9
+Assign@10 lines 10
+Assign@11 lines 11-18
+Return@19 lines 19
+code lines: 1-4,7-19
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: Expr@1; owner <module>#0; tokens -
+line 3: Expr@1; owner <module>#0; tokens -
+line 4: Expr@1; owner <module>#0; tokens -
+line 5: -; owner <module>#0; tokens -
+line 6: -; owner <module>#0; tokens -
+line 7: FunctionDef@7; owner f#0; tokens f#0:header
+line 8: Assign@8; owner f#0; tokens f#0:body, f.<locals>.<genexpr>#0:body, f.<locals>.<genexpr>#1:body
+line 9: Assign@9; owner f#0; tokens f#0:body, f.<locals>.<listcomp>#0:body, f.<locals>.<listcomp>#1:body
+line 10: Assign@10; owner f#0; tokens f#0:body, f.<locals>.<dictcomp>#0:body, f.<locals>.<lambda>#0:body, f.<locals>.<lambda>#0:header
+line 11: Assign@11; owner f#0; tokens f#0:body, f.<locals>.<genexpr>#3:body
+line 12: Assign@11; owner f.<locals>.<genexpr>#3; tokens f.<locals>.<genexpr>#3:body
+line 13: Assign@11; owner f.<locals>.<genexpr>#3; tokens f.<locals>.<genexpr>#3:body
+line 14: Assign@11; owner f.<locals>.<genexpr>#2; tokens f.<locals>.<genexpr>#2:body, f.<locals>.<genexpr>#3:body
+line 15: Assign@11; owner f.<locals>.<genexpr>#3; tokens f.<locals>.<genexpr>#3:body
+line 16: Assign@11; owner f.<locals>.<genexpr>#3; tokens f.<locals>.<genexpr>#3:body
+line 17: Assign@11; owner f.<locals>.<genexpr>#3; tokens f.<locals>.<genexpr>#3:body
+line 18: Assign@11; owner f.<locals>.<genexpr>#3; tokens f.<locals>.<genexpr>#3:body
+line 19: Return@19; owner f#0; tokens f#0:body
+header f: 7
+header f.<locals>.<lambda>: 10
+source @1: """C3 v2 (_client/channels.py:156): a scope inside another comprehension's first iterable owns its own tokens.
+
+questions: bindings, references
+"""
+source @8: a = list(name for name in (item for item in rows))
+source @9: b = [name for name in [item for item in rows] if name]
+source @10: c = {key: rows for key in (lambda seq: seq)(kinds)}
+source @11: d = list( (name, kind) for name, kind in zip( (row.name for row in rows), kinds, strict=True, ) )
+source @19: return a, b, c, d
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,15 @@
+== references
+10:0 A load in <module> -> local <module> @4; origin forms.references.late_attribute_writes.A
+11:4 value store in <module> -> local <module> @11
+11:14 A load in <module> -> local <module> @4; origin forms.references.late_attribute_writes.A
+11:17 B load in <module> -> local <module> @7; origin forms.references.late_attribute_writes.B
+12:4 value load in <module> -> local <module> @11
+12:23 __name__ load in <module> -> global <module>
+13:0 B load in <module> -> local <module> @7; origin forms.references.late_attribute_writes.B
+13:23 staticmethod load in <module> -> builtin; origin builtins.staticmethod
+13:36 print load in <module> -> builtin; origin builtins.print
+uses of <module>:A@4: attribute-store@10, read@11
+uses of <module>:B@7: read@11, attribute-store@13
+uses of <module>:value@11: attribute-store@12
+type positions @10: pkg
+== code objects: one per scope that compiles on this Python

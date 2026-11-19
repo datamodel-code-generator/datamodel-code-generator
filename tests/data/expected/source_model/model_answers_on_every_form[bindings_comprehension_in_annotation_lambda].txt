@@ -1,0 +1,126 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  Annotated: import-from@8 [always]; origin typing.Annotated
+  Literal: import-from@8 [always]; origin typing.Literal
+  Query: import-from@10 [always]; origin fastapi.Query
+  BaseModel: import-from@11 [always]; origin pydantic.BaseModel
+  Field: import-from@11 [always]; origin pydantic.Field
+  Order: class@14 [always]
+  read: def@20 [always]
+  pick: def@24 [always]
+  TOP: annassign@28 [always]; value set()
+scope class Order#0 'Order': code yes; first line 14
+  opened by a node evaluated in <module>#0
+  items: annotation-only@15 [always]
+  tags: annotation-only@16 [always]
+  nested: annassign@17 [always]; value []
+  members: items, nested, tags
+scope lambda Order.<lambda>#0 '<lambda>': code yes; first line 15; in evaluated annotation
+  opened by a node evaluated in Order#0
+scope comprehension Order.<lambda>.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 15; in evaluated annotation
+  opened by a node evaluated in Order.<lambda>#0
+  i: comprehension@15 [function:body@15|loop:body@15]
+scope lambda Order.<lambda>#1 '<lambda>': code yes; first line 16; in evaluated annotation
+  opened by a node evaluated in Order#0
+scope comprehension Order.<lambda>.<locals>.<dictcomp>#0 '<dictcomp>': code 3.11 only; first line 16; in evaluated annotation
+  opened by a node evaluated in Order.<lambda>#1
+  k: comprehension@16 [function:body@16|loop:body@16]
+scope lambda Order.<lambda>#2 '<lambda>': code yes; first line 17; in evaluated annotation
+  opened by a node evaluated in Order#0
+scope lambda Order.<lambda>.<locals>.<lambda>#0 '<lambda>': code yes; first line 17; in evaluated annotation
+  opened by a node evaluated in Order.<lambda>#2
+scope comprehension Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 17; in evaluated annotation
+  opened by a node evaluated in Order.<lambda>.<locals>.<lambda>#0
+  s: comprehension@17 [function:body@17|function:body@17|loop:body@17]
+scope lambda <lambda>#0 '<lambda>': code yes; first line 20; in evaluated annotation
+  opened by a node evaluated in <module>#0
+scope comprehension <lambda>.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 20; in evaluated annotation
+  opened by a node evaluated in <lambda>#0
+  s: comprehension@20 [function:body@20|loop:body@20]
+scope function read#0 'read': code yes; first line 20
+  opened by a node evaluated in <module>#0
+  q: param@20 [function:body@20]
+scope comprehension <genexpr>#0 '<genexpr>': code yes; first line 24; in evaluated annotation
+  opened by a node evaluated in <module>#0
+  i: comprehension@24 [loop:body@24]
+scope comprehension <genexpr>.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 24; in evaluated annotation
+  opened by a node evaluated in <genexpr>#0
+  j: comprehension@24 [loop:body@24|loop:body@24]
+scope function pick#0 'pick': code yes; first line 24
+  opened by a node evaluated in <module>#0
+  x: param@24 [function:body@24]
+scope lambda <lambda>#1 '<lambda>': code yes; first line 28; in evaluated annotation
+  opened by a node evaluated in <module>#0
+scope comprehension <lambda>.<locals>.<setcomp>#0 '<setcomp>': code 3.11 only; first line 28; in evaluated annotation
+  opened by a node evaluated in <lambda>#1
+  n: comprehension@28 [function:body@28|loop:body@28]
+== references
+14:12 BaseModel load in <module> -> local <module> @11; origin pydantic.BaseModel
+15:4 items store in Order -> local Order @15, else unbound
+15:11 Annotated load (evaluated annotation) in Order -> global <module> @8; origin typing.Annotated
+15:21 list load (evaluated annotation) in Order -> builtin; origin builtins.list
+15:26 int load (evaluated annotation) in Order -> builtin; origin builtins.int
+15:32 Field load (evaluated annotation) in Order -> global <module> @11; origin pydantic.Field
+15:78 range load in Order.<lambda> -> builtin; origin builtins.range
+15:73 i store in Order.<lambda>.<locals>.<listcomp> -> local Order.<lambda>.<locals>.<listcomp> @15
+15:63 i load in Order.<lambda>.<locals>.<listcomp> -> local Order.<lambda>.<locals>.<listcomp> @15
+16:4 tags store in Order -> local Order @16, else unbound
+16:10 Annotated load (evaluated annotation) in Order -> global <module> @8; origin typing.Annotated
+16:20 dict load (evaluated annotation) in Order -> builtin; origin builtins.dict
+16:25 str load (evaluated annotation) in Order -> builtin; origin builtins.str
+16:30 str load (evaluated annotation) in Order -> builtin; origin builtins.str
+16:36 Field load (evaluated annotation) in Order -> global <module> @11; origin pydantic.Field
+16:76 k store in Order.<lambda>.<locals>.<dictcomp> -> local Order.<lambda>.<locals>.<dictcomp> @16
+16:70 k load in Order.<lambda>.<locals>.<dictcomp> -> local Order.<lambda>.<locals>.<dictcomp> @16
+16:67 k load in Order.<lambda>.<locals>.<dictcomp> -> local Order.<lambda>.<locals>.<dictcomp> @16
+17:4 nested store in Order -> local Order @17, else unbound
+17:12 Annotated load (evaluated annotation) in Order -> global <module> @8; origin typing.Annotated
+17:22 list load (evaluated annotation) in Order -> builtin; origin builtins.list
+17:27 str load (evaluated annotation) in Order -> builtin; origin builtins.str
+17:56 s store in Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp> -> local Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp> @17
+17:50 s load in Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp> -> local Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp> @17
+20:12 Annotated load (evaluated annotation) in <module> -> local <module> @8; origin typing.Annotated
+20:22 list load (evaluated annotation) in <module> -> builtin; origin builtins.list
+20:27 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+20:33 Query load (evaluated annotation) in <module> -> local <module> @10; origin fastapi.Query
+20:70 s store in <lambda>.<locals>.<listcomp> -> local <lambda>.<locals>.<listcomp> @20
+20:64 s load in <lambda>.<locals>.<listcomp> -> local <lambda>.<locals>.<listcomp> @20
+20:93 list load (evaluated annotation) in <module> -> builtin; origin builtins.list
+20:98 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+21:11 q load in read -> local read @20
+24:12 Literal load (evaluated annotation) in <module> -> local <module> @8; origin typing.Literal
+24:20 tuple load (evaluated annotation) in <module> -> builtin; origin builtins.tuple
+24:45 i store in <genexpr> -> local <genexpr> @24
+24:38 i load in <genexpr> -> local <genexpr> @24
+24:33 j store in <genexpr>.<locals>.<listcomp> -> local <genexpr>.<locals>.<listcomp> @24
+24:27 j load in <genexpr>.<locals>.<listcomp> -> local <genexpr>.<locals>.<listcomp> @24
+28:0 TOP store in <module> -> local <module> @28
+28:5 Annotated load (evaluated annotation) in <module> -> local <module> @8; origin typing.Annotated
+28:15 set load (evaluated annotation) in <module> -> builtin; origin builtins.set
+28:19 int load (evaluated annotation) in <module> -> builtin; origin builtins.int
+28:45 range load in <lambda> -> builtin; origin builtins.range
+28:40 n store in <lambda>.<locals>.<setcomp> -> local <lambda>.<locals>.<setcomp> @28
+28:34 n load in <lambda>.<locals>.<setcomp> -> local <lambda>.<locals>.<setcomp> @28
+28:58 set load in <module> -> builtin; origin builtins.set
+uses of <module>:Annotated@8: read@15, read@16, read@17, read@20, read@28
+uses of <module>:Literal@8: read@24
+uses of <module>:Query@10: call@20
+uses of <module>:BaseModel@11: read@14
+uses of <module>:Field@11: call@15, call@16
+uses of Order.<lambda>.<locals>.<listcomp>:i@15: read@15
+uses of Order.<lambda>.<locals>.<dictcomp>:k@16: read@16, read@16
+uses of Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp>:s@17: read@17
+uses of <lambda>.<locals>.<listcomp>:s@20: read@20
+uses of read:q@20: read@21
+uses of <genexpr>:i@24: read@24
+uses of <genexpr>.<locals>.<listcomp>:j@24: read@24
+uses of <lambda>.<locals>.<setcomp>:n@28: read@28
+type positions @20: list, str
+type positions @24: -
+type positions @28: Annotated, set, int
+type positions @15: Annotated, list, int
+type positions @16: Annotated, dict, str, str
+type positions @17: Annotated, list, str
+type positions @20: Annotated, list, str
+type positions @24: Literal
+== code objects: one per scope that compiles on this Python

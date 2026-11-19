@@ -11,7 +11,7 @@
         "RootModel"
       ],
       "config": {},
-      "croot": "Annotated[datetime.date, MaxLen(max_length=10)]",
+      "croot": "Annotated[datetime.date, max_length=10]",
       "default": null,
       "kind": "RootModel",
       "root": "datetime.date"
@@ -36,7 +36,7 @@
     },
     "StampsAdditionalProperty": {
       "kind": "alias",
-      "type": "Annotated[pydantic.AwareDatetime, MinLen(min_length=20)]"
+      "type": "Annotated[pydantic.AwareDatetime, min_length=20]"
     },
     "StringConstraintsOnEmittedTypes": {
       "bases": [
@@ -64,7 +64,7 @@
         },
         "id": {
           "alias": null,
-          "ctype": "Annotated[Union[None, uuid.UUID], MinLen(min_length=36)]",
+          "ctype": "Annotated[Union[None, uuid.UUID], min_length=36]",
           "default": "None",
           "required": false,
           "serialization_alias": null,

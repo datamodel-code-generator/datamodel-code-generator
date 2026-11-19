@@ -1,0 +1,6 @@
+asyncapi: 3.0.0
+info: {title: Messages of a library, version: 1.0.0}
+components:
+  messages:
+    Quote:
+      payload: {type: string}

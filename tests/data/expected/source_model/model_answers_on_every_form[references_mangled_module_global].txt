@@ -1,0 +1,4 @@
+== references
+3:0 __secret store in <module> -> local <module> @3
+8:15 __secret load in C.m -> unbound
+== code objects: one per scope that compiles on this Python

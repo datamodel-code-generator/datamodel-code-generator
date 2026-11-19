@@ -1,0 +1,9 @@
+verdict problems: none
+undeclared questions: none
+references/syntax_read_by_origin: syntax_read_by_origin.py:18
+references/syntax_read_by_origin: syntax_read_by_origin.py:18
+references/syntax_read_by_origin: syntax_read_by_origin.py:26
+references/syntax_read_by_origin: syntax_read_by_origin.py:34
+references/syntax_read_by_origin: syntax_read_by_origin.py:38
+references/syntax_read_by_origin: syntax_read_by_origin.py:42
+references/syntax_read_by_origin: syntax_read_by_origin.py:42

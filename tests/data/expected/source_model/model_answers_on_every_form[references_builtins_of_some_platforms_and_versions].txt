@@ -1,0 +1,22 @@
+== references
+5:3 sys load in <module> -> local <module> @3; origin sys
+6:4 NATIVE_ERRORS store in <module> -> local <module> @6,8
+6:21 WindowsError load in <module> -> builtin; origin builtins.WindowsError
+6:35 OSError load in <module> -> builtin; origin builtins.OSError
+8:4 NATIVE_ERRORS store in <module> -> local <module> @6,8
+8:21 OSError load in <module> -> builtin; origin builtins.OSError
+10:3 sys load in <module> -> local <module> @3; origin sys
+11:4 FINALIZING store in <module> -> local <module> @11
+11:18 PythonFinalizationError load in <module> -> builtin; origin builtins.PythonFinalizationError
+11:43 _IncompleteInputError load in <module> -> builtin; origin builtins._IncompleteInputError
+13:3 sys load in <module> -> local <module> @3; origin sys
+14:4 EMPTY store in <module> -> local <module> @14
+14:12 frozendict load in <module> -> builtin; origin builtins.frozendict
+15:4 MISSING store in <module> -> local <module> @15
+15:14 sentinel load in <module> -> builtin; origin builtins.sentinel
+16:4 CYCLE store in <module> -> local <module> @16
+16:12 ImportCycleError load in <module> -> builtin; origin builtins.ImportCycleError
+17:4 LAZY store in <module> -> local <module> @17
+17:11 __lazy_import__ load in <module> -> builtin; origin builtins.__lazy_import__
+uses of <module>:sys@3: read@5, read@10, read@13
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,38 @@
+== extents
+Expr@1 lines 1
+ClassDef@4 lines 4-10: class 4/5-10
+FunctionDef@5 lines 5-10: function 5/6-10
+If@6 lines 6-9: if 6/7
+Return@7 lines 7
+If@8 lines 8-9: elif 8/9
+Return@9 lines 9
+Return@10 lines 10
+ClassDef@13 lines 13-15: class 13/14-15
+FunctionDef@14 lines 14-15: function 14/15
+Return@15 lines 15
+code lines: 1,4-10,13-15
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: -; owner <module>#0; tokens -
+line 4: ClassDef@4; owner Base#0; tokens Base#0:header
+line 5: FunctionDef@5; owner Base.run#0; tokens Base.run#0:header
+line 6: If@6; owner Base.run#0; tokens Base.run#0:body
+line 7: Return@7; owner Base.run#0; tokens Base.run#0:body
+line 8: If@8; owner Base.run#0; tokens Base.run#0:body
+line 9: Return@9; owner Base.run#0; tokens Base.run#0:body
+line 10: Return@10; owner Base.run#0; tokens Base.run#0:body
+line 11: -; owner <module>#0; tokens -
+line 12: -; owner <module>#0; tokens -
+line 13: ClassDef@13; owner Child#0; tokens Child#0:header
+line 14: FunctionDef@14; owner Child.run#0; tokens Child.run#0:header
+line 15: Return@15; owner Child.run#0; tokens Child.run#0:body
+header Base: 4
+header Base.run: 5
+header Child: 13
+header Child.run: 14
+source @1: """C3 P3/P4: an elif branch and an overriding method read on the base text map to their own clause and owner."""
+source @7: return "one"
+source @9: return "two"
+source @10: return "other"
+source @15: return super().run(x)
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,21 @@
+== references
+3:0 n store in <module> -> local <module> @3
+7:4 n store in C -> local C @7, else global <module> @3
+8:4 xs store in C -> local C @8, else unbound
+8:25 range load in C -> builtin; origin builtins.range
+8:31 n load in C -> local C @7, else global <module> @3
+8:20 i store in C.<listcomp> -> local C.<listcomp> @8
+8:10 i load in C.<listcomp> -> local C.<listcomp> @8
+8:14 n load in C.<listcomp> -> global <module> @3; origin forms.references.class_body_comprehension.n
+9:4 ok store in C -> local C @9, else unbound
+9:9 any load in C -> builtin; origin builtins.any
+9:28 xs load in C -> local C @8, else unbound
+9:23 v store in C.<genexpr> -> local C.<genexpr> @9
+9:13 v load in C.<genexpr> -> local C.<genexpr> @9
+9:17 n load in C.<genexpr> -> global <module> @3; origin forms.references.class_body_comprehension.n
+uses of <module>:n@3: read@8, read@8, read@9
+uses of C:n@7: read@8
+uses of C:xs@8: read@9
+uses of C.<listcomp>:i@8: read@8
+uses of C.<genexpr>:v@9: read@9
+== code objects: one per scope that compiles on this Python

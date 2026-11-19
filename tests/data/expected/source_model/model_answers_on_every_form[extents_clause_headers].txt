@@ -1,0 +1,75 @@
+== extents
+Expr@1 lines 1
+FunctionDef@4 lines 4-33: function 4/5-33
+If@5 lines 5-10: if 5/6
+Pass@6 lines 6
+If@7 lines 7-10: elif 7/8; else 9/10
+Pass@8 lines 8
+Pass@10 lines 10
+TryStar@11 lines 11-18: try 11/12; except* 13/14; else 15/16; finally 17/18
+Pass@12 lines 12
+Pass@14 lines 14
+Pass@16 lines 16
+Pass@18 lines 18
+For@19 lines 19-22: for 19/20; else 21/22
+Pass@20 lines 20
+Pass@22 lines 22
+While@23 lines 23-26: while 23-25/26
+Break@26 lines 26
+With@27 lines 27-28: with 27/28
+Pass@28 lines 28
+Try@29 lines 29-32: try 29/30; finally 31/32
+Pass@30 lines 30
+Pass@32 lines 32
+Return@33 lines 33
+code lines: 1,4-33
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: -; owner <module>#0; tokens -
+line 3: -; owner <module>#0; tokens -
+line 4: FunctionDef@4; owner f#0; tokens f#0:header
+line 5: If@5; owner f#0; tokens f#0:body
+line 6: Pass@6; owner f#0; tokens f#0:body
+line 7: If@7; owner f#0; tokens f#0:body
+line 8: Pass@8; owner f#0; tokens f#0:body
+line 9: If@7; owner f#0; tokens f#0:body
+line 10: Pass@10; owner f#0; tokens f#0:body
+line 11: TryStar@11; owner f#0; tokens f#0:body
+line 12: Pass@12; owner f#0; tokens f#0:body
+line 13: TryStar@11; owner f#0; tokens f#0:body
+line 14: Pass@14; owner f#0; tokens f#0:body
+line 15: TryStar@11; owner f#0; tokens f#0:body
+line 16: Pass@16; owner f#0; tokens f#0:body
+line 17: TryStar@11; owner f#0; tokens f#0:body
+line 18: Pass@18; owner f#0; tokens f#0:body
+line 19: For@19; owner f#0; tokens f#0:body
+line 20: Pass@20; owner f#0; tokens f#0:body
+line 21: For@19; owner f#0; tokens f#0:body
+line 22: Pass@22; owner f#0; tokens f#0:body
+line 23: While@23; owner f#0; tokens f#0:body
+line 24: While@23; owner f#0; tokens f#0:body
+line 25: While@23; owner f#0; tokens f#0:body
+line 26: Break@26; owner f#0; tokens f#0:body
+line 27: With@27; owner f#0; tokens f#0:body
+line 28: Pass@28; owner f#0; tokens f#0:body
+line 29: Try@29; owner f#0; tokens f#0:body
+line 30: Pass@30; owner f#0; tokens f#0:body
+line 31: Try@29; owner f#0; tokens f#0:body
+line 32: Pass@32; owner f#0; tokens f#0:body
+line 33: Return@33; owner f#0; tokens f#0:body
+header f: 4
+source @1: """#7119: else with a comment, finally, except*, an elif chain, loops with else, and a multi-line header."""
+source @6: pass
+source @8: pass
+source @10: pass
+source @12: pass
+source @14: pass
+source @16: pass
+source @18: pass
+source @20: pass
+source @22: pass
+source @26: break
+source @28: pass
+source @30: pass
+source @32: pass
+source @33: return handle
+== code objects: one per scope that compiles on this Python

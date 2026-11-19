@@ -1,0 +1,13 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  f: def@4 [always]
+scope function f#0 'f': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  a: param@4 [function:body@4]
+  b: param@4 [function:body@4]
+  fa: with@5 [function:body@4]
+  fb: with@5 [function:body@4]
+  line: for@6 [function:body@4|loop:body@6]
+  line: assign@9 [function:body@4|loop:else@6]; value None
+  done: assign@13 [function:body@4|loop:else@10]; value True
+== code objects: one per scope that compiles on this Python

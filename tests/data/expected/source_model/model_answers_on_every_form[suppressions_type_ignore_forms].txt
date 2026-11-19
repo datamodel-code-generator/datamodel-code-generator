@@ -1,0 +1,13 @@
+== suppressions
+comment @3: # type: ignore
+comment @4: # type: ignore[assignment]
+comment @5: # ty: ignore[invalid-assignment, other]
+comment @6: # pyright: ignore[reportAssignmentType]
+comment @7: # noqa: E501  # type: ignore[assignment]
+type ignore @3 (every code): lines 3
+type ignore @4 (assignment): lines 4
+ty ignore @5 (invalid-assignment,other): lines 5
+pyright ignore @6 (reportAssignmentType): lines 6
+ruff noqa @7 (E501): lines 7
+type ignore @7 (assignment): lines 7
+== code objects: one per scope that compiles on this Python

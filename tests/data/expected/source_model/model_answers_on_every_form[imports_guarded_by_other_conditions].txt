@@ -1,0 +1,11 @@
+== imports
+import@3 os as os from os in <module> [always]; unconditional
+import@4 sys as sys from sys in <module> [always]; unconditional
+import@8 fast_path as fast_path from fast_path in <module> [case:body@7]
+import@10 slow_path as slow_path from slow_path in <module> [case:body@9]
+import@12 debugger as debugger from debugger in <module> [if:body@11]
+import@14 runner as runner from runner in <module> [if:body@13]
+import@16 looped as looped from looped in <module> [loop:body@15]
+import@18 never as never from never in <module> [loop:body@17]
+import@20 inside_with as inside_with from inside_with in <module> [always]; unconditional
+== code objects: one per scope that compiles on this Python

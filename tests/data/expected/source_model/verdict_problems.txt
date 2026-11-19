@@ -1,0 +1,6 @@
+{'a/x': []} {'a/x': 'no finding: clean'}: []
+{'a/x': ['1: hit']} {'a/x': 'finding'}: []
+{'a/x': []} {}: ['a/x: no verdict']
+{} {'a/x': 'finding'}: ['a/x: verdict for a form the rule does not read']
+{'a/x': []} {'a/x': 'finding'}: ["a/x: verdict 'finding', the rule gives 'no finding'"]
+{'a/x': ['1: hit']} {'a/x': 'no finding: clean'}: ["a/x: verdict 'no finding', the rule gives 'finding'"]

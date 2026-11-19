@@ -1,0 +1,31 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  __context: assign@3 [always]; value "module"
+  Parser: class@6 [always]
+  ___: class@21 [always]
+scope class Parser#0 'Parser': code yes; first line 6
+  opened by a node evaluated in <module>#0
+  __slots__: assign@7 [always]; value ("__context",)
+  __limit (as _Parser__limit): assign@8 [always]; value 3
+  __init__: def@10 [always]
+  __read (as _Parser__read): def@14 [always]
+  __Inner (as _Parser__Inner): class@17 [always]
+  members: _Parser__Inner, _Parser__context, _Parser__limit, _Parser__read, __init__, __slots__
+scope function Parser.__init__#0 '__init__': code yes; first line 10
+  opened by a node evaluated in Parser#0
+  self: param@10 [function:body@10]
+  __context (as _Parser__context): param@10 [function:body@10]
+  receiver: self@10
+scope function Parser.__read#0 '__read': code yes; first line 14
+  opened by a node evaluated in Parser#0
+  self: param@14 [function:body@14]
+  receiver: self@14
+scope class Parser.__Inner#0 '__Inner': code yes; first line 17
+  opened by a node evaluated in Parser#0
+  __depth (as _Inner__depth): assign@18 [always]; value 1
+  members: _Inner__depth
+scope class ___#0 '___': code yes; first line 21
+  opened by a node evaluated in <module>#0
+  __kept: assign@22 [always]; value 1
+  members: __kept
+== code objects: one per scope that compiles on this Python

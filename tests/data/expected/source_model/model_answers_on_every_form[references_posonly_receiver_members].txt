@@ -1,0 +1,25 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  C: class@7 [always]
+scope class C#0 'C': code yes; first line 7
+  opened by a node evaluated in <module>#0
+  __init__: def@8 [always]
+  make: def@12 [always]
+  members: __init__, make, value
+scope function C.__init__#0 '__init__': code yes; first line 8
+  opened by a node evaluated in C#0
+  self: param@8 [function:body@8]
+  value: param@8 [function:body@8]
+  receiver: self@8
+scope function C.make#0 'make': code yes; first line 11
+  opened by a node evaluated in C#0
+  other: param@12 [function:body@12]
+== references
+9:8 self load in C.__init__ -> local C.__init__ @8
+9:21 value load in C.__init__ -> local C.__init__ @8
+11:5 staticmethod load in C -> builtin; origin builtins.staticmethod
+13:8 other load in C.make -> local C.make @12
+uses of C.__init__:self@8: attribute-store@9
+uses of C.__init__:value@8: read@9
+uses of C.make:other@12: attribute-store@13
+== code objects: one per scope that compiles on this Python

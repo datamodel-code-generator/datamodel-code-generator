@@ -1,0 +1,10 @@
+== references
+3:0 TABLE store in <module> -> local <module> @3
+3:8 tuple load in <module> -> builtin; origin builtins.tuple
+3:14 globals load in <module> -> builtin; origin builtins.globals
+7:11 globals load in shadowed -> local shadowed @6
+11:11 open load in module_rebinding -> global <module> @14; origin forms.references.builtin_shadowed_and_spelled.open
+14:0 open store in <module> -> local <module> @14
+uses of <module>:open@14: read@11
+uses of shadowed:globals@6: call@7
+== code objects: one per scope that compiles on this Python
