@@ -77,10 +77,12 @@ class AssignmentFacts(Protocol):
 
 
 def field_lines(rendered: str) -> list[Binding] | None:
-    """Return the field lines of the classes of the rendered text, in order, or None if the text does not parse.
+    """Return the field lines of the module-level classes of the rendered text, in order, or None if it does not parse.
 
     A field line annotates one name (``name: hint``) or binds it to a value, with an annotation or without one
-    (``name: hint = value``, ``name = value``); the value of a binding is None exactly for an annotation alone.
+    (``name: hint = value``, ``name = value``); the value of a binding is None exactly for an annotation alone. Only the
+    direct body of a class at module level holds field lines: a nested class (``class Config:`` in a model body, a
+    class in a method) binds its own names, which are not the model's fields.
     """
     from scripts._source_model import SourceModule
 
@@ -92,6 +94,8 @@ def field_lines(rendered: str) -> list[Binding] | None:
         binding
         for binding in source.bindings()
         if binding.scope.kind == "class"
+        and binding.scope.parent is not None
+        and binding.scope.parent.kind == "module"
         and (
             binding.kind == "annotation-only" or (binding.kind in {"assign", "annassign"} and binding.value is not None)
         )
