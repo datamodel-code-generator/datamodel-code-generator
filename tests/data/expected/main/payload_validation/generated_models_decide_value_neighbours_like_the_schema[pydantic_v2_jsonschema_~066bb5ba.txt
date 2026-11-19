@@ -2,6 +2,7 @@
   "/ enum \"1\": invalid, model accepts",
   "/ enum \"2\": invalid, model accepts",
   "/ enum 1: invalid, model accepts",
+  "/ enum 1.0: invalid, model accepts",
   "/ enum true: invalid, model accepts",
   "/ minimum 1: invalid, model accepts"
 ]

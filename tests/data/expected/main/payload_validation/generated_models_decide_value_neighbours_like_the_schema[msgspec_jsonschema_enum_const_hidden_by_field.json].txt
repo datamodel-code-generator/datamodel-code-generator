@@ -1,3 +1,5 @@
 [
-  "/Counts enum 1: invalid, model accepts"
+  "/Counts const 2.0: valid, model rejects",
+  "/Counts enum 1: invalid, model accepts",
+  "/Counts enum 2.0: valid, model rejects"
 ]

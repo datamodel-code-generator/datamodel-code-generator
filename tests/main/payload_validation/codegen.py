@@ -80,6 +80,10 @@ class PayloadAdapterError(Exception):
     """Raised when a generated payload adapter cannot be created."""
 
 
+class PayloadModelError(Exception):
+    """Raised when a generated model raises an error that is no rejection of the payload; it holds the error's type."""
+
+
 @dataclass(frozen=True)
 class PayloadRuntime:
     """Backend-specific runtime validator for a generated payload type."""
@@ -117,13 +121,13 @@ class PayloadRuntime:
         return False
 
     def accepts_python(self, payload: object) -> bool:
-        """Return whether the backend accepts a Python payload; an exception that is no rejection propagates."""
+        """Return whether the backend accepts a Python payload; an exception that is no rejection raises its type."""
         try:
             self.validate_python(payload)
         except Exception as exception:
             if self.is_rejection_exception(exception):
                 return False
-            raise
+            raise PayloadModelError(type(exception).__name__) from exception
         return True
 
     def assert_rejects_python(self, payload: Any) -> None:

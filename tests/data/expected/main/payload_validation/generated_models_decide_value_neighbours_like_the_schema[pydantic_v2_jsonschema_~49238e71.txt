@@ -8,6 +8,7 @@
   "/length_enum enum null: invalid, model accepts",
   "/own_length_enum enum \"ccc\": invalid, model accepts",
   "/own_length_enum enum 1: invalid, model accepts",
+  "/own_length_enum enum 1.0: invalid, model accepts",
   "/own_length_enum enum [\"a\"]: invalid, model accepts",
   "/own_length_enum enum [\"bb\"]: invalid, model accepts",
   "/own_length_enum enum [\"ccc\"]: invalid, model accepts",

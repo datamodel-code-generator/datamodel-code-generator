@@ -8,7 +8,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Literal, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 import pytest
 from hypothesis import HealthCheck, assume, given, settings
@@ -18,7 +18,7 @@ from jsonschema import Draft7Validator
 from jsonschema import ValidationError as JsonSchemaValidationError
 from packaging.version import Version
 from pydantic import VERSION as PYDANTIC_VERSION
-from pydantic import ValidationError
+from pydantic import AfterValidator, TypeAdapter, ValidationError
 
 from datamodel_code_generator.format import PythonVersion
 from scripts.check_ratchets import NO_SEED_LINE
@@ -29,7 +29,7 @@ from tests.main.conftest import (
     EXPERIMENTAL_MISSING_IMPORT_WARNING,
     JSON_SCHEMA_DATA_PATH,
 )
-from tests.main.payload_validation.codegen import PayloadAdapterError, generate_payload_runtime
+from tests.main.payload_validation.codegen import PayloadAdapterError, PayloadRuntime, generate_payload_runtime
 from tests.main.payload_validation.schema import _referenced_openapi_components, _schema_exclusion_reason
 
 from .payload_validation import (
@@ -1211,13 +1211,31 @@ def test_generated_models_decide_value_neighbours_like_the_schema(
             continue
         default_agrees = defaults is not None and model_verdict(defaults, neighbour.payload) == expected
         asserted_here = neighbour_is_asserted(
-            neighbour, backend, schema_validators=schema_validators, default_agrees=default_agrees
+            neighbour,
+            backend,
+            verdict,
+            schema_validators=schema_validators,
+            default_agrees=default_agrees,
+            full_runtime=PYDANTIC_RUNTIME_VERSION >= PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN,
         )
         (asserted if asserted_here else unasserted).append(differing_line(neighbour, verdict))
         if neighbour.keyword == SEED_KEYWORD:
             break
     assert not asserted, f"{case.id}: the models decide asserted value neighbours otherwise:\n" + "\n".join(asserted)
     assert_output(json.dumps(unasserted, indent=2))
+
+
+def _raise_type_error(value: int) -> int:
+    msg = f"no location for {value}"
+    raise TypeError(msg)
+
+
+def test_value_neighbour_verdict_names_an_error_that_is_no_rejection() -> None:
+    """A model that raises an error other than a validation error gets a verdict naming it, not a test error."""
+    runtime = PayloadRuntime(
+        PayloadBackend.PYDANTIC_V2, int, TypeAdapter(Annotated[int, AfterValidator(_raise_type_error)])
+    )
+    assert_output(json.dumps([model_verdict(runtime, 1), model_verdict(runtime, "a")]))
 
 
 LITERAL_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "literal_witnesses_schemas.json"

@@ -1,7 +1,9 @@
 [
   "/code enum null: invalid, model accepts",
   "/flag enum 0: invalid, model accepts",
+  "/flag enum 0.0: invalid, model accepts",
   "/flag enum 1: invalid, model accepts",
+  "/flag enum 1.0: invalid, model accepts",
   "/flag enum null: invalid, model accepts",
   "/mixed enum null: invalid, model accepts",
   "/mixed enum true: invalid, model accepts",

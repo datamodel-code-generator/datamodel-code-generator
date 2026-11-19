@@ -1,3 +1,4 @@
 [
-  "/c3/0 enum 2: invalid, model accepts"
+  "/c3/0 enum 2: invalid, model accepts",
+  "/c3/0 enum 2.0: invalid, model accepts"
 ]

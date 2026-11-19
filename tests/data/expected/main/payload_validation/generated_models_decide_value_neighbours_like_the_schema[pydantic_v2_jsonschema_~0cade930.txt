@@ -1,10 +1,14 @@
 [
   "/always enum 1: invalid, model accepts",
+  "/always enum 1.0: invalid, model accepts",
   "/always enum null: invalid, model accepts",
   "/amount enum null: invalid, model accepts",
   "/enabled enum 0: invalid, model accepts",
+  "/enabled enum 0.0: invalid, model accepts",
   "/enabled enum 1: invalid, model accepts",
+  "/enabled enum 1.0: invalid, model accepts",
   "/enabled enum null: invalid, model accepts",
   "/never enum 0: invalid, model accepts",
+  "/never enum 0.0: invalid, model accepts",
   "/never enum null: invalid, model accepts"
 ]

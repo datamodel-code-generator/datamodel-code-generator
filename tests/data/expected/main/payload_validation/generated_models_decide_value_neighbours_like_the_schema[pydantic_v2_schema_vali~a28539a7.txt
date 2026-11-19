@@ -8,5 +8,6 @@
   "/mixed enum null: invalid, model accepts",
   "/numbers enum null: invalid, model accepts",
   "/typed_mixed enum 1: invalid, model accepts",
+  "/typed_mixed enum 1.0: invalid, model accepts",
   "/typed_mixed enum null: invalid, model accepts"
 ]

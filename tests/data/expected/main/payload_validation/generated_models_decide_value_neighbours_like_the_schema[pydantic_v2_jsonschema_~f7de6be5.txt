@@ -1,0 +1,4 @@
+[
+  "/above exclusiveMinimum 4.611686018427388e+18: valid, model rejects",
+  "/below exclusiveMaximum -4.611686018427388e+18: valid, model rejects"
+]

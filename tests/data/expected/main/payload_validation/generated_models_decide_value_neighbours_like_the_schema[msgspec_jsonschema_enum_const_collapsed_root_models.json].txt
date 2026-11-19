@@ -1,6 +1,10 @@
 [
   "/l/0 enum \"a\": invalid, model accepts",
+  "/lu/0 const 1.0: valid, model rejects",
   "/lu/0 enum \"a\": invalid, model accepts",
+  "/lu/0 enum 1.0: valid, model rejects",
   "/p enum \"a\": invalid, model accepts",
-  "/u enum \"a\": invalid, model accepts"
+  "/u const 1.0: valid, model rejects",
+  "/u enum \"a\": invalid, model accepts",
+  "/u enum 1.0: valid, model rejects"
 ]

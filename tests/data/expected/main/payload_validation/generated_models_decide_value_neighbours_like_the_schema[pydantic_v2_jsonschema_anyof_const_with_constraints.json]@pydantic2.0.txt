@@ -1,0 +1,5 @@
+[
+  "/SomeValue const 500000.0: valid, model rejects",
+  "/SomeValue const null: invalid, model accepts",
+  "/SomeValue const true: invalid, model accepts"
+]

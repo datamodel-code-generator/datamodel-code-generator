@@ -1,5 +1,6 @@
 [
   "/flags/0 enum 0: invalid, model accepts",
+  "/flags/0 enum 0.0: invalid, model accepts",
   "/flags/0 enum false: invalid, model accepts",
   "/floats/0 enum 2.5: invalid, model accepts",
   "/picked const null: invalid, model accepts",

@@ -1,6 +1,7 @@
 [
   "/code const \"1\": valid, model rejects",
   "/code const 1: invalid, model accepts",
+  "/code const 1.0: invalid, model accepts",
   "/code const [\"x\"]: valid, model rejects",
   "/code const [1]: valid, model rejects",
   "/code const {\"a\": \"x\"}: valid, model rejects",
@@ -8,6 +9,7 @@
   "/kind enum null: invalid, model accepts",
   "/level enum null: invalid, model accepts",
   "/only const 1: valid, model rejects",
+  "/only const 1.0: valid, model rejects",
   "/only const [\"x\"]: valid, model rejects",
   "/only const true: valid, model rejects",
   "/only const {\"a\": \"x\"}: valid, model rejects"

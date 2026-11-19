@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Final, TypeGuard
 
 from scripts.check_ratchets import REJECTED_SEED_LINE
 
+from .codegen import PayloadModelError
 from .conformance import rejected_mutation_reason
 from .models import PayloadBackend
 from .mutation import COMBINED_SCHEMA_KEYS, _resolve_internal_ref
@@ -147,6 +148,11 @@ def json_kind_key(value: object) -> tuple[str, str]:
     return kind, json.dumps(value)
 
 
+def json_form_key(value: object) -> str:
+    """Return the JSON text of a payload value, which tells apart forms of one JSON value such as ``1`` and ``1.0``."""
+    return json.dumps(value, sort_keys=True)
+
+
 def _number_text(value: Fraction) -> str:
     return str(value.numerator) if value.denominator == 1 else str(value)
 
@@ -206,10 +212,9 @@ def _member_number_and_text(value: object) -> tuple[Fraction, str]:
 
 
 def kind_forms(value: object) -> list[object]:
-    """Return a member in every JSON kind: ``1`` gives ``true``, ``"1"``, ``[1]``, ``{"a": 1}`` and ``null``.
+    """Return a member in every JSON kind: ``1`` gives ``1.0``, ``true``, ``"1"``, ``[1]``, ``{"a": 1}``, ``null``.
 
-    Forms are told apart by JSON kind and value, where ``1.0`` is ``1``; the nearest float stands for an integer only
-    where it is another value.
+    Forms are told apart by their JSON text, so the integer-valued float ``1.0`` is drawn beside the integer ``1``.
     """
     number, text = _member_number_and_text(value)
     forms = [
@@ -221,9 +226,9 @@ def kind_forms(value: object) -> list[object]:
         {"a": _json_value(value)},
         None,
     ]
-    unique = {json_kind_key(_json_value(value)): _json_value(value)}
+    unique = {json_form_key(_json_value(value)): _json_value(value)}
     for form in forms:
-        unique.setdefault(json_kind_key(form), form)
+        unique.setdefault(json_form_key(form), form)
     return list(unique.values())
 
 
@@ -721,8 +726,8 @@ def _build_neighbours(case: SchemaCase) -> tuple[object, tuple[ValueNeighbour, .
     neighbours: dict[tuple[JsonPath, str, tuple[str, str]], ValueNeighbour] = {}
     for site in _iter_sites(seeds, seeds.root, seed, ()):
         for keyword, value in _site_values(seeds, site):
-            key = (site.path, keyword, json_kind_key(value))
-            if key in neighbours or json_kind_key(value) == json_kind_key(site.value):
+            key = (site.path, keyword, json_form_key(value))
+            if key in neighbours or json_form_key(value) == json_form_key(site.value):
                 continue
             payload = _replaced(seed, site.path, value)
             if (valid := _agrees(agreement, payload)) is None:
@@ -782,8 +787,12 @@ def schema_validator_case(case: SchemaCase) -> SchemaCase:
 
 
 def model_verdict(runtime: PayloadRuntime, payload: object) -> str:
-    """Return whether the generated model accepts or rejects a payload; any other exception fails the test."""
-    return "accepts" if runtime.accepts_python(payload) else "rejects"
+    """Return whether the generated model accepts or rejects a payload, or the type of any other error it raises."""
+    try:
+        accepted = runtime.accepts_python(payload)
+    except PayloadModelError as error:
+        return f"raises {error}"
+    return "accepts" if accepted else "rejects"
 
 
 def schema_verdict(neighbour: ValueNeighbour) -> str:
@@ -792,21 +801,32 @@ def schema_verdict(neighbour: ValueNeighbour) -> str:
 
 
 def neighbour_is_asserted(
-    neighbour: ValueNeighbour, backend: PayloadBackend, *, schema_validators: bool, default_agrees: bool
+    neighbour: ValueNeighbour,
+    backend: PayloadBackend,
+    verdict: str,
+    *,
+    schema_validators: bool,
+    default_agrees: bool,
+    full_runtime: bool,
 ) -> bool:
     """Return whether a differing verdict fails the suite instead of going into the unasserted list of its backend.
 
     The keywords ``conformance.py`` asserts for a backend are asserted; the models of ``--generate-schema-validators``
-    are asserted wherever the default Pydantic v2 model of the case decides like the validator, because the checks the
-    option adds may close the default model's gaps but never open one.
+    are asserted wherever this environment's default Pydantic v2 model of the case decides like the validator, on a
+    Pydantic release the suite fully supports, because the checks the option adds may close the default model's gaps
+    but never open one. A verdict that names a raised error is never asserted: it is recorded with the error's type.
     """
-    return rejected_mutation_reason(neighbour.keyword, backend) is not None or (schema_validators and default_agrees)
+    decided = verdict in {"accepts", "rejects"}
+    return decided and (
+        rejected_mutation_reason(neighbour.keyword, backend) is not None
+        or (schema_validators and default_agrees and full_runtime)
+    )
 
 
 def differing_line(neighbour: ValueNeighbour, verdict: str) -> str:
     """Return the line naming a neighbour the model decides otherwise than the validator.
 
-    A seed is valid, so it differs only where the model rejects it: that line is the ratchet's blind line.
+    A seed is valid, so it differs only where the model rejects it or raises: that line is the ratchet's blind line.
     """
     if neighbour.keyword == SEED_KEYWORD:
         return REJECTED_SEED_LINE

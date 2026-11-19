@@ -1,6 +1,8 @@
 [
   "/active enum 0: invalid, model accepts",
+  "/active enum 0.0: invalid, model accepts",
   "/active enum 1: invalid, model accepts",
+  "/active enum 1.0: invalid, model accepts",
   "/active enum null: invalid, model accepts",
   "/name enum null: invalid, model accepts",
   "/status enum \"0\": invalid, model accepts",

@@ -1,4 +1,5 @@
 [
   "/bool_default const 1: invalid, model accepts",
+  "/bool_default const 1.0: invalid, model accepts",
   "/foo const null: invalid, model accepts"
 ]
