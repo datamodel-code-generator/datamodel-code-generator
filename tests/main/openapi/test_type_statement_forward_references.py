@@ -10,7 +10,6 @@ and so is the value of a ``TypeAliasType`` call, which no deferred annotation re
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING, Any
 
 import msgspec
@@ -19,6 +18,7 @@ import yaml
 from jsonschema import Draft7Validator, Draft202012Validator
 from pydantic import TypeAdapter, ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -44,17 +44,17 @@ OPTION_SETS = (
     pytest.param(
         ("--target-python-version", "3.12", "--disable-future-imports", "--use-type-alias-type"),
         id="no_future_imports",
-        marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="The output has type statements"),
+        marks=needs("type-statements"),
     ),
     pytest.param(
         ("--target-python-version", "3.12", "--use-type-alias-type"),
         id="future_imports",
-        marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="The output has type statements"),
+        marks=needs("type-statements"),
     ),
     pytest.param(
         ("--target-python-version", "3.14", "--disable-future-imports", "--use-type-alias-type"),
         id="native_deferred",
-        marks=pytest.mark.skipif(sys.version_info < (3, 14), reason="The output defers its annotations natively"),
+        marks=needs("native-deferred-annotations"),
     ),
 )
 

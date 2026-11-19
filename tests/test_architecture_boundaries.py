@@ -14,6 +14,7 @@ import tomllib
 
 from scripts import check_architecture_boundaries
 from scripts._import_cycles import import_cycles
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[1]
@@ -181,7 +182,7 @@ def test_host_private_access_follows_the_binding_rules() -> None:
     assert_output(check_architecture_boundaries.format_report(violations))
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="type parameter syntax needs Python 3.12 or later")
+@needs("type-statements")
 def test_host_private_access_follows_type_parameter_scopes(tmp_path: Path) -> None:
     """Hide a Host parameter behind a type parameter or a type statement of the same name."""
     stored = FIXTURE_ROOT / "host_private_access" / "type_parameters.py.txt"

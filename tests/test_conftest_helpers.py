@@ -21,6 +21,7 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
 from tests import conftest as shared_conftest
 from tests import units
+from tests.capabilities import needs
 from tests.conftest import (
     _infer_expected_file,
     _refuse_home_directory,
@@ -4027,7 +4028,7 @@ def test_ledger_leaves_a_missing_storage_in_place(ledger: LedgerProject) -> None
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_ledger_reports_a_refused_sidecar_rewrite(ledger: LedgerProject) -> None:
     """A sidecar resolving outside the tests root is not rewritten into the form pytest writes; the run fails."""
     ledger.write("test_m.py", ONE_TEST)

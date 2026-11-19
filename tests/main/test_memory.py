@@ -13,6 +13,7 @@ import pytest
 
 from datamodel_code_generator import DataModelType
 from scripts.measure_generation_memory import main as measure_generation_memory
+from tests.capabilities import needs
 
 if TYPE_CHECKING:
     from _pytest.tmpdir import TempPathFactory
@@ -47,7 +48,7 @@ def _append_step_summary(report_line: str, summary_path: str | None) -> None:
 
 
 @pytest.mark.allow_direct_assert
-@pytest.mark.skipif(sys.platform == "win32", reason="resource.getrusage is unavailable on Windows")
+@needs("posix")
 def test_measure_generation_memory(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Run the measurement entry point and emit complete machine-readable metrics."""
     input_path = tmp_path / "schema.json"
@@ -86,7 +87,7 @@ def test_append_step_summary(tmp_path: Path) -> None:
 
 @pytest.mark.perf
 @pytest.mark.allow_direct_assert
-@pytest.mark.skipif(sys.platform == "win32", reason="resource.getrusage is unavailable on Windows")
+@needs("posix")
 @pytest.mark.parametrize("output_model_type", MEMORY_MODEL_TYPES)
 def test_perf_extreme_large_schema_peak_rss(
     tmp_path_factory: TempPathFactory,

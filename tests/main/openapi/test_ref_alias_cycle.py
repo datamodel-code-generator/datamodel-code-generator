@@ -8,7 +8,6 @@ root models Pydantic builds.
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -18,6 +17,7 @@ from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
 
 from datamodel_code_generator.__main__ import Exit
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -115,10 +115,7 @@ def test_ref_alias_cycle_base_model(output_file: Path) -> None:
             valid_json,
             expected_error_type,
             id=f"{output_model_type}-{case}",
-            marks=pytest.mark.skipif(
-                output_model_type == "typing.TypedDict" and sys.version_info < (3, 12),
-                reason="Pydantic validates typing.TypedDict from Python 3.12 on",
-            ),
+            marks=[needs("typed-dict-validation")] if output_model_type == "typing.TypedDict" else [],
         )
         for output_model_type, expected_error_type in (
             ("dataclasses.dataclass", "dataclass_type"),
@@ -270,10 +267,9 @@ def test_ref_sibling_cycle_description_error(output_file: Path, capsys: pytest.C
             input_name,
             valid_json,
             id=f"{output_model_type}-{case}",
-            marks=pytest.mark.skipif(
-                output_model_type == "typing.TypedDict" and case == "field" and sys.version_info < (3, 12),
-                reason="Pydantic validates typing.TypedDict from Python 3.12 on",
-            ),
+            marks=[needs("typed-dict-validation")]
+            if output_model_type == "typing.TypedDict" and case == "field"
+            else [],
         )
         for output_model_type in ("dataclasses.dataclass", "typing.TypedDict")
         for case, input_name, valid_json in (

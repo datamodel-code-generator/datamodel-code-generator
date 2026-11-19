@@ -22,6 +22,7 @@ import datamodel_code_generator
 import datamodel_code_generator._builtin_formatter as builtin_formatter
 import datamodel_code_generator._format_types as format_types
 import datamodel_code_generator.format as format_module
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 DEFAULT_KNOWN_FIRST_PARTY = format_module.DEFAULT_KNOWN_FIRST_PARTY
@@ -1223,7 +1224,7 @@ def test_apply_builtin_formatter_keeps_comments_of_code_it_cannot_tokenize() -> 
     assert apply_builtin_formatter("x = (\n#c\n") == "x = (\n#c\n"
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="a comment in an f-string's replacement field needs Python 3.12")
+@needs("fstring-nested-syntax")
 def test_apply_builtin_formatter_keeps_comments_in_f_string_fields() -> None:
     """Keep a comment in a multi-line f-string's replacement field as written, as black leaves the f-string."""
     code = 'x = 1\ny = f"""{x  #c\n}""" #d\n'
@@ -2292,7 +2293,7 @@ def test_builtin_formatter_blank_line_guard_keeps_backslash_continuation_body_li
     assert builtin_formatter._normalize_top_level_blank_lines(code) == "\n".join(expected_lines)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
+@needs("type-statements")
 def test_apply_builtin_formatter_normalizes_type_alias_blank_lines_without_imports() -> None:
     """Test built-in formatter normalizes top-level blanks between type statements."""
     code = "type Foo = str\n\n\n\ntype Bar = Foo\n"

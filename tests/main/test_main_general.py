@@ -7,7 +7,6 @@ import importlib.util
 import inspect
 import json
 import os
-import platform
 import re
 import shutil
 import sys
@@ -65,6 +64,7 @@ from datamodel_code_generator.model.pydantic_v2 import UnionMode
 from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from tests.capabilities import needs
 from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
@@ -1548,7 +1548,7 @@ def test_standard_preset_enum_shapes(output_model_type: str, date: str, expected
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="the 3.14 preset writes type statements")
+@needs("type-statements")
 @pytest.mark.parametrize("date", ["20261017", "20261027"])
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_standard_preset_enums_read_as_their_const(output_model_type: str, date: str, output_file: Path) -> None:
@@ -2166,7 +2166,7 @@ def test_generate_call_keyword_source_uses_unparse_fallback() -> None:
 
 
 @pytest.mark.allow_direct_assert
-@pytest.mark.skipif(platform.system() == "Windows", reason="text-mode writes use CRLF on Windows")
+@needs("posix")
 def test_generated_file_line_endings_are_lf_with_single_trailing_newline(output_file: Path) -> None:
     """Generated files use LF line endings and exactly one trailing newline."""
     result = generate(
@@ -2205,7 +2205,7 @@ def test_space_and_special_characters_dict_stdin(monkeypatch: pytest.MonkeyPatch
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@needs("posix")
 @pytest.mark.timeout(30)
 @pytest.mark.parametrize(
     ("source", "input_file_type"),
@@ -2245,7 +2245,7 @@ def test_main_named_pipe_input_is_read_once(
     writer.join()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@needs("posix")
 @pytest.mark.timeout(30)
 @pytest.mark.parametrize("input_file_type", [None, "jsonschema"], ids=["auto", "jsonschema"])
 def test_main_named_pipe_input_resolves_references_beside_it(
@@ -2274,7 +2274,7 @@ def test_main_named_pipe_input_resolves_references_beside_it(
     writer.join()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@needs("posix")
 @pytest.mark.timeout(30)
 def test_main_named_pipe_csv_input_is_read_up_to_its_first_row(
     tmp_path: Path, output_file: Path, monkeypatch: pytest.MonkeyPatch
@@ -8206,7 +8206,7 @@ def test_generate_extra_template_data_comment_object_is_safe() -> None:
     assert_no_uncommented_generated_code(generated, forbidden_starts=("__import__(",))
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statement requires Python 3.12+")
+@needs("type-statements")
 @pytest.mark.skipif(version.parse(black.__version__) < version.parse("23.3.0"), reason="black too old")
 def test_generate_extra_template_data_comment_is_safe_for_type_statement() -> None:
     """Ensure type statement comments cannot add Python statements."""

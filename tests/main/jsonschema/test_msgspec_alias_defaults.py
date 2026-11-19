@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
@@ -13,6 +12,7 @@ from typing_extensions import TypeAliasType
 
 from datamodel_code_generator import DataModelType, InputFileType, PythonVersion
 from datamodel_code_generator.format import Formatter
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -41,7 +41,7 @@ _BACKPORT_ALIAS_WARNING = r"msgspec may not decode the type alias(es)? .* typing
         PythonVersion.PY_310,
         pytest.param(
             PythonVersion.PY_312,
-            marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="Runtime requires Python type statements"),
+            marks=needs("type-statements"),
         ),
     ],
 )
@@ -535,7 +535,7 @@ def test_msgspec_tagged_alias_beside_struct_list_defaults(collapse: list[str], o
         PythonVersion.PY_310,
         pytest.param(
             PythonVersion.PY_312,
-            marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="Runtime requires Python type statements"),
+            marks=needs("type-statements"),
         ),
     ],
 )

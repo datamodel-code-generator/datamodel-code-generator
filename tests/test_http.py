@@ -45,6 +45,7 @@ from datamodel_code_generator.http import (
     get_body,
 )
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from tests.capabilities import needs
 from tests.conftest import (
     assert_output,
     assert_warnings_contain,
@@ -899,7 +900,7 @@ def test_generate_without_a_lock_does_not_copy_public_config(
 
 
 @pytest.mark.benchmark
-@pytest.mark.skipif(os.name == "nt", reason="the shared local mirror uses symlinks")
+@needs("symlinks")
 def test_no_lock_shared_local_mirror_keeps_one_cache_entry(tmp_path: Path) -> None:
     """No-lock aliases retain the shared physical-file cache key and object."""
     mirror_root = tmp_path / "schemas"
@@ -1023,7 +1024,7 @@ def test_cli_reports_invalid_locked_local_http_mirror_content(
     assert not lockfile.exists()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="the shared local mirror uses symlinks")
+@needs("symlinks")
 def test_cli_locks_each_remote_identity_that_uses_the_same_local_mirror(
     tmp_path: Path,
 ) -> None:
@@ -1072,7 +1073,7 @@ def test_cli_locks_each_remote_identity_that_uses_the_same_local_mirror(
     run_main_with_args([*common_args, "--locked"])
 
 
-@pytest.mark.skipif(os.name == "nt", reason="the raw host:port local-mirror path is not a valid Windows path")
+@needs("posix")
 def test_cli_verifies_an_http_lock_through_an_equivalent_local_mirror(
     mocker: MockerFixture,
     local_http_server: str,
@@ -1847,7 +1848,7 @@ def test_generate_publishes_extensionless_file_output_with_remote_lock(tmp_path:
     assert lockfile.is_file()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="lockfile symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_update_lock_preserves_lockfile_symlink(tmp_path: Path) -> None:
     """Public atomic updates resolve a lockfile symlink and replace its target instead."""
     output_path = tmp_path / "output.py"
@@ -2043,7 +2044,7 @@ def test_generate_atomic_remote_update_releases_temporary_output_when_anchor_res
     _assert_file_does_not_exist(lockfile)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="descriptor anchor races require POSIX dir_fd support")
+@needs("posix")
 def test_generate_rejects_a_changed_public_output_anchor_before_publication(
     mocker: MockerFixture,
     local_http_server: str,
@@ -2712,7 +2713,7 @@ lockfile = "{active_lock.as_posix()}"
     assert_http_e2e_file(active_lock, "remote_lock_empty.txt")
 
 
-@pytest.mark.skipif(os.name == "nt", reason="the alias fixture requires POSIX symlinks")
+@needs("symlinks")
 def test_cli_batch_rejects_update_lock_aliases_before_generation(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -2910,7 +2911,7 @@ def test_cli_rolls_back_new_lock_parent_and_stdout_when_publication_fails(
     assert not lockfile.parent.exists()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="the race fixture requires POSIX directory symlinks")
+@needs("symlinks")
 def test_cli_does_not_write_through_a_lock_parent_symlink_swap(
     mocker: MockerFixture,
     local_http_server: str,

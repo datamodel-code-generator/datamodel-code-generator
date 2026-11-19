@@ -26,6 +26,7 @@ from tests.assert_helper_allowlists import (
     FROZEN_EXEMPT_FILES,
     FROZEN_UNCOVERED_FILES,
 )
+from tests.capabilities import needs
 from tests.conftest import (
     HttpxGetMockFactory,
     MockHttpxResponse,
@@ -1758,7 +1759,7 @@ def test_generated_package_model_validation_restores_existing_modules(tmp_path: 
         sys.modules.pop("model.target", None)
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 14), reason="requires a target version newer than the runtime")
+@needs("target-newer-than-runtime")
 def test_run_main_runtime_validation_skips_newer_python_target(tmp_path: Path) -> None:
     """Runtime validation follows generated-code compatibility guards."""
     input_path = tmp_path / "schema.json"

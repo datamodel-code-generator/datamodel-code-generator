@@ -96,9 +96,10 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import ANY, NONE, DataType, Types
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
-_SYMLINK_CREATION_SKIP = pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+_SYMLINK_CREATION_SKIP = needs("symlinks")
 
 
 class A(TemplateBase):

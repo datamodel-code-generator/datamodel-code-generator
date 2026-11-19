@@ -12,6 +12,7 @@ import pytest
 
 from datamodel_code_generator import Error, InputFileType, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, run_main_with_args
 
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
 PERSON = DATA_PATH / "jsonschema" / "person.json"
-SYMLINKS = pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+SYMLINKS = needs("symlinks")
 
 
 def _rooted(text: str, root: Path) -> str:
@@ -85,7 +86,7 @@ def _stdin_pipe(data: bytes) -> Generator[None, None, None]:
         os.close(saved)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="/dev/stdin is a POSIX path")
+@needs("posix")
 @pytest.mark.parametrize("output_exists", [False, True], ids=["new-output", "existing-output"])
 def test_input_dev_stdin_reads_a_pipe(output_exists: bool, tmp_path: Path) -> None:
     """`--input /dev/stdin` reads the schema piped to the command, whether its output exists or not (#5378).

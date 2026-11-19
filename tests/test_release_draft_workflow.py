@@ -6,13 +6,13 @@ import json
 import os
 import shlex
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 import yaml
 from jsonschema import Draft202012Validator
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 
@@ -135,7 +135,7 @@ def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
     "requested_pr",
     json.loads((Path(__file__).parent / "data/release_draft_workflow/invalid_pr_numbers.json").read_text()),
 )
-@pytest.mark.skipif(sys.platform == "win32", reason="The workflow shell step runs on Ubuntu, not WSL.")
+@needs("posix")
 def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tmp_path: Path) -> None:
     """Invalid caller input exits the real shell step before any API or credential use.
 
@@ -169,7 +169,7 @@ def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tm
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="The workflow shell step runs on Ubuntu, not WSL.")
+@needs("posix")
 def test_trusted_checkout_rejects_other_commits(tmp_path: Path) -> None:
     """Both checkout jobs stop before repository scripts run unless HEAD is the workflow commit."""
     root = Path(__file__).parents[1]

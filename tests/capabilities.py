@@ -34,6 +34,7 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
     "symlinks": (("platform!=win32",), "Windows creates symlinks and hard links only with elevated privileges"),
     "linux": (("platform==linux",), "RLIMIT_DATA caps the memory of a run on Linux only"),
     "type-statements": (("python>=3.12",), "type statements and type parameter syntax (PEP 695) need Python 3.12"),
+    "fstring-nested-syntax": (("python>=3.12",), "a comment in an f-string's replacement field needs Python 3.12"),
     "typed-dict-validation": (("python>=3.12",), "Pydantic validates typing.TypedDict from Python 3.12 on"),
     "native-deferred-annotations": (("python>=3.14",), "Python defers annotations natively from 3.14 on"),
     "target-newer-than-runtime": (("python<3.14",), "the test needs a target Python version newer than the runtime"),

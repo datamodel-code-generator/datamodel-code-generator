@@ -54,6 +54,7 @@ from tests.conftest import (
 if TYPE_CHECKING:
     import tempfile
     from collections.abc import Iterator
+from tests.capabilities import needs
 from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -361,10 +362,7 @@ def test_main_custom_template_dir(
         )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 @freeze_time("2019-07-26")
 def test_pyproject(output_file: Path, tmp_path: Path) -> None:
     """Test main function with pyproject.toml configuration."""
@@ -1614,7 +1612,7 @@ def test_pyproject_profile_rejects_non_table_profiles(tmp_path: Path, capsys: py
 _UNKNOWN_USER_MESSAGE = "Invalid path for {option}: ~nouser_xyz/{name}: the user after '~' has no home directory\n"
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@needs("posix")
 @pytest.mark.parametrize(
     ("pyproject", "args", "option"),
     [
@@ -1663,7 +1661,7 @@ def test_pyproject_path_of_an_unknown_user_is_a_configuration_error(
     _assert_file_does_not_exist(tmp_path / "o.py")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@needs("posix")
 @pytest.mark.parametrize(
     ("option", "message"),
     [
@@ -2663,7 +2661,7 @@ output = "{output_path.as_posix()}"
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="hardlink creation requires elevated privileges")
+@needs("symlinks")
 def test_pyproject_jobs_preflight_rejects_hardlinked_other_job_input(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -2705,7 +2703,7 @@ output = "{(tmp_path / "reader.py").as_posix()}"
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="directory symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_pyproject_jobs_reject_nested_output_symlink_escape(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Reject a generated directory file that would escape through an existing nested symlink."""
     output_path = tmp_path / "models"
@@ -2748,7 +2746,7 @@ input-file-type = "jsonschema"
     _assert_file_does_not_exist(reader_output)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="directory symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_pyproject_jobs_rejects_output_root_swapped_after_preflight(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2793,7 +2791,7 @@ output = "{output_path.as_posix()}"
     _assert_file_does_not_exist(original_root / "generated.py")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="directory symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_rejects_output_ancestor_swap_between_validation_and_publication(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
@@ -2927,7 +2925,7 @@ def test_pyproject_jobs_publish_first_replacement_failure_removes_backup(
     assert list(tmp_path.glob(".target.py.*.bak")) == []
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_publish_replaces_symlink_without_mutating_its_target(tmp_path: Path) -> None:
     """Back up a symlink entry and atomically replace it without changing its original referent."""
@@ -2944,7 +2942,7 @@ def test_pyproject_jobs_publish_replaces_symlink_without_mutating_its_target(tmp
     assert original_target.read_text(encoding="utf-8") == "stale\n"
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_failed_replacement_discards_unchanged_symlink_backup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -3103,7 +3101,7 @@ def test_pyproject_jobs_partial_copy_backup_failure_removes_backup(
     assert list(tmp_path.glob(".target.py.*.bak")) == []
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="batch publication anchors use directory descriptors on POSIX")
+@needs("posix")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_post_publish_check_does_not_recreate_missing_parent(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -3211,7 +3209,7 @@ def test_pyproject_jobs_restore_backup_replaces_when_samefile_is_unavailable(
     assert target.read_text(encoding="utf-8") == "stale again\n"
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_restore_backup_discards_unchanged_symlink_backup(tmp_path: Path) -> None:
     """Remove a symlink backup when a failed replacement left its target unchanged."""
@@ -3228,7 +3226,7 @@ def test_pyproject_jobs_restore_backup_discards_unchanged_symlink_backup(tmp_pat
     assert target.is_symlink()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="batch publication anchors use directory descriptors on POSIX")
+@needs("posix")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_publish_reports_failed_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Include unrecovered paths when both publication and rollback fail."""
@@ -3258,7 +3256,7 @@ def test_pyproject_jobs_publish_reports_failed_rollback(tmp_path: Path, monkeypa
     assert target.read_text(encoding="utf-8") == "stale\n"
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="batch publication anchors use directory descriptors on POSIX")
+@needs("posix")
 @pytest.mark.abnormal_path("the open-file limit runs out only when the process holds every descriptor it may open")
 @pytest.mark.allow_direct_assert("checks that the stale target is rolled back after the publication error")
 def test_pyproject_jobs_publish_reports_open_file_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -3279,7 +3277,7 @@ def test_pyproject_jobs_publish_reports_open_file_limit(tmp_path: Path, monkeypa
     assert target.read_text(encoding="utf-8") == "stale\n"
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@needs("posix")
 @pytest.mark.allow_direct_assert("checks the exit code and modules of a run with a lowered open-file limit")
 def test_pyproject_jobs_publish_more_files_than_the_open_file_limit(tmp_path: Path) -> None:
     """Publish more modules than the process may open files, as one descriptor serves each directory (#6591).
@@ -3366,7 +3364,7 @@ def _run_command_line(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Exit:
     return main_module.main()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@needs("posix")
 @pytest.mark.allow_direct_assert("checks the open-file limits of the process after a command-line run")
 def test_command_line_raises_the_open_file_limit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lowered_open_file_limit: int
@@ -3376,7 +3374,7 @@ def test_command_line_raises_the_open_file_limit(
     assert _soft_open_file_limit() > lowered_open_file_limit
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@needs("posix")
 @pytest.mark.allow_direct_assert("checks the open-file limits of the process after a generate() call")
 def test_generate_keeps_the_open_file_limit(tmp_path: Path, lowered_open_file_limit: int) -> None:
     """Leave the open-file limits of a process that calls ``generate()`` as they are (#6591)."""
@@ -3389,7 +3387,7 @@ def test_generate_keeps_the_open_file_limit(tmp_path: Path, lowered_open_file_li
     assert _soft_open_file_limit() == lowered_open_file_limit
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@needs("posix")
 @pytest.mark.abnormal_path(
     "limits and a kernel that refuses the hard limit, as macOS refuses an unlimited one, are not Linux"
 )
@@ -3443,7 +3441,7 @@ def test_command_line_runs_without_the_resource_module(tmp_path: Path, monkeypat
     assert _run_command_line(tmp_path, monkeypatch) == Exit.OK
 
 
-@pytest.mark.skipif(os.name == "nt", reason="POSIX permission modes are unsupported on Windows")
+@needs("posix")
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_publish_preserves_existing_file_mode(tmp_path: Path) -> None:
     """Keep an existing output's permission bits when atomically replacing its contents."""
@@ -3474,7 +3472,7 @@ def test_pyproject_jobs_publish_rejects_directory_file_target(tmp_path: Path) ->
 
 
 @pytest.mark.allow_direct_assert
-@pytest.mark.skipif(os.name == "nt", reason="POSIX permission modes are unsupported on Windows")
+@needs("posix")
 def test_pyproject_jobs_publish_nested_output_and_preserve_mode(tmp_path: Path) -> None:
     """Publish into new parent directories and preserve the mode on a later replacement."""
     output_path = tmp_path / "created" / "nested" / "model.py"
@@ -3557,7 +3555,7 @@ emit-model-metadata = "{metadata_output.as_posix()}"
     _assert_file_does_not_exist(lockfile)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="batch publication anchors use directory descriptors on POSIX")
+@needs("posix")
 def test_pyproject_jobs_staging_failure_keeps_primary_error_when_anchor_cleanup_fails(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

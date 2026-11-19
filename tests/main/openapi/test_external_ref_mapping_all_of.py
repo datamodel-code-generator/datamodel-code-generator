@@ -21,6 +21,7 @@ from pydantic import ValidationError
 
 from datamodel_code_generator import DanglingRefWarning
 from datamodel_code_generator.__main__ import Exit
+from tests.capabilities import needs
 from tests.conftest import MockHttpxResponse, assert_output
 from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
@@ -46,9 +47,7 @@ OUTPUT_MODEL_TYPES = (
     "dataclasses.dataclass",
     pytest.param(
         "typing.TypedDict",
-        marks=pytest.mark.skipif(
-            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-        ),
+        marks=needs("typed-dict-validation"),
     ),
     "msgspec.Struct",
 )

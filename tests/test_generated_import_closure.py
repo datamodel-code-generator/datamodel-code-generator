@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import ast
 import operator
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -37,6 +36,7 @@ from scripts._source_model import (
     name_reads,
     string_type,
 )
+from tests.capabilities import needs
 from tests.generated_import_closure_allowlist import UNBOUND_NAME_GROUP_REASONS, UNBOUND_NAME_VIOLATIONS
 
 if TYPE_CHECKING:
@@ -339,7 +339,7 @@ def unbound_names(model: SourceModule) -> set[str]:
     return {name for _, name in unbound_sites(model)}
 
 
-PEP_695 = pytest.mark.skipif(sys.version_info < (3, 12), reason="PEP 695 syntax needs Python 3.12 or later")
+PEP_695 = needs("type-statements")
 UNBOUND_NAME_CASES = [
     pytest.param(
         "def outer():\n    n = 1\n\n    def inner():\n        nonlocal n\n        n = 2\n", set(), id="nonlocal"

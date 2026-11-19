@@ -70,6 +70,7 @@ from datamodel_code_generator.types import DataType
 from scripts._template_compiler import build_environment, compile_template, module_name_for_path
 from scripts._template_compiler import inventory as template_compiler_inventory
 from scripts.compile_builtin_templates import template_sets
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[2]
@@ -893,7 +894,7 @@ def test_inventory_rejects_include_capture_of_parent_macro(tmp_path: Path) -> No
         template_compiler_inventory.inventory_templates(tmp_path)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_inventory_rejects_template_source_symlink_outside_root(tmp_path: Path) -> None:
     """Template discovery must not read a source reached through an escaping symlink."""
     template_dir = tmp_path / "templates"
@@ -912,7 +913,7 @@ def test_inventory_rejects_template_source_symlink_outside_root(tmp_path: Path) 
         template_compiler_inventory.inventory_templates(template_dir)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_inventory_accepts_template_source_symlink_within_root(tmp_path: Path) -> None:
     """A source alias remains valid when its resolved target stays inside the template root."""
     source = tmp_path / "source.jinja2"
@@ -922,7 +923,7 @@ def test_inventory_accepts_template_source_symlink_within_root(tmp_path: Path) -
     template_compiler_inventory.inventory_templates(tmp_path)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_inventory_rejects_broken_template_source_symlink(tmp_path: Path) -> None:
     """Broken source aliases fail with an actionable compiler diagnostic."""
     tmp_path.joinpath("broken.jinja2").symlink_to(tmp_path / "missing.jinja2")
@@ -988,7 +989,7 @@ def test_inventory_rejects_template_source_directory(tmp_path: Path) -> None:
         template_compiler_inventory.inventory_templates(tmp_path)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_template_source_read_keeps_the_verified_descriptor_after_symlink_swap(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1017,7 +1018,7 @@ def test_template_source_read_keeps_the_verified_descriptor_after_symlink_swap(
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_template_source_read_rejects_symlink_swapped_after_validation(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
