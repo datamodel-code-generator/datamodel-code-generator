@@ -25,6 +25,7 @@ ruff-config:ignore:ERA001                          1       1       0
 ruff-config:ignore:INP                             1       1       0
 ruff-config:per-file:tests/**/*.py:S101            1       1       0
 ruff:PLC0415@src                                   1       1       0
+source-rule:raw-skip                               0       1      +1
 store-allowlist:counted                            0       2      +2
 store-allowlist:witness                            0       1      +1
 ty-config:deprecated                               0       1      +1
@@ -76,6 +77,9 @@ pyright-ignore:reportPrivateUsage@src rose by 1 (0 -> 1). pyright checks only ge
 
 pytest-config:filterwarnings-ignore rose by 1 (0 -> 1). Fix the warning's cause, or assert it with pytest.warns, instead of filtering it for all tests.
   pyproject.toml: 0 -> 1
+
+source-rule:raw-skip rose by 1 (0 -> 1). Say what the test needs with a capability of tests/capabilities.py (`@needs("symlinks")`), adding one with its reason when none fits; delete a skip that no lane takes; `python scripts/check_source_rules.py --rule raw-skip` prints each site with its detail.
+  tests/test_d.py: 0 -> 1 (lines 8)
 
 store-allowlist:counted rose by 2 (0 -> 2). Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it.
   scripts/generation_store_allowlist.toml: 0 -> 2

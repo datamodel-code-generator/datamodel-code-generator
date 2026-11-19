@@ -1,0 +1,1 @@
+pydantic-2.5: the generated code needs Pydantic 2.5

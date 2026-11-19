@@ -1,0 +1,33 @@
+== references
+14:0 when store in <module> -> local <module> @14
+14:7 marks load in <module> -> local <module> @12; origin pytest.mark
+15:0 REFERENCE store in <module> -> local <module> @15
+18:1 when load in <module> -> local <module> @14; origin pytest.mark.skipif
+18:6 sys load in <module> -> local <module> @7; origin sys
+20:4 importorskip load in test_aliased -> global <module> @11; origin pytest.importorskip
+21:4 pt load in test_aliased -> global <module> @10; origin pytest
+24:15 ut load in <module> -> local <module> @8; origin unittest
+25:4 skip store in TestCase -> local TestCase @25, else unbound
+25:11 staticmethod load in TestCase -> builtin; origin builtins.staticmethod
+25:39 reason load in TestCase.<lambda> -> local TestCase.<lambda> @25
+27:5 ut load in TestCase -> global <module> @8; origin unittest
+29:8 self load in TestCase.test_method -> local TestCase.test_method @28
+33:4 skip load in test_parameter -> local test_parameter @32
+34:4 mark load in test_parameter -> local test_parameter @32
+38:4 skipif store in test_local -> local test_local @38
+38:31 condition load in test_local.<locals>.<lambda> -> local test_local.<locals>.<lambda> @38
+39:4 skipif load in test_local -> local test_local @38
+uses of <module>:sys@7: read@18
+uses of <module>:ut@8: read@24, call:skipIf@27
+uses of <module>:pt@10: call:skip@21
+uses of <module>:importorskip@11: call@20
+uses of <module>:marks@12: read@14
+uses of <module>:when@14: call@18
+uses of TestCase.<lambda>:reason@25: read@25
+uses of TestCase.test_method:self@28: call:skip@29
+uses of test_parameter:skip@32: call@33
+uses of test_parameter:mark@32: read@34
+uses of test_local:skipif@38: call@39
+uses of test_local.<locals>.<lambda>:condition@38: read@38
+type positions @15: pytest; chains pytest.mark.skipif = None
+== code objects: one per scope that compiles on this Python

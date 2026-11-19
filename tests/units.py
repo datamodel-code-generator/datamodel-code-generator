@@ -20,6 +20,7 @@ import base64
 import binascii
 import hashlib
 import json
+import operator
 import os
 import posixpath
 import re
@@ -40,9 +41,11 @@ __all__ = [
     "INPUT_TREES",
     "KEEP",
     "ORDER",
+    "ORDERS",
     "PAYLOAD_DECODED_LIMIT",
     "REFS_HEADER",
     "REFS_SUFFIX",
+    "VERSION_FACTS",
     "Desired",
     "Event",
     "Observations",
@@ -55,6 +58,8 @@ __all__ = [
     "UnsafeWriteError",
     "apply_payload",
     "common_contents",
+    "condition_holds",
+    "condition_problem",
     "decode_payload",
     "deduplicate",
     "derived_directory",
@@ -84,6 +89,7 @@ __all__ = [
     "predicate_text",
     "read_unit",
     "refs_sections",
+    "release",
     "resolve",
     "split_label",
     "stored_digest",
@@ -358,6 +364,60 @@ def parse_predicate(text: str) -> tuple[tuple[str, str], ...]:
 def predicate_matches(predicate: tuple[tuple[str, str], ...], facts: Mapping[str, str]) -> bool:
     """Return whether an environment's facts satisfy a predicate; versions match by their leading components."""
     return all((actual := facts.get(fact, "")) == value or actual.startswith(f"{value}.") for fact, value in predicate)
+
+
+VERSION_FACTS = frozenset({"python", "black", "isort", "pydantic"})
+"""The facts whose values are versions, which a condition may compare in order (``black>=24``)."""
+_CONDITION = re.compile(r"(?P<fact>[a-z]+)(?P<op>==|!=|>=|<=|<|>)(?P<value>[^\s|]+)")
+_RELEASE = re.compile(r"\d+(?:\.\d+)*")
+ORDERS: dict[str, Callable[[tuple[int, ...], tuple[int, ...]], bool]] = {
+    "<": operator.lt,
+    "<=": operator.le,
+    ">": operator.gt,
+    ">=": operator.ge,
+}
+"""The order operators of a condition, over numeric releases (`release`)."""
+
+
+def condition_problem(clause: str) -> str | None:
+    """Return why a condition clause is malformed, or None.
+
+    A clause is one or more alternatives joined by ``|``; each alternative is ``<fact><op><value>``, where the fact is
+    one of `FACTS`, the value has its shape, and only a version fact (`VERSION_FACTS`) is compared in order (``<``,
+    ``<=``, ``>``, ``>=``) with a numeric release (``3.12``, ``23.3``).
+    """
+    for alternative in clause.split("|"):
+        if (match := _CONDITION.fullmatch(alternative)) is None or not _fact_fits(match["fact"], match["value"]):
+            return f"{alternative!r} is not <fact><op><value> with a fact of {', '.join(FACTS)}"
+        if match["op"] in ORDERS and (match["fact"] not in VERSION_FACTS or not _RELEASE.fullmatch(match["value"])):
+            return f"{alternative!r} orders a fact that is not a version, or by a value that is not a release"
+    return None
+
+
+def release(value: str) -> tuple[int, ...]:
+    """Return the numeric release a version starts with (``(26, 1)`` for ``26.1a1``), empty for none."""
+    match = _RELEASE.match(value)
+    return tuple(int(part) for part in match.group().split(".")) if match else ()
+
+
+def condition_holds(clause: str, facts: Mapping[str, str]) -> bool:
+    """Return whether an environment's facts satisfy a well-formed clause (`condition_problem`): any alternative holds.
+
+    ``==`` and ``!=`` match a version by its leading components, as overrides do (``black==22`` holds for ``22.1.0``).
+    An order compares the actual version's release cut to the length of the value's (``black>=24`` holds for
+    ``24.1.0``). A tool that is not installed (an empty fact) satisfies only ``!=``.
+    """
+    for match in filter(None, map(_CONDITION.fullmatch, clause.split("|"))):
+        fact, op, value = match["fact"], match["op"], match["value"]
+        actual = facts.get(fact, "")
+        if op in ORDERS:
+            wanted = release(value)
+            found = release(actual)[: len(wanted)]
+            if found and ORDERS[op](found, wanted):
+                return True
+        elif predicate_matches(((fact, value),), facts) is (op == "=="):
+            return True
+    return False
 
 
 def _overlap(first: tuple[tuple[str, str], ...], second: tuple[tuple[str, str], ...]) -> bool:

@@ -16,3 +16,6 @@ scripts/check_source_rules.py::redundant-local-import: ratchet
 scripts/check_source_rules.py::clone-bodies: ratchet
 scripts/check_source_rules.py::lost-last-caller: ratchet (report only)
 scripts/check_source_rules.py::flaky-test-workarounds: ratchet
+scripts/check_source_rules.py::raw-skip: ratchet
+scripts/check_source_rules.py::dead-capability: ratchet
+scripts/check_source_rules.py::never-run: ratchet

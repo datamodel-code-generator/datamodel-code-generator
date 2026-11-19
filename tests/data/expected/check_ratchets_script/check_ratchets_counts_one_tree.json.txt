@@ -69,6 +69,9 @@ exit status 0
  "ruff:PLC0415@src": {
   "src/pkg/a.py": 1
  },
+ "source-rule:raw-skip": {
+  "tests/test_d.py": 1
+ },
  "store-allowlist:counted": {
   "scripts/generation_store_allowlist.toml": 2
  },

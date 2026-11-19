@@ -37,12 +37,14 @@ from typing import TYPE_CHECKING
 import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts._source_model import SourceModelError, SourceModule
+from scripts._ci_lanes import WORKFLOW, Lane, read_lanes
+from scripts._source_model import SourceModelError, SourceModule, Unreadable
+from tests.units import condition_holds, condition_problem
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
-    from scripts._source_model import Import, Scope
+    from scripts._source_model import Binding, Import, Scope
 
 PACKAGE = "src/datamodel_code_generator"
 PACKAGE_NAME = "datamodel_code_generator"
@@ -63,6 +65,21 @@ TESTS = "tests"
 TESTS_STORED = "tests/data/expected/"
 SLEEP_ALLOWLIST = "scripts/test_sleep_allowlist.toml"
 RERUN_MODULES = frozenset({"flaky", "pytest_rerunfailures", "rerunfailures"})
+TEST_DATA = "tests/data/"
+CAPABILITY_HOME = "tests/capabilities.py"
+CAPABILITY_TABLE = "CAPABILITIES"
+NEEDS = "tests.capabilities.needs"
+SKIP_ORIGINS = frozenset({
+    "pytest.importorskip",
+    "pytest.mark.skip",
+    "pytest.mark.skipif",
+    "pytest.skip",
+    "unittest.SkipTest",
+    "unittest.skip",
+    "unittest.skipIf",
+    "unittest.skipUnless",
+})
+"""The skip markers, calls and exceptions, by the origin the source model gives a name or attribute chain."""
 _FILE_CITATION = re.compile(r"`([A-Za-z_][\w/]*\.py):([A-Za-z_][\w.]*)")
 _CLASS_CITATION = re.compile(r"`([A-Z][A-Za-z0-9_]*)\.([A-Za-z_]\w*)")
 _WORD = re.compile(r"\w+")
@@ -728,6 +745,176 @@ def flaky_test_workarounds(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
             yield Finding(SLEEP_ALLOWLIST, 1, "flaky-test-workarounds", f"{name} allows {count}, holds {found[name]}")
 
 
+def _test_modules(tree: Tree) -> Iterator[Module]:
+    """Yield the test modules a skip rule reads: those of ``tests``, test data and the capability table aside."""
+    for module in tree.tests:
+        if module.rel != CAPABILITY_HOME and not module.rel.startswith(TEST_DATA):
+            yield module
+
+
+def raw_skip(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a skip marker, call or exception in the tests outside the capability table (``tests/capabilities.py``).
+
+    A site is a read of ``pytest.mark.skip``/``skipif``, ``pytest.skip``, ``pytest.importorskip`` or a ``unittest``
+    skip, by origin (an alias counts, a local of the same name does not).
+
+    Review class: a test that verifies nothing on some or all lanes, added by copying a neighbour's ``skipif``.
+    """
+    for module in _test_modules(tree):
+        model = module.model
+        loads = [reference.node for reference in model.references if reference.context == "load"]
+        loads += [node for node in module.nodes if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load)]
+        for node in loads:
+            if (origin := model.origin(node)) in SKIP_ORIGINS:
+                yield Finding(module.rel, node.lineno, "raw-skip", origin)
+
+
+@dataclass(frozen=True)
+class _Capabilities:
+    """The capability table of a tree, the line of each entry, what makes either unreadable, and the CI lanes."""
+
+    table: dict[str, tuple[tuple[str, ...], str]]
+    lines: dict[str, int]
+    problems: list[Finding]
+    lanes: list[Lane]
+
+    def lanes_with(self, names: Iterable[str]) -> list[Lane]:
+        """Return the lanes that have every named capability; an unknown name holds on none."""
+        wanted = list(dict.fromkeys(names))
+        if any(name not in self.table for name in wanted):
+            return []
+        clauses = [clause for name in wanted for clause in self.table[name][0]]
+        return [lane for lane in self.lanes if all(condition_holds(clause, lane.facts) for clause in clauses)]
+
+
+def _table_shape(value: object) -> str | None:
+    """Return why a table value is not ``{name: ((clause, ...), reason)}``, or None."""
+    if not isinstance(value, dict):
+        return "it is not a dict"
+    for name, entry in value.items():
+        match entry:
+            case (tuple() as clauses, str()) if isinstance(name, str) and all(isinstance(c, str) for c in clauses):
+                continue
+            case _:
+                return f"{name!r} is not ((clause, ...), reason)"
+    return None
+
+
+def _capabilities(tree: Tree) -> _Capabilities | None:
+    """Return the capability table and the lanes of a tree; None without the matrix (no lane judges anything)."""
+    lanes, unreadable = read_lanes(tree.root)
+    if not lanes and not unreadable:
+        return None
+    problems = [Finding(WORKFLOW, 1, "dead-capability", problem) for problem in unreadable]
+    if not (tree.root / CAPABILITY_HOME).is_file():
+        return _Capabilities({}, {}, problems, lanes)
+    model = tree.module(CAPABILITY_HOME).model
+    value = model.constant(CAPABILITY_TABLE)
+    shape = value.reason if isinstance(value, Unreadable) else _table_shape(value)
+    if shape is not None or not isinstance(value, dict):
+        problems.append(Finding(CAPABILITY_HOME, 1, "dead-capability", f"{CAPABILITY_TABLE} is unreadable: {shape}"))
+        return _Capabilities({}, {}, problems, lanes)
+    bindings = model.bindings(CAPABILITY_TABLE, model.module_scope)
+    keys = bindings[0].value.keys if isinstance(bindings[0].value, ast.Dict) else []
+    lines = {key.value: key.lineno for key in keys if isinstance(key, ast.Constant) and isinstance(key.value, str)}
+    return _Capabilities(value, lines, problems, lanes)
+
+
+def dead_capability(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a capability of the table that no lane of the CI matrix has, a malformed one, and an unreadable lane.
+
+    The lanes and their facts are read from the workflow, ``tox.ini``, ``pyproject.toml`` and ``uv.lock``
+    (`scripts/_ci_lanes.py`); a tree without the workflow has no lanes and nothing is judged.
+
+    Review class: a skip that guards against an environment no lane installs (black 19, Pydantic 1), so it says what
+    the suite covers and covers nothing.
+    """
+    if (found := _capabilities(tree)) is None:
+        return
+    yield from found.problems
+    for name, (clauses, _) in found.table.items():
+        line = found.lines.get(name, 1)
+        if problems := [problem for problem in map(condition_problem, clauses) if problem]:
+            yield Finding(CAPABILITY_HOME, line, "dead-capability", f"{name}: {'; '.join(problems)}")
+        elif not found.lanes_with([name]):
+            yield Finding(CAPABILITY_HOME, line, "dead-capability", f"{name}: no lane has {' and '.join(clauses)}")
+
+
+def _needed(model: SourceModule, node: ast.expr | None, seen: frozenset[Binding] = frozenset()) -> list[str]:
+    """Return the capabilities a mark expression names: a ``needs(...)`` call, a name bound to one, or a list of them.
+
+    ``needs`` is found by origin; a name is followed to its single module-level or local assignment, each once, so
+    names bound to each other end the walk. An argument that is not a string literal is kept as its source text,
+    which names no capability, so it holds on no lane.
+    """
+    if node is None:
+        return []
+    if isinstance(node, ast.Call):
+        if model.origin(node.func) != NEEDS:
+            return []
+        return [
+            arg.value if isinstance(arg, ast.Constant) and isinstance(arg.value, str) else ast.unparse(arg)
+            for arg in node.args
+        ]
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [name for item in node.elts for name in _needed(model, item, seen)]
+    reference = next((item for item in model.references if item.node is node and item.context == "load"), None)
+    if (
+        reference is not None
+        and len(bindings := model.resolve(reference.node).bindings) == 1
+        and bindings[0] not in seen
+    ):
+        return _needed(model, bindings[0].value, seen | {bindings[0]})
+    return []
+
+
+def _marks_of(model: SourceModule, scope: Scope) -> list[str]:
+    """Return the capabilities a scope's own marks name: its decorators, and the ``pytestmark`` of a module or class."""
+    names = [name for decorator in getattr(scope.node, "decorator_list", []) for name in _needed(model, decorator)]
+    if scope.kind in {"module", "class"}:
+        for binding in model.bindings("pytestmark", scope):
+            names += _needed(model, binding.value)
+    return names
+
+
+def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a test, or a ``pytest.param`` of one, whose capabilities together hold on no lane of the CI matrix.
+
+    A test's capabilities are those its module's and its classes' ``pytestmark`` and decorators name and its own
+    decorators; a ``pytest.param`` adds those of its ``marks``. An unknown capability holds on no lane. A lane that
+    selects only some tests is counted as running every test.
+
+    Review class: a test that no lane runs, kept only because its skip hides that.
+    """
+    if (found := _capabilities(tree)) is None:
+        return
+    for module in _test_modules(tree):
+        model = module.model
+        owners: dict[ast.AST, list[str]] = {}
+        for scope in model.scopes:
+            if scope.kind != "function" or not scope.code_name.startswith("test"):
+                continue
+            chain, parent = [scope], scope.parent
+            while parent is not None and parent.kind in {"class", "module"}:
+                chain.append(parent)
+                parent = parent.parent
+            if parent is not None:
+                continue  # a function inside another function is no test pytest collects
+            names = [name for item in reversed(chain) for name in _marks_of(model, item)]
+            for decorator in getattr(scope.node, "decorator_list", []):
+                owners.update(dict.fromkeys(ast.walk(decorator), names))
+            if names and not found.lanes_with(names):
+                yield Finding(module.rel, scope.line, "never-run", f"{scope.qualname} needs {', '.join(names)}")
+        module_names = _marks_of(model, model.module_scope)
+        for node in module.nodes:
+            if not (isinstance(node, ast.Call) and model.origin(node.func) == "pytest.param"):
+                continue
+            marks = next((keyword.value for keyword in node.keywords if keyword.arg == "marks"), None)
+            if (added := _needed(model, marks)) and not found.lanes_with([*owners.get(node, module_names), *added]):
+                names = ", ".join(dict.fromkeys([*owners.get(node, module_names), *added]))
+                yield Finding(module.rel, node.lineno, "never-run", f"pytest.param needs {names}")
+
+
 RULES: tuple[Rule, ...] = (
     Rule(
         "hash-split",
@@ -782,6 +969,26 @@ RULES: tuple[Rule, ...] = (
         flaky_test_workarounds,
         "fix the race the retry or sleep hides (wait on an event, a condition or an injected clock) or delete the test "
         "with the reason in the commit; never add an entry to scripts/test_sleep_allowlist.toml",
+        absolute=True,
+    ),
+    Rule(
+        "raw-skip",
+        raw_skip,
+        'say what the test needs with a capability of tests/capabilities.py (`@needs("symlinks")`), adding one with '
+        "its reason when none fits; delete a skip that no lane takes",
+    ),
+    Rule(
+        "dead-capability",
+        dead_capability,
+        "delete the capability and its uses (no lane of .github/workflows/test.yaml has it, so the tests it guards "
+        "always run, or never), or fix the clause or the lane the message names",
+        absolute=True,
+    ),
+    Rule(
+        "never-run",
+        never_run,
+        "delete the test, or the capability that excludes every lane; a test no lane of .github/workflows/test.yaml "
+        "runs checks nothing",
         absolute=True,
     ),
 )

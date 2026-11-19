@@ -420,11 +420,20 @@ The same script counts the sites of the source rules in
 `source-rule:<rule>` keys: a change may keep or lower a count, and an absolute
 rule fails on any site and cannot be approved. The rules marked
 `absolute=True` in `RULES` of that script are absolute (today `doc-citations`,
-`unused-private-global` and `flaky-test-workarounds`), and the summary of
+`unused-private-global`, `flaky-test-workarounds`, `dead-capability` and
+`never-run`), and the summary of
 `python scripts/check_source_rules.py` names the kind of each rule.
 `python scripts/check_source_rules.py --rule <rule>` prints each site and how to
 fix it. `lost-last-caller` compares the tree with the base and needs coverage
 data to decide, so the ratchet prints its candidates without failing on them.
+A test that needs something of its environment names a capability of
+`tests/capabilities.py` (`@needs("symlinks")`) instead of writing a `skipif`:
+the table states each capability as clauses over the environment facts of
+`tests/units.py`, with its reason. `raw-skip` counts every other skip,
+`dead-capability` fails on a capability that no lane of
+`.github/workflows/test.yaml` has (`scripts/_ci_lanes.py` reads the facts of
+each lane from the matrix, `tox.ini`, `pyproject.toml` and `uv.lock`), and
+`never-run` fails on a test whose capabilities together exclude every lane.
 `tests/test_checks_are_run.py` names every `scripts/check_*.py` and every source
 rule that nothing runs on the repository tree: a workflow `run:` step or a hook
 `entry` that executes it, a `commands` line of a tox environment a workflow

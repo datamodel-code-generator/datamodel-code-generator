@@ -1,0 +1,11 @@
+[[change]]
+id = "skips-as-capabilities"
+category = "harness"
+title = "Check test skips against the CI lanes"
+summary = "The ratchet counts the skips outside the capability table of tests/capabilities.py as source-rule:raw-skip and fails on a capability or a test that no CI lane runs; the counts list the three new keys; the generated package writes the same output."
+refs = []
+covers = [
+    "check_ratchets_script/check_ratchets_counts_one_tree.json.txt",
+    "check_ratchets_script/check_ratchets_counts_one_tree.table.txt",
+    "source_rules/counts_are_printed_as_ratchet_keys.txt",
+]

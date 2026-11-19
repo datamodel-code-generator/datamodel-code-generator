@@ -12,5 +12,8 @@ exit: 0
   "source-rule:unused-private-global": {},
   "source-rule:redundant-local-import": {},
   "source-rule:clone-bodies": {},
-  "source-rule:flaky-test-workarounds": {}
+  "source-rule:flaky-test-workarounds": {},
+  "source-rule:raw-skip": {},
+  "source-rule:dead-capability": {},
+  "source-rule:never-run": {}
 }
