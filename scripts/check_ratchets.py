@@ -44,9 +44,11 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   ``comment:plain@src`` the other plain comments (a directive such as ``noqa``, a pragma, a type ignore, a shebang or
   an encoding line is none). A comment that explains a hard line is legitimate, so the budget is today's count, paid
   by turning another comment into a docstring.
-- ``env-probe@src``: the places where the package reads the environment it runs in: a guarded import (the body of a
-  ``try`` that catches ``ImportError``), ``sys.version_info``, ``sys.platform``, ``os.name``, ``os.environ``,
-  ``os.getenv`` and ``importlib.util.find_spec``, read with the source model by origin. Output that depends on the
+- ``env-probe@src``: the places where the package reads the environment it runs in: a guarded import (an import
+  statement or ``import_module`` call in the body of a ``try`` with a handler for ``ImportError`` or
+  ``ModuleNotFoundError``, one probe per statement; ``except Exception`` makes an ordinary lazy import), the version
+  and platform reads of the source model's tables, ``os.environ``, ``os.getenv`` and ``importlib.util.find_spec``,
+  read with the source model by origin. Output that depends on the
   environment cost review rounds, so the count may stay or fall, never rise.
 - ``expected:env-override`` and ``expected:conditional``: the ``.refs`` lines that carry an environment predicate
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
@@ -111,7 +113,7 @@ import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._import_cycles import import_cycles
-from scripts._source_model import SourceModule
+from scripts._source_model import _PLATFORMS, _VERSIONS, SourceModule
 from scripts.check_source_rules import RULES
 from scripts.check_source_rules import Tree as SourceTree
 from scripts.check_source_rules import run as run_source_rules
@@ -235,19 +237,16 @@ PLAIN_COMMENT_AREAS = frozenset({"src"})
 """The areas whose plain comments and environment probes are counted."""
 TODO_MARKER = re.compile(r"\b(?:TODO|FIXME|XXX|HACK)\b")
 COMMENT_DIRECTIVE = re.compile(
-    r"^#(?:!|\s*-\*-|\s*(?:vim?|coding)[:=])|\b(?:noqa|pragma|type|ty|pyright|mypy|pylint|isort|fmt|ruff)\s*:",
-    re.IGNORECASE,
+    r"^#(?:!|\s*-\*-|\s*(?:vim?|coding)[:=]|\s*(?:type|ty|pyright|mypy|pylint|isort|fmt)\s*:)", re.IGNORECASE
 )
-"""A comment that directs a tool (a shebang, an encoding line, ``noqa``, ``pragma:``, ``type:``, ...), not a reader."""
-ENV_PROBES = frozenset({
-    "sys.version_info",
-    "sys.platform",
-    "os.name",
-    "os.environ",
-    "os.getenv",
-    "importlib.util.find_spec",
-})
-"""The dotted origins whose reads depend on the environment the code runs in."""
+"""A comment that starts as a tool directive (a shebang, an encoding line, ``type:``, ``fmt:``, ...), no reader.
+
+Comments the source model reports as suppressions (``noqa``, ``pragma``, ``ruff:``, type ignores) are directives too.
+"""
+ENV_PROBES = frozenset({*_VERSIONS, *_PLATFORMS, "os.environ", "os.getenv", "importlib.util.find_spec"})
+"""The dotted origins whose reads depend on the environment: the source model's version and platform tables, etc."""
+IMPORT_ERRORS = frozenset({"builtins.ImportError", "builtins.ModuleNotFoundError"})
+"""The exceptions whose handler makes a ``try`` around an import a probe (``Exception`` makes it an ordinary guard)."""
 REPORT_ONLY = frozenset({"expected"})
 """The kinds of keys that are reported in the table and never fail."""
 ADVICE = {
@@ -774,31 +773,50 @@ def scope_walk_sites(text: str, path: str) -> list[int]:
 
 def comment_sites(model: SourceModule) -> tuple[list[int], list[int]]:
     """Return the lines of the plain comments and of the to-do comments of a module (directives are neither)."""
+    directives = {item.line for item in model.suppressions()}
     plain: list[int] = []
     todo: list[int] = []
     for line, comment in sorted(model.comments.items()):
         if TODO_MARKER.search(comment):
             todo.append(line)
-        elif not COMMENT_DIRECTIVE.search(comment):
+        elif line not in directives and not COMMENT_DIRECTIVE.match(comment):
             plain.append(line)
     return plain, todo
+
+
+def _catches_import_error(model: SourceModule, node: ast.AST) -> bool:
+    """Return whether a ``try`` has a handler that names ``ImportError`` or ``ModuleNotFoundError`` by origin."""
+    if not isinstance(node, (ast.Try, ast.TryStar)):
+        return False
+    return any(
+        isinstance(part, ast.expr) and model.origin(part) in IMPORT_ERRORS
+        for handler in node.handlers
+        if handler.type is not None
+        for part in (handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type])
+    )
+
+
+def _guarded_by_import_error(model: SourceModule, guard: tuple) -> bool:
+    return any(condition.branch == "body" and _catches_import_error(model, condition.node) for condition in guard)
 
 
 def env_probe_sites(model: SourceModule) -> list[int]:
     """Return the lines where a module reads the environment it runs in, by origin through the source model.
 
-    A guarded import (the body of a ``try`` that catches ``ImportError``) and each read of one of `ENV_PROBES`.
+    A guarded import (an import statement or ``import_module`` call in the body of a ``try`` with a handler for
+    ``ImportError``; one probe per statement) and each read of one of `ENV_PROBES`.
     """
     nodes = list(ast.walk(model.tree))
     reads = [reference.node for reference in model.references if reference.context == "load"]
     reads += [node for node in nodes if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load)]
     lines = [node.lineno for node in reads if model.origin(node) in ENV_PROBES]
-    lines += [
-        found.node.lineno
-        for found in model.imports
-        if any(condition.kind == "import-error" and condition.branch == "body" for condition in found.guard)
-    ]
-    return sorted(lines)
+    guarded = {found.node for found in model.imports if _guarded_by_import_error(model, found.guard)}
+    guarded |= {
+        site.node
+        for site in model.dynamic_sites
+        if site.kind == "import-module" and _guarded_by_import_error(model, site.guard)
+    }
+    return sorted([*lines, *(node.lineno for node in guarded)])
 
 
 def _comment_tally(tally: Tally, root: Path, files: list[str]) -> None:

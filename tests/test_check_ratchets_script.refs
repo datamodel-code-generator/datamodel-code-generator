@@ -22,6 +22,8 @@ demoted-absolute-rule	check_ratchets_script/check_ratchets_against_base[demoted-
 demoted-absolute-rule-approved-in-head	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule-approved-in-head].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
 environment-probes	check_ratchets_script/check_ratchets_against_base[environment-probes].txt
+environment-probes-broad-try	check_ratchets_script/check_ratchets_against_base[environment-probes-broad-try].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
+environment-probes-more	check_ratchets_script/check_ratchets_against_base[environment-probes-more].txt
 environment-probes-unchanged	check_ratchets_script/check_ratchets_against_base[environment-probes-unchanged].txt
 exempt-files-listed	check_ratchets_script/check_ratchets_against_base[exempt-files-listed].txt
 expected-reported-only	check_ratchets_script/check_ratchets_against_base[expected-reported-only].txt
@@ -53,6 +55,7 @@ source-rules-unchanged	check_ratchets_script/check_ratchets_against_base[source-
 source-rules-unparsable	check_ratchets_script/check_ratchets_against_base[source-rules-unparsable].txt
 stopgap-comments	check_ratchets_script/check_ratchets_against_base[stopgap-comments].txt
 stopgap-comments-moved	check_ratchets_script/check_ratchets_against_base[stopgap-comments-moved].txt
+stopgap-comments-prose	check_ratchets_script/check_ratchets_against_base[stopgap-comments-prose].txt
 stored-lists-environments	check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt
 stored-lists-grow	check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt
 stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
