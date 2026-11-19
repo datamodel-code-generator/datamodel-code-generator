@@ -1,0 +1,77 @@
+=== module legacy_row_reading_lines
+== references
+=== module legacy_row_reading_lines.reader
+== references
+5:0 AT_IMPORT store in <module> -> local <module> @5
+5:12 KEPT load in <module> -> local <module> @3; origin legacy_row_reading_lines.rows.KEPT
+8:16 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+8:24 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+11:11 KEPT load in read -> global <module> @3; origin legacy_row_reading_lines.rows.KEPT
+11:18 value load in read -> local read @8
+11:26 str load in read -> builtin; origin builtins.str
+11:30 LOCAL load in read -> local read @9; origin legacy_row_reading_lines.rows.DOCUMENTED
+uses of <module>:KEPT@3: read@5, read@11
+uses of read:value@8: read@11
+uses of read:LOCAL@9: argument@11
+type positions @8: str
+type positions @8: str
+definition legacy_row_reading_lines.reader:AT_IMPORT -> assign legacy_row_reading_lines.rows:KEPT@5 via legacy_row_reading_lines.reader [always] > legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.reader:KEPT -> assign legacy_row_reading_lines.rows:KEPT@5 via legacy_row_reading_lines.reader [always] > legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.reader:read -> def legacy_row_reading_lines.reader:read@8 via legacy_row_reading_lines.reader [always]
+=== module legacy_row_reading_lines.rows
+== references
+5:0 KEPT store in <module> -> local <module> @5
+6:0 DOCUMENTED store in <module> -> local <module> @6
+6:12 TypeAlias load (evaluated annotation) in <module> -> local <module> @3; origin typing.TypeAlias
+6:24 Literal load in <module> -> local <module> @3; origin typing.Literal
+8:0 UNREAD store in <module> -> local <module> @8
+14:4 row store in Policy -> local Policy @14, else unbound
+16:26 str load (evaluated annotation) in Policy -> builtin; origin builtins.str
+16:34 str load (evaluated annotation) in Policy -> builtin; origin builtins.str
+17:37 row load in Policy.choose -> local Policy.choose @16
+20:16 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+20:27 bool load (evaluated annotation) in <module> -> builtin; origin builtins.bool
+20:36 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+21:7 row load in decide -> local decide @20
+22:15 KEPT load in decide -> global <module> @5; origin legacy_row_reading_lines.rows.KEPT
+23:10 row load in decide -> local decide @20
+28:11 flag load in decide -> local decide @20
+33:20 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+33:47 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+35:4 choice store in documented -> local documented @35
+35:12 DOCUMENTED load (never annotation) in documented -> global <module> @6; origin legacy_row_reading_lines.rows.DOCUMENTED
+36:11 choice load in documented -> local documented @35
+36:20 row load in documented -> local documented @33
+uses of <module>:Literal@3: read@6
+uses of <module>:TypeAlias@3: read@6
+uses of <module>:KEPT@5: read@22
+uses of <module>:DOCUMENTED@6: read@35
+uses of Policy.choose:row@16: read@17
+uses of decide:row@20: read@21, read@23
+uses of decide:flag@20: read@28
+uses of documented:row@33: read@36
+uses of documented:choice@35: read@36
+type positions @5: legacy, constant
+type positions @6: TypeAlias
+type positions @8: legacy, unread, constant
+type positions @20: str
+type positions @33: str
+type positions @39: -
+type positions @14: -
+type positions @16: str
+type positions @35: DOCUMENTED
+type positions @20: str
+type positions @20: bool
+type positions @33: str
+type positions @16: str
+definition legacy_row_reading_lines.rows:DOCUMENTED -> annassign legacy_row_reading_lines.rows:DOCUMENTED@6 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:KEPT -> assign legacy_row_reading_lines.rows:KEPT@5 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:Literal -> outside typing.Literal@3 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:Policy -> class legacy_row_reading_lines.rows:Policy@11 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:TypeAlias -> outside typing.TypeAlias@3 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:UNREAD -> assign legacy_row_reading_lines.rows:UNREAD@8 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:decide -> def legacy_row_reading_lines.rows:decide@20 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:documented -> def legacy_row_reading_lines.rows:documented@33 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:empty -> def legacy_row_reading_lines.rows:empty@39 via legacy_row_reading_lines.rows [always]
+edge legacy_row_reading_lines.reader -> legacy_row_reading_lines.rows @3 via from (module) [always]
+edge legacy_row_reading_lines.reader -> legacy_row_reading_lines.rows @9 via from (function) [function:body@8]

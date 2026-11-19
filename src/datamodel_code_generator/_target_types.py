@@ -453,6 +453,10 @@ class TypeTables:
         return next(value for slot, value in zip(symbol.fields, symbol.values, strict=True) if slot.field == item.field)
 
     def _kinds(self, value: TypeView | None, row: _Vocabulary, seen: frozenset[SymbolId]) -> JSONKinds:  # ruff: ignore[too-many-branches]
+        """Return the kinds of a type as ``row`` reads them; a class ``row.text`` lists is a string's.
+
+        Row ``legacy-imported-container-text``: ``text`` lists the containers imported from a module.
+        """
         kinds: JSONKinds = row.written
         match value:
             case None:
@@ -484,7 +488,10 @@ class TypeTables:
         return kinds
 
     def _values(self, value: LiteralType | FinalModelSymbol, row: _Vocabulary, seen: frozenset[SymbolId]) -> JSONKinds:
-        """Return the kinds of a literal's or an enum's values as ``row.values`` says."""
+        """Return the kinds of a literal's or an enum's values as ``row.values`` says.
+
+        Row ``legacy-codec-enum-kinds``: ``native`` reads the kinds of the str and int values alone.
+        """
         literal = isinstance(value, LiteralType)
         if row.values == "all" and not literal:
             return frozenset(value.value_types)

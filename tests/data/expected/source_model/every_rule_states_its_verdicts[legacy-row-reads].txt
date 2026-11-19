@@ -1,0 +1,15 @@
+verdict problems: none
+undeclared questions: none
+references/legacy_row_reading_lines: reader.py:11: legacy-constant
+references/legacy_row_reading_lines: rows.py:22: legacy-constant
+references/legacy_row_reading_lines: reader.py:11: legacy-constant-docstring
+references/legacy_row_reading_lines: rows.py:35: legacy-default
+references/legacy_row_reading_lines: rows.py:35: legacy-function-doc
+references/legacy_row_reading_lines: rows.py:26: legacy-in-call
+references/legacy_row_reading_lines: rows.py:27: legacy-in-call
+references/legacy_row_reading_lines: rows.py:28: legacy-in-call
+references/legacy_row_reading_lines: rows.py:29: legacy-in-call
+references/legacy_row_reading_lines: rows.py:30: legacy-in-call
+references/legacy_row_reading_lines: rows.py:24: legacy-in-case
+references/legacy_row_reading_lines: rows.py:17: legacy-in-method
+references/legacy_row_reading_lines: rows.py:21: legacy-in-test
