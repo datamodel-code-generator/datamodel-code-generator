@@ -44,6 +44,7 @@ from datamodel_code_generator.parser._intersection import (
     inherited_override_row,
     kept_legacy_rows,
 )
+from datamodel_code_generator.parser._null_facts import _declares_null, dump_null_sources
 from datamodel_code_generator.parser._schema_reading import _intersect_dumps
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, _without_nullable
 from tests.main.payload_validation import SchemaCase, source_schema_validator
@@ -368,7 +369,7 @@ def _explanation(core: str, a: dict[str, object], b: dict[str, object], kept: fr
         reason = "unsatisfiable"
     elif merged.warned:
         reason = "warned"
-    elif core in OWN_NULL_SITES and differing == [VALUES.index(None)] and _validity(_json_schema(b))[0]:
+    elif core in OWN_NULL_SITES and differing == [VALUES.index(None)] and _declares_null(dump_null_sources(b)):
         reason = "own null"
     return reason
 
