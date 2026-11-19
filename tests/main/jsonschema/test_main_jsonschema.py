@@ -444,7 +444,7 @@ def test_main_array_uri_items_preserves_min_items(output_file: Path) -> None:
     extra_outputs=[
         {
             "title": "Generated metadata (`model-map.json`)",
-            "path": "main/jsonschema/model_metadata_map.txt",
+            "path": "main/jsonschema/main_jsonschema/main_emit_model_metadata.txt",
             "language": "json",
         }
     ],
@@ -967,7 +967,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
     input_schema="jsonschema/null_and_array.json",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel"],
     model_outputs={
-        "pydantic_v2": "main/jsonschema/null_and_array_v2.py",
+        "pydantic_v2": "main/jsonschema/main_jsonschema/main_null_and_array.py",
     },
     primary=True,
 )
