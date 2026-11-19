@@ -1,7 +1,17 @@
 exit=0
 summary: same=4, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=0
 cells: 4 (tier pr, shard 1/1), cached base outputs: 0
+evidence: input group tests/data/jsonschema files | msgspec.Struct | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/jsonschema files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | msgspec.Struct | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: complete
 
 exit=0
 summary: same=4, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=0
 cells: 4 (tier pr, shard 1/1), cached base outputs: 4
+evidence: input group tests/data/jsonschema files | msgspec.Struct | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/jsonschema files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | msgspec.Struct | default: 1 compared, 0 failed on both sides
+evidence: input group tests/data/openapi files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: complete

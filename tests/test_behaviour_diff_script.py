@@ -1820,7 +1820,9 @@ def test_gate_against_a_git_revision(case: str, tmp_path: Path) -> None:
     deprecation, another exception class behind the same message, another refusal, error or output is a violation.
     Paths of the output and the package read the same on both sides, as does the order of a set; a run the memory
     cap stopped, and an input that fails on both sides in every cell, are not compared. A retry that crashed leaves
-    no record of the refused attempt. A cache directory given with `..` holds the base tree the base runs.
+    no record of the refused attempt. A cache directory given with `..` holds the base tree the base runs. Identity
+    also fails where a changed code object ran in no compared cell: the moved error paths run only in inputs that fail
+    on both sides.
     """
     versions, tag, base, mode = REVISION_CASES[case]
     repo = tmp_path / "repo"
