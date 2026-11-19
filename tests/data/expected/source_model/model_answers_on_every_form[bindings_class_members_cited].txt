@@ -1,0 +1,36 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  TYPE_CHECKING: import-from@9 [always]; origin typing.TYPE_CHECKING
+  Sequence: import-from@12 [type-checking:body@11]; origin collections.abc.Sequence
+  LIMIT: assign@14 [always]; value 3
+  build: assign@15 [always]; value lambda: None
+  Parser: class@18 [always]
+scope lambda <lambda>#0 '<lambda>': code yes; first line 15
+  opened by a node evaluated in <module>#0
+scope class Parser#0 'Parser': code yes; first line 18
+  opened by a node evaluated in <module>#0
+  kind: assign@19 [always]; value "json"
+  parse: def@21 [always]
+  helper: def@30 [always]
+  closure: def@33 [always]
+  static: def@40 [always]
+  members: closure, counter, cursor, extra, handle, helper, kind, nested, parse, registry, rest, results, static
+scope function Parser.parse#0 'parse': code yes; first line 21
+  opened by a node evaluated in Parser#0
+  self: param@21 [function:body@21]
+  receiver: self@21
+scope function Parser.helper#0 'helper': code yes; first line 29
+  opened by a node evaluated in Parser#0
+  cls: param@30 [function:body@30]
+  receiver: cls@30
+scope function Parser.closure#0 'closure': code yes; first line 33
+  opened by a node evaluated in Parser#0
+  self: param@33 [function:body@33]
+  inner: def@34 [function:body@33]
+  receiver: self@33
+scope function Parser.closure.<locals>.inner#0 'inner': code yes; first line 34
+  opened by a node evaluated in Parser.closure#0
+scope function Parser.static#0 'static': code yes; first line 39
+  opened by a node evaluated in Parser#0
+  other: param@40 [function:body@40]
+== code objects: one per scope that compiles on this Python

@@ -1,0 +1,17 @@
+== references
+8:4 key store in <module> -> local <module> @8
+8:11 list load in <module> -> star <module>
+8:16 globals load in <module> -> star <module>
+10:0 TABLE store in <module> -> local <module> @10
+10:28 globals load in <module> -> star <module>
+10:19 value store in <listcomp> -> local <listcomp> @10
+10:9 value load in <listcomp> -> local <listcomp> @10
+14:11 str load in cut -> star <module>
+14:21 ref load in cut -> local cut @13
+18:11 str load in shadowed -> local shadowed @17
+18:21 ref load in shadowed -> local shadowed @17
+uses of <listcomp>:value@10: read@10
+uses of cut:ref@13: argument@14
+uses of shadowed:str@17: call:split@18
+uses of shadowed:ref@17: argument@18
+== code objects: one per scope that compiles on this Python

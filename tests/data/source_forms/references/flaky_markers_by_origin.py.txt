@@ -1,0 +1,36 @@
+"""#7138 flaky-test-workarounds: markers, plugins and sleeps are found by where their names come from.
+
+A parameter or a local named ``flaky`` or ``sleep`` is not the marker or the call; an alias of one is.
+
+This form is a ``.txt`` file: the repository's own run of the rule reads every ``.py`` file of ``tests/`` and would
+report it.
+"""
+import time as clock
+from time import sleep as nap
+
+import flaky
+import pytest
+from flaky import flaky as retry
+from pytest import mark as marks
+
+pytestmark = pytest.mark.flaky(reruns=3)
+
+
+@retry(max_runs=3)
+def test_marked():
+    marks.flaky
+    nap(1)
+    clock.sleep(2)
+    return ["--reruns", "-p", "rerunfailures", "--lf"]
+
+
+def test_parameter(flaky, nap):
+    flaky(max_runs=3)
+    nap(1)
+    return flaky
+
+
+def test_local():
+    sleep = lambda seconds: seconds
+    sleep(1)
+    marks.slow

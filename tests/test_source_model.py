@@ -20,7 +20,7 @@ import tomllib
 
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
-from scripts import check_ratchets, where
+from scripts import check_ratchets, check_source_rules, where
 from tests import test_checks_are_run as checks_are_run
 from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
@@ -36,7 +36,8 @@ PYTHON = (sys.version_info.major, sys.version_info.minor)
 OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
-    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes): *(.*)$", re.MULTILINE
+    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations): *(.*)$",
+    re.MULTILINE,
 )
 MODEL_NAMES = frozenset({"scripts._source_model", "_source_model"})
 """The names a module imports the model by: as part of the ``scripts`` package, or beside it when run as a script."""
@@ -550,6 +551,36 @@ def _private_scope_walk(form: Path) -> list[str]:
     ]
 
 
+def _source_rules(form: Path) -> list[str]:
+    """Run every source rule that needs no base over a form, placed as a module of the package, scripts and tests.
+
+    A form that cites code (the directive ``citations: docstring``) stands in for the architecture page: its docstring
+    is the page, and its module is a file of the package.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        for area in (check_source_rules.PACKAGE, "scripts", "tests"):
+            for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+                target = (
+                    root
+                    / area
+                    / (form.name / path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+                )
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        if _directives(form).get("citations"):
+            page = root / check_source_rules.ARCHITECTURE_DOCS
+            page.parent.mkdir(parents=True)
+            page.write_text(_form_text(form).split('"""', 2)[1], encoding="utf-8")
+        found = check_source_rules.run(check_source_rules.Tree(root), check_source_rules.RULES, None)
+        return [
+            f"{finding.path.replace(check_source_rules.PACKAGE, 'src')}:{finding.line}: "
+            f"{finding.rule}: {finding.detail}"
+            for findings in found.values()
+            for finding in findings
+        ]
+
+
 def _where_disagreements(form: Path) -> list[str]:
     """Compare what `scripts.where` answers on a form's modules with the model's own answers and with every file read.
 
@@ -652,6 +683,11 @@ RULES: dict[str, RuleRun] = {
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
     ),
     "private-scope-walk": RuleRun("scripts.check_ratchets", frozenset({"bindings", "references"}), _private_scope_walk),
+    "source-rules": RuleRun(
+        "scripts.check_source_rules",
+        frozenset({"bindings", "references", "imports", "suppressions", "extents"}),
+        _source_rules,
+    ),
     "where-agrees-with-the-model": RuleRun(
         "scripts.where", frozenset({"bindings", "references", "imports", "extents"}), _where_disagreements
     ),

@@ -1,5 +1,8 @@
 verdict problems: none
 undeclared questions: none
+imports/redundant_local_imports: module-level: redundant_local_imports.cycle, redundant_local_imports.loader
+imports/redundant_local_imports: lazy: redundant_local_imports.cycle, redundant_local_imports.loader
+imports/redundant_local_imports: largest-lazy: redundant_local_imports.cycle, redundant_local_imports.loader
 imports/submodule_and_parent_packages: lazy: submodule_and_parent_packages.inner.deep, submodule_and_parent_packages.leaf
 imports/submodule_and_parent_packages: largest-lazy: submodule_and_parent_packages.inner.deep, submodule_and_parent_packages.leaf
 references/reexport_chain_across_modules: module-level: reexport_chain_across_modules.loop, reexport_chain_across_modules.other

@@ -3,7 +3,7 @@ Escape hatches: base (merge-base <commit>) -> working tree
 
 key                                             base    head  change
 any@tests                                          5       5       0
-private-scope-walk@scripts                       132     132       0
+private-scope-walk@scripts                        19      19       0
 ruff-config:exclude:scripts                        1       1       0
 ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
 ruff-config:ignore:CPY                             1       1       0
