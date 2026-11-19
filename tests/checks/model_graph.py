@@ -36,9 +36,8 @@ _COPIES: Final = "reference copies"
 
 
 def _violation(graph_mode: Mode, message: str, **details: object) -> None:
-    from datamodel_code_generator import Error
 
-    graph_mode.violation(Error, message, **details)
+    graph_mode.violation(message, **details)
 
 
 def records_naming_claims(original: Callable[[Any], bool]) -> Callable[[Any], bool]:

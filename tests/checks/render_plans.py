@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 
 
 def _violation(plans_mode: Mode, message: str) -> None:
-    from datamodel_code_generator import Error
 
-    plans_mode.violation(Error, message)
+    plans_mode.violation(message)
 
 
 def _check_accounting(plans_mode: Mode, model: Any, field: Any, plan: Any) -> None:

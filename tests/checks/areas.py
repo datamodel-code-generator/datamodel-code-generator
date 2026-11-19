@@ -77,6 +77,16 @@ class Area(Enum):
     """
 
 
+class CheckFailure(BaseException):
+    """A violation of a debug check that raises: the one exception every area of the suite checks raises.
+
+    It derives from ``BaseException``, neither from the package's ``Error`` nor from ``Exception``: generations
+    catch ``Error`` to try another reading of the input or to write ``Error: <message>`` into their output, and
+    others catch ``Exception``, so a failing check would become a stored output change that a fix run accepts
+    instead of a failing test (#7184).
+    """
+
+
 @final
 @dataclass(frozen=True, slots=True)
 class Mode:
@@ -88,14 +98,14 @@ class Mode:
     state: dict[Any, Any] = field(default_factory=dict, compare=False)
     """What the area's wrappers keep for the parse."""
 
-    def violation(self, error: type[Exception], message: str, **details: object) -> None:
-        """Raise error with the message, or append the message and its details to the report as one JSON line.
+    def violation(self, message: str, **details: object) -> None:
+        """Raise ``CheckFailure`` with the message, or append the message and its details to the report as a line.
 
         The message starts with the area's variable, so that it names the flag that found it.
         """
         text = f"{self.area.value}: {message}"
         if self.report_path is None:
-            raise error(text)
+            raise CheckFailure(text)
         self.record(text, **details)
 
     def record(self, message: str, **details: object) -> None:

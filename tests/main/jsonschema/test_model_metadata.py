@@ -9,12 +9,13 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 from pydantic import Field, TypeAdapter, model_validator
 
-from datamodel_code_generator import DataModelType, Error, InputFileType, PythonVersion, generate
+from datamodel_code_generator import DataModelType, InputFileType, PythonVersion, generate
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model_metadata import dump_model_metadata
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.reference import binary_content_of, field_origin_of, type_origin_of
+from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
@@ -277,7 +278,9 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
         monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, value)
     parser = RewritingParser(OPEN_API_DATA_PATH / "schema_location_alias.yaml", formatters=[Formatter.BUILTIN])
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: Owner "):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: Owner "
+        ):
             parser.parse(collect_model_metadata=True)
         return
     parser.parse(collect_model_metadata=True)

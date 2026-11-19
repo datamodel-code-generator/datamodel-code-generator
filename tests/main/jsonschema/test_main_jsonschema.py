@@ -81,6 +81,7 @@ from datamodel_code_generator.model.base import TEMPLATE_DIR, UNDEFINED
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecDataModelField
 from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
     HttpxGetMockFactory,
@@ -40031,7 +40032,7 @@ def test_schema_graph_check_of_a_reader_that_writes_a_shared_schema(
     )
     if flag == "check":
         with pytest.raises(
-            Error,
+            CheckFailure,
             match=f"^{CHECK_SCHEMA_GRAPH_ENV}: shared schema objects changed after validation: "
             "redirect.json#/properties/kept$",
         ):
@@ -40060,7 +40061,7 @@ def test_schema_graph_check_of_a_reader_that_writes_a_loaded_document(monkeypatc
         JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN]
     )
     with pytest.raises(
-        Error, match=f"^{CHECK_SCHEMA_GRAPH_ENV}: loaded documents changed after their load: redirect.json$"
+        CheckFailure, match=f"^{CHECK_SCHEMA_GRAPH_ENV}: loaded documents changed after their load: redirect.json$"
     ):
         parser.parse()
 
@@ -40081,7 +40082,7 @@ def test_schema_graph_check_of_a_reader_that_writes_a_pointer_target(monkeypatch
         JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN]
     )
     with pytest.raises(
-        Error,
+        CheckFailure,
         match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the value kept for redirect.json#/properties/kept differs from its "
         "document$",
     ):

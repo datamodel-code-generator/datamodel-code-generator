@@ -129,12 +129,10 @@ def pointer_value(original: Callable[..., object]) -> Callable[..., object]:
 
         kept = original(self, tree, fragment, reading, counted)
         if (graph_mode := mode(Area.SCHEMA_GRAPH)) is not None and not read_now and read() is not kept:
-            from datamodel_code_generator import Error
             from datamodel_code_generator._url_redaction import redact_reference
 
             where = redact_reference(f"{self.locations[id(tree)].document}#{fragment}")
             graph_mode.violation(
-                Error,
                 f"the value kept for {where} differs from its document",
                 kind="pointer-value",
                 location=where,
@@ -148,7 +146,6 @@ def check_shared_schemas(parser: Any) -> None:
     """Report the shared schema objects that changed after validation, and the loaded documents, at the end of L1."""
     if (graph := parser._schema_graph) is None or (graph_mode := mode(Area.SCHEMA_GRAPH)) is None:
         return
-    from datamodel_code_generator import Error
     from datamodel_code_generator._url_redaction import redact_reference
 
     if changed := [
@@ -157,7 +154,6 @@ def check_shared_schemas(parser: Any) -> None:
         if _fingerprint(value) != recorded
     ]:
         graph_mode.violation(
-            Error,
             f"shared schema objects changed after validation: {', '.join(changed)}",
             kind="shared-schema",
             locations=changed,
@@ -168,7 +164,6 @@ def check_shared_schemas(parser: Any) -> None:
         if _fingerprint(raw) != recorded
     ]:
         graph_mode.violation(
-            Error,
             f"loaded documents changed after their load: {', '.join(written)}",
             kind="loaded-document",
             locations=written,
@@ -194,12 +189,10 @@ def site_facts(original: Callable[..., Any]) -> Callable[..., Any]:
             records[location] = _site_record(kept)
             return kept
         if (fresh := self._located_site(location)) is None or _site_record(fresh) != records[location]:
-            from datamodel_code_generator import Error
             from datamodel_code_generator._url_redaction import redact_reference
 
             where = redact_reference(str(location))
             graph_mode.violation(
-                Error,
                 f"the schema site kept for {where} differs from the documents",
                 kind="schema-site",
                 location=where,
@@ -221,12 +214,10 @@ def site_facts_of(original: Callable[..., Any]) -> Callable[..., Any]:
             and isinstance(value, dict)
             and isinstance(ref := value.get("$ref"), str)
         ):
-            from datamodel_code_generator import Error
             from datamodel_code_generator._url_redaction import redact_reference
 
             where = redact_reference(str(location))
             graph_mode.violation(
-                Error,
                 f"the $ref {redact_reference(ref)} of the schema site {where} leads to no loaded schema",
                 kind="schema-site-reference",
                 location=where,

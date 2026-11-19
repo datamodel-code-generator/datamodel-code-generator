@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from datamodel_code_generator import Error
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.types import DataType
+from tests.checks.areas import CheckFailure
 from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_STORE_WRITES_ENV, assert_output
 
 if TYPE_CHECKING:
@@ -130,7 +130,7 @@ def test_store_write_guard_reports_a_custom_parser_write(
     parser = DescribingParser(SCHEMA, formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(
-            Error,
+            CheckFailure,
             match=rf"^{CHECK_STORE_WRITES_ENV}: BaseModel\.description is written outside store operations by "
             r"(DescribingParser\.)?_process_single_module \(.+test_store_write_guard\.py:\d+\), in "
             r"(DescribingParser\.)?_process_single_module during MODULES$",

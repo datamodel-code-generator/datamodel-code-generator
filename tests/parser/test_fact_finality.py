@@ -14,12 +14,13 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from datamodel_code_generator import DataModelType, Error, PythonVersion
+from datamodel_code_generator import DataModelType, PythonVersion
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.types import DataType
 from scripts import check_fact_finality, check_pass_pipeline
+from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
     CHECK_FACT_FINALITY_SWEEP_ENV,
@@ -161,7 +162,7 @@ def test_fact_finality_reports_a_write_the_pass_does_not_declare(
     parser = DiagnosingParser(SCHEMA, formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(
-            Error,
+            CheckFailure,
             match=rf"^{CHECK_FACT_FINALITY_ENV}: report_parse_diagnostics undeclared: DataModel\.description "
             r"\(METADATA\) of Person during SETTLE$",
         ):
@@ -230,7 +231,7 @@ def test_fact_finality_reports_a_frozen_write_where_it_is_made(
     parser = SealedWriteParser(SCHEMA, formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(
-            Error,
+            CheckFailure,
             match=rf"^{CHECK_FACT_FINALITY_ENV}: <IMPORTS> frozen: DataModel\.fields \(FIELD_ORDER, FIELD_SET\) "
             r"of Person during IMPORTS$",
         ):
@@ -404,7 +405,7 @@ def test_fact_finality_raises_at_the_first_render_fact_a_decision_reads(monkeypa
     READ.clear()
 
     with pytest.raises(
-        Error,
+        CheckFailure,
         match=rf"^{CHECK_FACT_FINALITY_ENV}: read_names render-read: DataModel\.class_name \(CLASS_NAMES\) of Person "
         r"during DECIDE$",
     ):
@@ -451,7 +452,7 @@ def test_fact_finality_reports_render_facts_that_decisions_iterate(monkeypatch: 
 
     _finality_only(monkeypatch, "1")
 
-    with pytest.raises(Error, match=rf"^{CHECK_FACT_FINALITY_ENV}: iterate_keys render-read: .* during DECIDE$"):
+    with pytest.raises(CheckFailure, match=rf"^{CHECK_FACT_FINALITY_ENV}: iterate_keys render-read: .* during DECIDE$"):
         IteratingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
 
 
@@ -639,7 +640,7 @@ def test_fact_finality_reports_a_decision_write_it_does_not_declare(monkeypatch:
     _finality_only(monkeypatch, "1")
 
     with pytest.raises(
-        Error,
+        CheckFailure,
         match=rf"^{CHECK_FACT_FINALITY_ENV}: write_description undeclared: DataModel\.description \(METADATA\) "
         r"of Person during DECIDE$",
     ):

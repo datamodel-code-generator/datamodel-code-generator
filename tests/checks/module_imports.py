@@ -270,9 +270,8 @@ def get_module_future_imports(original: Callable[..., str]) -> Callable[..., str
 
 
 def _violation(imports_mode: Mode, message: str, **details: object) -> None:
-    from datamodel_code_generator import Error
 
-    imports_mode.violation(Error, message, **details)
+    imports_mode.violation(message, **details)
 
 
 def _replay(ledger: Any, imports: Imports, *, without: str | None = None) -> Imports:
