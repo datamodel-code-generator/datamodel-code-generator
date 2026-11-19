@@ -1,0 +1,9 @@
+[[change]]
+id = "doc-citations-resolve"
+category = "harness"
+title = "The doc-citations rule is absolute"
+summary = "The rule's own fixture output now reports the absolute verdict; the package writes the same output"
+refs = ["#7174"]
+covers = [
+    "source_rules/rule_reports_its_site_and_not_the_near_miss[doc-citations].txt",
+]
