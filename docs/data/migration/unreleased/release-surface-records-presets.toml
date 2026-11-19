@@ -4,6 +4,10 @@ category = "harness"
 title = "Record what a release fixes in the release surface file"
 summary = "The upgrade guide builder records the dated presets, the recommender rules digest and the experimental ids with their since_versions of a release; the package writes the same output."
 covers = [
+    "build_migration_docs_script/build_migration_docs_check_refuses_a_released_preset_the_tree_lost[date added].txt",
+    "build_migration_docs_script/build_migration_docs_check_refuses_a_released_preset_the_tree_lost[date removed].txt",
+    "build_migration_docs_script/build_migration_docs_check_refuses_a_released_preset_the_tree_lost[date swapped].txt",
+    "build_migration_docs_script/build_migration_docs_check_refuses_a_released_preset_the_tree_lost[name removed].txt",
     "build_migration_docs_script/build_migration_docs_invalid_data[released facts changed].txt",
     "build_migration_docs_script/build_migration_docs_invalid_data[surface without released facts].txt",
     "build_migration_docs_script/build_migration_docs_stamp.txt",

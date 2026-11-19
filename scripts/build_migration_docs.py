@@ -808,7 +808,8 @@ def _check_released(
 ) -> None:
     """Report what changes the facts the latest release fixed.
 
-    The presets of a date the release ships are frozen, and one date at most is unreleased. Rules that differ from the
+    The presets of a date the release ships are frozen and none of them is removed or replaced; one date at most is
+    unreleased. Rules that differ from the
     release's carry a new `rules_revision`. An experimental feature the release lacks names a later `since_version`,
     and one it has keeps the `since_version` it shipped with.
     """
@@ -825,6 +826,13 @@ def _check_released(
         if date in shipped
         for name, digest in names.items()
         if shipped[date].get(name) != digest
+    )
+    problems.extend(
+        f"preset {name}: the {date} presets of {latest} include it, but this tree no longer does; released presets "
+        "are frozen"
+        for date, names in shipped.items()
+        for name in names
+        if name not in current["presets"].get(date, {})
     )
     rules, released_rules = current["recommender_rules"], released["recommender_rules"]
     if rules["digest"] != released_rules["digest"] and rules["revision"] == released_rules["revision"]:

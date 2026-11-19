@@ -1,0 +1,3 @@
+date removed: written None, exit 1
+Invalid migration data:
+- preset standard-py313-20260201: the 20260201 presets of 0.4.0 include it, but this tree no longer does; released presets are frozen

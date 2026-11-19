@@ -936,6 +936,34 @@ def test_build_migration_docs_stamp_after_a_merge_onto_the_tagged_date(
     assert_output(f"exits {checked}, {stamped}, {after}\n{problems}{stamp_problems}{capsys.readouterr().err}")
 
 
+@pytest.mark.parametrize("case", ["date removed", "date swapped", "name removed", "date added"])
+def test_build_migration_docs_check_refuses_a_released_preset_the_tree_lost(
+    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A preset date or name the release ships must stay; a tree that only adds a date passes."""
+    _write_data(tmp_path, CHANGES, UNRELEASED, **UNCHANGED)
+    presets = dict(REGISTRIES.surface["presets"])
+    dates = REGISTRIES.preset_dates
+    new_date = PresetDate("20260401", "20260301", ())
+    match case:
+        case "date removed":
+            del presets["20260201"]
+        case "date swapped":
+            presets = {date: names for date, names in presets.items() if date != "20260301"}
+            presets["20260401"] = {"practical-py314-20260401": "b4"}
+            dates = (*dates[:-1], new_date)
+        case "name removed":
+            presets["20260101"] = {"standard-py313-20260101": "a1"}
+        case _:
+            presets["20260401"] = {"practical-py314-20260401": "b4"}
+            dates = (*dates, new_date)
+    registries = replace(REGISTRIES, preset_dates=dates, surface=REGISTRIES.surface | {"presets": presets})
+    written = main(_args(tmp_path), registries) if case == "date added" else None
+    capsys.readouterr()
+    code = main([*_args(tmp_path), "--check"], registries)
+    assert_output(f"{case}: written {written}, exit {code}\n{capsys.readouterr().err}")
+
+
 def test_build_migration_docs_stamp_retained_extension(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A fragment merged after the tag that extends one the tag contains is refused before anything is written.
 
