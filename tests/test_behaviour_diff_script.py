@@ -2539,7 +2539,7 @@ class CellsCase:
     PR; `main` is a commit main takes after the PR forked. `against` names the gate's base: the PR's `base` (the
     layer's tip), main's tip, the release tag, a commit no history has (`unknown`) or one of another history
     (`orphan`). `records` also runs `declared_changes.py check` on the PR, which fails the harness labels the
-    gate refuses. `shape` names the rule the case pins (a numbered fail-closed rule of the design) or a passing shape.
+    gate refuses. `shape` names, in words, the rule the case pins or the passing shape it keeps.
     """
 
     verdict: str
@@ -2563,9 +2563,9 @@ MEMORY = _cells_input("memory", type="int", memory=True)
 FAILS = _cells_input("fails", type="int", fail="boom")
 PLAIN_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/plain.py"
 CELLS_CASES: dict[str, CellsCase] = {
-    "pass: no src change": CellsCase("pass", "9.9 shortcut", {"docs/notes.md": "notes\n"}),
+    "pass: no src change": CellsCase("pass", "no src change, the shortcut", {"docs/notes.md": "notes\n"}),
     "pass: a refactor, every cell equal": CellsCase(
-        "pass", "refactor, 9.7 both stop", CELLS_REFACTOR, release=FAILS | MEMORY
+        "pass", "refactor, both sides stop", CELLS_REFACTOR, release=FAILS | MEMORY
     ),
     "pass: output-text with a payload case": CellsCase(
         "pass", "output-text, payload case", COMMENT_PLAIN | _record("plain-note", "output-text", _cells("plain.json"))
@@ -2575,7 +2575,7 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "pass: output-text with a covered stored module": CellsCase(
         "pass",
-        "output-text, 6.2",
+        "output-text, covered stored module",
         COMMENT_PLAIN
         | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
         | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
@@ -2592,7 +2592,7 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "pass: options * covers the preset cells": CellsCase(
         "pass",
-        "M2 options = *",
+        "options * covers the preset cells",
         _cells_src(("plain", "--preset", "comment")) | _record("preset-note", "output-text", _cells("plain.json")),
     ),
     "pass: crash-fix": CellsCase(
@@ -2609,7 +2609,7 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "pass: experimental with an equal companion": CellsCase(
         "pass",
-        "experimental, S3",
+        "experimental, equal companion",
         _cells_src(("plain", "--generate-client", "type:float"))
         | _record("client-float", "experimental", _cells("plain.json", options=[["--generate-client"]])),
     ),
@@ -2625,51 +2625,55 @@ CELLS_CASES: dict[str, CellsCase] = {
         _cells_src(flags=CELLS_FLAGS[:-1]) | _record("old-flag", "api", _cells("plain.json", options=[["--old-flag"]])),
     ),
     "pass: the version header line is normalised": CellsCase(
-        "pass", "2 normalisation", CELLS_REFACTOR, release=_cells_input("header", type="int", header=True)
+        "pass", "version header normalised", CELLS_REFACTOR, release=_cells_input("header", type="int", header=True)
     ),
     "pass: a lagging branch is judged from its merge base": CellsCase(
-        "pass", "M1 lag7108", {"docs/notes.md": "notes\n"}, main=FLOAT_OTHER, against="main"
+        "pass",
+        "lagging branch, judged from its merge base",
+        {"docs/notes.md": "notes\n"},
+        main=FLOAT_OTHER,
+        against="main",
     ),
     "pass: a stack layer extends the record below": CellsCase(
         "pass",
-        "5.5 extends",
+        "stack layer extends the record below",
         _cells_src(("plain", None, "comment"), ("other", None, "comment"))
         | _record("other-note", None, _cells("other.json"), extends="plain-note", title=None, summary=None),
         layer=COMMENT_PLAIN | _record("plain-note", "output-text", _cells("plain.json")),
     ),
     "pass: a renamed fragment is no PR record": CellsCase(
         "pass",
-        "5.5 rename",
+        "renamed fragment",
         _cells_src(("other", None, "comment"), helper="HELPER = 1\n")
         | {f"{CELLS_FRAGMENTS}/other-note.toml": None}
         | _record("other-note", "output-text", _cells("other.json"), file="renamed"),
         base=COMMENT_OTHER | OUTPUT_TEXT_OTHER,
     ),
     "pass: the release run covers by unreleased records": CellsCase(
-        "pass", "5 release run", base=COMMENT_OTHER | OUTPUT_TEXT_OTHER, against="tag", tier="nightly"
+        "pass", "release run, unreleased records", base=COMMENT_OTHER | OUTPUT_TEXT_OTHER, against="tag", tier="nightly"
     ),
     "pass: a decision record beside an output-text record": CellsCase(
         "pass",
-        "9.14 composition",
+        "decision beside output-text",
         FLOAT_OTHER
         | OUTPUT_TEXT_OTHER
         | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match=r"str -> float")),
     ),
     "pass: an oracle-file change runs the base's gate, which passes": CellsCase(
         "pass",
-        "9.9 oracle files",
+        "oracle files, the base's gate passes",
         {"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)  # changed\n"},
         release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)\n"},
     ),
     "pass: the base stops, the head generates": CellsCase(
         "pass",
-        "9.7 crash-fix",
+        "base stops, head generates",
         _cells_src(("memory", None, "fixed")) | _record("memory-fixed", "crash-fix", _cells("memory.json")),
         release=MEMORY,
     ),
     "pass: harness covers an internal label": CellsCase(
         "pass",
-        "6.4 internal",
+        "harness, internal label",
         CELLS_REFACTOR
         | {f"{CELLS_EXPECTED}/scripts/tool.txt": "ran twice\n"}
         | _record("tool", "harness", covers=("scripts/tool.txt",)),
@@ -2677,7 +2681,7 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "pass: harness covers a modified module the proof holds for": CellsCase(
         "pass",
-        "6.4 module",
+        "harness, modified module the proof holds for",
         CELLS_REFACTOR
         | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
         | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
@@ -2685,7 +2689,7 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "pass: harness covers an added label": CellsCase(
         "pass",
-        "6.4 added",
+        "harness, added label",
         CELLS_REFACTOR
         | {
             "tests/main/test_models.refs": _cells_refs(CELLS_REFS | {"test_note": ["\tmain/jsonschema/note.py"]}),
@@ -2694,42 +2698,44 @@ CELLS_CASES: dict[str, CellsCase] = {
         | _record("note-test", "harness", covers=("main/jsonschema/note.py",)),
         records=True,
     ),
-    "fail: an uncovered differing cell": CellsCase("fail", "9.1", FLOAT_OTHER),
+    "fail: an uncovered differing cell": CellsCase("fail", "uncovered differing cell", FLOAT_OTHER),
     "fail: a kind no covering record admits": CellsCase(
         "fail",
-        "9.1 kinds",
+        "kind no covering record admits",
         _cells_src(("other", None, "comment"), ("other", None, "warn:mind the gap")) | OUTPUT_TEXT_OTHER,
     ),
-    "fail: output-text with a signature change": CellsCase("fail", "9.2 signature", FLOAT_OTHER | OUTPUT_TEXT_OTHER),
+    "fail: output-text with a signature change": CellsCase(
+        "fail", "output-text, signature change", FLOAT_OTHER | OUTPUT_TEXT_OTHER
+    ),
     "fail: output-text with a differing non-model file": CellsCase(
-        "fail", "9.2 non-model file", _cells_src(("other", None, "file")) | OUTPUT_TEXT_OTHER
+        "fail", "output-text, differing non-model file", _cells_src(("other", None, "file")) | OUTPUT_TEXT_OTHER
     ),
     "fail: output-text whose output does not import": CellsCase(
-        "fail", "9.2 SIGNATURE_FAILED", _cells_src(("other", None, "broken")) | OUTPUT_TEXT_OTHER
+        "fail", "output-text, output does not import", _cells_src(("other", None, "broken")) | OUTPUT_TEXT_OTHER
     ),
     "fail: output-text against rule (b)": CellsCase(
         "fail",
-        "9.2 rule (b)",
+        "output-text, validator body changed",
         _cells_src(("checked", None, "body")) | _record("checked-body", "output-text", _cells("checked.json")),
         release=CHECKED,
     ),
     "fail: output-text whose payload verdicts change": CellsCase(
         "fail",
-        "9.2 payload cells",
+        "output-text, payload verdicts change",
         _cells_src(("checked", None, "reject-big")) | _record("checked-big", "output-text", _cells("checked.json")),
         release=CHECKED,
     ),
     "fail: crash-fix on a cell that was no crash": CellsCase(
-        "fail", "9.2 crash-fix", COMMENT_PLAIN | _record("plain-note", "crash-fix", _cells("plain.json"))
+        "fail", "crash-fix, cell was no crash", COMMENT_PLAIN | _record("plain-note", "crash-fix", _cells("plain.json"))
     ),
     "fail: decided-change outside its match": CellsCase(
         "fail",
-        "9.2 decided-change",
+        "decided-change, outside its match",
         FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match=r"-> int")),
     ),
     "fail: experimental whose companion differs": CellsCase(
         "fail",
-        "9.2 experimental, S3",
+        "experimental, companion differs",
         _cells_src(("plain", "--use-annotated", "type:float"))
         | _record(
             "client-float", "experimental", _cells("plain.json", options=[["--generate-client", "--use-annotated"]])
@@ -2737,37 +2743,41 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "fail: notice outside its match": CellsCase(
         "fail",
-        "9.2 notice",
+        "notice, outside its match",
         _cells_src(("plain", None, "warn:mind the gap"))
         | _record("plain-warns", "notice", _cells("plain.json", match="other text")),
     ),
     "fail: a selector that matches no input": CellsCase(
         "fail",
-        "9.3",
+        "selector matches no input",
         COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json"), _cells("missing.json")),
     ),
     "fail: a selector that matches equal cells only": CellsCase(
         "fail",
-        "9.3",
+        "selector matches equal cells only",
         COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json"), _cells("plain.json")),
     ),
     "fail: the release run's stale selector": CellsCase(
         "fail",
-        "9.3 staleness",
+        "release run, stale selector",
         base=CELLS_REFACTOR | _record("plain-note", "output-text", _cells("plain.json")),
         against="tag",
         tier="nightly",
     ),
-    "fail: output-text without cells": CellsCase("fail", "9.4", COMMENT_OTHER | _record("other-note", "output-text")),
+    "fail: output-text without cells": CellsCase(
+        "fail", "output-text without cells", COMMENT_OTHER | _record("other-note", "output-text")
+    ),
     "fail: a decision selector without aspects or match": CellsCase(
-        "fail", "9.4 S4", FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json"))
+        "fail",
+        "decision selector without aspects or match",
+        FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json")),
     ),
     "fail: cells in a harness record": CellsCase(
-        "fail", "9.4", COMMENT_OTHER | _record("other-test", "harness", _cells("other.json"))
+        "fail", "cells in a harness record", COMMENT_OTHER | _record("other-test", "harness", _cells("other.json"))
     ),
     "fail: a selector naming an unreleased preset": CellsCase(
         "fail",
-        "9.5 M3",
+        "selector names an unreleased preset",
         _cells_src(("plain", "standard-py314-20260201", "comment"), presets=CELLS_UNRELEASED_PRESETS)
         | _record(
             "preset-note", "output-text", _cells("plain.json", options=[["--preset", "standard-py314-20260201"]])
@@ -2775,35 +2785,39 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "fail: a selector naming an unreleased option": CellsCase(
         "fail",
-        "9.5 M3",
+        "selector names an unreleased option",
         _cells_src(("plain", "--new-flag", "comment"), flags=(*CELLS_FLAGS, "--new-flag"))
         | _record("flag-note", "output-text", _cells("plain.json", options=[["--new-flag"]])),
     ),
     "fail: a nondeterministic head": CellsCase(
-        "fail", "9.6", _cells_src(("other", None, "random")) | OUTPUT_TEXT_OTHER
+        "fail", "nondeterministic head", _cells_src(("other", None, "random")) | OUTPUT_TEXT_OTHER
     ),
-    "fail: the head stops where the base generates": CellsCase("fail", "9.7", _cells_src(("plain", None, "memory"))),
-    "fail: an unknown base": CellsCase("fail", "9.8", CELLS_REFACTOR, against="unknown"),
-    "fail: a base without a merge base": CellsCase("fail", "9.8 M1", CELLS_REFACTOR, against="orphan"),
+    "fail: the head stops where the base generates": CellsCase(
+        "fail", "head stops, base generates", _cells_src(("plain", None, "memory"))
+    ),
+    "fail: an unknown base": CellsCase("fail", "unknown base", CELLS_REFACTOR, against="unknown"),
+    "fail: a base without a merge base": CellsCase(
+        "fail", "base without a merge base", CELLS_REFACTOR, against="orphan"
+    ),
     "fail: cells without a src change": CellsCase(
-        "fail", "9.9", _record("plain-note", "output-text", _cells("plain.json"))
+        "fail", "cells without a src change", _record("plain-note", "output-text", _cells("plain.json"))
     ),
     "fail: an oracle-file change runs the base's gate, which fails": CellsCase(
         "fail",
-        "9.9 oracle files",
+        "oracle files, the base's gate fails",
         {"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)\n"},
         release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
     ),
     "fail: selectors added to a record of the base": CellsCase(
         "fail",
-        "9.10 S5",
+        "selectors added to a record of the base",
         _cells_src(("other", None, "comment"), ("plain", None, "comment"))
         | _record("other-note", "output-text", _cells("other.json"), _cells("plain.json")),
         base=COMMENT_OTHER | OUTPUT_TEXT_OTHER,
     ),
     "fail: a fragment of the tag covers nothing": CellsCase(
         "fail",
-        "9.10",
+        "fragment of the tag covers nothing",
         release=OUTPUT_TEXT_OTHER,
         base=COMMENT_OTHER,
         against="tag",
@@ -2811,21 +2825,21 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "fail: output-text whose covered module fails the proof": CellsCase(
         "fail",
-        "9.11 M4",
+        "output-text, covered module fails the proof",
         COMMENT_PLAIN
         | {PLAIN_MODULE: CELLS_MODULE.format("float")}
         | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
     ),
     "fail: output-text whose covered payload companion changed": CellsCase(
         "fail",
-        "9.11 M4",
+        "output-text, covered payload companion changed",
         COMMENT_PLAIN
         | {f"{CELLS_EXPECTED}/main/jsonschema/plain.txt": 'valid: {"a": 1}\nvalid: {"a": "x"}\n'}
         | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.txt",)),
     ),
     "fail: harness covers a modified module the proof fails for": CellsCase(
         "fail",
-        "9.12 M4",
+        "harness, modified module the proof fails for",
         CELLS_REFACTOR
         | {PLAIN_MODULE: CELLS_MODULE.format("float")}
         | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
@@ -2833,46 +2847,50 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
     "fail: harness covers a modified listing": CellsCase(
         "fail",
-        "9.12 M4",
+        "harness, modified listing",
         CELLS_REFACTOR
         | {f"{CELLS_EXPECTED}/main/jsonschema/listing.txt": "Model\nOther\n"}
         | _record("listing-test", "harness", covers=("main/jsonschema/listing.txt",)),
         records=True,
     ),
     "fail: a fragment that does not parse": CellsCase(
-        "fail", "9.13", COMMENT_OTHER | OUTPUT_TEXT_OTHER | {f"{CELLS_FRAGMENTS}/broken.toml": "[[change]\nid = \n"}
+        "fail",
+        "fragment does not parse",
+        COMMENT_OTHER | OUTPUT_TEXT_OTHER | {f"{CELLS_FRAGMENTS}/broken.toml": "[[change]\nid = \n"},
     ),
     "fail: an unknown key in cells": CellsCase(
-        "fail", "9.13", COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json", colour="red"))
+        "fail",
+        "unknown key in cells",
+        COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json", colour="red")),
     ),
     "fail: an empty input list": CellsCase(
         "fail",
-        "9.13",
+        "empty input list",
         COMMENT_OTHER | _record("other-note", "output-text", {"input": [], "backends": "*", "options": "*"}),
     ),
     "fail: an unknown backend": CellsCase(
         "fail",
-        "9.13",
+        "unknown backend",
         COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json", backends=["pydantic.BaseModel"])),
     ),
     "fail: malformed options": CellsCase(
         "fail",
-        "9.13",
+        "malformed options",
         COMMENT_OTHER | _record("other-note", "output-text", _cells("other.json", options=["--use-annotated"])),
     ),
     "fail: an unknown aspect": CellsCase(
         "fail",
-        "9.13",
+        "unknown aspect",
         FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json", aspects=["colour"], match="float")),
     ),
     "fail: a match that does not compile": CellsCase(
         "fail",
-        "9.13",
+        "match does not compile",
         FLOAT_OTHER | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match="(float")),
     ),
     "fail: two records whose evidence fails on one cell": CellsCase(
         "fail",
-        "9.14 composition",
+        "two records, evidence fails on one cell",
         FLOAT_OTHER | OUTPUT_TEXT_OTHER | _record("other-warns", "notice", _cells("other.json", match="float")),
     ),
 }
@@ -2985,7 +3003,7 @@ def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 @pytest.mark.parametrize("case", sorted(CELLS_CASES.keys() - CELLS_NOT_BUILT.keys()))
 def test_cells_oracle(case: str, tmp_path: Path) -> None:
     """The gate gives each oracle case the verdict of the cell gate: a case that fails, fails on that verdict."""
