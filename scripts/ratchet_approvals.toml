@@ -8,10 +8,3 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
-
-[[approved]]
-key = "ruff-config:ignore:PLC0414"
-head = 1
-pr = 7202
-decision = ["#7194"]
-reason = "the explicit X as X re-export form of a typed package is exactly what PLC0414 flags"
