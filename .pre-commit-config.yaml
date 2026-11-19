@@ -1,5 +1,6 @@
 ci:
   autofix_commit_msg: "style: auto-fix by pre-commit.ci"
+  autofix_prs: false
   skip: [readme, config-types, schema-docs, compiled-templates]
 
 repos:
@@ -40,7 +41,7 @@ repos:
     name: Update README command help
     entry: bash -c '[ -x .tox/fix/bin/python ] && PYTHON=.tox/fix/bin/python || PYTHON=.tox/fix/Scripts/python; test -x "$PYTHON" || tox run -e fix --notest -qq; "$PYTHON" scripts/update_command_help_on_markdown.py'
     language: system
-    files: ^(src/datamodel_code_generator/arguments\.py|README\.md|docs/index\.md)$
+    files: ^(src/datamodel_code_generator/arguments\.py|README\.md|docs/index\.md|scripts/update_command_help_on_markdown\.py|scripts/build_cli_docs\.py)$
     pass_filenames: false
   - id: config-types
     name: Generate config TypedDicts
@@ -58,13 +59,19 @@ repos:
     name: Check parser GenerationStore usage
     entry: python scripts/check_generation_store_usage.py
     language: python
-    files: ^src/datamodel_code_generator/parser/.*\.py$
+    files: ^(src/datamodel_code_generator/parser/.*\.py|scripts/check_generation_store_usage\.py|scripts/fact_tables\.py|scripts/generation_store_allowlist\.toml|scripts/_source_model\.py)$
     pass_filenames: false
   - id: architecture-boundaries
     name: Check architecture boundaries
     entry: python scripts/check_architecture_boundaries.py
     language: python
-    files: ^(src/datamodel_code_generator/.*\.py|scripts/check_architecture_boundaries\.py|scripts/host_private_access_baseline\.toml)$
+    files: ^(src/datamodel_code_generator/.*\.py|scripts/check_architecture_boundaries\.py|scripts/host_private_access_baseline\.toml|scripts/_import_cycles\.py|scripts/_source_model\.py)$
+    pass_filenames: false
+  - id: source-rules
+    name: Check source rules
+    entry: python scripts/check_source_rules.py
+    language: python
+    files: ^(src|scripts|tests)/.*\.py$
     pass_filenames: false
   - id: compiled-templates
     name: Check generated built-in template renderers

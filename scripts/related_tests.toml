@@ -132,6 +132,13 @@ paths = ["src/datamodel_code_generator/parser/*"]
 tests = ["tests/parser/test_generation_store_usage.py"]
 
 [[rule]]
+id = "check-runners"
+prs = [7190]
+incident = "a new pre-commit hook changed the stored list of where each check runs; no related test ran for .pre-commit-config.yaml"
+paths = [".pre-commit-config.yaml", "tox.ini", ".github/workflows/*"]
+tests = ["tests/test_checks_are_run.py"]
+
+[[rule]]
 id = "workflows"
 prs = [7043]
 incident = "a workflow change broke the workflow contract and gate simulation tests; no related test ran for .github"
