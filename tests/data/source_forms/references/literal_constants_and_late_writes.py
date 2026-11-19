@@ -1,6 +1,6 @@
-"""#7017, the docs builders and the store's _literal_names: literal tables, and the writes that make them unreadable.
+"""#7017, the docs builders and the store check's _literal_names: literal tables (a read-only mapping too), and the writes that make them unreadable.
 
-constants: PLAIN NESTED NEGATIVE FINAL WRITTEN APPENDED REBOUND CALLED STARRED UNHASHABLE MALFORMED MISSING TUPLE_CALL
+constants: PLAIN NESTED NEGATIVE FINAL WRITTEN APPENDED REBOUND CALLED STARRED UNHASHABLE MALFORMED MISSING TUPLE_CALL READ_ONLY OPAQUE
 """
 
 from typing import Final
@@ -20,3 +20,7 @@ STARRED = {**PLAIN}
 UNHASHABLE = {[1]: 2}
 MALFORMED = dict([("ok", 1), ("bad", 2, 3)])
 TUPLE_CALL = tuple(["a"])
+from types import MappingProxyType
+
+READ_ONLY = MappingProxyType({"set_fields": "copied"})
+OPAQUE = MappingProxyType(PLAIN)

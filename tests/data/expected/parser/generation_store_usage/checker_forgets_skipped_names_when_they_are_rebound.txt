@@ -1,6 +1,5 @@
 4 loop required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
 9 context required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
-14 comprehension required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
 21 handler required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
 26 unpacking required: use GenerationStore.apply_literal_default() or require_field() instead of writing required
 31 augmented required: use GenerationStore.apply_literal_default() or require_field() instead of writing required

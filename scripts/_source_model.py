@@ -334,6 +334,7 @@ _LITERAL_CALLS: dict[str, Callable[..., object]] = {
     "builtins.tuple": tuple,
     "builtins.list": list,
     "builtins.dict": dict,
+    "types.MappingProxyType": types.MappingProxyType,
 }
 _MUTATORS = frozenset({
     "add",

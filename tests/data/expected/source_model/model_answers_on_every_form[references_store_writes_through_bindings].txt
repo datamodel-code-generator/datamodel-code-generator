@@ -1,0 +1,110 @@
+== references
+13:4 extras store in closure_writes_the_alias -> local closure_writes_the_alias @13
+13:13 field load in closure_writes_the_alias -> local closure_writes_the_alias @12
+16:8 extras load in closure_writes_the_alias.<locals>.inner -> enclosing closure_writes_the_alias @13
+18:11 inner load in closure_writes_the_alias -> local closure_writes_the_alias @15
+21:41 JsonSchemaObject load (evaluated annotation) in <module> -> unbound
+23:8 obj load in closure_keeps_the_schema_object.<locals>.inner -> enclosing closure_keeps_the_schema_object @21
+25:11 inner load in closure_keeps_the_schema_object -> local closure_keeps_the_schema_object @22
+29:4 shared store in Holder -> local Holder @29, else unbound
+29:13 JsonSchemaObject load in Holder -> unbound
+32:8 shared load in Holder.method -> unbound
+36:4 write store in local_setattr_alias -> local local_setattr_alias @36
+36:12 setattr load in local_setattr_alias -> builtin; origin builtins.setattr
+37:4 write load in local_setattr_alias -> local local_setattr_alias @36; origin builtins.setattr
+37:10 model load in local_setattr_alias -> local local_setattr_alias @35
+41:4 setattr load in shadowed_setattr -> local shadowed_setattr @40
+41:12 model load in shadowed_setattr -> local shadowed_setattr @40
+45:4 extras store in lambda_parameter -> local lambda_parameter @45
+45:13 field load in lambda_parameter -> local lambda_parameter @44
+46:11 list load in lambda_parameter -> builtin; origin builtins.list
+46:16 map load in lambda_parameter -> builtin; origin builtins.map
+46:35 extras load in lambda_parameter.<locals>.<lambda> -> local lambda_parameter.<locals>.<lambda> @46
+46:54 items load in lambda_parameter -> local lambda_parameter @44
+50:4 extras store in comprehension_target -> local comprehension_target @50
+50:13 field load in comprehension_target -> local comprehension_target @49
+51:37 items load in comprehension_target -> local comprehension_target @49
+51:27 extras store in comprehension_target.<locals>.<listcomp> -> local comprehension_target.<locals>.<listcomp> @51
+51:5 extras load in comprehension_target.<locals>.<listcomp> -> local comprehension_target.<locals>.<listcomp> @51
+52:4 extras load in comprehension_target -> local comprehension_target @50
+55:35 list load (evaluated annotation) in <module> -> builtin; origin builtins.list
+56:4 obj load in schema_object_in_a_string -> local schema_object_in_a_string @55
+57:4 other load in schema_object_in_a_string -> local schema_object_in_a_string @55
+61:4 extras store in capture_rebinds -> local capture_rebinds @61,63
+61:13 field load in capture_rebinds -> local capture_rebinds @60
+62:10 subject load in capture_rebinds -> local capture_rebinds @60
+64:12 extras load in capture_rebinds -> local capture_rebinds @61,63
+68:4 extras store in import_rebinds -> local import_rebinds @68,69
+68:13 field load in import_rebinds -> local import_rebinds @67
+71:4 extras load in import_rebinds -> local import_rebinds @68,69
+  may be extras [function:body@67]
+75:4 extras store in def_rebinds -> local def_rebinds @75,77
+75:13 field load in def_rebinds -> local def_rebinds @74
+80:4 extras load in def_rebinds -> local def_rebinds @75,77
+84:4 extras store in annotation_keeps_the_alias -> local annotation_keeps_the_alias @84,85
+84:13 field load in annotation_keeps_the_alias -> local annotation_keeps_the_alias @83
+85:4 extras store in annotation_keeps_the_alias -> local annotation_keeps_the_alias @84,85
+85:12 dict load (never annotation) in annotation_keeps_the_alias -> builtin; origin builtins.dict
+86:4 extras load in annotation_keeps_the_alias -> local annotation_keeps_the_alias @84,85
+90:4 extras store in in_place_operator_keeps_the_alias -> local in_place_operator_keeps_the_alias @90,91
+90:13 field load in in_place_operator_keeps_the_alias -> local in_place_operator_keeps_the_alias @89
+91:4 extras load in in_place_operator_keeps_the_alias -> local in_place_operator_keeps_the_alias @90,91
+91:4 extras store in in_place_operator_keeps_the_alias -> local in_place_operator_keeps_the_alias @90,91
+92:4 extras load in in_place_operator_keeps_the_alias -> local in_place_operator_keeps_the_alias @90,91
+96:4 extras store in bound_twice -> local bound_twice @96,97
+96:13 field load in bound_twice -> local bound_twice @95
+97:4 extras store in bound_twice -> local bound_twice @96,97
+97:13 other load in bound_twice -> local bound_twice @95
+98:4 extras load in bound_twice -> local bound_twice @96,97
+99:4 again store in bound_twice -> local bound_twice @99,100
+99:12 other load in bound_twice -> local bound_twice @95
+100:4 again store in bound_twice -> local bound_twice @99,100
+100:12 field load in bound_twice -> local bound_twice @95
+101:4 again load in bound_twice -> local bound_twice @99,100
+55:40 JsonSchemaObject load (string annotation) in <module> -> unbound
+55:68 JsonSchemaObject load (string annotation) in <module> -> unbound
+uses of closure_writes_the_alias:field@12: read@13
+uses of closure_writes_the_alias:extras@13: subscript-store@16
+uses of closure_writes_the_alias:inner@15: read@18
+uses of closure_keeps_the_schema_object:obj@21: attribute-store@23
+uses of closure_keeps_the_schema_object:inner@22: read@25
+uses of local_setattr_alias:model@35: argument@37
+uses of local_setattr_alias:write@36: call@37
+uses of shadowed_setattr:model@40: argument@41
+uses of shadowed_setattr:setattr@40: call@41
+uses of lambda_parameter:field@44: read@45
+uses of lambda_parameter:items@44: argument@46
+uses of lambda_parameter.<locals>.<lambda>:extras@46: call:update@46
+uses of comprehension_target:field@49: read@50
+uses of comprehension_target:items@49: iterate@51
+uses of comprehension_target:extras@50: subscript-store@52
+uses of comprehension_target.<locals>.<listcomp>:extras@51: call:update@51
+uses of schema_object_in_a_string:obj@55: attribute-store@56
+uses of schema_object_in_a_string:other@55: attribute-store@57
+uses of capture_rebinds:field@60: read@61
+uses of capture_rebinds:subject@60: read@62
+uses of capture_rebinds:extras@61: subscript-store@64
+uses of capture_rebinds:extras@63: subscript-store@64
+uses of import_rebinds:field@67: read@68
+uses of import_rebinds:extras@68: subscript-store@71
+uses of import_rebinds:extras@69: subscript-store@71
+uses of def_rebinds:field@74: read@75
+uses of def_rebinds:extras@75: subscript-store@80
+uses of def_rebinds:extras@77: subscript-store@80
+uses of annotation_keeps_the_alias:field@83: read@84
+uses of annotation_keeps_the_alias:extras@84: subscript-store@86
+uses of annotation_keeps_the_alias:extras@85: subscript-store@86
+uses of in_place_operator_keeps_the_alias:field@89: read@90
+uses of in_place_operator_keeps_the_alias:extras@90: augassign@91, subscript-store@92
+uses of in_place_operator_keeps_the_alias:extras@91: augassign@91, subscript-store@92
+uses of bound_twice:field@95: read@96, read@100
+uses of bound_twice:other@95: read@97, read@99
+uses of bound_twice:extras@96: subscript-store@98
+uses of bound_twice:extras@97: subscript-store@98
+uses of bound_twice:again@99: subscript-store@101
+uses of bound_twice:again@100: subscript-store@101
+type positions @85: dict
+type positions @21: JsonSchemaObject
+type positions @55: list, JsonSchemaObject
+type positions @55: JsonSchemaObject
+== code objects: one per scope that compiles on this Python

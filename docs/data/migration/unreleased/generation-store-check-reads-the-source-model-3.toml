@@ -1,0 +1,6 @@
+[[change]]
+id = "generation-store-check-reads-the-source-model-3"
+extends = "import-cycles-as-ratchet-keys"
+covers = [
+    "source_model/model_answers_on_every_form[references_literal_constants_and_late_writes].txt",
+]

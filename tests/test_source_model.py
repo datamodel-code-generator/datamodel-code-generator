@@ -22,7 +22,13 @@ import tomllib
 
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
-from scripts import check_architecture_boundaries, check_ratchets, check_source_rules, where
+from scripts import (
+    check_architecture_boundaries,
+    check_generation_store_usage,
+    check_ratchets,
+    check_source_rules,
+    where,
+)
 from tests import test_checks_are_run as checks_are_run
 from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
@@ -808,6 +814,24 @@ def _check_runs(form: Path) -> list[Finding]:
         ]
 
 
+def _generation_store_usage(form: Path) -> list[Finding]:
+    """Run the generation store check over a form's modules, as parser code and as model code."""
+    paths = sorted(form.rglob("*.py")) if form.is_dir() else [form]
+    found = []
+    for scope in typing.get_args(check_generation_store_usage.Scope):
+        for violation in check_generation_store_usage.scan_files([(path, scope) for path in paths]).violations:
+            place = violation.path.relative_to(form.parent).as_posix().removesuffix(".txt")
+            target = re.sub(r"[\s\"]", "", violation.target)
+            found.append(
+                Finding(
+                    f"{scope}/{target}",
+                    _site(form, place, violation.line),
+                    f"{scope}: {place}:{violation.line}: {violation.message} (in {violation.function})",
+                )
+            )
+    return found
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -831,6 +855,11 @@ RULES: dict[str, RuleRun] = {
         "tests.checks.template_assignments", frozenset({"bindings", "references"}), _template_assignment_lines
     ),
     "check-run-on-the-tree": RuleRun("tests.test_checks_are_run", frozenset({"bindings", "references"}), _check_runs),
+    "generation-store-usage": RuleRun(
+        "scripts.check_generation_store_usage",
+        frozenset({"bindings", "references", "imports"}),
+        _generation_store_usage,
+    ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 

@@ -22,10 +22,16 @@
 21:12 dict load in <module> -> builtin; origin builtins.dict
 22:0 TUPLE_CALL store in <module> -> local <module> @22
 22:13 tuple load in <module> -> builtin; origin builtins.tuple
+25:0 READ_ONLY store in <module> -> local <module> @25
+25:12 MappingProxyType load in <module> -> local <module> @23; origin types.MappingProxyType
+26:0 OPAQUE store in <module> -> local <module> @26
+26:9 MappingProxyType load in <module> -> local <module> @23; origin types.MappingProxyType
+26:26 PLAIN load in <module> -> local <module> @8; origin forms.references.literal_constants_and_late_writes.PLAIN
 uses of <module>:Final@6: read@11
-uses of <module>:PLAIN@8: unpack@19
+uses of <module>:PLAIN@8: unpack@19, argument@26
 uses of <module>:WRITTEN@12: subscript-store@13
 uses of <module>:APPENDED@14: call:append@15
+uses of <module>:MappingProxyType@23: call@25, call@26
 type positions @11: Final
 constant PLAIN: tuple('a', 'b')
 constant NESTED: {'v': {}, 'w': set(), 'x': frozenset({'y'}), 'z': list(1, tuple(2, 3))}
@@ -40,4 +46,6 @@ constant UNHASHABLE: Unreadable(reason='UNHASHABLE is not a literal: an unhashab
 constant MALFORMED: Unreadable(reason='MALFORMED is not a literal: an entry that is not a key and a value', lines=(21,))
 constant MISSING: Unreadable(reason='MISSING is not bound exactly once by an assignment', lines=())
 constant TUPLE_CALL: tuple('a')
+constant READ_ONLY: mappingproxy({'set_fields': 'copied'})
+constant OPAQUE: Unreadable(reason='OPAQUE is not a literal: a Name at line 26', lines=(26,))
 == code objects: one per scope that compiles on this Python
