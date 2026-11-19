@@ -239,8 +239,14 @@ def validate_resolved_ref(value: object, handler: Callable[[object], Any]) -> An
 class ResourceChildren(Protocol):
     """The schema-valued keywords of a schema, by their path from it; examples, defaults and extensions are not."""
 
-    def __call__(self, schema: dict[str, Any], /) -> Iterable[tuple[SchemaPath, dict[str, Any]]]:
-        """Yield each schema-valued keyword below the schema with its path."""
+    def __call__(
+        self, schema: dict[str, Any], /, *, passed: Callable[[SchemaPath, str], None]
+    ) -> Iterable[tuple[SchemaPath, dict[str, Any]]]:
+        """Yield each schema-valued keyword below the schema with its path.
+
+        Each `$anchor` on a schema it passes over (a namespace of definitions, read for its entries alone, and each
+        subschema the namespace holds outside its definitions) goes to ``passed`` with its path, as written.
+        """
 
 
 class ResourceIdentifier(Protocol):
@@ -306,6 +312,10 @@ class DocumentResources:
     declarations: tuple[Declaration, ...]
     """Every declaration of the document in walk order (the root's schemas, then the implicit resources), the
     identifiers whose fragment is empty included."""
+    passed_anchors: tuple[tuple[str, str], ...]
+    """The `$anchor` of each schema the walk passes over, as written, with its pointer: a namespace of definitions,
+    which it reads for its entries alone, and each subschema the namespace holds outside its definitions. They declare
+    nothing the registry reads; row ``legacy-external-anchor-search`` reads them."""
 
 
 def walk_schema_resources(  # noqa: PLR0913
@@ -326,6 +336,8 @@ def walk_schema_resources(  # noqa: PLR0913
     the root, declares a resource whose base URI applies below it. The walk meets the schemas of the root in document
     order and the implicit resources after them, so the declarations that ``duplicate_names`` and
     ``first_dynamic_anchors`` order are put in document order by where they are written (``_document_position``).
+    The `$anchor` declarations ``children`` reads on the schemas it passes over, a namespace of definitions and the
+    subschemas it holds outside its definitions, are listed (``passed_anchors``) and register nothing.
     """
     names: dict[str, str] = {}
     declared: set[str] = set()
@@ -337,6 +349,7 @@ def walk_schema_resources(  # noqa: PLR0913
     dynamic_declarations: dict[str, dict[str, str]] = {}
     root_base = base
     listed: list[Declaration] = []
+    passed_anchors: list[tuple[str, str]] = []
 
     def name(uri: str, location: str, pointer: str, keyword: str, written: str) -> None:
         listed.append(Declaration(keyword, written, uri, pointer))
@@ -372,7 +385,11 @@ def walk_schema_resources(  # noqa: PLR0913
                 if keyword == "$dynamicAnchor":
                     dynamic_anchors.setdefault(resource, {}).setdefault(anchor, location)
                     dynamic_declarations.setdefault(anchor, {}).setdefault(location, pointer)
-        for path, child in children(schema):
+
+        def passed(path: SchemaPath, written: str) -> None:
+            passed_anchors.append((written, pointer + join_pointer(path)))
+
+        for path, child in children(schema, passed=passed):
             embeds |= visit(child, pointer + join_pointer(path), base, id_field, resource)
         return embeds
 
@@ -399,6 +416,7 @@ def walk_schema_resources(  # noqa: PLR0913
         implicit_resources=bool(implicit),
         embeds_resources=embeds_resources,
         declarations=tuple(listed),
+        passed_anchors=tuple(passed_anchors),
     )
 
 

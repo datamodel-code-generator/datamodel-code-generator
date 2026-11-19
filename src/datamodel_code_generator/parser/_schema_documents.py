@@ -159,6 +159,9 @@ __all__ = [
 
 _SchemaReading: TypeAlias = "Callable[[dict[str, YamlValue]], dict[str, YamlValue]]"
 """One reading of a schema object: it takes the object as the readings before it left it, children read."""
+_PassedAnchor: TypeAlias = "Callable[[tuple[str | int, ...], str], None]"
+"""What a walk of definition entries tells of each `$anchor` on a schema it passes over: its path and the name as
+written."""
 
 
 def _read_schema_objects(
@@ -339,16 +342,22 @@ def legacy_external_anchor_search(record: DocumentRecord, tree: Mapping[str, obj
 
     This is row ``legacy-external-anchor-search`` (#7158), the released search of the tree. It read the declarations of
     `$anchor` alone, whose value is the name as written, among the schemas it reached (``_searched``), and took the
-    first one on its stack (``stack_position``). It never read a `$dynamicAnchor`, an identifier that is a fragment, a
-    namespace of definitions or an implicit resource, which the registry reads. A document no preparation recorded
-    (``DocumentRecord.resources``) declares nothing.
+    first one on its stack (``stack_position``): those the walk of the document declares and those of the schemas it
+    passes over (``DocumentResources.passed_anchors``), a namespace of definitions and the subschemas the namespace
+    holds outside its definitions. It never read a `$dynamicAnchor`, an identifier that is a fragment, the members of
+    a version namespace of definitions or an implicit resource, which the registry reads. A document no preparation
+    recorded (``DocumentRecord.resources``) declares nothing.
     """
-    declarations = () if (resources := record.resources) is None else resources.declarations
-    pointers = [
-        declaration.pointer
-        for declaration in declarations
-        if declaration.keyword == "$anchor" and declaration.written == name and _searched(tree, declaration.pointer)
-    ]
+    resources = record.resources
+    anchors = (
+        ()
+        if resources is None
+        else chain(
+            ((found.written, found.pointer) for found in resources.declarations if found.keyword == "$anchor"),
+            resources.passed_anchors,
+        )
+    )
+    pointers = [pointer for written, pointer in anchors if written == name and _searched(tree, pointer)]
     return min(pointers, key=partial(stack_position, tree)) if pointers else None
 
 
@@ -769,12 +778,15 @@ def located_document(parser: DocumentNamesHost, location: SchemaLocation) -> Doc
 
 
 def iter_schema_resource_children(
-    parser: SchemaResourcesHost, schema: dict[str, Any]
+    parser: SchemaResourcesHost, schema: dict[str, Any], *, passed: _PassedAnchor | None = None
 ) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
-    """Visit schema-valued keywords without inspecting examples, defaults or extensions."""
+    """Visit schema-valued keywords without inspecting examples, defaults or extensions.
+
+    Each `$anchor` on a schema it passes over (``iter_schema_definition_entry``) goes to ``passed`` with its path.
+    """
     for keyword, value in schema.items():
         if keyword in DEFINITION_KEYS and isinstance(value, dict):
-            for _name, child, path in iter_schema_definition_entries(parser, value, [keyword]):
+            for _name, child, path in iter_schema_definition_entries(parser, value, [keyword], passed=passed):
                 if isinstance(child, dict):
                     yield tuple(path), child
             continue
@@ -1382,10 +1394,11 @@ def iter_definition_namespace_entries(
     path: list[str],
     *,
     include_direct_children: bool,
+    passed: _PassedAnchor | None = None,
 ) -> Iterator[tuple[str, YamlValue, list[str]]]:
     for schema_key in NAMESPACE_DEFINITION_KEYS:
         if isinstance(definitions := raw.get(schema_key), dict):
-            yield from iter_schema_definition_entries(parser, definitions, [*path, schema_key])
+            yield from iter_schema_definition_entries(parser, definitions, [*path, schema_key], passed=passed)
 
     if not include_direct_children:
         return
@@ -1395,7 +1408,7 @@ def iter_definition_namespace_entries(
         key_str = str(key)
         if key_str in known_keys or key_str.startswith("x-") or not isinstance(value, (dict, bool)):
             continue
-        yield from iter_schema_definition_entry(parser, key_str, value, [*path, key_str])
+        yield from iter_schema_definition_entry(parser, key_str, value, [*path, key_str], passed=passed)
 
 
 def iter_schema_definition_entry(
@@ -1403,7 +1416,14 @@ def iter_schema_definition_entry(
     name: str,
     raw: YamlValue,
     path: list[str],
+    *,
+    passed: _PassedAnchor | None = None,
 ) -> Iterator[tuple[str, YamlValue, list[str]]]:
+    """Yield a definition entry, or the entries of the namespace of definitions it is.
+
+    A namespace is read for its entries alone, so ``passed``, if given, is told of each `$anchor` on it and on the
+    subschemas it holds outside its definitions, which no walk of the entries visits (``_anchors_read_as_data``).
+    """
     if isinstance(raw, dict) and not has_schema_affecting_keywords(parser, raw):
         entries = list(
             iter_definition_namespace_entries(
@@ -1411,22 +1431,44 @@ def iter_schema_definition_entry(
                 raw,
                 path,
                 include_direct_children=parser._is_version_definition_namespace_name(name),
+                passed=passed,
             )
         )
         if entries:
+            if passed is not None:
+                for below, written in _anchors_read_as_data(raw, definitions=False):
+                    passed((*path, *below), written)
             yield from entries
             return
     yield name, raw, path
+
+
+def _anchors_read_as_data(
+    schema: Mapping[str, object], *, definitions: bool = True
+) -> Iterator[tuple[tuple[str | int, ...], str]]:
+    """Yield each `$anchor` of a schema read as data and of its subschemas, with its path from it and as written.
+
+    ``definitions`` False leaves out the entries of its definitions, which a walk of definition entries reads itself.
+    """
+    if isinstance(anchor := schema.get("$anchor"), str):
+        yield (), anchor
+    for keyword, value in schema.items():
+        if definitions or keyword not in DEFINITION_KEYS:
+            for path, child in subschema_entries(keyword, value):
+                for below, written in _anchors_read_as_data(child):
+                    yield (*path, *below), written
 
 
 def iter_schema_definition_entries(
     parser: SchemaResourcesHost,
     definitions: dict[str, YamlValue],
     base_path: list[str],
+    *,
+    passed: _PassedAnchor | None = None,
 ) -> Iterator[tuple[str, YamlValue, list[str]]]:
     for key, model in definitions.items():
         name = str(key)
-        yield from iter_schema_definition_entry(parser, name, model, [*base_path, name])
+        yield from iter_schema_definition_entry(parser, name, model, [*base_path, name], passed=passed)
 
 
 def definition_entries(

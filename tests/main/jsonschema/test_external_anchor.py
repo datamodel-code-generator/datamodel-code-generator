@@ -91,6 +91,22 @@ def test_main_jsonschema_external_anchor_released_search(output_file: Path) -> N
     )
 
 
+def test_main_jsonschema_external_anchor_in_passed_namespace(output_file: Path) -> None:
+    """Name an `$anchor` of another file on a schema the resource walk passes over, as the released search did.
+
+    A namespace of definitions (an object of metadata and `$defs` alone) is read for its entries, yet an `$anchor` on
+    it, under its `contentSchema`, `not` or `if`, or under a known keyword of a version namespace (`v1`) is named as in
+    0.98.0; a name a later passed-over schema and an earlier definition both declare names the later one.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_passed_namespace" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_jsonschema_external_id_resolved_to_local_ref(output_file: Path) -> None:
     """Do not reinterpret an external $id that resolves to a local reference."""
     run_main_and_assert(
