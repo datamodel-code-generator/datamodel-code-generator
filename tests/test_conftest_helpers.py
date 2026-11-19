@@ -11,7 +11,7 @@ import textwrap
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import call
 
@@ -37,7 +37,7 @@ from tests.main import _builtin_parity
 from tests.main import conftest as main_conftest
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
 
     from pytest_mock import MockerFixture
 
@@ -545,6 +545,7 @@ class LedgerProject:
 
     pytester: pytest.Pytester
     monkeypatch: pytest.MonkeyPatch
+    modules: ImportedModules
 
     @property
     def suite(self) -> Path:
@@ -585,16 +586,74 @@ class LedgerProject:
         }
 
     def run(self, *args: str, env: dict[str, str] | None = None) -> pytest.RunResult:
-        """Run pytest in the project with extra environment variables."""
+        """Run pytest in the project with extra environment variables, keeping the modules the run imports."""
         with self.monkeypatch.context() as context:
             for name, value in (env or {}).items():
                 context.setenv(name, value)
-            return self.pytester.runpytest_inprocess("-p", "no:cacheprovider", "-p", "no:randomly", *args)
+            result = self.pytester.runpytest_inprocess(
+                "-p", "no:cacheprovider", "-p", "no:randomly", *args, plugins=[self.modules]
+            )
+        _put_back(self.modules.kept)
+        return result
+
+
+@dataclass(eq=False)
+class ImportedModules:
+    """The modules a ledger test imports from outside its project, which stay imported for the rest of the process.
+
+    Pytester restores ``sys.modules`` after each in-process run and when the test ends: every module first imported
+    meanwhile goes, while the modules imported before still hold its objects. The next import of such a module would
+    run it a second time, with classes of its own: a second ``datamodel_code_generator.model.typed_dict`` made the
+    models a later generation builds unknown to the target binder, which keys the first one. Only the project's own
+    modules (its conftest and test modules) are dropped.
+    """
+
+    project: Path
+    before: frozenset[str]
+    kept: dict[str, ModuleType]
+
+    def keep(self) -> None:
+        """Remember the modules imported since the test started from outside the project."""
+        project = self.project.resolve()
+        self.kept.update(
+            (name, module)
+            for name, module in sys.modules.items()
+            if name not in self.before
+            and isinstance(module, ModuleType)
+            and not any(Path(location).resolve().is_relative_to(project) for location in _module_locations(module))
+        )
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_unconfigure(self) -> None:
+        """Remember the modules of a run before pytester drops them."""
+        self.keep()
+
+
+def _module_locations(module: ModuleType) -> list[str]:
+    """Return the file and the package directories a module was loaded from."""
+    file = getattr(module, "__file__", None)
+    return [*([file] if isinstance(file, str) else []), *getattr(module, "__path__", ())]
+
+
+def _put_back(kept: dict[str, ModuleType]) -> None:
+    """Import again, as the same objects, the kept modules that pytester dropped."""
+    for name, module in kept.items():
+        sys.modules.setdefault(name, module)
 
 
 @pytest.fixture
-def ledger(pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch) -> LedgerProject:
-    """Return an empty project whose conftest is the shared one and whose tests live in suite/."""
+def kept_modules() -> Generator[dict[str, ModuleType], None, None]:
+    """Hold the modules a ledger test keeps; set up before ``pytester``, it puts them back after pytester's teardown."""
+    kept: dict[str, ModuleType] = {}
+    yield kept
+    _put_back(kept)
+
+
+@pytest.fixture
+def ledger(
+    kept_modules: dict[str, ModuleType], pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> Generator[LedgerProject, None, None]:
+    """Yield an empty project whose conftest is the shared one and whose tests live in suite/."""
     for name in _ISOLATED_VARIABLES:
         monkeypatch.delenv(name, raising=False)
     pytester.makepyprojecttoml(
@@ -609,7 +668,9 @@ def ledger(pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch) -> Ledger
     )
     pytester.makeconftest("from tests.conftest import *  # noqa: F403\n")
     (pytester.path / "suite" / "data" / "expected").mkdir(parents=True)
-    return LedgerProject(pytester, monkeypatch)
+    modules = ImportedModules(pytester.path, frozenset(sys.modules), kept_modules)
+    yield LedgerProject(pytester, monkeypatch, modules)
+    modules.keep()
 
 
 SHARED = """
@@ -2018,6 +2079,37 @@ def test_ledger_generation_helpers_name_outputs(ledger: LedgerProject) -> None:
     assert "expected: test_named now has the same output as e.py; it uses that file" in first.stdout.str()
     assert "CLASS PET(BASEMODEL)" in files["main/directory/models.py"]
     ledger.run("suite", "--inline-snapshot=disable").assert_outcomes(passed=10)
+
+
+KEPT_MODULE_TESTS = """
+from tests.test_conftest_helpers import kept_modules, ledger
+
+
+def test_import_in_a_run(ledger):
+    ledger.write("test_m.py", "import ledger_kept\\n\\n\\ndef test_a():\\n    pass\\n")
+    ledger.run("suite").assert_outcomes(passed=1)
+
+
+def test_import_after_the_run():
+    import ledger_kept
+"""
+
+
+def test_ledger_runs_keep_the_modules_they_import(
+    ledger: LedgerProject, kept_modules: dict[str, ModuleType], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A module a ledger run imports runs once: a later test of the process imports the same module, not a copy."""
+    (tmp_path / "ledger_kept.py").write_text(
+        "from pathlib import Path\n\n"
+        "with (Path(__file__).parent / 'runs.txt').open('a', encoding='utf-8') as runs:\n"
+        "    runs.write('run\\n')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(tmp_path)
+    ledger.write("test_keep.py", KEPT_MODULE_TESTS)
+    ledger.run("-p", "pytester", "suite").assert_outcomes(passed=2)
+    assert (tmp_path / "runs.txt").read_text(encoding="utf-8") == "run\n"
+    del kept_modules["ledger_kept"], sys.modules["ledger_kept"]
 
 
 def test_ledger_observe_ignores_failures(ledger: LedgerProject, tmp_path: Path) -> None:
