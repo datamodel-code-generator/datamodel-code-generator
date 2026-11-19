@@ -10,6 +10,9 @@
 	checks/checks/checked_run_of_the_command_line.txt
 [test_checks_run_in_a_python_a_test_starts]
 	checks/checks/run_in_a_python_a_test_starts.txt
+[test_field_lines_read_only_module_level_class_bodies]
+class-in-a-class-body	checks/checks/field_lines_read_only_module_level_class_bodies[class-in-a-class-body].txt
+class-in-a-method	checks/checks/field_lines_read_only_module_level_class_bodies[class-in-a-method].txt	= checks/checks/field_lines_read_only_module_level_class_bodies[class-in-a-class-body].txt
 [test_naming_check_replays_the_names_a_custom_generator_gave]
 	checks/checks/naming_check_replays_the_names_a_custom_generator_gave.txt
 [test_naming_check_turned_off]

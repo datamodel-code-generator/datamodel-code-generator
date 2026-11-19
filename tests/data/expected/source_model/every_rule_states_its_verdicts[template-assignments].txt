@@ -1,0 +1,34 @@
+verdict problems: none
+undeclared questions: none
+bindings/annotation_without_value: annotation_without_value.py:21: name no value
+bindings/annotation_without_value: annotation_without_value.py:22: size with a value
+bindings/binding_of_a_node: binding_of_a_node.py:46: size with a value
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:14: size with a value
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:15: items no value
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:16: tags no value
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:17: nested with a value
+bindings/lambda_in_class_annotation_future: lambda_in_class_annotation_future.py:9: x with a value
+bindings/match_captures: match_captures.py:7: __match_args__ with a value
+bindings/match_captures: match_captures.py:11: RED with a value
+bindings/match_mapping_rest_reads_keys: match_mapping_rest_reads_keys.py:7: RED with a value
+bindings/name_mangling: name_mangling.py:7: __slots__ with a value
+bindings/name_mangling: name_mangling.py:8: __limit with a value
+bindings/name_mangling: name_mangling.py:22: __kept with a value
+references/annotation_modes: annotation_modes.py:12: size no value
+references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:8: kind with a value
+references/class_body_comprehension: class_body_comprehension.py:7: n with a value
+references/class_body_comprehension: class_body_comprehension.py:8: xs with a value
+references/class_body_comprehension: class_body_comprehension.py:9: ok with a value
+references/class_body_reads_later_binding: class_body_reads_later_binding.py:7: y with a value
+references/class_body_reads_later_binding: class_body_reads_later_binding.py:8: x with a value
+references/class_body_rebinds_global: class_body_rebinds_global.py:7: _limit with a value
+references/class_scope_skipped: class_scope_skipped.py:7: y with a value
+references/class_scope_skipped: class_scope_skipped.py:8: items with a value
+references/class_scope_skipped: class_scope_skipped.py:9: z with a value
+references/class_scope_skipped: class_scope_skipped.py:10: first with a value
+references/class_scope_skipped: class_scope_skipped.py:11: f with a value
+references/comprehension_in_method_default: comprehension_in_method_default.py:5: size with a value
+references/consumers_of_expressions: consumers_of_expressions.py:29: entries with a value
+references/reexport_chain_across_modules: _format_types.py:9: One with a value
+references/string_annotation_forward: string_annotation_forward.py:16: children no value
+references/string_annotation_forward: string_annotation_forward.py:17: broken no value

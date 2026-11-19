@@ -187,3 +187,23 @@ def test_trigger_check_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "0")
     modules = _EnumLiteralTags(_ENUM_TAGGED_VARIANTS, formatters=[Formatter.BUILTIN]).parse()
     assert_output("".join(f"# {'/'.join(name)}\n{result.body}\n" for name, result in modules.items()))
+
+
+@pytest.mark.parametrize(
+    "rendered",
+    [
+        pytest.param(
+            "class Model:\n    x: int\n\n    def method(self) -> None:\n        class Inner:\n            x = 1\n",
+            id="class-in-a-method",
+        ),
+        pytest.param("class Model:\n    x: int\n\n    class Config:\n        x = 1\n", id="class-in-a-class-body"),
+    ],
+)
+def test_field_lines_read_only_module_level_class_bodies(rendered: str) -> None:
+    """A class nested in a method or a class body binds its own names, never the fields of the model around it."""
+    from tests.checks.template_assignments import field_lines
+
+    lines = [
+        f"{line.name}: {'no value' if line.value is None else 'with a value'}" for line in field_lines(rendered) or ()
+    ]
+    assert_output("\n".join(lines) + "\n")
