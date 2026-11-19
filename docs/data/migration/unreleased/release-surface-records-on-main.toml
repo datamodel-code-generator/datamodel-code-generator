@@ -5,8 +5,8 @@ title = "Name the recommender rules revision of the 0.99.0 surface"
 summary = "The rules revision printed by --recommend-options is now 2026-11-19, the date the rule evidence texts last changed."
 kind = "experimental"
 action = "review"
-refs = ["#0"]
-decision = ["#0"]
+refs = ["#7209"]
+decision = ["#7209"]
 affects = { experimental = ["cli-option.recommend-options"] }
 source = "release-note"
 covers = [

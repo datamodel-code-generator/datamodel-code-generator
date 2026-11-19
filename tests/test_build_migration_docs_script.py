@@ -102,7 +102,7 @@ REGISTRIES = Registries(
             "20260301": {"practical-py314-20260301": "b3"},
         },
         "recommender_rules": {"digest": "r2", "revision": "2026-03-01"},
-        "experimental": ["input-format.avro", "input-format.toml"],
+        "experimental": {"input-format.avro": "0.3.0", "input-format.toml": "0.5.0"},
     },
 )
 RELEASED_SURFACE = {
@@ -119,7 +119,7 @@ RELEASED_SURFACE = {
         "20260201": {"standard-py313-20260201": "a2"},
     },
     "recommender_rules": {"digest": "r1", "revision": "2026-02-01"},
-    "experimental": ["input-format.avro"],
+    "experimental": {"input-format.avro": "0.3.0"},
 }
 """The surface of 0.4.0: the rules changed since, with a new revision, and 20260301 is the one unreleased date."""
 RELEASES = [("0.1.0", "2026-01-01"), ("0.2.0", "2026-02-01"), ("0.3.0", "2026-03-01"), ("0.4.0", "2026-04-01")]
@@ -470,7 +470,7 @@ INVALID_SURFACES = {
         | {
             "presets": {"20260101": {"standard-py313-20260101": "a0"}},
             "recommender_rules": {"digest": "r1", "revision": "2026-03-01"},
-            "experimental": [],
+            "experimental": {"input-format.avro": "0.2.0"},
         }
     },
 }
@@ -814,7 +814,10 @@ arg_parser.add_argument("--quiet-flag", action="store_true")
 
 
 def iter_experimental_features():
-    return [SimpleNamespace(id="input-format.avro"), SimpleNamespace(id="input-format.toml")]
+    return [
+        SimpleNamespace(id="input-format.avro", since_version="0.3.0"),
+        SimpleNamespace(id="input-format.toml", since_version="0.5.0"),
+    ]
 """,
     "preset.py": """from types import SimpleNamespace
 
@@ -876,7 +879,9 @@ def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixtur
         tagged.with_name(f"{entry_id}.toml").write_text(text, encoding="utf-8")
     package = tree / "src" / "datamodel_code_generator"
     registries = _tag_registries(data, package)
-    without_toml = TAG_PACKAGE["experimental.py"].replace(', SimpleNamespace(id="input-format.toml")', "")
+    without_toml = TAG_PACKAGE["experimental.py"].replace(
+        '        SimpleNamespace(id="input-format.toml", since_version="0.5.0"),\n', ""
+    )
     stamp = ["--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"]
     codes = []
     for fragment, package_files in (
@@ -900,6 +905,35 @@ def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixtur
         capsys.readouterr().err.splitlines()[-1],
     ]
     assert_output("\n".join([*output, _files(data), _files(tmp_path / "docs")]))
+
+
+def test_build_migration_docs_stamp_after_a_merge_onto_the_tagged_date(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A tree that moved an option to a new date after the tag is stamped, as the tag's own facts hold.
+
+    Between the tag and its stamp surface.json is still the release before, so the tagged date and the new one are both
+    unreleased there; `--check` says to stamp first, and the stamp compares the tree with the tag's surface alone.
+    """
+    data = _write_data(tmp_path, CHANGES, UNRELEASED)
+    tree = tmp_path / "tag"
+    fragments = tree / "docs" / "data" / "migration" / "unreleased"
+    fragments.mkdir(parents=True)
+    for entry_id, text in UNRELEASED.items():
+        (fragments / f"{entry_id}.toml").write_text(text, encoding="utf-8")
+    tagged = _tag_registries(data, tree / "src" / "datamodel_code_generator")
+    surface = tagged.surface
+    registries = replace(
+        tagged,
+        preset_dates=(*tagged.preset_dates, PresetDate("20260401", "20260301", ())),
+        surface=surface | {"presets": surface["presets"] | {"20260401": {"practical-py314-20260401": "b4"}}},
+    )
+    checked = main([*_args(tmp_path), "--check"], registries)
+    problems = capsys.readouterr().err
+    stamped = main([*_args(tmp_path), "--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"], registries)
+    stamp_problems = capsys.readouterr().err
+    after = main([*_args(tmp_path), "--check"], registries)
+    assert_output(f"exits {checked}, {stamped}, {after}\n{problems}{stamp_problems}{capsys.readouterr().err}")
 
 
 def test_build_migration_docs_stamp_retained_extension(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

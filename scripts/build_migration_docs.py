@@ -236,7 +236,7 @@ print(json.dumps({
     "templates": sorted(path.relative_to(templates).as_posix() for path in templates.rglob("*.jinja2")),
     "presets": presets,
     "recommender_rules": {"digest": digest(rules), "revision": revision},
-    "experimental": sorted(feature.id for feature in iter_experimental_features()),
+    "experimental": {feature.id: feature.since_version for feature in iter_experimental_features()},
 }))
 """
 CHANGES_HEADER = (
@@ -261,11 +261,11 @@ class Surface(TypedDict):
     templates: list[str]
     presets: dict[str, dict[str, str]]
     recommender_rules: dict[str, str]
-    experimental: list[str]
+    experimental: dict[str, str]
 
 
 EMPTY_SURFACE = Surface(
-    options={}, python_api=[], generate_config=[], templates=[], presets={}, recommender_rules={}, experimental=[]
+    options={}, python_api=[], generate_config=[], templates=[], presets={}, recommender_rules={}, experimental={}
 )
 
 
@@ -421,8 +421,8 @@ def read_surface(src: Path) -> Surface:
 
     It also holds what a release fixes: a digest of the option set of each dated preset by date, the digest of the
     recommender rules (everything but `rules_revision` and the option registry, which no recommendation reads) with
-    their revision, and the experimental feature ids. It runs in a fresh interpreter, so the surface of a release
-    tag's tree can be read next to this checkout's.
+    their revision, and the experimental feature ids with their `since_version`. It runs in a fresh interpreter, so the
+    surface of a release tag's tree can be read next to this checkout's.
     """
     env = {**os.environ, "PYTHONPATH": str(src), "PYTHONWARNINGS": "ignore"}
     result = subprocess.run(
@@ -809,12 +809,14 @@ def _check_released(
     """Report what changes the facts the latest release fixed.
 
     The presets of a date the release ships are frozen, and one date at most is unreleased. Rules that differ from the
-    release's carry a new `rules_revision`. An experimental feature the release lacks names a later `since_version`.
+    release's carry a new `rules_revision`. An experimental feature the release lacks names a later `since_version`,
+    and one it has keeps the `since_version` it shipped with.
     """
     shipped = released["presets"]
     if len(unreleased := sorted(current["presets"].keys() - shipped.keys())) > 1:
         problems.append(
-            f"presets: dates {', '.join(unreleased)} are unreleased; add the options of this release to one date"
+            f"presets: dates {', '.join(unreleased)} are unreleased; add the options of this release to one date; "
+            "if the latest tag is not stamped yet, stamp it first"
         )
     problems.extend(
         f"preset {name}: {'its options differ from' if name in shipped[date] else 'is not one of'} the {date} presets "
@@ -830,6 +832,12 @@ def _check_released(
             f"recommender_rules.json: the rules differ from those of {latest} and rules_revision is still "
             f"{rules['revision']}; set it to the date of the change"
         )
+    problems.extend(
+        f"experimental feature {feature.id}: since_version {feature.since_version} differs from {since}, which "
+        f"{latest} ships"
+        for feature in experimental
+        if (since := released["experimental"].get(feature.id, feature.since_version)) != feature.since_version
+    )
     problems.extend(
         f"experimental feature {feature.id}: {latest} lacks it, so since_version {feature.since_version} must name a "
         "later release"
@@ -930,10 +938,18 @@ def _facts(registries: Registries, released_surface: Surface, changes: dict[str,
     )
 
 
-def load(layout: Layout | None = None, registries: Registries | None = None, *, records: bool = True) -> Guide:
+def load(
+    layout: Layout | None = None,
+    registries: Registries | None = None,
+    *,
+    records: bool = True,
+    released_check: bool = True,
+) -> Guide:
     """Load, derive and check the change list; raise MigrationDataError with every problem found.
 
-    Without `records`, an entry with a fixture may lack the recorded output `--record` is about to write.
+    Without `records`, an entry with a fixture may lack the recorded output `--record` is about to write. Without
+    `released_check`, the tree is not held to the facts of surface.json, which `--stamp` is about to replace by the
+    tag's and checks the tree against.
     """
     layout = layout or Layout()
     registries = registries or current_registries()
@@ -960,7 +976,7 @@ def load(layout: Layout | None = None, registries: Registries | None = None, *, 
         problems += guide_problems(entry)
     _check_links(changes, order, problems)
     _check_removals(registries.surface, released_surface, changes, problems)
-    if released and placed.versions:
+    if released and released_check and placed.versions:
         _check_released(registries.surface, released, placed.versions[-1], registries.experimental, problems)
     _check_allowlist(layout, placed.versions, changes, problems)
     if records and not problems:
@@ -1389,7 +1405,7 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     that changes a fact the tag fixes (`_check_released`), such as a preset date of the tag that a later merge edited.
     """
     registries = registries or current_registries()
-    guide = load(layout, registries)
+    guide = load(layout, registries, released_check=False)
     if version_key(version) <= version_key(guide.latest):
         msg = f"{version} does not come after the latest release {guide.latest}"
         raise MigrationDataError([msg])

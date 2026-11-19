@@ -192,10 +192,10 @@ version = "0.5.0"
 date = "2026-05-01"
 --- surface.json ---
 {
- "experimental": [
-  "input-format.avro",
-  "input-format.toml"
- ],
+ "experimental": {
+  "input-format.avro": "0.3.0",
+  "input-format.toml": "0.5.0"
+ },
  "generate_config": [
   "output"
  ],

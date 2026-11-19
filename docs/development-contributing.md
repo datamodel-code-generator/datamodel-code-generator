@@ -286,8 +286,8 @@ registry schedules its removal. New options and option values get their entries 
 `surface.json` also holds what the latest release fixes, and the build fails when your change moves it: a digest of
 the options of each dated preset (the presets of a released date are frozen, and one date at most is unreleased: add
 this release's options to it), the digest of the recommender rules with their `rules_revision` (rules that differ
-from the release's need a new revision, once per release), and the experimental feature ids (a feature the release
-lacks names a later `since_version`). A preset option without a `--no-` form fails at import, in
+from the release's need a new revision, once per release), and the experimental feature ids with their `since_version` (a feature the release
+lacks names a later `since_version`; one it has keeps its own). If a release is tagged but not stamped, stamp it first. A preset option without a `--no-` form fails at import, in
 `PresetOptionGroup`.
 
 An entry with `source = "run"` carries a minimal fixture, `[change.verify]` with a `schema` and the `args` of every

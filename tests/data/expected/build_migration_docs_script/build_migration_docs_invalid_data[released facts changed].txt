@@ -1,8 +1,8 @@
 exit 1
 Invalid migration data:
-- presets: dates 20260201, 20260301 are unreleased; add the options of this release to one date
+- presets: dates 20260201, 20260301 are unreleased; add the options of this release to one date; if the latest tag is not stamped yet, stamp it first
 - preset standard-py313-20260101: its options differ from the 20260101 presets of 0.4.0; released presets are frozen, so change the unreleased date's
 - preset practical-py313-20260101: is not one of the 20260101 presets of 0.4.0; released presets are frozen, so change the unreleased date's
 - recommender_rules.json: the rules differ from those of 0.4.0 and rules_revision is still 2026-03-01; set it to the date of the change
-- experimental feature input-format.avro: 0.4.0 lacks it, so since_version 0.3.0 must name a later release
+- experimental feature input-format.avro: since_version 0.3.0 differs from 0.2.0, which 0.4.0 ships
 written: []

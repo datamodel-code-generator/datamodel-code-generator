@@ -139,7 +139,7 @@ date = "2026-03-01"
 version = "0.4.0"
 date = "2026-04-01"
 --- surface.json ---
-{"options": {"--old-flag": {"aliases": [], "choices": null}, "--output-model-type": {"aliases": [], "choices": ["a", "b"]}, "--preset": {"aliases": [], "choices": ["p1"]}}, "python_api": ["generate"], "generate_config": ["output"], "templates": ["Kept.jinja2", "Old.jinja2"], "presets": {"20260101": {"standard-py313-20260101": "1e9db6e35c701fb2", "practical-py313-20260101": "1e9db6e35c701fb2"}, "20260201": {"standard-py313-20260201": "1e9db6e35c701fb2"}}, "recommender_rules": {"digest": "r1", "revision": "2026-02-01"}, "experimental": ["input-format.avro"]}--- unreleased/commented-header.toml ---
+{"options": {"--old-flag": {"aliases": [], "choices": null}, "--output-model-type": {"aliases": [], "choices": ["a", "b"]}, "--preset": {"aliases": [], "choices": ["p1"]}}, "python_api": ["generate"], "generate_config": ["output"], "templates": ["Kept.jinja2", "Old.jinja2"], "presets": {"20260101": {"standard-py313-20260101": "1e9db6e35c701fb2", "practical-py313-20260101": "1e9db6e35c701fb2"}, "20260201": {"standard-py313-20260201": "1e9db6e35c701fb2"}}, "recommender_rules": {"digest": "r1", "revision": "2026-02-01"}, "experimental": {"input-format.avro": "0.3.0"}}--- unreleased/commented-header.toml ---
 
 [[change]] # kept as written
 id = "commented-header"
