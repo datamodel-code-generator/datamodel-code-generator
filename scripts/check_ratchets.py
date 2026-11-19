@@ -711,9 +711,9 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
                     tally.add(f"allowlist:{listed}:unreadable", path, statement.lineno)
 
 
-def _import_cycle_tally(tally: Tally, root: Path) -> None:
-    """Count the modules on the import cycles of the package and of ``scripts`` (`scripts/_import_cycles.py`)."""
-    for key, found in import_cycles(root).items():
+def _import_cycle_tally(tally: Tally, root: Path, files: list[str]) -> None:
+    """Count the modules on the import cycles of the package and of ``scripts`` among the tree's files."""
+    for key, found in import_cycles(root, files=files).items():
         for path, line in (site for cycle in found for site in cycle):
             tally.add(key, path, line)
 
@@ -728,7 +728,7 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _ruff_files(tally, root, files)
     _source_tally(tally, root, files)
     _config_tally(tally, root, pyproject)
-    _import_cycle_tally(tally, root)
+    _import_cycle_tally(tally, root, files)
     return tally
 
 

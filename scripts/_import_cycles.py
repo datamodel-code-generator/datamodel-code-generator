@@ -4,7 +4,8 @@ A cycle is a strongly connected component of more than one module. `import_cycle
 three ways, each a key ``import-cycle:<measure>@<area>`` of ``scripts/check_ratchets.py``:
 
 - ``module-level``: the modules on cycles of the imports that run when their module is imported (`runs_at_import`).
-  ``scripts/check_architecture_boundaries.py`` also rejects every such cycle of the package, whatever the base.
+  ``scripts/check_architecture_boundaries.py`` also rejects every such cycle of the package, whatever the base. The
+  scope that runs decides: a class body in a function runs with the function, a module-level comprehension at import.
 - ``lazy``: the modules on cycles of every import; function-local and ``TYPE_CHECKING`` imports count too, as code
   scanning reports cycles that they close.
 - ``largest-lazy``: the modules of the largest of those cycles, so that two cycles which merge count as a rise.
@@ -23,7 +24,7 @@ from typing import TYPE_CHECKING, Final
 from scripts._source_model import SourceTree
 
 if TYPE_CHECKING:
-    from collections.abc import Container
+    from collections.abc import Container, Iterable
     from pathlib import Path
 
     from scripts._source_model import Edge
@@ -39,7 +40,8 @@ def runs_at_import(edge: Edge) -> bool:
     """Whether an import runs when its module is imported: at module or class level, outside ``TYPE_CHECKING``.
 
     An import under a version, platform or ``ImportError`` guard, or under any other test, runs on some interpreter,
-    so it counts; one in a function runs only when the function is called, one under ``TYPE_CHECKING`` never.
+    so it counts; one in a function, or in a class defined in a function, runs only when the function is called, and
+    one under ``TYPE_CHECKING`` never. A comprehension runs where it stands (`Scope.runs_in` gives the edge's level).
     """
     return edge.level != "function" and not any(
         condition.kind == "type-checking" and condition.branch == "body" for condition in edge.guard
@@ -89,11 +91,22 @@ def tree_cycles(tree: SourceTree) -> dict[str, list[Cycle]]:
     }
 
 
-def import_cycles(root: Path, areas: Container[str] = AREAS) -> dict[str, list[list[tuple[str, int]]]]:
-    """Return the cycles of each key of the trees of ``areas`` under ``root``: each module's path and line."""
+def _within(files: Iterable[str] | None, directory: str) -> set[str] | None:
+    """Return the files under a tree's directory, relative to it (``None``: no limit)."""
+    prefix = "" if directory == "." else f"{directory}/"
+    return None if files is None else {name.removeprefix(prefix) for name in files if name.startswith(prefix)}
+
+
+def import_cycles(
+    root: Path, areas: Container[str] = AREAS, files: Iterable[str] | None = None
+) -> dict[str, list[list[tuple[str, int]]]]:
+    """Return the cycles of each key of the trees of ``areas`` under ``root``: each module's path and line.
+
+    ``files`` limits the trees to the files of that set (paths relative to ``root``), as the ratchet selects them.
+    """
     found: dict[str, list[list[tuple[str, int]]]] = {}
     for area, directory, package in (tree for tree in TREES if tree[0] in areas):
-        tree = SourceTree(root / directory, [package])
+        tree = SourceTree(root / directory, [package], files=_within(files, directory))
         for measure, measured in tree_cycles(tree).items():
             if measured:
                 found[f"import-cycle:{measure}@{area}"] = [

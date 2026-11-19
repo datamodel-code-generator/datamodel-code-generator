@@ -1,3 +1,16 @@
+== class_in_function
+import-cycle:lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:8
+import-cycle:largest-lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:8
+No architecture boundary violations.
+
+== comprehension_back
+import-cycle:module-level@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6
+import-cycle:lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6, src/datamodel_code_generator/c.py:3
+import-cycle:largest-lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6, src/datamodel_code_generator/c.py:3
+Architecture boundary violations found:
+src/datamodel_code_generator/a.py:3:0: [import-cycle] src/datamodel_code_generator/a.py, src/datamodel_code_generator/b.py: an import here runs when the module is imported and closes this import cycle; move what its modules share into a module that imports none of them (in <module>)
+src/datamodel_code_generator/b.py:6:0: [import-cycle] src/datamodel_code_generator/a.py, src/datamodel_code_generator/b.py: an import here runs when the module is imported and closes this import cycle; move what its modules share into a module that imports none of them (in <module>)
+
 == dynamic
 import-cycle:module-level@src: src/datamodel_code_generator/literal.py:3, src/datamodel_code_generator/literal_pair.py:5
 import-cycle:lazy@src: src/datamodel_code_generator/literal.py:3, src/datamodel_code_generator/literal_pair.py:5

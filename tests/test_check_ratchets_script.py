@@ -193,6 +193,12 @@ IMPORT_BACK = {
     "src/datamodel_code_generator/base.py": FUTURE + "\nfrom datamodel_code_generator import types\n\nVALUE = 1\n",
 }
 """An import back inside a function of ``scripts`` (lazy keys only) and at module level in the package (every key)."""
+IMPORT_IGNORED = {
+    ".gitignore": "scripts/local_*.py\n",
+    "scripts/local_a.py": FUTURE + "\nfrom scripts import local_b\n\nVALUE = local_b.VALUE\n",
+    "scripts/local_b.py": FUTURE + "\nfrom scripts import local_a\n\nVALUE = 1\n",
+}
+"""Two ignored files of ``scripts`` import each other: the ratchet reads the tree's files, so no cycle is counted."""
 SCOPE_WALK = """import ast as syntax
 import symtable
 import tokenize
@@ -442,6 +448,11 @@ def show(flag: bool) -> None:
         "args": ["--enforce"],
     },
     "import-cycles": {"base": IMPORT_ONE_WAY, "head": IMPORT_BACK, "args": ["--enforce"]},
+    "import-cycles-ignored-files": {
+        "base": IMPORT_ONE_WAY,
+        "head": IMPORT_IGNORED,
+        "args": ["--enforce"],
+    },
     "ahead-base": {
         "ahead": {"src/pkg/a.py": FUTURE + NAME},
         "base_ref": "ahead",
