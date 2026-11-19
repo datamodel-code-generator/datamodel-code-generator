@@ -14,3 +14,4 @@ references/check_main_calls: check_main_calls.py:28:   tests/api_generation/supp
 references/check_main_calls: check_main_calls.py:33:   tests/api_generation/support/check_main_calls.py:33 (test_nested.inner): assert check_nested.main([]) == 0
 references/output_policy_by_origin: output_policy_by_origin.py:22:   tests/api_generation/support/output_policy_by_origin.py:22 (rewrite_schema): datamodel_code_generator.parser.mcp._rewrite_schema_refs
 references/output_policy_by_origin: output_policy_by_origin.py:28:   tests/api_generation/support/output_policy_by_origin.py:28 (rewrite_shared_schema): datamodel_code_generator._json_schema
+references/skip_markers_by_origin: skip_markers_by_origin.py:24:   tests/api_generation/support/skip_markers_by_origin.py:24 (TestCase): class TestCase(ut.TestCase)

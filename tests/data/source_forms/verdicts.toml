@@ -1441,6 +1441,7 @@
 "references/type_expressions_and_any_aliases" = "no finding: every load is bound by the time it runs"
 "references/typevar_string_bound_and_cast" = "no finding: every load is bound by the time it runs"
 "references/writes_through_a_name" = "no finding: every load is bound by the time it runs"
+"references/skip_markers_by_origin" = "no finding: every load is bound by the time it runs"
 
 ["assert-helper-usage"]
 "bindings/annotation_without_value" = "no finding: no assert, mock or private access the guard reports"
@@ -1578,6 +1579,7 @@
 "references/type_expressions_and_any_aliases" = "no finding: no assert, mock or private access the guard reports"
 "references/typevar_string_bound_and_cast" = "no finding: no assert, mock or private access the guard reports"
 "references/writes_through_a_name" = "no finding: no assert, mock or private access the guard reports"
+"references/skip_markers_by_origin" = "finding: disguised-assert 24"
 
 ["expected-access"]
 "bindings/annotation_without_value" = "no finding: no path below the stored expected output is read or listed"
@@ -1715,6 +1717,7 @@
 "references/type_expressions_and_any_aliases" = "no finding: no path below the stored expected output is read or listed"
 "references/typevar_string_bound_and_cast" = "no finding: no path below the stored expected output is read or listed"
 "references/writes_through_a_name" = "no finding: no path below the stored expected output is read or listed"
+"references/skip_markers_by_origin" = "no finding: no path below the stored expected output is read or listed"
 
 ["pre-commit-hook-runs"]
 "bindings/binding_of_a_node" = "no finding: no module of the form imports another of its modules"
@@ -1812,6 +1815,7 @@
 "references/type_expressions_and_any_aliases" = "no finding: no module of the form imports another of its modules"
 "references/typevar_string_bound_and_cast" = "no finding: no module of the form imports another of its modules"
 "references/writes_through_a_name" = "no finding: no module of the form imports another of its modules"
+"references/skip_markers_by_origin" = "no finding: no module of the form imports another of its modules"
 
 ["ci-test-targets"]
 "bindings/annotation_without_value" = "finding: defines Fields Fields::name Fields::size count f g"
@@ -1933,3 +1937,4 @@
 "references/type_expressions_and_any_aliases" = "finding: defines Annotated Any Config Literal Payload Plain TYPE_CHECKING Table TypeAlias annotations cast read t typing"
 "references/typevar_string_bound_and_cast" = "finding: defines Alias Forward Later S T TypeAlias TypeVar cast f"
 "references/writes_through_a_name" = "finding: defines FROZEN ITEMS JUSTIFIED_VIOLATIONS REGISTRY read"
+"references/skip_markers_by_origin" = "finding: defines REFERENCE TestCase TestCase::* TestCase::skip TestCase::test_method importorskip marks pt sys test_aliased test_local test_parameter ut when"
