@@ -1,0 +1,221 @@
+== extents
+Expr@1 lines 1-4
+FunctionDef@8 lines 7-19: function 7-8/9-19
+Assign@9 lines 9
+Assign@10 lines 10
+Assign@11 lines 11
+Assign@12 lines 12
+If@13 lines 13: if 13/13
+Assign@13 lines 13
+Match@14 lines 14-16: match 14/15-16; case 15/16
+Assign@16 lines 16
+Assign@17 lines 17
+Assign@18 lines 18
+Return@19 lines 19
+ClassDef@22 lines 22-23: class 22/23
+Assign@23 lines 23
+code lines: 1-4,7-19,22-23
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: Expr@1; owner <module>#0; tokens -
+line 3: Expr@1; owner <module>#0; tokens -
+line 4: Expr@1; owner <module>#0; tokens -
+line 5: -; owner <module>#0; tokens -
+line 6: -; owner <module>#0; tokens -
+line 7: FunctionDef@8; owner pick#0; tokens pick#0:header
+line 8: FunctionDef@8; owner pick#0; tokens pick#0:header
+line 9: Assign@9; owner pick#0; tokens pick#0:body
+line 10: Assign@10; owner pick#0; tokens pick#0:body
+line 11: Assign@11; owner pick#0; tokens pick#0:body, pick.<locals>.<listcomp>#0:body
+line 12: Assign@12; owner pick#0; tokens pick#0:body, pick.<locals>.<dictcomp>#0:body
+line 13: Assign@13; owner pick#0; tokens pick#0:body
+line 14: Match@14; owner pick#0; tokens pick#0:body
+line 15: Match@14; owner pick#0; tokens pick#0:body
+line 16: Assign@16; owner pick#0; tokens pick#0:body
+line 17: Assign@17; owner pick#0; tokens pick#0:body, pick.<locals>.<lambda>#0:body, pick.<locals>.<lambda>#0:header
+line 18: Assign@18; owner pick#0; tokens pick#0:body, pick.<locals>.<genexpr>#0:body, pick.<locals>.<genexpr>#1:body
+line 19: Return@19; owner pick#0; tokens pick#0:body
+line 20: -; owner <module>#0; tokens -
+line 21: -; owner <module>#0; tokens -
+line 22: ClassDef@22; owner Holder#0; tokens Holder#0:header
+line 23: Assign@23; owner Holder#0; tokens Holder#0:body
+header pick: 7-8
+header pick.<locals>.<lambda>: 17
+header Holder: 22
+source @1: """C3 (scripts/_change_units.py): the segments a position lies in, the header that holds it and its innermost node.
+
+segments: yes
+"""
+source @9: label = value.upper() if flag else value.casefold()
+source @10: found = flag or value.endswith("_x") or value
+source @11: names = [n for n in value if flag and n if n != "q" for m in n]
+source @12: table = {key: key * 2 for key in value}
+source @13: label = label.lower()
+source @16: label = "s"
+source @17: convert = lambda item, scale=(2 if flag else 3): item * scale
+source @18: rows = (row for row in (x for x in value))
+source @19: return label, found, names, table, convert, rows
+source @23: size = 1
+token 1:0 '"""C3 (scripts/_change_units.py): the segments a position lies in, the header that holds it and its innermost node.\n\nsegments: yes\n"""': statement 1:0-4:3; header -; node Constant 1:0-4:3; typing-only -
+token 7:0 '@': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 7:1 'staticmethod': statement 7:0-19:52; header pick#0; node Name 7:1-7:13; typing-only -
+token 8:0 'def': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:4 'pick': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:8 '(': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:9 'flag': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:13 ',': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:15 'value': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:20 ',': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:22 'default': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:29 '=': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:30 '(': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:31 '1': arm 8:31-8:32; header pick#0; node Constant 8:31-8:32; typing-only -
+token 8:33 'if': statement 7:0-19:52; header pick#0; node IfExp 8:31-8:47; typing-only -
+token 8:36 'True': statement 7:0-19:52; header pick#0; node Constant 8:36-8:40; typing-only -
+token 8:41 'else': statement 7:0-19:52; header pick#0; node IfExp 8:31-8:47; typing-only -
+token 8:46 '2': arm 8:46-8:47; header pick#0; node Constant 8:46-8:47; typing-only -
+token 8:47 ')': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:48 ')': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 8:49 ':': statement 7:0-19:52; header pick#0; node FunctionDef 7:0-19:52; typing-only -
+token 9:4 'label': statement 9:4-9:55; header -; node Name 9:4-9:9; typing-only -
+token 9:10 '=': statement 9:4-9:55; header -; node Assign 9:4-9:55; typing-only -
+token 9:12 'value': arm 9:12-9:25; header -; node Name 9:12-9:17; typing-only -
+token 9:17 '.': arm 9:12-9:25; header -; node Attribute 9:12-9:23; typing-only -
+token 9:18 'upper': arm 9:12-9:25; header -; node Attribute 9:12-9:23; typing-only -
+token 9:23 '(': arm 9:12-9:25; header -; node Call 9:12-9:25; typing-only -
+token 9:24 ')': arm 9:12-9:25; header -; node Call 9:12-9:25; typing-only -
+token 9:26 'if': statement 9:4-9:55; header -; node IfExp 9:12-9:55; typing-only -
+token 9:29 'flag': statement 9:4-9:55; header -; node Name 9:29-9:33; typing-only -
+token 9:34 'else': statement 9:4-9:55; header -; node IfExp 9:12-9:55; typing-only -
+token 9:39 'value': arm 9:39-9:55; header -; node Name 9:39-9:44; typing-only -
+token 9:44 '.': arm 9:39-9:55; header -; node Attribute 9:39-9:53; typing-only -
+token 9:45 'casefold': arm 9:39-9:55; header -; node Attribute 9:39-9:53; typing-only -
+token 9:53 '(': arm 9:39-9:55; header -; node Call 9:39-9:55; typing-only -
+token 9:54 ')': arm 9:39-9:55; header -; node Call 9:39-9:55; typing-only -
+token 10:4 'found': statement 10:4-10:49; header -; node Name 10:4-10:9; typing-only -
+token 10:10 '=': statement 10:4-10:49; header -; node Assign 10:4-10:49; typing-only -
+token 10:12 'flag': statement 10:4-10:49; header -; node Name 10:12-10:16; typing-only -
+token 10:17 'or': statement 10:4-10:49; header -; node BoolOp 10:12-10:49; typing-only -
+token 10:20 'value': operand 10:20-10:40; header -; node Name 10:20-10:25; typing-only -
+token 10:25 '.': operand 10:20-10:40; header -; node Attribute 10:20-10:34; typing-only -
+token 10:26 'endswith': operand 10:20-10:40; header -; node Attribute 10:20-10:34; typing-only -
+token 10:34 '(': operand 10:20-10:40; header -; node Call 10:20-10:40; typing-only -
+token 10:35 '"_x"': operand 10:20-10:40; header -; node Constant 10:35-10:39; typing-only -
+token 10:39 ')': operand 10:20-10:40; header -; node Call 10:20-10:40; typing-only -
+token 10:41 'or': statement 10:4-10:49; header -; node BoolOp 10:12-10:49; typing-only -
+token 10:44 'value': operand 10:44-10:49; header -; node Name 10:44-10:49; typing-only -
+token 11:4 'names': statement 11:4-11:67; header -; node Name 11:4-11:9; typing-only -
+token 11:10 '=': statement 11:4-11:67; header -; node Assign 11:4-11:67; typing-only -
+token 11:12 '[': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 11:13 'n': element 11:13-11:14; header -; node Name 11:13-11:14; typing-only -
+token 11:15 'for': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 11:19 'n': target 11:19-11:20,11:33-11:43; header -; node Name 11:19-11:20; typing-only -
+token 11:21 'in': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 11:24 'value': statement 11:4-11:67; header -; node Name 11:24-11:29; typing-only -
+token 11:30 'if': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 11:33 'flag': target 11:19-11:20,11:33-11:43; header -; node Name 11:33-11:37; typing-only -
+token 11:38 'and': target 11:19-11:20,11:33-11:43; header -; node BoolOp 11:33-11:43; typing-only -
+token 11:42 'n': operand 11:42-11:43; header -; node Name 11:42-11:43; typing-only -
+token 11:44 'if': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 11:47 'n': condition 11:47-11:55; header -; node Name 11:47-11:48; typing-only -
+token 11:49 '!=': condition 11:47-11:55; header -; node Compare 11:47-11:55; typing-only -
+token 11:52 '"q"': condition 11:47-11:55; header -; node Constant 11:52-11:55; typing-only -
+token 11:56 'for': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 11:60 'm': target 11:60-11:61; header -; node Name 11:60-11:61; typing-only -
+token 11:62 'in': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 11:65 'n': iterable 11:65-11:66; header -; node Name 11:65-11:66; typing-only -
+token 11:66 ']': statement 11:4-11:67; header -; node ListComp 11:12-11:67; typing-only -
+token 12:4 'table': statement 12:4-12:43; header -; node Name 12:4-12:9; typing-only -
+token 12:10 '=': statement 12:4-12:43; header -; node Assign 12:4-12:43; typing-only -
+token 12:12 '{': statement 12:4-12:43; header -; node DictComp 12:12-12:43; typing-only -
+token 12:13 'key': element 12:13-12:25; header -; node Name 12:13-12:16; typing-only -
+token 12:16 ':': statement 12:4-12:43; header -; node DictComp 12:12-12:43; typing-only -
+token 12:18 'key': element 12:13-12:25; header -; node Name 12:18-12:21; typing-only -
+token 12:22 '*': element 12:13-12:25; header -; node BinOp 12:18-12:25; typing-only -
+token 12:24 '2': element 12:13-12:25; header -; node Constant 12:24-12:25; typing-only -
+token 12:26 'for': statement 12:4-12:43; header -; node DictComp 12:12-12:43; typing-only -
+token 12:30 'key': target 12:30-12:33; header -; node Name 12:30-12:33; typing-only -
+token 12:34 'in': statement 12:4-12:43; header -; node DictComp 12:12-12:43; typing-only -
+token 12:37 'value': statement 12:4-12:43; header -; node Name 12:37-12:42; typing-only -
+token 12:42 '}': statement 12:4-12:43; header -; node DictComp 12:12-12:43; typing-only -
+token 13:4 'if': statement 13:4-13:34; header -; node If 13:4-13:34; typing-only -
+token 13:7 'flag': statement 13:4-13:34; header -; node Name 13:7-13:11; typing-only -
+token 13:11 ':': statement 13:4-13:34; header -; node If 13:4-13:34; typing-only -
+token 13:13 'label': statement 13:13-13:34; header -; node Name 13:13-13:18; typing-only -
+token 13:19 '=': statement 13:13-13:34; header -; node Assign 13:13-13:34; typing-only -
+token 13:21 'label': statement 13:13-13:34; header -; node Name 13:21-13:26; typing-only -
+token 13:26 '.': statement 13:13-13:34; header -; node Attribute 13:21-13:32; typing-only -
+token 13:27 'lower': statement 13:13-13:34; header -; node Attribute 13:21-13:32; typing-only -
+token 13:32 '(': statement 13:13-13:34; header -; node Call 13:21-13:34; typing-only -
+token 13:33 ')': statement 13:13-13:34; header -; node Call 13:21-13:34; typing-only -
+token 14:4 'match': statement 14:4-16:23; header -; node Match 14:4-16:23; typing-only -
+token 14:10 'value': statement 14:4-16:23; header -; node Name 14:10-14:15; typing-only -
+token 14:15 ':': statement 14:4-16:23; header -; node Match 14:4-16:23; typing-only -
+token 15:8 'case': statement 14:4-16:23; header -; node Match 14:4-16:23; typing-only -
+token 15:13 'str': statement 14:4-16:23; header -; node Name 15:13-15:16; typing-only -
+token 15:16 '(': statement 14:4-16:23; header -; node Match 14:4-16:23; typing-only -
+token 15:17 ')': statement 14:4-16:23; header -; node Match 14:4-16:23; typing-only -
+token 15:19 'if': statement 14:4-16:23; header -; node Match 14:4-16:23; typing-only -
+token 15:22 'flag': statement 14:4-16:23; header -; node Name 15:22-15:26; typing-only -
+token 15:26 ':': statement 14:4-16:23; header -; node Match 14:4-16:23; typing-only -
+token 16:12 'label': statement 16:12-16:23; header -; node Name 16:12-16:17; typing-only -
+token 16:18 '=': statement 16:12-16:23; header -; node Assign 16:12-16:23; typing-only -
+token 16:20 '"s"': statement 16:12-16:23; header -; node Constant 16:20-16:23; typing-only -
+token 17:4 'convert': statement 17:4-17:65; header -; node Name 17:4-17:11; typing-only -
+token 17:12 '=': statement 17:4-17:65; header -; node Assign 17:4-17:65; typing-only -
+token 17:14 'lambda': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:21 'item': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:25 ',': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:27 'scale': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:32 '=': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:33 '(': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:34 '2': arm 17:34-17:35; header pick.<locals>.<lambda>#0; node Constant 17:34-17:35; typing-only -
+token 17:36 'if': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node IfExp 17:34-17:50; typing-only -
+token 17:39 'flag': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Name 17:39-17:43; typing-only -
+token 17:44 'else': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node IfExp 17:34-17:50; typing-only -
+token 17:49 '3': arm 17:49-17:50; header pick.<locals>.<lambda>#0; node Constant 17:49-17:50; typing-only -
+token 17:50 ')': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:51 ':': statement 17:4-17:65; header pick.<locals>.<lambda>#0; node Lambda 17:14-17:65; typing-only -
+token 17:53 'item': statement 17:4-17:65; header -; node Name 17:53-17:57; typing-only -
+token 17:58 '*': statement 17:4-17:65; header -; node BinOp 17:53-17:65; typing-only -
+token 17:60 'scale': statement 17:4-17:65; header -; node Name 17:60-17:65; typing-only -
+token 18:4 'rows': statement 18:4-18:46; header -; node Name 18:4-18:8; typing-only -
+token 18:9 '=': statement 18:4-18:46; header -; node Assign 18:4-18:46; typing-only -
+token 18:11 '(': statement 18:4-18:46; header -; node GeneratorExp 18:11-18:46; typing-only -
+token 18:12 'row': element 18:12-18:15; header -; node Name 18:12-18:15; typing-only -
+token 18:16 'for': statement 18:4-18:46; header -; node GeneratorExp 18:11-18:46; typing-only -
+token 18:20 'row': target 18:20-18:23; header -; node Name 18:20-18:23; typing-only -
+token 18:24 'in': statement 18:4-18:46; header -; node GeneratorExp 18:11-18:46; typing-only -
+token 18:27 '(': statement 18:4-18:46; header -; node GeneratorExp 18:27-18:45; typing-only -
+token 18:28 'x': element 18:28-18:29; header -; node Name 18:28-18:29; typing-only -
+token 18:30 'for': statement 18:4-18:46; header -; node GeneratorExp 18:27-18:45; typing-only -
+token 18:34 'x': target 18:34-18:35; header -; node Name 18:34-18:35; typing-only -
+token 18:36 'in': statement 18:4-18:46; header -; node GeneratorExp 18:27-18:45; typing-only -
+token 18:39 'value': statement 18:4-18:46; header pick.<locals>.<genexpr>#0; node Name 18:39-18:44; typing-only -
+token 18:44 ')': statement 18:4-18:46; header -; node GeneratorExp 18:27-18:45; typing-only -
+token 18:45 ')': statement 18:4-18:46; header -; node GeneratorExp 18:11-18:46; typing-only -
+token 19:4 'return': statement 19:4-19:52; header -; node Return 19:4-19:52; typing-only -
+token 19:11 'label': statement 19:4-19:52; header -; node Name 19:11-19:16; typing-only -
+token 19:16 ',': statement 19:4-19:52; header -; node Tuple 19:11-19:52; typing-only -
+token 19:18 'found': statement 19:4-19:52; header -; node Name 19:18-19:23; typing-only -
+token 19:23 ',': statement 19:4-19:52; header -; node Tuple 19:11-19:52; typing-only -
+token 19:25 'names': statement 19:4-19:52; header -; node Name 19:25-19:30; typing-only -
+token 19:30 ',': statement 19:4-19:52; header -; node Tuple 19:11-19:52; typing-only -
+token 19:32 'table': statement 19:4-19:52; header -; node Name 19:32-19:37; typing-only -
+token 19:37 ',': statement 19:4-19:52; header -; node Tuple 19:11-19:52; typing-only -
+token 19:39 'convert': statement 19:4-19:52; header -; node Name 19:39-19:46; typing-only -
+token 19:46 ',': statement 19:4-19:52; header -; node Tuple 19:11-19:52; typing-only -
+token 19:48 'rows': statement 19:4-19:52; header -; node Name 19:48-19:52; typing-only -
+token 22:0 'class': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 22:6 'Holder': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 22:12 '(': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 22:13 'dict': statement 22:0-23:12; header Holder#0; node Name 22:13-22:17; typing-only -
+token 22:17 ',': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 22:19 'metaclass': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 22:28 '=': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 22:29 'type': statement 22:0-23:12; header Holder#0; node Name 22:29-22:33; typing-only -
+token 22:33 ')': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 22:34 ':': statement 22:0-23:12; header Holder#0; node ClassDef 22:0-23:12; typing-only -
+token 23:4 'size': statement 23:4-23:12; header -; node Name 23:4-23:8; typing-only -
+token 23:9 '=': statement 23:4-23:12; header -; node Assign 23:4-23:12; typing-only -
+token 23:11 '1': statement 23:4-23:12; header -; node Constant 23:11-23:12; typing-only -
+== code objects: one per scope that compiles on this Python

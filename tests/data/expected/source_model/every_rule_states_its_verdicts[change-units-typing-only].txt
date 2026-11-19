@@ -1,0 +1,190 @@
+verdict problems: none
+undeclared questions: none
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:12: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:21: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:22: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:26: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:27: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:30: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:31: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:33: local-annotation (header of collect.<locals>.<lambda>)
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:39: local-annotation (header of collect.<locals>.<lambda>)
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:41: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:42: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:44: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:48: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:50: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:53: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:57: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10:58: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:11: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:20: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:21: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:25: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:26: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:29: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:30: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:32: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:33: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:35: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:39: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:41: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:44: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:48: local-annotation
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11:49: local-annotation
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:11: local-annotation
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:20: local-annotation
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:21: local-annotation
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:24: local-annotation
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:26: local-annotation (header of f.<locals>.<lambda>)
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:32: local-annotation (header of f.<locals>.<lambda>)
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:34: local-annotation
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10:35: local-annotation
+extents/annotations_without_future: annotations_without_future.py:8:11: local-annotation
+extents/typing_only_parts: typing_only_parts.py:14:4: type-checking
+extents/typing_only_parts: typing_only_parts.py:14:9: type-checking
+extents/typing_only_parts: typing_only_parts.py:14:12: type-checking
+extents/typing_only_parts: typing_only_parts.py:14:19: type-checking
+extents/typing_only_parts: typing_only_parts.py:16:4: type-checking
+extents/typing_only_parts: typing_only_parts.py:16:10: type-checking
+extents/typing_only_parts: typing_only_parts.py:16:12: type-checking
+extents/typing_only_parts: typing_only_parts.py:20:4: type-checking
+extents/typing_only_parts: typing_only_parts.py:20:10: type-checking
+extents/typing_only_parts: typing_only_parts.py:20:12: type-checking
+extents/typing_only_parts: typing_only_parts.py:23:0: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:23:1: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:0: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:4: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:11: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:12: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:17: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:19: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:22: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:24: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:27: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:30: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:24:32: overload
+extents/typing_only_parts: typing_only_parts.py:25:0: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:25:1: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:25:18: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:25:19: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:0: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:4: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:11: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:12: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:17: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:19: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:22: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:24: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:27: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:30: overload (header of convert)
+extents/typing_only_parts: typing_only_parts.py:26:32: overload
+extents/typing_only_parts: typing_only_parts.py:27:19: deferred-annotation (header of convert)
+extents/typing_only_parts: typing_only_parts.py:27:30: deferred-annotation (header of convert)
+extents/typing_only_parts: typing_only_parts.py:28:11: local-annotation
+extents/typing_only_parts: typing_only_parts.py:35:4: typing-decorator (header of Base.label)
+extents/typing_only_parts: typing_only_parts.py:35:5: typing-decorator (header of Base.label)
+extents/typing_only_parts: typing_only_parts.py:35:22: typing-decorator (header of Base.label)
+extents/typing_only_parts: typing_only_parts.py:35:23: typing-decorator (header of Base.label)
+extents/typing_only_parts: typing_only_parts.py:36:4: typing-decorator (header of Base.label)
+extents/typing_only_parts: typing_only_parts.py:36:5: typing-decorator (header of Base.label)
+extents/typing_only_parts: typing_only_parts.py:38:21: deferred-annotation (header of Base.label)
+extents/typing_only_parts: typing_only_parts.py:38:29: deferred-annotation (header of Base.label)
+imports/submodule_and_parent_packages: deep.py:6:4: type-checking
+imports/submodule_and_parent_packages: deep.py:6:9: type-checking
+imports/submodule_and_parent_packages: deep.py:6:10: type-checking
+imports/submodule_and_parent_packages: deep.py:6:12: type-checking
+imports/submodule_and_parent_packages: deep.py:6:19: type-checking
+references/annotation_modes: annotation_modes.py:16:11: local-annotation
+references/annotation_modes: annotation_modes.py:16:20: local-annotation
+references/annotation_modes: annotation_modes.py:16:21: local-annotation
+references/annotation_modes: annotation_modes.py:16:24: local-annotation
+references/annotation_modes: annotation_modes.py:16:26: local-annotation (header of f.<locals>.<lambda>)
+references/annotation_modes: annotation_modes.py:16:32: local-annotation (header of f.<locals>.<lambda>)
+references/annotation_modes: annotation_modes.py:16:34: local-annotation
+references/annotation_modes: annotation_modes.py:16:35: local-annotation
+references/annotations_and_string_reads: annotations_and_string_reads.py:9:4: type-checking
+references/annotations_and_string_reads: annotations_and_string_reads.py:9:9: type-checking
+references/annotations_and_string_reads: annotations_and_string_reads.py:9:20: type-checking
+references/annotations_and_string_reads: annotations_and_string_reads.py:9:21: type-checking
+references/annotations_and_string_reads: annotations_and_string_reads.py:9:25: type-checking
+references/annotations_and_string_reads: annotations_and_string_reads.py:9:32: type-checking
+references/annotations_and_string_reads: annotations_and_string_reads.py:24:15: local-annotation
+references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:18:20: local-annotation
+references/store_writes_through_bindings: store_writes_through_bindings.py:85:12: local-annotation
+references/store_writes_through_bindings: store_writes_through_bindings.py:118:11: local-annotation
+references/string_annotation_forward: string_annotation_forward.py:8:4: type-checking
+references/string_annotation_forward: string_annotation_forward.py:8:9: type-checking
+references/string_annotation_forward: string_annotation_forward.py:8:11: type-checking
+references/string_annotation_forward: string_annotation_forward.py:8:18: type-checking
+references/string_annotation_forward: string_annotation_forward.py:11:9: deferred-annotation (header of f)
+references/string_annotation_forward: string_annotation_forward.py:11:21: deferred-annotation (header of f)
+references/string_annotation_forward: string_annotation_forward.py:11:29: deferred-annotation (header of f)
+references/string_annotation_forward: string_annotation_forward.py:11:30: deferred-annotation (header of f)
+references/string_annotation_forward: string_annotation_forward.py:11:35: deferred-annotation (header of f)
+references/string_annotation_forward: string_annotation_forward.py:11:41: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:9: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:16: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:17: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:22: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:28: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:37: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:38: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:41: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:43: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:48: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:54: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:64: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:68: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:69: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:74: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:80: deferred-annotation (header of f)
+references/string_annotation_type_positions: string_annotation_type_positions.py:8:101: deferred-annotation (header of f)
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:45:24: local-annotation
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:64:19: local-annotation
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:147:20: local-annotation
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:4: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:9: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:20: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:21: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:25: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:32: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:40: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:15:43: type-checking
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:25:11: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:25:17: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:25:18: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:26:12: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:27:11: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:27:15: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:27:16: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:27:22: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:27:23: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:27:26: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:28:12: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:29:11: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:30:11: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:31:13: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:12: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:21: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:22: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:25: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:27: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:33: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:34: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:32:37: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:33:11: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:33:18: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:33:19: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:33:31: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:5: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:11: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:12: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:19: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:20: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:23: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:25: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:26: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:27: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:34:30: deferred-annotation (header of read)
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:35:10: local-annotation

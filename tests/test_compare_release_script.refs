@@ -18,6 +18,8 @@ path_option-args2	compare_release/path_option.txt	= compare_release/directory.tx
 	compare_release_script/handled_exceptions_are_tracked.txt
 [test_ran_out_of_memory]
 	compare_release_script/ran_out_of_memory.txt
+[test_the_annotation_reader_sites_are_the_package_s]
+	compare_release_script/the_annotation_reader_sites_are_the_package_s.txt
 [test_the_environment_keeps_what_windows_needs]
 	compare_release_script/the_environment_keeps_what_windows_needs.txt
 [test_the_record_is_published_by_a_replace]

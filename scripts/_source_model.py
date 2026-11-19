@@ -1022,9 +1022,14 @@ class _Extents(_SourceText):
         return [node for node in reversed(self._holders((line, column))) if isinstance(node, (ast.expr, ast.stmt))]
 
     def segment(self, line: int, column: int) -> Segment:
-        """Return the innermost `Segment` that holds a position: a statement, or a part of one that may be skipped."""
+        """Return the innermost `Segment` that holds a position: a statement, or a part of one that may be skipped.
+
+        A position between two statements on one line (a ``;``) is in the statement that holds the line.
+        """
         _ask("extents")
         chain = self._holders((line, column))
+        if not chain and (statement := self._line_statements.get(line)) is not None:
+            chain = [statement]
         if not chain:
             self._refuse(line, "a position outside every statement")
         found = Segment("statement", (self._span(chain[0]),), chain[0])
@@ -1621,7 +1626,7 @@ class _TypingForms(_Reads):
         _ask("references")
         chain = self._holders((line, column))
         position = (line, column)
-        pairs = zip(chain, [*chain[1:], None], strict=True)
+        pairs = zip(chain, [*chain[1:], None][: len(chain)], strict=True)
         forms = (self._typing_form(node, inner, position) for node, inner in pairs)
         return next((form for form in forms if form is not None), None)
 

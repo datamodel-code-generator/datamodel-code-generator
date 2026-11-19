@@ -18,6 +18,7 @@ import pytest
 
 import datamodel_code_generator
 import datamodel_code_generator.__main__  # noqa: F401
+from scripts import _change_units as change_units
 from scripts import compare_release
 from tests.capabilities import needs
 from tests.conftest import assert_output
@@ -1175,3 +1176,18 @@ def test_compare_release_measures_nothing_without_sys_monitoring(tmp_path: Path)
     run = subprocess.run([*command, *REACHED], cwd=repo / "inputs", capture_output=True, text=True, check=False)
     assert _verdict(run.returncode, run.stdout) == "incomplete", run.stdout
     assert_output(f"exit={run.returncode}\n{run.stdout}".replace(str(tmp_path), "<tmp>"))
+
+
+@pytest.mark.allow_direct_assert("a table pinned to the package fails on its own, never through a stored output")
+def test_the_annotation_reader_sites_are_the_package_s() -> None:
+    """`READER_SITES` lists exactly the code of the package that may read annotations at run time, both ways.
+
+    Every site the source finds is listed (with why it reads no function's annotations) and every listed site is
+    still there, so the table is a check and no escape hatch.
+    """
+    found = set(change_units.reader_sites(change_units.Side("head", ROOT / "src")))
+    listed = set(change_units.READER_SITES)
+    assert found == listed, f"not listed: {sorted(found - listed)}; listed, not found: {sorted(listed - found)}"
+    assert_output(
+        "".join(f"{path} {qualname}: {change_units.READER_SITES[path, qualname]}\n" for path, qualname in sorted(found))
+    )
