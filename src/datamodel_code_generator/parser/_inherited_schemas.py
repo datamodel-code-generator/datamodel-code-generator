@@ -47,6 +47,7 @@ from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
 from datamodel_code_generator.parser import _rw_split, _schema_refs, _value_keywords
 from datamodel_code_generator.parser._all_of_values import holds_union_member
+from datamodel_code_generator.parser._field_copies import _get_inherited_type_modifiers
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,
     POSITIONAL_SCHEMA_KEYWORDS,
@@ -60,6 +61,7 @@ from datamodel_code_generator.parser._intersection import (
 )
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._passes._keys import _DEFERRED_INHERITED_FIELD_KEY, _DEFERRED_INHERITED_TYPE_KEY
 from datamodel_code_generator.parser._rw_split import RwSplitHost
 from datamodel_code_generator.parser._schema_documents import current_document
 from datamodel_code_generator.parser._schema_object import (
@@ -85,11 +87,6 @@ from datamodel_code_generator.parser._schema_reading import (
 )
 from datamodel_code_generator.parser._schema_refs import mark_conjunction_parts
 from datamodel_code_generator.parser._value_keywords import get_effective_array_length
-from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_FIELD_KEY,
-    _DEFERRED_INHERITED_TYPE_KEY,
-    _get_inherited_type_modifiers,
-)
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
     Reference,

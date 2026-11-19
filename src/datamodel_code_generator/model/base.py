@@ -6,7 +6,7 @@ representation, and DataModel as the abstract base for all model types.
 
 from __future__ import annotations
 
-import ast  # noqa: F401  # Preserve the established model.base export.
+import ast as ast
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -14,12 +14,10 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
-from dataclasses import (
-    dataclass,  # noqa: F401  # Preserve the established model.base export.
-)
+from dataclasses import dataclass as dataclass
 from functools import cached_property, lru_cache
+from itertools import accumulate as accumulate
 from itertools import (
-    accumulate,  # noqa: F401  # Preserve the established model.base export.
     chain,
     takewhile,
 )
@@ -45,8 +43,8 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._free_names import numbered_class as _numbered_class
 from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
+from datamodel_code_generator._internal_utils import get_most_of_parent as get_most_of_parent
 from datamodel_code_generator._internal_utils import (
-    get_most_of_parent,  # noqa: F401  # Preserve the established model.base export.
     to_hashable,
 )
 from datamodel_code_generator._message_text import for_count
@@ -64,26 +62,26 @@ from datamodel_code_generator._parse_memo import (
 from datamodel_code_generator._python_syntax import (
     _normalize_string,
     _single_line_docstring,
-    comment_safe,  # noqa: F401  # Preserve the established model.base export.
     escape_docstring,
     format_docstring,
     inline_comment_safe,
 )
+from datamodel_code_generator._python_syntax import comment_safe as comment_safe
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import REQUIREMENTS, backport_path, python_target_meets
+from datamodel_code_generator._target_unicode import host_identifiers as host_identifiers
+from datamodel_code_generator._target_unicode import host_parsable as host_parsable
 from datamodel_code_generator._target_unicode import (
-    host_identifiers,  # noqa: F401  # Preserve the established model.base export.
-    host_parsable,  # noqa: F401  # Preserve the established model.base export.
     is_importable_part,
 )
 from datamodel_code_generator._user_keys import template_data_keys
 from datamodel_code_generator.enums import DataclassArguments
+from datamodel_code_generator.imports import IMPORT_ANNOTATED as IMPORT_ANNOTATED
+from datamodel_code_generator.imports import IMPORT_ANY as IMPORT_ANY
+from datamodel_code_generator.imports import IMPORT_OPTIONAL as IMPORT_OPTIONAL
+from datamodel_code_generator.imports import IMPORT_UNION as IMPORT_UNION
 from datamodel_code_generator.imports import (
-    IMPORT_ANNOTATED,  # noqa: F401  # Preserve the established model.base export.
-    IMPORT_ANY,  # noqa: F401  # Preserve the established model.base export.
-    IMPORT_OPTIONAL,  # noqa: F401  # Preserve the established model.base export.
-    IMPORT_UNION,  # noqa: F401  # Preserve the established model.base export.
     Import,
 )
 from datamodel_code_generator.model import _field_imports
@@ -125,7 +123,6 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model._rendered_names import (
     FieldNameBindings,
-    _bare_loads_of,  # noqa: F401  # Preserve the established model.base export.
     _bind_bare_loads,
     _bind_field_expressions,
 )

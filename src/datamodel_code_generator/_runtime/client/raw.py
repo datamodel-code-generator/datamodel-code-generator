@@ -420,7 +420,7 @@ class _Raw(Generic[SourceT, HandleT]):
             await close()
         except Exception as failure:  # noqa: BLE001
             if error is None:
-                failed = error = self._call.snapshot_error(_cleanup_failure(failure))
+                failed = self._call.snapshot_error(_cleanup_failure(failure))
                 failed.info = self._info
             else:
                 self._call.retry_blocked = True

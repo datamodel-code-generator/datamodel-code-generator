@@ -39,9 +39,9 @@ from datamodel_code_generator.parser._schema_refs import _ref_path_parts
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _named_path,
-    get_model_by_path,  # noqa: F401  # Preserve the established parser.asyncapi export.
-    unescape_json_pointer_segment,  # noqa: F401  # Preserve the established parser.asyncapi export.
 )
+from datamodel_code_generator.parser.jsonschema import get_model_by_path as get_model_by_path
+from datamodel_code_generator.parser.jsonschema import unescape_json_pointer_segment as unescape_json_pointer_segment
 from datamodel_code_generator.parser.openapi import OpenAPIParser, _DiscriminatorScan
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import BaseModel

@@ -234,6 +234,7 @@ lint.ignore = [
   "missing-trailing-comma",                    # Conflict with formatter
   "multi-line-summary-first-line",             # multi-line-summary-first-line (conflicts with D213)
   "single-line-implicit-string-concatenation", # Conflict with formatter
+  "useless-import-alias",                      # `import x as x` is the explicit re-export form of a py.typed package
 ]
 lint.per-file-ignores."scripts/*.py" = [
   "implicit-namespace-package", # no implicit namespace

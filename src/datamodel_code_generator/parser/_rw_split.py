@@ -33,6 +33,7 @@ from datamodel_code_generator.parser._all_of_values import AllOfValuesHost
 from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._naming import rw_variant_class_name
 from datamodel_code_generator.parser._origins import with_field_origin
+from datamodel_code_generator.parser._passes._keys import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
     inherited_default_source,
@@ -46,7 +47,6 @@ from datamodel_code_generator.parser._schema_reading import (
     _declares_key_keywords,
     _merges_ref_siblings,
 )
-from datamodel_code_generator.parser.base import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 from datamodel_code_generator.reference import (
     _is_special_path,

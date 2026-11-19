@@ -25,7 +25,6 @@ class _SortableNode(Protocol):
 
 NodeT = TypeVar("NodeT", bound=_SortableNode)
 ModulePath: TypeAlias = tuple[str, ...]
-SCC: TypeAlias = set[ModulePath]
 
 
 class _Phase(IntEnum):

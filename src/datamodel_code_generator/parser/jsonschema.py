@@ -7,23 +7,21 @@ Python data models. Supports draft-04 through draft-2020-12 schemas.
 from __future__ import annotations
 
 import json
-import math  # Preserve the established parser.jsonschema export.
+import math as math
 import re
+from collections import Counter as Counter
 from collections import (
-    Counter,  # Preserve the established parser.jsonschema export.
     defaultdict,
-    deque,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from collections import deque as deque
+from contextlib import ExitStack as ExitStack
 from contextlib import (
-    ExitStack,  # noqa: F401  # Preserve the established parser.jsonschema export.
     contextmanager,
     nullcontext,
-    suppress,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
-from copy import (
-    copy,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    deepcopy,  # noqa: F401  # Preserve the established parser.jsonschema export.
-)
+from contextlib import suppress as suppress
+from copy import copy as copy
+from copy import deepcopy as deepcopy
 from dataclasses import replace
 from functools import (
     cached_property,
@@ -31,56 +29,55 @@ from functools import (
     partial,
     reduce,
 )
-from itertools import chain, compress  # noqa: F401  # Preserve the established parser.jsonschema export.
-from operator import and_, is_not  # noqa: F401  # Preserve the established parser.jsonschema export.
+from itertools import chain as chain
+from itertools import compress as compress
+from operator import and_ as and_
+from operator import is_not as is_not
 from pathlib import Path
-from string import digits  # noqa: F401  # Preserve the established parser.jsonschema export.
+from string import digits as digits
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Final,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Literal,
-    NamedTuple,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Optional,
-    TypeAlias,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    Union,  # noqa: F401  # Preserve the established parser.jsonschema export.
     cast,
 )
+from typing import Final as Final
+from typing import NamedTuple as NamedTuple
+from typing import TypeAlias as TypeAlias
+from typing import Union as Union
 from urllib.parse import (
     ParseResult,
     unquote,
-    urljoin,  # noqa: F401  # Preserve the established parser.jsonschema export.
     urlparse,
 )
+from urllib.parse import urljoin as urljoin
+from warnings import catch_warnings as catch_warnings
+from warnings import simplefilter as simplefilter
 from warnings import (
-    catch_warnings,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    simplefilter,  # noqa: F401  # Preserve the established parser.jsonschema export.
     warn,
 )
 
-from pydantic import (
-    ConfigDict,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    Field,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    ValidationInfo,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    field_validator,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    model_validator,  # noqa: F401  # Preserve the established parser.jsonschema export.
-)
-from pydantic_core import core_schema  # noqa: F401  # Preserve the established parser.jsonschema export.
+from pydantic import ConfigDict as ConfigDict
+from pydantic import Field as Field
+from pydantic import ValidationInfo as ValidationInfo
+from pydantic import field_validator as field_validator
+from pydantic import model_validator as model_validator
+from pydantic_core import core_schema as core_schema
+from typing_extensions import Sentinel as Sentinel
 from typing_extensions import (
-    Sentinel,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Unpack,
-    final,  # noqa: F401  # Preserve the established parser.jsonschema export.
     override,
 )
+from typing_extensions import final as final
 
+from datamodel_code_generator import AllOfClassHierarchy as AllOfClassHierarchy
+from datamodel_code_generator import AllOfMergeMode as AllOfMergeMode
 from datamodel_code_generator import (
-    AllOfClassHierarchy,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    AllOfMergeMode,  # noqa: F401  # Preserve the established parser.jsonschema export.
     DanglingRefWarning,
     Error,
     InputFileType,
-    InvalidClassNameError,  # noqa: F401  # Preserve the established parser.jsonschema export.
     InvalidFileFormatError,
     ReadOnlyWriteOnlyModelType,
     SchemaParseError,
@@ -88,33 +85,38 @@ from datamodel_code_generator import (
     VersionMode,
     snooper_to_methods,
 )
-from datamodel_code_generator._alias_generators import generate_alias  # noqa: F401  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator import InvalidClassNameError as InvalidClassNameError
+from datamodel_code_generator._alias_generators import generate_alias as generate_alias
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORD_ORDER,
-    LITERAL_DECIDABLE_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     NO_KEYWORDS,
-    NUMBER_KEYWORD_ORDER,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    PROPERTY_COUNT_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     STRING_KEYWORD_ORDER,
     VALUES_AS_WRITTEN_KEY,
-    DeclaredKinds,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    all_of_root_keyword_kinds,  # noqa: F401  # Preserve the established parser.jsonschema export.
     constrained_type_keyword_order,
-    declared_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    declared_string_keywords_taken,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    enforced_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    holds_number_format,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    keyword_kinds,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    length_keywords_by_type,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    literal_check,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    literal_enforces_every_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
     other_kind_keywords,
     property_consumed_keywords,
-    split_declared_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    undeclared_keywords_taken,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    untaken_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    writes_beside_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._constraint_applicability import LITERAL_DECIDABLE_KEYWORDS as LITERAL_DECIDABLE_KEYWORDS
+from datamodel_code_generator._constraint_applicability import NUMBER_KEYWORD_ORDER as NUMBER_KEYWORD_ORDER
+from datamodel_code_generator._constraint_applicability import PROPERTY_COUNT_KEYWORDS as PROPERTY_COUNT_KEYWORDS
+from datamodel_code_generator._constraint_applicability import DeclaredKinds as DeclaredKinds
+from datamodel_code_generator._constraint_applicability import all_of_root_keyword_kinds as all_of_root_keyword_kinds
+from datamodel_code_generator._constraint_applicability import declared_keywords as declared_keywords
+from datamodel_code_generator._constraint_applicability import (
+    declared_string_keywords_taken as declared_string_keywords_taken,
+)
+from datamodel_code_generator._constraint_applicability import enforced_keywords as enforced_keywords
+from datamodel_code_generator._constraint_applicability import holds_number_format as holds_number_format
+from datamodel_code_generator._constraint_applicability import keyword_kinds as keyword_kinds
+from datamodel_code_generator._constraint_applicability import length_keywords_by_type as length_keywords_by_type
+from datamodel_code_generator._constraint_applicability import literal_check as literal_check
+from datamodel_code_generator._constraint_applicability import (
+    literal_enforces_every_keyword as literal_enforces_every_keyword,
+)
+from datamodel_code_generator._constraint_applicability import split_declared_keywords as split_declared_keywords
+from datamodel_code_generator._constraint_applicability import undeclared_keywords_taken as undeclared_keywords_taken
+from datamodel_code_generator._constraint_applicability import untaken_values as untaken_values
+from datamodel_code_generator._constraint_applicability import writes_beside_literal as writes_beside_literal
 from datamodel_code_generator._container_kinds import (
     ARRAYS,
     CONTAINER_FLAGS,
@@ -124,8 +126,8 @@ from datamodel_code_generator._container_kinds import (
     SEQUENCES,
     ContainerSlot,
 )
+from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError as ArrayIndexOutOfRangeError
 from datamodel_code_generator._document_reader import (
-    ArrayIndexOutOfRangeError,  # noqa: F401  # Preserve the established parser.jsonschema export.
     MergedRefSiteRecursionError,
     string_keyed,
 )
@@ -134,26 +136,26 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._json_pointer import (
     document_part,
-    escape_token,  # noqa: F401  # Preserve the established parser.jsonschema export.
     fragment_pointer,
-    join_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
     reference_tokens,
-    unescape_token,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator._json_pointer import escape_token as escape_token
+from datamodel_code_generator._json_pointer import join_pointer as join_pointer
+from datamodel_code_generator._json_pointer import unescape_token as unescape_token
 from datamodel_code_generator._json_schema import (
     DEFINITION_KEYS,
     REF_PRE_PASS_FIELDS,
     REF_PRE_PASS_POSITIONS,
     SCHEMA_MAP_KEYS,
-    SCHEMA_POSITIONS,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    SCHEMA_SHAPES,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    SCHEMA_VALUE_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    SINGLE_SCHEMA_SHAPES,  # noqa: F401  # Preserve the established parser.jsonschema export.
     definition_ref,
     non_null_types,
-    schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
     subschema_entries,
 )
+from datamodel_code_generator._json_schema import SCHEMA_POSITIONS as SCHEMA_POSITIONS
+from datamodel_code_generator._json_schema import SCHEMA_SHAPES as SCHEMA_SHAPES
+from datamodel_code_generator._json_schema import SCHEMA_VALUE_KEYS as SCHEMA_VALUE_KEYS
+from datamodel_code_generator._json_schema import SINGLE_SCHEMA_SHAPES as SINGLE_SCHEMA_SHAPES
+from datamodel_code_generator._json_schema import schema_positions as schema_positions
 from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import (
@@ -165,104 +167,110 @@ from datamodel_code_generator._model_keys import (
     model_key_of,
 )
 from datamodel_code_generator._module_paths import dotted_name
-from datamodel_code_generator._mro import (
-    linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    sort_descendants_first,  # noqa: F401  # Preserve the established parser.jsonschema export.
-)
+from datamodel_code_generator._mro import linearize as linearize
+from datamodel_code_generator._mro import sort_descendants_first as sort_descendants_first
 from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._paths import file_uri_path
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import (
     conjoin_patterns,
-    is_portable_pattern,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    literal_pattern_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     lookahead_patterns,
 )
+from datamodel_code_generator._regex_syntax import is_portable_pattern as is_portable_pattern
+from datamodel_code_generator._regex_syntax import literal_pattern_value as literal_pattern_value
 from datamodel_code_generator._requirements import python_target_meets
-from datamodel_code_generator._scc import (
-    strongly_connected_components,  # noqa: F401  # Preserve the established parser.jsonschema export.
-)
+from datamodel_code_generator._scc import strongly_connected_components as strongly_connected_components
 from datamodel_code_generator._shared_types import DefaultPutDict
 from datamodel_code_generator._source import (
     YamlValue,
-    load_data,  # noqa: F401  # Preserve the established parser.jsonschema export.
     load_data_from_path,
 )
 from datamodel_code_generator._source import decoding_from as _decoding_from
+from datamodel_code_generator._source import load_data as load_data
 from datamodel_code_generator._url_redaction import named_location, redact_path, redact_reference, redact_url
 from datamodel_code_generator._user_keys import ClassScope, class_key, template_data_keys
 from datamodel_code_generator._user_keys import class_scope as _class_scope_of
 from datamodel_code_generator._warning_control import first_report, quiet
 from datamodel_code_generator.deprecations import warn_deprecated
-from datamodel_code_generator.enums import (
-    AliasGenerator,  # noqa: F401  # Preserve the established parser.jsonschema export.
-)
-from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports  # noqa: F401  # Preserve the parser.jsonschema export.
+from datamodel_code_generator.enums import AliasGenerator as AliasGenerator
+from datamodel_code_generator.imports import IMPORT_ANY as IMPORT_ANY
+from datamodel_code_generator.imports import Import as Import
+from datamodel_code_generator.imports import Imports as Imports
 from datamodel_code_generator.model import (  # Preserve the established parser.jsonschema export.
     DataModel,
     DataModelFieldBase,
 )
 from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
-    enum_as_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
     enum_open_marker,
-    holds_inherited_member_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    holds_member_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    is_literal_kind,  # noqa: F401  # Preserve the established parser.jsonschema export.
     json_type,
-    literal_value_kind,  # noqa: F401  # Preserve the established parser.jsonschema export.
     values_no_literal_holds,
 )
-from datamodel_code_generator.model._decisions.literal_default import const_type  # noqa: F401  # Preserve the established parser.jsonschema export.
-from datamodel_code_generator.model._decisions.tag_value import (
-    FieldTag,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    distinct_tags,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    field_tag,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    tagged_union_discriminator,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    union_tag_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal as enum_as_literal
+from datamodel_code_generator.model._decisions.enum_kind import (
+    holds_inherited_member_value as holds_inherited_member_value,
 )
+from datamodel_code_generator.model._decisions.enum_kind import holds_member_value as holds_member_value
+from datamodel_code_generator.model._decisions.enum_kind import is_literal_kind as is_literal_kind
+from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind as literal_value_kind
+from datamodel_code_generator.model._decisions.literal_default import const_type as const_type
+from datamodel_code_generator.model._decisions.tag_value import FieldTag as FieldTag
+from datamodel_code_generator.model._decisions.tag_value import distinct_tags as distinct_tags
+from datamodel_code_generator.model._decisions.tag_value import field_tag as field_tag
+from datamodel_code_generator.model._decisions.tag_value import tagged_union_discriminator as tagged_union_discriminator
+from datamodel_code_generator.model._decisions.tag_value import union_tag_values as union_tag_values
 from datamodel_code_generator.model.base import (
     ALL_MODEL,
     UNDEFINED,
     _field_source_name,
     _mark_forbids_unknown_fields,
-    get_inherited_fields,  # noqa: F401  # Preserve the established parser.jsonschema export.
     sanitize_module_name,
 )
+from datamodel_code_generator.model.base import get_inherited_fields as get_inherited_fields
 from datamodel_code_generator.model.enum import (
     NULL_ENUM_MEMBER_VALUE,
     SUBCLASS_BASE_CLASSES,
     Enum,
     EnumMemberValue,
-    IntEnum,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    StrEnum,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _enum_class,
 )
-from datamodel_code_generator.model.output import (
-    OutputModelContext,  # noqa: F401  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator.model.enum import IntEnum as IntEnum
+from datamodel_code_generator.model.enum import StrEnum as StrEnum
+from datamodel_code_generator.model.output import OutputModelContext as OutputModelContext
+from datamodel_code_generator.model.runtime_validation import (
+    UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP as UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP,
 )
 from datamodel_code_generator.model.runtime_validation import (
-    UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP as UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,
+)
+from datamodel_code_generator.model.runtime_validation import (
+    UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP as UNIQUE_ITEMS_MAPPING_PATTERN_VALUES_PATH_STEP,
+)
+from datamodel_code_generator.model.runtime_validation import (
+    UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP as UNIQUE_ITEMS_MAPPING_VALUES_PATH_STEP,
+)
+from datamodel_code_generator.model.runtime_validation import (
     ConditionalBoundsRule,
     ConditionalRequiredRule,
     ConstantTypesRule,
     ContainsRule,
-    IndependentDeclaredPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    IndependentModelPatternPropertiesRule,  # noqa: F401  # Preserve the established parser.jsonschema export.
     PatternPropertiesRule,
     PropertyCountRule,
     RequiredGroupsRule,
     SchemaRuntimeValidation,
     UniqueItemsPath,
-    UniqueItemsPathStep,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UniqueItemsRule,
     _is_internal_schema_runtime_validation,
     _make_internal_schema_runtime_validation,
 )
+from datamodel_code_generator.model.runtime_validation import (
+    IndependentDeclaredPatternPropertiesRule as IndependentDeclaredPatternPropertiesRule,
+)
+from datamodel_code_generator.model.runtime_validation import (
+    IndependentModelPatternPropertiesRule as IndependentModelPatternPropertiesRule,
+)
+from datamodel_code_generator.model.runtime_validation import UniqueItemsPathStep as UniqueItemsPathStep
 from datamodel_code_generator.parser import (
     _all_of_values,
     _field_rows,
@@ -284,7 +292,7 @@ from datamodel_code_generator.parser._all_of_values import (
     _OBJECT_KEYWORDS,
     _SITE_CONSTRAINTS_SCHEMA_KEY,
 )
-from datamodel_code_generator.parser._field_rows import uses_default_with_required  # noqa: F401  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator.parser._field_rows import uses_default_with_required as uses_default_with_required
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._inherited_schemas import (
     _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY,
@@ -292,44 +300,44 @@ from datamodel_code_generator.parser._inherited_schemas import (
 )
 from datamodel_code_generator.parser._intersection import (
     BRANCH_COMBINATION_LIMIT,
-    INHERITED_SCHEMA_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    INTERSECTED_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    LEGACY_ROWS,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    POSITIONAL_SCHEMA_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     KeywordIntersection,
     all_of_member_row,
-    bounds_admit_no_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     branch_combinations,
-    common_types,  # noqa: F401  # Preserve the established parser.jsonschema export.
     concatenating_row,
     declared_types,
-    inherited_override_row,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    inherited_positional_tail,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    inherits_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    intersect_constraint,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_enum_values,
-    intersect_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    intersect_multiple_of,  # noqa: F401  # Preserve the established parser.jsonschema export.
     intersect_types,
     intersects_all_of_constraints,
     kept_legacy_rows,
-    merge_inherited_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    merge_inherited_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     warn_unsatisfiable,
     warn_untaken_patterns,
 )
+from datamodel_code_generator.parser._intersection import INHERITED_SCHEMA_KEYWORDS as INHERITED_SCHEMA_KEYWORDS
+from datamodel_code_generator.parser._intersection import INTERSECTED_KEYWORDS as INTERSECTED_KEYWORDS
+from datamodel_code_generator.parser._intersection import LEGACY_ROWS as LEGACY_ROWS
+from datamodel_code_generator.parser._intersection import POSITIONAL_SCHEMA_KEYWORDS as POSITIONAL_SCHEMA_KEYWORDS
+from datamodel_code_generator.parser._intersection import bounds_admit_no_value as bounds_admit_no_value
+from datamodel_code_generator.parser._intersection import common_types as common_types
+from datamodel_code_generator.parser._intersection import inherited_override_row as inherited_override_row
+from datamodel_code_generator.parser._intersection import inherited_positional_tail as inherited_positional_tail
+from datamodel_code_generator.parser._intersection import inherits_keyword as inherits_keyword
+from datamodel_code_generator.parser._intersection import intersect_constraint as intersect_constraint
+from datamodel_code_generator.parser._intersection import intersect_keywords as intersect_keywords
+from datamodel_code_generator.parser._intersection import intersect_multiple_of as intersect_multiple_of
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._intersection import merge_inherited_keyword as merge_inherited_keyword
+from datamodel_code_generator.parser._intersection import merge_inherited_value as merge_inherited_value
 from datamodel_code_generator.parser._naming import UNRECORDED, AllOfPart, Composed, NamingScope, composed_name
 from datamodel_code_generator.parser._null_facts import (
     NullFacts,
     NullMode,
     NullSite,
     NullSources,
-    dump_null_sources,  # noqa: F401  # Preserve the established parser.jsonschema export.
     null_schema,
     null_sources,
     resolve_null_facts,
 )
+from datamodel_code_generator.parser._null_facts import dump_null_sources as dump_null_sources
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
 from datamodel_code_generator.parser._origins import (
     with_binary_content,
@@ -339,7 +347,10 @@ from datamodel_code_generator.parser._origins import (
     with_unique_items,
 )
 from datamodel_code_generator.parser._passes._keys import (
+    _DEFERRED_INHERITED_CLASS_KEY,
+    _DEFERRED_INHERITED_TYPE_KEY,
     _DERIVED_FROM_KEY,
+    _RAW_SCHEMA_DEFAULT_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
     declares_type_list_unique_items,
     with_type_list_unique_items,
@@ -361,36 +372,32 @@ from datamodel_code_generator.parser._schema_documents import (
     ref_pointer_parts,
     ref_value_in,
 )
+from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH as SCHEMA_GRAPH
+from datamodel_code_generator.parser._schema_graph import ConvertedRefs as ConvertedRefs
+from datamodel_code_generator.parser._schema_graph import DocumentId as DocumentId
+from datamodel_code_generator.parser._schema_graph import RefEdge as RefEdge
+from datamodel_code_generator.parser._schema_graph import RefKey as RefKey
 from datamodel_code_generator.parser._schema_graph import (
-    SCHEMA_GRAPH,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    ConvertedRefs,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    DocumentId,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    RefEdge,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    RefKey,  # noqa: F401  # Preserve the established parser.jsonschema export.
     RefReading,
-    ReservedTarget,  # noqa: F401  # Preserve the established parser.jsonschema export.
     ResolvedRef,
     SchemaGraphBuilder,
     _TargetNode,
-    canonical_ref_spelling,  # noqa: F401  # Preserve the established parser.jsonschema export.
     keep_resolved_ref,
-    walk_schema_resources,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator.parser._schema_graph import ReservedTarget as ReservedTarget
+from datamodel_code_generator.parser._schema_graph import canonical_ref_spelling as canonical_ref_spelling
+from datamodel_code_generator.parser._schema_graph import walk_schema_resources as walk_schema_resources
 from datamodel_code_generator.parser._schema_object import (
     _CONDITIONAL_SCHEMA_KEYWORDS,
     _COPIED_NULLABLE_KEY,
     _NULLABLE_TYPE_LIST_KEY,
     DEFAULT_FIELD_KEYS,
     EMPTY_ENUM_CONTEXT,
-    EXCLUDE_FIELD_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA,  # noqa: F401  # Preserve the established parser.jsonschema export.
     IGNORED_REF_SIBLINGS_CONTEXT,
     PATTERN_READING_CONTEXT,
     READ_UNEVALUATED_PROPERTIES_CONTEXT,
-    Discriminator,  # noqa: F401  # Preserve the established parser.jsonschema export.
     JSONReference,
     JsonSchemaLiteral,
-    JsonSchemaObject,
     _has_map_key_keywords,
     _is_false_all_of,
     _locate,
@@ -402,6 +409,12 @@ from datamodel_code_generator.parser._schema_object import (
     get_ref_type,
     reads_ref_alone,
 )
+from datamodel_code_generator.parser._schema_object import EXCLUDE_FIELD_KEYS as EXCLUDE_FIELD_KEYS
+from datamodel_code_generator.parser._schema_object import (
+    EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA as EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA,
+)
+from datamodel_code_generator.parser._schema_object import Discriminator as Discriminator
+from datamodel_code_generator.parser._schema_object import JsonSchemaObject as JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import (
     _ARRAY_ITEMS_CONSTRAINT_FIELDS,
     _DOCUMENT_KEYWORDS,
@@ -418,24 +431,22 @@ from datamodel_code_generator.parser._schema_reading import (
     _intersect_parts,
     _merges_ref_siblings,
     _numeric_type_domain,
-    _split_json_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    get_model_by_path,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    split_json_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
     unescape_json_pointer_segment,
     unescaped_slash_pointer,
 )
+from datamodel_code_generator.parser._schema_reading import get_model_by_path as get_model_by_path
+from datamodel_code_generator.parser._schema_reading import split_json_pointer as split_json_pointer
 from datamodel_code_generator.parser._schema_refs import (
     _CONJUNCTION_PARTS_KEY,
     _MERGED_REF_TARGET_KEY,
     _REPORTED_VALUE_CONFLICT_KEY,
     _DynamicEdges,
-    _DynamicSpecialization,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _DynamicTarget,
     _ref_path_parts,
     _Worklist,
 )
+from datamodel_code_generator.parser._union_tags import TaggedUnionValue as TaggedUnionValue
 from datamodel_code_generator.parser._union_tags import (
-    TaggedUnionValue,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _get_union_variant_name,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator.parser._value_keywords import (
@@ -444,17 +455,14 @@ from datamodel_code_generator.parser._value_keywords import (
     _literal_constraints,
     _literal_met,
 )
+from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT as SPECIAL_PATH_FORMAT
 from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_TYPE_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
-    SPECIAL_PATH_FORMAT,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Parser,
     Source,
     _ConstNarrowing,
-    get_special_path,
-    title_to_class_name,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
+from datamodel_code_generator.parser.base import get_special_path as get_special_path
+from datamodel_code_generator.parser.base import title_to_class_name as title_to_class_name
 from datamodel_code_generator.parser.schema_version import (
     _KIND_READINGS,
     DocumentDialect,
@@ -470,32 +478,33 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
-    BINARY_CONTENT_KEY,  # noqa: F401  # Preserve the established parser.jsonschema export.
     SCHEMA_LOCATION_CONFLICT_KEY,
     SCHEMA_LOCATION_KEY,
-    SPECIAL_PATH_MARKER,  # noqa: F401  # Preserve the established parser.jsonschema export.
     ModelType,
     Reference,
     SchemaLocation,
     _is_special_path,
-    get_inferred_module_name,  # noqa: F401  # Preserve the established parser.jsonschema export.
     is_url,
     location_of,
     subtype_ref_of,
 )
+from datamodel_code_generator.reference import BINARY_CONTENT_KEY as BINARY_CONTENT_KEY
+from datamodel_code_generator.reference import SPECIAL_PATH_MARKER as SPECIAL_PATH_MARKER
+from datamodel_code_generator.reference import get_inferred_module_name as get_inferred_module_name
 from datamodel_code_generator.types import (
     ANY,
-    NONE,  # noqa: F401  # Preserve the established parser.jsonschema export.
     DataType,
     EmptyDataType,
-    FloatConstraint,  # noqa: F401  # Preserve the established parser.jsonschema export.
     Types,
     UnionIntFloat,
     build_union,
     untyped_value_data_type,
     writes_object_for_untyped_items,
 )
-from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors  # noqa: F401  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator.types import NONE as NONE
+from datamodel_code_generator.types import FloatConstraint as FloatConstraint
+from datamodel_code_generator.util import BaseModel as BaseModel
+from datamodel_code_generator.util import get_yaml_parse_errors as get_yaml_parse_errors
 from datamodel_code_generator.validators import _validate_schema_python_import_path
 
 if TYPE_CHECKING:

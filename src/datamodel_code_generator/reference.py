@@ -39,8 +39,8 @@ from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._context_scope import context_values
+from datamodel_code_generator._format_types import PythonVersion as PythonVersion
 from datamodel_code_generator._format_types import (
-    PythonVersion,  # Preserve the established reference export.
     PythonVersionMin,
 )
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
