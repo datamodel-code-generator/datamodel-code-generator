@@ -5,7 +5,7 @@ scripts/related_tests.py:<line>
     _fast_path_modules (function, line <line>)
 symbol _fast_path_modules
   defined (1):
-    scripts/related_tests.py:<line> function _fast_path_modules - Return the modules the stored fast-path lists name: from the merge base, or the working tree wi...
+    scripts/related_tests.py:<line> function _fast_path_modules - Return the modules the stored fast-path lists name: from the merge base, or the working tree w...
   users (1):
     scripts/related_tests.py: select
   rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")

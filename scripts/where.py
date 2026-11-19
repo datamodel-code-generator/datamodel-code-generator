@@ -624,9 +624,17 @@ def tests_section(repo: Repo, path: str) -> Section:
     ]
     everywhere = [f"{path.partition('/')[0]}/*"]
     plain = [rule for rule in fired if "pattern" not in rule and rule["paths"] != everywhere]
-    items = [f"mirror: {mirror or 'none'}", *(f"row {rule['id']}: {', '.join(rule['tests'])}" for rule in plain)]
+    items = [f"mirror: {mirror or 'none'}", *(_related_row_line(rule) for rule in plain)]
     rest = [rule["id"] for rule in fired if rule not in plain]
     return Section("tests", [*items, *([f"other rows (by changed lines): {', '.join(rest)}"] if rest else [])], cap=6)
+
+
+def _related_row_line(rule: dict) -> str:
+    """One related-tests row: the tests it selects and the environments it asks for (either may be absent)."""
+    parts = [", ".join(rule["tests"])] if rule.get("tests") else []
+    if rule.get("envs"):
+        parts.append(f"envs {', '.join(rule['envs'])}")
+    return f"row {rule['id']}: {'; '.join(parts)}"
 
 
 def _user_lines(repo: Repo, sites: list[Found]) -> list[str]:
