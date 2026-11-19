@@ -2107,9 +2107,12 @@ def test_ledger_runs_keep_the_modules_they_import(
     )
     monkeypatch.syspath_prepend(tmp_path)
     ledger.write("test_keep.py", KEPT_MODULE_TESTS)
-    ledger.run("-p", "pytester", "suite").assert_outcomes(passed=2)
-    assert (tmp_path / "runs.txt").read_text(encoding="utf-8") == "run\n"
-    del kept_modules["ledger_kept"], sys.modules["ledger_kept"]
+    try:
+        ledger.run("-p", "pytester", "suite").assert_outcomes(passed=2)
+        assert (tmp_path / "runs.txt").read_text(encoding="utf-8") == "run\n"
+    finally:  # the kept module goes away even when the run fails, so it leaks into no later test
+        kept_modules.pop("ledger_kept", None)
+        sys.modules.pop("ledger_kept", None)
 
 
 def test_ledger_observe_ignores_failures(ledger: LedgerProject, tmp_path: Path) -> None:
