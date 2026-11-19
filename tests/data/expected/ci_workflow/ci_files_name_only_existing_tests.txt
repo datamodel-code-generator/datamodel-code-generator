@@ -1,0 +1,2 @@
+Test targets that CI files name and the repository lacks:
+none

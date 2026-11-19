@@ -25,7 +25,7 @@ covers = [
     "main/jsonschema/annotated_union_members/annotated_union_member_kinds[field-constraints].txt",
     "main/jsonschema/annotated_union_members/annotated_union_member_kinds[type-alias].py",
     "main/jsonschema/annotated_union_members/annotated_union_member_kinds[type-alias].txt",
-    "main/jsonschema/number_constraints_on_non_numbers/use_annotated.py",
+    "main/jsonschema/main_jsonschema/main_number_constraints_on_non_numbers[extra_args2].py",
     "main/jsonschema/string_constraints_on_other_types/use_annotated.py",
     "main/jsonschema/type_union_constraints/both_root_annotated.py",
     "main/jsonschema/type_union_constraints/string_length_field_0.py",

@@ -1,0 +1,33 @@
+verdict problems: none
+undeclared questions: none
+bindings/annotation_without_value: annotation_without_value.py:11: count
+bindings/annotation_without_value: annotation_without_value.py:17: count
+bindings/assignment_targets_take: assignment_targets_take.py:7: make
+bindings/assignment_targets_take: assignment_targets_take.py:8: values
+bindings/assignment_targets_take: assignment_targets_take.py:15: pairs
+bindings/assignment_targets_take: assignment_targets_take.py:16: holder
+bindings/assignment_targets_take: assignment_targets_take.py:21: make
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:22: make_base
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:23: Host
+bindings/dynamic_globals_write: dynamic_globals_write.py:7: Late
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:13: Late
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:44: parser
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:186: parser
+bindings/host_private_access_concern: host_private_access_concern.py:99: NoSuchHost
+references/aliased_library_names: aliased_library_names.py:10: second
+references/all_augmented: all_augmented.py:9: sep
+references/annotations_and_string_reads: annotations_and_string_reads.py:14: 'not valid('
+references/annotations_and_string_reads: annotations_and_string_reads.py:15: ' Later'
+references/annotations_and_string_reads: annotations_and_string_reads.py:16: Laterx
+references/mangled_module_global: mangled_module_global.py:8: __secret
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:19: FinalFacts
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:29: FinalFacts
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:30: FinalFacts
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:31: FinalFacts
+references/store_writes_through_bindings: store_writes_through_bindings.py:21: JsonSchemaObject
+references/store_writes_through_bindings: store_writes_through_bindings.py:29: JsonSchemaObject
+references/store_writes_through_bindings: store_writes_through_bindings.py:32: shared
+references/store_writes_through_bindings: store_writes_through_bindings.py:55: JsonSchemaObject
+references/string_annotation_forward: string_annotation_forward.py:17: 'not a type ('
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:41: local_registry
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:27: enabled
