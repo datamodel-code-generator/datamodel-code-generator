@@ -1286,6 +1286,14 @@ VALUE_NEIGHBOUR_SHAPES: dict[str, dict[str, object]] = {
         },
         "required": ["a", "b"],
     },
+    "numeric_text_enum_members": {
+        "type": "object",
+        "properties": {
+            "p": {"type": "string", "format": "decimal", "enum": ["1", "2", "two"], "minimum": 1},
+            "q": {"type": "string", "format": "integer", "const": "3", "maximum": 5},
+        },
+        "required": ["p", "q"],
+    },
     "integer_exclusive_bound": {"type": "integer", "exclusiveMinimum": 1.9999, "maximum": 2},
     "integer_exclusive_bound_draft4": {
         "$schema": "http://json-schema.org/draft-04/schema#",

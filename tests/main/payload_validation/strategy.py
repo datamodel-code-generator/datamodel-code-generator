@@ -332,8 +332,23 @@ def _number_validator(kind: str, keywords: dict[str, object]) -> Validator:
     )
 
 
+def _number_or_text(value: object) -> object:
+    """Return the number a string writes, read as the payload's texts are read; any other value, or text, as it is."""
+    if isinstance(value, str):
+        try:
+            return _json_number(value)
+        except (ValueError, ZeroDivisionError):
+            return value
+    return value
+
+
 def _read_as_number(node: dict[str, object], kind: str, *, names_format: bool) -> None:
-    """Make the node's ``string`` type the number kind; the node that names the format has a type."""
+    """Make the node's ``string`` type the number kind and its listed values the numbers their texts write.
+
+    The node that names the format has a type. ``enum`` members and ``const`` are read as the payload's texts are, so
+    the projected node accepts exactly the numbers whose texts the string node accepts; a member that writes no number
+    stays text, which the number kind rejects.
+    """
     types = node.get("type")
     if types == "string":
         node["type"] = kind
@@ -341,6 +356,10 @@ def _read_as_number(node: dict[str, object], kind: str, *, names_format: bool) -
         node["type"] = [kind if name == "string" else name for name in types]
     elif names_format and types is None:
         node["type"] = kind
+    if isinstance(members := node.get("enum"), list):
+        node["enum"] = [_number_or_text(member) for member in members]
+    if "const" in node:
+        node["const"] = _number_or_text(node["const"])
 
 
 def numeric_text_schema(schema: object) -> object:
