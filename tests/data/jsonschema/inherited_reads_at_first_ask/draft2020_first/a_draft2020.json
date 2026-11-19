@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Draft2020",
+  "title": "Draft2020Two",
   "allOf": [
     {
       "$ref": "base.json"
