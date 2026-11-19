@@ -8,8 +8,10 @@ no releases	build_migration_docs_script/build_migration_docs_invalid_data[no rel
 no surface	build_migration_docs_script/build_migration_docs_invalid_data[no surface].txt
 ranges	build_migration_docs_script/build_migration_docs_invalid_data[ranges].txt
 records	build_migration_docs_script/build_migration_docs_invalid_data[records].txt
+released facts changed	build_migration_docs_script/build_migration_docs_invalid_data[released facts changed].txt
 releases	build_migration_docs_script/build_migration_docs_invalid_data[releases].txt
 surface and allowlist	build_migration_docs_script/build_migration_docs_invalid_data[surface and allowlist].txt
+surface without released facts	build_migration_docs_script/build_migration_docs_invalid_data[surface without released facts].txt
 [test_build_migration_docs_outputs]
 	build_migration_docs_script/build_migration_docs_outputs.txt
 [test_build_migration_docs_record_without_change]

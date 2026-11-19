@@ -1,0 +1,9 @@
+[[change]]
+id = "release-surface-records-presets"
+category = "harness"
+title = "Record what a release fixes in the release surface file"
+summary = "The upgrade guide builder records the dated presets, the recommender rules digest and the experimental ids of a release; the package writes the same output."
+covers = [
+    "build_migration_docs_script/build_migration_docs_stamp.txt",
+    "build_migration_docs_script/build_migration_docs_stamp_retained_extension.txt",
+]

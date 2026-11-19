@@ -10,6 +10,7 @@ import hashlib
 import json
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ import pytest
 
 from datamodel_code_generator.deprecations import Deprecation
 from datamodel_code_generator.experimental import ExperimentalFeature
-from scripts.build_migration_docs import PresetDate, Registries, main
+from scripts.build_migration_docs import PresetDate, Registries, main, read_surface
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -95,6 +96,13 @@ REGISTRIES = Registries(
         "python_api": ["generate"],
         "generate_config": ["output"],
         "templates": ["Kept.jinja2"],
+        "presets": {
+            "20260101": {"standard-py313-20260101": "a1", "practical-py313-20260101": "b1"},
+            "20260201": {"standard-py313-20260201": "a2"},
+            "20260301": {"practical-py314-20260301": "b3"},
+        },
+        "recommender_rules": {"digest": "r2", "revision": "2026-03-01"},
+        "experimental": ["input-format.avro", "input-format.toml"],
     },
 )
 RELEASED_SURFACE = {
@@ -106,7 +114,14 @@ RELEASED_SURFACE = {
     "python_api": ["generate"],
     "generate_config": ["output"],
     "templates": ["Kept.jinja2", "Old.jinja2"],
+    "presets": {
+        "20260101": {"standard-py313-20260101": "a1", "practical-py313-20260101": "b1"},
+        "20260201": {"standard-py313-20260201": "a2"},
+    },
+    "recommender_rules": {"digest": "r1", "revision": "2026-02-01"},
+    "experimental": ["input-format.avro"],
 }
+"""The surface of 0.4.0: the rules changed since, with a new revision, and 20260301 is the one unreleased date."""
 RELEASES = [("0.1.0", "2026-01-01"), ("0.2.0", "2026-02-01"), ("0.3.0", "2026-03-01"), ("0.4.0", "2026-04-01")]
 DERIVED = '[presets]\n"20260101" = "0.2.0"\n"20260201" = "0.3.0"\n\n[options]\n"--released-flag" = "0.3.0"\n'
 ALLOWLIST = """base = "0.4.0"
@@ -449,6 +464,15 @@ UNCHANGED = {"surface": REGISTRIES.surface, "allowlist": ALLOWLIST.replace("0.4.
 INVALID_SURFACES = {
     "surface and allowlist": {"surface": RELEASED_SURFACE, "allowlist": ALLOWLIST},
     "no surface": {"surface": None, "allowlist": ALLOWLIST},
+    "surface without released facts": {"surface": {key: RELEASED_SURFACE[key] for key in ("options", "templates")}},
+    "released facts changed": {
+        "surface": RELEASED_SURFACE
+        | {
+            "presets": {"20260101": {"standard-py313-20260101": "a0"}},
+            "recommender_rules": {"digest": "r1", "revision": "2026-03-01"},
+            "experimental": [],
+        }
+    },
 }
 INVALID_CASES = {
     "surface and allowlist": (
@@ -470,6 +494,8 @@ source = "release-note"
         DERIVED,
     ),
     "no surface": ({}, {}, None, DERIVED),
+    "surface without released facts": ({}, UNRELEASED, None, DERIVED),
+    "released facts changed": ({}, UNRELEASED, None, DERIVED),
     "entries": (
         {
             "0.2.0": """
@@ -784,17 +810,50 @@ arg_parser.add_argument("--new-flag", action=argparse.BooleanOptionalAction, hel
 arg_parser.add_argument("--quiet-flag", action="store_true")
 """,
     "config.py": 'class GenerateConfig:\n    model_fields = {"output": None}\n',
-    "preset_names.py": 'PresetName = Literal[\n    "standard-py313-20260101",\n    "practical-py314-20260301",\n]\n',
+    "experimental.py": """from types import SimpleNamespace
+
+
+def iter_experimental_features():
+    return [SimpleNamespace(id="input-format.avro"), SimpleNamespace(id="input-format.toml")]
+""",
+    "preset.py": """from types import SimpleNamespace
+
+GROUP = SimpleNamespace(
+    config=SimpleNamespace(items=lambda: [SimpleNamespace(field_name="snake_case_field", pyproject_value=True)]),
+    input_file_types=(),
+    output_model_types=(),
+)
+
+
+def get_preset_infos():
+    dates = {"20260101": ["standard-py313", "practical-py313"], "20260201": ["standard-py313"]}
+    names = [f"{name}-{date}" for date, names in (dates | {"20260301": ["practical-py314"]}).items() for name in names]
+    return [SimpleNamespace(name=SimpleNamespace(value=name), option_groups=[GROUP]) for name in names]
+""",
+    "resources/recommender_rules.json": '{"rules_revision": "2026-03-01", "rules": [], "options": {}}\n',
     "model/template/Kept.jinja2": "{{ class_name }}\n",
 }
+"""A tag tree's package with the surface of `REGISTRIES`; its dated presets have option sets of their own."""
+
+
+def _tag_registries(data: Path, package: Path) -> Registries:
+    """Write the tag tree's package and return registries with its surface, the release before it with its presets."""
+    for name, text in TAG_PACKAGE.items():
+        (package / name).parent.mkdir(parents=True, exist_ok=True)
+        (package / name).write_text(text, encoding="utf-8")
+    surface = read_surface(package.parent)
+    released = {date: surface["presets"][date] for date in RELEASED_SURFACE["presets"]}
+    (data / "surface.json").write_text(json.dumps(RELEASED_SURFACE | {"presets": released}), encoding="utf-8")
+    return replace(REGISTRIES, surface=surface)
 
 
 def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A stamp moves the fragments the tag contains, adds the release and the preset dates the tag first ships.
 
     A moved entry loses its covers; records without a guide entry and records that extend another are deleted. A tag
-    tree whose fragment differs from the branch's, or whose preset names or surface cannot be read, is refused before
-    anything is written, so the stamp runs again once the tree is right.
+    tree whose fragment differs from the branch's, whose surface cannot be read, or that lacks an experimental feature
+    whose `since_version` is the stamped release is refused before anything is written, so the stamp runs again once
+    the tree is right.
     """
     shipped = {
         "covered-template-root": UNRELEASED["custom-template-root"]
@@ -816,25 +875,24 @@ def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixtur
     for entry_id, text in shipped.items():
         tagged.with_name(f"{entry_id}.toml").write_text(text, encoding="utf-8")
     package = tree / "src" / "datamodel_code_generator"
-    (package / "model" / "template").mkdir(parents=True)
+    registries = _tag_registries(data, package)
+    without_toml = TAG_PACKAGE["experimental.py"].replace(', SimpleNamespace(id="input-format.toml")', "")
     stamp = ["--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"]
     codes = []
     for fragment, package_files in (
         ("edited after the tag", TAG_PACKAGE),
         (UNRELEASED["custom-template-root"], {**TAG_PACKAGE, "arguments.py": "raise SystemExit('no surface')"}),
-        (UNRELEASED["custom-template-root"], {k: v for k, v in TAG_PACKAGE.items() if k != "preset_names.py"}),
+        (UNRELEASED["custom-template-root"], {**TAG_PACKAGE, "experimental.py": without_toml}),
         (UNRELEASED["custom-template-root"], TAG_PACKAGE),
         (UNRELEASED["custom-template-root"], TAG_PACKAGE),
     ):
         tagged.write_text(fragment, encoding="utf-8")
-        for name in TAG_PACKAGE:
-            (package / name).unlink(missing_ok=True)
         for name, text in package_files.items():
             (package / name).write_text(text, encoding="utf-8")
-        codes.append(main([*_args(tmp_path), *stamp], REGISTRIES))
+        codes.append(main([*_args(tmp_path), *stamp], registries))
     printed = capsys.readouterr()
     with pytest.raises(SystemExit) as missing_tree:
-        main([*_args(tmp_path), "--stamp", "0.6.0"], REGISTRIES)
+        main([*_args(tmp_path), "--stamp", "0.6.0"], registries)
     output = [
         f"exits {codes}, without --tag-tree {missing_tree.value.code}",
         printed.out,
@@ -858,15 +916,12 @@ def test_build_migration_docs_stamp_retained_extension(tmp_path: Path, capsys: p
     tagged.mkdir(parents=True)
     for entry_id, text in shipped.items():
         (tagged / f"{entry_id}.toml").write_text(text, encoding="utf-8")
-    package = tree / "src" / "datamodel_code_generator"
-    (package / "model" / "template").mkdir(parents=True)
-    for name, text in TAG_PACKAGE.items():
-        (package / name).write_text(text, encoding="utf-8")
+    registries = _tag_registries(data, tree / "src" / "datamodel_code_generator")
     stamp = ["--stamp", "0.5.0", "--tag-tree", str(tree), "--date", "2026-05-01"]
-    refused = main([*_args(tmp_path), *stamp], REGISTRIES)
+    refused = main([*_args(tmp_path), *stamp], registries)
     before = _files(data)
     (data / "unreleased" / "more-new-flag-outputs.toml").unlink()
-    stamped = main([*_args(tmp_path), *stamp], REGISTRIES)
+    stamped = main([*_args(tmp_path), *stamp], registries)
     printed = capsys.readouterr()
     assert_output(f"exits {refused}, {stamped}\n{printed.err}{before}{_files(data / 'changes')}")
 
