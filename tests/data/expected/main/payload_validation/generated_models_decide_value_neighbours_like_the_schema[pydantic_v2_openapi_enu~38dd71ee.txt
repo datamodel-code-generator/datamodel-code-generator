@@ -1,4 +1,4 @@
 [
-  "/ enum \"a\": invalid, model accepts",
-  "/ enum \"b\": invalid, model accepts"
+  "enum \"a\": invalid, model accepts",
+  "enum \"b\": invalid, model accepts"
 ]

@@ -26,12 +26,14 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
-  items, which is never a rise. ``lines`` counts each line under its item and its text, split by a tab: it rises
-  with a line that an item the base stores did not hold, while a new item, and one whose base list is a blind line
-  (its checks did not run), starts at the lines it stores. ``blind`` counts the lines of ``BLIND_LINES``, which say
-  that the item checked nothing (a seed the model rejects): it rises with a blind line the base does not hold, in a
-  new item too, once the base stores the test. These keys rise by their lines, not their totals, so a fix that drops
-  one line does not pay for a regression that adds another.
+  records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
+  counts each line under its item, its text and its environment's predicate, split by tabs. Each environment of an
+  item reads its override or else the default, and compares with the record it reads in the base: it rises with a
+  line that record did not hold, while a new item, and an environment whose base record is a blind line (its checks
+  did not run), starts at the lines it stores. ``blind`` counts the lines of ``BLIND_LINES``, which say that the item
+  checked nothing (a seed the model rejects): it rises with a blind line the base record does not hold, in a new item
+  too, once the base stores the test. These keys rise by their lines, not their totals, so a fix that drops one line
+  does not pay for a regression that adds another, nor one environment's fix for another's regression.
 - ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
   or ``--config`` argument) or an allowlist or host baseline this script cannot read. Such a key always fails under
   ``--enforce``, because what it hides cannot be counted.
@@ -78,7 +80,7 @@ STORED_LISTS = (
 )
 """The ``.refs`` files and tests whose stored outputs are lists of known gaps that may only shrink."""
 NO_SEED_LINE = "no source-valid seed"
-REJECTED_SEED_LINE = "/ seed: valid, model rejects"
+REJECTED_SEED_LINE = "seed: valid, model rejects"
 BLIND_LINES = frozenset({NO_SEED_LINE, REJECTED_SEED_LINE})
 """The lines that say a stored item checked nothing, so that no new one passes as a shorter list."""
 AREAS = frozenset({"src", "tests", "scripts"})
@@ -735,7 +737,11 @@ def _stored_lines(path: Path) -> list[str] | None:
 
 
 def _stored_list_tally(tally: Tally, root: Path) -> None:
-    """Count the items and lines of the stored lists, reading each record's storage through its ``.refs`` file."""
+    """Count the items and lines of the stored lists, reading each record's storage through its ``.refs`` file.
+
+    Only the records of the test's own list count: the other outputs it stores for an item, such as the warnings of
+    its generation, are no list of gaps.
+    """
     for sidecar, test in STORED_LISTS:
         path = root / sidecar
         section = ""
@@ -745,12 +751,18 @@ def _stored_list_tally(tally: Tally, root: Path) -> None:
             if section != test or raw.startswith(("[", "#")):
                 continue
             item, label, *flags = raw.split("\t")
+            if not label.rpartition("/")[2].startswith(f"{test.removeprefix('test_')}["):
+                continue
             storage = next((flag.removeprefix("= ") for flag in flags if flag.startswith("= ")), label)
-            tally.add(f"{STORED_LIST}:{test}:items", item)
+            environment = next((flag for flag in flags if flag.startswith("@")), "")
+            tally.add(f"{STORED_LIST}:{test}:items", "\t".join(filter(None, (item, environment))))
             if (lines := _stored_lines(root / EXPECTED_ROOT / storage)) is None:
                 tally.add(f"{STORED_LIST}:{test}:unreadable", f"{EXPECTED_ROOT}/{storage}")
             for line in lines or []:
-                tally.add(f"{STORED_LIST}:{test}:{'blind' if line in BLIND_LINES else 'lines'}", f"{item}\t{line}")
+                tally.add(
+                    f"{STORED_LIST}:{test}:{'blind' if line in BLIND_LINES else 'lines'}",
+                    "\t".join(filter(None, (item, line, environment))),
+                )
 
 
 def count_tree(root: Path, ruff: list[str]) -> Tally:
@@ -786,12 +798,58 @@ def _risen(key: str, base: dict[str, dict[str, int]], head: dict[str, dict[str, 
     if _kind(key) != STORED_LIST:
         return _file_rises(base.get(key, {}), head[key])
     test, _, part = key.rpartition(":")
-    items = base.get(f"{test}:items", {})
-    blind = {path.partition("\t")[0] for path in base.get(f"{test}:blind", {})}
-    new = [(path, 0, count) for path, count in sorted(head[key].items()) if path not in base.get(key, {})]
-    if part == "lines":
-        return [entry for entry in new if (item := entry[0].partition("\t")[0]) in items and item not in blind]
-    return new if part == "blind" and items else []
+    if part not in {"lines", "blind"}:
+        return []
+    base_lists, head_lists = _environment_lists(base, test), _environment_lists(head, test)
+    new: list[tuple[str, int, int]] = []
+    for item, head_records in sorted(head_lists.items()):
+        if (base_records := base_lists.get(item)) is None:
+            if part == "blind" and base_lists:
+                new.extend((path, 0, 1) for path in _stored_paths(item, head_records, part))
+            continue
+        for environment in sorted(head_records.keys() | base_records.keys()):
+            now, was = _record(head_records, environment), _record(base_records, environment)
+            if part == "lines" and was["blind"]:
+                continue
+            new.extend((_stored_path(item, line, environment), 0, 1) for line in sorted(now[part] - was[part]))
+    return new
+
+
+_StoredRecord = dict[str, set[str]]
+"""The ``lines`` and ``blind`` lines one record of a stored list holds."""
+
+
+def _environment_lists(counts: dict[str, dict[str, int]], test: str) -> dict[str, dict[str, _StoredRecord]]:
+    """Return the records of a stored list's items by environment: ``""`` for the default, ``@<predicate>`` otherwise.
+
+    An environment's override is its own record, so a line that one environment's record gains is new even where
+    another environment's record holds it.
+    """
+    lists: dict[str, dict[str, _StoredRecord]] = {}
+    for path in counts.get(f"{test}:items", {}):
+        item, _, environment = path.partition("\t")
+        lists.setdefault(item, {})[environment] = {"lines": set(), "blind": set()}
+    for part in ("lines", "blind"):
+        for path in counts.get(f"{test}:{part}", {}):
+            item, line, *environment = path.split("\t")
+            records = lists.setdefault(item, {})
+            records.setdefault("".join(environment), {"lines": set(), "blind": set()})[part].add(line)
+    return lists
+
+
+def _record(records: dict[str, _StoredRecord], environment: str) -> _StoredRecord:
+    """Return the record an environment reads: its override, or the item's default record."""
+    return records.get(environment) or records.get("") or {"lines": set(), "blind": set()}
+
+
+def _stored_path(item: str, line: str, environment: str) -> str:
+    return "\t".join(filter(None, (item, line, environment)))
+
+
+def _stored_paths(item: str, records: dict[str, _StoredRecord], part: str) -> list[str]:
+    return sorted(
+        _stored_path(item, line, environment) for environment, record in records.items() for line in record[part]
+    )
 
 
 def _file_rises(base: dict[str, int], head: dict[str, int]) -> list[tuple[str, int, int]]:

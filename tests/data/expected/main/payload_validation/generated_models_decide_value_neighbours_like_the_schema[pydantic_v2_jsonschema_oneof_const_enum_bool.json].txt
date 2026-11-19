@@ -1,6 +1,6 @@
 [
-  "/ const 0: invalid, model accepts",
-  "/ const 0.0: invalid, model accepts",
-  "/ const 1: invalid, model accepts",
-  "/ const 1.0: invalid, model accepts"
+  "const 0: invalid, model accepts",
+  "const 0.0: invalid, model accepts",
+  "const 1: invalid, model accepts",
+  "const 1.0: invalid, model accepts"
 ]

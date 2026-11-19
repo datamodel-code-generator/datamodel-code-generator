@@ -1,4 +1,4 @@
 [
-  "/ enum 2.0: valid, model rejects",
-  "/ minimum 3: invalid, model accepts"
+  "enum 2.0: valid, model rejects",
+  "minimum 3: invalid, model accepts"
 ]

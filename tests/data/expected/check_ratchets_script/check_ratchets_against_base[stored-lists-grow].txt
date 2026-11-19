@@ -22,6 +22,6 @@ stored-list:test_generated_models_decide_value_neighbours_like_the_schema:lines 
   one	/k const 3: invalid, model accepts: 0 -> 1
   two	/k const 4: invalid, model accepts: 0 -> 1
 
-stored-list:test_generated_models_decide_value_neighbours_like_the_schema:unreadable in tests/data/expected/lists/nowhere.txt, tests/data/expected/lists/seven.txt: the counter cannot read it. Store the list as a JSON list of strings at the storage its `.refs` line names (pytest writes both), so that the counter can read it.
+stored-list:test_generated_models_decide_value_neighbours_like_the_schema:unreadable in tests/data/expected/lists/generated_models_decide_value_neighbours_like_the_schema[nowhere].txt, tests/data/expected/lists/generated_models_decide_value_neighbours_like_the_schema[seven].txt: the counter cannot read it. Store the list as a JSON list of strings at the storage its `.refs` line names (pytest writes both), so that the counter can read it.
 
 Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

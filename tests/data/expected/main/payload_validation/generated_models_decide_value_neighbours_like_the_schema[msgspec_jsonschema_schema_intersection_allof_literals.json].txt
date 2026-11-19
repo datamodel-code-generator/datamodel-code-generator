@@ -18,8 +18,7 @@
   "/own_length_enum enum {\"a\": \"a\"}: invalid, model accepts",
   "/own_length_enum enum {\"a\": \"bb\"}: invalid, model accepts",
   "/own_length_enum enum {\"a\": \"ccc\"}: invalid, model accepts",
-  "/own_length_enum maxLength \"aa\": invalid, model accepts",
-  "/own_length_enum maxLength \"aaa\": invalid, model accepts",
+  "/own_length_enum maxLength \"ccc\": invalid, model accepts",
   "/pattern_enum enum \"a\": invalid, model accepts",
   "/pattern_enum_class enum \"bb\": invalid, model accepts",
   "/pattern_enum_items/0 enum \"a\": invalid, model accepts"

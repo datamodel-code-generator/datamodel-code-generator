@@ -1,5 +1,5 @@
 [
-  "/ const 200.0: valid, model rejects",
-  "/ const 404.0: valid, model rejects",
-  "/ const 500.0: valid, model rejects"
+  "const 200.0: valid, model rejects",
+  "const 404.0: valid, model rejects",
+  "const 500.0: valid, model rejects"
 ]

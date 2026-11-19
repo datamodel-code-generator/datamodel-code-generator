@@ -121,15 +121,22 @@ class ValueNeighbour:
 
     @property
     def label(self) -> str:
-        """The stable text naming the neighbour: its JSON pointer, keyword and JSON value."""
-        pointer = "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in self.path) or "/"
-        if self.keyword == SEED_KEYWORD:
-            return f"{pointer} {self.keyword}"
-        return f"{pointer} {self.keyword} {json.dumps(self.value, sort_keys=True)}"
+        """The stable text naming the neighbour: its JSON pointer, keyword and JSON value.
+
+        The root's pointer is empty, so its label starts with the keyword, while ``/`` names a property with an empty
+        name: no two paths share a label.
+        """
+        pointer = "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in self.path)
+        words = [pointer] if pointer else []
+        words.append(self.keyword)
+        if self.keyword != SEED_KEYWORD:
+            words.append(json.dumps(self.value, sort_keys=True))
+        return " ".join(words)
 
 
 def json_kind_key(value: object) -> tuple[str, str]:
     """Return a key that tells JSON values apart by kind and value, where Python equality takes ``1 == 1.0 == True``."""
+    kind = type(value).__name__
     match value:
         case bool():
             kind = "boolean"
@@ -143,8 +150,6 @@ def json_kind_key(value: object) -> tuple[str, str]:
             return "array", json.dumps([json_kind_key(item) for item in value])
         case dict():
             return "object", json.dumps(sorted((key, json_kind_key(item)) for key, item in value.items()))
-        case _:
-            kind = type(value).__name__
     return kind, json.dumps(value)
 
 
@@ -247,6 +252,41 @@ def _item_schemas(parts: list[dict[str, object]]) -> tuple[list[object], list[ob
     return prefix, items
 
 
+def _matches(pattern: str, name: str) -> bool:
+    """Return whether a ``patternProperties`` regex matches a name, as the suite's validator searches it."""
+    try:
+        return re.search(pattern, name) is not None
+    except re.error:
+        return False
+
+
+def _property_schemas(schema: dict[str, object], name: str) -> list[object]:
+    """Return the schemas a schema object applies to the property of a name.
+
+    The property takes its ``properties`` schema and every ``patternProperties`` schema whose regex matches its name;
+    ``additionalProperties`` applies only to a property neither of them names.
+    """
+    properties = schema.get("properties")
+    patterns = schema.get("patternProperties")
+    applying = [properties[name]] if isinstance(properties, dict) and name in properties else []
+    if isinstance(patterns, dict):
+        applying.extend(subschema for pattern, subschema in patterns.items() if _matches(pattern, name))
+    if not applying and "additionalProperties" in schema:
+        applying.append(schema["additionalProperties"])
+    return applying
+
+
+def _object_property_schemas(parts: list[dict[str, object]], name: str) -> list[object]:
+    """Return the schemas the parts of an object schema apply to the property of a name, or ``[True]`` for none."""
+    return [schema for part in parts for schema in _property_schemas(part, name)] or [True]
+
+
+def _new_names(taken: dict[str, object], size: int) -> list[str]:
+    """Return the names ``neighbour<n>`` an object adds to reach ``size`` properties, past the names it holds."""
+    names = (f"neighbour{index}" for index in range(size + len(taken)))
+    return [name for name in names if name not in taken][: max(size - len(taken), 0)]
+
+
 def _subschemas(value: object) -> list[object]:
     """Return the subschemas a keyword holds: the members of a list, or the one schema."""
     if isinstance(value, list):
@@ -276,6 +316,11 @@ class _Seeds:
         self.root = root
         self.validator = validator
         self.checks = SEED_CHECKS
+
+    def anew(self) -> _Seeds:
+        """Return the builder with its whole budget of checks again, for a value built after the seed."""
+        self.checks = SEED_CHECKS
+        return self
 
     def accepts(self, schema: object, value: object) -> bool:
         """Return whether the subschema accepts the value."""
@@ -377,36 +422,43 @@ class _Seeds:
                 yield None
 
     def objects(self, parts: list[dict[str, object]], depth: int) -> Iterator[dict[str, object]]:
-        properties: dict[str, list[object]] = {}
+        names: dict[str, None] = {}
         required: dict[str, None] = {}
-        extra: list[object] = []
         fewest = 0
         for part in parts:
             if isinstance(part_properties := part.get("properties"), dict):
-                for name, subschema in part_properties.items():
-                    properties.setdefault(name, []).append(subschema)
+                names.update(dict.fromkeys(part_properties))
             if isinstance(part_required := part.get("required"), list):
                 required.update(dict.fromkeys(name for name in part_required if isinstance(name, str)))
-            if "additionalProperties" in part:
-                extra.append(part["additionalProperties"])
             if _is_number(least := part.get("minProperties")):
                 fewest = max(fewest, int(least))
         built: dict[str, object] = {}
-        for name in (*properties, *(name for name in required if name not in properties)):
-            schemas = properties.get(name) or extra or [True]
+        for name in {**names, **required}:
             optional_too_deep = name not in required and depth >= DEEPEST_SEED // 2
-            if optional_too_deep or (value := self.witness(schemas, depth + 1)) is _MISSING:
+            if optional_too_deep or (value := self.property_witness(parts, name, depth + 1)) is _MISSING:
                 if name in required:
                     return
                 continue
             built[name] = value
-        if (
-            len(built) < fewest <= LONGEST_NEIGHBOUR
-            and (value := self.witness(extra or [True], depth + 1)) is not _MISSING
-        ):
-            built.update((f"neighbour{index}", deepcopy(value)) for index in range(fewest - len(built)))
+        if len(built) < fewest <= LONGEST_NEIGHBOUR:
+            self.add_properties(parts, built, fewest, depth + 1)
         yield built
         yield {name: value for name, value in built.items() if name in required}
+
+    def property_witness(self, parts: list[dict[str, object]], name: str, depth: int) -> object:
+        """Return a value for the property of a name that every schema the parts apply to it accepts."""
+        return self.witness(_object_property_schemas(parts, name), depth)
+
+    def add_properties(self, parts: list[dict[str, object]], built: dict[str, object], size: int, depth: int) -> None:
+        """Add properties named ``neighbour<n>`` to an object until it has ``size``, each a value its schemas accept."""
+        values: dict[tuple[int, ...], object] = {}
+        for name in _new_names(built, size):
+            schemas = _object_property_schemas(parts, name)
+            if (key := tuple(map(id, schemas))) not in values:
+                values[key] = self.witness(schemas, depth)
+            if values[key] is _MISSING:
+                return
+            built[name] = deepcopy(values[key])
 
     def arrays(self, parts: list[dict[str, object]], depth: int) -> Iterator[list[object]]:
         prefix, items = _item_schemas(parts)
@@ -423,16 +475,24 @@ class _Seeds:
             value for value in (self.witness([schema], depth + 1) for schema in prefix[:least]) if value is not _MISSING
         ]
         if len(values) == len(prefix[:least]) and (rest := least - len(values)) > 0:
-            schemas = items or [True]
-            if unique:
-                values.extend(self.distinct(schemas, rest, depth + 1))
-            elif (value := self.witness(schemas, depth + 1)) is not _MISSING:
-                values.extend(deepcopy(value) for _ in range(rest))
+            values.extend(self.items(items or [True], rest, depth + 1, unique=unique))
         for matcher, count in contains:
-            if 0 < count <= LONGEST_NEIGHBOUR and (value := self.witness([matcher, *items], depth + 1)) is not _MISSING:
-                values = [*values[: max(len(values) - count, 0)], *(deepcopy(value) for _ in range(count))]
+            if (
+                0 < count <= LONGEST_NEIGHBOUR
+                and len(matching := self.items([matcher, *items], count, depth + 1, unique=unique)) == count
+            ):
+                taken = {json_kind_key(value) for value in matching} if unique else set()
+                kept = [value for value in values if json_kind_key(value) not in taken]
+                values = [*kept[: max(len(values) - count, 0)], *matching]
         yield values
         yield []
+
+    def items(self, schemas: list[object], count: int, depth: int, *, unique: bool) -> list[object]:
+        """Return ``count`` items the schemas accept, all different where the array's items must be unique."""
+        if unique:
+            return self.distinct(schemas, count, depth)
+        value = self.witness(schemas, depth)
+        return [] if value is _MISSING else [deepcopy(value) for _ in range(count)]
 
     @staticmethod
     def strings(parts: list[dict[str, object]]) -> Iterator[str]:
@@ -454,37 +514,60 @@ class _Seeds:
 
     @staticmethod
     def numbers(parts: list[dict[str, object]], *, integral: bool) -> Iterator[object]:
-        lows: list[Fraction] = []
-        highs: list[Fraction] = []
-        multiples: list[Fraction] = []
-        for part in parts:
-            for keyword, exclusive, into, step in (
-                ("minimum", "exclusiveMinimum", lows, 1),
-                ("maximum", "exclusiveMaximum", highs, -1),
-            ):
-                if _is_number(bound := part.get(keyword)):
-                    into.append(Fraction(bound) + (Fraction(step, 1000) if part.get(exclusive) is True else 0))
-                if _is_number(bound := part.get(exclusive)):
-                    into.append(Fraction(bound) + Fraction(step, 1000))
-            if _is_number(multiple := part.get("multipleOf")) and multiple > 0:
-                multiples.append(Fraction(multiple))
-        low = max(lows, default=None)
-        high = min(highs, default=None)
+        low, high = _bounds(parts, "minimum", "exclusiveMinimum"), _bounds(parts, "maximum", "exclusiveMaximum")
+        multiples = [
+            Fraction(multiple) for part in parts if _is_number(multiple := part.get("multipleOf")) and multiple > 0
+        ]
         candidates = [Fraction(0), Fraction(1)]
-        candidates.extend(bound for bound in (low, high) if bound is not None)
+        for bound, sign in ((low, 1), (high, -1)):
+            if bound is not None:
+                candidates.append(bound.value)
+                if bound.exclusive:
+                    candidates.append(bound.value + sign * _decimal_step(bound.value))
         if low is not None and high is not None:
-            candidates.append((low + high) / 2)
+            candidates.append((low.value + high.value) / 2)
         step = math.lcm(*(multiple.numerator for multiple in multiples)) if multiples else 1
         unit = Fraction(step, math.gcd(*(multiple.denominator for multiple in multiples))) if multiples else Fraction(1)
         if integral and unit.denominator != 1:
             unit = Fraction(unit.numerator)
         for candidate in candidates:
             for rounded in (math.ceil(candidate / unit) * unit, math.floor(candidate / unit) * unit):
-                if (low is None or rounded >= low) and (high is None or rounded <= high):
+                if _within(rounded, low, high):
                     yield _json_value(rounded)
         if not integral and not multiples:
-            yield from (number for candidate in candidates if (number := _json_value(candidate)) is not None)
+            yield from (
+                number
+                for candidate in candidates
+                if _within(candidate, low, high) and (number := _json_value(candidate)) is not None
+            )
         yield from (0, 1)
+
+
+@dataclass(frozen=True)
+class _Bound:
+    """A least or greatest number a schema allows, and whether the number itself is left out."""
+
+    value: Fraction
+    exclusive: bool
+
+
+def _within(number: Fraction, low: _Bound | None, high: _Bound | None) -> bool:
+    """Return whether a number lies between the bounds, outside the ones that leave their number out."""
+    above = low is None or number > low.value or (number == low.value and not low.exclusive)
+    return above and (high is None or number < high.value or (number == high.value and not high.exclusive))
+
+
+def _bounds(parts: list[dict[str, object]], keyword: str, exclusive: str) -> _Bound | None:
+    """Return the tightest bound the parts set with a keyword and its exclusive form, a number or a draft-4 flag."""
+    bounds: list[_Bound] = []
+    for part in parts:
+        if _is_number(bound := part.get(keyword)):
+            bounds.append(_Bound(Fraction(bound), exclusive=part.get(exclusive) is True))
+        if _is_number(bound := part.get(exclusive)):
+            bounds.append(_Bound(Fraction(bound), exclusive=True))
+    if keyword == "minimum":
+        return max(bounds, key=lambda bound: (bound.value, bound.exclusive), default=None)
+    return min(bounds, key=lambda bound: (bound.value, not bound.exclusive), default=None)
 
 
 @dataclass(frozen=True)
@@ -519,34 +602,12 @@ def _iter_sites(
             yield from _iter_array_sites(seeds, schema, value, path)
 
 
-def _matches(pattern: str, name: str) -> bool:
-    """Return whether a ``patternProperties`` regex matches a name, as the suite's validator searches it."""
-    try:
-        return re.search(pattern, name) is not None
-    except re.error:
-        return False
-
-
 def _iter_object_sites(
     seeds: _Seeds, schema: dict[str, object], value: dict[str, object], path: JsonPath, seen: frozenset[str]
 ) -> Iterator[_Site]:
-    """Yield the sites of each property from every schema that applies to it, and of the ``dependentSchemas``.
-
-    A property takes its ``properties`` schema and every ``patternProperties`` schema whose regex matches its name;
-    ``additionalProperties`` applies only to a property neither of them names.
-    """
-    properties = schema.get("properties")
-    if not isinstance(properties, dict):
-        properties = {}
-    patterns = schema.get("patternProperties")
-    if not isinstance(patterns, dict):
-        patterns = {}
+    """Yield the sites of each property from every schema that applies to it, and of the ``dependentSchemas``."""
     for name, item in value.items():
-        applying = [properties[name]] if name in properties else []
-        applying.extend(subschema for pattern, subschema in patterns.items() if _matches(pattern, name))
-        if not applying:
-            applying.append(schema.get("additionalProperties"))
-        for subschema in applying:
+        for subschema in _property_schemas(schema, name):
             yield from _iter_sites(seeds, subschema, item, (*path, name))
     if isinstance(dependent := schema.get("dependentSchemas"), dict):
         for name, subschema in dependent.items():
@@ -606,35 +667,6 @@ def _numbers_beside(bound: Fraction) -> list[Fraction]:
     return [*integers, bound - step, bound, bound + step]
 
 
-def _sized(value: object, size: int, filler: object) -> object:
-    """Return a string, array or object of the size built from the seed's value: cut, or padded with its last part."""
-    match value:
-        case str():
-            pad = value[-1:] or "a"
-            return value[:size] + pad * max(size - len(value), 0)
-        case list():
-            pad = deepcopy(value[-1]) if value else filler
-            return value[:size] + [deepcopy(pad) for _ in range(max(size - len(value), 0))]
-        case dict():
-            names = list(value)[:size]
-            sized = {name: value[name] for name in names}
-            index = 0
-            while len(sized) < size:
-                sized.setdefault(f"neighbour{index}", deepcopy(filler))
-                index += 1
-            return sized
-        case _:
-            return None
-
-
-def _filler(seeds: _Seeds, schema: dict[str, object]) -> object:
-    """Return the value an object neighbour gives the names it adds: one its additional properties accept."""
-    if isinstance(additional := schema.get("additionalProperties"), dict):
-        value = seeds.witness([additional])
-        return "a" if value is _MISSING else value
-    return "a"
-
-
 def _member_values(schema: dict[str, object]) -> Iterator[tuple[str, object]]:
     """Yield the first members of ``const`` and ``enum`` in every JSON kind."""
     for keyword in ("const", "enum"):
@@ -658,34 +690,81 @@ def _number_values(schema: dict[str, object]) -> Iterator[tuple[str, object]]:
         yield from (("multipleOf", number) for value in values if (number := _json_value(value)) is not None)
 
 
+def _sized(seeds: _Seeds, site: _Site, size: int) -> object:
+    """Return the seed's string, array or object at a size: cut, or padded with its last character, item or a property.
+
+    The names an object adds are ``neighbour<n>``, each with a value the schemas that apply to it accept.
+    """
+    match value := site.value:
+        case str():
+            pad = value[-1:] or "a"
+            return value[:size] + pad * max(size - len(value), 0)
+        case list() if value:
+            return value[:size] + [deepcopy(value[-1]) for _ in range(max(size - len(value), 0))]
+        case dict():
+            sized = {name: value[name] for name in list(value)[:size]}
+            seeds.anew().add_properties(seeds.parts(site.schema), sized, size, 0)
+            return sized if len(sized) == size else _MISSING
+    return _MISSING
+
+
+def _keeping_the_rest(
+    seeds: _Seeds, site: _Site, keywords: tuple[str, ...], near: object, target: dict[str, object]
+) -> object:
+    """Return a value next to a keyword's boundary that every other keyword of the site's schema accepts, or none.
+
+    A neighbour that broke a second keyword would test nothing about the one it varies. The value made from the
+    seed's (``near``) comes first; else a value is built for the rest of the schema together with ``target``, the
+    schema of the boundary's side.
+    """
+    rest = {key: value for key, value in site.schema.items() if key not in keywords}
+    if near is not _MISSING and seeds.accepts(rest, near):
+        return near
+    return seeds.anew().witness([rest, target])
+
+
 def _size_values(seeds: _Seeds, site: _Site) -> Iterator[tuple[str, object]]:
-    """Yield the seed's string, array or object one step either side of each length and count bound."""
-    for keywords, kind in ((LENGTH_KEYWORDS, str), (ITEM_COUNT_KEYWORDS, list), (PROPERTY_COUNT_KEYWORDS, dict)):
+    """Yield a string, array or object one step either side of each length and count bound of the site."""
+    for (least, most), kind, name in (
+        (LENGTH_KEYWORDS, str, "string"),
+        (ITEM_COUNT_KEYWORDS, list, "array"),
+        (PROPERTY_COUNT_KEYWORDS, dict, "object"),
+    ):
         if not isinstance(site.value, kind):
             continue
-        for keyword in keywords:
+        for keyword in (least, most):
             if _is_number(size := site.schema.get(keyword)) and 0 <= size <= LONGEST_NEIGHBOUR:
                 size = int(size)
-                sizes = (size - 1, size) if keyword.startswith("min") else (size, size + 1)
-                yield from (
-                    (keyword, _sized(site.value, each, _filler(seeds, site.schema))) for each in sizes if each >= 0
-                )
+                for each in (size - 1, size) if keyword == least else (size, size + 1):
+                    target = {"type": name, least: each, most: each}
+                    if (
+                        each >= 0
+                        and (value := _keeping_the_rest(seeds, site, (keyword,), _sized(seeds, site, each), target))
+                        is not _MISSING
+                    ):
+                        yield keyword, value
 
 
 def _contains_values(seeds: _Seeds, site: _Site) -> Iterator[tuple[str, object]]:
-    """Yield arrays of items the ``contains`` schema accepts, one step either side of its least and greatest count."""
+    """Yield arrays with one count either side of the least and greatest count of items the ``contains`` accepts."""
     schema = site.schema
     if "contains" not in schema or not isinstance(site.value, list):
-        return
-    if (matching := seeds.witness([schema["contains"]])) is _MISSING:
         return
     least = int(value) if _is_number(value := schema.get("minContains")) else 1
     counts = [("minContains" if "minContains" in schema else "contains", count) for count in (least - 1, least)]
     if _is_number(most := schema.get("maxContains")):
         counts.extend(("maxContains", count) for count in (int(most), int(most) + 1))
     for keyword, count in counts:
-        if 0 <= count <= LONGEST_NEIGHBOUR:
-            yield keyword, [deepcopy(matching) for _ in range(count)]
+        target: dict[str, object] = (
+            {"type": "array", "contains": schema["contains"], "minContains": count, "maxContains": count}
+            if count
+            else {"type": "array", "not": {"contains": schema["contains"]}}
+        )
+        if (
+            0 <= count <= LONGEST_NEIGHBOUR
+            and (value := _keeping_the_rest(seeds, site, CONTAINS_COUNT_KEYWORDS, _MISSING, target)) is not _MISSING
+        ):
+            yield keyword, value
 
 
 def _tag_values(site: _Site) -> Iterator[tuple[str, object]]:

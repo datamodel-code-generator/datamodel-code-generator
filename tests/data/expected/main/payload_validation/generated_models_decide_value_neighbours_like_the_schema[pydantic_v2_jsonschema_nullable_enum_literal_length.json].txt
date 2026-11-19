@@ -1,0 +1,4 @@
+[
+  "enum \"a\": invalid, model accepts",
+  "minLength \"a\": invalid, model accepts"
+]

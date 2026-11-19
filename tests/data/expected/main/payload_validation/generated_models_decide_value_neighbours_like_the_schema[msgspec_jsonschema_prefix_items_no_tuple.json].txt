@@ -1,3 +1,0 @@
-[
-  "/a maxItems [{\"value\": 0}, {\"value\": 0}, {\"value\": 0}]: invalid, model accepts"
-]

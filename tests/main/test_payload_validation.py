@@ -1238,6 +1238,62 @@ def test_value_neighbour_verdict_names_an_error_that_is_no_rejection() -> None:
     assert_output(json.dumps([model_verdict(runtime, 1), model_verdict(runtime, "a")]))
 
 
+VALUE_NEIGHBOUR_SHAPES: dict[str, dict[str, object]] = {
+    "root_and_empty_property_name": {"enum": [{"": 1}, 1], "properties": {"": {"enum": [1]}}},
+    "required_pattern_property": {
+        "type": "object",
+        "required": ["x"],
+        "patternProperties": {"^x$": {"type": "integer", "minimum": 1}},
+        "additionalProperties": False,
+    },
+    "pattern_property_count": {"type": "object", "patternProperties": {"": {"type": "integer"}}, "maxProperties": 2},
+    "closed_object_count": {
+        "type": "object",
+        "properties": {"a": {"type": "integer"}},
+        "required": ["a"],
+        "additionalProperties": False,
+        "maxProperties": 1,
+    },
+    "unique_contains": {
+        "type": "array",
+        "uniqueItems": True,
+        "contains": {"type": "integer", "minimum": 0},
+        "minContains": 2,
+    },
+    "unique_item_count": {
+        "type": "array",
+        "uniqueItems": True,
+        "items": {"type": "integer"},
+        "minItems": 2,
+        "maxItems": 3,
+    },
+    "contains_min_items": {"type": "array", "minItems": 2, "contains": {"const": 1}},
+    "integer_exclusive_bound": {"type": "integer", "exclusiveMinimum": 1.9999, "maximum": 2},
+    "integer_exclusive_bound_draft4": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "type": "integer",
+        "minimum": 1.9999,
+        "exclusiveMinimum": True,
+        "maximum": 2,
+    },
+}
+"""Schemas whose neighbours each vary one keyword while every other keyword of their schema holds."""
+
+
+@pytest.mark.parametrize("name", VALUE_NEIGHBOUR_SHAPES)
+def test_value_neighbours_keep_every_other_keyword_of_their_schema(name: str) -> None:
+    """The seed follows the schema's rules; each neighbour breaks at most the keyword it varies, at its own label.
+
+    Required properties take their ``patternProperties`` schemas, items of unique arrays differ, an integer next to an
+    exclusive bound is kept; a size or ``contains`` neighbour keeps the other sizes, items and uniqueness of its
+    schema or is left out, and the root's label starts with the keyword while ``/`` names a property named ``""``.
+    """
+    schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **VALUE_NEIGHBOUR_SHAPES[name]}
+    case = SchemaCase(f"value_neighbour_shape:{name}", "jsonschema", Path(f"{name}.json"), schema, schema, ".json")
+    lines = [f"{neighbour.label}: {'valid' if neighbour.valid else 'invalid'}" for neighbour in value_neighbours(case)]
+    assert_output(json.dumps(lines if has_value_neighbour_seed(case) else [NO_SEED_LINE], indent=2))
+
+
 LITERAL_DATA_PATH = Path(__file__).parents[1] / "data" / "payloads" / "literal_witnesses_schemas.json"
 
 

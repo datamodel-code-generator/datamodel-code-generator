@@ -7,8 +7,6 @@
   "/enum_bound_prop enum 2.0: valid, model rejects",
   "/enum_bound_prop maximum 10: invalid, model accepts",
   "/enum_bound_prop maximum 9: invalid, model accepts",
-  "/enum_length_items/0 maxLength \"aaa\": invalid, model accepts",
-  "/enum_length_prop maxLength \"aaa\": invalid, model accepts",
   "/enum_member_items/0 enum 1.0: valid, model rejects",
   "/enum_member_items/0 enum 2.0: valid, model rejects",
   "/enum_member_prop enum 1.0: valid, model rejects",

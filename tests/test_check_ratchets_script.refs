@@ -28,6 +28,7 @@ nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt
 quoted-hook-id	check_ratchets_script/check_ratchets_against_base[quoted-hook-id].txt
 scope-walk	check_ratchets_script/check_ratchets_against_base[scope-walk].txt
+stored-lists-environments	check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt
 stored-lists-grow	check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt
 stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
 stored-lists-shrink	check_ratchets_script/check_ratchets_against_base[stored-lists-shrink].txt
