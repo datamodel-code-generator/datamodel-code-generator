@@ -17,8 +17,6 @@ bindings/name_mangling: name_mangling.py:7: __slots__ with a value
 bindings/name_mangling: name_mangling.py:8: __limit with a value
 bindings/name_mangling: name_mangling.py:18: __depth with a value
 bindings/name_mangling: name_mangling.py:22: __kept with a value
-bindings/type_parameter_scopes: type_parameter_scopes.py:9: Alias with a value
-bindings/type_statements: type_statements.py:14: Unit with a value
 imports/a6_conditional_bindings: a6_conditional_bindings.py:46: strict with a value
 references/annotation_modes: annotation_modes.py:12: size no value
 references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:8: kind with a value

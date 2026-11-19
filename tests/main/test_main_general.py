@@ -3503,6 +3503,7 @@ def test_template_assignment_check_reports_a_line_the_facts_do_not_bind(
     """
     from datamodel_code_generator.model.dataclass import DataClass, DataModelField
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from tests.checks.template_assignments import TemplateAssignmentError
 
     class StripsEveryNone(DataModelField):
         def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
@@ -3519,7 +3520,7 @@ def test_template_assignment_check_reports_a_line_the_facts_do_not_bind(
         formatters=[Formatter.BUILTIN],
     )
     if flag == "check":
-        with pytest.raises(Error) as raised:
+        with pytest.raises(TemplateAssignmentError) as raised:
             parser.parse()
         assert_output(f"{raised.value}\n")
         return

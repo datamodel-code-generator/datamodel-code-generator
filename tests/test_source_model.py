@@ -32,6 +32,8 @@ FORMS = Path(__file__).parent / "data" / "source_forms"
 VERDICTS = FORMS / "verdicts.toml"
 CHUNKS = 16
 PYTHON = (sys.version_info.major, sys.version_info.minor)
+OLDEST_PYTHON = (3, 11)
+"""The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
     r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes): *(.*)$", re.MULTILINE
 )
@@ -82,7 +84,9 @@ def _questions(path: Path) -> set[str]:
 
 
 def _min_python(path: Path) -> tuple[int, int]:
-    major, _, minor = _directives(path).get("min-python", "3.11").partition(".")
+    if (named := _directives(path).get("min-python")) is None:
+        return OLDEST_PYTHON
+    major, _, minor = named.partition(".")
     return int(major), int(minor)
 
 
@@ -659,7 +663,11 @@ def verdict_problems(findings: dict[str, list[str]], entries: dict[str, str]) ->
 @pytest.mark.allow_direct_assert("a verdict gate fails on its own, never through a stored output a fix run accepts")
 @pytest.mark.parametrize("rule", sorted(RULES))
 def test_every_rule_states_its_verdicts(rule: str) -> None:
-    """Each rule runs over every form of the questions it asks; each form has its verdict, and none is stale."""
+    """Each rule runs over every form of the questions it asks; each form has its verdict, and none is stale.
+
+    The stored findings are those of the forms every supported Python reads: a form of a newer Python has its verdict
+    checked where it runs, so the stored output is the same in every environment.
+    """
     run = RULES[rule]
     forms = [form for form in FORM_PATHS if _questions(form) & run.asks and _min_python(form) <= PYTHON]
     with source_model.questions_asked() as asked:
@@ -670,7 +678,8 @@ def test_every_rule_states_its_verdicts(rule: str) -> None:
     undeclared = sorted(asked - run.asks)
     assert not problems, f"{rule}: {problems}; state the rule's verdict on each form in {VERDICTS.relative_to(ROOT)}"
     assert not undeclared, f"{rule} asks {undeclared}; add them to its RuleRun.asks"
-    found = [f"{form}: {finding}" for form, items in findings.items() for finding in items]
+    every_python = {_form_id(form) for form in forms if _min_python(form) == OLDEST_PYTHON}
+    found = [f"{form}: {finding}" for form, items in findings.items() if form in every_python for finding in items]
     report = [f"verdict problems: {problems or 'none'}", f"undeclared questions: {undeclared or 'none'}", *found]
     assert_output("\n".join(report) + "\n")
 

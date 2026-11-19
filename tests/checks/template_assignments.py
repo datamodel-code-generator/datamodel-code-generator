@@ -51,6 +51,15 @@ LEGACY_ROWS: Final[Mapping[str, str]] = MappingProxyType({
 """The shapes whose line differs from the assignment facts today, each with what differs."""
 
 
+class TemplateAssignmentError(Exception):
+    """A field line that disagrees with its assignment facts.
+
+    It is no ``Error`` of the package: a generation that retries on an ``Error`` (another reading of the document
+    roles, for one) would otherwise go on with other output instead of failing, and the check would change what it
+    observes.
+    """
+
+
 class AssignmentFacts(Protocol):
     """The assignment facts of a field that the check reads (``AssignmentFacts`` of ``model/_render_plan.py``)."""
 
@@ -99,24 +108,31 @@ def assignment_facts(model: DataModel, field: DataModelFieldBase) -> AssignmentF
     return model._field_assignment_facts(field)
 
 
-def _legacy_row(model: DataModel, field: DataModelFieldBase, facts: AssignmentFacts, line: Binding) -> str | None:
+def _legacy_row(model: DataModel, field: DataModelFieldBase, facts: AssignmentFacts, *, binds: bool) -> str | None:
+    """Return the legacy row whose shape the field's line has, or None.
+
+    A row is keyed on the facts and on the built-in template the shape is about, which says what the line writes, not
+    on a class object the check imports itself.
+    """
     from datamodel_code_generator.model.enum import Enum
     from datamodel_code_generator.model.typed_dict import TypedDict
 
-    unbound_default = line.value is None and facts.rule == "default"
+    template, unbound_default = type(model).TEMPLATE_FILE_PATH, not binds and facts.rule == "default"
     if unbound_default and field.use_annotated and getattr(field, "has_default_factory_in_field", False):
         return "legacy-annotated-factory-binds"
-    if unbound_default and isinstance(model, TypedDict):
+    if unbound_default and template == TypedDict.TEMPLATE_FILE_PATH:
         return "legacy-typed-dict-binds"
-    if line.value is not None and facts.rule == "unassigned" and isinstance(model, Enum):
+    if binds and facts.rule == "unassigned" and template == Enum.TEMPLATE_FILE_PATH:
         return "legacy-enum-member-unbound"
     return None
 
 
 def _check(checks_mode: Mode, model: DataModel, rendered: str) -> None:
-    """Report a field whose line binds its name where its facts bind none, or none where they bind one."""
-    from datamodel_code_generator import Error
+    """Report a field whose lines bind its name where its facts bind none, or none where they bind one.
 
+    The class body binds the name when any line of the field assigns it, so every line written under the field's name
+    counts, not only the first.
+    """
     if (written := field_lines(rendered)) is None:
         return
     lines: dict[str, list[Binding]] = {}
@@ -126,19 +142,21 @@ def _check(checks_mode: Mode, model: DataModel, rendered: str) -> None:
     for field in model.fields:
         if not (named := lines.get(line_name(model, field))):
             continue
-        line = named.pop(0)
+        bound = next((line.value for line in named if line.value is not None), None)
         facts = assignment_facts(model, field)
-        if facts.rule == "hook" or (line.value is not None) == facts.binds_class_attribute:
+        if facts.rule == "hook" or (bound is not None) == facts.binds_class_attribute:
             continue
-        wrote = "no value" if line.value is None else f"= {ast.unparse(line.value)}"
+        wrote = "no value" if bound is None else f"= {ast.unparse(bound)}"
         decided = (
             f"classify_assignment decides binds_class_attribute={facts.binds_class_attribute} "
             f"(assigned={facts.assigned}, rule {facts.rule})"
         )
         details = {"template": template, "model": model.class_name, "field": field.name, "written": wrote}
-        if (row := _legacy_row(model, field, facts, line)) is None:
+        if (row := _legacy_row(model, field, facts, binds=bound is not None)) is None:
             checks_mode.violation(
-                Error, f"{template} writes {model.class_name}.{field.name} with {wrote}, where {decided}", **details
+                TemplateAssignmentError,
+                f"{template} writes {model.class_name}.{field.name} with {wrote}, where {decided}",
+                **details,
             )
         elif checks_mode.report_path is not None:
             checks_mode.record(
