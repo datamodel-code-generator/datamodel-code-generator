@@ -405,6 +405,24 @@ request, and the push of its squash commit to `main`, accept the rise; a local
 run does not. An entry that its tree already reaches is stale and fails, so the
 approved pull request removes its own entry.
 
+The same script counts the sites of the source rules in
+`scripts/check_source_rules.py`, the code shapes that reviews keep finding, as
+`source-rule:<rule>` keys: a change may keep or lower a count, and an absolute
+rule fails on any site and cannot be approved. The rules marked
+`absolute=True` in `RULES` of that script are absolute (today `doc-citations`,
+`unused-private-global` and `flaky-test-workarounds`), and the summary of
+`python scripts/check_source_rules.py` names the kind of each rule.
+`python scripts/check_source_rules.py --rule <rule>` prints each site and how to
+fix it. `lost-last-caller` compares the tree with the base and needs coverage
+data to decide, so the ratchet prints its candidates without failing on them.
+`tests/test_checks_are_run.py` names every `scripts/check_*.py` and every source
+rule that nothing runs on the repository tree: a workflow `run:` step or a hook
+`entry` that executes it, a `commands` line of a tox environment a workflow
+runs, a ratchet key, or a test that asserts the exit status of its `main` on
+the tree, each with arguments that run it on the tree (read with the check's own
+parser). A mention, such as a `paths:` filter or a hook `files:` pattern, is no
+run, and neither is a lookup such as `check_ratchets.py --ruff-pin`.
+
 Tests for the checker use source fixtures and expected reports under
 `tests/data/architecture_boundaries/` and
 `tests/data/expected/architecture_boundaries/`. Keep diagnostics specific enough

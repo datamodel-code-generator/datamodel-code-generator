@@ -1,0 +1,16 @@
+[[change]]
+id = "source-rules-run-on-the-tree"
+category = "harness"
+title = "Count the source rules as ratchet keys"
+refs = ["#7183"]
+summary = "The ratchet output lists the source rules and refuses approvals of absolute rules; the fact finality and pass pipeline tests assert the exit status of their checks instead of storing it; the generated package writes the same output."
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[approvals-malformed].txt",
+    "check_ratchets_script/check_ratchets_against_base[approved-rise].txt",
+    "check_ratchets_script/check_ratchets_against_base[scope-walk].txt",
+    "check_ratchets_script/check_ratchets_against_base[unchanged].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-counter-unreadable].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-counter].txt",
+    "parser/fact_finality/known_violations_are_made_by_their_witnesses.txt",
+    "parser/pipeline/tables_follow_the_rules.checks.txt",
+]

@@ -21,6 +21,10 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   `scripts/_import_cycles.py` from the model's import graph: ``module-level`` counts the cycles of the imports that run
   when their module is imported, ``lazy`` those of every import (function-local and ``TYPE_CHECKING`` ones too) and
   ``largest-lazy`` the largest of those; each module counts once, at its first import into its cycle.
+- ``source-rule:<rule>``: the sites of each rule of `scripts/check_source_rules.py` that runs without a base, as its
+  ``--count`` prints them. A rule absolute in the head or in the base revision (read with the base's own rules) fails
+  on any site, whatever the base holds. The base-relative rules (``lost-last-caller``) report candidates that need
+  coverage data to decide: a run with ``--base`` prints them and never fails on them.
 - ``private-scope-walk``, in ``scripts`` and ``tests``: a check that reads bindings, scopes, imports or comments with
   ``ast``, ``symtable`` or ``tokenize`` itself instead of through ``scripts/_source_model.py`` (`scope_walk_sites`),
   read by origin with the model; the model and its test are not counted.
@@ -52,7 +56,9 @@ sites and how to fix it. The exit status is 0 unless ``--enforce`` is given and 
 ``scripts/ratchet_approvals.toml`` lists the rises the owner approved, each for one pull request; it is read from the
 base revision, so a change cannot approve itself. A run of that pull request on GitHub Actions accepts the key up to the
 approved count; every other run fails as before. An entry that the tree already reaches accepts no rise and is stale,
-and a stale or malformed entry fails under ``--enforce`` (`_judged_pull_requests`, `_approval_problems`).
+and a stale or malformed entry fails under ``--enforce`` (`_judged_pull_requests`, `_approval_problems`). No entry, in
+either table, approves the key of a rule that is absolute in the head or in the base revision: such an entry is
+malformed.
 
 ``--count <dir>`` prints the counts of one tree as JSON, ``{key: {file: count}}``; a later copy of this script reads it
 from the base revision's copy, so its form stays.
@@ -82,6 +88,9 @@ import tomllib
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._import_cycles import import_cycles
 from scripts._source_model import SourceModule
+from scripts.check_source_rules import RULES
+from scripts.check_source_rules import Tree as SourceTree
+from scripts.check_source_rules import run as run_source_rules
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -170,6 +179,17 @@ SCOPE_WALK_HINT = re.compile(r"\b(?:ast|symtable|tokenize)\b")
 SCOPE_WALK_AREAS = frozenset({"scripts", "tests"})
 SOURCE_MODEL_HOME = frozenset({"scripts/_source_model.py", "tests/test_source_model.py"})
 """The model and the test of its answers, the one place that reads these forms itself."""
+SOURCE_RULES = tuple(rule for rule in RULES if not rule.needs_base)
+"""The source rules counted on every tree, under ``source-rule:<rule>``."""
+REPORTED_RULES = tuple(rule for rule in RULES if rule.needs_base)
+"""The base-relative source rules: their sites are candidates, printed by a run with a base and never failing it."""
+ABSOLUTE_KEYS = frozenset(f"source-rule:{rule.name}" for rule in SOURCE_RULES if rule.absolute)
+"""The keys of the head's absolute rules; a run judges with these and the base revision's (`_absolute_keys`)."""
+ABSOLUTE_RULES_OF_TREE = (
+    "import json, sys; sys.path.insert(0, sys.argv[1]); from scripts.check_source_rules import RULES; "
+    "print(json.dumps([rule.name for rule in RULES if rule.absolute and not rule.needs_base]))"
+)
+"""The program that prints the absolute rules of the tree given as its argument, with that tree's own rule table."""
 ALLOWLISTS = (
     (
         "tests/assert_helper_allowlists.py",
@@ -183,6 +203,7 @@ ALLOWLISTS = (
     ),
     ("tests/generated_import_closure_allowlist.py", frozenset({"UNBOUND_NAME_VIOLATIONS"})),
     ("scripts/check_architecture_boundaries.py", frozenset({"DEFAULT_ALLOWLIST"})),
+    ("tests/test_checks_are_run.py", frozenset({"UNREACHED"})),
 )
 ADVICE = {
     "ruff": (
@@ -232,6 +253,18 @@ ADVICE = {
         "blind line, an item whose checks no longer run). Fix the change or file the defect; never store the line "
         "with the fix command the test prints."
     ),
+    "allowlist:UNREACHED": (
+        "Every check runs on the tree: run the new check from a workflow step, a tox environment a workflow runs, a "
+        "hook entry, the ratchet or a test that asserts its exit status on the repository tree instead of listing it "
+        "as unreached."
+    ),
+    **{
+        f"source-rule:{rule.name}": (
+            f"{rule.fix[:1].upper()}{rule.fix[1:]}; `python scripts/check_source_rules.py --rule {rule.name}` prints "
+            "each site with its detail."
+        )
+        for rule in SOURCE_RULES
+    },
     "allowlist:host-private-access": (
         "Host baseline entries only shrink: declare the member on the Host Protocol the function takes, "
         "or move the code into the class."
@@ -836,6 +869,29 @@ def _import_cycle_tally(tally: Tally, root: Path, files: list[str]) -> None:
             tally.add(key, path, line)
 
 
+def _source_rule_tally(tally: Tally, root: Path, files: list[str]) -> None:
+    """Count the sites of every source rule that runs without a base, in the Python files of the tree."""
+    findings = run_source_rules(SourceTree(root, frozenset(files)), SOURCE_RULES, None)
+    for finding in (finding for found in findings.values() for finding in found):
+        tally.add(f"source-rule:{finding.rule}", finding.path, finding.line)
+
+
+def _candidate_lines(base_root: Path, head_root: Path) -> list[str]:
+    """List the candidates of the base-relative source rules for the head against the base; they never fail."""
+    head = SourceTree(head_root, frozenset(_tree_files(head_root)))
+    findings = run_source_rules(head, REPORTED_RULES, SourceTree(base_root))
+    lines: list[str] = []
+    for rule in REPORTED_RULES:
+        if not (found := findings[rule.name]):
+            continue
+        lines += [
+            "",
+            f"source-rule:{rule.name}: {len(found)} candidates (report only, never fails). Check: {rule.fix}.",
+        ]
+        lines += [f"  {finding.path}:{finding.line}: {finding.detail}" for finding in found]
+    return lines
+
+
 def count_tree(root: Path, ruff: list[str]) -> Tally:
     """Count every escape hatch of the tree at ``root``."""
     path = root / "pyproject.toml"
@@ -848,6 +904,7 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _config_tally(tally, root, pyproject)
     _stored_list_tally(tally, root)
     _import_cycle_tally(tally, root, files)
+    _source_rule_tally(tally, root, files)
     return tally
 
 
@@ -855,14 +912,22 @@ def _totals(counts: dict[str, dict[str, int]]) -> dict[str, int]:
     return {key: sum(files.values()) for key, files in counts.items()}
 
 
-def _rises(base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals) -> list[str]:
+def _rises(
+    base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals, absolute: frozenset[str]
+) -> list[str]:
+    """Return the keys that rose, those of ``absolute`` whenever they hold a site, the others beyond their approval."""
     base_totals, head_totals = _totals(base), _totals(head)
     return [
         key
         for key, total in sorted(head_totals.items())
         if _kind(key) != "unreadable"
-        and (bool(_risen(key, base, head)) if _kind(key) == STORED_LIST else total > base_totals.get(key, 0))
-        and not approvals.covering(key, total)
+        and (
+            key in absolute
+            or (
+                (bool(_risen(key, base, head)) if _kind(key) == STORED_LIST else total > base_totals.get(key, 0))
+                and not approvals.covering(key, total)
+            )
+        )
     ]
 
 
@@ -949,24 +1014,33 @@ def _change_table(base: dict[str, int], head: dict[str, int]) -> list[str]:
 
 
 def _rise_lines(
-    key: str, base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], sites: dict[str, list[int]]
+    key: str,
+    base: dict[str, dict[str, int]],
+    head: dict[str, dict[str, int]],
+    sites: dict[str, list[int]],
+    absolute: frozenset[str],
 ) -> list[str]:
     """Describe one key that rose: its totals, how to fix it, and each file whose count rose with its sites."""
     before, after = sum(base.get(key, {}).values()), sum(head[key].values())
-    risen = _risen(key, base, head)
-    added = f"{len(risen)} new {'line' if len(risen) == 1 else 'lines'}"
-    change = f"has {added}" if _kind(key) == STORED_LIST else f"rose by {after - before}"
-    lines = ["", f"{key} {change} ({before} -> {after}). {ADVICE.get(key, ADVICE.get(_kind(key), ''))}"]
-    for path, was, now in risen:
+    advice = ADVICE.get(key, ADVICE.get(_kind(key), ""))
+    if key in absolute:
+        lines = ["", f"{key} is absolute and holds {after} sites (the base {before}): it must be 0. {advice}"]
+        changes = [(path, base.get(key, {}).get(path, 0), count) for path, count in sorted(head[key].items())]
+    else:
+        changes = _risen(key, base, head)
+        added = f"{len(changes)} new {'line' if len(changes) == 1 else 'lines'}"
+        change = f"has {added}" if _kind(key) == STORED_LIST else f"rose by {after - before}"
+        lines = ["", f"{key} {change} ({before} -> {after}). {advice}"]
+    for path, was, now in changes:
         at = ", ".join(map(str, sorted(line for line in sites.get(path, []) if line)))
         lines.append(f"  {path}: {was} -> {now}" + (f" (lines {at})" if at else ""))
     return lines
 
 
-def _report_rises(base: Tally, head: Tally, approvals: Approvals) -> list[str]:
+def _report_rises(base: Tally, head: Tally, approvals: Approvals, absolute: frozenset[str]) -> list[str]:
     base_counts, head_counts = base.counts(), head.counts()
-    rises = _rises(base_counts, head_counts, approvals)
-    return [line for key in rises for line in _rise_lines(key, base_counts, head_counts, head.sites[key])]
+    rises = _rises(base_counts, head_counts, approvals, absolute)
+    return [line for key in rises for line in _rise_lines(key, base_counts, head_counts, head.sites[key], absolute)]
 
 
 def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: str) -> dict[str, dict[str, int]]:
@@ -983,26 +1057,38 @@ def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: 
     return json.loads(output.stdout)
 
 
-def _report_copy(
-    base_root: Path, head_root: Path, ruff_args: list[str], settled: Callable[[str, int], bool], base_commit: str
-) -> list[str]:
-    """Count both trees with the base revision's copy of this script and report the rises only it sees.
-
-    ``settled`` tells the keys this copy already judged, and the approved rises, from a key and its total.
-    """
+def _copy_tallies(
+    base_root: Path, head_root: Path, ruff_args: list[str], base_commit: str
+) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+    """Count both trees with the base revision's copy of this script; nothing where the base has no copy."""
     copy = base_root / SCRIPT
     if not copy.is_file():
-        return []
-    base = _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit)
-    head = _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit)
-    unseen = [key for key in _rises(base, head, NO_APPROVALS) if not settled(key, sum(head[key].values()))]
+        return {}, {}
+    return (
+        _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit),
+        _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit),
+    )
+
+
+def _report_copy(
+    base: dict[str, dict[str, int]],
+    head: dict[str, dict[str, int]],
+    settled: Callable[[str, int], bool],
+    absolute: frozenset[str],
+) -> list[str]:
+    """Report the rises only the base revision's copy of this script sees in its counts of both trees.
+
+    ``settled`` tells the keys this copy already judged, and the approved rises, from a key and its total; the keys of
+    ``absolute`` are judged as in this copy.
+    """
+    unseen = [key for key in _rises(base, head, NO_APPROVALS, absolute) if not settled(key, sum(head[key].values()))]
     hidden = {key: files for key, files in head.items() if not settled(key, sum(files.values()))}
     header = [
         "",
         f"The base revision's {SCRIPT} also counts these rises, which this copy does not: the change weakens the",
         "counter that judges it. Keep the counter's rules (changes to it are reviewed) and fix the hatches:",
     ]
-    body = [line for key in unseen for line in _rise_lines(key, base, head, {})]
+    body = [line for key in unseen for line in _rise_lines(key, base, head, {}, absolute)]
     body += _unreadable_lines(hidden)
     return [*header, *body] if body else []
 
@@ -1024,7 +1110,10 @@ def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
 
 
 APPROVAL_RULES = {
-    "key": "`key` is an escape-hatch key such as allowlist:JUSTIFIED_VIOLATIONS (an unreadable key cannot be approved)",
+    "key": (
+        "`key` is an escape-hatch key such as allowlist:JUSTIFIED_VIOLATIONS (an unreadable key, or the key of an "
+        "absolute rule, cannot be approved)"
+    ),
     "head": "`head` is the approved count of the key, a positive integer",
     "pr": "`pr` is the number of the pull request the rise is approved for, a positive integer",
     "decision": '`decision` lists the public references of the owner decision, such as ["#7172"]',
@@ -1032,9 +1121,19 @@ APPROVAL_RULES = {
 }
 
 
-def _approval_field_ok(name: str, value: object) -> bool:
+def _absolute_keys(root: Path) -> frozenset[str]:
+    """Return the keys of the absolute source rules of the tree at ``root``, read with its own rules; none without."""
+    if not (root / "scripts/check_source_rules.py").is_file():
+        return frozenset()
+    names = subprocess.run(
+        [sys.executable, "-c", ABSOLUTE_RULES_OF_TREE, str(root)], capture_output=True, text=True, check=True
+    ).stdout
+    return frozenset(f"source-rule:{name}" for name in json.loads(names))
+
+
+def _approval_field_ok(name: str, value: object, absolute: frozenset[str]) -> bool:
     if name == "key":
-        return isinstance(value, str) and _kind(value) not in {"", "unreadable"}
+        return isinstance(value, str) and _kind(value) not in {"", "unreadable"} and value not in absolute
     if name in {"head", "pr"}:
         return type(value) is int and value > 0
     if name == "decision":
@@ -1046,8 +1145,8 @@ def _approval_field_ok(name: str, value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-def _approval_problems(entry: object) -> list[str]:
-    """Return what makes one entry of the approvals table unusable, as readable messages."""
+def _approval_problems(entry: object, absolute: frozenset[str]) -> list[str]:
+    """Return what makes one entry of the approvals table unusable, a key of ``absolute`` among it, as messages."""
     if not isinstance(entry, dict):
         return ["it is not a table: write it as an `[[approved]]` entry"]
     problems = [f"`{name}` is missing ({APPROVAL_RULES[name]})" for name in APPROVAL_FIELDS if name not in entry]
@@ -1055,13 +1154,16 @@ def _approval_problems(entry: object) -> list[str]:
     problems += [
         f"{APPROVAL_RULES[name]}, not {_toml(entry[name])}"
         for name in APPROVAL_FIELDS
-        if name in entry and not _approval_field_ok(name, entry[name])
+        if name in entry and not _approval_field_ok(name, entry[name], absolute)
     ]
     return problems
 
 
-def _read_approvals(root: Path) -> tuple[tuple[Approval, ...], list[str]]:
-    """Read the approvals table of a tree: its usable entries, and a readable message for each problem."""
+def _read_approvals(root: Path, absolute: frozenset[str]) -> tuple[tuple[Approval, ...], list[str]]:
+    """Read the approvals table of a tree: its usable entries, and a readable message for each problem.
+
+    An entry for one of the ``absolute`` keys is a problem and never usable, so no approval covers such a key.
+    """
     path = root / APPROVALS
     if not path.is_file():
         return (), []
@@ -1079,7 +1181,7 @@ def _read_approvals(root: Path) -> tuple[tuple[Approval, ...], list[str]]:
         entries = []
     approvals: list[Approval] = []
     for index, entry in enumerate(entries, 1):
-        if found := _approval_problems(entry):
+        if found := _approval_problems(entry, absolute):
             problems.append(f"{APPROVALS} entry {index}: {'; '.join(found)}.")
             continue
         approval = Approval(entry["key"], entry["head"], entry["pr"], tuple(entry["decision"]), entry["reason"])
@@ -1108,9 +1210,15 @@ def _judged_pull_requests(head_root: Path, fork: str) -> frozenset[int]:
 
 
 def _approval_lines(
-    base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals, head_root: Path
+    base: dict[str, dict[str, int]],
+    head: dict[str, dict[str, int]],
+    approvals: Approvals,
+    head_root: Path,
+    absolute: frozenset[str],
 ) -> tuple[list[str], list[str]]:
     """Describe the rises an approval covers or names, and the problems of the head's table (stale or malformed).
+
+    An entry of the head's table for a key of ``absolute`` (absolute in the head or the base) is malformed.
 
     The head's table is judged because it becomes the base: an entry whose key the head already counts at its approved
     count accepts no rise afterwards, so the pull request that reaches the count removes it.
@@ -1118,7 +1226,7 @@ def _approval_lines(
     base_totals, head_totals = _totals(base), _totals(head)
     judged = ", ".join(f"#{number}" for number in sorted(approvals.pull_requests)) or "no pull request"
     notes: list[str] = []
-    for key in _rises(base, head, NO_APPROVALS):
+    for key in _rises(base, head, NO_APPROVALS, absolute):
         before, after = base_totals.get(key, 0), head_totals[key]
         if covering := approvals.covering(key, after):
             notes += [
@@ -1140,7 +1248,7 @@ def _approval_lines(
                 ),
             )
         ]
-    entries, problems = _read_approvals(head_root)
+    entries, problems = _read_approvals(head_root, absolute)
     problems += [
         f"{APPROVALS}: the approval of {entry.key} up to {entry.head} for #{entry.pr} is stale: this tree already "
         f"counts {head_totals.get(entry.key, 0)}, so it accepts no rise. Remove it (in #{entry.pr} itself when that "
@@ -1161,22 +1269,22 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(base_root, filter="data")
         base, head = count_tree(base_root, ruff), count_tree(head_root, ruff)
-        approvals = Approvals(_read_approvals(base_root)[0], _judged_pull_requests(head_root, fork))
-        head_rises = set(_rises(base.counts(), head.counts(), approvals))
+        absolute = ABSOLUTE_KEYS | _absolute_keys(base_root)
+        approvals = Approvals(_read_approvals(base_root, absolute)[0], _judged_pull_requests(head_root, fork))
+        head_rises = set(_rises(base.counts(), head.counts(), approvals, absolute))
         lines = [f"Escape hatches: {base_ref} (merge-base {fork}) -> working tree", ""]
         lines += _change_table(_totals(base.counts()), _totals(head.counts()))
-        lines += _report_rises(base, head, approvals)
-        notes, table_problems = _approval_lines(base.counts(), head.counts(), approvals, head_root)
+        lines += _report_rises(base, head, approvals, absolute)
+        notes, table_problems = _approval_lines(base.counts(), head.counts(), approvals, head_root, absolute)
         unreadable = _unreadable_lines(head.counts())
         lines += [*notes, *unreadable, *table_problems]
         seen = head_rises | {key for key in head.counts() if _kind(key) == "unreadable"}
         copy_lines = _report_copy(
-            base_root,
-            head_root,
-            ruff_args,
+            *_copy_tallies(base_root, head_root, ruff_args, fork),
             lambda key, total: key in seen or approvals.covering(key, total) is not None,
-            fork,
+            absolute,
         )
+        candidates = _candidate_lines(base_root, head_root)
     rose = bool(head_rises or copy_lines or unreadable)
     verdict = (
         "Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. "
@@ -1185,7 +1293,7 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
     passed = f"No key rose{' beyond its approval' if notes else ''}."
     if table_problems and not rose:
         passed = f"No key rose, but {APPROVALS} needs the changes above. Exit status 0 unless --enforce is given."
-    lines += [*copy_lines, "", verdict if rose else passed]
+    lines += [*copy_lines, *candidates, "", verdict if rose else passed]
     return lines, rose or bool(table_problems)
 
 

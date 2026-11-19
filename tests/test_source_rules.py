@@ -694,6 +694,18 @@ def test_rule_reports_its_site_and_not_the_near_miss(
     assert_output(_run(capsys, "--root", str(tmp_path), "--rule", rule))
 
 
+def test_a_tree_without_the_architecture_page_cites_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """``doc-citations`` reports nothing in a tree without the architecture page, and its citations once it is there."""
+    page = "docs/architecture.md"
+    _write(tmp_path, {rel: text for rel, text in TREES["doc-citations"].items() if rel != page})
+    without_page = _run(capsys, "--root", str(tmp_path), "--rule", "doc-citations")
+    _write(tmp_path, {page: TREES["doc-citations"][page]})
+
+    assert_output(
+        f"{without_page}\n--- with the page\n{_run(capsys, '--root', str(tmp_path), '--rule', 'doc-citations')}"
+    )
+
+
 def test_counts_are_printed_as_ratchet_keys(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """``--count`` prints one key per rule that ran, with the count of each file."""
     _write(tmp_path, {**TREES["hash-split"], **TREES["ellipsis-statement"], "docs/architecture.md": ""})
