@@ -47,29 +47,29 @@ uses of <module>:ast@7: read@14, call:walk@16, read@18, read@20, read@25, read@2
 uses of <module>:syntax@8: read@18, call:Name@30, call:Load@30
 uses of <module>:symtable@9: call:symtable@34
 uses of <module>:tokenize@10: read@37, read@38
-uses of <module>:FunctionDef@11: read@26
-uses of stores:tree@14: read@16
+uses of <module>:FunctionDef@11: argument@26
+uses of stores:tree@14: argument@16
 uses of stores:names@15: call:append@19, read@22
 uses of stores:node@16: read@17, read@19
-uses of definitions:tree@25: read@26
-uses of definitions.<locals>.<listcomp>:node@26: read@26, read@26
-uses of table:text@33: read@34
+uses of definitions:tree@25: argument@26
+uses of definitions.<locals>.<listcomp>:node@26: argument@26, read@26
+uses of table:text@33: argument@34
 uses of comment:token@37: read@38, read@38
 uses of Finder.visit_Lambda:self@42: call:generic_visit@43
-uses of Finder.visit_Lambda:node@42: read@43
+uses of Finder.visit_Lambda:node@42: argument@43
 uses of Finder.visit_Call:self@45: call:generic_visit@46
-uses of Finder.visit_Call:node@45: read@46
+uses of Finder.visit_Call:node@45: argument@46
 type positions @14: list, str
-type positions @25: list, ast
-type positions @29: ast
+type positions @25: list, ast; chains ast.stmt = ast.stmt
+type positions @29: ast; chains ast.expr = ast.expr
 type positions @33: list, str
 type positions @37: bool
 type positions @42: -
 type positions @45: -
-type positions @14: ast
-type positions @25: ast
+type positions @14: ast; chains ast.Module = ast.Module
+type positions @25: ast; chains ast.Module = ast.Module
 type positions @33: str
-type positions @37: tokenize
-type positions @42: ast
-type positions @45: ast
+type positions @37: tokenize; chains tokenize.TokenInfo = tokenize.TokenInfo
+type positions @42: ast; chains ast.Lambda = ast.Lambda
+type positions @45: ast; chains ast.Call = ast.Call
 == code objects: one per scope that compiles on this Python

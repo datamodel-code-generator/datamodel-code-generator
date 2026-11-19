@@ -19,7 +19,7 @@ uses of <module>:TypeAlias@3: read@7
 uses of <module>:TypeVar@3: call@5, call@6
 uses of <module>:cast@3: call@12
 uses of <module>:Later@15: read@5, read@6, read@12, read@7
-uses of f:x@11: read@12
+uses of f:x@11: argument@12
 type positions @7: TypeAlias
 type positions @8: list, Later
 type positions @11: object

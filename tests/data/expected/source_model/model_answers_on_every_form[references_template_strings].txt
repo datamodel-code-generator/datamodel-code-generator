@@ -3,5 +3,5 @@
 8:27 len load in f -> builtin; origin builtins.len
 8:31 name load in f -> local f @7
 8:41 name load in f -> local f @7
-uses of f:name@7: read@8, read@8, read@8
+uses of f:name@7: read@8, argument@8, read@8
 == code objects: one per scope that compiles on this Python
