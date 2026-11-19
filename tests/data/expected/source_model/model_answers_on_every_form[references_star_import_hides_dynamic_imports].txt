@@ -1,0 +1,12 @@
+== references
+9:0 CONCRETE_BACKEND store in <module> -> local <module> @9
+10:0 import_module load in <module> -> star <module>
+10:14 CONCRETE_BACKEND load in <module> -> local <module> @9; origin forms.references.star_import_hides_dynamic_imports.CONCRETE_BACKEND
+11:0 __import__ load in <module> -> star <module>
+11:11 CONCRETE_BACKEND load in <module> -> local <module> @9; origin forms.references.star_import_hides_dynamic_imports.CONCRETE_BACKEND
+15:4 import_module load in shadowed -> local shadowed @14
+15:18 CONCRETE_BACKEND load in shadowed -> global <module> @9; origin forms.references.star_import_hides_dynamic_imports.CONCRETE_BACKEND
+uses of <module>:CONCRETE_BACKEND@9: argument@10, argument@11, argument@15
+uses of shadowed:import_module@14: call@15
+type positions @9: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+== code objects: one per scope that compiles on this Python

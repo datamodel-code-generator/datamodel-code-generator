@@ -1,0 +1,36 @@
+== references
+10:0 CONCRETE_BACKEND store in <module> -> local <module> @10
+12:0 load_module store in <module> -> local <module> @12
+12:14 import_provider load in <module> -> local <module> @7; origin importlib
+15:36 Callable load (evaluated annotation) in <module> -> local <module> @5; origin collections.abc.Callable
+15:46 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+16:4 load_module load in use_shadowed_alias -> local use_shadowed_alias @15
+16:16 CONCRETE_BACKEND load in use_shadowed_alias -> global <module> @10; origin forms.references.shared_model_dynamic_import_neutral.CONCRETE_BACKEND
+20:36 str load (evaluated annotation) in NeutralImporter -> builtin; origin builtins.str
+24:0 neutral_provider store in <module> -> local <module> @24
+24:19 NeutralImporter load in <module> -> local <module> @19; origin forms.references.shared_model_dynamic_import_neutral.NeutralImporter
+25:0 neutral_loader store in <module> -> local <module> @25
+25:17 neutral_provider load in <module> -> local <module> @24; origin forms.references.shared_model_dynamic_import_neutral.neutral_provider
+26:0 neutral_loader load in <module> -> local <module> @25; origin forms.references.shared_model_dynamic_import_neutral.neutral_provider.import_module
+26:15 CONCRETE_BACKEND load in <module> -> local <module> @10; origin forms.references.shared_model_dynamic_import_neutral.CONCRETE_BACKEND
+27:0 NeutralImporter load in <module> -> local <module> @19; origin forms.references.shared_model_dynamic_import_neutral.NeutralImporter
+27:32 CONCRETE_BACKEND load in <module> -> local <module> @10; origin forms.references.shared_model_dynamic_import_neutral.CONCRETE_BACKEND
+29:43 NeutralImporter load (evaluated annotation) in <module> -> local <module> @19; origin forms.references.shared_model_dynamic_import_neutral.NeutralImporter
+30:4 import_provider load in use_shadowed_provider -> local use_shadowed_provider @29
+30:34 CONCRETE_BACKEND load in use_shadowed_provider -> global <module> @10; origin forms.references.shared_model_dynamic_import_neutral.CONCRETE_BACKEND
+uses of <module>:Callable@5: read@15
+uses of <module>:import_provider@7: read@12
+uses of <module>:CONCRETE_BACKEND@10: argument@16, argument@26, argument@27, argument@30
+uses of <module>:NeutralImporter@19: call@24, call@27, read@29
+uses of <module>:neutral_provider@24: read@25
+uses of <module>:neutral_loader@25: call@26
+uses of use_shadowed_alias:load_module@15: call@16
+uses of use_shadowed_provider:import_provider@29: call:import_module@30
+type positions @10: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @15: -
+type positions @29: -
+type positions @20: -
+type positions @15: Callable, str
+type positions @29: NeutralImporter
+type positions @20: str
+== code objects: one per scope that compiles on this Python

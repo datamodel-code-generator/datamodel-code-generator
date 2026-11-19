@@ -93,6 +93,19 @@ def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(
     )
 
 
+def test_architecture_boundary_detector_fails_closed_where_the_source_model_cannot_read(tmp_path: Path) -> None:
+    """Report an import that leaves the top-level package and a module the source model refuses, as violations."""
+    stored = [FIXTURE_ROOT / "unreadable" / "import.py.txt", FIXTURE_ROOT / "unreadable" / "source.py.txt"]
+    files: list[tuple[Path, check_architecture_boundaries.Layer]] = []
+    for path in stored:
+        copied = tmp_path / path.name.removesuffix(".txt")
+        copyfile(path, copied)
+        files.append((copied, "shared"))
+    report = check_architecture_boundaries.format_report(check_architecture_boundaries.check_files(files, allowlist={}))
+
+    assert_output(report.replace(tmp_path.as_posix(), "tests/data/architecture_boundaries/unreadable"))
+
+
 def test_architecture_boundary_source_classification() -> None:
     """Keep entrypoint, model, schema graph, parser core, requirement, constraint and check flag ownership explicit."""
     source_root = ROOT / "src" / "datamodel_code_generator"

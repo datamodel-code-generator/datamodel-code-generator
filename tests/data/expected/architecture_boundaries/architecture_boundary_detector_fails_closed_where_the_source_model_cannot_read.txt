@@ -1,0 +1,3 @@
+Architecture boundary violations found:
+tests/data/architecture_boundaries/unreadable/import.py:1:1: [unreadable-import] unreadable: the relative import leaves the package of datamodel_code_generator.shared_fixture (lines 1): the import leaves the top-level package, so no module name can be read from it: import by an absolute name (in <module>)
+tests/data/architecture_boundaries/unreadable/source.py:0:0: [unreadable-source] the source model refuses it: tests/data/architecture_boundaries/unreadable/source.py:3: nonlocal missing has no enclosing binding (form: Assign); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request (in <module>)

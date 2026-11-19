@@ -1,0 +1,15 @@
+== references
+5:0 PRIVATE_ATTRIBUTE store in <module> -> local <module> @5
+9:4 parser load in mutate_parser -> local mutate_parser @8
+10:4 parser load in mutate_parser -> local mutate_parser @8
+11:4 parser load in mutate_parser -> local mutate_parser @8
+12:4 worker_parser_instance load in mutate_parser -> local mutate_parser @8
+13:11 getattr load in mutate_parser -> builtin; origin builtins.getattr
+13:19 retry_parser load in mutate_parser -> local mutate_parser @8
+13:33 PRIVATE_ATTRIBUTE load in mutate_parser -> global <module> @5; origin forms.references.entrypoint_parser_private_access.PRIVATE_ATTRIBUTE
+uses of <module>:PRIVATE_ATTRIBUTE@5: argument@13
+uses of mutate_parser:parser@8: attribute-store@9, call:_dispose@10, read@11
+uses of mutate_parser:retry_parser@8: argument@13
+uses of mutate_parser:worker_parser_instance@8: attribute-store@12
+type positions @5: _formatter_cwd
+== code objects: one per scope that compiles on this Python

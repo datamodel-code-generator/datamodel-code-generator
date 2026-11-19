@@ -15,10 +15,14 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 import tomllib
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable
+
+    from scripts._source_model import Binding, Import, Reference, Scope
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._import_cycles import import_cycles
+from scripts._source_model import SourceModelError, SourceModule, Unreadable, annotation, bases
+from scripts._source_model import argument as call_argument
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src" / "datamodel_code_generator"
@@ -60,7 +64,6 @@ Layer: TypeAlias = Literal[
     "runtime",
     "shared",
 ]
-SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
 
 CONCRETE_BACKEND_ROOTS: Final = frozenset({
     "dataclass",
@@ -86,7 +89,9 @@ REFERENCE_EXTERNAL_BACKEND_ROOTS: Final = frozenset({"msgspec"})
 DYNAMIC_ATTRIBUTE_MIN_ARGS: Final = 2
 _BACKEND_MODULE_PART_COUNT: Final = 3
 _DYNAMIC_IMPORT_ATTRIBUTE_NAMES: Final = frozenset({"__import__", "import_module"})
-_DYNAMIC_IMPORT_PROVIDER_ROOTS: Final = frozenset({"builtins", "importlib"})
+_UNREADABLE_IMPORT_MESSAGE: Final = (
+    "the import leaves the top-level package, so no module name can be read from it: import by an absolute name"
+)
 _SHARED_MODEL_BACKEND_IMPORT_MESSAGE: Final = (
     "shared model code must not depend on a concrete backend; expose a neutral capability instead"
 )
@@ -529,16 +534,6 @@ def _module_name(path: Path, layer: Layer) -> str:
     return ".".join(parts)
 
 
-def _normalize_import(module: str | None, level: int, current_module: str, path: Path) -> str:
-    if level == 0:
-        return module or ""
-
-    module_parts = current_module.split(".")
-    package_parts = module_parts if path.name == "__init__.py" else module_parts[:-1]
-    keep = max(0, len(package_parts) - level + 1)
-    return ".".join((*package_parts[:keep], *((module or "").split(".") if module else ())))
-
-
 def _is_below(module: str, package: str) -> bool:
     return module == package or module.startswith(f"{package}.")
 
@@ -556,309 +551,202 @@ def _is_reference_backend_import(target: str) -> bool:
     return bool(_concrete_backend_module(target) or target.partition(".")[0] in REFERENCE_EXTERNAL_BACKEND_ROOTS)
 
 
-def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
+_STAR_SPELLINGS: Final = {
+    "__import__": "builtins.__import__",
+    "import_module": "importlib.import_module",
+    "super": "builtins.super",
+}
+"""What a name that only a star import may bind reads as, by its spelling: the names the rules look for."""
+_DYNAMIC_IMPORT_ORIGINS: Final = frozenset({"builtins.__import__", "importlib.__import__", "importlib.import_module"})
+_DATA_MODEL_TYPE_ORIGINS: Final = frozenset({
+    "datamodel_code_generator.DataModelType",
+    "datamodel_code_generator.enums.DataModelType",
+})
+_MODEL_TYPE_ORIGIN: Final = "datamodel_code_generator.reference.ModelType"
+_PROTOCOL_ORIGINS: Final = frozenset({"typing.Protocol", "typing_extensions.Protocol"})
+
+
+class _Reading:
+    """One module read through the source model: what the names of its expressions spell, read and may hold."""
+
+    def __init__(self, model: SourceModule, package: PackageIndex) -> None:
+        """Index the name occurrences that read a name; ``package`` follows the names the package re-exports."""
+        self.model = model
+        self.package = package
+        self.names: dict[ast.AST, Reference] = {
+            reference.node: reference for reference in model.references if reference.context == "load"
+        }
+
+    def spelled(self, node: ast.AST) -> str | None:
+        """Return the dotted text of a name or attribute chain as written, None for any other expression."""
+        parts: list[str] = []
+        while isinstance(node, ast.Attribute):
+            parts.append(node.attr)
+            node = node.value
+        reference = self.names.get(node)
+        return None if reference is None else ".".join([reference.name, *reversed(parts)])
+
+    def last_name(self, node: ast.AST) -> str:
+        """Return the last name of a name or attribute chain, the empty string for any other expression."""
+        if isinstance(node, ast.Attribute):
+            return node.attr
+        reference = self.names.get(node)
+        return "" if reference is None else reference.name
+
+    def head(self, node: ast.AST) -> Reference | None:
+        """Return the name an attribute chain starts at, None where it starts at another expression."""
+        while isinstance(node, ast.Attribute):
+            node = node.value
+        return self.names.get(node)
+
+    def origins(self, node: ast.expr) -> set[str]:
+        """Return every dotted path a name or attribute chain may name.
+
+        A path through a name the package re-exports from another module counts as that module's path too. A name that
+        only a star import may bind reads as what its spelling says, for the names the rules look for.
+        """
+        found = {path for path, _ in self.model.origins(node)}
+        if (single := self.model.origin(node)) is not None:
+            found.add(single)
+        head = self.head(node)
+        if not found and head is not None and self.model.resolve(head.node).kind == "star":
+            spelled = self.spelled(node) or ""
+            if head.name in _STAR_SPELLINGS:
+                found.add(_STAR_SPELLINGS[head.name] + spelled.removeprefix(head.name))
+        return found | {self.package.resolve(path) for path in found}
+
+    def strings(self, node: ast.AST | None, seen: frozenset[ast.AST] = frozenset()) -> list[str]:
+        """Return the strings an expression may hold: a literal, or the literals of every binding of the name.
+
+        A name holds what every assignment of its scope gives it, whatever the order: the source model does not
+        answer which binding reaches a read, and a string that a rule leaves out would be missed silently.
+        """
+        if isinstance(node, ast.Constant):
+            return [node.value] if isinstance(node.value, str) else []
+        reference = None if node is None else self.names.get(node)
+        if reference is None:
+            return []
+        found: list[str] = []
+        for binding in self.model.resolve(reference.node).bindings:
+            if binding.kind in {"assign", "annassign"} and binding.value is not None and binding.node not in seen:
+                found += self.strings(binding.value, seen | {binding.node})
+        return list(dict.fromkeys(found))
+
+    def matching(self, node: ast.AST | None, accepts: Callable[[str], object]) -> str | None:
+        """Return the first string an expression may hold that a predicate accepts."""
+        return next((value for value in self.strings(node) if accepts(value)), None)
+
+    def qualname(self, node: ast.AST) -> str:
+        """Return the functions and classes around a node, innermost last, as ``Class.method``."""
+        return _scope_qualname(self.model.scope_of(node))
+
+
+def _scope_qualname(scope: Scope | None) -> str:
+    """Return the dotted names of the functions and classes a scope is in, itself included."""
     parts: list[str] = []
-    current = node
-    while isinstance(current, ast.Attribute):
-        parts.append(current.attr)
-        current = current.value
-    if isinstance(current, ast.Name):
-        parts.append(current.id)
-    parts.reverse()
-    return tuple(parts)
+    while scope is not None:
+        if scope.kind in {"function", "class"}:
+            parts.append(scope.code_name)
+        scope = scope.parent
+    return ".".join(reversed(parts)) or "<module>"
 
 
-class ArchitectureBoundaryVisitor(ast.NodeVisitor):
-    """Find forbidden imports and semantic backend inspection for one layer."""
+class ArchitectureBoundaryReader:
+    """Find forbidden imports and semantic backend inspection for one layer, from the source model's answers."""
 
-    def __init__(self, path: Path, layer: Layer, tree: ast.Module) -> None:
-        """Create a visitor and collect conservative module string constants."""
+    def __init__(self, path: Path, layer: Layer, reading: _Reading) -> None:
+        """Create a reader for one file; the model knows its module name, so relative imports read as absolute."""
         self.path = path
         self.display_path = _display_path(path)
         self.layer = layer
-        self.current_module = _module_name(path, layer)
-        self.qualnames: list[str] = []
+        self.reading = reading
+        self.model = reading.model
         self.violations: list[Violation] = []
-        self.backend_aliases: dict[str, str] = {}
-        self.package_root_aliases: set[str] = set()
-        self.dynamic_import_aliases = set(_DYNAMIC_IMPORT_ATTRIBUTE_NAMES)
-        self.dynamic_import_provider_aliases: set[str] = set()
-        (
-            self.module_dynamic_import_provider_aliases,
-            self.module_dynamic_import_provider_alias_names,
-        ) = self._collect_dynamic_import_provider_aliases(tree) if layer == "shared-model" else (set(), set())
-        self.sys_aliases: set[str] = set()
-        self.sys_modules_aliases: set[str] = set()
-        self.shared_model_scope_contexts: list[tuple[bool, SharedModelAliasState]] = []
-        self.data_model_type_aliases = {"DataModelType"}
-        self.field_name_model_type_aliases: set[str] = set()
-        self.module_string_constants, self.module_string_constant_names = self._collect_string_constants(
-            tree,
-            clear_reassigned=layer == "shared-model",
-        )
-        self.string_constants = {} if layer == "shared-model" else self.module_string_constants.copy()
 
-    @staticmethod
-    def _collect_string_constants(
-        tree: ast.Module,
-        *,
-        clear_reassigned: bool,
-    ) -> tuple[dict[str, str], set[str]]:
-        constants: dict[str, str] = {}
-        names: set[str] = set()
-        for node in tree.body:
-            match node:
-                case (
-                    ast.Assign(targets=[ast.Name(id=name)], value=value)
-                    | ast.AnnAssign(target=ast.Name(id=name), value=value)
-                ):
-                    names.add(name)
-                    match value:
-                        case ast.Constant(value=str() as string_value):
-                            constants[name] = string_value
-                        case ast.Name(id=alias) if alias in constants:
-                            constants[name] = constants[alias]
-                        case _ if clear_reassigned:
-                            constants.pop(name, None)
-                        case _:
-                            pass
-        return constants, names
+    def run(self) -> list[Violation]:
+        """Return the violations of the file: its imports, its definitions and what its expressions read."""
+        for item in self.model.imports:
+            if item.kind != "dynamic":
+                self._imported(item)
+        if self.layer == "reference":
+            self._definitions()
+        for node in ast.walk(self.model.tree):
+            if isinstance(node, ast.Call):
+                self._call(node)
+            elif isinstance(node, ast.Compare):
+                self._compare(node)
+            elif isinstance(node, ast.Subscript):
+                self._subscript(node)
+            elif isinstance(node, ast.Attribute):
+                self._attribute(node)
+        return self.violations
 
-    @staticmethod
-    def _import_alias_name(alias: ast.alias) -> str:
-        return alias.asname or alias.name.partition(".")[0]
-
-    @staticmethod
-    def _is_dynamic_import_provider_alias(alias: ast.alias) -> bool:
-        return alias.name in _DYNAMIC_IMPORT_PROVIDER_ROOTS or (
-            alias.asname is None and alias.name.partition(".")[0] in _DYNAMIC_IMPORT_PROVIDER_ROOTS
-        )
-
-    @classmethod
-    def _collect_dynamic_import_provider_aliases(cls, tree: ast.Module) -> tuple[set[str], set[str]]:
-        aliases: set[str] = set()
-        names: set[str] = set()
-        for node in tree.body:
-            match node:
-                case ast.Import(names=imports):
-                    for imported in imports:
-                        alias_name = cls._import_alias_name(imported)
-                        names.add(alias_name)
-                        aliases.discard(alias_name)
-                        if cls._is_dynamic_import_provider_alias(imported):
-                            aliases.add(alias_name)
-                case ast.ImportFrom(names=imports):
-                    imported_names = {imported.asname or imported.name for imported in imports}
-                    names.update(imported_names)
-                    aliases.difference_update(imported_names)
-                case ast.Assign(targets=targets, value=ast.Name(id=alias)):
-                    assigned_names = {target.id for target in targets if isinstance(target, ast.Name)}
-                    is_provider_alias = alias in aliases
-                    names.update(assigned_names)
-                    aliases.difference_update(assigned_names)
-                    if is_provider_alias:
-                        aliases.update(assigned_names)
-                case ast.Assign(targets=targets):
-                    assigned_names = {target.id for target in targets if isinstance(target, ast.Name)}
-                    names.update(assigned_names)
-                    aliases.difference_update(assigned_names)
-                case ast.AnnAssign(target=ast.Name(id=name), value=ast.Name(id=alias)):
-                    is_provider_alias = alias in aliases
-                    names.add(name)
-                    aliases.discard(name)
-                    if is_provider_alias:
-                        aliases.add(name)
-                case ast.AnnAssign(target=ast.Name(id=name)):
-                    names.add(name)
-                    aliases.discard(name)
-        return aliases, names
-
-    @property
-    def qualname(self) -> str:
-        """Current enclosing symbol."""
-        return ".".join(self.qualnames) or "<module>"
-
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        """Track class context for stable allowlist entries."""
-        self._visit_named_scope(node, class_scope=True)
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        """Track function context for stable allowlist entries."""
-        self._visit_named_scope(node, class_scope=False)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        """Track async function context for stable allowlist entries."""
-        self._visit_named_scope(node, class_scope=False)
-
-    def _visit_named_scope(
-        self,
-        node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef,
-        *,
-        class_scope: bool,
-    ) -> None:
-        """Track one scope and reject output-specific definitions in reference code."""
-        aliases = self._snapshot_shared_model_aliases()
-        self.qualnames.append(node.name)
-        scoped_aliases = False
-        try:
-            self._visit_outer_scope_expressions(node)
-            if aliases is not None and self.shared_model_scope_contexts and self.shared_model_scope_contexts[-1][0]:
-                class_aliases = self.shared_model_scope_contexts[-1][1]
-                self._restore_shared_model_aliases(self._copy_shared_model_aliases(class_aliases))
-            if (
-                aliases is not None
-                and isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-                and all(class_scope for class_scope, _ in self.shared_model_scope_contexts)
-            ):
-                self.string_constants = {
-                    name: value
-                    for name, value in self.string_constants.items()
-                    if name not in self.module_string_constant_names
-                }
-                self.string_constants.update(self.module_string_constants)
-                self.dynamic_import_provider_aliases.difference_update(self.module_dynamic_import_provider_alias_names)
-                self.dynamic_import_provider_aliases.update(self.module_dynamic_import_provider_aliases)
-            if aliases is not None:
-                self.shared_model_scope_contexts.append((class_scope, self._copy_current_shared_model_aliases()))
-                scoped_aliases = True
-            if aliases is not None:
-                self._discard_function_parameter_aliases(node)
-            if self.layer == "reference" and any(
-                marker in node.name.replace("_", "").casefold() for marker in REFERENCE_BACKEND_DEFINITION_MARKERS
+    def _definitions(self) -> None:
+        """Reject output-specific definitions in reference code."""
+        for scope in self.model.scopes:
+            if scope.kind in {"function", "class"} and any(
+                marker in scope.code_name.replace("_", "").casefold() for marker in REFERENCE_BACKEND_DEFINITION_MARKERS
             ):
                 self._add(
-                    node,
+                    scope.node,
                     "reference-backend-definition",
-                    node.name,
+                    scope.code_name,
                     "reference code must not define concrete output-backend policy; move it to the output model",
+                    qualname=_scope_qualname(scope),
                 )
-            for statement in node.body:
-                self.visit(statement)
-        finally:
-            if scoped_aliases:
-                self.shared_model_scope_contexts.pop()
-            self.qualnames.pop()
-            self._restore_shared_model_aliases(aliases)
 
-    def _visit_outer_scope_expressions(
-        self,
-        node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef,
-    ) -> None:
-        for decorator in node.decorator_list:
-            self.visit(decorator)
-        for name, value in ast.iter_fields(node):
-            if name in {"body", "decorator_list"}:
-                continue
-            if isinstance(value, ast.AST):
-                self.visit(value)
-            elif isinstance(value, list):
-                for item in value:
-                    self.visit(item)
-
-    def visit_Import(self, node: ast.Import) -> None:
-        """Check direct absolute backend and private-parser imports."""
-        for alias in node.names:
-            if alias.name == "datamodel_code_generator":
-                self.package_root_aliases.add(alias.asname or alias.name)
-            alias_name = self._import_alias_name(alias)
-            if self.layer == "shared-model":
-                self._discard_shared_model_aliases({alias_name})
-                if self._is_dynamic_import_provider_alias(alias):
-                    self.dynamic_import_provider_aliases.add(alias_name)
-                if alias.name == "sys":
-                    self.sys_aliases.add(alias_name)
-            self._record_import_alias(alias.asname or alias.name.partition(".")[0], alias.name)
-            self._check_import(node, alias.name)
-
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        """Check absolute, relative, and package-root import forms."""
-        module = _normalize_import(node.module, node.level, self.current_module, self.path)
-        if self.layer == "runtime" and node.level and _is_below(module, _RUNTIME_PACKAGE):
+    def _imported(self, item: Import) -> None:
+        """Check one import: an absolute, relative or package-root form, a star import included."""
+        if isinstance(item.source, Unreadable):
+            self._add(item.node, "unreadable-import", str(item.source), _UNREADABLE_IMPORT_MESSAGE)
             return
-        for alias in node.names:
-            target = f"{module}.{alias.name}" if module else alias.name
-            alias_name = alias.asname or alias.name
-            if self.layer == "shared-model":
-                self._discard_shared_model_aliases({alias_name})
-                if module == "sys" and alias.name == "modules":
-                    self.sys_modules_aliases.add(alias_name)
-            if module in {"builtins", "importlib"} and alias.name in _DYNAMIC_IMPORT_ATTRIBUTE_NAMES:
-                self.dynamic_import_aliases.add(alias_name)
-            if self.layer in _PARSER_LAYERS and module == "datamodel_code_generator" and alias.name.startswith("_"):
-                self._add(
-                    node,
-                    "parser-root-private-import",
-                    target,
-                    "parser code must import private helpers from their neutral module, not the package facade",
-                )
-            if (
-                module in {"datamodel_code_generator", "datamodel_code_generator.enums"}
-                and alias.name == "DataModelType"
-            ):
-                self.data_model_type_aliases.add(alias.asname or alias.name)
-            if module == "datamodel_code_generator.reference" and alias.name == "ModelType":
-                self.field_name_model_type_aliases.add(alias_name)
-            if module == "datamodel_code_generator.model" and alias.name in CONCRETE_BACKEND_ROOTS:
-                self._record_import_alias(alias.asname or alias.name, target)
-                self._check_import(node, target)
-                continue
-            self._record_import_alias(alias.asname or alias.name, module)
-            self._check_import(
-                node,
-                target
-                if self.layer in {"reference", "target", "requirements", "constraints", "regex"}
-                or alias.name.startswith("_")
-                else module,
+        if item.alias is None or item.kind == "import":
+            self._check_import(item.node, item.source)
+            return
+        module, name = item.source, item.alias.name
+        if self.layer == "runtime" and item.level and _is_below(module, _RUNTIME_PACKAGE):
+            return
+        target = f"{module}.{name}" if module else name
+        if self.layer in _PARSER_LAYERS and module == "datamodel_code_generator" and name.startswith("_"):
+            self._add(
+                item.node,
+                "parser-root-private-import",
+                target,
+                "parser code must import private helpers from their neutral module, not the package facade",
             )
+        if module == "datamodel_code_generator.model" and name in CONCRETE_BACKEND_ROOTS:
+            self._check_import(item.node, target)
+            return
+        self._check_import(
+            item.node,
+            target
+            if self.layer in {"reference", "target", "requirements", "constraints", "regex"} or name.startswith("_")
+            else module,
+        )
 
-    def visit_Call(self, node: ast.Call) -> None:
+    def _call(self, node: ast.Call) -> None:
         """Check dynamic imports, semantic getattr, and backend module identity helpers."""
-        chain = _attribute_chain(node.func)
-        dynamic_target = None
-        if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
-            dynamic_target = self._resolved_dynamic_target(node, self._resolved_string(argument))
-        if dynamic_target and self.layer in _LEAF_LAYER_IMPORTS:
-            self._check_import(node, dynamic_target)
-        elif (
-            dynamic_target
-            and not self._check_parser_pass_import(node, dynamic_target)
-            and not self._check_target_boundary(node, dynamic_target)
-            and self.layer in {*_PARSER_LAYERS, "config", "reference", "shared-model"}
-            and (
-                _is_reference_backend_import(dynamic_target)
-                if self.layer == "reference"
-                else _concrete_backend_module(dynamic_target)
-            )
-        ):
-            match self.layer:
-                case "reference":
-                    self._add(
-                        node,
-                        "reference-backend-import",
-                        dynamic_target,
-                        "reference code must not import concrete output backends except bounded compatibility exports",
-                    )
-                case "shared-model":
-                    self._add(
-                        node,
-                        "shared-model-backend-import",
-                        dynamic_target,
-                        _SHARED_MODEL_BACKEND_IMPORT_MESSAGE,
-                    )
-                case _:
-                    self._add(
-                        node,
-                        "backend-dynamic-import",
-                        dynamic_target,
-                        "parser/config layers must not dynamically import output backends; "
-                        "declare a neutral capability",
-                    )
+        reading = self.reading
+        for target in self._dynamic_targets(node):
+            if self.layer in _LEAF_LAYER_IMPORTS:
+                self._check_import(node, target)
+            elif (
+                not self._check_parser_pass_import(node, target)
+                and not self._check_target_boundary(node, target)
+                and self.layer in {*_PARSER_LAYERS, "config", "reference", "shared-model"}
+                and (
+                    _is_reference_backend_import(target)
+                    if self.layer == "reference"
+                    else _concrete_backend_module(target)
+                )
+            ):
+                self._dynamic_backend_import(node, target)
 
         if (
             self.layer == "shared-model"
+            and node.args
             and self._is_sys_modules_get(node)
-            and (target := self._resolved_string(node.args[0]))
-            and _concrete_backend_module(target)
+            and (target := reading.matching(node.args[0], _concrete_backend_module))
         ):
             self._add(
                 node,
@@ -867,14 +755,19 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE,
             )
 
-        self._check_entrypoint_private_call(node, chain)
+        callee = reading.last_name(node.func)
+        self._check_entrypoint_private_call(node, callee)
 
         if (
             self.layer in _PARSER_LAYERS
-            and chain[-1:]
-            and chain[-1] in PARSER_BACKEND_REQUIREMENT_READERS
-            and (construct := self._resolved_string(self._requirement_construct_argument(node))) is not None
-            and construct.startswith(PARSER_BACKEND_REQUIREMENT_PREFIX)
+            and callee in PARSER_BACKEND_REQUIREMENT_READERS
+            and (
+                construct := reading.matching(
+                    call_argument(node, 0, "construct"),
+                    lambda value: value.startswith(PARSER_BACKEND_REQUIREMENT_PREFIX),
+                )
+            )
+            is not None
         ):
             self._add(
                 node,
@@ -884,13 +777,10 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             )
 
         if (
-            chain
-            and chain[-1] in {"getattr", "hasattr"}
+            callee in {"getattr", "hasattr"}
             and len(node.args) > 1
-            and (
-                self.layer in _PARSER_LAYERS
-                and (attribute := self._resolved_string(node.args[1])) in PARSER_BACKEND_ATTRIBUTES
-            )
+            and self.layer in _PARSER_LAYERS
+            and (attribute := reading.matching(node.args[1], PARSER_BACKEND_ATTRIBUTES.__contains__)) is not None
         ):
             self._add(
                 node,
@@ -899,15 +789,13 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 "parser code must query a neutral DataModel or DataModelFieldBase capability",
             )
 
-        module_keyword = next((keyword.value for keyword in node.keywords if keyword.arg == "module"), None)
+        module_keyword = call_argument(node, None, "module")
         if (
             self.layer in _PARSER_LAYERS
             and module_keyword is not None
-            and (target := self._resolved_string(module_keyword))
-            and _concrete_backend_module(target)
+            and (target := reading.matching(module_keyword, _concrete_backend_module))
         ):
-            name_keyword = next((keyword.value for keyword in node.keywords if keyword.arg == "name"), None)
-            if name := self._resolved_string(name_keyword):
+            if name := next(iter(reading.strings(call_argument(node, None, "name"))), None):
                 target = f"{target}#{name}"
             self._add(
                 node,
@@ -915,9 +803,27 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 target,
                 "parser code must not identify an output backend by module/name; declare a neutral capability",
             )
-        self.generic_visit(node)
 
-    def visit_Compare(self, node: ast.Compare) -> None:
+    def _dynamic_backend_import(self, node: ast.Call, target: str) -> None:
+        match self.layer:
+            case "reference":
+                self._add(
+                    node,
+                    "reference-backend-import",
+                    target,
+                    "reference code must not import concrete output backends except bounded compatibility exports",
+                )
+            case "shared-model":
+                self._add(node, "shared-model-backend-import", target, _SHARED_MODEL_BACKEND_IMPORT_MESSAGE)
+            case _:
+                self._add(
+                    node,
+                    "backend-dynamic-import",
+                    target,
+                    "parser/config layers must not dynamically import output backends; declare a neutral capability",
+                )
+
+    def _compare(self, node: ast.Compare) -> None:
         """Check direct ``__module__`` comparisons to concrete backends."""
         operands = (node.left, *node.comparators)
         if (
@@ -928,7 +834,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                     (
                         value
                         for operand in operands
-                        if (value := self._resolved_string(operand)) and _concrete_backend_module(value)
+                        if (value := self.reading.matching(operand, _concrete_backend_module))
                     ),
                     None,
                 )
@@ -940,48 +846,13 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 target,
                 "parser code must not identify an output backend by module/name; declare a neutral capability",
             )
-        self.generic_visit(node)
 
-    def visit_Assign(self, node: ast.Assign) -> None:
-        """Track shared-model aliases for the module registry and concrete module strings."""
-        self.visit(node.value)
-        for target in node.targets:
-            self.visit(target)
-        if self.layer == "shared-model":
-            self._record_shared_model_aliases(node.targets, node.value)
-
-    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        """Track annotated shared-model aliases for the module registry and concrete module strings."""
-        self.visit(node.annotation)
-        if node.value is not None:
-            self.visit(node.value)
-        self.visit(node.target)
-        if self.layer == "shared-model":
-            self._record_shared_model_aliases((node.target,), node.value)
-
-    def visit_If(self, node: ast.If) -> None:
-        """Retain shared-model aliases that remain possible after either branch."""
-        if self.layer != "shared-model":
-            self.generic_visit(node)
-            return
-        self.visit(node.test)
-        initial = self._copy_current_shared_model_aliases()
-        for statement in node.body:
-            self.visit(statement)
-        body_aliases = self._copy_current_shared_model_aliases()
-        self._restore_shared_model_aliases(self._copy_shared_model_aliases(initial))
-        for statement in node.orelse:
-            self.visit(statement)
-        orelse_aliases = self._copy_current_shared_model_aliases()
-        self._restore_shared_model_aliases(self._merge_shared_model_aliases(body_aliases, orelse_aliases))
-
-    def visit_Subscript(self, node: ast.Subscript) -> None:
+    def _subscript(self, node: ast.Subscript) -> None:
         """Reject concrete backend lookups through the module registry."""
         if (
             self.layer == "shared-model"
             and self._is_sys_modules_registry(node.value)
-            and (target := self._resolved_string(node.slice))
-            and _concrete_backend_module(target)
+            and (target := self.reading.matching(node.slice, _concrete_backend_module))
         ):
             self._add(
                 node,
@@ -989,85 +860,78 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 target,
                 _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE,
             )
-        self.generic_visit(node)
 
-    def visit_Attribute(self, node: ast.Attribute) -> None:
+    def _attribute(self, node: ast.Attribute) -> None:
         """Check backend-specific semantic attributes and output policy references."""
-        if self.layer == "entrypoint" and node.attr.startswith("_") and self._is_parser_instance(node.value):
-            self._add(
-                node,
-                "entrypoint-parser-private-access",
-                node.attr,
-                "entrypoint code must use the Parser public lifecycle and run-context API",
-            )
+        reading = self.reading
+        if self.layer == "entrypoint":
+            if node.attr.startswith("_") and self._is_parser_instance(node.value):
+                self._add(
+                    node,
+                    "entrypoint-parser-private-access",
+                    node.attr,
+                    "entrypoint code must use the Parser public lifecycle and run-context API",
+                )
         elif self.layer in _PARSER_LAYERS:
-            match node.value:
-                case ast.Name(id=root_alias) if root_alias in self.package_root_aliases and node.attr.startswith("_"):
-                    self._add(
-                        node,
-                        "parser-root-private-import",
-                        f"datamodel_code_generator.{node.attr}",
-                        "parser code must import private helpers from their neutral module, not the package facade",
-                    )
-                case _ if node.attr in PARSER_BACKEND_ATTRIBUTES:
-                    self._add(
-                        node,
-                        "backend-semantic-inspection",
-                        node.attr,
-                        "parser code must query a neutral DataModel or DataModelFieldBase capability",
-                    )
-                case ast.Name(id=type_alias) if type_alias in self.data_model_type_aliases or (
-                    type_alias in self.field_name_model_type_aliases and node.attr in {"PYDANTIC", "MSGSPEC"}
-                ):
-                    self._add(
-                        node,
-                        "parser-output-policy",
-                        f"{type_alias}.{node.attr}",
-                        "parser code must query output capabilities instead of selecting concrete backend policy",
-                    )
-                case _:
-                    pass
+            self._parser_attribute(node)
         elif self.layer == "config":
-            chain = _attribute_chain(node)
-            if chain and (backend := self.backend_aliases.get(chain[0])):
-                target = ".".join((backend, *chain[1:]))
+            if backend := next(iter(sorted(filter(_concrete_backend_module, reading.origins(node)))), None):
                 self._add(
                     node,
                     "config-backend-reference",
-                    target,
+                    backend,
                     "configuration must receive output implementations through a neutral registry or injection",
                 )
         elif self.layer == "input-model":
-            chain = _attribute_chain(node)
-            if len(chain) > 1 and chain[0] in self.data_model_type_aliases:
+            head = reading.head(node)
+            if head is not None and reading.origins(head.node) & _DATA_MODEL_TYPE_ORIGINS:
                 self._add(
                     node,
                     "input-model-output-policy",
-                    ".".join(chain),
+                    reading.spelled(node) or "",
                     "input-model conversion must obtain output-family policy from the output selection registry",
                 )
-        self.generic_visit(node)
 
-    @staticmethod
-    def _is_parser_instance(node: ast.AST) -> bool:
+    def _parser_attribute(self, node: ast.Attribute) -> None:
+        reading = self.reading
+        receiver = node.value
+        origins = reading.origins(receiver) if receiver in reading.names else set()
+        if "datamodel_code_generator" in origins and node.attr.startswith("_"):
+            self._add(
+                node,
+                "parser-root-private-import",
+                f"datamodel_code_generator.{node.attr}",
+                "parser code must import private helpers from their neutral module, not the package facade",
+            )
+        elif node.attr in PARSER_BACKEND_ATTRIBUTES:
+            self._add(
+                node,
+                "backend-semantic-inspection",
+                node.attr,
+                "parser code must query a neutral DataModel or DataModelFieldBase capability",
+            )
+        elif origins & _DATA_MODEL_TYPE_ORIGINS or (
+            _MODEL_TYPE_ORIGIN in origins and node.attr in {"PYDANTIC", "MSGSPEC"}
+        ):
+            self._add(
+                node,
+                "parser-output-policy",
+                f"{reading.spelled(receiver)}.{node.attr}",
+                "parser code must query output capabilities instead of selecting concrete backend policy",
+            )
+
+    def _is_parser_instance(self, node: ast.AST) -> bool:
         """Recognize local Parser instances without following arbitrary object graphs."""
-        match node:
-            case ast.Name(id=name) | ast.Attribute(attr=name):
-                return name == "parser" or name.endswith(("_parser", "_parser_instance"))
-        return False
+        name = self.reading.last_name(node)
+        return name == "parser" or name.endswith(("_parser", "_parser_instance"))
 
-    def _check_entrypoint_private_call(self, node: ast.Call, chain: tuple[str, ...]) -> None:
+    def _check_entrypoint_private_call(self, node: ast.Call, callee: str) -> None:
         """Reject indirect private access on a Parser instance from the entrypoint."""
-        if self.layer != "entrypoint" or chain[-1:] not in {
-            ("getattr",),
-            ("hasattr",),
-            ("setattr",),
-            ("delattr",),
-        }:
+        if self.layer != "entrypoint" or callee not in {"getattr", "hasattr", "setattr", "delattr"}:
             return
         if len(node.args) < DYNAMIC_ATTRIBUTE_MIN_ARGS or not self._is_parser_instance(node.args[0]):
             return
-        if (attribute := self._resolved_string(node.args[1])) is None or not attribute.startswith("_"):
+        if (attribute := self.reading.matching(node.args[1], lambda value: value.startswith("_"))) is None:
             return
         self._add(
             node,
@@ -1076,186 +940,52 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             "entrypoint code must use the Parser public lifecycle and run-context API",
         )
 
-    def _is_dynamic_import(self, node: ast.AST) -> bool:
-        match node:
-            case ast.Name(id=name):
-                return name in self.dynamic_import_aliases
-            case ast.Attribute(attr=attribute):
-                if attribute not in _DYNAMIC_IMPORT_ATTRIBUTE_NAMES:
-                    return False
-                if self.layer != "shared-model":
-                    return True
-                chain = _attribute_chain(node)
-                return len(chain) > 1 and chain[0] in self.dynamic_import_provider_aliases
-        return False
+    def _is_dynamic_import(self, func: ast.expr) -> bool:
+        """Whether a callee is ``importlib.import_module`` or ``__import__``, or any attribute of those names.
 
-    def _resolved_package(self, node: ast.expr | None) -> str | None:
-        match node:
-            case ast.Name(id="__package__"):
-                return (
-                    self.current_module if self.path.name == "__init__.py" else self.current_module.rpartition(".")[0]
-                )
-        return self._resolved_string(node)
+        Outside shared model code an attribute of those names counts whatever it is read from.
+        """
+        if self.reading.origins(func) & _DYNAMIC_IMPORT_ORIGINS:
+            return True
+        return (
+            self.layer != "shared-model"
+            and isinstance(func, ast.Attribute)
+            and func.attr in _DYNAMIC_IMPORT_ATTRIBUTE_NAMES
+        )
 
-    def _resolved_dynamic_target(self, node: ast.Call, target: str | None) -> str | None:
-        match node.func:
-            case ast.Name(id="import_module") | ast.Attribute(attr="import_module") if (
-                target is not None and target.startswith(".")
-            ):
-                package = (
-                    node.args[1]
-                    if len(node.args) > 1
-                    else next((keyword.value for keyword in node.keywords if keyword.arg == "package"), None)
-                )
-                if (anchor := self._resolved_package(package)) is None:
-                    return target
-                try:
-                    return importlib.util.resolve_name(target, anchor)
-                except ImportError:
-                    return target
-        return target
+    def _dynamic_targets(self, node: ast.Call) -> list[str]:
+        """Return the modules a dynamic import call may load, the strings its name argument may hold."""
+        if not self._is_dynamic_import(node.func) or (argument := call_argument(node, 0, "name")) is None:
+            return []
+        return [target for value in self.reading.strings(argument) if (target := self._resolved_target(node, value))]
 
-    @staticmethod
-    def _dynamic_import_target_argument(node: ast.Call) -> ast.expr | None:
-        if node.args:
-            return node.args[0]
-        return next((keyword.value for keyword in node.keywords if keyword.arg == "name"), None)
+    def _resolved_target(self, node: ast.Call, target: str) -> str:
+        """Return the absolute module a relative ``import_module`` name reads, given its ``package``."""
+        if self.reading.last_name(node.func) != "import_module" or not target.startswith("."):
+            return target
+        package = call_argument(node, 1, "package")
+        if package is None or (anchor := self._resolved_package(package)) is None:
+            return target
+        try:
+            return importlib.util.resolve_name(target, anchor)
+        except ImportError:
+            return target
 
-    @staticmethod
-    def _requirement_construct_argument(node: ast.Call) -> ast.expr | None:
-        if node.args:
-            return node.args[0]
-        return next((keyword.value for keyword in node.keywords if keyword.arg == "construct"), None)
+    def _resolved_package(self, node: ast.expr) -> str | None:
+        """Return the package name an expression gives: ``__package__`` of this module, or a string."""
+        if self.reading.spelled(node) == "__package__":
+            return self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]
+        return next(iter(self.reading.strings(node)), None)
 
-    def _is_sys_modules_registry(self, node: ast.AST) -> bool:
-        match node:
-            case ast.Name(id=name):
-                return name in self.sys_modules_aliases
-            case ast.Attribute(value=ast.Name(id=name), attr="modules"):
-                return name in self.sys_aliases
-        return False
+    def _is_sys_modules_registry(self, node: ast.expr) -> bool:
+        return "sys.modules" in self.reading.origins(node)
 
     def _is_sys_modules_get(self, node: ast.Call) -> bool:
-        match node.func:
-            case ast.Attribute(value=value, attr="get"):
-                return bool(node.args) and self._is_sys_modules_registry(value)
-        return False
-
-    def _snapshot_shared_model_aliases(self) -> SharedModelAliasState | None:
-        if self.layer != "shared-model":
-            return None
-        return self._copy_current_shared_model_aliases()
-
-    def _copy_current_shared_model_aliases(self) -> SharedModelAliasState:
         return (
-            self.dynamic_import_aliases.copy(),
-            self.dynamic_import_provider_aliases.copy(),
-            self.sys_aliases.copy(),
-            self.sys_modules_aliases.copy(),
-            self.string_constants.copy(),
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "get"
+            and self._is_sys_modules_registry(node.func.value)
         )
-
-    @staticmethod
-    def _copy_shared_model_aliases(aliases: SharedModelAliasState) -> SharedModelAliasState:
-        return (
-            aliases[0].copy(),
-            aliases[1].copy(),
-            aliases[2].copy(),
-            aliases[3].copy(),
-            aliases[4].copy(),
-        )
-
-    @staticmethod
-    def _merge_shared_model_aliases(
-        body_aliases: SharedModelAliasState,
-        orelse_aliases: SharedModelAliasState,
-    ) -> SharedModelAliasState:
-        string_constants: dict[str, str] = {}
-        for name in body_aliases[4].keys() | orelse_aliases[4].keys():
-            body_value = body_aliases[4].get(name)
-            orelse_value = orelse_aliases[4].get(name)
-            if body_value == orelse_value:
-                string_constants[name] = body_aliases[4][name]
-            elif concrete_value := next(
-                (
-                    value
-                    for value in (body_value, orelse_value)
-                    if value is not None and _concrete_backend_module(value)
-                ),
-                None,
-            ):
-                string_constants[name] = concrete_value
-        return (
-            body_aliases[0] | orelse_aliases[0],
-            body_aliases[1] | orelse_aliases[1],
-            body_aliases[2] | orelse_aliases[2],
-            body_aliases[3] | orelse_aliases[3],
-            string_constants,
-        )
-
-    def _restore_shared_model_aliases(
-        self,
-        aliases: SharedModelAliasState | None,
-    ) -> None:
-        if aliases is None:
-            return
-        (
-            self.dynamic_import_aliases,
-            self.dynamic_import_provider_aliases,
-            self.sys_aliases,
-            self.sys_modules_aliases,
-            self.string_constants,
-        ) = aliases
-
-    def _discard_function_parameter_aliases(self, node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef) -> None:
-        match node:
-            case ast.FunctionDef(args=args) | ast.AsyncFunctionDef(args=args):
-                arguments = (*args.posonlyargs, *args.args, *args.kwonlyargs)
-                names = {argument.arg for argument in arguments}
-                if args.vararg is not None:
-                    names.add(args.vararg.arg)
-                if args.kwarg is not None:
-                    names.add(args.kwarg.arg)
-                self._discard_shared_model_aliases(names)
-            case _:
-                pass
-
-    def _discard_shared_model_aliases(self, names: set[str]) -> None:
-        self.dynamic_import_aliases.difference_update(names)
-        self.dynamic_import_provider_aliases.difference_update(names)
-        self.sys_aliases.difference_update(names)
-        self.sys_modules_aliases.difference_update(names)
-        for name in names:
-            self.string_constants.pop(name, None)
-
-    def _record_shared_model_aliases(
-        self,
-        targets: list[ast.expr] | tuple[ast.expr, ...],
-        value: ast.expr | None,
-    ) -> None:
-        names = {target.id for target in targets if isinstance(target, ast.Name)}
-        if not names:
-            return
-        string_value = self._resolved_string(value)
-        is_registry = value is not None and self._is_sys_modules_registry(value)
-        is_sys = isinstance(value, ast.Name) and value.id in self.sys_aliases
-        is_dynamic_import = value is not None and self._is_dynamic_import(value)
-        is_dynamic_import_provider = isinstance(value, ast.Name) and value.id in self.dynamic_import_provider_aliases
-        self._discard_shared_model_aliases(names)
-        if string_value is not None:
-            self.string_constants.update(dict.fromkeys(names, string_value))
-        if is_sys:
-            self.sys_aliases.update(names)
-        if is_registry:
-            self.sys_modules_aliases.update(names)
-        if is_dynamic_import:
-            self.dynamic_import_aliases.update(names)
-        if is_dynamic_import_provider:
-            self.dynamic_import_provider_aliases.update(names)
-
-    def _record_import_alias(self, alias: str, target: str) -> None:
-        if backend := _concrete_backend_module(target):
-            self.backend_aliases[alias] = backend
 
     def _check_target_boundary(self, node: ast.AST, target: str) -> bool:
         if self.layer == "target" and (
@@ -1358,21 +1088,13 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 "configuration must not depend on parser implementation modules",
             )
 
-    def _resolved_string(self, node: ast.AST | None) -> str | None:
-        match node:
-            case ast.Constant(value=str() as value):
-                return value
-            case ast.Name(id=name):
-                return self.string_constants.get(name)
-        return None
-
-    def _add(self, node: ast.AST, rule: str, target: str, message: str) -> None:
+    def _add(self, node: ast.AST, rule: str, target: str, message: str, *, qualname: str = "") -> None:
         self.violations.append(
             Violation(
                 path=self.display_path,
                 line=getattr(node, "lineno", 0),
                 column=getattr(node, "col_offset", 0) + 1,
-                qualname=self.qualname,
+                qualname=qualname or self.reading.qualname(node),
                 rule=rule,
                 target=target,
                 message=message,
@@ -1429,320 +1151,158 @@ def _in_host_scope(path: Path) -> bool:
     return False
 
 
-def _annotation_chain(annotation: ast.expr | None) -> tuple[str, ...]:
-    """Return the dotted name a ``Host``, ``mod.Host``, ``Host[...]``, ``type[Host]`` or ``"Host"`` annotation reads."""
-    match annotation:
-        case ast.Subscript(value=ast.Name(id="type"), slice=inner):
-            return _annotation_chain(inner)
-        case ast.Subscript():
-            return _annotation_chain(annotation.value)
-        case ast.Constant(value=str() as text):
-            return _annotation_chain(ast.parse(text, mode="eval").body)
-        case ast.Name() | ast.Attribute():
-            return _attribute_chain(annotation)
-    return ()
-
-
-def _is_protocol_base(base: ast.expr) -> bool:
-    match base:
-        case ast.Name(id="Protocol") | ast.Subscript(value=ast.Name(id="Protocol")):
-            return True
-    return False
-
-
-def _declared_names(node: ast.ClassDef) -> Iterator[str]:
-    """Yield the names a class body declares: annotated and assigned attributes, methods and properties."""
-    for statement in node.body:
-        match statement:
-            case ast.AnnAssign(target=ast.Name(id=name)) | ast.FunctionDef(name=name) | ast.AsyncFunctionDef(name=name):
-                yield name
-            case ast.Assign(targets=targets):
-                yield from (target.id for target in targets if isinstance(target, ast.Name))
-
-
-def _parse(path: Path) -> ast.Module:
-    return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-
-
-def _module_level_statements(statements: list[ast.stmt]) -> Iterator[ast.stmt]:
-    """Yield the statements of a module body in order, those of its ``if`` and ``try`` blocks included."""
-    for statement in statements:
-        yield statement
-        match statement:
-            case ast.If(body=body, orelse=orelse):
-                yield from _module_level_statements([*body, *orelse])
-            case ast.Try(body=body, handlers=handlers, orelse=orelse, finalbody=finalbody):
-                yield from _module_level_statements([
-                    *body,
-                    *(s for h in handlers for s in h.body),
-                    *orelse,
-                    *finalbody,
-                ])
-
-
-class HostIndex:
-    """The members each ``*Host`` Protocol declares, its Host bases' included, found through the imports."""
+class PackageIndex:
+    """The models of the package's modules, read once, and the names a module takes from another one."""
 
     def __init__(self) -> None:
         """Start with no module read."""
-        self._parsed: dict[Path, ast.Module] = {}
-        self._trees: dict[str, ast.Module | None] = {}
-        self._bindings: dict[str, dict[str, tuple[str, str]]] = {}
-        self._members: dict[tuple[str, str], frozenset[str] | None] = {}
+        self._models: dict[str, SourceModule | None] = {}
+        self._resolved: dict[str, str] = {}
 
-    def parse(self, path: Path) -> ast.Module:
-        """Return the syntax tree of a file, read once for both the rules and the Host lookups."""
-        if path not in self._parsed:
-            self._parsed[path] = _parse(path)
-        return self._parsed[path]
+    def add(self, module: str, model: SourceModule) -> None:
+        """Register a module's model, so that its own definitions and imports resolve."""
+        self._models[module] = model
 
-    def add(self, module: str, path: Path) -> None:
-        """Register a module's file, so that its own Host classes and imports resolve."""
-        tree = self._trees[module] = self.parse(path)
-        self._bindings[module] = self._read_bindings(module, path, tree)
-
-    def _tree(self, module: str) -> ast.Module | None:
-        if module not in self._trees:
+    def model(self, module: str) -> SourceModule | None:
+        """Return the model of a module of the package, read once; None for any other module."""
+        if module not in self._models:
             package, *parts = module.split(".")
             relative = SOURCE_ROOT.joinpath(*parts)
             for path in (relative.with_name(f"{relative.name}.py"), relative / "__init__.py"):
                 if package == "datamodel_code_generator" and path.is_file():
-                    self.add(module, path.resolve())
+                    text = path.read_text(encoding="utf-8")
+                    self._models[module] = SourceModule(text, _display_path(path.resolve()), module)
                     break
             else:
-                self._trees[module] = None
-        return self._trees[module]
+                self._models[module] = None
+        return self._models[module]
 
-    @staticmethod
-    def _read_bindings(module: str, path: Path, tree: ast.Module) -> dict[str, tuple[str, str]]:
-        """Map each name a module imports from a module, or defines as a class, to that module and name.
+    def resolve(self, origin: str) -> str:
+        """Follow a dotted path through the names a module of the package imports from another module.
 
-        Module-level imports count, those under ``if TYPE_CHECKING:`` (or another ``if`` or ``try``) included.
+        ``from datamodel_code_generator.format import import_module`` is ``importlib.import_module``, as the module
+        ``format`` binds it; a path that leads nowhere in the package stays as it is.
         """
-        bindings: dict[str, tuple[str, str]] = {}
-        for node in _module_level_statements(tree.body):
-            if isinstance(node, ast.ImportFrom):
-                source = _normalize_import(node.module, node.level, module, path)
-                bindings.update({alias.asname or alias.name: (source, alias.name) for alias in node.names})
-        bindings.update({node.name: (module, node.name) for node in tree.body if isinstance(node, ast.ClassDef)})
-        return bindings
+        if origin not in self._resolved:
+            self._resolved[origin] = origin
+            parts = origin.split(".")
+            for count in range(len(parts) - 1, 0, -1):
+                if (model := self.model(".".join(parts[:count]))) is None:
+                    continue
+                bindings = model.module_scope.bindings.get(parts[count], []) if count == len(parts) - 1 else []
+                if len(bindings) == 1 and bindings[0].kind == "import-from" and bindings[0].origin:
+                    self._resolved[origin] = self.resolve(bindings[0].origin)
+                break
+        return self._resolved[origin]
 
-    def members(self, module: str, chain: tuple[str, ...]) -> frozenset[str] | None:
-        """Return the members the Host Protocol that ``chain`` names in ``module`` declares, else None."""
-        if (
-            not chain
-            or (tree := self._tree(module)) is None
-            or (binding := self._bindings[module].get(chain[0])) is None
-        ):
+
+class HostIndex(PackageIndex):
+    """The members each ``*Host`` Protocol declares, its Host bases' included, found through the imports."""
+
+    def __init__(self) -> None:
+        """Start with no module read."""
+        super().__init__()
+        self._members: dict[tuple[str, str], frozenset[str] | None] = {}
+
+    def of_annotation(self, model: SourceModule, annotation: ast.expr | None) -> frozenset[str] | None:
+        """Return the members of the Host Protocol that a parameter's annotation names, else None.
+
+        The annotation names a Host as ``Host``, ``mod.Host``, ``Host[...]``, ``type[Host]`` or ``"Host"``.
+        """
+        types = model.type_expressions(annotation) if annotation is not None else []
+        if types and model.origin(types[0]) == "builtins.type":
+            types = types[1:]
+        return self.members(model.origin(types[0])) if types else None
+
+    def members(self, origin: str | None) -> frozenset[str] | None:
+        """Return the members the Host Protocol that a dotted origin names declares, else None."""
+        parts = (origin or "").split(".")
+        for count in range(len(parts) - 1, 0, -1):
+            module = ".".join(parts[:count])
+            if (model := self.model(module)) is not None:
+                return self._of_name(module, model, ".".join(parts[count:]))
+        return None
+
+    def _of_name(self, module: str, model: SourceModule, name: str) -> frozenset[str] | None:
+        """Return the members of the Host a module defines as ``name``, or imports from a module of the package."""
+        if (module, name) not in self._members:
+            self._members[module, name] = None
+            bindings = model.module_scope.bindings.get(name, [])
+            classes = [binding for binding in bindings if binding.kind == "class"]
+            imports = [binding for binding in bindings if binding.kind == "import-from" and binding.origin]
+            if len(classes) == 1:
+                self._members[module, name] = self._class_members(model, classes[0])
+            elif len(imports) == 1:
+                self._members[module, name] = self.members(imports[0].origin)
+        return self._members[module, name]
+
+    def _class_members(self, model: SourceModule, binding: Binding) -> frozenset[str] | None:
+        scope = model.scope_defined_by(binding.node)
+        listed = bases(scope)
+        protocols = [base for base in listed if model.origin(base) in _PROTOCOL_ORIGINS]
+        if not binding.name.endswith("Host") or not protocols:
             return None
-        if len(chain) > 1:
-            return self.members(".".join(binding), chain[1:])
-        if binding != (module, chain[0]):
-            return self.members(binding[0], binding[1:])
-        if binding not in self._members:
-            self._members[binding] = None
-            node = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == chain[0])
-            self._members[binding] = self._class_members(module, node)
-        return self._members[binding]
-
-    def _class_members(self, module: str, node: ast.ClassDef) -> frozenset[str] | None:
-        if not node.name.endswith("Host") or not any(_is_protocol_base(base) for base in node.bases):
-            return None
-        inherited = (
-            self.members(module, _annotation_chain(base)) for base in node.bases if not _is_protocol_base(base)
-        )
-        return frozenset(_declared_names(node)).union(*(members for members in inherited if members is not None))
+        inherited = (self.members(model.origin(base)) for base in listed if base not in protocols)
+        declared = frozenset(declaration.name for declaration in model.bindings(scope=scope))
+        return declared.union(*(members for members in inherited if members is not None))
 
 
-_COMPREHENSIONS: Final = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
-_SCOPES: Final = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef, *_COMPREHENSIONS)
-_Binding: TypeAlias = frozenset[str] | Literal[True] | None
-"""What a name in scope reaches: the members of its Host, every member (a method's receiver) or none."""
-
-
-def _ast_fields(node: ast.AST, skipped: tuple[str, ...]) -> list[ast.AST]:
-    return [
-        child
-        for field, value in ast.iter_fields(node)
-        if field not in skipped
-        for child in (value if isinstance(value, list) else [value])
-        if isinstance(child, ast.AST)
-    ]
-
-
-def _enclosing_parts(node: ast.AST) -> list[ast.AST]:
-    """Return the children of a node that run in the scope around it: of a nested scope, only its header."""
-    if isinstance(node, _COMPREHENSIONS):
-        return [node.generators[0].iter]
-    if isinstance(node, _SCOPES):
-        return _ast_fields(node, ("body", "type_params"))
-    return list(ast.iter_child_nodes(node))
-
-
-def _own_code(scope: ast.AST) -> list[ast.AST]:
-    """Return the code of a scope that runs in it: a body, or all of a comprehension but its first iterable."""
-    if isinstance(scope, _COMPREHENSIONS):
-        first, *rest = scope.generators
-        return [*_ast_fields(scope, ("generators",)), first.target, *first.ifs, *rest]
-    return _ast_fields(scope, ("args", "bases", "keywords", "decorator_list", "returns", "type_params"))
-
-
-def _bound_names(scope: ast.AST) -> set[str]:
-    """Return the names a scope binds, which hide the same names of the scopes around it.
-
-    The binding forms of the language reference ("Naming and binding"): assignment, augmented and annotated
-    assignment, ``for``, ``with``, ``except`` and ``import`` names, ``del``, ``def`` and ``class`` names, ``match``
-    captures and walrus targets, and the names a ``global`` statement declares; a ``nonlocal`` name stays the one
-    around. A comprehension binds its targets, and a walrus in it binds in the scope around it. Parameters and type
-    parameters are bound by the visitor.
-    """
-    bound: set[str] = set()
-    declared_nonlocal: set[str] = set()
-    targets = [generator.target for generator in scope.generators] if isinstance(scope, _COMPREHENSIONS) else []
-    stack: list[tuple[ast.AST, bool]] = [(node, False) for node in targets or _own_code(scope)]
-    while stack:
-        node, in_comprehension = stack.pop()
-        match node:
-            case ast.NamedExpr(target=ast.Name(id=name)):
-                bound.add(name)
-            case _ if in_comprehension:
-                pass
-            case (
-                ast.Name(id=name, ctx=ast.Store() | ast.Del())
-                | ast.FunctionDef(name=name)
-                | ast.AsyncFunctionDef(name=name)
-                | ast.ClassDef(name=name)
-                | ast.ExceptHandler(name=str(name))
-                | ast.MatchAs(name=str(name))
-                | ast.MatchStar(name=str(name))
-                | ast.MatchMapping(rest=str(name))
-            ):
-                bound.add(name)
-            case ast.alias(name=module, asname=asname):
-                bound.add(asname or module.partition(".")[0])
-            case ast.Global(names=names):
-                bound.update(names)
-            case ast.Nonlocal(names=names):
-                declared_nonlocal.update(names)
-        if isinstance(node, _COMPREHENSIONS):
-            stack.extend((part, True) for part in _own_code(node))
-        stack.extend((part, in_comprehension) for part in _enclosing_parts(node))
-    return bound - declared_nonlocal
-
-
-def _receiver_text(node: ast.expr) -> str:
+def _receiver_text(reading: _Reading, node: ast.expr) -> str:
     """Return the receiver of a private access as its baseline key writes it, with calls and subscripts elided."""
+    if (spelled := reading.spelled(node)) is not None:
+        return spelled
     match node:
-        case ast.Name(id=name):
-            return name
         case ast.Attribute(value=value, attr=attr):
-            return f"{_receiver_text(value)}.{attr}"
+            return f"{_receiver_text(reading, value)}.{attr}"
         case ast.Call(func=func):
-            return f"{_receiver_text(func)}(...)"
+            return f"{_receiver_text(reading, func)}(...)"
         case ast.Subscript(value=value):
-            return f"{_receiver_text(value)}[...]"
+            return f"{_receiver_text(reading, value)}[...]"
     return "(...)"
 
 
-@dataclass(frozen=True)
-class _Scope:
-    names: dict[str, _Binding]
-    class_body: bool = False
-
-
-class HostPrivateAccessVisitor(ast.NodeVisitor):
+class HostPrivateAccessReader:
     """Find private member access through anything but a method's receiver or a parameter typed as a declaring Host."""
 
-    def __init__(self, path: Path, module: str, hosts: HostIndex) -> None:
-        """Create a visitor for one concern module."""
+    def __init__(self, path: Path, reading: _Reading, hosts: HostIndex) -> None:
+        """Create a reader for one concern module."""
         self.display_path = _display_path(path)
-        self.module = module
+        self.reading = reading
+        self.model = reading.model
         self.hosts = hosts
-        self.qualnames: list[str] = []
-        self.scopes: list[_Scope] = []
-        self.violations: list[Violation] = []
 
-    def visit(self, node: ast.AST) -> None:
-        """Visit a node, entering the scope a function, lambda, class or comprehension opens."""
-        if not isinstance(node, _SCOPES):
-            super().visit(node)
-            return
-        for part in _enclosing_parts(node):
-            self.visit(part)
-        names: dict[str, _Binding] = dict.fromkeys(_bound_names(node))
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-            names.update(self._parameters(node))
-        depth = len(self.scopes)
-        if type_parameters := getattr(node, "type_params", None):
-            self.scopes.append(_Scope(dict.fromkeys(parameter.name for parameter in type_parameters)))
-        self.scopes.append(_Scope(names, class_body=isinstance(node, ast.ClassDef)))
-        qualnames = len(self.qualnames)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            self.qualnames.append(node.name)
-        for part in _own_code(node):
-            self.visit(part)
-        del self.qualnames[qualnames:]
-        del self.scopes[depth:]
-
-    def _parameters(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda) -> dict[str, _Binding]:
-        """Bind each parameter to its Host's members, and a method's ``self`` or ``cls`` to every member.
-
-        A method is a function defined directly in a class body and not a ``staticmethod``; its receiver is its first
-        parameter, and the closures and lambdas inside it that do not rebind the name reach it too.
-        """
-        arguments = node.args
-        variadic = [argument for argument in (arguments.vararg, arguments.kwarg) if argument is not None]
-        positional = [*arguments.posonlyargs, *arguments.args]
-        parameters: dict[str, _Binding] = {
-            argument.arg: self.hosts.members(self.module, _annotation_chain(argument.annotation))
-            for argument in (*positional, *arguments.kwonlyargs, *variadic)
-        }
-        if positional and positional[0].arg in {"self", "cls"} and self._is_method(node):
-            parameters[positional[0].arg] = True
-        return parameters
-
-    def _is_method(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda) -> bool:
-        """Return whether a function is defined directly in the class body being visited and is no staticmethod."""
-        return (
-            not isinstance(node, ast.Lambda)
-            and bool(self.scopes)
-            and self.scopes[-1].class_body
-            and not any(
-                isinstance(decorator, ast.Name) and decorator.id == "staticmethod" for decorator in node.decorator_list
+    def run(self) -> list[Violation]:
+        """Return the private accesses of the module that its receivers do not allow."""
+        return [
+            Violation(
+                path=self.display_path,
+                line=node.lineno,
+                column=node.col_offset + 1,
+                qualname=self.reading.qualname(node),
+                rule=_HOST_RULE,
+                target=f"{_receiver_text(self.reading, node.value)}.{node.attr}",
+                message=_HOST_MESSAGE,
             )
-        )
-
-    def _binding(self, name: str) -> _Binding:
-        """Return what a name reaches, read from the innermost scope that binds it; a class body only binds its own."""
-        for depth, scope in enumerate(reversed(self.scopes)):
-            if name in scope.names and not (depth and scope.class_body):
-                return scope.names[name]
-        return None
-
-    def visit_Attribute(self, node: ast.Attribute) -> None:
-        """Check a private member access against its receiver."""
-        if is_private_member(node.attr) and not self._allows(node.value, node.attr):
-            self.violations.append(
-                Violation(
-                    path=self.display_path,
-                    line=node.lineno,
-                    column=node.col_offset + 1,
-                    qualname=".".join(self.qualnames) or "<module>",
-                    rule=_HOST_RULE,
-                    target=f"{_receiver_text(node.value)}.{node.attr}",
-                    message=_HOST_MESSAGE,
-                )
-            )
-        self.generic_visit(node)
+            for node in ast.walk(self.model.tree)
+            if isinstance(node, ast.Attribute)
+            and is_private_member(node.attr)
+            and not self._allows(node.value, node.attr)
+        ]
 
     def _allows(self, receiver: ast.expr, member: str) -> bool:
-        match receiver:
-            case ast.Call(func=ast.Name(id="super"), args=[]):
-                return True
-            case ast.Name(id=name):
-                binding = self._binding(name)
-                return binding is True or (isinstance(binding, frozenset) and member in binding)
-        return False
+        """Whether a receiver is ``super()``, a method's ``self`` or ``cls``, or a parameter whose Host declares it."""
+        if isinstance(receiver, ast.Call) and not receiver.args:
+            return "builtins.super" in self.reading.origins(receiver.func)
+        if (reference := self.reading.names.get(receiver)) is None:
+            return False
+        parameter = next((b for b in self.model.resolve(reference.node).bindings if b.kind == "param"), None)
+        if parameter is None:
+            return False
+        method = self.model.receiver(parameter.scope)
+        if parameter.name in {"self", "cls"} and method is not None and method.node is parameter.node:
+            return True
+        members = self.hosts.of_annotation(self.model, annotation(parameter))
+        return members is not None and member in members
 
 
 def load_host_baseline(path: Path = HOST_BASELINE_PATH) -> dict[BoundaryKey, AllowlistEntry]:
@@ -1907,17 +1467,29 @@ def _raw_violations(files: list[tuple[Path, Layer]], host_files: list[Path]) -> 
     hosts = HostIndex()
     raw_violations: list[Violation] = []
     for path in dict.fromkeys((*layers, *host_files)):
-        tree = hosts.parse(path) if path in host_scope else _parse(path)
-        if (layer := layers.get(path)) is not None:
-            visitor = ArchitectureBoundaryVisitor(path, layer, tree)
-            visitor.visit(tree)
-            raw_violations.extend(visitor.violations)
+        layer = layers.get(path)
+        module = _module_name(path, layer or "parser")
+        try:
+            model = SourceModule(path.read_text(encoding="utf-8"), _display_path(path), module)
+        except SourceModelError as error:
+            raw_violations.append(
+                Violation(
+                    _display_path(path),
+                    0,
+                    0,
+                    "<module>",
+                    "unreadable-source",
+                    "the source model refuses it",
+                    str(error),
+                )
+            )
+            continue
+        hosts.add(module, model)
+        reading = _Reading(model, hosts)
+        if layer is not None:
+            raw_violations.extend(ArchitectureBoundaryReader(path, layer, reading).run())
         if path in host_scope:
-            module = _module_name(path, layer or "parser")
-            hosts.add(module, path)
-            host_visitor = HostPrivateAccessVisitor(path, module, hosts)
-            host_visitor.visit(tree)
-            raw_violations.extend(host_visitor.violations)
+            raw_violations.extend(HostPrivateAccessReader(path, reading, hosts).run())
     return raw_violations
 
 

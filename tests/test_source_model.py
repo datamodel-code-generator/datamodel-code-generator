@@ -20,7 +20,7 @@ import tomllib
 
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
-from scripts import check_ratchets, check_source_rules, where
+from scripts import check_architecture_boundaries, check_ratchets, check_source_rules, where
 from tests import test_checks_are_run as checks_are_run
 from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
@@ -36,7 +36,8 @@ PYTHON = (sys.version_info.major, sys.version_info.minor)
 OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
-    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations): *(.*)$",
+    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases)"
+    r": *(.*)$",
     re.MULTILINE,
 )
 MODEL_NAMES = frozenset({"scripts._source_model", "_source_model"})
@@ -137,6 +138,20 @@ def _binding_of(model: source_model.SourceModule, node: ast.AST) -> str:
     return "none" if binding is None else f"{binding.scope.qualname}:{binding.name}@{binding.line} ({binding.kind})"
 
 
+def _bases_and_annotations(model: source_model.SourceModule) -> list[str]:
+    """Render the bases of every class scope and the annotation of every parameter, with the origin of each name."""
+    out = []
+    for scope in model.scopes:
+        listed = [f"{model.source(base)} = {model.origin(base)}" for base in source_model.bases(scope)]
+        out += [f"bases of {scope.qualname}: {', '.join(listed) or '-'}"] * (scope.kind == "class")
+    for binding in model.bindings():
+        annotation = source_model.annotation(binding) if binding.kind == "param" else None
+        out += [f"annotation of {binding.scope.qualname}:{binding.name}: {_expression(model, annotation)}"] * (
+            binding.kind == "param"
+        )
+    return out
+
+
 def _bindings(model: source_model.SourceModule, directives: dict[str, str]) -> list[str]:
     out = []
     for scope in model.scopes:
@@ -168,6 +183,7 @@ def _bindings(model: source_model.SourceModule, directives: dict[str, str]) -> l
         f"dynamic {site.kind}@{site.line} in {site.scope.qualname} [{_guard(site.guard)}]"
         for site in model.dynamic_sites
     ]
+    out += _bases_and_annotations(model) if directives.get("bases") else []
     kinds = (
         ast.Name,
         ast.alias,
@@ -581,6 +597,42 @@ def _source_rules(form: Path) -> list[str]:
         ]
 
 
+ARCHITECTURE_LAYERS: tuple[check_architecture_boundaries.Layer, ...] = (
+    "entrypoint",
+    "parser",
+    "config",
+    "input-model",
+    "reference",
+    "shared-model",
+)
+"""The layers with rules of their own on names; a leaf layer checks only the modules a dynamic import names."""
+
+
+def _architecture_boundaries(form: Path) -> list[str]:
+    """Run the layer rules of the layers above and the host rule over a form's modules, as files of a temporary tree."""
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        paths = []
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            target = root / (path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+            paths.append(target)
+        asked = [item.strip() for item in _directives(form).get("layers", "").split(",") if item.strip()]
+        runs = [(layer, [(path, layer) for path in paths], []) for layer in ARCHITECTURE_LAYERS]
+        runs.append(("host", [], paths))
+        runs = [run for run in runs if run[0] in asked or not asked]
+        found = []
+        for name, files, hosts in runs:
+            violations = check_architecture_boundaries.check_files(files, allowlist={}, host_files=hosts)
+            found += [
+                f"{name}: {violation.path.removeprefix(root.as_posix()).lstrip('/')}:{violation.line}: "
+                f"{violation.rule}: {violation.target} (in {violation.qualname})"
+                for violation in violations
+            ]
+        return found
+
+
 def _where_disagreements(form: Path) -> list[str]:
     """Compare what `scripts.where` answers on a form's modules with the model's own answers and with every file read.
 
@@ -687,6 +739,11 @@ RULES: dict[str, RuleRun] = {
         "scripts.check_source_rules",
         frozenset({"bindings", "references", "imports", "suppressions", "extents"}),
         _source_rules,
+    ),
+    "architecture-boundaries": RuleRun(
+        "scripts.check_architecture_boundaries",
+        frozenset({"bindings", "references", "imports"}),
+        _architecture_boundaries,
     ),
     "where-agrees-with-the-model": RuleRun(
         "scripts.where", frozenset({"bindings", "references", "imports", "extents"}), _where_disagreements

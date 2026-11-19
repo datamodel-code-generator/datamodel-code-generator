@@ -1,0 +1,13 @@
+[[change]]
+id = "checks-read-the-source-model-4"
+category = "harness"
+title = "Read the architecture boundaries through the source model"
+refs = ["#7189"]
+summary = "The architecture guard reads the names of the package source through the source model: a header expression is attributed to the scope around its definition, a name holds what every one of its bindings gives it, and the source rules report the new forms; the package writes the same output."
+covers = [
+    "architecture_boundaries/cli_subprocess_forbidden.txt",
+    "architecture_boundaries/cli_subprocess_shared_model_dynamic_import.txt",
+    "architecture_boundaries/shared_model_dynamic_import.txt",
+    "architecture_boundaries/violations.txt",
+    "source_model/every_rule_states_its_verdicts[source-rules].txt",
+]

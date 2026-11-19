@@ -1,0 +1,19 @@
+== references
+11:0 BACKEND_MODULE store in <module> -> local <module> @11
+12:0 EXTERNAL_BACKEND_MODULE store in <module> -> local <module> @12
+20:11 MsgspecFieldNameResolver load in build_dataclass_resolver -> global <module> @9; origin datamodel_code_generator.model.field_name.MsgspecFieldNameResolver
+20:37 msgspec load in build_dataclass_resolver -> global <module> @7; origin msgspec
+20:46 typed_dict load in build_dataclass_resolver -> global <module> @8; origin datamodel_code_generator.model.typed_dict
+24:11 importlib load in load_backend -> global <module> @5; origin importlib
+24:35 BACKEND_MODULE load in load_backend -> global <module> @11; origin forms.references.reference_backend_definitions.BACKEND_MODULE
+24:52 importlib load in load_backend -> global <module> @5; origin importlib
+24:76 EXTERNAL_BACKEND_MODULE load in load_backend -> global <module> @12; origin forms.references.reference_backend_definitions.EXTERNAL_BACKEND_MODULE
+uses of <module>:importlib@5: call:import_module@24, call:import_module@24
+uses of <module>:msgspec@7: read@20
+uses of <module>:typed_dict@8: read@20
+uses of <module>:MsgspecFieldNameResolver@9: read@20
+uses of <module>:BACKEND_MODULE@11: argument@24
+uses of <module>:EXTERNAL_BACKEND_MODULE@12: argument@24
+type positions @11: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_base = None
+type positions @12: msgspec; chains msgspec.json = msgspec.json
+== code objects: one per scope that compiles on this Python

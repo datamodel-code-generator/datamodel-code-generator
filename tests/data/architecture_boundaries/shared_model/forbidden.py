@@ -124,3 +124,41 @@ class ForwardModuleClass:
 
 LATER_CONCRETE_BACKEND = "datamodel_code_generator.model.pydantic_v2.base_model"
 CLASS_LATER_CONCRETE_BACKEND = "datamodel_code_generator.model.pydantic_v2.base_model"
+
+
+CLEARED_MODULE_BACKEND = CONCRETE_BACKEND
+CLEARED_MODULE_BACKEND = object()
+REASSIGNED_MODULE_BACKEND = CONCRETE_BACKEND
+
+
+def reassigned_registry() -> None:
+    local_registry = runtime.modules
+    local_registry = {}
+    local_registry[CONCRETE_BACKEND]
+
+
+def reassigned_string() -> None:
+    local_registry: object = runtime.modules
+    local_backend = CONCRETE_BACKEND
+    local_backend = None
+    local_registry[local_backend]
+
+
+def cleared_module_constant() -> None:
+    local_registry = runtime.modules
+    local_registry[CLEARED_MODULE_BACKEND]
+
+
+def reassigned_module_constant() -> None:
+    local_registry = runtime.modules
+    local_registry[REASSIGNED_MODULE_BACKEND]
+
+
+def cleared_later_module_constant() -> None:
+    local_registry = runtime.modules
+    local_registry[CLEARED_LATER_BACKEND]
+
+
+REASSIGNED_MODULE_BACKEND = object()
+CLEARED_LATER_BACKEND = CONCRETE_BACKEND
+CLEARED_LATER_BACKEND = None

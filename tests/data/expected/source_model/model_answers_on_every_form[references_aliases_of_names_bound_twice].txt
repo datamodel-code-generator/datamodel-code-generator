@@ -1,0 +1,23 @@
+== references
+9:3 sys load in <module> -> local <module> @7; origin sys
+10:4 loader store in <module> -> local <module> @10,12
+10:13 importlib load in <module> -> local <module> @6; origin importlib
+12:4 loader store in <module> -> local <module> @10,12
+12:13 sys load in <module> -> local <module> @7; origin sys
+14:0 load store in <module> -> local <module> @14
+14:7 loader load in <module> -> local <module> @10,12
+  may be importlib.import_module [platform:body@9]
+  may be sys.exit [platform:else@9]
+15:0 registry store in <module> -> local <module> @15,16
+15:11 sys load in <module> -> local <module> @7; origin sys
+16:0 registry store in <module> -> local <module> @15,16
+17:0 read store in <module> -> local <module> @17
+17:7 registry load in <module> -> local <module> @15,16
+  may be sys.modules [always]
+uses of <module>:importlib@6: read@10
+uses of <module>:sys@7: read@9, read@12, read@15
+uses of <module>:loader@10: read@14
+uses of <module>:loader@12: read@14
+uses of <module>:registry@15: read@17
+uses of <module>:registry@16: read@17
+== code objects: one per scope that compiles on this Python

@@ -20,6 +20,7 @@
 29:11 Plain load (deferred annotation) in <module> -> local <module> @20; origin typing.Any
 30:11 Table load (deferred annotation) in <module> -> local <module> @15,17
   may be collections.abc.Mapping [type-checking:body@14]
+  may be typing.Any [type-checking:else@14]
 31:13 Payload load (deferred annotation) in <module> -> local <module> @21; origin forms.references.type_expressions_and_any_aliases.Payload
 32:12 Annotated load (deferred annotation) in <module> -> local <module> @12; origin typing.Annotated
 32:22 int load (deferred annotation) in <module> -> builtin; origin builtins.int
