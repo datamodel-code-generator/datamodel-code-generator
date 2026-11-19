@@ -255,9 +255,14 @@ def _key(model: SourceModule, token_start: Position, kind: int, text: str) -> tu
 
 
 def _hunk_tokens(model: SourceModule, lines: range) -> list[tuple[Position, tuple[int, str, int]]]:
-    """Return the code tokens that start on `lines` or span into them, with their diff keys."""
+    """Return the code tokens that start on `lines` or span into them, with their diff keys.
+
+    A token that spans into them starts in the statement that holds their first line.
+    """
     found = []
-    for item in model.tokens():
+    statement = model.statement_at(lines.start) if lines else None
+    first = min(statement.lineno, lines.start) if statement is not None else lines.start
+    for item in model.tokens(range(first, lines.stop)):
         token = item.token
         start, end = token.start[0], token.end[0]
         if start in lines or (start < lines.start <= end and lines):
@@ -738,6 +743,7 @@ class Readers:
         )
         self.texts = {path: side.text(path) for path in self.paths}
         self.codes: dict[str, Code] = {}
+        self.found: dict[tuple[str, str, int, str], list[dict[str, object]]] = {}
 
     def code(self, path: str) -> Code:
         """Return the code objects of a module of this side."""
@@ -747,6 +753,11 @@ class Readers:
 
     def of(self, path: str, scope: Scope, name: str) -> list[dict[str, object]]:
         """Return the reader instructions of `name` bound in `scope` (a module or class body) of a module."""
+        if (key := (path, scope.qualname, scope.ordinal, name)) not in self.found:
+            self.found[key] = self._of(path, scope, name)
+        return self.found[key]
+
+    def _of(self, path: str, scope: Scope, name: str) -> list[dict[str, object]]:
         model = self.side.model(path)
         module = module_name(path)
         dotted = f"{module}.{name}" if scope.kind == "module" else f"{module}.{scope.qualname}.{name}"

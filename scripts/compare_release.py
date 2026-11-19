@@ -251,6 +251,12 @@ def _first_position(code: CodeType) -> tuple[int, int]:
     )
 
 
+class _CacheInfo(Protocol):
+    """The statistics of a `functools` cache (`_Cached.cache_info`)."""
+
+    hits: int
+
+
 class _Cached(Protocol):
     """A `functools` cache wrapper: what `_Tracer` clears."""
 
@@ -258,6 +264,9 @@ class _Cached(Protocol):
 
     def cache_clear(self) -> None:
         """Forget every cached value."""
+
+    def cache_info(self) -> _CacheInfo:
+        """Return how often the cache found a value."""
 
 
 def _started_frame() -> FrameType | None:
@@ -279,9 +288,11 @@ class _Tracer:
 
     What ran before the worker's first job (importing the CLI) every fresh process runs, so it counts for each job.
     What the first import of a module of the package ran counts for each job that imports the module
-    (`_track_imports`). A `functools` cache computed in a job after which a probe was recorded is dirty: the next job
-    clears it, so a job that needs its value computes it and records its own probes. A file probe is an `open` of the
-    file outside the import system (an audit hook). Only the generation counts: `begin` and `end` bound it.
+    (`_track_imports`). A `functools` cache whose computation in a job recorded a probe, or found the value of a cache
+    that did, is dirty: the next job clears it, so a job that needs its value computes it and records its own probes
+    (the local `PY_START` and `PY_RETURN` of a cache's function bound its computations, which run only where the
+    cache misses; one that raises stores no value). A file probe is an `open` of the file outside the import system
+    (an audit hook). Only the generation counts: `begin` and `end` bound it.
     """
 
     def __init__(self, package: Path, probes: list[Record]) -> None:
@@ -289,8 +300,10 @@ class _Tracer:
         self.probes = probes
         self.codes: dict[tuple[object, ...], int] = {}
         self.events: list[int] = []
+        self.offsets: list[set[int]] = []
         self.receivers: dict[int, list[list[str]]] = {}
         events = sys.monitoring.events
+        self.cache_events = events.PY_START | events.PY_RETURN
         for probe in probes:
             members = (
                 probe["readers"] if probe["kind"] == "readers" else [probe] * (probe["kind"] in {"start", "instr"})
@@ -299,6 +312,8 @@ class _Tracer:
                 index = self.codes.setdefault(tuple(member["code"]), len(self.codes))
                 member["index"] = index
                 self.events += [0] * (len(self.codes) - len(self.events))
+                self.offsets += [set() for _ in range(len(self.codes) - len(self.offsets))]
+                self.offsets[index].update(member.get("offsets") or ())
                 self.events[index] |= events.INSTRUCTION if member.get("offsets") else events.PY_START
                 if member.get("receiver"):
                     self.events[index] |= events.PY_START
@@ -311,7 +326,7 @@ class _Tracer:
         }
         self.armed: dict[int, tuple[CodeType, int]] = {}
         self.caches: dict[int, _Cached] = {}
-        self.computed: list[tuple[_Cached, int]] = []
+        self.computing: list[tuple[FrameType | None, _Cached, int, int]] = []
         self.dirty: list[_Cached] = []
         self.log: list[tuple[object, ...]] = []
         self.startup: set[tuple[object, ...]] = set()
@@ -320,12 +335,14 @@ class _Tracer:
         self.requested: set[str] = set()
         self.windows: list[tuple[int, set[str]]] = []
         self.imports: dict[str, tuple[set[tuple[object, ...]], set[str]]] = {}
+        self.closures: dict[str, set[tuple[object, ...]]] = {}
         monitoring = sys.monitoring
         monitoring.use_tool_id(HANDLED_TOOL, "compare_release")
         monitoring.use_tool_id(LOCAL_TOOL, "compare_release probes")
         monitoring.register_callback(HANDLED_TOOL, monitoring.events.PY_START, self._find)
         monitoring.register_callback(LOCAL_TOOL, monitoring.events.PY_START, self._start)
         monitoring.register_callback(LOCAL_TOOL, monitoring.events.INSTRUCTION, self._instruction)
+        monitoring.register_callback(LOCAL_TOOL, monitoring.events.PY_RETURN, self._computed)
         monitoring.set_events(HANDLED_TOOL, monitoring.events.PY_START)
         if self.files:
             sys.addaudithook(self._audit)
@@ -353,13 +370,19 @@ class _Tracer:
         return sys.monitoring.DISABLE
 
     def _local(self, code: CodeType, index: int) -> int:
-        cached = sys.monitoring.events.PY_START if id(code) in self.caches else 0
-        return self.events[index] | cached
+        return self.events[index] | (self.cache_events if id(code) in self.caches else 0)
+
+    def _hits(self) -> int:
+        """Return how often the dirty caches of the running job have found a value."""
+        return sum(wrapper.cache_info().hits for wrapper in self.dirty)
 
     def _start(self, code: CodeType, _: int) -> object:
-        """Record a start; a cache's function and a method whose receiver is not seen yet keep reporting starts."""
-        if (wrapper := self.caches.get(id(code))) is not None and self.active:
-            self.computed.append((wrapper, len(self.log)))
+        """Record a start; a cache's function and a method whose receiver is not seen yet keep reporting starts.
+
+        A start of a cache's function begins a computation of the cache (`_computed` ends it).
+        """
+        if (wrapper := self.caches.get(id(code))) is not None:
+            self.computing.append((_started_frame(), wrapper, len(self.log), self._hits()))
         armed = self.armed.get(id(code))
         if armed is None:
             return None if wrapper is not None else sys.monitoring.DISABLE
@@ -387,8 +410,24 @@ class _Tracer:
                 seen += 1
         return seen < len(checks)
 
+    def _computed(self, _: CodeType, __: int, ___: object) -> object:
+        """End a computation of a cache: it is dirty where it recorded a probe or found a dirty cache's value.
+
+        What a computation inside it ran, it ran inside it too. The computations above it ended with an exception.
+        """
+        frame = _started_frame()
+        found = next((at for at in range(len(self.computing) - 1, -1, -1) if self.computing[at][0] is frame), None)
+        if found is None:
+            return None
+        _, wrapper, start, hits = self.computing[found]
+        del self.computing[found:]
+        if self.active and self.started and (len(self.log) > start or self._hits() > hits):
+            self.dirty.append(wrapper)
+        return None
+
     def _instruction(self, code: CodeType, offset: int) -> object:
-        if (armed := self.armed.get(id(code))) is not None:
+        """Record an instruction a probe names; the others of the code object only disable themselves."""
+        if (armed := self.armed.get(id(code))) is not None and offset in self.offsets[armed[1]]:
             self._record(("offset", armed[1], offset))
         return sys.monitoring.DISABLE
 
@@ -417,7 +456,7 @@ class _Tracer:
                     self.caches[id(code)] = value
                     index = self.armed.get(id(code), (None, -1))[1]
                     events = self.events[index] if index >= 0 else 0
-                    sys.monitoring.set_local_events(LOCAL_TOOL, code, events | sys.monitoring.events.PY_START)
+                    sys.monitoring.set_local_events(LOCAL_TOOL, code, events | self.cache_events)
 
     def begin(self) -> None:
         """Start a job: clear the dirty caches and make every probe report again."""
@@ -425,7 +464,7 @@ class _Tracer:
             self.startup, self.started = set(self.log), True
         for wrapper in self.dirty:
             wrapper.cache_clear()
-        self.dirty, self.computed, self.log, self.requested = [], [], [], set()
+        self.dirty, self.computing, self.log, self.requested = [], [], [], set()
         for code, index in self.armed.values():
             sys.monitoring.set_local_events(LOCAL_TOOL, code, 0)
             sys.monitoring.set_local_events(LOCAL_TOOL, code, self._local(code, index))
@@ -433,18 +472,12 @@ class _Tracer:
             if key not in self.armed:
                 code = self.caches[key].__wrapped__.__code__
                 sys.monitoring.set_local_events(LOCAL_TOOL, code, 0)
-                sys.monitoring.set_local_events(LOCAL_TOOL, code, sys.monitoring.events.PY_START)
+                sys.monitoring.set_local_events(LOCAL_TOOL, code, self.cache_events)
         self.active = True
 
     def end(self) -> None:
-        """End a job's generation: what runs next (the comparator's own checks) does not count.
-
-        A cache computed before a probe was recorded is dirty, and so is every cache computed after the first dirty
-        one (it may have reused that value).
-        """
+        """End a job's generation: what runs next (the comparator's own checks) does not count."""
         self.active = False
-        first = next((start for _, start in self.computed if start < len(self.log)), None)
-        self.dirty = [wrapper for wrapper, start in self.computed if first is not None and start >= first]
 
     def request(self, names: list[str]) -> None:
         """Count the modules a job imports, and those the import running now imports."""
@@ -465,22 +498,35 @@ class _Tracer:
             start, requested = self.windows.pop()
             ran = set(self.log[start:])
             for name in names:
-                if (module := sys.modules.get(name)) is not None:
-                    self.imports.setdefault(name, (ran, requested))
+                if (module := sys.modules.get(name)) is not None and name not in self.imports:
+                    self.imports[name] = (ran, requested)
+                    self.closures.clear()
                     self.watch_caches(module)
             if self.windows:
                 self.windows[-1][1].update(requested)
 
+    def _closure(self, name: str) -> set[tuple[object, ...]]:
+        """Return what the first imports of a module and of every module its first import asked for ran.
+
+        It is kept until another module's first import is recorded.
+        """
+        if (found := self.closures.get(name)) is not None:
+            return found
+        found, pending, seen = set(), [name], set()
+        while pending:
+            if (module := pending.pop()) not in seen and module in self.imports:
+                seen.add(module)
+                ran, requested = self.imports[module]
+                found |= ran
+                pending += requested
+        self.closures[name] = found
+        return found
+
     def ran(self) -> list[int]:
         """Return the probes the job ran since `begin`, with what the CLI's and its modules' first imports ran."""
         events = self.startup | set(self.log)
-        pending, seen = list(self.requested), set()
-        while pending:
-            if (name := pending.pop()) not in seen and name in self.imports:
-                seen.add(name)
-                ran, requested = self.imports[name]
-                events |= ran
-                pending += requested
+        for name in self.requested:
+            events |= self._closure(name)
         return [index for index, probe in enumerate(self.probes) if _satisfied(probe, events)]
 
     def stop(self) -> None:

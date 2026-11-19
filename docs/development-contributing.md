@@ -658,12 +658,12 @@ bodies, `@overload` stubs, `@override`/`@final`, local and postponed function an
 run, a statement moved unchanged (with every name it reads leading to the same place) gives none either, and a
 changed `resources/*.json`, a template without a compiled renderer or a file of `_runtime/` has to be read by a
 compared run. What a module's import ran counts for every cell that imports the module, and a `functools` cache
-computed in another cell is computed again, so the order of the cells never changes the verdict. The workers of both
-sides measure (Python 3.12 or later). Evidence that compared nothing never reads as identical: the comparison fails
-where the inputs matched nothing, an input group compared nothing, or a changed code object ran in no compared run on
-its side, is unmeasurable or could not be measured, and names each with the probes that did not run; pass the test
-suite's coverage data file with `--test-coverage` to tell those the tests ran. Identity judges the whole run, so it
-refuses `--shard`.
+whose computation in another cell ran changed code is computed again, so the order of the cells does not decide what
+ran. The workers of both sides measure (Python 3.12 or later). Evidence that compared nothing never reads as
+identical: the comparison fails where the inputs matched nothing, an input group compared nothing, or a changed code
+object ran in no compared run on its side, is unmeasurable or could not be measured, and names each with the probes
+that did not run; pass the test suite's coverage data file with `--test-coverage` to tell those the tests ran.
+Identity judges the whole run, so it refuses `--shard`.
 
 ## Calibrating the option recommender
 
