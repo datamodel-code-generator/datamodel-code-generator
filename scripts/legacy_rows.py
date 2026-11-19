@@ -367,17 +367,21 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "later. Where an option makes `all_of_members` read the version of the document being parsed, the document "
             "that asks first decides them for all: under `--intersect-combined-schema-keywords`, with a base whose "
             "allOf holds a `$ref` beside `required` and `properties`, the model of a draft-07 document that inherits "
-            "the base requires those names when a 2020-12 document inheriting it is parsed before, and not when the "
-            "draft-07 document is parsed first"
+            "the base requires those names (the property the draft-07 document redeclares is required) when a 2020-12 "
+            "document inheriting it is parsed before, and not when the draft-07 document is parsed first"
         ),
         fix=7197,
         witness=(
             "--input",
-            "tests/data/openapi/json_pointer.yaml",
+            "tests/data/jsonschema/inherited_reads_at_first_ask",
             "--input-file-type",
-            "openapi",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
+            "--intersect-combined-schema-keywords",
         ),
     ),
     LegacyRow(
@@ -1460,11 +1464,12 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--input",
             "tests/data/jsonschema/const.json",
             "--output-model-type",
-            "typing.TypedDict",
+            "msgspec.Struct",
             "--target-python-version",
             "3.10",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
         ),
     ),
     LegacyRow(
@@ -1514,11 +1519,17 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=KEEP,
         witness=(
             "--input",
-            "tests/data/yaml/root_list.yaml",
+            "tests/data/graphql/union.graphql",
             "--input-file-type",
-            "yaml",
+            "graphql",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            "3.10",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
+            "--use-union-operator",
         ),
     ),
     LegacyRow(
@@ -1558,9 +1569,9 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=5588,
         witness=(
             "--input",
-            "tests/data/graphql/field_options_every_field.graphql",
+            "tests/data/openapi/field_options_every_field.yaml",
             "--input-file-type",
-            "graphql",
+            "openapi",
             "--output-model-type",
             "pydantic_v2.BaseModel",
             "--target-python-version",
@@ -1568,9 +1579,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--formatters",
             "builtin",
             "--disable-timestamp",
-            "--target-python-version",
-            "3.10",
-            "--use-default-factory-for-optional-nested-models",
+            "--use-default-kwarg",
         ),
         option="--apply-field-options-to-every-field",
     ),
@@ -1584,9 +1593,9 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=5588,
         witness=(
             "--input",
-            "tests/data/graphql/field_options_every_field.graphql",
+            "tests/data/openapi/field_options_every_field.yaml",
             "--input-file-type",
-            "graphql",
+            "openapi",
             "--output-model-type",
             "pydantic_v2.BaseModel",
             "--target-python-version",
@@ -1594,9 +1603,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--formatters",
             "builtin",
             "--disable-timestamp",
-            "--target-python-version",
-            "3.10",
-            "--use-default-factory-for-optional-nested-models",
+            "--use-annotated",
         ),
         option="--apply-field-options-to-every-field",
     ),
