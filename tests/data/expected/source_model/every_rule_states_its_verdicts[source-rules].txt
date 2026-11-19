@@ -76,6 +76,47 @@ references/lazy_table_module_getattr: src/lazy_table_module_getattr.py:10: unuse
 references/legacy_row_reading_lines: src/legacy_row_reading_lines/reader.py:9: redundant-local-import: datamodel_code_generator.legacy_row_reading_lines.rows
 references/legacy_row_reading_lines: src/legacy_row_reading_lines/reader.py:15: redundant-local-import: datamodel_code_generator.legacy_row_reading_lines.rows
 references/parameter_shadows_global: src/parameter_shadows_global.py:3: unused-private-global: _CACHE
+references/portable_names_by_key: scripts/portable_names_by_key.py:10: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: scripts/portable_names_by_key.py:10: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
+references/portable_names_by_key: scripts/portable_names_by_key.py:26: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: tests/portable_names_by_key.py:10: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: tests/portable_names_by_key.py:10: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
+references/portable_names_by_key: tests/portable_names_by_key.py:26: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:16: portable-names: 'has:colon.txt': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:17: portable-names: 'con.txt': Windows reserves the name for a device
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:18: portable-names: 'b?.json': Windows refuses '?' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:19: portable-names: 'trail.': Windows drops a trailing dot or space of a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:20: portable-names: 'AUX': Windows reserves the name for a device
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:21: portable-names: ':x.toml': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:24: portable-names: 'name|pipe': Windows refuses '|' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:16: portable-names: 'has:colon.txt': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:17: portable-names: 'con.txt': Windows reserves the name for a device
+references/portable_names_in_paths: tests/portable_names_in_paths.py:18: portable-names: 'b?.json': Windows refuses '?' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:19: portable-names: 'trail.': Windows drops a trailing dot or space of a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:20: portable-names: 'AUX': Windows reserves the name for a device
+references/portable_names_in_paths: tests/portable_names_in_paths.py:21: portable-names: ':x.toml': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:24: portable-names: 'name|pipe': Windows refuses '|' in a file name
+references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:10: posix-only-call: test_through_the_module reaches scripts.posix_only_across_modules.script.main -> scripts.posix_only_across_modules.script.run -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
+references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:14: posix-only-call: test_through_a_from_import reaches scripts.posix_only_across_modules.script.main -> scripts.posix_only_across_modules.script.run -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
+references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:18: posix-only-call: test_through_a_class reaches scripts.posix_only_across_modules.script.Runner -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
+references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:22: posix-only-call: test_passed_on reaches scripts.posix_only_across_modules.script.run -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
+references/posix_only_at_import: scripts/posix_only_at_import.py:10: posix-only-call: import fcntl runs when the module is imported
+references/posix_only_at_import: scripts/posix_only_at_import.py:25: posix-only-call: os.mkfifo runs when the module is imported
+references/posix_only_at_import: scripts/posix_only_at_import.py:26: posix-only-call: os.mkfifo runs when the module is imported
+references/posix_only_at_import: scripts/posix_only_at_import.py:28: posix-only-call: import resource runs when the module is imported
+references/posix_only_at_import: scripts/posix_only_at_import.py:32: posix-only-call: signal.SIGKILL runs when the module is imported
+references/posix_only_at_import: tests/posix_only_at_import.py:10: posix-only-call: import fcntl runs when the module is imported
+references/posix_only_at_import: tests/posix_only_at_import.py:25: posix-only-call: os.mkfifo runs when the module is imported
+references/posix_only_at_import: tests/posix_only_at_import.py:26: posix-only-call: os.mkfifo runs when the module is imported
+references/posix_only_at_import: tests/posix_only_at_import.py:28: posix-only-call: import resource runs when the module is imported
+references/posix_only_at_import: tests/posix_only_at_import.py:32: posix-only-call: signal.SIGKILL runs when the module is imported
+references/posix_only_in_tests: tests/posix_only_in_tests.py:31: posix-only-call: test_unmarked reaches tests.posix_only_in_tests.through_a_helper -> tests.posix_only_in_tests.make_pipe -> os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:51: posix-only-call: test_python_version_is_no_platform reaches os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:56: posix-only-call: test_unknown_capability reaches os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:60: posix-only-call: test_fixture reaches fixture pipe_dir -> os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:64: posix-only-call: test_from_import reaches os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:70: posix-only-call: test_nested reaches os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:102: posix-only-call: TestPlain.test_method reaches os.fork in tests/posix_only_in_tests.py
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:6: unused-private-global: _UNUSED
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:8: unused-private-global: _SHADOWED
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:9: unused-private-global: _COMPREHENSION

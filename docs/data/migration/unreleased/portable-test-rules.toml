@@ -1,0 +1,10 @@
+[[change]]
+id = "portable-test-rules"
+category = "harness"
+title = "Check tests and scripts for what only another lane shows"
+summary = "The ratchet counts uses of POSIX-only names outside a test with a POSIX capability, test files the oldest supported grammar refuses and file names Windows refuses or folds; the generated package writes the same output."
+refs = ["#1"]
+covers = [
+    "source_model/every_rule_states_its_verdicts[ci-test-targets].txt",
+    "source_model/every_rule_states_its_verdicts[pre-commit-hook-runs].txt",
+]

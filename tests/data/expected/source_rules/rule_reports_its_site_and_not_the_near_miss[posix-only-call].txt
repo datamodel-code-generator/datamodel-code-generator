@@ -1,0 +1,14 @@
+exit: 0
+scripts/eager.py:1: posix-only-call: import fcntl runs when the module is imported
+scripts/eager.py:5: posix-only-call: os.mkfifo runs when the module is imported
+scripts/eager.py:9: posix-only-call: import resource runs when the module is imported
+tests/test_worker.py:10: posix-only-call: test_main_forks reaches scripts.worker.main -> scripts.worker.run -> scripts.worker.spawn -> os.fork in scripts/worker.py
+tests/test_worker.py:14: posix-only-call: test_entry_forks reaches scripts.worker.main -> scripts.worker.run -> scripts.worker.spawn -> os.fork in scripts/worker.py
+tests/test_worker.py:23: posix-only-call: test_fixture reaches fixture pipe -> os.mkfifo in tests/test_worker.py
+tests/test_worker.py:27: posix-only-call: test_kill_signal reaches scripts.worker.stop -> signal.SIGKILL in scripts/worker.py
+tests/test_worker.py:46: posix-only-call: test_formatter_is_no_platform reaches scripts.worker.main -> scripts.worker.run -> scripts.worker.spawn -> os.fork in scripts/worker.py
+tests/test_worker.py:51: posix-only-call: test_python_is_no_platform reaches os.fork in tests/test_worker.py
+tests/test_worker.py:63: posix-only-call: TestPlain.test_forks reaches os.fork in tests/test_worker.py
+
+rule counts:
+  posix-only-call: 10 (ratchet); fix: mark the test `@needs("posix")` (or `linux`), or move the POSIX-only use out of module level and behind a platform test; a script that forks keeps its tests behind the capability

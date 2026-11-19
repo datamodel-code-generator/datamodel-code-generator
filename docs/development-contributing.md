@@ -426,8 +426,8 @@ The same script counts the sites of the source rules in
 `source-rule:<rule>` keys: a change may keep or lower a count, and an absolute
 rule fails on any site and cannot be approved. The rules marked
 `absolute=True` in `RULES` of that script are absolute (today `doc-citations`,
-`unused-private-global`, `flaky-test-workarounds`, `dead-capability` and
-`never-run`), and the summary of
+`unused-private-global`, `flaky-test-workarounds`, `dead-capability`,
+`never-run`, `floor-syntax` and `portable-names`), and the summary of
 `python scripts/check_source_rules.py` names the kind of each rule.
 `python scripts/check_source_rules.py --rule <rule>` prints each site and how to
 fix it. `lost-last-caller` compares the tree with the base and needs coverage
@@ -440,6 +440,17 @@ the table states each capability as clauses over the environment facts of
 `.github/workflows/test.yaml` has, that every lane has, or that only subset lanes (fixed lists of tests) lack (`scripts/_ci_lanes.py` reads the facts of
 each lane from the matrix, `tox.ini`, `pyproject.toml` and `uv.lock`), and
 `never-run` fails on a test whose capabilities together exclude every lane.
+Three rules count what only another lane shows. `posix-only-call` reads `os.fork`, `os.mkfifo`, `signal.SIGKILL`
+and the `resource` and `fcntl` modules by origin: a use at module or class level breaks the import on Windows, and a
+collected test that reaches one (through helpers, fixtures and scripts it calls) must need a capability that Windows
+lacks (`posix`, `linux`); a dispatching `main` reaches every subcommand, so a test of a portable subcommand is a site
+too. `floor-syntax` fails a `.py` file of `tests` (test data included, stored output aside) that this Python parses and
+that the grammar of the oldest supported Python (`requires-python`) refuses: store it as `<name>.py.txt` and copy it
+where a test reads it on a Python that parses it. It sees syntax, not library features. `portable-names` counts the
+file names below `scripts` and `tests` that Windows refuses (`<>:"|?*`, a trailing dot or space, `con`, `aux.txt`) or
+that fold onto another path (case, Unicode composition), the same names in the paths a test builds (right of `/`,
+`Path(...)`, `os.path.join`, `open`), and the keys of a mapping that is passed to a function that writes files named
+by its entries; a name a test builds from data the source does not spell is not seen.
 `tests/test_checks_are_run.py` names every `scripts/check_*.py` and every source
 rule that nothing runs on the repository tree: a workflow `run:` step or a hook
 `entry` that executes it, a `commands` line of a tox environment a workflow

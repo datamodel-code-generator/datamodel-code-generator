@@ -1,0 +1,35 @@
+== references
+10:0 CASES store in <module> -> local <module> @10
+11:0 UNUSED store in <module> -> local <module> @11
+15:8 name store in write -> local write @15
+15:14 text store in write -> local write @15
+15:22 files load in write -> local write @14
+16:9 root load in write -> local write @14
+16:19 name load in write -> local write @15
+16:43 text load in write -> local write @15
+20:8 key store in count -> local count @20
+20:15 files load in count -> local count @19
+21:8 print load in count -> builtin; origin builtins.print
+21:14 key load in count -> local count @20
+24:14 Path load (evaluated annotation) in <module> -> local <module> @8; origin pathlib.Path
+25:4 write load in run -> global <module> @14; origin forms.references.portable_names_by_key.write
+25:10 root load in run -> local run @24
+25:16 CASES load in run -> global <module> @10; origin forms.references.portable_names_by_key.CASES
+25:22 case load in run -> local run @24
+26:4 write load in run -> global <module> @14; origin forms.references.portable_names_by_key.write
+26:10 root load in run -> local run @24
+27:4 count load in run -> global <module> @19; origin forms.references.portable_names_by_key.count
+uses of <module>:Path@8: read@24
+uses of <module>:CASES@10: read@25
+uses of <module>:write@14: call@25, call@26
+uses of <module>:count@19: call@27
+uses of write:root@14: read@16
+uses of write:files@14: call:items@15
+uses of write:name@15: read@16
+uses of write:text@15: argument@16
+uses of count:files@19: iterate@20
+uses of count:key@20: argument@21
+uses of run:root@24: argument@25, argument@26
+uses of run:case@24: read@25
+type positions @24: Path
+== code objects: one per scope that compiles on this Python

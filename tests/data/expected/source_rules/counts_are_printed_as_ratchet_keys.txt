@@ -15,5 +15,8 @@ exit: 0
   "source-rule:flaky-test-workarounds": {},
   "source-rule:raw-skip": {},
   "source-rule:dead-capability": {},
-  "source-rule:never-run": {}
+  "source-rule:never-run": {},
+  "source-rule:posix-only-call": {},
+  "source-rule:floor-syntax": {},
+  "source-rule:portable-names": {}
 }

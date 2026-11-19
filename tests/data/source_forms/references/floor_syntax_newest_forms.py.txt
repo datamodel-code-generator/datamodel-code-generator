@@ -1,0 +1,14 @@
+"""G13 floor-syntax: syntax only Python 3.14 reads (template strings, ``except`` without parentheses) is a site.
+
+min-python: 3.14
+
+Each form is a site of its own: the oldest grammar refuses every one of them.
+"""
+
+NAME = "dcg"
+TEMPLATE = t"hello {NAME}"
+
+try:
+    pass
+except ValueError, TypeError:
+    pass

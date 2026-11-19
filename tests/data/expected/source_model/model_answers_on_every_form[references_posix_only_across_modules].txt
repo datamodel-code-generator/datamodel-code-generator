@@ -1,0 +1,51 @@
+=== module posix_only_across_modules
+== references
+=== module posix_only_across_modules.cases
+== references
+11:4 script load in test_through_the_module -> global <module> @4; origin scripts.posix_only_across_modules.script
+15:4 entry load in test_through_a_from_import -> global <module> @5; origin scripts.posix_only_across_modules.script.main
+19:4 script load in test_through_a_class -> global <module> @4; origin scripts.posix_only_across_modules.script
+23:4 pool load in test_passed_on -> local test_passed_on @22
+23:16 script load in test_passed_on -> global <module> @4; origin scripts.posix_only_across_modules.script
+27:4 script load in test_portable_function -> global <module> @4; origin scripts.posix_only_across_modules.script
+31:11 posix_only_across_modules load in test_package_only -> global <module> @3; origin scripts.posix_only_across_modules
+34:1 needs load in <module> -> local <module> @7; origin tests.capabilities.needs
+36:4 script load in test_marked -> global <module> @4; origin scripts.posix_only_across_modules.script
+uses of <module>:posix_only_across_modules@3: read@31
+uses of <module>:script@4: call:main@11, call:Runner@19, read@23, call:portable@27, call:main@36
+uses of <module>:entry@5: call@15
+uses of <module>:needs@7: call@34
+uses of test_passed_on:pool@22: call:submit@23
+definition posix_only_across_modules.cases:entry -> outside scripts.posix_only_across_modules.script.main@5 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:needs -> outside tests.capabilities.needs@7 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:posix_only_across_modules -> outside scripts.posix_only_across_modules@3 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:script -> outside scripts.posix_only_across_modules.script@4 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:test_marked -> def posix_only_across_modules.cases:test_marked@35 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:test_package_only -> def posix_only_across_modules.cases:test_package_only@30 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:test_passed_on -> def posix_only_across_modules.cases:test_passed_on@22 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:test_portable_function -> def posix_only_across_modules.cases:test_portable_function@26 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:test_through_a_class -> def posix_only_across_modules.cases:test_through_a_class@18 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:test_through_a_from_import -> def posix_only_across_modules.cases:test_through_a_from_import@14 via posix_only_across_modules.cases [always]
+definition posix_only_across_modules.cases:test_through_the_module -> def posix_only_across_modules.cases:test_through_the_module@10 via posix_only_across_modules.cases [always]
+=== module posix_only_across_modules.script
+== references
+7:11 os load in worker -> global <module> @3; origin os
+11:23 argv load in run -> local run @10
+11:11 worker load in run -> global <module> @6; origin posix_only_across_modules.script.worker
+15:11 run load in main -> global <module> @10; origin posix_only_across_modules.script.run
+15:15 argv load in main -> local main @14
+19:11 len load in portable -> builtin; origin builtins.len
+19:15 argv load in portable -> local portable @18
+24:15 worker load in Runner.start -> global <module> @6; origin posix_only_across_modules.script.worker
+uses of <module>:os@3: call:fork@7
+uses of <module>:worker@6: call@11, call@24
+uses of <module>:run@10: call@15
+uses of run:argv@10: read@11
+uses of main:argv@14: argument@15
+uses of portable:argv@18: argument@19
+definition posix_only_across_modules.script:Runner -> class posix_only_across_modules.script:Runner@22 via posix_only_across_modules.script [always]
+definition posix_only_across_modules.script:main -> def posix_only_across_modules.script:main@14 via posix_only_across_modules.script [always]
+definition posix_only_across_modules.script:os -> outside os@3 via posix_only_across_modules.script [always]
+definition posix_only_across_modules.script:portable -> def posix_only_across_modules.script:portable@18 via posix_only_across_modules.script [always]
+definition posix_only_across_modules.script:run -> def posix_only_across_modules.script:run@10 via posix_only_across_modules.script [always]
+definition posix_only_across_modules.script:worker -> def posix_only_across_modules.script:worker@6 via posix_only_across_modules.script [always]

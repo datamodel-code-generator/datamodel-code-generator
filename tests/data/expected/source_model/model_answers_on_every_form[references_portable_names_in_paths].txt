@@ -1,0 +1,60 @@
+== references
+15:4 fine store in build -> local build @15
+15:11 root load in build -> local build @14
+16:4 colon store in build -> local build @16
+16:12 root load in build -> local build @14
+17:4 device store in build -> local build @17
+17:13 root load in build -> local build @14
+18:4 question store in build -> local build @18
+18:15 Path load in build -> global <module> @11; origin pathlib.Path
+19:4 trailing store in build -> local build @19
+19:15 os load in build -> global <module> @10; origin os
+20:4 reserved store in build -> local build @20
+20:15 root load in build -> local build @14
+21:4 fragment store in build -> local build @21
+21:15 root load in build -> local build @14
+21:25 name load in build -> local build @14
+22:4 template store in build -> local build @22
+22:15 root load in build -> local build @14
+22:25 name load in build -> local build @14
+23:4 drive store in build -> local build @23
+23:12 Path load in build -> global <module> @11; origin pathlib.Path
+24:4 pipe store in build -> local build @24
+24:11 open load in build -> builtin; origin builtins.open
+25:4 pattern store in build -> local build @25
+25:14 root load in build -> local build @14
+26:4 parent store in build -> local build @26
+26:13 root load in build -> local build @14
+27:4 beside store in build -> local build @27
+28:11 fine load in build -> local build @15
+28:17 colon load in build -> local build @16
+28:24 device load in build -> local build @17
+28:32 question load in build -> local build @18
+28:42 trailing load in build -> local build @19
+28:52 reserved load in build -> local build @20
+28:62 fragment load in build -> local build @21
+28:72 template load in build -> local build @22
+28:82 drive load in build -> local build @23
+28:89 pipe load in build -> local build @24
+28:95 pattern load in build -> local build @25
+28:104 parent load in build -> local build @26
+28:112 beside load in build -> local build @27
+uses of <module>:os@10: read@19
+uses of <module>:Path@11: call@18, call@23
+uses of build:root@14: read@15, read@16, read@17, call:joinpath@20, read@21, read@22, call:glob@25, read@26
+uses of build:name@14: read@21, read@22
+uses of build:fine@15: read@28
+uses of build:colon@16: read@28
+uses of build:device@17: read@28
+uses of build:question@18: read@28
+uses of build:trailing@19: read@28
+uses of build:reserved@20: read@28
+uses of build:fragment@21: read@28
+uses of build:template@22: read@28
+uses of build:drive@23: read@28
+uses of build:pipe@24: read@28
+uses of build:pattern@25: read@28
+uses of build:parent@26: read@28
+uses of build:beside@27: read@28
+type positions @27: -
+== code objects: one per scope that compiles on this Python

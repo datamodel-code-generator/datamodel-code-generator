@@ -1,0 +1,5 @@
+exit: 0
+tests/test_fork.py:7: posix-only-call: test_fork reaches os.fork in tests/test_fork.py
+
+rule counts:
+  posix-only-call: 1 (ratchet); fix: mark the test `@needs("posix")` (or `linux`), or move the POSIX-only use out of module level and behind a platform test; a script that forks keeps its tests behind the capability

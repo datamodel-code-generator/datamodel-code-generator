@@ -1,0 +1,9 @@
+== references
+8:0 NAME store in <module> -> local <module> @8
+9:0 TEMPLATE store in <module> -> local <module> @9
+9:20 NAME load in <module> -> local <module> @8; origin forms.references.floor_syntax_newest_forms.NAME
+13:7 ValueError load in <module> -> builtin; origin builtins.ValueError
+13:19 TypeError load in <module> -> builtin; origin builtins.TypeError
+uses of <module>:NAME@8: read@9
+type positions @8: dcg
+== code objects: one per scope that compiles on this Python

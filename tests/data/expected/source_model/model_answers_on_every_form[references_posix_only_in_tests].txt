@@ -1,0 +1,46 @@
+== references
+18:4 os load in make_pipe -> global <module> @9; origin os
+18:14 path load in make_pipe -> local make_pipe @17
+22:4 make_pipe load in through_a_helper -> global <module> @17; origin forms.references.posix_only_in_tests.make_pipe
+22:14 path load in through_a_helper -> local through_a_helper @21
+25:1 pytest load in <module> -> local <module> @12; origin pytest
+27:4 os load in pipe_dir -> global <module> @9; origin os
+27:14 tmp_path load in pipe_dir -> local pipe_dir @26
+28:11 tmp_path load in pipe_dir -> local pipe_dir @26
+32:4 through_a_helper load in test_unmarked -> global <module> @21; origin forms.references.posix_only_in_tests.through_a_helper
+35:1 needs load in <module> -> local <module> @14; origin tests.capabilities.needs
+37:4 through_a_helper load in test_posix -> global <module> @21; origin forms.references.posix_only_in_tests.through_a_helper
+40:1 needs load in <module> -> local <module> @14; origin tests.capabilities.needs
+42:4 through_a_helper load in test_linux -> global <module> @21; origin forms.references.posix_only_in_tests.through_a_helper
+45:1 needs load in <module> -> local <module> @14; origin tests.capabilities.needs
+47:4 os load in test_one_capability_excludes_windows -> global <module> @9; origin os
+50:1 needs load in <module> -> local <module> @14; origin tests.capabilities.needs
+52:4 os load in test_python_version_is_no_platform -> global <module> @9; origin os
+55:1 needs load in <module> -> local <module> @14; origin tests.capabilities.needs
+57:4 os load in test_unknown_capability -> global <module> @9; origin os
+61:11 pipe_dir load in test_fixture -> local test_fixture @60
+67:4 fork load in test_from_import -> local test_from_import @65; origin os.fork
+72:8 os load in test_nested.<locals>.test_inner -> global <module> @9; origin os
+74:4 test_inner load in test_nested -> local test_nested @71
+78:7 sys load in test_guarded -> global <module> @10; origin sys
+79:8 os load in test_guarded -> global <module> @9; origin os
+87:4 os load in test_shadowed -> local test_shadowed @86
+91:4 os load in unused_helper -> global <module> @9; origin os
+95:4 pytestmark store in TestMarked -> local TestMarked @95, else unbound
+95:17 needs load in TestMarked -> global <module> @14; origin tests.capabilities.needs
+98:8 os load in TestMarked.test_method -> global <module> @9; origin os
+103:8 os load in TestPlain.test_method -> global <module> @9; origin os
+uses of <module>:os@9: call:mkfifo@18, call:mkfifo@27, call:mkfifo@47, call:mkfifo@52, call:mkfifo@57, call:fork@72, call:fork@79, call:fork@91, call:fork@98, call:fork@103
+uses of <module>:sys@10: read@78
+uses of <module>:pytest@12: read@25
+uses of <module>:needs@14: call@35, call@40, call@45, call@50, call@55, call@95
+uses of <module>:make_pipe@17: call@22
+uses of <module>:through_a_helper@21: call@32, call@37, call@42
+uses of make_pipe:path@17: argument@18
+uses of through_a_helper:path@21: argument@22
+uses of pipe_dir:tmp_path@26: read@27, read@28
+uses of test_fixture:pipe_dir@60: read@61
+uses of test_from_import:fork@65: call@67
+uses of test_nested:test_inner@71: call@74
+uses of test_shadowed:os@86: call:fork@87
+== code objects: one per scope that compiles on this Python

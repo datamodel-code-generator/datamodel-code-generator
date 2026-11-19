@@ -1,0 +1,6 @@
+[[change]]
+id = "portable-test-rules-2"
+extends = "checks-read-the-source-model-4"
+covers = [
+    "source_model/every_rule_states_its_verdicts[source-rules].txt",
+]

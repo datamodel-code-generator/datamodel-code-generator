@@ -11,6 +11,7 @@ import yaml
 
 from scripts import check_source_rules
 from scripts._ci_lanes import FORMATTER_ENV, WORKFLOW, matrix_entries, read_lanes
+from tests.capabilities import needs
 from tests.conftest import TEST_DEFAULT_FORMATTER_ENV, assert_output
 
 PACKAGE = "src/datamodel_code_generator"
@@ -882,6 +883,169 @@ TREES: dict[str, dict[str, str]] = {
                     pass
         """,
     },
+    "posix-only-call": {
+        "tests/capabilities.py": """
+            CAPABILITIES = {
+                "posix": (("platform!=win32",), "the test forks"),
+                "linux": (("platform==linux",), "the test needs a Linux facility"),
+                "formatter": (("formatter==builtin|platform!=win32",), "builtin, or any POSIX"),
+                "python-3.12": (("python>=3.12",), "type statements"),
+            }
+        """,
+        "scripts/worker.py": """
+            import os
+            import sys
+            from signal import SIGKILL
+
+            if sys.platform != "win32":
+                import resource
+
+            try:
+                import fcntl
+            except ImportError:
+                fcntl = None
+
+
+            def spawn():
+                return os.fork()
+
+
+            def run(argv):
+                return spawn() if argv else 0
+
+
+            def main(argv):
+                return run(argv)
+
+
+            def portable(argv):
+                return len(argv)
+
+
+            def stop(pid):
+                os.kill(pid, SIGKILL)
+        """,
+        "scripts/eager.py": """
+            import fcntl
+            import os as operating_system
+
+            LOCK = fcntl.LOCK_EX
+            PIPE = operating_system.mkfifo
+
+
+            class Holder:
+                limit = __import__("resource")
+        """,
+        "tests/test_worker.py": """
+            import os
+
+            import pytest
+
+            from scripts import worker
+            from scripts.worker import main as entry
+            from tests.capabilities import needs
+
+
+            def test_main_forks():
+                worker.main(["x"])
+
+
+            def test_entry_forks():
+                entry(["x"])
+
+
+            @pytest.fixture
+            def pipe(tmp_path):
+                os.mkfifo(tmp_path / "pipe")
+
+
+            def test_fixture(pipe):
+                pass
+
+
+            def test_kill_signal():
+                worker.stop(1)
+
+
+            def test_portable():
+                worker.portable(["x"])
+
+
+            @needs("posix")
+            def test_marked():
+                worker.main(["x"])
+
+
+            @needs("formatter", "linux")
+            def test_linux_only():
+                worker.main(["x"])
+
+
+            @needs("formatter")
+            def test_formatter_is_no_platform():
+                worker.main(["x"])
+
+
+            @needs("python-3.12")
+            def test_python_is_no_platform():
+                os.fork()
+
+
+            class TestMarks:
+                pytestmark = needs("posix")
+
+                def test_inherits(self):
+                    os.fork()
+
+
+            class TestPlain:
+                def test_forks(self):
+                    os.fork()
+        """,
+    },
+    "portable-names": {
+        "scripts/names.py": """
+            import os.path
+            from pathlib import Path
+
+
+            def build(root, name):
+                fine = root / "ok.txt"
+                colon = root / "has:colon.txt"
+                device = root / "con.txt"
+                question = Path("a", "b?.json")
+                trailing = os.path.join("x", "trail.")
+                reserved = root.joinpath("sub", "AUX")
+                fragment = root / f"{name}:x.toml"
+                template = root / f"{name}.toml"
+                drive = Path("C:/windows/x")
+                pipe = open("name|pipe")
+                pattern = root.glob("*.py")
+                beside = "has:colon.txt"
+        """,
+        "tests/test_names.py": """
+            from pathlib import Path
+
+            CASES = {"ok": {"fine": "x", "bad:name": "y"}, "other": {"quote\\"": "z"}}
+            UNUSED = {"not:passed": 1}
+
+
+            def write(root, files):
+                for name, text in files.items():
+                    (root / f"{name}.toml").write_text(text)
+
+
+            def count(files):
+                for key in files:
+                    print(key)
+
+
+            def test_run(tmp_path: Path):
+                write(tmp_path, CASES["ok"])
+                write(tmp_path, files={"also:bad": "x", "fine": "y"})
+                count({"not:a:file": 1})
+        """,
+    },
 }
 LOST_BASE = {
     f"{PACKAGE}/__init__.py": "",
@@ -1145,3 +1309,151 @@ def test_a_table_that_cannot_be_read_holds_no_capability(
         (tmp_path / "tests/capabilities.py").write_text(table, encoding="utf-8")
 
     assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "dead-capability", "--rule", "never-run"))
+
+
+FLOOR_TREE = {
+    "pyproject.toml": """
+        [project]
+        requires-python = ">=3.11"
+    """,
+    "tests/test_ok.py": """
+        def test_old_grammar(value):
+            match value:
+                case [first, *rest]:
+                    return first, rest
+            try:
+                pass
+            except* ValueError:
+                pass
+    """,
+    "tests/data/newer.py": """
+        type Alias = int
+
+
+        def generic[T](value: T) -> T:
+            return value
+    """,
+    "tests/data/garbage.py": "def broken(:\n",
+    "tests/data/expected/stored.py": "type Alias = int\n",
+}
+
+
+@pytest.mark.parametrize("requires", ['">=3.11"', '">=3.12"', '">=3.14"'], ids=["3.11", "3.12", "3.14"])
+@needs("type-statements")
+def test_floor_syntax_follows_requires_python(
+    requires: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``floor-syntax`` parses with the oldest Python of ``requires-python``: newer syntax is a site, older is not.
+
+    A stored ``.py`` file and one this Python cannot parse hold no finding (so a file of the newest syntax is a site
+    only on a Python that reads it: `floor_syntax_newest_forms` of the source forms states that one).
+    """
+    _write(tmp_path, {**FLOOR_TREE, "pyproject.toml": f"[project]\nrequires-python = {requires}\n"})
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "floor-syntax"))
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("plain.txt", id="plain"),
+        pytest.param("has space.txt", id="space"),
+        pytest.param("has:colon.txt", id="colon"),
+        pytest.param('quote".txt', id="quote"),
+        pytest.param("star*.txt", id="star"),
+        pytest.param("what?.txt", id="question"),
+        pytest.param("pipe|.txt", id="pipe"),
+        pytest.param("less<.txt", id="less"),
+        pytest.param("back\\\\slash.txt", id="backslash"),
+        pytest.param("control\\x01.txt", id="control"),
+        pytest.param("trailing.", id="trailing-dot"),
+        pytest.param("trailing ", id="trailing-space"),
+        pytest.param("con", id="device"),
+        pytest.param("CON.txt", id="device-extension"),
+        pytest.param("nul.tar.gz", id="device-double-extension"),
+        pytest.param("aux.", id="device-dot"),
+        pytest.param("com1.py", id="device-com1"),
+        pytest.param("lpt9", id="device-lpt9"),
+        pytest.param("com0.py", id="not-a-device-com0"),
+        pytest.param("console.py", id="not-a-device-console"),
+        pytest.param("a.con", id="not-a-device-suffix"),
+        pytest.param("[param-id].txt", id="brackets"),
+    ],
+)
+def test_unportable_name(name: str) -> None:
+    """Windows refuses these characters, a trailing dot or space and the names of devices, with or without extension."""
+    assert_output(f"{check_source_rules.unportable_name(name)}\n")
+
+
+@pytest.mark.parametrize(
+    "fragment",
+    [
+        pytest.param("", id="empty"),
+        pytest.param(".toml", id="extension"),
+        pytest.param(":x", id="colon"),
+        pytest.param("con", id="device"),
+        pytest.param("trailing.", id="trailing-dot"),
+        pytest.param("a?b", id="question"),
+    ],
+)
+def test_unportable_fragment(fragment: str) -> None:
+    """A fragment of an f-string is checked for characters only: its neighbours may complete the name."""
+    assert_output(f"{check_source_rules.unportable_name(fragment, whole=False)}\n")
+
+
+def test_paths_that_fold_onto_each_other() -> None:
+    """Two paths that differ in case or in Unicode composition fold onto the first; a folder counts like a file."""
+    paths = [
+        "tests/a/File.txt",
+        "tests/a/file.txt",
+        "tests/A/other.txt",
+        "tests/b/café.txt",
+        "tests/b/café.txt",
+        "tests/c/Ünï.txt",
+        "tests/c/ünï.txt",
+        "tests/d/same.txt",
+        "scripts/has:colon.py",
+        "scripts/con.py",
+        "scripts/fine.py",
+    ]
+    assert_output("\n".join(f"{path}: {reason}" for path, reason in check_source_rules.unportable_paths(paths)) + "\n")
+
+
+@needs("linux")
+def test_the_file_names_of_a_tree_are_checked(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """``portable-names`` reads every file below ``scripts`` and ``tests``, stored output and data included.
+
+    A tree like this one cannot be written where the names are refused, or where case folds (Windows, macOS): it is
+    written on Linux only.
+    """
+    files = ["tests/data/expected/has:colon.txt", "tests/data/Same.txt", "tests/data/same.txt", "scripts/aux.py"]
+    _write(tmp_path, dict.fromkeys(["tests/data/expected/fine.txt", "scripts/fine.py", *files], ""))
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "portable-names"))
+
+
+@needs("type-statements")
+@pytest.mark.parametrize("pyproject", [None, "[project]\nname = 'x'\n"], ids=["no-pyproject", "no-requires-python"])
+def test_floor_syntax_without_requires_python_uses_this_checkouts(
+    pyproject: str | None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A tree that names no oldest Python is read with the one of the checkout the script belongs to (3.11)."""
+    files = {**FLOOR_TREE, **({"pyproject.toml": pyproject} if pyproject else {})}
+    _write(tmp_path, {name: text for name, text in files.items() if pyproject or name != "pyproject.toml"})
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "floor-syntax"))
+
+
+def test_an_unreadable_capability_table_excludes_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """``posix-only-call`` counts a test whose capability the table cannot state: nothing is known to exclude it."""
+    _write(
+        tmp_path,
+        {
+            "tests/capabilities.py": 'CAPABILITIES = ["posix"]\n',
+            "tests/test_fork.py": (
+                "import os\n\nfrom tests.capabilities import needs\n\n\n"
+                '@needs("posix")\ndef test_fork():\n    os.fork()\n'
+            ),
+        },
+    )
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "posix-only-call"))

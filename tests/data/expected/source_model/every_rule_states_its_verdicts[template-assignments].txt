@@ -47,6 +47,8 @@ references/legacy_row_reading_lines: rows.py:14: row with a value
 references/output_policy_by_origin: output_policy_by_origin.py:10: output_type with a value
 references/output_policy_by_origin: output_policy_by_origin.py:11: literal_type with a value
 references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:16: __runner with a value
+references/posix_only_at_import: posix_only_at_import.py:32: signal with a value
+references/posix_only_in_tests: posix_only_in_tests.py:95: pytestmark with a value
 references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:44: _CLASS_BODY with a value
 references/reexport_chain_across_modules: _format_types.py:9: One with a value
 references/skip_markers_by_origin: skip_markers_by_origin.py:25: skip with a value
