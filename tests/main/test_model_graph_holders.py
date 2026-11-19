@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import Error
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.types import DataType
+from tests.checks.areas import CheckFailure
 from tests.conftest import CHECK_MODEL_GRAPH_ENV
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH
 
@@ -58,7 +58,7 @@ def test_model_graph_check_reports_holder_violations(
 
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
     parser = CorruptingParser(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
-    with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: {message}"):
+    with pytest.raises(CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: {message}"):
         parser.parse()
 
 
@@ -82,7 +82,7 @@ def test_model_graph_check_reports_a_change_no_operation_noted(monkeypatch: pyte
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
     parser = UnnotingParser(JSON_SCHEMA_DATA_PATH / "nested_person.json", formatters=[Formatter.BUILTIN])
     with pytest.raises(
-        Error,
+        CheckFailure,
         match=rf"^{CHECK_MODEL_GRAPH_ENV}: the models that a refresh recorded for the noted models differ from a full "
         "rebuild$",
     ):
@@ -107,5 +107,5 @@ def test_model_graph_check_reports_a_cycle_in_a_model_no_operation_noted(monkeyp
 
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
     parser = UnnotingParser(JSON_SCHEMA_DATA_PATH / "nested_person.json", formatters=[Formatter.BUILTIN])
-    with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a data type of \w+ contains itself$"):
+    with pytest.raises(CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a data type of \w+ contains itself$"):
         parser.parse()

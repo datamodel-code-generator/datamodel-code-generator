@@ -1050,7 +1050,6 @@ class _Finality:
     def __init__(
         self,
         mode: Mode,
-        error: type[Exception],
         store: GenerationStore,
         guard_lists: Callable[[object, dict[int, _GuardedList]], None],
         *,
@@ -1061,7 +1060,6 @@ class _Finality:
         """Puts the plain lists of an object it holds into guarded lists, sharing those it has guarded already."""
         self.sweep = sweep
         """Whether a global pass that transforms or repairs compares every model (``FACT_FINALITY_SWEEP``)."""
-        self.error = error
         self.store = store
         self.prints: dict[int, _ModelPrint] = {}
         self.owners: dict[int, dict[int, DataModel]] = {}
@@ -1245,7 +1243,6 @@ class _Finality:
         class_name = None if model is None else model.class_name
         phase = self.store.phase.name
         self.mode.violation(
-            self.error,
             f"{pass_name} {rule.value}: {row_name} ({', '.join(fact_names)}) of {class_name} during {phase}",
             rule=rule.value,
             pass_name=pass_name,
@@ -1647,8 +1644,6 @@ class ParseChecks:
     """The debug checks of one parse: the store write guard and the finality check, whichever areas are on."""
 
     parser: object
-    error: type[Exception]
-    """The error a violation raises when the mode raises."""
     writes: Mode | None
     """How the store write guard handles a write outside store operations, or None when the area is off."""
     finality_mode: Mode | None
@@ -1701,7 +1696,6 @@ class ParseChecks:
             ]
             if changed and (mode := areas.mode(Area.PASS_TRIGGERS)) is not None:
                 mode.violation(
-                    self.error,
                     f"{decl.name} trigger-absent write: {', '.join(changed)} during {decl.phase.name}",
                     pass_name=decl.name,
                     changed=changed,
@@ -1725,7 +1719,6 @@ class ParseChecks:
         if (mode := self.finality_mode) is not None:
             finality = self.finality = _Finality(
                 mode,
-                self.error,
                 store,
                 self._guard_lists,
                 sweep=areas.mode(Area.FACT_FINALITY_SWEEP) is not None,
@@ -1830,7 +1823,6 @@ class ParseChecks:
         )
         written = f"{owner}.{attribute}" if operation == "=" else f"{owner}.{attribute}.{operation}()"
         mode.violation(
-            self.error,
             f"{written} is written outside store operations by {function} ({path}:{line}), "
             f"in {caller or scope} during {phase.name}",
             owner=owner,
@@ -1932,12 +1924,12 @@ def guarded_facts(finality: _Finality, facts: FinalFacts) -> FinalFacts:
 
 
 @contextmanager
-def parse_checks(parser: object, error: type[Exception]) -> Generator[None, None, None]:
+def parse_checks(parser: object) -> Generator[None, None, None]:
     """Open the checks of one parse of ``parser``, when an area that watches writes is on (``parse.run_steps``).
 
-    A violation raises ``error`` when the mode raises.
+    A violation raises ``CheckFailure`` when the mode raises.
     """
-    checks = ParseChecks(parser, error, areas.mode(Area.STORE_WRITES), areas.mode(Area.FACT_FINALITY))
+    checks = ParseChecks(parser, areas.mode(Area.STORE_WRITES), areas.mode(Area.FACT_FINALITY))
     token = PARSE_CHECKS.set(checks)
     try:
         yield

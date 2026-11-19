@@ -51,15 +51,6 @@ LEGACY_ROWS: Final[Mapping[str, str]] = MappingProxyType({
 """The shapes whose line differs from the assignment facts today, each with what differs."""
 
 
-class TemplateAssignmentError(Exception):
-    """A field line that disagrees with its assignment facts.
-
-    It is no ``Error`` of the package: a generation that retries on an ``Error`` (another reading of the document
-    roles, for one) would otherwise go on with other output instead of failing, and the check would change what it
-    observes.
-    """
-
-
 class AssignmentFacts(Protocol):
     """The assignment facts of a field that the check reads (``AssignmentFacts`` of ``model/_render_plan.py``)."""
 
@@ -158,7 +149,6 @@ def _check(checks_mode: Mode, model: DataModel, rendered: str) -> None:
         details = {"template": template, "model": model.class_name, "field": field.name, "written": wrote}
         if (row := _legacy_row(model, field, facts, binds=bound is not None)) is None:
             checks_mode.violation(
-                TemplateAssignmentError,
                 f"{template} writes {model.class_name}.{field.name} with {wrote}, where {decided}",
                 **details,
             )

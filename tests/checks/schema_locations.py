@@ -21,13 +21,11 @@ def check_schema_locations(parser: Any) -> None:
         for model in parser.results
         if location_of(model.reference) is None and not model.reference.__dict__.get(SCHEMA_LOCATION_CONFLICT_KEY)
     ]:
-        from datamodel_code_generator import Error
         from datamodel_code_generator._url_redaction import redact_reference
 
         paths = [(model.class_name, redact_reference(model.reference.path)) for model in missing]
         names = ", ".join(f"{name} ({path})" for name, path in paths)
         locations_mode.violation(
-            Error,
             f"models without a schema location: {names}",
             models=[{"class_name": name, "path": path} for name, path in paths],
         )

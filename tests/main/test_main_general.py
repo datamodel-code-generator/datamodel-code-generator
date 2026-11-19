@@ -65,6 +65,7 @@ from datamodel_code_generator.model.pydantic_v2 import UnionMode
 from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
     CHECK_MODEL_GRAPH_ENV,
@@ -292,7 +293,7 @@ def test_collapse_root_models_recursion_limit_is_a_model_graph_violation(
     }
     if flag == "check":
         with pytest.raises(
-            Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: collapsing root models reached the recursion limit"
+            CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: collapsing root models reached the recursion limit"
         ):
             generate(source, input_file_type=InputFileType.JsonSchema, **options)
         return
@@ -751,7 +752,7 @@ def test_model_graph_check_reports_a_copied_reference(
         JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
     )
     if flag == "check":
-        with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a copy of the Reference of Child "):
+        with pytest.raises(CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a copy of the Reference of Child "):
             parser.parse()
         return
     assert_output(cast("str", parser.parse()))
@@ -892,7 +893,9 @@ def test_model_graph_check_reports_a_written_model_that_the_store_retired(
         formatters=[Formatter.BUILTIN],
     )
     if flag == "check":
-        with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is written but is not an"):
+        with pytest.raises(
+            CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is written but is not an"
+        ):
             parser.parse()
         return
     assert_output(cast("str", parser.parse()))
@@ -913,7 +916,7 @@ def test_model_graph_check_reports_an_emitted_model_that_is_not_written() -> Non
         JSON_SCHEMA_DATA_PATH / "reuse_model_inline_definitions.json", formatters=[Formatter.BUILTIN]
     )
     with pytest.raises(
-        Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is an emitted model but is not"
+        CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is an emitted model but is not"
     ):
         parser.parse()
 
@@ -969,7 +972,7 @@ def test_process_single_module_override_gives_module_names_by_path() -> None:
             return context
 
     parser = RelabelingParser(OPEN_API_DATA_PATH / "modular.yaml", formatters=[Formatter.BUILTIN])
-    with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: ") as exc_info:
+    with pytest.raises(CheckFailure, match=f"^{CHECK_MODULE_IMPORTS_ENV}: ") as exc_info:
         parser.parse()
     assert_output(str(exc_info.value))
 
@@ -1158,7 +1161,9 @@ def test_model_graph_check_reports_a_model_without_an_owner(monkeypatch: pytest.
     parser = AddingParser(
         JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
     )
-    with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: models without an owner that are not roots: Added "):
+    with pytest.raises(
+        CheckFailure, match=rf"^{CHECK_MODEL_GRAPH_ENV}: models without an owner that are not roots: Added "
+    ):
         parser.parse()
 
 
@@ -3404,7 +3409,7 @@ def test_module_imports_written_outside_the_import_ledger(
     monkeypatch.setenv(CHECK_MODULE_IMPORTS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = DirectImportWriter(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: imports of .+ differ from the replay of"):
+        with pytest.raises(CheckFailure, match=f"^{CHECK_MODULE_IMPORTS_ENV}: imports of .+ differ from the replay of"):
             parser.parse()
         return
     assert_output(str(parser.parse()))
@@ -3477,7 +3482,9 @@ def test_render_plan_that_drops_a_declared_item(monkeypatch: pytest.MonkeyPatch,
         formatters=[Formatter.BUILTIN],
     )
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan of Person.firstName leaves"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan of Person.firstName leaves"
+        ):
             parser.parse()
         return
     assert_output(str(parser.parse()))
@@ -3503,7 +3510,6 @@ def test_template_assignment_check_reports_a_line_the_facts_do_not_bind(
     """
     from datamodel_code_generator.model.dataclass import DataClass, DataModelField
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-    from tests.checks.template_assignments import TemplateAssignmentError
 
     class StripsEveryNone(DataModelField):
         def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
@@ -3520,7 +3526,7 @@ def test_template_assignment_check_reports_a_line_the_facts_do_not_bind(
         formatters=[Formatter.BUILTIN],
     )
     if flag == "check":
-        with pytest.raises(TemplateAssignmentError) as raised:
+        with pytest.raises(CheckFailure) as raised:
             parser.parse()
         assert_output(f"{raised.value}\n")
         return
@@ -3687,7 +3693,9 @@ def test_render_plan_whose_field_changes_after_render_preparation(
     monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = LateDescription(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan frozen for field firstName"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_PLANS_ENV}: the render plan frozen for field firstName"
+        ):
             parser.parse()
         return
     assert_output(str(parser.parse()))
@@ -3716,7 +3724,9 @@ def test_type_expression_whose_field_changes_after_render_preparation(
     monkeypatch.setenv(CHECK_RENDER_PLANS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = LateList(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_PLANS_ENV}: the type expression frozen for field firstName"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_PLANS_ENV}: the type expression frozen for field firstName"
+        ):
             parser.parse()
         return
     assert_output(str(parser.parse()))
@@ -3749,7 +3759,7 @@ def test_render_memo_that_an_extension_makes_stale(monkeypatch: pytest.MonkeyPat
     parser = LateUnionAlias(schema, formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(
-            Error, match=f"^{CHECK_RENDER_MEMOS_ENV}: the union members joined to Union.str, bool. that"
+            CheckFailure, match=f"^{CHECK_RENDER_MEMOS_ENV}: the union members joined to Union.str, bool. that"
         ):
             parser.parse()
         return
@@ -3792,7 +3802,9 @@ components:
     monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
     parser = LateMemberValue(schema, formatters=[Formatter.BUILTIN], set_default_enum_member=True)
     if flag == "check":
-        with pytest.raises(Error, match=f"^{CHECK_RENDER_MEMOS_ENV}: the enum member index of Kind that the memo"):
+        with pytest.raises(
+            CheckFailure, match=f"^{CHECK_RENDER_MEMOS_ENV}: the enum member index of Kind that the memo"
+        ):
             parser.parse()
         return
     output = parser.parse()

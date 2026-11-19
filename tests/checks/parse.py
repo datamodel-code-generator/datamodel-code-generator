@@ -263,9 +263,7 @@ def _run_pipeline(original: Callable[..., None], runner: Any, steps: Any, parser
 
 def _checks(parser: object) -> AbstractContextManager[None]:
     """Open the checks of one parse of ``parser``; ``finality.py`` loads only then."""
-    from datamodel_code_generator import Error
-
-    return parse_checks(parser, Error)
+    return parse_checks(parser)
 
 
 def _runs_idle(spec: Any, parser: object, state: object) -> bool:

@@ -11,11 +11,12 @@ from typing import Any
 
 import pytest
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import InputFileType, generate
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.checks.__main__ import main
+from tests.checks.areas import Area, CheckFailure, Mode
 from tests.checks.seams import report
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
@@ -26,9 +27,9 @@ from tests.conftest import (
 )
 
 _EXTENSION_MAKES_A_MEMO_STALE = """
-from datamodel_code_generator import Error
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from tests.checks.areas import CheckFailure
 
 
 class LateUnionAlias(JsonSchemaParser):
@@ -44,7 +45,7 @@ SCHEMA = (
 )
 try:
     LateUnionAlias(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
-except Error as error:
+except CheckFailure as error:
     print(error)
 """
 
@@ -118,7 +119,7 @@ def test_naming_check_reports_a_name_no_naming_call_gives() -> None:
     The naming check is on (`1`, as the test suite sets it); the replay of the calls names the definition ``Pet``.
     """
     with pytest.raises(
-        Error,
+        CheckFailure,
         match=(
             rf"^{CHECK_NAMING_ENV}: names the resolver's naming calls do not explain: "
             r"#/definitions/Pet: 'Animal' \(asked None\) where its calls give 'Pet' \(asked None\)$"
@@ -174,7 +175,7 @@ def test_trigger_check_reports_a_pass_that_writes_where_its_trigger_is_false(mon
     enum into the module of the variants.
     """
     monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "1")
-    with pytest.raises(Error) as raised:
+    with pytest.raises(CheckFailure) as raised:
         _EnumLiteralTags(_ENUM_TAGGED_VARIANTS, formatters=[Formatter.BUILTIN]).parse()
     assert_output(f"{raised.value}\n")
 
@@ -206,4 +207,42 @@ def test_field_lines_read_only_module_level_class_bodies(rendered: str) -> None:
     lines = [
         f"{line.name}: {'no value' if line.value is None else 'with a value'}" for line in field_lines(rendered) or ()
     ]
+    assert_output("\n".join(lines) + "\n")
+
+
+_REFUSED_WHERE_YAML_NUMBERS_ARE_TEXT = """
+openapi: 3.0.3
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        at: {type: string, pattern: 00:00:00.00}
+"""
+
+
+def test_a_failing_check_is_no_error_that_a_generation_catches() -> None:
+    """A violation of every area fails the generation with its message, however the generation retries.
+
+    The schema is refused with its YAML 1.1-only number read as a number, so the generation parses again with it read
+    as text, and a package ``Error`` of that second parse is swallowed: the refusal of the first parse then stands. The
+    class name generator makes each area's violation in the second parse, where it names the first class.
+    """
+    lines = []
+    for area in Area:
+
+        def violates(_name: str, area: Area = area) -> str:
+            Mode(area, None).violation("seeded failure")
+            raise NotImplementedError
+
+        with pytest.raises(CheckFailure) as raised:
+            generate(
+                _REFUSED_WHERE_YAML_NUMBERS_ARE_TEXT,
+                input_file_type=InputFileType.OpenAPI,
+                custom_class_name_generator=violates,
+                formatters=[Formatter.BUILTIN],
+            )
+        lines.append(str(raised.value))
     assert_output("\n".join(lines) + "\n")

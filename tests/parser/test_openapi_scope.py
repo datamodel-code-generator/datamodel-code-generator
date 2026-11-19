@@ -14,6 +14,7 @@ from datamodel_code_generator.enums import AllExportsScope
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.openapi_scope import ApiModelResolver, ApiOpenAPIParser
+from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
     assert_directory_content,
@@ -578,7 +579,7 @@ def test_api_schema_site_check_of_a_reader_that_writes_the_document(monkeypatch:
     parser = _SiteWriterParser(SOURCE / "declarations.json", openapi_scopes=[OpenAPIScope.Api], formatters=[])
     try:
         with pytest.raises(
-            Error,
+            CheckFailure,
             match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the schema site kept for "
             "declarations.json#/components/parameters/Page/schema differs from the documents$",
         ):
@@ -615,7 +616,7 @@ def test_api_schema_site_check_of_a_site_read_before_its_reference_loads(
     parser = _EarlySiteReader(tmp_path / "api.json", openapi_scopes=[OpenAPIScope.Api], formatters=[])
     try:
         with pytest.raises(
-            Error,
+            CheckFailure,
             match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the \\$ref other.json#/B of the schema site "
             "api.json#/paths/~1a/get/parameters/0/schema leads to no loaded schema$",
         ):

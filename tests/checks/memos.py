@@ -228,6 +228,5 @@ def _check_hit(memo_mode: Mode, table: MemoTable, owner: object, kept: object, r
 
 
 def _stale(memo_mode: Mode, subject: str, why: str, **details: object) -> None:
-    from datamodel_code_generator import Error
 
-    memo_mode.violation(Error, f"{subject} that the memo returns {why}", **details)
+    memo_mode.violation(f"{subject} that the memo returns {why}", **details)
