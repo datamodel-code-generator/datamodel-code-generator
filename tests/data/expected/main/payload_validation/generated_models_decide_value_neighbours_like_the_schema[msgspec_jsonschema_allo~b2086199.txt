@@ -1,0 +1,3 @@
+[
+  "/0/b/0 enum \"y\": invalid, model accepts"
+]

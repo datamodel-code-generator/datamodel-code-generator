@@ -1,0 +1,19 @@
+[
+  "seed: valid",
+  "/ enum \"1\": invalid",
+  "/ enum 1.0: valid",
+  "/ enum [1]: invalid",
+  "/ enum null: invalid",
+  "/ enum true: invalid",
+  "/ enum {\"a\": 1}: invalid",
+  "enum \"1\": invalid",
+  "enum \"{\\\"\\\": 1}\": invalid",
+  "enum 1: valid",
+  "enum 1.0: valid",
+  "enum [1]: invalid",
+  "enum [{\"\": 1}]: invalid",
+  "enum null: invalid",
+  "enum true: invalid",
+  "enum {\"a\": 1}: invalid",
+  "enum {\"a\": {\"\": 1}}: invalid"
+]

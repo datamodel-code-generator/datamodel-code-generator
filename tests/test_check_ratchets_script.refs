@@ -23,11 +23,17 @@ host-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[host-bas
 host-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 host-baseline-unreadable-shape	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-shape].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 host-baseline-unreadable-value	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-value].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
+import-cycles	check_ratchets_script/check_ratchets_against_base[import-cycles].txt
+import-cycles-ignored-files	check_ratchets_script/check_ratchets_against_base[import-cycles-ignored-files].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 moved-line	check_ratchets_script/check_ratchets_against_base[moved-line].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff-config].txt
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt
 quoted-hook-id	check_ratchets_script/check_ratchets_against_base[quoted-hook-id].txt
 scope-walk	check_ratchets_script/check_ratchets_against_base[scope-walk].txt
+stored-lists-environments	check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt
+stored-lists-grow	check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt
+stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
+stored-lists-shrink	check_ratchets_script/check_ratchets_against_base[stored-lists-shrink].txt
 top-level-extended-ignores	check_ratchets_script/check_ratchets_against_base[top-level-extended-ignores].txt	= check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 unchanged	check_ratchets_script/check_ratchets_against_base[unchanged].txt
 unreadable-arguments	check_ratchets_script/check_ratchets_against_base[unreadable-arguments].txt

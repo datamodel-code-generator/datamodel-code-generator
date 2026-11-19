@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Released",
+  "type": "object",
+  "properties": {
+    "twice": {"$ref": "anchors.json#twice"},
+    "nested": {"$ref": "anchors.json#nested"},
+    "pet": {"$ref": "anchors.json#pet"}
+  }
+}

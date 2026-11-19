@@ -7,10 +7,11 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator import DanglingRefWarning, SchemaResourceRefWarning
 from datamodel_code_generator.__main__ import Exit
-from datamodel_code_generator.parser.jsonschema import JsonSchemaParser, _find_json_schema_anchor_pointer
+from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.reference import ModelResolver
-from tests.conftest import assert_output
+from tests.conftest import assert_output, assert_warnings_contain
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
@@ -47,30 +48,63 @@ def test_main_jsonschema_external_anchor_in_subdirectory(output_kind: str, outpu
     )
 
 
-def test_jsonschema_anchor_search_visits_only_schema_keyword_locations() -> None:
-    """Traverse every schema container shape while ignoring instance data."""
-    source = JSON_SCHEMA_DATA_PATH / "external_anchor" / "keyword_locations.json"
-    document = json.loads(source.read_text(encoding="utf-8"))
-    output = "".join(
-        f"{anchor}: {_find_json_schema_anchor_pointer(document, anchor)}\n"
-        for anchor in ("mapped", "sequence", "single", "mixed-object", "mixed-list", "instance-only")
-    )
-    output += f"non-object root: {_find_json_schema_anchor_pointer(document['examples'], 'instance-only')}\n"
+def test_main_jsonschema_external_anchor_in_schema_keyword_locations(output_file: Path) -> None:
+    """Name an `$anchor` of another file in every shape of a keyword that holds schemas, never in instance data.
 
-    assert_output(output, EXPECTED_JSON_SCHEMA_PATH / "anchor_keyword_locations.txt")
-
-
-def test_jsonschema_anchor_search_keeps_nested_resources_isolated() -> None:
-    """Do not leak nested-resource anchors into their parent resource."""
-    source = JSON_SCHEMA_DATA_PATH / "external_anchor" / "child.json"
-    document = json.loads(source.read_text(encoding="utf-8"))
-    nested_resource = document["$defs"]["NestedChild"]
-    output = (
-        f"parent: {_find_json_schema_anchor_pointer(document, 'anchored-child')}\n"
-        f"nested: {_find_json_schema_anchor_pointer(nested_resource, 'anchored-child')}\n"
+    `keyword_locations.json` declares one anchor under a map of schemas, a list, one schema, a keyword that holds
+    one schema or a list, and in `default` and `examples`, which hold instance data: that one names nothing.
+    """
+    with pytest.warns(DanglingRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor" / "keyword_locations_root.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )
+    assert_warnings_contain(
+        warning_records,
+        "Unresolved local $ref '#/instance-only' in keyword_locations.json: JSON pointer was not found.",
     )
 
-    assert_output(output, EXPECTED_JSON_SCHEMA_PATH / "anchor_nested_resource.txt")
+
+def test_main_jsonschema_external_anchor_released_search(output_file: Path) -> None:
+    """Name an `$anchor` of another file as the released search did (row ``legacy-external-anchor-search``, #7158).
+
+    A name two sibling schemas declare names the one written later, a name an ancestor and a schema inside it declare
+    names the ancestor, and an anchor in a namespace of definitions (`$defs/v1/Pet`) names nothing, as in 0.98.0.
+    """
+    with pytest.warns((SchemaResourceRefWarning, DanglingRefWarning)) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_released_search" / "root.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'twice' is declared by more than one schema in anchors.json ('#/$defs/Earlier', '#/$defs/Later')",
+        "The anchor 'nested' is declared by more than one schema in anchors.json ('#/$defs/Outer', "
+        "'#/$defs/Outer/properties/inner')",
+        "Unresolved local $ref '#/pet' in anchors.json: JSON pointer was not found.",
+    )
+
+
+def test_main_jsonschema_external_anchor_in_passed_namespace(output_file: Path) -> None:
+    """Name an `$anchor` of another file on a schema the resource walk passes over, as the released search did.
+
+    A namespace of definitions (an object of metadata and `$defs` alone) is read for its entries, yet an `$anchor` on
+    it, under its `contentSchema`, `not` or `if`, or under a known keyword of a version namespace (`v1`) is named as in
+    0.98.0; a name a later passed-over schema and an earlier definition both declare names the later one.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_passed_namespace" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
 
 
 def test_main_jsonschema_external_id_resolved_to_local_ref(output_file: Path) -> None:

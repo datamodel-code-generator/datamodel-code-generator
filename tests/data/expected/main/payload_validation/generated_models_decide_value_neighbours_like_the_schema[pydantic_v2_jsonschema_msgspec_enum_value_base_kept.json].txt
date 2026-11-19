@@ -1,0 +1,6 @@
+[
+  "/int_then_float const null: invalid, model accepts",
+  "/int_then_float const true: invalid, model accepts",
+  "/str_then_int const null: invalid, model accepts",
+  "/str_then_int const true: invalid, model accepts"
+]

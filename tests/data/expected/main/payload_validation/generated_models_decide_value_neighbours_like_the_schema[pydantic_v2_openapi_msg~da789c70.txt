@@ -1,0 +1,5 @@
+[
+  "enum \"1\": invalid, model accepts",
+  "enum \"2\": invalid, model accepts",
+  "enum true: invalid, model accepts"
+]

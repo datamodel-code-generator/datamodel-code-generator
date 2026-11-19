@@ -1,0 +1,7 @@
+[
+  "/mode const null: invalid, model accepts",
+  "/negated const 1: invalid, model accepts",
+  "/negated const 1.0: invalid, model accepts",
+  "/negated const null: invalid, model accepts",
+  "/retries const null: invalid, model accepts"
+]

@@ -1,0 +1,5 @@
+[
+  "/category enum null: invalid, model accepts",
+  "/priority enum null: invalid, model accepts",
+  "/status enum null: invalid, model accepts"
+]

@@ -15,7 +15,7 @@
   may be os [function:body@18|function:body@19]
 28:11 inner load in except_name -> local except_name @19
 uses of comprehension:field@4: read@5
-uses of comprehension:models@4: read@5
+uses of comprehension:models@4: iterate@5
 uses of comprehension.<locals>.<listcomp>:field@5: read@5
 uses of match_capture:value@8: read@10
 uses of match_capture:inner@9: read@15

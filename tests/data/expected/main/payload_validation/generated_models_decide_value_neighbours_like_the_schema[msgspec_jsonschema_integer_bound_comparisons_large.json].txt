@@ -1,0 +1,13 @@
+[
+  "/belowExactLimit minimum 9007199254740991.0: valid, model rejects",
+  "/mixedMaximum maximum -9007199254740994.0: valid, model rejects",
+  "/mixedMinimum minimum 9007199254740994.0: valid, model rejects",
+  "/negativeMaximum maximum -9007199254740994.0: valid, model rejects",
+  "/negativeMaximumReversed maximum -9007199254740994.0: valid, model rejects",
+  "/negativeMinimum minimum -9007199254740992.0: valid, model rejects",
+  "/negativeMinimumReversed minimum -9007199254740992.0: valid, model rejects",
+  "/positiveMaximum maximum 9007199254740992.0: valid, model rejects",
+  "/positiveMaximumReversed maximum 9007199254740992.0: valid, model rejects",
+  "/positiveMinimum minimum 9007199254740994.0: valid, model rejects",
+  "/positiveMinimumReversed minimum 9007199254740994.0: valid, model rejects"
+]

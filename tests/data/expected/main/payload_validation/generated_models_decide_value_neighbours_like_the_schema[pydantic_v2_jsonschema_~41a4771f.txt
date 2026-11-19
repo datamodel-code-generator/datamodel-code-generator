@@ -1,0 +1,4 @@
+[
+  "/one enum \"a\": invalid, model accepts",
+  "/one enum null: invalid, model accepts"
+]

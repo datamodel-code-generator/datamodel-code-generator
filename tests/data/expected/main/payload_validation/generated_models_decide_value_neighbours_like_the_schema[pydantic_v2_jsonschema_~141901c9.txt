@@ -1,0 +1,8 @@
+[
+  "/equal_x_enumNames enum null: invalid, model accepts",
+  "/equal_x_enum_descriptions enum null: invalid, model accepts",
+  "/equal_x_enum_varnames enum null: invalid, model accepts",
+  "/subset_x_enumNames enum null: invalid, model accepts",
+  "/subset_x_enum_descriptions enum null: invalid, model accepts",
+  "/subset_x_enum_varnames enum null: invalid, model accepts"
+]

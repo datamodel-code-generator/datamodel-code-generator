@@ -1,0 +1,6 @@
+[
+  "/code const 1.0: valid, model rejects",
+  "/code const 2.0: valid, model rejects",
+  "/pick enum \"a\": invalid, model accepts",
+  "/version const 2.0: valid, model rejects"
+]

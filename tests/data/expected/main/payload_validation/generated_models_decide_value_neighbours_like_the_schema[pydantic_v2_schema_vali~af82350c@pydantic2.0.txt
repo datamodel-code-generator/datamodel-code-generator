@@ -1,0 +1,4 @@
+[
+  "/negated const null: invalid, model accepts",
+  "/statusCode/code const 7.0: valid, model rejects"
+]

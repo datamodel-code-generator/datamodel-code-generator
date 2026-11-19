@@ -19,8 +19,8 @@ uses of factory:decorate@4: call@5
 uses of factory:default@4: read@6, read@6
 uses of factory:base@4: read@9
 uses of factory:meta@4: read@9
-uses of factory:rows@4: read@12
-uses of factory:kind@4: read@5, read@6, read@6
+uses of factory:rows@4: iterate@12
+uses of factory:kind@4: argument@5, read@6, read@6
 uses of factory:inner@6: read@13
 uses of factory:Made@9: read@13
 uses of factory:total@12: read@13

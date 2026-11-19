@@ -1,0 +1,4 @@
+[
+  "/holder/inline/0 minProperties {}: invalid, model accepts",
+  "/holder/named/0 minProperties {}: invalid, model accepts"
+]

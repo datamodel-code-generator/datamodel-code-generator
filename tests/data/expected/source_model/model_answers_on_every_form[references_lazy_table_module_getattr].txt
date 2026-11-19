@@ -25,12 +25,12 @@
 20:20 globals load in __dir__ -> builtin; origin builtins.globals
 20:32 _LAZY_IMPORTS load in __dir__ -> global <module> @8; origin forms.references.lazy_table_module_getattr._LAZY_IMPORTS
 uses of <module>:import_module@6: call@16
-uses of <module>:_LAZY_IMPORTS@8: read@14, read@20
+uses of <module>:_LAZY_IMPORTS@8: read@14, unpack@20
 uses of <dictcomp>:name@10: read@10, call:upper@10
 uses of __getattr__:name@13: read@14, read@15
-uses of __getattr__:entry@14: read@15, read@15, read@15
-uses of __getattr__:module@15: read@16
-uses of __getattr__:attribute@15: read@16
+uses of __getattr__:entry@14: argument@15, read@15, read@15
+uses of __getattr__:module@15: argument@16
+uses of __getattr__:attribute@15: argument@16
 constant _LAZY_IMPORTS: {'Generator': 'pkg.generator', 'Parser': tuple('pkg.parser', 'Parser')}
 constant COMPLEX_TYPES: frozenset({'array', 'enum', 'record'})
 constant _COMPUTED: Unreadable(reason='_COMPUTED is not a literal: a DictComp at line 10', lines=(10,))

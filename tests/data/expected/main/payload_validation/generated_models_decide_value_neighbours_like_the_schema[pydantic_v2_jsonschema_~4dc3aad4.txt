@@ -1,0 +1,6 @@
+[
+  "/cst const null: invalid, model accepts",
+  "/cst enum null: invalid, model accepts",
+  "/one enum \"a\": invalid, model accepts",
+  "/one enum null: invalid, model accepts"
+]

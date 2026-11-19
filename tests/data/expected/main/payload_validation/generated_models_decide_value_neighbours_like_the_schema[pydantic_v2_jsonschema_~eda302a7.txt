@@ -1,0 +1,3 @@
+[
+  "/enum_and_key_branches enum null: invalid, model accepts"
+]

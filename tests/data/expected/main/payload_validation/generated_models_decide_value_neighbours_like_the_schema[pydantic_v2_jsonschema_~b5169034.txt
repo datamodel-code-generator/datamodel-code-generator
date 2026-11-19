@@ -1,0 +1,4 @@
+[
+  "/plugin~1rule enum null: invalid, model accepts",
+  "/plugin~1rule enum true: invalid, model accepts"
+]

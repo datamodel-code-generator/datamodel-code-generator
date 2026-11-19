@@ -21,5 +21,5 @@ uses of <module>:c@6: call@16
 uses of <module>:no_check@8: read@14
 uses of <module>:first@10: read@11, read@16
 uses of <module>:second@11: read@10
-uses of f:x@15: read@16
+uses of f:x@15: argument@16
 == code objects: one per scope that compiles on this Python

@@ -1,0 +1,8 @@
+[
+  "/looser minimum 0: invalid, model accepts",
+  "/looser_items/0 minimum 0: invalid, model accepts",
+  "/looser_prop minimum 0: invalid, model accepts",
+  "/pick enum \"a\": invalid, model accepts",
+  "/pick_items/0 enum \"a\": invalid, model accepts",
+  "/pick_prop enum \"a\": invalid, model accepts"
+]

@@ -1,0 +1,12 @@
+[
+  "/color enum null: invalid, model accepts",
+  "/level enum \"1\": invalid, model accepts",
+  "/level enum \"2\": invalid, model accepts",
+  "/level enum null: invalid, model accepts",
+  "/nullableLevel enum \"1\": invalid, model accepts",
+  "/nullableLevel enum null: invalid, model accepts",
+  "/rank enum \"1\": invalid, model accepts",
+  "/rank enum \"2\": invalid, model accepts",
+  "/rank enum null: invalid, model accepts",
+  "/weight enum null: invalid, model accepts"
+]

@@ -11,7 +11,7 @@
 15:8 hasattr load in read -> builtin; origin builtins.hasattr
 15:16 obj load in read -> local read @9
 uses of <module>:operator@6: call:attrgetter@13
-uses of read:obj@9: read@11, read@12, read@13, read@14, read@15
+uses of read:obj@9: argument@11, argument@12, argument@13, argument@14, argument@15
 uses of read:suffix@9: read@12
 call @11 builtins.getattr: 0=obj 1="_private" 2=None name=None
 call @12 builtins.getattr: 0=obj 1=f"_prefix_{suffix}" 2=None name=None

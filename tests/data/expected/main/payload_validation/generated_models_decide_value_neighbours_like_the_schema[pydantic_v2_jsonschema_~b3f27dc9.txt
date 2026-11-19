@@ -1,0 +1,7 @@
+[
+  "/fixed const null: invalid, model accepts",
+  "/inline enum \"b\": invalid, model accepts",
+  "/inline enum null: invalid, model accepts",
+  "/referenced enum \"b\": invalid, model accepts",
+  "/referenced enum null: invalid, model accepts"
+]

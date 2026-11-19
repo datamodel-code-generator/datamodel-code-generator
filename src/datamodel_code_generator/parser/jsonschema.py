@@ -358,7 +358,6 @@ from datamodel_code_generator.parser._schema_dispatch import (
     TypedChild,
 )
 from datamodel_code_generator.parser._schema_documents import (
-    _find_json_schema_anchor_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
     ref_pointer_parts,
     ref_value_in,
 )

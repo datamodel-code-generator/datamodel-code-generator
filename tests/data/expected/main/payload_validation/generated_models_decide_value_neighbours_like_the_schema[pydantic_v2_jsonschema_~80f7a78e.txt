@@ -1,0 +1,17 @@
+[
+  "/both const null: invalid, model accepts",
+  "/both enum null: invalid, model accepts",
+  "/code enum \"1\": invalid, model accepts",
+  "/code enum \"2\": invalid, model accepts",
+  "/code enum null: invalid, model accepts",
+  "/code enum true: invalid, model accepts",
+  "/default enum null: invalid, model accepts",
+  "/level enum null: invalid, model accepts",
+  "/phase enum null: invalid, model accepts",
+  "/pick enum null: invalid, model accepts",
+  "/region enum null: invalid, model accepts",
+  "/source const null: invalid, model accepts",
+  "/source enum null: invalid, model accepts",
+  "/version enum \"2\": invalid, model accepts",
+  "/version enum null: invalid, model accepts"
+]

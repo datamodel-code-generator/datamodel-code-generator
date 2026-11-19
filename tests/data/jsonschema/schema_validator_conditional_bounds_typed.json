@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "$defs": {
+    "Any": {},
+    "Open": {
+      "type": "object"
+    }
+  },
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "value": {
+      "type": "integer"
+    },
+    "size": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "if": {
+    "type": "object",
+    "properties": {
+      "kind": {
+        "const": "bulk"
+      }
+    },
+    "required": [
+      "kind"
+    ]
+  },
+  "then": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Any",
+            "minimum": 10
+          }
+        ]
+      }
+    }
+  },
+  "else": {
+    "type": "object",
+    "allOf": [
+      {
+        "$ref": "#/$defs/Open",
+        "type": "object",
+        "properties": {
+          "size": {
+            "maximum": 5
+          }
+        }
+      }
+    ]
+  }
+}
