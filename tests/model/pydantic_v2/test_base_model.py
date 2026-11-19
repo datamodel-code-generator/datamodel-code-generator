@@ -501,6 +501,20 @@ def test_parser_simple_field_preserves_parent_and_fresh_extras() -> None:
     assert first.extras is not second.extras
 
 
+@pytest.mark.allow_direct_assert("states that validating an instance returns it, which writes no output")
+def test_constraints_validation_keeps_an_instance() -> None:
+    """Validating a ``Constraints`` instance returns it as it is."""
+    constraints = Constraints()
+
+    assert Constraints.model_validate(constraints) is constraints
+
+
+def test_get_data_model_types_refuses_a_value_that_is_no_model_type() -> None:
+    """``get_data_model_types`` takes the enum member, not its string value."""
+    with pytest.raises(ValueError, match=r"pydantic_v2\.BaseModel is unsupported data model type"):
+        get_data_model_types("pydantic_v2.BaseModel")  # ty: ignore[invalid-argument-type]
+
+
 @pytest.mark.allow_direct_assert
 def test_parser_simple_field_falls_back_for_processed_values() -> None:
     """Retain Pydantic validation for constraints, extras, and const fields."""

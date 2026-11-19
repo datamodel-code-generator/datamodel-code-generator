@@ -304,6 +304,24 @@ def test_datatype_remove_reference_detaches_compatibility_child() -> None:
     assert [child is data_type for child in reference.children] == []
 
 
+def test_datatype_replace_reference_requires_a_reference() -> None:
+    """Refuse to replace the reference of a type that holds none."""
+    with pytest.raises(Exception, match=r"`DataType.replace_reference\(\)` can't be called"):
+        DataType().replace_reference(None)
+
+
+def test_union_int_float_public_conversions() -> None:
+    """Convert a UnionIntFloat to int, and validate instances, numeric strings and other values."""
+    value = UnionIntFloat(3.7)
+
+    assert int(value) == 3
+    assert UnionIntFloat.validate(value) is value
+    assert UnionIntFloat.validate("5").value == "5"
+    assert UnionIntFloat.validate("2.5").value == "2.5"
+    with pytest.raises(TypeError, match="x is not int or float"):
+        UnionIntFloat.validate("x")
+
+
 def test_hostname_regex_aliases_canonical_data_type_manager() -> None:
     """Test model modules reuse the canonical hostname regex."""
     from datamodel_code_generator.model import types as model_types

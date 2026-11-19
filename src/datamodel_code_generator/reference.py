@@ -228,7 +228,7 @@ class _BaseModel(BaseModel):
 
     if not TYPE_CHECKING:  # pragma: no branch
 
-        def dict(  # noqa: PLR0913  # pragma: no cover
+        def dict(  # noqa: PLR0913
             self,
             *,
             include: AbstractSet[int | str] | Mapping[int | str, Any] | None = None,
@@ -266,7 +266,7 @@ class Reference(_BaseModel):
     @model_validator(mode="before")
     def validate_original_name(cls, values: Any) -> Any:  # noqa: N805
         """Assign name to original_name if original_name is empty."""
-        if not isinstance(values, dict):  # pragma: no cover
+        if not isinstance(values, dict):
             return values
         original_name = values.get("original_name")
         if original_name:
@@ -1938,7 +1938,7 @@ class ModelResolver:  # noqa: PLR0904
         absolute_path = Path(self._base_path, file_part).resolve().as_posix()
         if self.is_external_root_ref(ref) or self.is_external_ref(ref):
             return absolute_path in self.after_load_files
-        return False  # pragma: no cover
+        return False
 
     @staticmethod
     def is_external_ref(ref: str) -> bool:
@@ -2216,7 +2216,7 @@ class ModelResolver:  # noqa: PLR0904
         else:
             # TODO: create a validate for module name
             name = self.get_valid_field_name(name, model_type=ModelType.CLASS)
-            if singular_name:  # pragma: no cover
+            if singular_name:
                 name = self._singular_name(name, singular_name_suffix)
             elif unique:
                 unique_name = self._get_unique_name(name, path=joined_path)

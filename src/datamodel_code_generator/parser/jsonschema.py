@@ -5675,7 +5675,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged_copy = _MERGED_REF_TARGET_KEY in obj.__dict__
             if self.generate_schema_validators:
                 obj = self._merge_conditional_properties(obj)
-            if not unique:  # pragma: no cover
+            if not unique:
                 warn(
                     f"{self.__class__.__name__}.parse_object() ignore `unique` argument."
                     f"An object name must be unique."
@@ -7784,7 +7784,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         """Parse enum schema into an Enum class."""
         with self._model_frame() as frame:
-            if not unique:  # pragma: no cover
+            if not unique:
                 warn(
                     f"{self.__class__.__name__}.parse_enum() ignore `unique` argument."
                     f"An object name must be unique."

@@ -295,7 +295,7 @@ class Constraints(_Constraints):
     @model_validator(mode="before")
     def validate_min_max_items(cls, values: Any) -> dict[str, Any]:  # noqa: N805
         """Validate and convert minItems/maxItems to minLength/maxLength."""
-        if not isinstance(values, dict):  # pragma: no cover
+        if not isinstance(values, dict):
             return values
         min_items = values.pop("minItems", None)
         if min_items is not None:

@@ -1443,7 +1443,7 @@ def _normalize_raw_input(
 
     _warn_genson_optional()
     try:
-        if isinstance(input_, Path) and input_.is_dir():  # pragma: no cover
+        if isinstance(input_, Path) and input_.is_dir():
             msg = f"Input must be a file for {input_file_type}"
             raise Error(msg)  # noqa: TRY301
         obj: Any
@@ -2287,10 +2287,8 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         and input_file_type != InputFileType.MCPTools
         and (not input_ or any(not isinstance(item, Path) for item in input_))
     ):
-        msg = (  # pragma: no cover
-            "List input is only supported for file path lists or input_file_type=InputFileType.MCPTools."
-        )
-        raise Error(msg)  # pragma: no cover
+        msg = "List input is only supported for file path lists or input_file_type=InputFileType.MCPTools."
+        raise Error(msg)
 
     from datamodel_code_generator._paths import resolved  # noqa: PLC0415
 

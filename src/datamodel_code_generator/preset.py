@@ -345,7 +345,7 @@ class PresetConfig(BaseGenerateConfig):
     def __init__(self, **values: Unpack[BaseGenerateConfigDict]) -> None:
         """Build immutable preset updates from statically checked GenerateConfig fields."""
         for field_name in values:
-            if field_name not in type(self).model_fields:  # pragma: no cover
+            if field_name not in type(self).model_fields:
                 msg = f"Preset field {stable_repr(field_name)} is not a BaseGenerateConfig field"
                 raise PresetError(msg)
 
@@ -398,7 +398,7 @@ class PresetOptionGroup:
 
     def applies_to(self, context: PresetContext) -> bool:
         """Return whether this option group applies to a preset context."""
-        if self.input_file_types and context.input_file_type not in self.input_file_types:  # pragma: no cover
+        if self.input_file_types and context.input_file_type not in self.input_file_types:
             return False
         if self.output_model_types and context.output_model_type not in self.output_model_types:
             return False
@@ -1932,7 +1932,7 @@ def render_presets(format_: PresetFormat) -> str:
             return render_presets_json() + "\n"
         case "markdown":
             return render_presets_markdown().rstrip() + "\n"
-        case _:  # pragma: no cover
+        case _:
             msg = f"Unsupported preset docs format: {stable_repr(format_)}"
             raise PresetError(msg)
 

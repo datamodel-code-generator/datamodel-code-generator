@@ -15,7 +15,7 @@ import yaml
 from lxml import etree
 from pydantic import PydanticUserError, ValidationError
 
-from datamodel_code_generator import DataModelType, InputFileType
+from datamodel_code_generator import DataModelType, InputFileType, generate
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter, PythonVersion
 from datamodel_code_generator.parser import xmlschema as xmlschema_parser
@@ -1532,3 +1532,24 @@ def test_main_xmlschema_named_type_element_defaults(output_file: Path, extra_arg
         expected_attribute_path=("color",),
         expected_attribute_value="blue",
     )
+
+
+@pytest.mark.allow_direct_assert("generate() returns the modules of a list input as a dict that no helper compares")
+def test_generate_xmlschema_from_a_list_of_files(tmp_path: Path) -> None:
+    """Generate the models of several XML Schema files given as a list of paths."""
+    schema = (
+        '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">'
+        '<xs:element name="{name}"><xs:complexType><xs:sequence>'
+        '<xs:element name="{field}" type="xs:string"/>'
+        "</xs:sequence></xs:complexType></xs:element></xs:schema>"
+    )
+    paths = [tmp_path / "pet.xsd", tmp_path / "owner.xsd"]
+    paths[0].write_text(schema.format(name="Pet", field="nickname"), encoding="utf-8")
+    paths[1].write_text(schema.format(name="Owner", field="surname"), encoding="utf-8")
+
+    result = generate(paths, input_file_type=InputFileType.XMLSchema, disable_timestamp=True)
+
+    assert isinstance(result, dict)
+    assert sorted(module for (module,) in result) == ["__init__.py", "owner.py", "pet.py"]
+    assert "class Pet(BaseModel):\n    nickname: str" in result["pet.py",]
+    assert "class Owner(BaseModel):\n    surname: str" in result["owner.py",]

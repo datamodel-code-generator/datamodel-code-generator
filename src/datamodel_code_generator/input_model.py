@@ -845,12 +845,12 @@ def _preserved_python_type_expr(tp: type, generic_names: dict[type, str] | None 
     type_name: str | None = None
     if origin is not None:
         type_name = _PRESERVED_TYPE_ORIGINS.get(origin)
-        if type_name is None and getattr(origin, "__module__", None) == "collections":  # pragma: no cover
+        if type_name is None and getattr(origin, "__module__", None) == "collections":
             type_name = _simple_type_name(origin)
     if type_name is not None:
         if arguments := _with_full_fallback(args, generic_names, optional=False):
             return PythonTypeSubscript(PythonTypeName(type_name), arguments)
-        return PythonTypeName(type_name)  # pragma: no cover
+        return PythonTypeName(type_name)
 
     if arguments := _with_full_fallback(args, generic_names):
         return PythonTypeSubscript(PythonTypeName(_simple_type_name(origin or tp)), arguments)

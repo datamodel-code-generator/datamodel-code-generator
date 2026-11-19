@@ -1138,6 +1138,42 @@ def test_input_model_abstract_containers_as_written(
     )
 
 
+@pytest.mark.allow_direct_assert("reads the two fields of the output of an input-model run")
+def test_input_model_collection_classes_beside_the_preserved_ones(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write a ``collections`` class no preserved row names, and a bare ``deque``, as the model types them."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "collection_classes", raising=False)
+    (tmp_path / "collection_classes.py").write_text(
+        "from collections import UserDict\n"
+        "from typing import Deque\n\n"
+        "from pydantic import BaseModel, ConfigDict\n\n\n"
+        "class Owner(BaseModel):\n"
+        "    model_config = ConfigDict(arbitrary_types_allowed=True)\n\n"
+        "    nicknames: UserDict[str, int]\n"
+        "    queue: Deque\n",
+        encoding="utf-8",
+    )
+    output_path = tmp_path / "output.py"
+    with freeze_time(TIMESTAMP):
+        run_main_with_args(
+            _input_model_args(
+                "collection_classes:Owner",
+                output_path=output_path,
+                extra_args=["--disable-timestamp", "--formatters", "builtin"],
+            ),
+            use_parsed_source_cache=False,
+            use_builtin_default_formatter=False,
+            isolate_model_template_cache=True,
+        )
+
+    output = output_path.read_text(encoding="utf-8")
+    assert "from collections import UserDict, deque" in output
+    assert "nicknames: UserDict[str, int] = Field(..., title='Nicknames')" in output
+    assert "queue: deque = Field(..., title='Queue')" in output
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

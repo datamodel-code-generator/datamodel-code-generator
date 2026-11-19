@@ -268,7 +268,7 @@ class UnionIntFloat:
         """Initialize with an int or float value."""
         self.value: int | float = value
 
-    def __int__(self) -> int:  # pragma: no cover
+    def __int__(self) -> int:
         """Convert value to int."""
         return int(self.value)
 
@@ -299,9 +299,9 @@ class UnionIntFloat:
     @classmethod
     def validate(cls, v: Any) -> UnionIntFloat:
         """Validate and convert value to UnionIntFloat."""
-        if isinstance(v, UnionIntFloat):  # pragma: no cover
+        if isinstance(v, UnionIntFloat):
             return v
-        if not isinstance(v, (int, float)):  # pragma: no cover
+        if not isinstance(v, (int, float)):
             try:
                 int(v)
                 return cls(v)
@@ -822,7 +822,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def replace_reference(self, reference: Reference | None) -> None:
         """Replace this DataType's reference with a new one."""
-        if not self.reference:  # pragma: no cover
+        if not self.reference:
             msg = f"`{self.__class__.__name__}.replace_reference()` can't be called when `reference` field is empty."
             raise Exception(msg)  # noqa: TRY002
         drop_child(self.reference, self)

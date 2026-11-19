@@ -16,6 +16,7 @@ from datamodel_code_generator.preset import (
     PresetConfig,
     PresetConfigItem,
     PresetContext,
+    PresetError,
     PresetOptionGroup,
     get_latest_preset_name,
     get_preset_infos,
@@ -127,6 +128,33 @@ def test_preset_config_supports_enum_backed_string_and_sequence_options() -> Non
     ))
 
     assert_output(output, EXPECTED_PRESET_DOCS_PATH / "preset_config_enum_values.txt")
+
+
+def test_preset_api_refuses_an_unknown_format_and_an_unknown_field() -> None:
+    """The preset API names the format or the config field it does not know."""
+    with pytest.raises(PresetError, match="Unsupported preset docs format: 'xml'"):
+        render_presets("xml")  # ty: ignore[invalid-argument-type]
+    with pytest.raises(PresetError, match="Preset field 'no_such_field' is not a BaseGenerateConfig field"):
+        PresetConfig(no_such_field=True)  # ty: ignore[unknown-argument]
+
+
+@pytest.mark.allow_direct_assert("states which contexts a preset option group applies to, which writes no output")
+def test_preset_option_group_applies_to_its_input_file_types() -> None:
+    """A group that names input file types applies to those only."""
+    group = PresetOptionGroup(
+        title="openapi only",
+        config=PresetConfig(),
+        description="",
+        input_file_types=frozenset({InputFileType.OpenAPI}),
+    )
+    context = PresetContext(
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        target_python_version=PythonVersion.PY_310,
+    )
+
+    assert group.applies_to(context) is False
+    assert group.applies_to(PresetContext(InputFileType.OpenAPI, context.output_model_type, PythonVersion.PY_310))
 
 
 def test_dated_presets_keep_default_deserialization_immutable() -> None:

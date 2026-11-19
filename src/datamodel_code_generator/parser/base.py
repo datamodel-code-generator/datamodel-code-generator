@@ -1389,7 +1389,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.http_timeout: float | None = self._source_context.http_timeout
         self._remote_response_observer = self._source_context.remote_response_observer
         self.use_annotated: bool = config.use_annotated
-        if self.use_annotated and not self.field_constraints:  # pragma: no cover
+        if self.use_annotated and not self.field_constraints:
             msg = "`use_annotated=True` has to be used with `field_constraints=True`"
             raise Exception(msg)  # noqa: TRY002
         self._output_model_context = OutputModelContext.from_generation_types(

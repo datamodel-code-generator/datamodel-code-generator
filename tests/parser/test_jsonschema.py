@@ -3431,6 +3431,22 @@ def test_parse_enum_empty_enum_not_nullable() -> None:
     assert result.type == "None"
 
 
+def test_parser_refuses_use_annotated_without_field_constraints() -> None:
+    """A parser built with ``use_annotated`` and without ``field_constraints`` is refused."""
+    with pytest.raises(Exception, match="`use_annotated=True` has to be used with `field_constraints=True`"):
+        JsonSchemaParser("", use_annotated=True)
+
+
+def test_parse_object_and_parse_enum_warn_that_unique_is_ignored() -> None:
+    """The ``unique`` argument of parse_object() and parse_enum() is ignored, and a false one warns."""
+    parser = JsonSchemaParser("")
+
+    with pytest.warns(UserWarning, match=r"JsonSchemaParser\.parse_object\(\) ignore `unique` argument"):
+        parser.parse_object("Pet", JsonSchemaObject.model_validate({"type": "object"}), ["Pet"], unique=False)
+    with pytest.warns(UserWarning, match=r"JsonSchemaParser\.parse_enum\(\) ignore `unique` argument"):
+        parser.parse_enum("Color", JsonSchemaObject.model_validate({"enum": ["red"]}), ["Color"], unique=False)
+
+
 def test_parse_enum_preserves_explicit_null_member() -> None:
     """Keep a native JSON null member distinct from an unset field default."""
     from datamodel_code_generator.model.enum import NULL_ENUM_MEMBER_VALUE, Enum

@@ -1557,7 +1557,7 @@ class XMLSchemaParser(JsonSchemaParser):
                         yield self._source_from_xml_path(file_path)
                 else:
                     yield self._source_from_xml_path(path)
-            case list() as paths:  # pragma: no cover
+            case list() as paths:
                 for path in paths:
                     yield self._source_from_xml_path(path)
             case _:
