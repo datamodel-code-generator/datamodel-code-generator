@@ -1,0 +1,10 @@
+[[change]]
+id = "ratchet-comments-and-env-probes"
+category = "harness"
+title = "Report the environment overrides of stored outputs in the ratchet tables"
+summary = "Only the ratchet script tests change: the table of three cases gains a reported-only line; the package writes the same output."
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[named-outputs-fall].txt",
+    "check_ratchets_script/check_ratchets_against_base[named-outputs-moved].txt",
+    "check_ratchets_script/check_ratchets_against_base[named-outputs].txt",
+]

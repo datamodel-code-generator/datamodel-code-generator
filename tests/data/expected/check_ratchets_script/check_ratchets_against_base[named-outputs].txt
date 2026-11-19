@@ -2,6 +2,7 @@ exit status 1
 Escape hatches: base (merge-base <commit>) -> working tree
 
 key                                             base    head  change
+expected:env-override                              1       2      +1
 named-stored-output@tests                          0       9      +9
 ruff-config:exclude:scripts                        1       1       0
 ruff-config:hook-exclude:^src/pkg/generated/       1       1       0

@@ -39,6 +39,17 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   a test whose sibling the module gets by inheritance, import or assignment. Renaming a test counts the hand-named
   labels that happened to match its old derived name. It may stay or fall, never rise: the base is the
   budget.
+- ``comment:plain@src`` and ``comment:todo``: the comments of the package that are no hatch, read through the source
+  model. ``comment:todo`` counts those with a to-do marker (``TODO``, ``FIXME``, ``XXX``, ``HACK``),
+  ``comment:plain@src`` the other plain comments (a directive such as ``noqa``, a pragma, a type ignore, a shebang or
+  an encoding line is none). A comment that explains a hard line is legitimate, so the budget is today's count, paid
+  by turning another comment into a docstring.
+- ``env-probe@src``: the places where the package reads the environment it runs in: a guarded import (the body of a
+  ``try`` that catches ``ImportError``), ``sys.version_info``, ``sys.platform``, ``os.name``, ``os.environ``,
+  ``os.getenv`` and ``importlib.util.find_spec``, read with the source model by origin. Output that depends on the
+  environment cost review rounds, so the count may stay or fall, never rise.
+- ``expected:env-override`` and ``expected:conditional``: the ``.refs`` lines that carry an environment predicate
+  (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
   (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
@@ -220,6 +231,25 @@ ALLOWLISTS = (
     ("scripts/check_architecture_boundaries.py", frozenset({"DEFAULT_ALLOWLIST"})),
     ("tests/test_checks_are_run.py", frozenset({"UNREACHED"})),
 )
+PLAIN_COMMENT_AREAS = frozenset({"src"})
+"""The areas whose plain comments and environment probes are counted."""
+TODO_MARKER = re.compile(r"\b(?:TODO|FIXME|XXX|HACK)\b")
+COMMENT_DIRECTIVE = re.compile(
+    r"^#(?:!|\s*-\*-|\s*(?:vim?|coding)[:=])|\b(?:noqa|pragma|type|ty|pyright|mypy|pylint|isort|fmt|ruff)\s*:",
+    re.IGNORECASE,
+)
+"""A comment that directs a tool (a shebang, an encoding line, ``noqa``, ``pragma:``, ``type:``, ...), not a reader."""
+ENV_PROBES = frozenset({
+    "sys.version_info",
+    "sys.platform",
+    "os.name",
+    "os.environ",
+    "os.getenv",
+    "importlib.util.find_spec",
+})
+"""The dotted origins whose reads depend on the environment the code runs in."""
+REPORT_ONLY = frozenset({"expected"})
+"""The kinds of keys that are reported in the table and never fail."""
 ADVICE = {
     "ruff": (
         "Fix the finding instead of suppressing it. A noqa comment, a `ruff: ignore` comment and a per-file ignore "
@@ -233,6 +263,16 @@ ADVICE = {
     "pragma": (
         "Reach the line with a test, or delete the code if no input reaches it; if the pragma must stay, remove "
         "another one in the same area."
+    ),
+    "comment:todo": (
+        "Open an issue for the work and delete the marker, or do the work now: a to-do in the source is a defect "
+        "nobody tracks."
+    ),
+    "comment": "Say it in the docstring or fix it: a comment that only explains a stopgap hides the stopgap.",
+    "env-probe": (
+        "Output must not depend on the environment the generator runs in: key the decision on an option or a "
+        "static rule, not on the interpreter, the platform, a variable or an installed package. A probe that "
+        "belongs to the runtime itself (an optional dependency) is paid for by removing another one."
     ),
     "ty-ignore": "Fix the type error or the annotation instead of ignoring it.",
     "pyright-ignore": "pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.",
@@ -732,6 +772,65 @@ def scope_walk_sites(text: str, path: str) -> list[int]:
     return sorted([*lines, *visitors])
 
 
+def comment_sites(model: SourceModule) -> tuple[list[int], list[int]]:
+    """Return the lines of the plain comments and of the to-do comments of a module (directives are neither)."""
+    plain: list[int] = []
+    todo: list[int] = []
+    for line, comment in sorted(model.comments.items()):
+        if TODO_MARKER.search(comment):
+            todo.append(line)
+        elif not COMMENT_DIRECTIVE.search(comment):
+            plain.append(line)
+    return plain, todo
+
+
+def env_probe_sites(model: SourceModule) -> list[int]:
+    """Return the lines where a module reads the environment it runs in, by origin through the source model.
+
+    A guarded import (the body of a ``try`` that catches ``ImportError``) and each read of one of `ENV_PROBES`.
+    """
+    nodes = list(ast.walk(model.tree))
+    reads = [reference.node for reference in model.references if reference.context == "load"]
+    reads += [node for node in nodes if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load)]
+    lines = [node.lineno for node in reads if model.origin(node) in ENV_PROBES]
+    lines += [
+        found.node.lineno
+        for found in model.imports
+        if any(condition.kind == "import-error" and condition.branch == "body" for condition in found.guard)
+    ]
+    return sorted(lines)
+
+
+def _comment_tally(tally: Tally, root: Path, files: list[str]) -> None:
+    """Count the plain and to-do comments and the environment probes of the package, through the source model."""
+    for path in files:
+        if not path.endswith((".py", ".pyi")) or path.startswith(UNCHECKED) or _area(path) not in PLAIN_COMMENT_AREAS:
+            continue
+        try:
+            model = SourceModule((root / path).read_text(encoding="utf-8", errors="replace"), path)
+            plain, todo = comment_sites(model)
+            probes = env_probe_sites(model)
+        except (SyntaxError, ValueError):
+            continue
+        for line in plain:
+            tally.add(f"comment:plain@{_area(path)}", path, line)
+        for line in todo:
+            tally.add("comment:todo", path, line)
+        for line in probes:
+            tally.add(f"env-probe@{_area(path)}", path, line)
+
+
+def _expected_tally(tally: Tally, root: Path) -> None:
+    """Count the ``.refs`` lines with an environment predicate and the conditional ones, per sidecar (report only)."""
+    tests_root = root / TESTS_ROOT
+    for sidecar, lines in RefsIndex(tests_root).all_lines().items():
+        for line in lines:
+            if line.predicate:
+                tally.add("expected:env-override", sidecar.relative_to(root).as_posix())
+            if line.conditional:
+                tally.add("expected:conditional", sidecar.relative_to(root).as_posix())
+
+
 def _source_tally(tally: Tally, root: Path, files: list[str]) -> None:
     """Count the hatch comments and calls of every Python file, whether ruff checks it or not.
 
@@ -978,6 +1077,8 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _ruff_tally(tally, root, files, ruff, pyproject)
     _ruff_files(tally, root, files)
     _source_tally(tally, root, files)
+    _comment_tally(tally, root, files)
+    _expected_tally(tally, root)
     _config_tally(tally, root, pyproject)
     _stored_list_tally(tally, root)
     _named_output_tally(tally, root)
@@ -998,7 +1099,7 @@ def _rises(
     return [
         key
         for key, total in sorted(head_totals.items())
-        if _kind(key) != "unreadable"
+        if _kind(key) not in {"unreadable", *REPORT_ONLY}
         and (
             key in absolute
             or (

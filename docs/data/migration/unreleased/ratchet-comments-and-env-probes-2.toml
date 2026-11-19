@@ -1,0 +1,6 @@
+[[change]]
+id = "ratchet-comments-and-env-probes-2"
+extends = "stored-output-names-held-by-the-ratchet"
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt",
+]
