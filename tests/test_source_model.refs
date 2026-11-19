@@ -18,6 +18,7 @@
 architecture-boundaries	source_model/every_rule_states_its_verdicts[architecture-boundaries].txt
 assert-helper-usage	source_model/every_rule_states_its_verdicts[assert-helper-usage].txt
 check-run-on-the-tree	source_model/every_rule_states_its_verdicts[check-run-on-the-tree].txt
+ci-test-targets	source_model/every_rule_states_its_verdicts[ci-test-targets].txt
 coverage-exclusions	source_model/every_rule_states_its_verdicts[coverage-exclusions].txt
 expected-access	source_model/every_rule_states_its_verdicts[expected-access].txt
 generated-import-closure	source_model/every_rule_states_its_verdicts[generated-import-closure].txt

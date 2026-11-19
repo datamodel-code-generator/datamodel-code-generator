@@ -36,6 +36,7 @@ from scripts import (
 from tests import expected_access
 from tests import test_assert_helper_usage as assert_helper_usage
 from tests import test_checks_are_run as checks_are_run
+from tests import test_ci_workflow as ci_workflow
 from tests import test_generated_import_closure as import_closure
 from tests import test_pre_commit_hooks as pre_commit_hooks
 from tests.checks.template_assignments import field_lines
@@ -994,6 +995,15 @@ def _hook_runs(form: Path) -> list[Finding]:
         return found
 
 
+def _defined_tests(form: Path) -> list[Finding]:
+    """Return the node ids each module of a form defines below its path, as the CI test target check reads them."""
+    return [
+        Finding("defines", node, f"{name}::{node}")
+        for name, text in _form_files(form)
+        for node in sorted(ci_workflow.defined_tests(source_model.SourceModule(text, name, "forms.form")))
+    ]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -1031,6 +1041,7 @@ RULES: dict[str, RuleRun] = {
         "tests.test_assert_helper_usage", frozenset({"bindings", "references", "imports"}), _assert_helper_findings
     ),
     "pre-commit-hook-runs": RuleRun("tests.test_pre_commit_hooks", frozenset({"imports", "references"}), _hook_runs),
+    "ci-test-targets": RuleRun("tests.test_ci_workflow", frozenset({"bindings", "references"}), _defined_tests),
     "expected-access": RuleRun(
         "tests.expected_access", frozenset({"bindings", "references", "imports"}), _expected_reads
     ),
