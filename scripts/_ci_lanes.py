@@ -172,6 +172,11 @@ def _satisfies(version: str, spec: str) -> bool:
     return True
 
 
+def _is_suite_target(word: str) -> bool:
+    """Return whether a command word is the ``tests`` target, bare or as tox's ``{posargs:tests}`` default."""
+    return word.rstrip("}") in {"tests", "{posargs:tests"}
+
+
 class Environments:
     """The facts of the tox environments of a checkout, from ``tox.ini``, ``pyproject.toml`` and ``uv.lock``."""
 
@@ -222,7 +227,7 @@ class Environments:
     def runs_suite(self, env: str) -> bool:
         """Return whether ``env`` runs the whole suite: no commands is read as the default, else a ``tests`` target."""
         lines = self.tox.lines(env, "commands")
-        return not lines or any(word.rstrip("}") == "tests" for line in lines for word in line.split())
+        return not lines or any(_is_suite_target(word) for line in lines for word in line.split())
 
     def facts(self, env: str, runner: str) -> dict[str, str]:
         """Return the facts of ``env`` on ``runner``; a fact that cannot be read is empty."""

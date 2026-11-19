@@ -815,6 +815,13 @@ TREES: dict[str, dict[str, str]] = {
             def test_parameters(value):
                 pass
 
+            CASES = [pytest.param(1, marks=needs("windows")), pytest.param(2)]
+
+            @needs("python-3.12")
+            @pytest.mark.parametrize("value", CASES)
+            def test_referenced_cases(value):
+                pass
+
             @needs("gpu")
             def test_unknown():
                 pass
@@ -1094,6 +1101,25 @@ def test_the_line_reader_reads_the_matrix_a_yaml_parser_reads() -> None:
         f"matrix keys but include: {_beyond_include(jobs)}\n"
         f"formatter variable equal to the suite's: {same_variable}\n"
     )
+
+
+def test_a_full_suite_command_with_the_tox_default_target_is_no_subset_lane(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``pytest {posargs:tests}`` runs the whole suite, so the lane lacking a capability is no subset lane."""
+    files = {
+        **LANES,
+        "tox.ini": LANES["tox.ini"].replace(
+            "pytest tests/main/test_payload_validation.py::test_numeric_payload_sampling", "pytest {posargs:tests}"
+        ),
+    }
+    test = 'from tests.capabilities import needs\n\n\n@needs("pydantic-2.1")\ndef test_it():\n    pass\n'
+    _write(tmp_path, {**files, "tests/test_it.py": test})
+    (tmp_path / "tests/capabilities.py").write_text(
+        'CAPABILITIES = {"pydantic-2.1": (("pydantic>=2.1",), "the pinned lane lacks it")}\n', encoding="utf-8"
+    )
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "dead-capability", "--rule", "never-run"))
 
 
 @pytest.mark.parametrize(

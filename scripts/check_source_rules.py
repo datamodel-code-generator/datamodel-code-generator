@@ -893,12 +893,34 @@ def _marks_of(model: SourceModule, scope: Scope) -> list[str]:
     return names
 
 
+def _with_referenced_values(model: SourceModule, decorator: ast.expr) -> Iterator[ast.AST]:
+    """Yield the nodes of a decorator and of the single assignment each name in it is bound to, each once.
+
+    A ``parametrize`` over a module-level list of ``pytest.param`` belongs to every test that names the list.
+    """
+    seen: set[ast.AST] = set()
+    pending: list[ast.AST] = [decorator]
+    while pending:
+        for node in ast.walk(pending.pop()):
+            if node in seen:
+                continue
+            seen.add(node)
+            yield node
+            reference = next((item for item in model.references if item.node is node and item.context == "load"), None)
+            if (
+                reference is not None
+                and len(bindings := model.resolve(reference.node).bindings) == 1
+                and bindings[0].value is not None
+            ):
+                pending.append(bindings[0].value)
+
+
 def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report a test, or a ``pytest.param`` of one, whose capabilities together hold on no lane of the CI matrix.
 
     A test's capabilities are those its module's and its classes' ``pytestmark`` and decorators name and its own
-    decorators; a ``pytest.param`` adds those of its ``marks``. An unknown capability holds on no lane. A lane that
-    selects only some tests is counted as running every test.
+    decorators; a ``pytest.param`` adds those of its ``marks`` to those of each test that parametrizes over it. An
+    unknown capability holds on no lane. A lane that selects only some tests is counted as running every test.
 
     Review class: a test that no lane runs, kept only because its skip hides that.
     """
@@ -906,7 +928,7 @@ def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
         return
     for module in _test_modules(tree):
         model = module.model
-        owners: dict[ast.AST, list[str]] = {}
+        owners: dict[ast.AST, list[list[str]]] = {}
         for scope in model.scopes:
             if scope.kind != "function" or not scope.code_name.startswith("test"):
                 continue
@@ -918,7 +940,8 @@ def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
                 continue  # a function inside another function is no test pytest collects
             names = [name for item in reversed(chain) for name in _marks_of(model, item)]
             for decorator in getattr(scope.node, "decorator_list", []):
-                owners.update(dict.fromkeys(ast.walk(decorator), names))
+                for node in _with_referenced_values(model, decorator):
+                    owners.setdefault(node, []).append(names)
             if names and not found.lanes_with(names):
                 yield Finding(module.rel, scope.line, "never-run", f"{scope.qualname} needs {', '.join(names)}")
         module_names = _marks_of(model, model.module_scope)
@@ -926,9 +949,13 @@ def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
             if not (isinstance(node, ast.Call) and model.origin(node.func) == "pytest.param"):
                 continue
             marks = next((keyword.value for keyword in node.keywords if keyword.arg == "marks"), None)
-            if (added := _needed(model, marks)) and not found.lanes_with([*owners.get(node, module_names), *added]):
-                names = ", ".join(dict.fromkeys([*owners.get(node, module_names), *added]))
-                yield Finding(module.rel, node.lineno, "never-run", f"pytest.param needs {names}")
+            if not (added := _needed(model, marks)):
+                continue
+            for consumer in owners.get(node, [module_names]):
+                if not found.lanes_with([*consumer, *added]):
+                    names = ", ".join(dict.fromkeys([*consumer, *added]))
+                    yield Finding(module.rel, node.lineno, "never-run", f"pytest.param needs {names}")
+                    break
 
 
 RULES: tuple[Rule, ...] = (
