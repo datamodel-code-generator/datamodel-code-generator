@@ -21,7 +21,12 @@ coverage-omit-widened	check_ratchets_script/check_ratchets_against_base[coverage
 demoted-absolute-rule	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule].txt
 demoted-absolute-rule-approved-in-head	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule-approved-in-head].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
+environment-probes	check_ratchets_script/check_ratchets_against_base[environment-probes].txt
+environment-probes-broad-try	check_ratchets_script/check_ratchets_against_base[environment-probes-broad-try].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
+environment-probes-more	check_ratchets_script/check_ratchets_against_base[environment-probes-more].txt
+environment-probes-unchanged	check_ratchets_script/check_ratchets_against_base[environment-probes-unchanged].txt
 exempt-files-listed	check_ratchets_script/check_ratchets_against_base[exempt-files-listed].txt
+expected-reported-only	check_ratchets_script/check_ratchets_against_base[expected-reported-only].txt
 explicit-preview-rules	check_ratchets_script/check_ratchets_against_base[explicit-preview-rules].txt
 extend-exclude-swapped	check_ratchets_script/check_ratchets_against_base[extend-exclude-swapped].txt
 extended-per-file-ignores	check_ratchets_script/check_ratchets_against_base[extended-per-file-ignores].txt
@@ -48,6 +53,9 @@ source-rules	check_ratchets_script/check_ratchets_against_base[source-rules].txt
 source-rules-refused	check_ratchets_script/check_ratchets_against_base[source-rules-refused].txt
 source-rules-unchanged	check_ratchets_script/check_ratchets_against_base[source-rules-unchanged].txt
 source-rules-unparsable	check_ratchets_script/check_ratchets_against_base[source-rules-unparsable].txt
+stopgap-comments	check_ratchets_script/check_ratchets_against_base[stopgap-comments].txt
+stopgap-comments-moved	check_ratchets_script/check_ratchets_against_base[stopgap-comments-moved].txt
+stopgap-comments-prose	check_ratchets_script/check_ratchets_against_base[stopgap-comments-prose].txt
 stored-lists-environments	check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt
 stored-lists-grow	check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt
 stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
