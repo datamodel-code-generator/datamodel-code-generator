@@ -1,0 +1,65 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Two versions of a schema document that keep one root id",
+  "version": "1"
+ },
+ "paths": {
+  "/v1/pets": {
+   "get": {
+    "operationId": "getPetV1",
+    "responses": {
+     "200": {
+      "description": "A version 1 pet.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Pet"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v2/pets": {
+   "get": {
+    "operationId": "getPetV2",
+    "responses": {
+     "200": {
+      "description": "A version 2 pet.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Pet_2"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Pet": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 5
+     }
+    }
+   },
+   "Pet_2": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 50
+     }
+    }
+   }
+  }
+ }
+}

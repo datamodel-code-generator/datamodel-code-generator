@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info: {title: An inline response schema with an id and a pointer below it, version: "1"}
+paths:
+  /notes:
+    get:
+      operationId: getNote
+      responses:
+        "200":
+          description: A note.
+          content:
+            application/json:
+              schema:
+                $id: https://example.com/note.json
+                type: object
+                properties:
+                  title: {$ref: "#/$defs/Title"}
+                $defs:
+                  Title: {type: string, maxLength: 10}

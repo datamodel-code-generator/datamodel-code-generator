@@ -1,0 +1,30 @@
+[[change]]
+id = "served-document-reads-the-record"
+category = "experimental"
+title = "The served document of a generated FastAPI server resolves references by the names the models read"
+refs = ["#7178"]
+summary = "With `--generate-server fastapi`, the served OpenAPI document resolves a `$ref` through the `$id`, `$anchor` and `$dynamicAnchor` names the parser registers for the models, instead of an index of its own. Three references that the models already resolve, and that the served document kept as written with \"The served document keeps ..., which names nothing the generation loaded\", now name the schema the models use: a plain name of an anchor in a namespace of definitions (`$defs: {v1: {Label: {$anchor: label}}}`, named `#label`), a reference by the root `$id` of a referenced JSON Schema document into that document (`https://example.com/schemas/pet#/$defs/Name`, bundled as a component), and, under OpenAPI 3.0, a reference by the `$id` of a component schema (`https://example.com/owner.json`, with `--no-allow-remote-refs`). Two other references follow the models too: a plain name whose anchor a `schema` beside a Reference Object (which OpenAPI ignores) also declares now names the anchored property the models read instead of that ignored schema, and a JSON pointer below the `$id` of a parameter document first loaded by a pointer (`#/properties/size`), which the models keep as a dangling reference, is kept as written with the same message instead of being bundled (with `--strict-refs` both resolve it), and so is a JSON pointer below the `$id` of a schema written inline in `paths` (`#/$defs/Title`), which the models also keep as a dangling reference, instead of naming that inline schema's `$defs` entry. The models do not change."
+kind = "experimental"
+action = "none"
+affects = { experimental = ["cli-option.generate-server"] }
+before = '"label": {"$ref": "#label"}'
+after = '"label": {"$ref": "#/components/schemas/Pet/$defs/v1/Label"}'
+source = "release-note"
+covers = [
+    "main/generation_platform/fastapi/packages/served-embedded-id/",
+    "main/generation_platform/fastapi/packages/served-held-by-path-item/",
+    "main/generation_platform/fastapi/packages/served-id-after-pointer/",
+    "main/generation_platform/fastapi/packages/served-ids-30/",
+    "main/generation_platform/fastapi/packages/served-inline-id/",
+    "main/generation_platform/fastapi/packages/served-root-id/",
+    "main/generation_platform/fastapi/packages/served-same-root-id/",
+    "main/generation_platform/fastapi/packages/served-self-names/",
+    "main/generation_platform/fastapi/served-embedded-id.txt",
+    "main/generation_platform/fastapi/served-held-by-path-item.txt",
+    "main/generation_platform/fastapi/served-id-after-pointer.txt",
+    "main/generation_platform/fastapi/served-ids-30.txt",
+    "main/generation_platform/fastapi/served-inline-id.txt",
+    "main/generation_platform/fastapi/served-root-id.txt",
+    "main/generation_platform/fastapi/served-same-root-id.txt",
+    "main/generation_platform/fastapi/served-self-names.txt",
+]

@@ -1633,10 +1633,10 @@ what it references, a server generation reads a local file only inside the input
 and symbolic links resolve, and none for a document read from a URL: it fails on any other local file reference
 before reading the file, with or without `--allow-remote-refs`. References are rewritten
 relative to the document, so a schema's `$id` is left out; a reference resolves as the models resolve it,
-through `$id`, `$anchor`, and `$dynamicAnchor`. A reference that names nothing the generation loaded stays as it
-is, with a warning. A link whose `operationRef` names a path that is left out is left out, and so is a value without
-a JSON form: a YAML `!!binary` value, NaN or infinity, or a YAML alias that contains itself. Each of them is reported
-as a `DocumentationAnnotationWarning`.
+through the `$id`, `$anchor`, and `$dynamicAnchor` names the models read. A reference that names nothing the
+generation loaded stays as it is, with a warning. A link whose `operationRef` names a path that is left out is left
+out, and so is a value without a JSON form: a YAML `!!binary` value, NaN or infinity, or a YAML alias that contains
+itself. Each of them is reported as a `DocumentationAnnotationWarning`.
 
 FastAPI's `/docs` and `/redoc` show the document, and behind a root path FastAPI adds that path as the first
 server, as it does for its own document. `create_app`'s `prefix` leads every path, and the references and link
