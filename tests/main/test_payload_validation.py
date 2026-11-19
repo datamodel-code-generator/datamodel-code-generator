@@ -39,8 +39,6 @@ from .payload_validation import (
     BACKEND_UNASSERTED_MUTATION_CONSTRAINTS,
     PAYLOAD_MUTATION_CONSTRAINTS,
     PAYLOAD_VALIDATION_BACKENDS,
-    PYDANTIC_V2_0_RUNTIME_MAX_VERSION,
-    PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES,
@@ -90,6 +88,7 @@ from .payload_validation.constants import (
 from .payload_validation.native_numeric import (
     NATIVE_NUMERIC_SAMPLING_ADAPTERS,
     native_float_multiple_errors,
+    pydantic_payload_dump,
     pydantic_payload_result,
 )
 from .payload_validation.neighbours import (
@@ -157,7 +156,6 @@ MAX_EXAMPLES = _max_examples_from_env()
 BACKEND_CASE_MODE = _backend_case_mode_from_env()
 PYDANTIC_RUNTIME_VERSION = Version(PYDANTIC_VERSION)
 PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN = Version(PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION)
-PYDANTIC_V2_0_RUNTIME_MAX = Version(PYDANTIC_V2_0_RUNTIME_MAX_VERSION)
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN = Version(PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN = Version(PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
@@ -182,7 +180,6 @@ PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeE
     (PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN, PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
-    (PYDANTIC_V2_0_RUNTIME_MAX, PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
     *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES),
@@ -782,7 +779,6 @@ def test_pydantic_v2_legacy_runtime_exclusions_are_version_gated() -> None:
         case, PayloadBackend.PYDANTIC_V2, PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN
     )
     for round_trip_case_id, max_version in (
-        ("jsonschema/msgspec_payload_runtime_compatibility.json", PYDANTIC_V2_0_RUNTIME_MAX),
         ("jsonschema/property_names_ref_enum.json", PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN),
     ):
         round_trip_case = SCHEMA_CASE_BY_ID[round_trip_case_id]
@@ -1006,8 +1002,7 @@ def test_generated_pydantic_v2_model_accepts_schema_derived_payloads(
             NATIVE_NUMERIC_EMPTY_ERRORS,
         )
         if expected_errors is not None and not errors:
-            dumped = adapter.dump_python(validated, mode="json", by_alias=True, exclude_unset=True)
-            validate_with_source_schema(case, dumped)
+            validate_with_source_schema(case, pydantic_payload_dump(adapter, validated))
 
     check_acceptance()
 
@@ -1049,8 +1044,7 @@ def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
         )
         if errors:
             return
-        dumped_payload = adapter.dump_python(validated_payload, mode="json", by_alias=True, exclude_unset=True)
-        validate_with_source_schema(case, dumped_payload)
+        validate_with_source_schema(case, pydantic_payload_dump(adapter, validated_payload))
 
     check_round_trip()
 
@@ -1207,7 +1201,9 @@ def test_generated_models_decide_value_neighbours_like_the_schema(
     asserted: list[str] = []
     unasserted: list[str] = [] if has_value_neighbour_seed(case) else [NO_SEED_LINE]
     for neighbour in value_neighbours(case):
-        if (verdict := model_verdict(runtime, neighbour.payload)) == (expected := schema_verdict(neighbour)):
+        if (expected := schema_verdict(neighbour, backend)) is None or (
+            (verdict := model_verdict(runtime, neighbour.payload)) == expected
+        ):
             continue
         default_agrees = defaults is not None and model_verdict(defaults, neighbour.payload) == expected
         asserted_here = neighbour_is_asserted(

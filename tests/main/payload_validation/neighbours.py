@@ -24,10 +24,15 @@ from .conformance import rejected_mutation_reason
 from .models import PayloadBackend
 from .mutation import COMBINED_SCHEMA_KEYS, _resolve_internal_ref
 from .strategy import (
+    NUMERIC_FORMAT_KINDS,
     _canonical_json_numbers,
     _regex_agreement_validator,
     _RegexEnginesDisagreeError,
+    format_example,
+    numeric_keywords,
+    numeric_text_is_valid,
     source_schema_validator,
+    typed_string_formats,
 )
 
 if TYPE_CHECKING:
@@ -72,7 +77,6 @@ DEEPEST_SEED: Final = 12
 _UNTYPED_KINDS: Final = ("string", "integer", "object", "array", "boolean", "null", "number")
 _FORMAT_SAMPLES: Final = {
     "date": "2020-01-02",
-    "decimal": "1.5",
     "date-time": "2020-01-02T03:04:05Z",
     "time": "03:04:05Z",
     "duration": "P1D",
@@ -96,6 +100,20 @@ _FORMAT_SAMPLES: Final = {
     "relative-json-pointer": "0",
     "uri-template": "https://example.com/{a}",
 }
+
+
+def _number_keywords(schema: dict[str, object]) -> dict[str, object]:
+    """Return the number keywords of a canonical schema as JSON values."""
+    return {keyword: _json_value(value) for keyword, value in numeric_keywords(schema).items()}
+
+
+def _format_text(name: str, keywords: dict[str, object]) -> str | None:
+    """Return a text of a string format: the strategy's for a numeric one, else a sample, else the strategy's."""
+    if name not in NUMERIC_FORMAT_KINDS and (sample := _FORMAT_SAMPLES.get(name)) is not None:
+        return sample
+    return format_example(name, keywords)
+
+
 _KIND_KEYWORDS: Final = (
     ("object", frozenset({"properties", "required", "additionalProperties", "patternProperties", "minProperties"})),
     ("array", frozenset({"items", "prefixItems", "contains", "minItems", "maxItems", "uniqueItems"})),
@@ -118,6 +136,10 @@ class ValueNeighbour:
     value: object
     payload: object
     valid: bool
+    formats: frozenset[str] = frozenset()
+    """The string formats of the schemas that apply at the path, which the generated types may take as their own."""
+    numeric_format: str = ""
+    """The numeric string format whose number keywords the value, a number's text, is checked against, else empty."""
 
     @property
     def label(self) -> str:
@@ -498,10 +520,11 @@ class _Seeds:
     def strings(parts: list[dict[str, object]]) -> Iterator[str]:
         least = max((int(value) for part in parts if _is_number(value := part.get("minLength"))), default=0)
         most = min((int(value) for part in parts if _is_number(value := part.get("maxLength"))), default=None)
+        keywords = {key: value for part in parts for key, value in _number_keywords(part).items()}
         bases = [
-            _FORMAT_SAMPLES[fmt]
+            text
             for part in parts
-            if isinstance(fmt := part.get("format"), str) and fmt in _FORMAT_SAMPLES
+            if isinstance(fmt := part.get("format"), str) and (text := _format_text(fmt, keywords)) is not None
         ]
         bases.extend(
             pattern.removeprefix("^").removesuffix("$")
@@ -776,10 +799,22 @@ def _tag_values(site: _Site) -> Iterator[tuple[str, object]]:
             yield from (("discriminator", {**value, name: form}) for form in kind_forms(value[name]))
 
 
+def _numeric_format(site: _Site) -> str:
+    """Return the numeric string format of a site whose value is its text, else an empty string."""
+    name = site.schema.get("format")
+    return name if isinstance(name, str) and name in NUMERIC_FORMAT_KINDS and isinstance(site.value, str) else ""
+
+
 def _site_values(seeds: _Seeds, site: _Site) -> Iterator[tuple[str, object]]:
-    """Yield each keyword of a site with a value next to its boundary."""
+    """Yield each keyword of a site with a value next to its boundary.
+
+    The number keywords of a numeric string format apply to the number its text writes, so their values are texts.
+    """
     yield from _member_values(site.schema)
-    yield from _number_values(site.schema)
+    if _numeric_format(site):
+        yield from ((keyword, json.dumps(number)) for keyword, number in _number_values(site.schema))
+    else:
+        yield from _number_values(site.schema)
     yield from _size_values(seeds, site)
     yield from _contains_values(seeds, site)
     yield from _tag_values(site)
@@ -803,7 +838,13 @@ def _build_neighbours(case: SchemaCase) -> tuple[object, tuple[ValueNeighbour, .
     if seed is _MISSING or not validator.is_valid(seed) or not _agrees(agreement, seed):
         return _MISSING, ()
     neighbours: dict[tuple[JsonPath, str, tuple[str, str]], ValueNeighbour] = {}
-    for site in _iter_sites(seeds, seeds.root, seed, ()):
+    sites = list(_iter_sites(seeds, seeds.root, seed, ()))
+    formats: dict[JsonPath, set[str]] = {}
+    for site in sites:
+        if isinstance(name := site.schema.get("format"), str):
+            formats.setdefault(site.path, set()).add(name)
+    for site in sites:
+        numeric = _numeric_format(site)
         for keyword, value in _site_values(seeds, site):
             key = (site.path, keyword, json_form_key(value))
             if key in neighbours or json_form_key(value) == json_form_key(site.value):
@@ -811,7 +852,20 @@ def _build_neighbours(case: SchemaCase) -> tuple[object, tuple[ValueNeighbour, .
             payload = _replaced(seed, site.path, value)
             if (valid := _agrees(agreement, payload)) is None:
                 continue
-            neighbours[key] = ValueNeighbour(keyword, site.path, value, payload, valid)
+            counted = bool(numeric) and keyword in {*BOUND_KEYWORDS, "multipleOf"}
+            if counted:
+                valid = valid and numeric_text_is_valid(
+                    NUMERIC_FORMAT_KINDS[numeric], _number_keywords(site.schema), str(value)
+                )
+            neighbours[key] = ValueNeighbour(
+                keyword,
+                site.path,
+                value,
+                payload,
+                valid,
+                frozenset(formats.get(site.path, ())),
+                numeric if counted else "",
+            )
     ordered = sorted(neighbours.values(), key=lambda neighbour: neighbour.label)
     return seed, (ValueNeighbour(SEED_KEYWORD, (), seed, seed, valid=True), *ordered)
 
@@ -874,8 +928,21 @@ def model_verdict(runtime: PayloadRuntime, payload: object) -> str:
     return "accepts" if accepted else "rejects"
 
 
-def schema_verdict(neighbour: ValueNeighbour) -> str:
-    """Return the verdict a model gives a neighbour where it decides like the suite's validator."""
+def schema_verdict(neighbour: ValueNeighbour, backend: PayloadBackend) -> str | None:
+    """Return the verdict a model gives a neighbour where it decides like the suite's validator, none where it cannot.
+
+    The generator turns some string formats into types of their own, which the validator does not assert. A numeric
+    format's number keywords then apply to the number its text writes, and the neighbour's validity is that number's
+    (``numeric_text_is_valid``); the neighbours of a backend that keeps the format a string have no such verdict. A
+    text cut or padded to a length the validator accepts need not be a value of such a type, so a model rejecting it
+    proves nothing: only a text the validator rejects is compared, where a model accepting it is a real difference.
+    Which formats a backend types is ``typed_string_formats``, the one place the payload suite reads for it.
+    """
+    typed = typed_string_formats(backend)
+    if neighbour.numeric_format and neighbour.numeric_format not in typed:
+        return None
+    if neighbour.keyword in LENGTH_KEYWORDS and neighbour.valid and neighbour.formats & typed:
+        return None
     return "accepts" if neighbour.valid else "rejects"
 
 

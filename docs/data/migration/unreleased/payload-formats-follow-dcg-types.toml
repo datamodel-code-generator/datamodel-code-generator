@@ -1,0 +1,43 @@
+[[change]]
+id = "payload-formats-follow-dcg-types"
+category = "harness"
+title = "The payload suite draws string formats from the generated types"
+summary = "The payload runtime suite's own stored outputs move with its neighbour lists; the package writes the same output"
+refs = ["#7162"]
+covers = [
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_jsonschema_allo~419ff0f1.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_jsonschema_allo~73882c67.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~3cb85130.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~4c217073.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~7bfdc834.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~973fba56.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~c314c6e0.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~d01e146c.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~d2e7c3c9.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~dae5090e.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~e18cc0ed.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~f456f1af.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_decimal_fractional_constraints.json].txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_msgspec_decimal_constraints.json].txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~2b42b2e7.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~57b46185.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~851197e2.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~91bb2cf3.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~a53c63ae.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~b90d2c70.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~c2f96a41.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~e775352a.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_api~5f2deed9.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~0d2494d1.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~11bda26b.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~1d419022.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~58b0910f.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~685bffd4.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~87b449b9.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~8f533d0a.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~a7786de5.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~c7061acc.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~d4559311.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~f4d4ea95.txt",
+    "payloads/native_numeric_empty_errors.txt",
+]
