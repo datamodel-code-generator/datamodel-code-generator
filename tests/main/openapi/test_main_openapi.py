@@ -268,10 +268,6 @@ def test_enable_generated_header_marker(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_enum(output_file: Path) -> None:
     """Test OpenAPI generation with discriminator enum."""
     run_main_and_assert(
@@ -284,10 +280,6 @@ def test_main_openapi_discriminator_enum(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--use-enum-values-in-discriminator"],
     option_description="""Use enum values in discriminator mappings for union types.
@@ -427,10 +419,6 @@ def test_main_openapi_discriminator_enum_use_enum_values_across_modules(
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_enum_use_enum_values_sanitized(output_file: Path) -> None:
     """Enum values requiring sanitization are rendered as enum members in discriminator."""
     with freeze_time(TIMESTAMP):
@@ -450,10 +438,6 @@ def test_main_openapi_discriminator_enum_use_enum_values_sanitized(output_file: 
         )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_enum_duplicate(output_file: Path) -> None:
     """Test OpenAPI generation with duplicate discriminator enum."""
     run_main_and_assert(
@@ -497,10 +481,6 @@ def test_main_openapi_discriminator_duplicate_value(option: str | None, expected
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_integer_mapping(output_file: Path) -> None:
     """Integer discriminator mapping preserves integer literal values."""
     run_main_and_assert(
@@ -513,10 +493,6 @@ def test_main_openapi_discriminator_integer_mapping(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_integer_mapping_use_enum(output_file: Path) -> None:
     """Integer discriminator mapping preserves enum member literal values."""
     run_main_and_assert(
@@ -535,10 +511,6 @@ def test_main_openapi_discriminator_integer_mapping_use_enum(output_file: Path) 
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_float_mapping(output_file: Path) -> None:
     """Write a union whose mapping keys name float values without ``discriminator=``, keeping the Enums of its tags.
 
@@ -628,10 +600,6 @@ def test_main_openapi_discriminator_mapping_declared_in_other_document_directory
         )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_integer_no_mapping(output_file: Path) -> None:
     """Integer discriminator without mapping preserves integer literal values."""
     run_main_and_assert(
@@ -644,10 +612,6 @@ def test_main_openapi_discriminator_integer_no_mapping(output_file: Path) -> Non
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_integer_no_mapping_literal(output_file: Path) -> None:
     """Integer discriminator literals remain integers when enums collapse to literals."""
     run_main_and_assert(
@@ -667,10 +631,6 @@ def test_main_openapi_discriminator_integer_no_mapping_literal(output_file: Path
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_enum_single_value(output_file: Path) -> None:
     """Single-value enum discriminator with allOf inheritance."""
     run_main_and_assert(
@@ -684,10 +644,6 @@ def test_main_openapi_discriminator_enum_single_value(output_file: Path) -> None
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_enum_single_value_use_enum(output_file: Path) -> None:
     """Single-value enum with allOf + --use-enum-values-in-discriminator."""
     run_main_and_assert(
@@ -707,10 +663,6 @@ def test_main_openapi_discriminator_enum_single_value_use_enum(output_file: Path
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_enum_single_value_anyof(output_file: Path) -> None:
     """Single-value enum discriminator with anyOf - uses enum value, not model name."""
     run_main_and_assert(
@@ -723,10 +675,6 @@ def test_main_openapi_discriminator_enum_single_value_anyof(output_file: Path) -
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_enum_single_value_anyof_use_enum(output_file: Path) -> None:
     """Single-value enum with anyOf + --use-enum-values-in-discriminator."""
     run_main_and_assert(
@@ -3301,10 +3249,6 @@ def test_main_openapi_no_file(
         )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.isolate_builtin_formatter_config
 @pytest.mark.cli_doc(
     options=["--extra-template-data"],
@@ -3812,10 +3756,6 @@ def test_main_without_field_constraints(output_file: Path) -> None:
             marks=LEGACY_BLACK_SKIP,
         ),
     ],
-)
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
 )
 @pytest.mark.cli_doc(
     options=["--aliases"],
@@ -4464,10 +4404,6 @@ def test_enable_command_header_redacts_http_headers(
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--allow-population-by-field-name"],
     option_description="""Allow Pydantic model population by field name (not just alias).
@@ -4494,10 +4430,6 @@ def test_allow_population_by_field_name(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--allow-extra-fields"],
     option_description="""Allow extra fields in generated Pydantic models (extra='allow').
@@ -4524,10 +4456,6 @@ def test_allow_extra_fields(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--enable-faux-immutability"],
     option_description="""Enable faux immutability in Pydantic models (frozen=True).
@@ -4833,10 +4761,6 @@ def test_main_models_not_found(
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("1.9.0"),
-    reason="Require Pydantic version 1.9.0 or later ",
-)
 @pytest.mark.cli_doc(
     options=["--enum-field-as-literal"],
     option_description="""Convert single-member enums to Literal types in OpenAPI schemas.
@@ -5079,10 +5003,6 @@ def test_main_openapi_single_value_enum_as_const_mixed_types(
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("1.9.0"),
-    reason="Require Pydantic version 1.9.0 or later ",
-)
 @pytest.mark.cli_doc(
     options=["--use-one-literal-as-default"],
     option_description="""Use single literal value as default when enum has only one option.
@@ -5125,10 +5045,6 @@ def test_main_openapi_use_one_literal_as_default_keeps_nullable(output_file: Pat
 
 
 @pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("1.9.0"),
-    reason="Require Pydantic version 1.9.0 or later ",
-)
-@pytest.mark.skipif(
     black.__version__.split(".")[0] >= "24",
     reason="Installed black doesn't support the old style",
 )
@@ -5144,10 +5060,6 @@ def test_main_openapi_enum_models_as_literal_all(min_version: str, output_file: 
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("1.9.0"),
-    reason="Require Pydantic version 1.9.0 or later ",
-)
 @pytest.mark.skipif(
     black.__version__.split(".")[0] >= "24",
     reason="Installed black doesn't support the old style",
@@ -6441,10 +6353,6 @@ def test_main_openapi_msgspec_ref_nullable_strict_nullable(
         ),
     ],
 )
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_pattern(output_model: str, expected_output: str, output_file: Path) -> None:
     """Test OpenAPI generation with pattern validation."""
     run_main_and_assert(
@@ -6467,10 +6375,6 @@ def test_main_openapi_pattern(output_model: str, expected_output: str, output_fi
             ["--field-constraints"],
         ),
     ],
-)
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] < "22",
-    reason="Installed black doesn't support Python version 3.10",
 )
 def test_main_openapi_pattern_with_lookaround_pydantic_v2(
     expected_output: str, args: list[str], output_file: Path
@@ -6773,10 +6677,6 @@ def test_main_openapi_pointer_into_document_with_integer_top_level_key(output_fi
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--use-annotated"],
     option_description="""Use typing.Annotated for field constraints in OpenAPI schemas.
@@ -6846,10 +6746,6 @@ def test_openapi_special_yaml_keywords(mocker: MockerFixture, output_file: Path)
     mock_prance.assert_called_once()
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] < "22",
-    reason="Installed black doesn't support Python version 3.10",
-)
 def test_main_openapi_nullable_use_union_operator(output_file: Path) -> None:
     """Test OpenAPI generation with nullable using union operator."""
     run_main_and_assert(
@@ -10107,10 +10003,6 @@ def test_main_openapi_discriminator_in_array_snake_case(output_file: Path) -> No
         ),
     ],
 )
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_default_object(output_model: str, expected_output: str, tmp_path: Path) -> None:
     """Test OpenAPI generation with default object values."""
     run_main_and_assert(
@@ -10134,10 +10026,6 @@ def test_main_openapi_default_object(output_model: str, expected_output: str, tm
             "msgspec_union_default_object.py",
         ),
     ],
-)
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
 )
 def test_main_openapi_union_default_object(output_model: str, expected_output: str, output_file: Path) -> None:
     """Test OpenAPI generation with Union type default object values.
@@ -10178,10 +10066,6 @@ def test_main_openapi_union_default_object(output_model: str, expected_output: s
         ),
     ],
 )
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_empty_dict_default(output_model: str, expected_output: str, output_file: Path) -> None:
     """Test OpenAPI generation with empty dict default values."""
     run_main_and_assert(
@@ -10200,10 +10084,6 @@ def test_main_openapi_empty_dict_default(output_model: str, expected_output: str
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_empty_list_default(output_file: Path) -> None:
     """Test OpenAPI generation with empty list default values."""
     run_main_and_assert(
@@ -10739,10 +10619,6 @@ def test_main_openapi_serialize_as_any_pydantic_v2(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("2.0.0"),
-    reason="Require Pydantic version 2.0.0 or later",
-)
 @pytest.mark.parametrize(
     "extra_args",
     [
@@ -10796,10 +10672,6 @@ def test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2(output_di
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_all_of_with_relative_ref(output_file: Path) -> None:
     """Test OpenAPI generation with allOf and relative reference."""
     run_main_and_assert(
@@ -10863,10 +10735,6 @@ def test_main_openapi_msgspec_struct_snake_case(min_version: str, output_file: P
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @MSGSPEC_LEGACY_BLACK_SKIP
 def test_main_openapi_msgspec_use_annotated_with_field_constraints(output_file: Path) -> None:
     """Test OpenAPI generation with msgspec using Annotated and field constraints."""
@@ -11408,10 +11276,6 @@ def test_main_openapi_discriminator_nested_variant_defaults(
     assert_output("".join(verdicts), name="payloads")
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_discriminator_one_literal_as_default_dataclass_py310(output_file: Path) -> None:
     """Test OpenAPI generation with discriminator one literal as default for dataclass with Python 3.10+."""
     run_main_and_assert(
@@ -11430,10 +11294,6 @@ def test_main_openapi_discriminator_one_literal_as_default_dataclass_py310(outpu
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_dataclass_inheritance_parent_default(output_file: Path) -> None:
     """Test dataclass field ordering fix when parent has default field."""
     run_main_and_assert(
@@ -11489,10 +11349,6 @@ def test_main_openapi_pydantic_dataclass_inheritance_parent_default(output_file:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_keyword_only_dataclass(output_file: Path) -> None:
     """Test OpenAPI generation with keyword-only dataclass."""
     run_main_and_assert(
@@ -11531,10 +11387,6 @@ def test_main_openapi_dataclass_with_naive_datetime(capsys: pytest.CaptureFixtur
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_keyword_only_msgspec(min_version: str, output_file: Path) -> None:
     """Test OpenAPI generation with keyword-only msgspec."""
     run_main_and_assert(
@@ -11547,10 +11399,6 @@ def test_main_openapi_keyword_only_msgspec(min_version: str, output_file: Path) 
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_openapi_keyword_only_msgspec_with_extra_data(min_version: str, output_file: Path) -> None:
     """Test OpenAPI generation with keyword-only msgspec and extra data."""
     run_main_and_assert(
@@ -11571,10 +11419,6 @@ def test_main_openapi_keyword_only_msgspec_with_extra_data(min_version: str, out
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_generate_openapi_keyword_only_msgspec_with_extra_data(tmp_path: Path) -> None:
     """Test OpenAPI generation with keyword-only msgspec using generate function."""
     extra_data = json.loads((JSON_SCHEMA_DATA_PATH / "extra_data_msgspec.json").read_text())
@@ -11596,10 +11440,6 @@ def test_main_generate_openapi_keyword_only_msgspec_with_extra_data(tmp_path: Pa
     assert_file_content(output_file, "msgspec_keyword_only_omit_defaults.py")
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] < "22",
-    reason="Installed black doesn't support Python version 3.10",
-)
 @MSGSPEC_LEGACY_BLACK_SKIP
 def test_main_openapi_msgspec_use_union_operator(output_file: Path) -> None:
     """Test msgspec Struct generation with union operator (Python 3.10+)."""
@@ -15244,10 +15084,6 @@ def test_main_allof_enum_ref(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("2.0.0"),
-    reason="Require Pydantic version 2.0.0 or later",
-)
 def test_main_openapi_allof_single_ref_inline(output_file: Path) -> None:
     """Test that single $ref in allOf inline property does not create wrapper class."""
     run_main_and_assert(
@@ -15263,10 +15099,6 @@ def test_main_openapi_allof_single_ref_inline(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("2.0.0"),
-    reason="Require Pydantic version 2.0.0 or later",
-)
 def test_main_openapi_module_class_name_collision_pydantic_v2(output_dir: Path) -> None:
     """Test Issue #1994: module and class name collision (e.g., A.A schema)."""
     run_main_and_assert(
@@ -15284,10 +15116,6 @@ def test_main_openapi_module_class_name_collision_pydantic_v2(output_dir: Path) 
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("2.0.0"),
-    reason="Require Pydantic version 2.0.0 or later",
-)
 def test_main_openapi_module_class_name_collision_deep_pydantic_v2(output_dir: Path) -> None:
     """Test Issue #1994: deep module collision (e.g., A.B.B schema)."""
     run_main_and_assert(
@@ -15305,10 +15133,6 @@ def test_main_openapi_module_class_name_collision_deep_pydantic_v2(output_dir: P
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("2.0.0"),
-    reason="Require Pydantic version 2.0.0 or later",
-)
 def test_main_openapi_module_class_name_collision_exact_imports_pydantic_v2(output_dir: Path) -> None:
     """Test --use-exact-imports with module/class name collision."""
     run_main_and_assert(
@@ -15328,10 +15152,6 @@ def test_main_openapi_module_class_name_collision_exact_imports_pydantic_v2(outp
     )
 
 
-@pytest.mark.skipif(
-    version.parse(pydantic.VERSION) < version.parse("2.0.0"),
-    reason="Require Pydantic version 2.0.0 or later",
-)
 def test_main_openapi_module_class_name_collision_deep_exact_imports_pydantic_v2(output_dir: Path) -> None:
     """Test --use-exact-imports with deep module/class name collision."""
     run_main_and_assert(

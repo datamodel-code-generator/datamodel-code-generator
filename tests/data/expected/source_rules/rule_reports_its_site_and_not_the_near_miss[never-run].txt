@@ -1,0 +1,14 @@
+exit: 1
+tests/test_classes.py:6: never-run: TestDecorated.test_method needs windows, python-3.12
+tests/test_combined.py:9: never-run: test_windows_on_3_12 needs windows, python-3.12
+tests/test_combined.py:14: never-run: test_aliased needs windows, python-3.12
+tests/test_combined.py:20: never-run: pytest.param needs windows, python-3.12
+tests/test_combined.py:20: never-run: pytest.param needs windows, posix
+tests/test_combined.py:25: never-run: pytest.param needs python-3.12, windows
+tests/test_combined.py:33: never-run: test_unknown needs gpu
+tests/test_combined.py:49: never-run: test_spread needs *['windows'], posix
+tests/test_module_marks.py:6: never-run: test_windows_in_a_posix_module needs posix, windows
+tests/test_module_marks.py:12: never-run: TestWindows.test_method needs posix, windows
+
+rule counts:
+  never-run: 10 (absolute); fix: delete the test, or the capability that excludes every lane; a test no lane of .github/workflows/test.yaml runs checks nothing

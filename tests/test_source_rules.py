@@ -3,19 +3,111 @@
 from __future__ import annotations
 
 import subprocess
+from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING
 
 import pytest
+import yaml
 
 from scripts import check_source_rules
-from tests.conftest import assert_output
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from scripts._ci_lanes import FORMATTER_ENV, WORKFLOW, matrix_entries, read_lanes
+from tests.conftest import TEST_DEFAULT_FORMATTER_ENV, assert_output
 
 PACKAGE = "src/datamodel_code_generator"
 GIT = ["git", "-c", "user.name=CI", "-c", "user.email=ci@example.com", "-c", "commit.gpgsign=false"]
+LANES: dict[str, str] = {
+    ".github/workflows/test.yaml": """
+        name: Test
+        jobs:
+          test-shard:
+            strategy:
+              matrix:
+                include:
+                  - tox_env: py312-parallel
+                    os: ubuntu-24.04
+                    shard: 1
+                  - tox_env: py312-parallel
+                    os: ubuntu-24.04
+                    shard: 2
+                  - tox_env: "py311-nocov-parallel"  # Windows
+                    os: windows-latest
+            runs-on: ${{ matrix.os }}
+          test-coverage:
+            strategy:
+              matrix:
+                include:
+                  - tox_env: pydantic20,py312-black22-parallel,py312-isort6-parallel
+                    name: pinned
+            runs-on: ubuntu-24.04
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - name: no matrix
+    """,
+    "tox.ini": """
+        [tox]
+        env_list = py312-parallel
+
+        [testenv]
+        set_env =
+            COVERAGE_FILE = .coverage
+        dependency_groups =
+            test
+            black22: black22
+            isort6: isort6
+
+        [testenv:py{311,312}{,-nocov}-parallel]
+        set_env =
+            {[testenv]set_env}
+            !nocov: DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER = builtin
+
+        [testenv:py312-{black22,black24,isort6}-parallel]
+
+        [testenv:pydantic{20,25}]
+        base_python =
+            pydantic20: python3.11
+            pydantic25: python3.12
+        deps =
+            pydantic20: pydantic==2.0.3
+        commands =
+            pytest tests/main/test_payload_validation.py::test_numeric_payload_sampling
+    """,
+    "pyproject.toml": """
+        [dependency-groups]
+        test = ["pytest", { include-group = "coverage" }]
+        coverage = ["coverage", { include-group = "test" }]
+        black22 = ["black==22.1; python_version<'3.15'"]
+        isort6 = ["isort>=6,<7"]
+    """,
+    "uv.lock": """
+        version = 1
+
+        [[package]]
+        name = "black"
+        version = "22.1.0"
+
+        [[package]]
+        name = "black"
+        version = "26.10.1"
+
+        [[package]]
+        name = "isort"
+        version = "6.1.0"
+
+        [[package]]
+        name = "isort"
+        version = "7.0.0"
+
+        [[package]]
+        name = "pydantic"
+        version = "2.14.1"
+
+        [[package]]
+        name = "datamodel-code-generator"
+        source = { editable = "." }
+    """,
+}
+"""A CI matrix of five lanes: Python 3.12, 3.11 (Windows, external formatter), Pydantic 2.0, black 22 and isort 6."""
 TREES: dict[str, dict[str, str]] = {
     "hash-split": {
         f"{PACKAGE}/_json_pointer.py": """
@@ -608,6 +700,188 @@ TREES: dict[str, dict[str, str]] = {
                 return count
         """,
     },
+    "raw-skip": {
+        "tests/test_skips.py": """
+            import sys
+            import unittest
+            from unittest import skipIf
+
+            import pytest
+            from pytest import mark as marks
+            from pytest import skip
+
+            pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="POSIX only")
+            SKIP_OLD = marks.skipif
+
+            @pytest.mark.skip(reason="broken")
+            def test_marked():
+                pytest.skip("not here")
+                pytest.importorskip("grpc_tools")
+
+            @SKIP_OLD(sys.version_info < (3, 12), reason="type statements")
+            def test_aliased():
+                skip("aliased")
+
+            class TestCase(unittest.TestCase):
+                @unittest.skipUnless(sys.platform == "linux", "Linux only")
+                @skipIf(True, "never")
+                def test_method(self):
+                    raise unittest.SkipTest("unittest")
+        """,
+        "tests/test_near_miss.py": """
+            import pytest
+
+            from tests.capabilities import needs
+
+            REFERENCE = "pytest.mark.skipif"
+
+            @needs("posix")
+            def test_capability():
+                pass
+
+            def skip(reason):
+                return reason
+
+            def test_local(mark):
+                skip("a local function")
+                mark.skipif
+                pytest.mark.xfail
+        """,
+        "tests/capabilities.py": """
+            import pytest
+
+            def needs(*names):
+                return pytest.mark.skipif(not names, reason="the one home of skips")
+        """,
+        "tests/data/python/inputs.py": """
+            import pytest
+
+            pytestmark = pytest.mark.skip(reason="test data, not a test")
+        """,
+        f"{PACKAGE}/runner.py": """
+            import pytest
+
+            pytest.skip("the package holds no tests")
+        """,
+    },
+    "dead-capability": {
+        **LANES,
+        "tests/capabilities.py": """
+            CAPABILITIES = {
+                "posix": (("platform!=win32",), "the test forks"),
+                "builtin-or-black-24": (("formatter==builtin|black>=24",), "black before 24 formats differently"),
+                "black-22": (("black==22",), "black 22 output"),
+                "black-19": (("black==19",), "no lane installs black 19"),
+                "windows-3.12": (("platform==win32", "python>=3.12"), "the Windows lane runs Python 3.11"),
+                "pydantic-1": (("pydantic<2",), "the floor is Pydantic 2"),
+                "malformed": (("platform>=win32", "node==20"), "not a version, not a fact"),
+                "python-3.11": (("python>=3.11",), "every lane runs Python 3.11 or newer: the skip never fires"),
+                "empty": ((), "no clause holds everywhere"),
+                "pydantic-2.1": (("pydantic>=2.1",), "only the pinned 2.0.3 subset lane lacks it"),
+            }
+        """,
+    },
+    "never-run": {
+        **LANES,
+        "tests/capabilities.py": """
+            CAPABILITIES = {
+                "posix": (("platform!=win32",), "the test forks"),
+                "windows": (("platform==win32",), "the test reads the registry"),
+                "python-3.12": (("python>=3.12",), "type statements"),
+            }
+        """,
+        "tests/test_combined.py": """
+            import pytest
+
+            from tests.capabilities import needs
+            from tests.capabilities import needs as requires
+
+            WINDOWS = needs("windows")
+
+            @needs("windows", "python-3.12")
+            def test_windows_on_3_12():
+                pass
+
+            @WINDOWS
+            @requires("python-3.12")
+            def test_aliased():
+                pass
+
+            @needs("windows")
+            @pytest.mark.parametrize(
+                "value",
+                [pytest.param(1, marks=needs("python-3.12")), pytest.param(2, marks=[needs("posix")]), 3],
+            )
+            def test_parameters(value):
+                pass
+
+            CASES = [pytest.param(1, marks=needs("windows")), pytest.param(2)]
+
+            @needs("python-3.12")
+            @pytest.mark.parametrize("value", CASES)
+            def test_referenced_cases(value):
+                pass
+
+            @needs("gpu")
+            def test_unknown():
+                pass
+
+            @needs("windows")
+            def test_windows():
+                def test_inner():
+                    pass
+
+            @needs("posix", "python-3.12")
+            def test_posix_on_3_12():
+                pass
+
+            def needs_nothing(needs):
+                return needs("windows")
+
+            @needs(*["windows"], "posix")
+            def test_spread():
+                pass
+
+            LOOP = AGAIN
+            AGAIN = LOOP
+
+            @LOOP
+            @pytest.mark.slow
+            @pytest.mark.parametrize("value", [pytest.param(4, marks=pytest.mark.slow), pytest.param(5)])
+            def test_names_bound_to_each_other(value):
+                pass
+        """,
+        "tests/test_module_marks.py": """
+            from tests.capabilities import needs
+
+            pytestmark = [needs("posix")]
+
+            @needs("windows")
+            def test_windows_in_a_posix_module():
+                pass
+
+            class TestWindows:
+                pytestmark = needs("windows")
+
+                def test_method(self):
+                    pass
+
+            def test_plain():
+                pass
+        """,
+        "tests/test_classes.py": """
+            from tests.capabilities import needs
+
+            @needs("windows")
+            class TestDecorated:
+                @needs("python-3.12")
+                def test_method(self):
+                    pass
+
+                def test_windows(self):
+                    pass
+        """,
+    },
 }
 LOST_BASE = {
     f"{PACKAGE}/__init__.py": "",
@@ -725,3 +999,149 @@ def test_lost_last_caller_compares_with_the_base(tmp_path: Path, capsys: pytest.
     without_base = _run(capsys, "--root", str(tmp_path), "--rule", "lost-last-caller", "--rule", "ellipsis-statement")
 
     assert_output(f"{with_base}\n--- without --base\n{without_base}")
+
+
+def test_lanes_are_read_from_the_matrix_and_tox(tmp_path: Path) -> None:
+    """Each matrix entry runs its tox environments on its runner, shards once; facts come from tox, groups and the lock.
+
+    An entry whose runner and environment name no platform and no Python is a problem, never a lane with guessed facts.
+    """
+    odd = """
+          odd:
+            runs-on: self-hosted
+            strategy:
+              matrix:
+                include:
+                  - tox_env: lint
+    """
+    _write(tmp_path, {**LANES, WORKFLOW: LANES[WORKFLOW].rstrip() + odd})
+    lanes, problems = read_lanes(tmp_path)
+
+    assert_output("".join(f"{lane.name}: {lane.facts}\n" for lane in lanes) + f"problems: {problems}\n")
+
+
+def _beyond_include(jobs: dict[str, dict[str, dict[str, dict[str, object]]]]) -> list[str]:
+    """Return ``job: key`` for every key of a job matrix but ``include``: neither reader expands axes or excludes."""
+    return [
+        f"{name}: {key}"
+        for name, job in jobs.items()
+        for key in job.get("strategy", {}).get("matrix", {})
+        if key != "include"
+    ]
+
+
+def test_a_matrix_key_but_include_is_found() -> None:
+    """A plain axis or an ``exclude`` would drop lanes silently from both readers, so it is reported."""
+    text = """
+jobs:
+  axes:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+        tox_env: [py312-parallel]
+  mixed:
+    strategy:
+      matrix:
+        include:
+          - tox_env: py312-parallel
+        exclude:
+          - tox_env: py311-parallel
+  plain:
+    runs-on: ubuntu-latest
+"""
+    assert_output(f"{_beyond_include(yaml.load(text, Loader=yaml.BaseLoader)['jobs'])}\n")
+
+
+def test_a_job_that_lists_test_paths_selects_them() -> None:
+    """A job whose steps list test paths one per line runs a fixed list: its entries are ``listed``, others ``all``."""
+    text = """
+jobs:
+  subset:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - tox_env: py312-black22-parallel
+    steps:
+    - run: |
+        tox run -e "$TOX_ENV" -- \\
+          tests/test_format.py \\
+          tests/main/openapi
+  suite:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - tox_env: py312-parallel
+            exclude_tests: tests/main/test_payload_validation.py
+"""
+    assert_output("".join(f"{entry['job']}: {entry['selection']}\n" for entry in matrix_entries(text)))
+
+
+def test_the_line_reader_reads_the_matrix_a_yaml_parser_reads() -> None:
+    """The workflow's matrix entries read line by line equal those of a YAML parse, runner included.
+
+    Neither reader expands matrix axes or excludes, so no matrix has a key but ``include``.
+    """
+    root = Path(__file__).parents[1]
+    text = (root / WORKFLOW).read_text(encoding="utf-8")
+    jobs = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]
+    parsed = sorted(
+        (name, entry["tox_env"], entry.get("os", job["runs-on"]))
+        for name, job in jobs.items()
+        for entry in job.get("strategy", {}).get("matrix", {}).get("include", [])
+    )
+    read = sorted((entry["job"], entry["tox_env"], entry.get("os", entry["runs-on"])) for entry in matrix_entries(text))
+    same_variable = FORMATTER_ENV == TEST_DEFAULT_FORMATTER_ENV
+
+    assert_output(
+        f"missed by the line reader: {sorted(set(parsed) - set(read))}\n"
+        f"added by the line reader: {sorted(set(read) - set(parsed))}\n"
+        f"entries equal: {parsed == read}\n"
+        f"matrix keys but include: {_beyond_include(jobs)}\n"
+        f"formatter variable equal to the suite's: {same_variable}\n"
+    )
+
+
+def test_a_full_suite_command_with_the_tox_default_target_is_no_subset_lane(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``pytest {posargs:tests}`` runs the whole suite, so the lane lacking a capability is no subset lane."""
+    files = {
+        **LANES,
+        "tox.ini": LANES["tox.ini"].replace(
+            "pytest tests/main/test_payload_validation.py::test_numeric_payload_sampling", "pytest {posargs:tests}"
+        ),
+    }
+    test = 'from tests.capabilities import needs\n\n\n@needs("pydantic-2.1")\ndef test_it():\n    pass\n'
+    _write(tmp_path, {**files, "tests/test_it.py": test})
+    (tmp_path / "tests/capabilities.py").write_text(
+        'CAPABILITIES = {"pydantic-2.1": (("pydantic>=2.1",), "the pinned lane lacks it")}\n', encoding="utf-8"
+    )
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "dead-capability", "--rule", "never-run"))
+
+
+@pytest.mark.parametrize(
+    "table",
+    [
+        None,
+        'CAPABILITIES = dict(posix=(("platform!=win32",), "the test forks"))\n',
+        'CAPABILITIES = ["posix"]\n',
+        'CAPABILITIES = {"posix": ("platform!=win32",)}\n',
+    ],
+    ids=["no-table", "not-a-literal", "not-a-dict", "entry-shape"],
+)
+def test_a_table_that_cannot_be_read_holds_no_capability(
+    table: str | None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Without a readable table every capability is unknown, so each test that needs one never runs.
+
+    A table that is not a literal ``{name: ((clause, ...), reason)}`` is reported.
+    """
+    test = 'from tests.capabilities import needs\n\n\n@needs("posix")\ndef test_posix():\n    pass\n'
+    _write(tmp_path, {**LANES, "tests/test_posix.py": test})
+    if table is not None:
+        (tmp_path / "tests/capabilities.py").write_text(table, encoding="utf-8")
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "dead-capability", "--rule", "never-run"))

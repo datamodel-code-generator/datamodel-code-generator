@@ -506,7 +506,6 @@ class UnknownTypeNumber(Enum):
     )
 
 
-@pytest.mark.skipif(pydantic.VERSION < "1.9.0", reason="Require Pydantic version 1.9.0 or later ")
 def test_openapi_parser_parse_enum_models() -> None:
     """Test parsing OpenAPI enum models."""
     parser = OpenAPIParser(

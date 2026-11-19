@@ -23,6 +23,7 @@ ruff-config:ignore:ERA001                          1
 ruff-config:ignore:INP                             1
 ruff-config:per-file:tests/**/*.py:S101            1
 ruff:PLC0415@src                                   1
+source-rule:raw-skip                               1
 store-allowlist:counted                            2
 store-allowlist:witness                            1
 ty-config:deprecated                               1

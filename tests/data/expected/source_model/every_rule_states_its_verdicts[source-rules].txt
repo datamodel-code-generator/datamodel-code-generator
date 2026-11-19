@@ -78,6 +78,11 @@ references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowe
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:10: unused-private-global: _LISTED
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:11: unused-private-global: _COUNTER
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:12: unused-private-global: _SECOND
+references/skip_markers_by_origin: tests/skip_markers_by_origin.py:14: raw-skip: pytest.mark.skipif
+references/skip_markers_by_origin: tests/skip_markers_by_origin.py:18: raw-skip: pytest.mark.skipif
+references/skip_markers_by_origin: tests/skip_markers_by_origin.py:20: raw-skip: pytest.importorskip
+references/skip_markers_by_origin: tests/skip_markers_by_origin.py:21: raw-skip: pytest.skip
+references/skip_markers_by_origin: tests/skip_markers_by_origin.py:27: raw-skip: unittest.skipIf
 references/star_import_hides_builtins: src/star_import_hides_builtins.py:14: hash-split: str.split(ref, '#')
 references/star_import_hides_builtins: scripts/star_import_hides_builtins.py:8: globals-registry: for key in list(globals()):
 references/star_import_hides_builtins: scripts/star_import_hides_builtins.py:10: globals-registry: TABLE = [value for value in globals().values()]

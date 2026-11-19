@@ -209,9 +209,10 @@ COUNTER = {
     "scripts/_source_model.py": (ROOT / "scripts/_source_model.py").read_text(encoding="utf-8"),
     "scripts/_import_cycles.py": (ROOT / "scripts/_import_cycles.py").read_text(encoding="utf-8"),
     "scripts/check_source_rules.py": (ROOT / "scripts/check_source_rules.py").read_text(encoding="utf-8"),
+    "scripts/_ci_lanes.py": (ROOT / "scripts/_ci_lanes.py").read_text(encoding="utf-8"),
     "tests/units.py": (ROOT / "tests/units.py").read_text(encoding="utf-8"),
 }
-"""The counter and the modules it reads Python, cycles, source rules and ``.refs`` files with, as a copy needs them."""
+"""The counter and the modules it reads Python, cycles, source rules, lanes and ``.refs`` files with, for a copy."""
 IMPORT_ONE_WAY = {
     "scripts/report.py": FUTURE + "\nfrom scripts import guide\n\nTITLE = guide.TITLE\n",
     "scripts/guide.py": FUTURE + '\nTITLE = "guide"\n',

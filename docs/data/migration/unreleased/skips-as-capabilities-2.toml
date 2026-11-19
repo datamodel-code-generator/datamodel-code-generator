@@ -1,0 +1,6 @@
+[[change]]
+id = "skips-as-capabilities-2"
+extends = "import-cycles-as-ratchet-keys"
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
+]

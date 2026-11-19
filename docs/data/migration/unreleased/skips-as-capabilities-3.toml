@@ -1,0 +1,6 @@
+[[change]]
+id = "skips-as-capabilities-3"
+extends = "pre-commit-hooks-read-their-scripts"
+covers = [
+    "checks_are_run/every_check_runs_on_the_tree.txt",
+]

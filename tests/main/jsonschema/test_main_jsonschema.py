@@ -12633,10 +12633,6 @@ def test_main_jsonschema_combined_nullable_without_type(output_file: Path) -> No
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.parametrize(
     ("union_mode", "output_model", "expected_output"),
     [
@@ -14654,10 +14650,6 @@ def test_main_jsonschema_falsy_default_enum_member(deserialize_args: list[str], 
     assert_warnings_do_not_contain(recorded_warnings, "--set-default-enum-member is deprecated")
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] < "22",
-    reason="Installed black doesn't support Python version 3.10",
-)
 def test_main_use_union_operator(output_dir: Path) -> None:
     """Test union operator usage."""
     run_main_and_assert(
@@ -19893,10 +19885,6 @@ def test_main_duplicate_field_constraints(output_dir: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_duplicate_field_constraints_msgspec(min_version: str, output_dir: Path) -> None:
     """Test duplicate field constraints with msgspec."""
     run_main_and_assert(
@@ -19948,10 +19936,6 @@ def test_main_all_of_ref_self(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_array_field_constraints(output_file: Path) -> None:
     """Test array field constraints."""
     run_main_and_assert(

@@ -1,0 +1,6 @@
+[[change]]
+id = "skips-as-capabilities-4"
+extends = "checks-read-the-source-model-4"
+covers = [
+    "source_model/every_rule_states_its_verdicts[source-rules].txt",
+]

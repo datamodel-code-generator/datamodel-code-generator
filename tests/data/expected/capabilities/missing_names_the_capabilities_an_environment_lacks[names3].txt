@@ -1,0 +1,1 @@
+ValueError: unknown capabilities ['gpu']: name one of CAPABILITIES in tests/capabilities.py, or add it there
