@@ -1,0 +1,2 @@
+generation-store-usage: scripts/_source_model.py
+architecture-boundaries: scripts/_source_model.py

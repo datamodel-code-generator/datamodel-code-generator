@@ -37,6 +37,7 @@ from tests import expected_access
 from tests import test_assert_helper_usage as assert_helper_usage
 from tests import test_checks_are_run as checks_are_run
 from tests import test_generated_import_closure as import_closure
+from tests import test_pre_commit_hooks as pre_commit_hooks
 from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
 
@@ -968,6 +969,31 @@ def _expected_reads(form: Path) -> list[Finding]:
         ]
 
 
+def _hook_runs(form: Path) -> list[Finding]:
+    """Return the other modules of a form each module runs through its imports, the form placed below ``scripts/``.
+
+    The site is the module run, named inside the form.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        paths = []
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            relative = form.name / path.relative_to(form) if form.is_dir() else Path(path.name.removesuffix(".txt"))
+            target = root / "scripts" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+            paths.append(target)
+        found = []
+        for path in paths:
+            entry = path.relative_to(root).as_posix()
+            found += [
+                Finding("runs", ran.removeprefix(f"scripts/{form.name}/"), f"{entry} runs {ran}")
+                for ran in pre_commit_hooks.runs(root, path)
+                if ran != entry
+            ]
+        return found
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -1004,6 +1030,7 @@ RULES: dict[str, RuleRun] = {
     "assert-helper-usage": RuleRun(
         "tests.test_assert_helper_usage", frozenset({"bindings", "references", "imports"}), _assert_helper_findings
     ),
+    "pre-commit-hook-runs": RuleRun("tests.test_pre_commit_hooks", frozenset({"imports", "references"}), _hook_runs),
     "expected-access": RuleRun(
         "tests.expected_access", frozenset({"bindings", "references", "imports"}), _expected_reads
     ),

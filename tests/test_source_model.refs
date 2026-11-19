@@ -24,6 +24,7 @@ generated-import-closure	source_model/every_rule_states_its_verdicts[generated-i
 generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt
 import-cycle	source_model/every_rule_states_its_verdicts[import-cycle].txt
 pass-pipeline	source_model/every_rule_states_its_verdicts[pass-pipeline].txt
+pre-commit-hook-runs	source_model/every_rule_states_its_verdicts[pre-commit-hook-runs].txt
 private-scope-walk	source_model/every_rule_states_its_verdicts[private-scope-walk].txt
 source-model-compiler-check	source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 source-rules	source_model/every_rule_states_its_verdicts[source-rules].txt
