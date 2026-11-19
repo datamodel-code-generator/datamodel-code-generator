@@ -3,17 +3,12 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 import pytest
 
-from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator.cli_options import CLI_OPTION_META, OPTION_TOPIC_ALLOWED_GROUPS
 from datamodel_code_generator.enums import DataModelType, InputFileType
 from datamodel_code_generator.preset import PresetContext, PresetInfo, PresetName, get_preset_infos
-
-SOURCE_PATH = Path(__file__).parents[1] / "src" / "datamodel_code_generator"
-REQUIREMENT_PATH_CALL = re.compile(r"""\b(form|backport)_path\(\s*["']([^"']+)["']\s*\)""")
 
 
 def _preset_name_problems() -> list[str]:
@@ -73,22 +68,9 @@ def _option_topic_problems() -> list[str]:
     ]
 
 
-def _requirement_path_problems() -> list[str]:
-    asked = {
-        (kind, construct)
-        for path in SOURCE_PATH.rglob("*.py")
-        for kind, construct in REQUIREMENT_PATH_CALL.findall(path.read_text(encoding="utf-8"))
-    }
-    problems = [] if asked else ["no construct asks for an import path"]
-    for kind, construct in sorted(asked):
-        if (REQUIREMENTS[construct].form if kind == "form" else REQUIREMENTS[construct].backport) is None:
-            problems.append(f"the requirement row {construct} names no such import")
-    return problems
-
-
 @pytest.mark.allow_direct_assert("states invariants of static tables that no generation output shows")
 def test_static_tables_keep_their_invariants() -> None:
-    """Check the preset tables, the option topics and groups, and the requirement rows the package reads at import."""
+    """Check the preset tables and the option topics and groups."""
     problems = _preset_name_problems()
     for info in get_preset_infos():
         problems.extend(_preset_group_problems(info))
@@ -96,6 +78,5 @@ def test_static_tables_keep_their_invariants() -> None:
             for input_file_type in InputFileType:
                 problems.extend(_preset_resolution_problems(info, output_model_type, input_file_type))
     problems.extend(_option_topic_problems())
-    problems.extend(_requirement_path_problems())
 
     assert problems == []

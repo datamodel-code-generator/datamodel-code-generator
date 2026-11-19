@@ -1739,7 +1739,8 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                     )
 
                 else:
-                    parent_data_type = cast("DataType", data_type.parent)
+                    parent_data_type = data_type.parent
+                    assert isinstance(parent_data_type, DataType)
                     shared_holders, kept_holders = shared_member_holders(parser, data_type, copied_data_type)
                     has_remaining_root_references = has_remaining_root_references or bool(kept_holders)
                     if parent_data_type.is_list:

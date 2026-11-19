@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import black
 import pytest
@@ -137,10 +137,12 @@ def test_preset_config_supports_enum_backed_string_and_sequence_options() -> Non
 
 def test_preset_api_refuses_an_unknown_format_and_an_unknown_field() -> None:
     """The preset API names the format or the config field it does not know."""
+    unknown_format: Any = "xml"
+    unknown_field: dict[str, Any] = {"no_such_field": True}
     with pytest.raises(PresetError, match="Unsupported preset docs format: 'xml'"):
-        render_presets("xml")  # ty: ignore[invalid-argument-type]
+        render_presets(unknown_format)
     with pytest.raises(PresetError, match="Preset field 'no_such_field' is not a BaseGenerateConfig field"):
-        PresetConfig(no_such_field=True)  # ty: ignore[unknown-argument]
+        PresetConfig(**unknown_field)
 
 
 @pytest.mark.parametrize(

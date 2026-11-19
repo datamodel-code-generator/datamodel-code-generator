@@ -310,6 +310,16 @@ def test_datatype_replace_reference_requires_a_reference() -> None:
         DataType().replace_reference(None)
 
 
+def test_datatype_swap_with_leaves_a_type_without_a_parent_alone() -> None:
+    """Swapping a type that has no parent only detaches it: nothing holds the new type."""
+    old, new = DataType(type="int"), DataType(type="str")
+
+    old.swap_with(new)
+
+    assert old.parent is None
+    assert new.parent is None
+
+
 def test_union_int_float_public_conversions() -> None:
     """Convert a UnionIntFloat to int, and validate instances, numeric strings and other values."""
     value = UnionIntFloat(3.7)

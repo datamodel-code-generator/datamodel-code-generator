@@ -386,12 +386,16 @@ def refused_bytes_pattern_message(owners: Sequence[str]) -> str:
 
 def form_path(construct: Construct) -> str:
     """Return the import that ``construct`` writes on a target that has it."""
-    return cast("str", REQUIREMENTS[construct].form)
+    path = REQUIREMENTS[construct].form
+    assert path is not None
+    return path
 
 
 def backport_path(construct: Construct) -> str:
     """Return the import that stands in for ``construct`` on a target before its minimum."""
-    return cast("str", REQUIREMENTS[construct].backport)
+    path = REQUIREMENTS[construct].backport
+    assert path is not None
+    return path
 
 
 __all__ = [

@@ -853,7 +853,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         parent = self.parent
         self.parent = None
-        if parent is not None:  # pragma: no branch
+        if parent is not None:
             new_data_type.parent = parent
             if is_data_model_field(parent):
                 parent.data_type = new_data_type
