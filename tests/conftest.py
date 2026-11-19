@@ -1913,7 +1913,7 @@ def _load_observations(directory: Path) -> Observations:
     return cast("Observations", {"facts": facts, "collected": sorted(collected), "items": list(items.values())})
 
 
-def _unit_diff(stored: object | None, value: object, path: str) -> str:  # pragma: no cover
+def _unit_diff(stored: object | None, value: object, path: str) -> str:
     """Show how a value differs from a stored unit: file diffs, or a tree's missing, extra, and changed files."""
     if not isinstance(value, dict) or not isinstance(stored, (dict, type(None))):
         old = stored if isinstance(stored, str) else json.dumps(stored, indent=2, ensure_ascii=False)
@@ -2332,7 +2332,7 @@ def assert_inputs_not_mutated(inputs: Mapping[str, object] | None) -> Generator[
     snapshots = {label: deepcopy(value) for label, value in inputs.items() if _tracks_mutation(value)}
     yield
     for label, before in snapshots.items():
-        if (current := inputs[label]) != before:  # pragma: no cover - exercised by helper tests
+        if (current := inputs[label]) != before:
             pytest.fail(f"{label} was mutated: before={before!r}, after={current!r}")
 
 
@@ -2607,7 +2607,7 @@ def mock_httpx_get(mocker: Any) -> HttpxGetMockFactory:
             return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (_MOCK_PUBLIC_IP, 0))]
 
         def _response_for_url(url: str, *_args: Any, **_kwargs: Any) -> Any:
-            if url not in queued_responses or not queued_responses[url]:  # pragma: no cover
+            if url not in queued_responses or not queued_responses[url]:
                 pytest.fail(
                     f"Unexpected HTTP client URL: {url!r}. Registered URLs: {sorted(queued_responses)}",
                     pytrace=False,

@@ -280,7 +280,7 @@ def get_version() -> str:
     return __version__
 
 
-def enable_debug_message() -> None:  # pragma: no cover
+def enable_debug_message() -> None:
     """Enable debug tracing with pysnooper."""
     global _debug_snoop  # noqa: PLW0603
     try:
@@ -443,7 +443,7 @@ JSON_SCHEMA_URLS: tuple[str, ...] = (
 def is_schema(data: dict) -> bool:
     """Check if the data dict is a JSON Schema."""
     schema = data.get("$schema")
-    if isinstance(schema, str) and any(schema.startswith(u) for u in JSON_SCHEMA_URLS):  # pragma: no cover
+    if isinstance(schema, str) and any(schema.startswith(u) for u in JSON_SCHEMA_URLS):
         return True
     if isinstance(data.get("type"), str):
         return True
@@ -1864,7 +1864,7 @@ def _emit_results(  # noqa: PLR0913
     allow_empty_api: bool = False,
     models_not_found_hint: str = "",
 ) -> str | GeneratedModules | None:
-    if not input_filename:  # pragma: no cover
+    if not input_filename:
         input_filename = _default_input_filename(input_)
     if not results:
         if allow_empty_api:
