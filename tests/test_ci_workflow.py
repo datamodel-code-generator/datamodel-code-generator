@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
+from scripts._source_model import SourceModule, bases
 from scripts.ci_coverage import EXPECTED_NAMES, PULL_REQUEST_NAMES
 from scripts.select_ci_test_shard import PROFILES
 from tests.conftest import assert_output
@@ -17,6 +20,12 @@ from tests.conftest import assert_output
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = ROOT / "tests/data/expected/ci_coverage"
 MAIN_ONLY_IF = "github.event_name != 'pull_request'"
+TEST_TARGET = re.compile(r"(?<![\w/.\-])(?:\./)?tests/[\w/.\-]*(?:::[\w:]+)?")
+ANY_MEMBER = "::*"
+MISSING_TARGETS_MESSAGE = (
+    "tox.ini or a workflow names a test path or node id the repository lacks, so the lane that runs it collects "
+    "nothing and fails: rename it in tox.ini or .github/ (both code-owned) with the test."
+)
 
 
 def test_workflow_matrix_and_coverage_contract() -> None:
@@ -162,3 +171,128 @@ def test_gate_rejects_every_unsuccessful_group() -> None:
             "stderr": result.stderr,
         }
     assert_output(json.dumps(outputs, sort_keys=True, indent=2) + "\n", EXPECTED / "gate.txt")
+
+
+def defined_tests(model: SourceModule) -> set[str]:
+    """Return the node ids below a test module's path that its source defines, read through the source model.
+
+    Each module-level name, each class and function nested in classes (``Class::method``), and each test a class
+    inherits from a class of the module. A class with a base from elsewhere may inherit any name: it gives
+    ``Class::*``.
+    """
+    module = model.module_scope
+    found = set(module.bindings)
+    classes = {
+        scope.qualname: scope for scope in model.scopes if scope.kind == "class" and "<locals>" not in scope.qualname
+    }
+    found |= {
+        scope.qualname.replace(".", "::")
+        for scope in model.scopes
+        if scope.kind == "function" and "<locals>" not in scope.qualname
+    }
+    found |= {name.replace(".", "::") for name in classes}
+    for name, scope in classes.items():
+        pending, seen = [scope], set()
+        while pending:
+            current = pending.pop()
+            seen.add(current.qualname)
+            found |= {f"{name.replace('.', '::')}::{member}" for member in model.class_members(current, spelled=True)}
+            for base in bases(current):
+                origin = model.origin(base) or ""
+                inner = classes.get(origin.removeprefix(f"{model.module}."))
+                if inner is not None and origin.startswith(f"{model.module}.") and inner.qualname not in seen:
+                    pending.append(inner)
+                elif inner is None and origin != "builtins.object":
+                    found.add(f"{name.replace('.', '::')}{ANY_MEMBER}")
+    return found
+
+
+def missing_test_targets(root: Path, files: dict[str, str]) -> list[str]:
+    """Return every path and node id below ``tests/`` that the given files (name and text) name and ``root`` lacks."""
+    models: dict[Path, set[str]] = {}
+    found = []
+    for file, text in files.items():
+        for target in sorted(set(TEST_TARGET.findall(text))):
+            path, _, node = target.removeprefix("./").partition("::")
+            where = root / path
+            if not where.exists():
+                found.append(f"{file}: {path} does not exist")
+                continue
+            if not node:
+                continue
+            if where not in models:
+                dotted = ".".join(Path(path).with_suffix("").parts)
+                models[where] = defined_tests(SourceModule(where.read_text(encoding="utf-8"), path, dotted))
+            open_classes = {name.removesuffix(ANY_MEMBER) for name in models[where] if name.endswith(ANY_MEMBER)}
+            if node not in models[where] and node.rpartition("::")[0] not in open_classes:
+                found.append(f"{file}: {path} defines no {node}")
+    return found
+
+
+def _ci_files() -> dict[str, str]:
+    paths = [ROOT / "tox.ini", *sorted((ROOT / ".github").rglob("*.y*ml"))]
+    return {path.relative_to(ROOT).as_posix(): path.read_text(encoding="utf-8") for path in paths}
+
+
+@pytest.mark.allow_direct_assert("a missing target fails on its own, never through a stored output a fix run accepts")
+def test_ci_files_name_only_existing_tests() -> None:
+    """Every test path and node id that tox.ini and the workflows name exists; a pinned lane never runs nothing."""
+    missing = missing_test_targets(ROOT, _ci_files())
+    assert not missing, MISSING_TARGETS_MESSAGE
+    assert_output(
+        "Test targets that CI files name and the repository lacks:\n"
+        + "".join(f"{line}\n" for line in missing or ["none"])
+    )
+
+
+@pytest.mark.allow_direct_assert("the seeded rename must be found, not only stored")
+def test_a_renamed_test_id_is_missing() -> None:
+    """A renamed node id and a path that is gone are reported; existing ones (parametrized too) are not."""
+    listed = {
+        "tox.ini": "commands = pytest tests/test_ci_workflow.py::test_ci_files_name_only_existing_tests_renamed "
+        "tests/test_ci_workflow.py::test_ci_files_name_only_existing_tests "
+        "tests/parser/test_jsonschema.py::test_schema_validator_helpers_disabled[x] tests/gone.py\n"
+    }
+    missing = missing_test_targets(ROOT, listed)
+    assert "tox.ini: tests/test_ci_workflow.py defines no test_ci_files_name_only_existing_tests_renamed" in missing
+    assert_output("".join(f"{line}\n" for line in missing))
+
+
+@pytest.mark.allow_direct_assert("each spelling of a path must decide its target, not only stored")
+def test_a_dot_slash_path_is_read_like_a_plain_one() -> None:
+    """A target spelled with a leading ``./`` is checked, and a path inside ``.tox`` or ``../`` is not a target."""
+    listed = {
+        "tox.ini": "commands = pytest ./tests/test_ci_workflow.py::test_ci_files_name_only_existing_tests_renamed "
+        "./tests/gone.py ./tests/test_ci_workflow.py::test_ci_files_name_only_existing_tests "
+        ".tox/py/tests/never.py ../tests/never.py {toxinidir}/tests/never.py\n"
+    }
+
+    assert missing_test_targets(ROOT, listed) == [
+        "tox.ini: tests/gone.py does not exist",
+        "tox.ini: tests/test_ci_workflow.py defines no test_ci_files_name_only_existing_tests_renamed",
+    ]
+
+
+@pytest.mark.allow_direct_assert("each inheritance shape must decide its target, not only stored")
+def test_inherited_tests_are_defined(tmp_path: Path) -> None:
+    """Methods a class inherits from classes of its module are its tests; a base from elsewhere may give any name."""
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_shapes.py").write_text(
+        "from elsewhere import Mixin\n\n\nclass Base:\n    def test_a(self): ...\n\n\n"
+        "class Left(Base): ...\n\n\nclass Right(Base, object): ...\n\n\nclass Both(Left, Right): ...\n\n\n"
+        "class Open(Mixin): ...\n",
+        encoding="utf-8",
+    )
+    listed = {
+        "tox.ini": " ".join(
+            f"tests/test_shapes.py::{node}"
+            for node in ("Both::test_a", "Right::test_a", "Both::test_b", "Open::test_anything", "Base::test_b")
+        )
+    }
+    missing = missing_test_targets(tmp_path, listed)
+    assert missing == [
+        "tox.ini: tests/test_shapes.py defines no Base::test_b",
+        "tox.ini: tests/test_shapes.py defines no Both::test_b",
+    ]
+    assert_output("".join(f"{line}\n" for line in missing))

@@ -19,6 +19,7 @@ import tomllib
 
 import datamodel_code_generator
 from datamodel_code_generator.http import _get_httpx
+from scripts._source_model import SourceModule, nested_name
 from tests.assert_helper_allowlists import (
     ALLOWLIST_GROUP_REASONS,
     ALLOWLISTS,
@@ -43,6 +44,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from pytest_mock import MockerFixture
+
+    from scripts._source_model import Binding, Import, Resolution, Scope
 
 TESTS_ROOT = Path(__file__).parent
 DIRECT_ASSERT_EXEMPT_FILES_INI = "assert_helper_direct_assert_exempt_files"
@@ -124,10 +127,9 @@ ALIAS_ROOTS = frozenset({
 })
 ASSERTION_ERRORS = frozenset({("AssertionError",), ("builtins", "AssertionError"), ("pytest", "fail", "Exception")})
 TEST_CASE_BASES = frozenset({("unittest", "IsolatedAsyncioTestCase"), ("unittest", "TestCase")})
+STORE_USES = frozenset({"attribute-store", "attribute-del", "subscript-store", "subscript-del"})
 LEAF_NODES = (
     ast.Constant,
-    ast.Name,
-    ast.alias,
     ast.boolop,
     ast.cmpop,
     ast.expr_context,
@@ -273,36 +275,6 @@ class _Analysis:
     registry_patches: tuple[WholeSysModulesPatch, ...]
 
 
-def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
-    if isinstance(node, ast.Name):
-        return (node.id,)
-    if not isinstance(node, ast.Attribute) or not (parent := _attribute_chain(node.value)):
-        return ()
-    return (*parent, node.attr)
-
-
-def _import_bindings(node: ast.Import | ast.ImportFrom) -> list[tuple[str, tuple[str, ...]]]:
-    if isinstance(node, ast.Import):
-        return [
-            (alias.asname, tuple(alias.name.split("."))) if alias.asname else (root, (root,))
-            for alias in node.names
-            if (root := alias.name.split(".", 1)[0])
-        ]
-    if node.module is None or node.level:
-        return []
-    return [(alias.asname or alias.name, (*node.module.split("."), alias.name)) for alias in node.names]
-
-
-def _canonical(attribute_chain: tuple[str, ...], aliases: Mapping[str, tuple[str, ...]]) -> tuple[str, ...]:
-    return (*aliases.get(attribute_chain[0], attribute_chain[:1]), *attribute_chain[1:])
-
-
-def _canonical_chain(node: ast.AST, aliases: Mapping[str, tuple[str, ...]]) -> tuple[str, ...]:
-    if not (attribute_chain := _attribute_chain(node)):
-        return ()
-    return _canonical(attribute_chain, aliases)
-
-
 def _static_text(node: ast.AST | None) -> tuple[str, bool] | None:
     """Return the statically known leading text of a string expression, and whether it is the whole string."""
     text: tuple[str, bool] | None = None
@@ -370,11 +342,21 @@ def _module_file(tests_root: Path, parts: tuple[str, ...]) -> Path | None:
 
 @cache
 def _module_aliases(path: Path) -> dict[str, tuple[str, ...]]:
-    aliases: dict[str, tuple[str, ...]] = {}
-    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path))):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            aliases.update(_import_bindings(node))
-    return aliases
+    """Return the dotted path each absolute import of a module (at any level) binds its name to, read by the model."""
+    return {
+        item.bound: _imported_chain(item)
+        for item in SourceModule(path.read_text(encoding="utf-8"), str(path)).imports
+        if item.alias is not None and item.bound is not None and not item.level
+    }
+
+
+def _imported_chain(item: Import) -> tuple[str, ...]:
+    """Return the dotted path an absolute ``import`` or ``from`` import binds its name to."""
+    alias = item.alias
+    name = alias.name if alias is not None else ""
+    if item.kind == "import":
+        return tuple(name.split(".")) if alias is not None and alias.asname else (str(item.bound),)
+    return (*str(item.source).split("."), name)
 
 
 @cache
@@ -429,18 +411,6 @@ def _keyword(call: ast.Call, name: str) -> ast.expr | None:
     return next((keyword.value for keyword in call.keywords if keyword.arg == name), None)
 
 
-def _is_sys_modules(node: ast.AST, aliases: Mapping[str, tuple[str, ...]]) -> bool:
-    if isinstance(node, ast.Constant):
-        return node.value == "sys.modules"
-    return _canonical_chain(node, aliases) == SYS_MODULES
-
-
-def _is_whole_sys_modules_patch(call: ast.Call, aliases: Mapping[str, tuple[str, ...]]) -> bool:
-    if _canonical_chain(call.func, aliases) not in REGISTRY_PATCH_CALLS:
-        return False
-    return (target := _patch_target(call)) is not None and _is_sys_modules(target, aliases)
-
-
 def _has_reason(marker: ast.expr) -> bool:
     if not isinstance(marker, ast.Call) or marker.keywords or len(marker.args) != 1:
         return False
@@ -468,109 +438,147 @@ def _imported_name(call: ast.Call, function: tuple[str, ...]) -> str | None:
     return f"{package.rsplit('.', level - 1)[0] if level > 1 else package}.{name[level:]}"
 
 
-class _Scope:
-    """A module, function, or class with the names it binds and the markers it carries."""
+class _ModuleAnalyzer:
+    """Collects one module's constructs in one pass, and decides them once every name is read through the model.
 
-    __slots__ = ("abnormal_path", "allows_direct_assert", "bindings", "node", "parent")
-
-    def __init__(
-        self, parent: _Scope | None, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | None
-    ) -> None:
-        self.parent = parent
-        self.node = node
-        self.bindings: dict[str, list[tuple[ast.expr | tuple[str, ...] | None, _Scope]]] = {}
-        self.abnormal_path = False
-        self.allows_direct_assert = False
-
-    @property
-    def name(self) -> str:
-        """Dotted name from the outermost enclosing function or class."""
-        names: list[str] = []
-        scope: _Scope | None = self
-        while scope is not None and scope.node is not None:
-            names.append(scope.node.name)
-            scope = scope.parent
-        return ".".join(reversed(names)) or "<module>"
-
-    def bind(self, name: str, value: ast.expr | tuple[str, ...] | None, scope: _Scope | None = None) -> None:
-        """Remember a value bound to a name, with the scope the value is evaluated in."""
-        self.bindings.setdefault(name, []).append((value, scope or self))
-
-    def owner(self, name: str) -> _Scope | None:
-        """Return the scope whose binding of a name this scope sees; class scopes are hidden from their methods."""
-        scope: _Scope | None = self
-        while scope is not None:
-            if name in scope.bindings and (scope is self or not isinstance(scope.node, ast.ClassDef)):
-                return scope
-            scope = scope.parent
-        return None
-
-    def chain(self) -> Iterable[_Scope]:
-        """Yield this scope and every enclosing scope, innermost first."""
-        scope: _Scope | None = self
-        while scope is not None:
-            yield scope
-            scope = scope.parent
-
-    def instance_owner(self) -> _Scope | None:
-        """Return the class whose methods share this scope's self attributes."""
-        scope: _Scope | None = self
-        while scope is not None and not isinstance(scope.node, ast.ClassDef):
-            scope = scope.parent
-        return scope
-
-
-class _ModuleAnalyzer(ast.NodeVisitor):
-    """Collects one module's constructs in one pass, and decides them once every import and alias is known."""
+    ``scripts/_source_model.py`` answers what each name read resolves to and what each binding target takes. A name
+    stands for a dotted path (its canonical chain) when a binding imports it, or assigns it a monkeypatch factory's
+    result or a chain that starts at one of `ALIAS_ROOTS`; any other name stands for itself.
+    """
 
     def __init__(self, path: Path, source: str, tests_root: Path) -> None:
         self.path = path
         self.tests_root = tests_root
         self.platform = any(map(path.is_relative_to, PLATFORM_MODULES))
         self.lines = _SourceLines(source)
-        self.scope = self.module = _Scope(None, None)
-        self.scopes: list[tuple[_Scope, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef]] = []
-        self.aliases: dict[str, tuple[str, ...]] = {}
-        self.alias_candidates: list[tuple[str, ast.expr]] = []
-        self.calls: list[tuple[ast.Call, tuple[str, ...], _Scope]] = []
-        self.attributes: list[tuple[ast.Attribute, tuple[str, ...], _Scope]] = []
-        self.subscripts: list[tuple[ast.Subscript, _Scope]] = []
-        self.raises: list[tuple[ast.Raise, _Scope]] = []
-        self.stores: list[tuple[ast.expr, _Scope]] = []
-        self.classes: list[tuple[ast.ClassDef, _Scope]] = []
-        self.records: list[tuple[str, ast.expr | ast.stmt, _Scope, str | None]] = []
-        self.reached: dict[tuple[int, str, bool], bool] = {}
-        self.functions: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
-        self.function_scopes: dict[ast.FunctionDef | ast.AsyncFunctionDef, _Scope] = {}
+        self.model = model = SourceModule(source, path.as_posix())
+        self.loads = {reference.node: reference for reference in model.references if reference.context == "load"}
+        self.definitions = {scope.node: scope for scope in model.scopes if scope.kind in {"function", "class"}}
+        self.imports: dict[ast.AST, list[Import]] = {}
+        for item in model.imports:
+            if item.kind != "dynamic":
+                self.imports.setdefault(item.node, []).append(item)
+        self.alias_imports = {item.alias: item for item in model.imports if item.alias is not None}
+        self.reserved_aliases = {
+            item.bound: tuple(item.target.split("."))
+            for item in model.imports
+            if item.bound is not None
+            and isinstance(item.target, str)
+            and not item.level
+            and (item.kind == "from" or (item.kind == "import" and item.alias is not None and item.alias.asname))
+        }
+        self.bare_targets = {annotation.target for annotation in model.annotations if annotation.value is None}
+        self.headers = {
+            id(part): scope
+            for scope in self.definitions.values()
+            for expression in _header_expressions(scope.node)
+            for part in ast.walk(expression)
+        }
+        self.calls: list[tuple[ast.Call, tuple[str, ...], Scope]] = []
+        self.attributes: list[tuple[ast.Attribute, tuple[str, ...], Scope]] = []
+        self.subscripts: list[tuple[ast.Subscript, Scope]] = []
+        self.raises: list[tuple[ast.Raise, Scope]] = []
+        self.stores: list[tuple[ast.Attribute | ast.Subscript, Scope]] = []
+        self.records: list[tuple[str, ast.expr | ast.stmt, Scope, str | None]] = []
+        self.arguments: dict[Binding | None, list[ast.expr]] = {}
+        self.instance_values: dict[tuple[Scope, str], list[ast.expr]] = {}
+        self.abnormal_path: set[Scope] = set()
+        self.allows_direct_assert: set[Scope] = set()
+        self.reached: dict[tuple[frozenset[int], bool], bool] = {}
+        self.aliasing: set[Binding] = set()
         self.type_checking = 0
+
+    def scope(self, node: ast.AST) -> Scope:
+        """Return the function, class or module a node belongs to; a definition's header belongs to the definition."""
+        found: Scope | None = self.headers.get(id(node)) or self.model.scope_of(node)
+        while found is not None and found.kind not in {"module", "class", "function"}:
+            found = found.parent
+        return found or self.model.module_scope
+
+    def enclosing(self, scope: Scope) -> Scope | None:
+        """Return the function, class or module around a function or class scope (None around the module)."""
+        return None if scope.parent is None else self.scope(scope.node)
+
+    def chain(self, node: ast.AST) -> tuple[str, ...]:
+        """Return the names of a name or attribute chain as written: ``("os", "path", "join")``."""
+        if node in self.loads:
+            return (self.loads[node].name,)
+        if not isinstance(node, ast.Attribute) or not (parent := self.chain(node.value)):
+            return ()
+        return (*parent, node.attr)
+
+    def head(self, node: ast.AST) -> ast.expr | None:
+        """Return the name a name or attribute chain starts at."""
+        while isinstance(node, ast.Attribute):
+            node = node.value
+        return node if node in self.loads else None
+
+    def alias(self, binding: Binding) -> tuple[str, ...] | None:
+        """Return the dotted path a binding makes its name stand for, if it makes it stand for one."""
+        if binding.kind in {"import", "import-from"}:
+            item = self.binding_import(binding)
+            return tuple(binding.origin.split(".")) if item is not None and binding.origin else None
+        if (assignment := self.model.assignment(binding.node)) is None or binding in self.aliasing:
+            return None
+        value = assignment.element
+        self.aliasing.add(binding)
+        try:
+            if isinstance(value, ast.Call):
+                return ("monkeypatch",) if self.canonical(value.func) in MONKEYPATCH_FACTORIES else None
+            chain = self.canonical(value)
+            return chain if chain and chain[0] in ALIAS_ROOTS else None
+        finally:
+            self.aliasing.discard(binding)
+
+    def binding_import(self, binding: Binding) -> Import | None:
+        """Return the absolute import a binding makes (relative imports name no dotted path here)."""
+        item = self.alias_imports.get(binding.node)
+        return item if item is not None and not item.level else None
+
+    def name_alias(self, resolution: Resolution) -> tuple[str, ...] | None:
+        """Return the dotted path the bindings of a name read make it stand for: the last one that makes one."""
+        found = [chain for binding in resolution.bindings if (chain := self.alias(binding)) is not None]
+        return found[-1] if found else None
+
+    def canonical(self, node: ast.AST) -> tuple[str, ...]:
+        """Return the canonical chain of a name or attribute chain: its head name replaced by what it stands for."""
+        if not (chain := self.chain(node)) or (head := self.head(node)) is None:
+            return chain
+        alias = self.name_alias(self.model.resolve(head))
+        return (*alias, *chain[1:]) if alias is not None else chain
+
+    def canonical_text(self, text: str, scope: Scope) -> tuple[str, ...]:
+        """Return the canonical chain of a dotted name a string spells, read in a scope."""
+        first, *rest = text.split(".")
+        alias = self.name_alias(self.model.lookup(first, scope))
+        return (*alias, *rest) if alias is not None else (first, *rest)
 
     def visit(self, node: ast.AST) -> None:
         """Collect the constructs the guard decides later, then visit the children of every other node."""
         if isinstance(node, LEAF_NODES):
             return
+        self.collect_definition(node)
         match node:
-            case ast.FunctionDef() | ast.AsyncFunctionDef() | ast.ClassDef():
-                self.visit_scope(node)
-                return
-            case ast.Import() | ast.ImportFrom():
-                self.visit_import(node)
-                return
-            case ast.If() if _attribute_chain(node.test)[-1:] == ("TYPE_CHECKING",):
+            case ast.If() if self.chain(node.test)[-1:] == ("TYPE_CHECKING",):
                 self.visit_type_checking(node)
                 return
-            case ast.Attribute() if attribute_chain := _attribute_chain(node):
-                self.attributes.append((node, attribute_chain, self.scope))
+            case ast.Attribute() if attribute_chain := self.chain(node):
+                self.collect_store(node)
+                self.attributes.append((node, attribute_chain, self.scope(node)))
                 return
             case ast.Assert() if not self.type_checking:
-                self.records.append((DIRECT_ASSERT, node, self.scope, None))
+                self.records.append((DIRECT_ASSERT, node, self.scope(node), None))
             case ast.Raise():
-                self.raises.append((node, self.scope))
-            case ast.Call() if function := _attribute_chain(node.func):
-                self.calls.append((node, function, self.scope))
-            case ast.Subscript() if _attribute_chain(node.value):
-                self.subscripts.append((node, self.scope))
+                self.raises.append((node, self.scope(node)))
+            case ast.Call() if function := self.chain(node.func):
+                self.calls.append((node, function, self.scope(node)))
+            case ast.Subscript() if self.chain(node.value):
+                self.collect_store(node)
+                self.subscripts.append((node, self.scope(node)))
+            case ast.Attribute() | ast.Subscript():
+                self.collect_store(node)
             case _:
-                self.collect_binding(node)
+                pass
         for child in ast.iter_child_nodes(node):
             self.visit(child)
 
@@ -583,101 +591,51 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         for statement in node.orelse:
             self.visit(statement)
 
-    def collect_binding(self, node: ast.AST) -> None:
-        """Bind the names an assignment, loop, with, or except clause introduces."""
-        match node:
-            case ast.Assign():
-                self.bind_targets(node.targets, node.value)
-            case ast.AnnAssign() | ast.NamedExpr() if node.value is not None:
-                self.bind_targets([node.target], node.value)
-            case ast.AugAssign():
-                self.bind_targets([node.target], None)
-            case ast.Delete():
-                self.bind_targets(node.targets, None)
-            case ast.For() | ast.AsyncFor() | ast.comprehension():
-                self.bind_targets([node.target], node.iter)
-            case ast.withitem() if node.optional_vars is not None:
-                self.bind_targets([node.optional_vars], node.context_expr)
-            case ast.ExceptHandler() if node.name:
-                self.scope.bind(node.name, None)
-            case _:
-                pass
-
-    def bind_targets(self, targets: Iterable[ast.expr], value: ast.expr | None) -> None:
-        """Bind assignment targets, pairing unpacked names with their values where both sides are literal tuples.
-
-        Every other target is an attribute or a subscript, which stores into an existing object.
-        """
-        for target in targets:
-            match target:
-                case ast.Name():
-                    self.scope.bind(target.id, value)
-                    if value is not None:
-                        self.alias_candidates.append((target.id, value))
-                case ast.Tuple() | ast.List():
-                    values = (
-                        value.elts
-                        if isinstance(value, (ast.Tuple, ast.List)) and len(value.elts) == len(target.elts)
-                        else [value] * len(target.elts)
-                    )
-                    for element, element_value in zip(target.elts, values, strict=True):
-                        self.bind_targets([element], element_value)
-                case ast.Starred():
-                    self.bind_targets([target.value], value)
-                case _:
-                    self.stores.append((target, self.scope))
-                    if (
-                        isinstance(target, ast.Attribute)
-                        and isinstance(target.value, ast.Name)
-                        and target.value.id == "self"
-                        and (owner := self.scope.instance_owner()) is not None
-                    ):
-                        owner.bind(f"self.{target.attr}", value, self.scope)
-
-    def visit_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> None:
-        """Visit a function or class inside its own scope, decorators included."""
-        parent = self.scope
-        parent.bind(node.name, None)
-        self.scope = scope = _Scope(parent, node)
-        self.scopes.append((scope, node))
-        if isinstance(node, ast.ClassDef):
-            self.classes.append((node, scope))
-        else:
-            if ASSERTION_HELPER_NAME.match(node.name):
-                self.records.append((ASSERTION_HELPER, node, scope, f"def {node.name}"))
-            self.functions[node.name] = node
-            self.function_scopes[node] = scope
-            arguments = node.args
-            for argument in (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs):
-                scope.bind(argument.arg, None)
-            for argument in (arguments.vararg, arguments.kwarg):
-                if argument is not None:
-                    scope.bind(argument.arg, None)
-        self.generic_visit(node)
-        self.scope = parent
-
-    def visit_import(self, node: ast.Import | ast.ImportFrom) -> None:
-        """Bind the imported names and record every private module or name the import reaches."""
-        for name, target in _import_bindings(node):
-            self.aliases[name] = target
-            self.scope.bind(name, target)
+    def collect_definition(self, node: ast.AST) -> None:
+        """Record an assertion helper a ``def`` defines and the private modules or names an import reaches."""
+        scope = self.definitions.get(node)
+        if scope is not None and scope.kind == "function" and ASSERTION_HELPER_NAME.match(scope.code_name):
+            self.records.append((ASSERTION_HELPER, node, scope, f"def {scope.code_name}"))
+        items = self.imports.get(node, [])
+        if not items or not isinstance(node, ast.stmt):
+            return
         modules: list[str] = []
-        if isinstance(node, ast.Import):
-            modules = [alias.name for alias in node.names]
-        elif node.module is not None and not node.level:
+        if items[0].kind == "import":
+            modules = [str(item.source) for item in items]
+        elif not items[0].level and (source := str(items[0].source)):
             modules = (
-                [node.module]
-                if _private_prefix(node.module)
-                else [f"{node.module}.{alias.name}" for alias in node.names]
+                [source]
+                if _private_prefix(source)
+                else [f"{source}.{item.alias.name}" for item in items if item.alias is not None]
             )
         for module in modules:
             if _private_prefix(module):
-                self.records.append((PRIVATE_IMPORT, node, self.scope, module))
+                self.records.append((PRIVATE_IMPORT, node, self.scope(node), module))
 
-    def resolve(self, chain: tuple[str, ...]) -> tuple[str, ...]:
-        """Canonical dotted path of an alias chain, through test helpers that re-export package names."""
-        resolved = _canonical(chain, self.aliases)
-        return _resolve_reexports(resolved, self.tests_root) if resolved[:1] == ("tests",) else resolved
+    def collect_store(self, target: ast.Attribute | ast.Subscript) -> None:
+        """Record an attribute or subscript an assignment, a loop, ``with`` or ``del`` stores into or deletes.
+
+        An attribute a method stores on its receiver also gives the class that value under that name.
+        """
+        if self.model.use_of(target.value) not in STORE_USES or target in self.bare_targets:
+            return
+        scope = self.scope(target)
+        self.stores.append((target, scope))
+        assignment = self.model.assignment(target)
+        if isinstance(target, ast.Attribute) and (owner := self.instance_owner(target.value)) is not None:
+            values = self.instance_values.setdefault((owner, target.attr), [])
+            values += [assignment.element] if assignment is not None else []
+
+    def instance_owner(self, node: ast.expr) -> Scope | None:
+        """Return the class whose instances a name holds: the receiver of one of its methods."""
+        if node not in self.loads:
+            return None
+        for binding in self.model.resolve(node).bindings:
+            method = binding.scope
+            owner = self.enclosing(method)
+            if owner is not None and owner.kind == "class" and self.model.receiver(method) is binding:
+                return owner
+        return None
 
     def reaches_text(self, text: str) -> bool:
         """Whether a dotted string names package or generated runtime internals."""
@@ -685,7 +643,11 @@ class _ModuleAnalyzer(ast.NodeVisitor):
             return True
         return text.startswith("tests.") and _resolve_reexports(tuple(text.split(".")), self.tests_root)[0] == PACKAGE
 
-    def reaches(self, expression: ast.expr, scope: _Scope, *, instances: bool) -> bool:
+    def resolved(self, chain: tuple[str, ...]) -> tuple[str, ...]:
+        """Follow a canonical chain through test helpers that re-export package names."""
+        return _resolve_reexports(chain, self.tests_root) if chain[:1] == ("tests",) else chain
+
+    def reaches(self, expression: ast.expr, *, instances: bool) -> bool:
         """Whether an expression reaches package or generated package internals.
 
         Without instances, values built by calling something other than an import do not count, so that assigning
@@ -694,8 +656,8 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         stack: list[ast.AST] = [expression]
         while stack:
             node = stack.pop()
-            if isinstance(node, ast.Call) and (call_chain := _attribute_chain(node.func)):
-                function = self.resolve(call_chain)
+            if isinstance(node, ast.Call) and self.chain(node.func):
+                function = self.resolved(self.canonical(node.func))
                 if function[-1] == GENERATED_IMPORT or (
                     function in IMPORT_CALLS
                     and (module := _imported_name(node, function)) is not None
@@ -706,70 +668,66 @@ class _ModuleAnalyzer(ast.NodeVisitor):
                     continue
             elif isinstance(node, ast.Call) and not instances:
                 continue
-            elif isinstance(node, ast.Name):
-                if self.name_reaches(node.id, scope, instances=instances):
+            elif node in self.loads:
+                if self.bindings_reach(self.model.resolve(node).bindings, instances=instances):
                     return True
                 continue
             elif isinstance(node, ast.Constant) and isinstance(node.value, str):
                 if self.reaches_text(node.value):
                     return True
                 continue
-            elif isinstance(node, ast.Attribute) and self.attribute_reaches(node, scope, instances=instances):
+            elif isinstance(node, ast.Attribute) and self.attribute_reaches(node, instances=instances):
                 return True
             stack.extend(ast.iter_child_nodes(node))
         return False
 
-    def attribute_reaches(self, node: ast.Attribute, scope: _Scope, *, instances: bool) -> bool:
+    def attribute_reaches(self, node: ast.Attribute, *, instances: bool) -> bool:
         """Whether an attribute is a generated runtime, a re-exported package name, or an internal self attribute."""
         if node.attr == "_runtime":
             return True
-        chain = _attribute_chain(node)
-        if chain and self.aliases.get(chain[0], ("",))[0] == "tests" and self.resolve(chain)[0] == PACKAGE:
+        head = self.head(node)
+        alias = self.name_alias(self.model.resolve(head)) if head is not None else None
+        if alias is not None and alias[0] == "tests" and self.resolved(self.canonical(node))[0] == PACKAGE:
             return True
-        return (
-            isinstance(node.value, ast.Name)
-            and node.value.id == "self"
-            and (owner := scope.instance_owner()) is not None
-            and self.bound_reaches(owner, f"self.{node.attr}", instances=instances)
-        )
+        if (owner := self.instance_owner(node.value)) is None:
+            return False
+        values = self.instance_values.get((owner, node.attr), [])
+        return self.values_reach(values, key=frozenset({id(owner), hash(node.attr)}), instances=instances)
 
-    def name_reaches(self, name: str, scope: _Scope, *, instances: bool) -> bool:
-        """Whether the binding of a name visible from a scope reaches internals."""
-        if (owner := scope.owner(name)) is None:
-            return self.aliases.get(name, ("",))[0] == PACKAGE
-        return self.bound_reaches(owner, name, instances=instances)
+    def binding_values(self, binding: Binding) -> list[ast.expr]:
+        """Return the expressions a binding gives its name: its value, or the arguments this module passes for it."""
+        if binding.kind == "param":
+            return self.arguments.get(binding, [])
+        assignment = self.model.assignment(binding.node)
+        return [assignment.element] if assignment is not None else []
 
-    def bound_reaches(self, owner: _Scope, name: str, *, instances: bool) -> bool:
-        """Whether any value a scope binds to a name reaches internals, deciding each binding once."""
-        key = (id(owner), name, instances)
-        if key in self.reached:
-            return self.reached[key]
-        self.reached[key] = False
-        reached = False
-        for value, value_scope in owner.bindings.get(name, ()):
-            if value is None:
-                continue
-            if isinstance(value, tuple):
-                resolved = _resolve_reexports(value, self.tests_root) if value[:1] == ("tests",) else value
-                reached = resolved[0] == PACKAGE
-            else:
-                reached = self.reaches(value, value_scope, instances=instances)
-            if reached:
-                break
-        self.reached[key] = reached
-        return reached
+    def bindings_reach(self, bindings: tuple[Binding, ...], *, instances: bool) -> bool:
+        """Whether any value the bindings of one name give it reaches internals, deciding each set of bindings once."""
+        if any(
+            binding.kind in {"import", "import-from"}
+            and (alias := self.alias(binding)) is not None
+            and self.resolved(alias)[0] == PACKAGE
+            for binding in bindings
+        ):
+            return True
+        values = [value for binding in bindings for value in self.binding_values(binding)]
+        return self.values_reach(values, key=frozenset(map(id, bindings)), instances=instances)
 
-    def outside_tests(self, name: str) -> bool:
+    def values_reach(self, values: list[ast.expr], *, key: frozenset[int], instances: bool) -> bool:
+        """Whether any of the values one name holds reaches internals, deciding each name once."""
+        memo = (key, instances)
+        if memo in self.reached:
+            return self.reached[memo]
+        self.reached[memo] = False
+        self.reached[memo] = any(self.reaches(value, instances=instances) for value in values)
+        return self.reached[memo]
+
+    def outside_tests(self, name: str, scope: Scope) -> bool:
         """Whether a dotted name resolves to a module or object outside the tests/ package."""
-        return self.resolve(tuple(name.split(".")))[0] != "tests"
+        return self.resolved(self.canonical_text(name, scope))[0] != "tests"
 
     def imported_from_outside(
-        self,
-        target: ast.expr,
-        scope: _Scope,
-        *,
-        instances: bool = False,
-        seen: frozenset[tuple[int, str]] = frozenset(),
+        self, target: ast.expr, scope: Scope, *, instances: bool = False, seen: frozenset[int] = frozenset()
     ) -> bool:
         """Whether a patch target comes from outside the tests/ package.
 
@@ -777,36 +735,60 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         an object such a name constructs. With instances, an object a call to such a name returns counts too.
         """
         if (text := _complete_text(target)) is not None:
-            return self.outside_tests(text)
+            return self.outside_tests(text, scope)
         if isinstance(target, ast.Call):
             return self.returned_from_outside(target, scope, instances=instances, seen=seen)
-        chain = _attribute_chain(target)
-        if not chain or (owner := scope.owner(chain[0])) is None or (key := (id(owner), chain[0])) in seen:
+        if (head := self.head(target)) is None:
+            return False
+        bindings = self.model.resolve(head).bindings
+        if not bindings or (key := hash(frozenset(map(id, bindings)))) in seen:
             return False
         return any(
-            self.resolve(value)[0] != "tests"
-            if isinstance(value, tuple)
-            else value is not None
-            and self.imported_from_outside(value, value_scope, instances=instances, seen=seen | {key})
-            for value, value_scope in owner.bindings[chain[0]]
+            self.resolved(alias)[0] != "tests"
+            if binding.kind in {"import", "import-from"} and (alias := self.alias(binding)) is not None
+            else any(
+                self.imported_from_outside(value, scope, instances=instances, seen=seen | {key})
+                for value in self.binding_values(binding)
+            )
+            for binding in bindings
         )
 
-    def returned_from_outside(
-        self, call: ast.Call, scope: _Scope, *, instances: bool, seen: frozenset[tuple[int, str]]
-    ) -> bool:
+    def returned_from_outside(self, call: ast.Call, scope: Scope, *, instances: bool, seen: frozenset[int]) -> bool:
         """Whether a call imports a module, or returns the type of or an instance from, something outside tests/."""
-        if not (call_chain := _attribute_chain(call.func)):
+        if not self.chain(call.func):
             return False
-        function = self.resolve(call_chain)
+        function = self.resolved(self.canonical(call.func))
         if function in IMPORT_CALLS:
-            return (module := _imported_name(call, function)) is not None and self.outside_tests(module)
+            return (module := _imported_name(call, function)) is not None and self.outside_tests(module, scope)
         if function in TYPE_CALLS and len(call.args) == 1:
             return self.imported_from_outside(call.args[0], scope, instances=True, seen=seen)
         return instances and self.imported_from_outside(call.func, scope, seen=seen)
 
+    def reserved(self, node: ast.AST) -> tuple[str, ...]:
+        """Return the canonical chain, reading a head name no binding gives an alias through the module's imports.
+
+        The registry rule reserves imported aliases across every scope, including where a parameter, a local
+        rebinding or another function's import shadows them.
+        """
+        chain = self.canonical(node)
+        head = self.head(node)
+        if head is not None and self.name_alias(self.model.resolve(head)) is None and chain[0] in self.reserved_aliases:
+            return (*self.reserved_aliases[chain[0]], *chain[1:])
+        return chain
+
+    def is_sys_modules(self, node: ast.AST) -> bool:
+        if isinstance(node, ast.Constant):
+            return node.value == "sys.modules"
+        return self.reserved(node) == SYS_MODULES
+
+    def is_whole_sys_modules_patch(self, call: ast.Call) -> bool:
+        if self.reserved(call.func) not in REGISTRY_PATCH_CALLS:
+            return False
+        return (target := _patch_target(call)) is not None and self.is_sys_modules(target)
+
     def replaces_internal_module_entry(self, function: tuple[str, ...], call: ast.Call, target: ast.expr) -> bool:
         """Whether a patch of sys.modules sets or removes a package or generated runtime module."""
-        if not _is_sys_modules(target, self.aliases):
+        if not self.is_sys_modules(target):
             return False
         values = call.args[1] if len(call.args) > 1 else _keyword(call, "values")
         keys: list[ast.expr | None] = []
@@ -816,49 +798,55 @@ class _ModuleAnalyzer(ast.NodeVisitor):
             keys = values.keys
         return any((text := _complete_text(key)) is not None and self.reaches_text(text) for key in keys)
 
-    def record_private_access(self, node: ast.expr, chain: tuple[str, ...], scope: _Scope) -> None:
+    def record_private_access(self, node: ast.Attribute, scope: Scope) -> None:
         """Record a private module or name reached by attribute access past a public import."""
-        if _private_prefix(".".join(self.resolve(chain[:1]))):
+        head = self.head(node)
+        if head is None or _private_prefix(".".join(self.resolved(self.canonical(head)))):
             return
-        if module := _private_prefix(".".join(self.resolve(chain))):
+        if module := _private_prefix(".".join(self.resolved(self.canonical(node)))):
             self.records.append((PRIVATE_IMPORT, node, scope, module))
 
     def bind_call_arguments(self) -> None:
         """Bind the parameters of this module's functions to the arguments of this module's calls to them."""
-        for node, attribute_chain, scope in self.calls:
-            if len(attribute_chain) != 1 or (function := self.functions.get(attribute_chain[0])) is None:
+        for node, attribute_chain, _ in self.calls:
+            if len(attribute_chain) != 1:
                 continue
-            function_scope = self.function_scopes[function]
-            positional = [*function.args.posonlyargs, *function.args.args]
-            for parameter, argument in zip(positional, node.args, strict=False):
-                if not isinstance(argument, ast.Starred):
-                    function_scope.bind(parameter.arg, argument, scope)
-            names = {parameter.arg for parameter in (*positional, *function.args.kwonlyargs)}
-            for keyword in node.keywords:
-                if keyword.arg in names:
-                    function_scope.bind(keyword.arg, keyword.value, scope)
+            for definition in self.model.resolve(node.func).bindings:
+                if definition.kind != "def":
+                    continue
+                function = definition.node
+                positional = [*function.args.posonlyargs, *function.args.args]
+                parameters = {parameter.arg: parameter for parameter in (*positional, *function.args.kwonlyargs)}
+                given = [
+                    (parameter, argument)
+                    for parameter, argument in zip(positional, node.args, strict=False)
+                    if not isinstance(argument, ast.Starred)
+                ]
+                given += [
+                    (parameters[keyword.arg], keyword.value) for keyword in node.keywords if keyword.arg in parameters
+                ]
+                for parameter, argument in given:
+                    self.arguments.setdefault(self.model.binding_at(parameter), []).append(argument)
 
     def decide_markers(self) -> None:
         """Resolve each scope's markers, and record every marker that states no reason."""
-        for scope, node in self.scopes:
-            for decorator in node.decorator_list:
-                marker = _canonical_chain(
-                    decorator.func if isinstance(decorator, ast.Call) else decorator, self.aliases
-                )
+        for scope in self.definitions.values():
+            for decorator in scope.node.decorator_list:
+                marker = self.canonical(decorator.func if isinstance(decorator, ast.Call) else decorator)
                 if marker not in {ABNORMAL_PATH_MARKER, ALLOW_DIRECT_ASSERT_MARKER}:
                     continue
                 reason = _has_reason(decorator)
                 if not reason:
                     self.records.append((MARKER_REASON, decorator, scope, None))
                 if marker == ALLOW_DIRECT_ASSERT_MARKER:
-                    scope.allows_direct_assert = True
+                    self.allows_direct_assert.add(scope)
                 elif reason:
-                    scope.abnormal_path = True
+                    self.abnormal_path.add(scope)
 
     def decide_calls(self) -> None:
         """Decide calls that assert, hook the profiler, patch, set attributes, or import modules."""
-        for node, attribute_chain, scope in self.calls:
-            function = _canonical(attribute_chain, self.aliases)
+        for node, _, scope in self.calls:
+            function = self.canonical(node.func)
             if _is_unittest_assertion(function):
                 self.records.append((DISGUISED_ASSERT, node, scope, None))
             elif self.replaces_internals(function, node, scope):
@@ -866,13 +854,13 @@ class _ModuleAnalyzer(ast.NodeVisitor):
             elif module := self.dynamic_private_access(function, node):
                 self.records.append((PRIVATE_IMPORT, node, scope, module))
 
-    def replaces_internals(self, function: tuple[str, ...], node: ast.Call, scope: _Scope) -> bool:
+    def replaces_internals(self, function: tuple[str, ...], node: ast.Call, scope: Scope) -> bool:
         """Whether a call hooks the profiler, or patches or sets an attribute of internals."""
         if function in PROFILE_HOOKS:
             return True
         if function in PATCH_CALLS and (target := _patch_target(node)) is not None:
             return (
-                self.reaches(target, scope, instances=True)
+                self.reaches(target, instances=True)
                 or self.replaces_internal_module_entry(function, node, target)
                 or (self.platform and self.imported_from_outside(target, scope))
             )
@@ -880,7 +868,7 @@ class _ModuleAnalyzer(ast.NodeVisitor):
             function in SETATTR_CALLS
             and bool(node.args)
             and (
-                self.reaches(node.args[0], scope, instances=False)
+                self.reaches(node.args[0], instances=False)
                 or (self.platform and self.imported_from_outside(node.args[0], scope))
             )
         )
@@ -892,23 +880,13 @@ class _ModuleAnalyzer(ast.NodeVisitor):
             return None if module is None else _private_prefix(module)
         if function not in GETATTR_CALLS or len(node.args) < 2:
             return None
-        if (name := _complete_text(node.args[1])) is None or not (base := _attribute_chain(node.args[0])):
+        if (name := _complete_text(node.args[1])) is None or not self.chain(node.args[0]):
             return None
-        resolved = ".".join(self.resolve(base))
+        resolved = ".".join(self.resolved(self.canonical(node.args[0])))
         return None if _private_prefix(resolved) else _private_prefix(f"{resolved}.{name}")
 
     def finish(self) -> _Analysis:
         """Decide every collected construct, and return findings in source order."""
-        for _ in range(REEXPORT_DEPTH):
-            for name, value in self.alias_candidates:
-                if isinstance(value, ast.Call) and _canonical_chain(value.func, self.aliases) in MONKEYPATCH_FACTORIES:
-                    self.aliases[name] = ("monkeypatch",)
-                elif (
-                    not isinstance(value, ast.Call)
-                    and (chain := _canonical_chain(value, self.aliases))
-                    and chain[0] in ALIAS_ROOTS
-                ):
-                    self.aliases[name] = chain
         self.bind_call_arguments()
         self.decide_markers()
         self.decide_calls()
@@ -919,7 +897,7 @@ class _ModuleAnalyzer(ast.NodeVisitor):
             Finding(
                 rule=rule,
                 path=self.path,
-                scope=scope.name,
+                scope=nested_name(scope) or "<module>",
                 lineno=node.lineno,
                 statement=statement or self.lines.segment(node),
             )
@@ -929,7 +907,7 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         registry_patches = [
             WholeSysModulesPatch(path=self.path, lineno=node.lineno, statement=self.lines.segment(node))
             for node, _, _ in self.calls
-            if _is_whole_sys_modules_patch(node, self.aliases)
+            if self.is_whole_sys_modules_patch(node)
         ]
         return _Analysis(
             findings=tuple(sorted(findings, key=lambda finding: finding.lineno)),
@@ -940,22 +918,24 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         """Record raised assertion errors and unittest.TestCase subclasses."""
         for node, scope in self.raises:
             exception = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
-            if exception is not None and _canonical_chain(exception, self.aliases) in ASSERTION_ERRORS:
+            if exception is not None and self.canonical(exception) in ASSERTION_ERRORS:
                 self.records.append((DISGUISED_ASSERT, node, scope, None))
-        for node, scope in self.classes:
-            if any(_canonical_chain(base, self.aliases) in TEST_CASE_BASES for base in node.bases):
+        for scope in self.definitions.values():
+            node = scope.node
+            if scope.kind == "class" and any(self.canonical(base) in TEST_CASE_BASES for base in node.bases):
                 bases = ", ".join(map(ast.unparse, node.bases))
                 self.records.append((DISGUISED_ASSERT, node, scope, f"class {node.name}({bases})"))
 
     def decide_attribute_access(self) -> None:
         """Record private modules reached through attributes past a public import or through sys.modules."""
-        for node, chain, scope in self.attributes:
-            if chain[0] in self.aliases:
-                self.record_private_access(node, chain, scope)
+        for node, _, scope in self.attributes:
+            head = self.head(node)
+            if head is not None and self.name_alias(self.model.resolve(head)) is not None:
+                self.record_private_access(node, scope)
         for node, scope in self.subscripts:
             if (
                 isinstance(node.ctx, ast.Load)
-                and _canonical_chain(node.value, self.aliases) == SYS_MODULES
+                and self.canonical(node.value) == SYS_MODULES
                 and (text := _complete_text(node.slice)) is not None
                 and (module := _private_prefix(text))
             ):
@@ -965,35 +945,49 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         """Record assignments and deletions that replace internals or their sys.modules entries."""
         for target, scope in self.stores:
             replaced = (
-                _canonical_chain(target.value, self.aliases) == SYS_MODULES
+                self.canonical(target.value) == SYS_MODULES
                 and (text := _complete_text(target.slice)) is not None
-                and (self.reaches_text(text) or (self.platform and self.outside_tests(text)))
+                and (self.reaches_text(text) or (self.platform and self.outside_tests(text, scope)))
                 if isinstance(target, ast.Subscript)
-                else self.reaches(target.value, scope, instances=False)
+                else self.reaches(target.value, instances=False)
                 or (self.platform and self.imported_from_outside(target.value, scope))
             )
             if replaced:
                 self.records.append((NORMAL_PATH_MOCK, target, scope, None))
 
-    def allowed(self, rule: str, scope: _Scope) -> bool:
+    def allowed(self, rule: str, scope: Scope) -> bool:
         """Whether a marker on the enclosing test, its class, or an enclosing helper allows the finding."""
         if rule == NORMAL_PATH_MOCK:
-            return any(current.abnormal_path for current in scope.chain())
+            current: Scope | None = scope
+            while current is not None:
+                if current in self.abnormal_path:
+                    return True
+                current = self.enclosing(current)
+            return False
         if rule not in {DIRECT_ASSERT, DISGUISED_ASSERT}:
             return False
         current = scope
-        while not current.allows_direct_assert:
-            if current.parent is None or not isinstance(current.parent.node, ast.ClassDef):
+        while current not in self.allows_direct_assert:
+            parent = self.enclosing(current)
+            if parent is None or parent.kind != "class":
                 return False
-            current = current.parent
+            current = parent
         return True
+
+
+def _header_expressions(node: ast.AST) -> list[ast.AST]:
+    """Return the parts of a ``def`` or ``class`` statement outside its body: decorators, signature, bases."""
+    arguments = getattr(node, "args", None)
+    signature = [] if arguments is None else [arguments, *(getattr(node, "returns", None),)]
+    parts = [*node.decorator_list, *getattr(node, "bases", []), *getattr(node, "keywords", []), *signature]
+    return [part for part in parts if part is not None]
 
 
 @cache
 def _analyze(path: Path, tests_root: Path) -> _Analysis:
     source = path.read_text(encoding="utf-8")
     analyzer = _ModuleAnalyzer(path.relative_to(tests_root), source, tests_root)
-    analyzer.visit(ast.parse(source, filename=str(path)))
+    analyzer.visit(analyzer.model.tree)
     return analyzer.finish()
 
 
@@ -1447,6 +1441,41 @@ def test_local_aliases(mocker):
             'imported_mock.patch.dict(system.modules, {"six": None})',
         ),
     ]
+
+
+def test_collect_whole_sys_modules_patches_keeps_imported_aliases_reserved_when_shadowed(tmp_path: Path) -> None:
+    """A parameter, a local rebinding or another function's import does not free an imported sys/patch alias."""
+    test_file = tmp_path / "test_shadowed_module_registry.py"
+    test_file.write_text(
+        """\
+import sys as system
+from unittest.mock import patch as patcher
+
+
+def test_shadowed_by_parameter(system):
+    patcher.dict(system.modules, {"one": None})
+
+
+def test_patch_shadowed_by_parameter(patcher):
+    patcher.dict("sys.modules", {"two": None})
+
+
+def test_shadowed_by_local():
+    system = object()
+    patcher.dict(system.modules, {"three": None})
+
+
+def setup_alias():
+    import sys as other_system
+
+
+def test_alias_of_another_function():
+    patcher.dict(other_system.modules, {"four": None})
+""",
+        encoding="utf-8",
+    )
+
+    assert [patch.lineno for patch in _collect_whole_sys_modules_patches(test_file, tmp_path)] == [6, 10, 15, 23]
 
 
 def test_collect_whole_sys_modules_patches_ignores_unrelated_calls(tmp_path: Path) -> None:

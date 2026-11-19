@@ -1,0 +1,2 @@
+tox.ini: tests/test_shapes.py defines no Base::test_b
+tox.ini: tests/test_shapes.py defines no Both::test_b

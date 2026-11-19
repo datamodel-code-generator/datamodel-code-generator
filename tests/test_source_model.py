@@ -33,7 +33,12 @@ from scripts import (
     coverage_exclusions,
     where,
 )
+from tests import expected_access
+from tests import test_assert_helper_usage as assert_helper_usage
 from tests import test_checks_are_run as checks_are_run
+from tests import test_ci_workflow as ci_workflow
+from tests import test_generated_import_closure as import_closure
+from tests import test_pre_commit_hooks as pre_commit_hooks
 from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
 
@@ -49,7 +54,7 @@ OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
     r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases"
-    r"|nested-names)"
+    r"|nested-names|assignments|annotations)"
     r": *(.*)$",
     re.MULTILINE,
 )
@@ -165,6 +170,20 @@ def _bases_and_annotations(model: source_model.SourceModule) -> list[str]:
     return out
 
 
+def _assignments(model: source_model.SourceModule) -> list[str]:
+    """Render what each target of the module takes: the item it pairs with, and the whole value."""
+    targets = sorted(
+        (node for node in ast.walk(model.tree) if model.assignment(node) is not None),
+        key=lambda node: (getattr(node, "lineno", 0), getattr(node, "col_offset", 0)),
+    )
+    return [
+        f"{model.source(node)} @{node.lineno}:{node.col_offset} takes ({found.kind}) {model.source(found.element)}"
+        f" of {model.source(found.value)}"
+        for node in targets
+        if (found := model.assignment(node)) is not None
+    ]
+
+
 def _bindings(model: source_model.SourceModule, directives: dict[str, str]) -> list[str]:
     out = []
     for scope in model.scopes:
@@ -198,6 +217,7 @@ def _bindings(model: source_model.SourceModule, directives: dict[str, str]) -> l
         for site in model.dynamic_sites
     ]
     out += _bases_and_annotations(model) if directives.get("bases") else []
+    out += _assignments(model) if directives.get("assignments") else []
     kinds = (
         ast.Name,
         ast.alias,
@@ -238,6 +258,30 @@ def _type_positions(model: source_model.SourceModule) -> list[str]:
     return out
 
 
+def _annotations_and_string_reads(model: source_model.SourceModule) -> list[str]:
+    """Render every annotation with its mode, and the names each string reads, looked up where it stands."""
+    out = []
+    for item in model.annotations:
+        target = "return" if item.target is None else getattr(item.target, "arg", None) or ast.unparse(item.target)
+        value = f"; value {model.source(item.value)}" if item.value is not None else ""
+        out.append(
+            f"annotation {model.source(item.node)} @{item.line} ({item.mode}) in {item.scope.qualname}: {target}{value}"
+        )
+    strings = sorted(
+        (node for node in ast.walk(model.tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)),
+        key=lambda node: (node.lineno, node.col_offset),
+    )
+    for node in strings:
+        parsed = source_model.string_type(node)
+        reads = [
+            f"{name.id} -> {_resolution(model.lookup(name.id, model.scope_of(node)))}"
+            for name in (source_model.name_reads(parsed) if parsed is not None else [])
+        ]
+        found = "does not parse" if parsed is None else f"reads {', '.join(reads) or 'nothing'}"
+        out.append(f"string {node.value!r} @{node.lineno}:{node.col_offset} {found}")
+    return out
+
+
 def _references(model: source_model.SourceModule, directives: dict[str, str]) -> list[str]:
     out = []
     for reference in model.references:
@@ -256,6 +300,7 @@ def _references(model: source_model.SourceModule, directives: dict[str, str]) ->
         uses = ", ".join(f"{use.kind}@{use.reference.line}" for use in model.uses(binding))
         out += [f"uses of {binding.scope.qualname}:{binding.name}@{binding.line}: {uses}"] if uses else []
     out += _type_positions(model)
+    out += _annotations_and_string_reads(model) if directives.get("annotations") else []
     out += [f"constant {name}: {_value(model.constant(name))}" for name in directives.get("constants", "").split()]
     if directives.get("consumers"):
         out += [
@@ -876,6 +921,89 @@ def _coverage_exclusions(form: Path) -> list[Finding]:
     return found
 
 
+def _unbound_names(form: Path) -> list[Finding]:
+    """Return the names each module of a form loads that nothing binds in time, as the import closure audit reads."""
+    return [
+        Finding("unbound", _site(form, name, line), f"{name}:{line}: {unbound}")
+        for name, text in _form_files(form)
+        for line, unbound in import_closure.unbound_sites(source_model.SourceModule(text, name))
+    ]
+
+
+def _placed_under_tests(form: Path, root: Path, folder: str) -> list[Path]:
+    """Write a form's modules below ``tests/<folder>`` of a temporary tree; return the paths of the modules."""
+    paths = []
+    for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+        relative = form.name / path.relative_to(form) if form.is_dir() else Path(path.name.removesuffix(".txt"))
+        target = root / "tests" / folder / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        paths.append(target)
+    (root / "tests" / "data" / "expected").mkdir(parents=True, exist_ok=True)
+    return paths
+
+
+def _assert_helper_findings(form: Path) -> list[Finding]:
+    """Run the assert helper guard over a form's modules, placed as a report helper module, which every rule reads."""
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        tests_root = root / "tests"
+        found = []
+        for path in _placed_under_tests(form, root, "api_generation/support"):
+            place = path.relative_to(tests_root / "api_generation" / "support").as_posix()
+            found += [
+                Finding(finding.rule, _site(form, place, finding.lineno), f"{place}:{finding.lineno}: {finding}")
+                for finding in assert_helper_usage._analyze(path, tests_root).findings
+            ]
+        return found
+
+
+def _expected_reads(form: Path) -> list[Finding]:
+    """Return the reads, copies and listings of stored expected output a form's modules make, placed below tests/."""
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        _placed_under_tests(form, root, "")
+        return [
+            Finding("expected-read", _site(form, place, access.lineno), f"{place}:{access.lineno}: {access.text}")
+            for access in expected_access.expected_accesses(root, root / "tests")
+            for place in [access.module.relative_to("tests").as_posix()]
+        ]
+
+
+def _hook_runs(form: Path) -> list[Finding]:
+    """Return the other modules of a form each module runs through its imports, the form placed below ``scripts/``.
+
+    The site is the module run, named inside the form.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        paths = []
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            relative = form.name / path.relative_to(form) if form.is_dir() else Path(path.name.removesuffix(".txt"))
+            target = root / "scripts" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+            paths.append(target)
+        found = []
+        for path in paths:
+            entry = path.relative_to(root).as_posix()
+            found += [
+                Finding("runs", ran.removeprefix(f"scripts/{form.name}/"), f"{entry} runs {ran}")
+                for ran in pre_commit_hooks.runs(root, path)
+                if ran != entry
+            ]
+        return found
+
+
+def _defined_tests(form: Path) -> list[Finding]:
+    """Return the node ids each module of a form defines below its path, as the CI test target check reads them."""
+    return [
+        Finding("defines", node, f"{name}::{node}")
+        for name, text in _form_files(form)
+        for node in sorted(ci_workflow.defined_tests(source_model.SourceModule(text, name, "forms.form")))
+    ]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -905,6 +1033,17 @@ RULES: dict[str, RuleRun] = {
         "scripts.check_generation_store_usage",
         frozenset({"bindings", "references", "imports"}),
         _generation_store_usage,
+    ),
+    "generated-import-closure": RuleRun(
+        "tests.test_generated_import_closure", frozenset({"bindings", "references", "extents"}), _unbound_names
+    ),
+    "assert-helper-usage": RuleRun(
+        "tests.test_assert_helper_usage", frozenset({"bindings", "references", "imports"}), _assert_helper_findings
+    ),
+    "pre-commit-hook-runs": RuleRun("tests.test_pre_commit_hooks", frozenset({"imports", "references"}), _hook_runs),
+    "ci-test-targets": RuleRun("tests.test_ci_workflow", frozenset({"bindings", "references"}), _defined_tests),
+    "expected-access": RuleRun(
+        "tests.expected_access", frozenset({"bindings", "references", "imports"}), _expected_reads
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
