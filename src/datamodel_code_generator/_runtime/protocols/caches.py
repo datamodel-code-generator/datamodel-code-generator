@@ -123,6 +123,7 @@ class CacheStore(Protocol):
 
     def get(self, key: bytes) -> CacheEntry | None:
         """Return the key's representation, or None."""
+        ...
 
     def set(self, key: bytes, entry: CacheEntry) -> None:
         """Replace the key's representation."""
@@ -136,6 +137,7 @@ class AsyncCacheStore(Protocol):
 
     async def get(self, key: bytes) -> CacheEntry | None:
         """Return the key's representation, or None."""
+        ...
 
     async def set(self, key: bytes, entry: CacheEntry) -> None:
         """Replace the key's representation."""
