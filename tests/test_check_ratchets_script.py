@@ -203,11 +203,13 @@ def _stored_lists(lists: dict[str, object]) -> dict[str, str]:
 STORED_BASE = {"one": [GAP.format(1), GAP.format(2)], "two": "empty", "empty": [], "three": [SEED]}
 SCRIPT = (ROOT / "scripts/check_ratchets.py").read_text(encoding="utf-8")
 COUNTER = {
+    "scripts/__init__.py": "",
     "scripts/check_ratchets.py": SCRIPT,
     "scripts/_source_model.py": (ROOT / "scripts/_source_model.py").read_text(encoding="utf-8"),
     "scripts/_import_cycles.py": (ROOT / "scripts/_import_cycles.py").read_text(encoding="utf-8"),
+    "scripts/check_source_rules.py": (ROOT / "scripts/check_source_rules.py").read_text(encoding="utf-8"),
 }
-"""The counter and the modules it reads Python and import cycles with, as a copy of the script in a tree needs them."""
+"""The counter and the modules it reads Python, import cycles and source rules with, as a copy in a tree needs them."""
 IMPORT_ONE_WAY = {
     "scripts/report.py": FUTURE + "\nfrom scripts import guide\n\nTITLE = guide.TITLE\n",
     "scripts/guide.py": FUTURE + '\nTITLE = "guide"\n',
@@ -292,8 +294,45 @@ approved = [
   {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 3, pr = 7172, decision = [], reason = "again"},
   {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 3, pr = 7172, decision = ["#7172"], reason = "again"},
   {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 2026-11-19, pr = 7173, decision = ["#7173"], reason = 07:32:00},
+  {key = "source-rule:unused-private-global", head = 1, pr = 7174, decision = ["#7174"], reason = "an absolute rule"},
 ]
 """
+PACKAGE = "src/datamodel_code_generator"
+SOURCE_RULES_BASE = {
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/hosts.py": FUTURE
+    + """
+from typing import Protocol
+
+_LEFT = 1
+
+
+class Host(Protocol):
+    def size(self) -> int: ...
+
+
+def helper() -> int:
+    return 1
+""",
+    f"{PACKAGE}/user.py": FUTURE + "\nfrom datamodel_code_generator.hosts import helper\n\nVALUE = helper()\n",
+}
+"""A package with a stub body, an unused private global (an absolute rule) and a public function it calls."""
+SOURCE_RULES_HEAD = {
+    f"{PACKAGE}/hosts.py": SOURCE_RULES_BASE[f"{PACKAGE}/hosts.py"].replace(
+        "def size(self) -> int: ...", "def size(self) -> int: ...\n\n    def name(self) -> str: ..."
+    ),
+    f"{PACKAGE}/user.py": FUTURE + "\n_STALE = 2\nVALUE = 1\n",
+}
+"""A second stub body, a second unused private global, and the last call of ``helper`` gone (a candidate only)."""
+ABSOLUTE_APPROVAL = APPROVAL.replace("allowlist:JUSTIFIED_VIOLATIONS", "source-rule:unused-private-global")
+"""An approval of a second unused private global, the key of an absolute rule, which no table may hold."""
+DEMOTED_RULES = COUNTER["scripts/check_source_rules.py"].replace(
+    '"delete the unused name (a move left it behind)",\n        absolute=True,',
+    '"delete the unused name (a move left it behind)",',
+)
+"""The source rules with ``unused-private-global`` no longer absolute: only the base's rules still say it is."""
+UNPARSABLE = 'try:\n    VALUE = int("1")\nexcept (ValueError, TypeError:\n    VALUE = ...\n'
+"""A test input this Python cannot parse: an unclosed bracket stands for syntax newer than the interpreter."""
 CASES = {
     "unchanged": {"base": COUNTER, "head": {}},
     "approved-rise": {
@@ -607,6 +646,31 @@ def show(flag: bool) -> None:
     "stored-lists-new-test": {
         "head": _stored_lists({"one": [GAP.format(1)], "five": [NO_SEED]}),
         "args": ["--enforce"],
+    },
+    "source-rules": {"base": SOURCE_RULES_BASE, "head": SOURCE_RULES_HEAD, "args": ["--enforce"]},
+    "source-rules-unchanged": {"base": SOURCE_RULES_BASE, "head": {}, "args": ["--enforce"]},
+    "source-rules-unparsable": {"base": SOURCE_RULES_BASE, "head": {"tests/data/python/newer.py": UNPARSABLE}},
+    "weakened-absolute-rule": {
+        "base": {**COUNTER, **SOURCE_RULES_BASE, "scripts/ratchet_approvals.toml": ABSOLUTE_APPROVAL},
+        "head": {
+            "scripts/check_source_rules.py": DEMOTED_RULES,
+            "scripts/ratchet_approvals.toml": "# No pending approval.\n",
+            f"{PACKAGE}/user.py": SOURCE_RULES_HEAD[f"{PACKAGE}/user.py"],
+        },
+        "env": PULL_REQUEST,
+        "args": ["--enforce"],
+        "subprocess": True,
+    },
+    "weakened-source-rules": {
+        "base": {**COUNTER, **SOURCE_RULES_BASE},
+        "head": {
+            "scripts/check_source_rules.py": COUNTER["scripts/check_source_rules.py"].replace(
+                "node.value.value is Ellipsis", "node.value.value is None"
+            ),
+            f"{PACKAGE}/hosts.py": SOURCE_RULES_HEAD[f"{PACKAGE}/hosts.py"],
+        },
+        "args": ["--enforce"],
+        "subprocess": True,
     },
     "weakened-counter-unreadable": {
         "base": COUNTER,

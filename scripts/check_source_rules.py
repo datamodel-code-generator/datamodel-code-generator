@@ -3,15 +3,16 @@
 usage: python scripts/check_source_rules.py [--root DIR] [--base REF] [--rule NAME]... [--count]
 
 Every rule reads the tree with ``ast`` or ``tokenize`` (standard library only) and reports each site as
-``path:line: rule: detail``; the summary gives the count of every rule and how to fix its sites. The counts are
-ratchet keys ``source-rule:<rule>`` (``--count`` prints them as JSON, ``{key: {file: count}}``): a change may keep or
-lower a count. A rule is marked absolute once its count is 0; the exit status is 1 only when an absolute rule reports
-a site.
+``path:line: rule: detail``; a file the running Python cannot parse (newer syntax, say) reports none. The summary gives
+the count of every rule and how to fix its sites. The counts are ratchet keys ``source-rule:<rule>`` (``--count``
+prints them as JSON, ``{key: {file: count}}``), which `scripts/check_ratchets.py` counts on every tree it compares:
+a change may keep or lower a count. A rule is marked absolute once its count is 0; the ratchet then fails on any site,
+and the exit status here is 1 only when an absolute rule reports a site.
 
 ``lost-last-caller`` compares the tree with ``--base`` (a git revision of the same repository) and runs only with it.
 It cannot tell from the source whether tests reach every branch of a callable, so it reports each candidate with the
-command that shows its coverage, and every run prints how many public callables it cannot decide (``coverage:``; on
-stderr with ``--count``).
+command that shows its coverage (the ratchet prints them and never fails on them), and every run prints how many
+public callables it cannot decide (``coverage:``; on stderr with ``--count``).
 """
 
 from __future__ import annotations
@@ -81,10 +82,13 @@ class Module:
     """One Python file of the tree, parsed once."""
 
     def __init__(self, root: Path, rel: str) -> None:
-        """Read and parse ``rel`` below ``root``."""
+        """Read and parse ``rel`` below ``root``; a file this Python cannot read or parse holds nothing to report."""
         self.rel = rel
-        self.text = (root / rel).read_text(encoding="utf-8")
-        self.tree = ast.parse(self.text)
+        try:
+            self.text = (root / rel).read_text(encoding="utf-8")
+            self.tree = ast.parse(self.text)
+        except (SyntaxError, ValueError):
+            self.text, self.tree = "", ast.Module(body=[], type_ignores=[])
 
     @cached_property
     def name(self) -> str:
@@ -125,19 +129,21 @@ class Module:
 
 
 class Tree:
-    """The files of a checkout that the rules read."""
+    """The files of a checkout that the rules read: every ``.py`` file below ``root``, or those of ``files``."""
 
-    def __init__(self, root: Path) -> None:
-        """Index the tree at ``root``."""
+    def __init__(self, root: Path, files: frozenset[str] | None = None) -> None:
+        """Index the tree at ``root``; ``files`` (paths relative to it) limits what the rules read."""
         self.root = root
+        self.files = files
         self._parsed: dict[str, Module] = {}
 
+    def _python_files(self, top: str) -> list[str]:
+        """Return the ``.py`` files below ``top`` as paths relative to the root, sorted."""
+        found = (path.relative_to(self.root).as_posix() for path in sorted((self.root / top).rglob("*.py")))
+        return [rel for rel in found if self.files is None or rel in self.files]
+
     def _modules(self, top: str) -> list[Module]:
-        return [
-            Module(self.root, path.relative_to(self.root).as_posix())
-            for path in sorted((self.root / top).rglob("*.py"))
-            if GENERATED not in path.parts
-        ]
+        return [Module(self.root, rel) for rel in self._python_files(top) if GENERATED not in Path(rel).parts]
 
     @cached_property
     def package(self) -> list[Module]:
@@ -152,21 +158,17 @@ class Tree:
     @cached_property
     def tests(self) -> list[Module]:
         """Return the Python files of ``tests`` (stored expected output aside)."""
-        return [
-            Module(self.root, rel)
-            for path in sorted((self.root / TESTS).rglob("*.py"))
-            if not (rel := path.relative_to(self.root).as_posix()).startswith(TESTS_STORED)
-        ]
+        return [Module(self.root, rel) for rel in self._python_files(TESTS) if not rel.startswith(TESTS_STORED)]
 
     @cached_property
     def words(self) -> dict[str, frozenset[str]]:
         """Return the words of every Python file that can import the package (test data aside) by path."""
         found: dict[str, frozenset[str]] = {}
         for top in ("src", "scripts", "tests"):
-            for path in sorted((self.root / top).rglob("*.py")):
-                rel = path.relative_to(self.root).as_posix()
+            for rel in self._python_files(top):
                 if not rel.startswith("tests/data/"):
-                    found[rel] = frozenset(_WORD.findall(path.read_text(encoding="utf-8", errors="replace")))
+                    text = (self.root / rel).read_text(encoding="utf-8", errors="replace")
+                    found[rel] = frozenset(_WORD.findall(text))
         return found
 
     def module(self, rel: str) -> Module:
@@ -301,10 +303,12 @@ def _members(node: ast.ClassDef) -> set[str]:
 def doc_citations(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report a backticked ``path.py:Name[.attr]`` or ``Class.attr`` of the architecture page that names no code.
 
-    Review class: docs or a script citing removed code.
+    Review class: docs or a script citing removed code. A tree without the page cites nothing.
     """
+    if not (page := tree.root / ARCHITECTURE_DOCS).is_file():
+        return
     index = _CitationIndex(tree.package)
-    text = (tree.root / ARCHITECTURE_DOCS).read_text(encoding="utf-8")
+    text = page.read_text(encoding="utf-8")
     for number, line in enumerate(text.splitlines(), start=1):
         cited = {(match[1], match[2].rstrip("."), True) for match in _FILE_CITATION.finditer(line)}
         cited |= {(match[1], match[2], False) for match in _CLASS_CITATION.finditer(line)}

@@ -1,0 +1,25 @@
+exit status 1
+Escape hatches: base (merge-base <commit>) -> working tree
+
+key                                             base    head  change
+private-scope-walk@scripts                       132     132       0
+ruff-config:exclude:scripts                        1       1       0
+ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
+ruff-config:ignore:CPY                             1       1       0
+ruff-config:ignore:D                               1       1       0
+ruff-config:ignore:ERA001                          1       1       0
+ruff-config:ignore:INP                             1       1       0
+ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:PLC0415@src                                   1       1       0
+source-rule:unused-private-global                  1       1       0
+
+source-rule:unused-private-global is absolute and holds 1 sites (the base 1): it must be 0. Delete the unused name (a move left it behind); `python scripts/check_source_rules.py --rule unused-private-global` prints each site with its detail.
+  src/datamodel_code_generator/hosts.py: 1 -> 1 (lines 5)
+
+The base revision's scripts/check_ratchets.py also counts these rises, which this copy does not: the change weakens the
+counter that judges it. Keep the counter's rules (changes to it are reviewed) and fix the hatches:
+
+source-rule:ellipsis-statement rose by 1 (1 -> 2). Give the body a docstring instead of `...`; `python scripts/check_source_rules.py --rule ellipsis-statement` prints each site with its detail.
+  src/datamodel_code_generator/hosts.py: 1 -> 2
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

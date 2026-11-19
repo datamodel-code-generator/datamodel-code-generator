@@ -1,0 +1,5 @@
+verdict problems: none
+undeclared questions: none
+references/check_main_calls: tests/test_check_main_calls.py::test_tree: scripts/check_tree.py
+references/check_main_calls: tests/test_check_main_calls.py::test_tree: scripts/check_spelled.py
+references/check_main_calls: tests/test_check_main_calls.py::test_tree: scripts/check_alias.py

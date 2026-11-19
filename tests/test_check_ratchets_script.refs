@@ -39,6 +39,9 @@ nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt
 quoted-hook-id	check_ratchets_script/check_ratchets_against_base[quoted-hook-id].txt
 scope-walk	check_ratchets_script/check_ratchets_against_base[scope-walk].txt
+source-rules	check_ratchets_script/check_ratchets_against_base[source-rules].txt
+source-rules-unchanged	check_ratchets_script/check_ratchets_against_base[source-rules-unchanged].txt
+source-rules-unparsable	check_ratchets_script/check_ratchets_against_base[source-rules-unparsable].txt
 stored-lists-environments	check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt
 stored-lists-grow	check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt
 stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
@@ -47,8 +50,10 @@ top-level-extended-ignores	check_ratchets_script/check_ratchets_against_base[top
 unchanged	check_ratchets_script/check_ratchets_against_base[unchanged].txt
 unreadable-arguments	check_ratchets_script/check_ratchets_against_base[unreadable-arguments].txt
 unreadable-hook	check_ratchets_script/check_ratchets_against_base[unreadable-hook].txt
+weakened-absolute-rule	check_ratchets_script/check_ratchets_against_base[weakened-absolute-rule].txt
 weakened-counter	check_ratchets_script/check_ratchets_against_base[weakened-counter].txt
 weakened-counter-unreadable	check_ratchets_script/check_ratchets_against_base[weakened-counter-unreadable].txt
+weakened-source-rules	check_ratchets_script/check_ratchets_against_base[weakened-source-rules].txt
 [test_check_ratchets_counts_one_tree]
 	check_ratchets_script/check_ratchets_counts_one_tree.json.txt
 	check_ratchets_script/check_ratchets_counts_one_tree.ruff-pin.txt
