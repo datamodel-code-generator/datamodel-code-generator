@@ -27,7 +27,7 @@ from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.experimental import EXPERIMENTAL_FEATURES
 from datamodel_code_generator.preset import get_preset_infos
-from tests.conftest import MockHttpxResponse, assert_httpx_get_kwargs, assert_output
+from tests.conftest import MockHttpxResponse, assert_httpx_get_kwargs, assert_output, stored_expected
 from tests.main.conftest import (
     DATA_PATH,
     EXPECTED_MAIN_PATH,
@@ -48,6 +48,7 @@ RECOMMEND_DOCS = Path(__file__).parents[2] / "docs" / "recommend-options.md"
 GRAPHQL_INPUT = DATA_PATH / "graphql" / "simple-star-wars.graphql"
 RULES_FILE = "src/datamodel_code_generator/resources/recommender_rules.json"
 RECOMMENDER = "datamodel_code_generator._recommend"
+ISSUE_NUMBER = re.compile(r"#\d+|\b(?:issues?|PRs?|pull requests?)\s+\d+|/(?:issues|pull|pulls)/\d+\b", re.IGNORECASE)
 REGISTRY_GUIDE = (
     f'Every option needs an entry in "options" of {RULES_FILE}: {{"rules": ["<rule id>"]}} when a rule sets it, '
     'or {"not_recommended": "<category>", "reason": "<why the schema does not decide it>"} with category io, '
@@ -740,8 +741,19 @@ def _newest_release() -> str:
     return re.findall(r"^## \[([^\]]+)\]", CHANGELOG.read_text(encoding="utf-8"), re.MULTILINE)[0]
 
 
-def _rule_problems(data: dict[str, Any], placeholders: set[str], newest_release: str) -> list[str]:
-    """Return the inconsistencies between the rules, the option registry, and the CLI options."""
+def _stored_report_texts() -> str:
+    """Return the stored reports of the schema fixtures, read through the stored-output index."""
+    marks = [mark for mark in test_recommend_options_for_schemas.pytestmark if mark.name == "parametrize"]
+    return "\n".join(
+        stored_expected(
+            EXPECTED_MAIN_PATH / "main_recommend_options" / f"recommend_options_for_schemas[{param.id}].stdout.txt"
+        ).read_text(encoding="utf-8")
+        for param in marks[0].args[1]
+    )
+
+
+def _rule_problems(data: dict[str, Any], placeholders: set[str], newest_release: str, stored_reports: str) -> list[str]:
+    """Return the inconsistencies between the rules, the option registry, the CLI options, and the stored reports."""
     options = data["options"]
     rules = data["rules"]
     rule_fields = {rule["id"]: sorted({*rule.get("set", {}), *rule.get("value_from", {})}) for rule in rules}
@@ -753,6 +765,18 @@ def _rule_problems(data: dict[str, Any], placeholders: set[str], newest_release:
     option_strings = {action.dest: action.option_strings for action in arg_parser._actions}
     pending = {field: entry for field, entry in sorted(options.items()) if entry.get("not_recommended") == "pending"}
     return [
+        *(
+            f"rule {rule['id']} cites an issue or pull request number in {key}; users read the text, so remove it"
+            for rule in rules
+            for key in ("reason", "caveats", "evidence")
+            if ISSUE_NUMBER.search(json.dumps(rule.get(key, ())))
+        ),
+        *(
+            f"rule {rule['id']} has no fixture: no stored report names [{rule['id']}]; add a "
+            "test_recommend_options_for_schemas case that fires it"
+            for rule in rules
+            if f"[{rule['id']}]" not in stored_reports
+        ),
         *(
             f"rule {rule['id']} sets {field}; list the rule in options.{field}.rules"
             for rule in rules
@@ -824,7 +848,7 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
     payload = json.loads(capsys.readouterr().out)
     data = _rules_data()
     problems = [
-        *_rule_problems(data, {*payload["signals"], *payload["facts"]}, _newest_release()),
+        *_rule_problems(data, {*payload["signals"], *payload["facts"]}, _newest_release(), _stored_report_texts()),
         *_mirror_problems(data["full_trial_max_models"]),
     ]
     assert_output(

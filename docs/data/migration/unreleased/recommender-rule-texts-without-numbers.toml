@@ -1,0 +1,18 @@
+[[change]]
+id = "recommender-rule-texts-without-numbers"
+category = "experimental"
+refs = ["#7192"]
+decision = ["#7192"]
+kind = "experimental"
+action = "none"
+title = "Recommender rule texts no longer cite issue numbers"
+summary = "The measured lines of two rules of --recommend-options no longer start with or contain an issue number; the sentences are otherwise unchanged."
+affects = { experimental = ["cli-option.recommend-options"] }
+before = "measured: #5361: Cat listed by ByName (tag Cat) and ByKey (mapping key cat)"
+after = "measured: Cat listed by ByName (tag Cat) and ByKey (mapping key cat)"
+source = "release-note"
+covers = [
+    "main/main_recommend_options/recommend_options_for_schemas[ref-siblings-read-as-draft-07].stdout.txt",
+    "main/main_recommend_options/recommend_options_for_schemas[unions-merge-shared-variant-tags-older-preset].stdout.txt",
+    "package_metadata/no_local_only_file_is_tracked.txt",
+]

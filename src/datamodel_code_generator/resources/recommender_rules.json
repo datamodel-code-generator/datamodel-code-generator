@@ -360,8 +360,8 @@
       },
       "reason": "Discriminated unions tag {variants_with_differing_tags} variants differently, for example one by a mapping key and one by the schema name. A variant has one tag field, so without merged tags it keeps the tags of the first union, and the other union rejects every document that selects the variant by its own tag; merged, the variant takes every tag its unions give it.",
       "evidence": [
-        "#5361: Cat listed by ByName (tag Cat) and ByKey (mapping key cat); without the option ByKey rejected {\"kind\": \"cat\"}, with it Cat takes Literal['Cat', 'cat'] and both unions decode their documents",
-        "#4666: a variant two discriminator mappings tag differently; with the option each union decodes its own tag"
+        "Cat listed by ByName (tag Cat) and ByKey (mapping key cat); without the option ByKey rejected {\"kind\": \"cat\"}, with it Cat takes Literal['Cat', 'cat'] and both unions decode their documents",
+        "A variant two discriminator mappings tag differently; with the option each union decodes its own tag"
       ]
     },
     {
@@ -472,9 +472,9 @@
       },
       "reason": "The keywords beside a $ref apply in the version the document declares otherwise than the parse reads them (validation keywords beside a $ref of an OpenAPI 3.1 or AsyncAPI 3 document, read as draft 7, which ignores them: {ref_siblings_read_as_draft_07}; minProperties or maxProperties beside an allOf $ref in a version that ignores them, which --generate-schema-validators checks: {property_counts_beside_ignored_ref}). Read in the version each document declares, they apply or are left out as that version says.",
       "evidence": [
-        "OpenAPI 3.1 uniqueItems beside a $ref (#5699): with --generate-schema-validators Holder(tags=['a', 'a']) is rejected, as the same schema in JSON Schema 2020-12 is",
-        "Draft-07 minProperties beside an allOf $ref (#5700): with --generate-schema-validators Holder(a='x') is accepted, as draft 7 ignores the keyword",
-        "Directory of draft-07 and 2020-12 documents (#5380): each module equals the output of its document read alone, so Wd keeps le=10 beside its allOf $ref"
+        "OpenAPI 3.1 uniqueItems beside a $ref: with --generate-schema-validators Holder(tags=['a', 'a']) is rejected, as the same schema in JSON Schema 2020-12 is",
+        "Draft-07 minProperties beside an allOf $ref: with --generate-schema-validators Holder(a='x') is accepted, as draft 7 ignores the keyword",
+        "Directory of draft-07 and 2020-12 documents: each module equals the output of its document read alone, so Wd keeps le=10 beside its allOf $ref"
       ]
     }
   ],
