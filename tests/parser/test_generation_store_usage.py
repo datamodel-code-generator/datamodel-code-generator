@@ -1110,6 +1110,13 @@ class External(BaseModel):
 
 class Other(typing.NamedTuple):
     value: int
+
+
+class Derived(Base):
+    shadowed: int
+
+    def method(self):
+        from pydantic import BaseModel as Base
 """,
     )
 
@@ -1172,6 +1179,12 @@ class Other(typing.NamedTuple):
             "DataModel",
             "dynamic",
             "DataModel.dynamic has no ATTRIBUTE_FACTS row in scripts/fact_tables.py",
+        ),
+        (
+            42,
+            "Derived",
+            "shadowed",
+            "Derived.shadowed has no ATTRIBUTE_FACTS row in scripts/fact_tables.py",
         ),
         (
             0,

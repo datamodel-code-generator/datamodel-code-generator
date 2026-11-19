@@ -1252,12 +1252,14 @@ library and `typing_extensions` (`scripts/check_architecture_boundaries.py` regi
 the checkers can read it without importing the package.
 
 `scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads that table and
-the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) with `ast` and reports every write that does not go through a
-store operation:
+the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) through `scripts/_source_model.py` and reports every write that
+does not go through a store operation (a module the source model cannot read is a finding of its own):
 
 - in `parser/`: writes of fact and presentation attributes of model-graph classes (assignment, `del`, augmented
-  assignment, `setattr` and `object.__setattr__` with a literal name, item writes and list, dict and set mutators,
-  also through a local alias), `__dict__` writes, the direct `.data_type`, `.fields`, `.base_classes` and
+  assignment, `setattr` and `object.__setattr__` (and an alias of either) with a literal name, item writes and list,
+  dict and set mutators, also through an alias: a name holds what the latest binding, in source order, of the scope
+  the language resolves it to holds, so every binding form replaces it and a nested function writes through its
+  enclosing function's alias), `__dict__` writes, the direct `.data_type`, `.fields`, `.base_classes` and
   `.reference` writes, list mutators on model collections and `Reference.children` reads. A `setattr` with a
   computed name is reported too. Writes to the parser itself (`self`) and to schema objects (parameters annotated
   `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from them) are not model

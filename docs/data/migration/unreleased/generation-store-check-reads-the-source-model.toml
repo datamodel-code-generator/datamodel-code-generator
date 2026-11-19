@@ -1,0 +1,8 @@
+[[change]]
+id = "generation-store-check-reads-the-source-model"
+category = "harness"
+title = "Read the generation store check through the source model"
+summary = "The generation store check reads names through the source model: a name holds what its latest binding in the scope the language resolves it to holds, so a comprehension target no longer rebinds the name of the function around it; the package writes the same output."
+covers = [
+    "parser/generation_store_usage/checker_forgets_skipped_names_when_they_are_rebound.txt",
+]

@@ -1,0 +1,8 @@
+[[change]]
+id = "pipeline-checks-read-the-source-model"
+category = "harness"
+title = "Read the pass pipeline check and coverage exclusions through the source model"
+summary = "The pass pipeline check and the coverage exclusion report read Python through the source model, and the source forms gain the forms their rules run over; the package writes the same output."
+covers = [
+    "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
+]

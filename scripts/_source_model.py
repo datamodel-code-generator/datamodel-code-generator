@@ -334,6 +334,7 @@ _LITERAL_CALLS: dict[str, Callable[..., object]] = {
     "builtins.tuple": tuple,
     "builtins.list": list,
     "builtins.dict": dict,
+    "types.MappingProxyType": types.MappingProxyType,
 }
 _MUTATORS = frozenset({
     "add",
@@ -792,6 +793,21 @@ def annotation(binding: Binding) -> ast.expr | None:
     """Return the annotation of the parameter a binding makes, None for any other binding or a parameter without one."""
     _ask("bindings")
     return binding.node.annotation if isinstance(binding.node, ast.arg) else None
+
+
+def nested_name(scope: Scope) -> str:
+    """Return the names of the classes and functions around a scope and its own, joined by dots ("" for the module).
+
+    The definitions as the source nests them: ``__qualname__`` without ``<locals>``, lambdas, comprehensions and
+    annotation scopes, and without the restart a ``global`` declaration gives the qualname of a nested definition.
+    """
+    _ask("bindings")
+    names = []
+    probe: Scope | None = scope
+    while probe is not None:
+        names += [probe.code_name] if probe.kind in {"class", "function"} else []
+        probe = probe.parent
+    return ".".join(reversed(names))
 
 
 def _verifying(*, verify: bool | None) -> bool:

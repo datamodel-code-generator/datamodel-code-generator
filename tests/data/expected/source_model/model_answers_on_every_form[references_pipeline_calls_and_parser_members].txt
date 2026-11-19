@@ -1,0 +1,44 @@
+== references
+12:28 function load in decorate.<locals>.<lambda> -> local decorate.<locals>.<lambda> @12
+16:4 __runner store in Parser -> local Parser @16, else unbound
+19:15 FinalFacts load in Parser.__enter -> unbound
+24:8 __index store in Parser -> local Parser @24, else unbound
+29:5 decorate load in Store -> global <module> @11; origin forms.references.pipeline_calls_and_parser_members.decorate
+29:14 FinalFacts load in Store -> unbound
+30:25 FinalFacts load in Store -> unbound
+31:15 FinalFacts load in Store.seal -> unbound
+35:4 lookup store in outside -> local outside @35
+35:13 __builtins__ load in outside -> global <module>
+36:4 fetch store in outside -> local outside @36
+36:12 globals load in outside -> builtin; origin builtins.globals
+37:11 parser load in outside -> local outside @34
+37:35 parser load in outside -> local outside @34
+37:51 getattr load in outside -> local outside @34
+37:59 parser load in outside -> local outside @34
+37:79 lookup load in outside -> local outside @35
+37:87 fetch load in outside -> local outside @36
+41:4 read store in reaches_by_name -> local reaches_by_name @41
+41:11 getattr load in reaches_by_name -> builtin; origin builtins.getattr
+42:11 read load in reaches_by_name -> local reaches_by_name @41; origin builtins.getattr
+42:16 parser load in reaches_by_name -> local reaches_by_name @40
+42:36 hasattr load in reaches_by_name -> builtin; origin builtins.hasattr
+42:44 parser load in reaches_by_name -> local reaches_by_name @40
+46:4 warn load in warns -> global <module> @8; origin warnings.warn
+47:4 warn load in warns -> global <module> @8; origin warnings.warn
+48:4 warn load in warns -> global <module> @8; origin warnings.warn
+48:32 level load in warns -> local warns @45
+51:8 warn load in warns.<locals>.nested -> global <module> @8; origin warnings.warn
+53:11 nested load in warns -> local warns @50
+57:4 warn load in warns_later -> global <module> @8; origin warnings.warn
+uses of <module>:warn@8: call@46, call@47, call@48, call@51, call@57
+uses of <module>:decorate@11: call@29
+uses of decorate.<locals>.<lambda>:function@12: read@12
+uses of outside:parser@34: read@37, read@37, argument@37
+uses of outside:getattr@34: call@37
+uses of outside:lookup@35: read@37
+uses of outside:fetch@36: read@37
+uses of reaches_by_name:parser@40: argument@42, argument@42
+uses of reaches_by_name:read@41: call@42
+uses of warns:level@45: read@48
+uses of warns:nested@50: read@53
+== code objects: one per scope that compiles on this Python

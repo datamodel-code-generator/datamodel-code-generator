@@ -43,8 +43,10 @@ references/comprehension_in_method_default: comprehension_in_method_default.py:5
 references/consumers_of_expressions: consumers_of_expressions.py:29: entries with a value
 references/output_policy_by_origin: output_policy_by_origin.py:10: output_type with a value
 references/output_policy_by_origin: output_policy_by_origin.py:11: literal_type with a value
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:16: __runner with a value
 references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:44: _CLASS_BODY with a value
 references/reexport_chain_across_modules: _format_types.py:9: One with a value
+references/store_writes_through_bindings: store_writes_through_bindings.py:29: shared with a value
 references/string_annotation_forward: string_annotation_forward.py:16: children no value
 references/string_annotation_forward: string_annotation_forward.py:17: broken no value
 references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:45: registry with a value

@@ -38,9 +38,12 @@ import argparse
 import ast
 import shlex
 import sys
+from functools import cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
+
+from typing_extensions import get_protocol_members
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -49,8 +52,6 @@ PACKAGE = SRC / "datamodel_code_generator"
 for path in (SRC, ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
-
-from typing_extensions import get_protocol_members  # noqa: E402
 
 from datamodel_code_generator.__main__ import main as generate_main  # noqa: E402
 from datamodel_code_generator.model._views import (  # noqa: E402, PLC2701
@@ -76,6 +77,7 @@ from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
     StepLike,
 )
 from datamodel_code_generator.parser.base import Parser  # noqa: E402
+from scripts._source_model import SourceModule, nested_name  # noqa: E402
 from scripts.fact_tables import ATTRIBUTE_FACTS, Fact, RenderFact  # noqa: E402
 from scripts.pass_decls import (  # noqa: E402
     BOUNDARY_BEFORE,
@@ -94,6 +96,8 @@ from tests.checks.trace import MODULE_TRACE_MARK, recording_pass_trace  # noqa: 
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+
+    from scripts._source_model import Scope as ModelScope
 
 __all__ = [
     "DECISION_DECLS",
@@ -524,82 +528,120 @@ FINAL_FACTS_SITE = "parser/generation.py:GenerationStore.seal_facts"
 """The one place that builds ``FinalFacts``."""
 
 
-def _calls(node: ast.AST, scope: str, name: str) -> Iterator[str]:
-    """Yield the scope, ``Class.function`` within ``node``, of each call of ``name`` under ``node``."""
-    for child in ast.iter_child_nodes(node):
-        if isinstance(child, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-            yield from _calls(child, f"{scope}.{child.name}" if scope else child.name, name)
-            continue
-        if isinstance(child, ast.Call) and name in {getattr(child.func, "id", None), getattr(child.func, "attr", None)}:
-            yield scope
-        yield from _calls(child, scope, name)
+_MODELS: dict[Path, SourceModule] = {}
+
+
+def _model(path: Path) -> SourceModule:
+    """Return the source model of a module, read once per run (named by its path below ``src/`` when it has one)."""
+    if (model := _MODELS.get(path)) is None:
+        parts = path.resolve().relative_to(SRC).with_suffix("").parts if path.resolve().is_relative_to(SRC) else ()
+        name = ".".join(parts[:-1] if parts[-1:] == ("__init__",) else parts)
+        model = _MODELS[path] = SourceModule(path.read_text(encoding="utf-8"), path.as_posix(), name)
+    return model
+
+
+@cache
+def _spellings(model: SourceModule) -> dict[ast.AST, str]:
+    """Return the name each name node of a model's tree spells."""
+    return {reference.node: reference.name for reference in model.references}
+
+
+def _callee(model: SourceModule, call: ast.Call) -> str | None:
+    """Return the name a call calls: the attribute of a method call, or the name a plain call spells."""
+    return call.func.attr if isinstance(call.func, ast.Attribute) else _spellings(model).get(call.func)
+
+
+def calls(model: SourceModule, name: str) -> Iterator[tuple[str, int]]:
+    """Yield the scope (``Class.function``, empty at module level) and the line of each call of ``name`` in a module."""
+    for node in ast.walk(model.tree):
+        if isinstance(node, ast.Call) and _callee(model, node) == name:
+            yield nested_name(model.scope_of(node)), node.lineno
+
+
+def _holding(paths: Iterable[Path], *words: str) -> Iterator[Path]:
+    """Yield the modules whose text holds one of ``words``: a module without any of them cannot spell what is sought."""
+    return (path for path in sorted(paths) if any(word in path.read_text(encoding="utf-8") for word in words))
 
 
 def final_facts_problems(package: Path = PACKAGE) -> list[str]:
     """Return the places other than ``FINAL_FACTS_SITE`` that build ``FinalFacts``, or that none builds it."""
     sites = [
         f"{path.relative_to(package).as_posix()}:{scope}"
-        for path in sorted(package.rglob("*.py"))
-        for scope in _calls(ast.parse(path.read_text(encoding="utf-8")), "", "FinalFacts")
+        for path in _holding(package.rglob("*.py"), "FinalFacts")
+        for scope, _ in calls(_model(path), "FinalFacts")
     ]
     if sites == [FINAL_FACTS_SITE]:
         return []
     return [f"FinalFacts is built in {sites}, not only in {FINAL_FACTS_SITE}"]
 
 
-def _parser_body(tree: ast.Module) -> ast.ClassDef:
-    return next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "Parser")
+def parser_body(model: SourceModule) -> ModelScope | None:
+    """Return the scope of the module-level class ``Parser`` of a module, if it defines one."""
+    return next(
+        (
+            scope
+            for scope in model.scopes
+            if scope.kind == "class" and scope.parent is model.module_scope and scope.code_name == "Parser"
+        ),
+        None,
+    )
 
 
-def _mangled_members(parser_body: ast.ClassDef) -> frozenset[str]:
-    """Return the ``__name`` members that the body of ``Parser`` defines."""
-    names: set[str] = set()
-    for node in parser_body.body:
-        match node:
-            case ast.FunctionDef(name=name) | ast.AnnAssign(target=ast.Name(id=name)):
-                names.add(name)
-            case ast.Assign(targets=targets):
-                names.update(target.id for target in targets if isinstance(target, ast.Name))
-    return frozenset(name for name in names if name.startswith("__") and not name.endswith("__"))
+def mangled_members(model: SourceModule) -> frozenset[str]:
+    """Return the ``__name`` members that the body of a module's ``Parser`` defines (none without one)."""
+    body = parser_body(model)
+    bindings = model.bindings(scope=body) if body is not None else []
+    return frozenset(
+        binding.name for binding in bindings if binding.name.startswith("__") and not binding.name.endswith("__")
+    )
 
 
-def _reached_member(node: ast.AST, members: frozenset[str]) -> str | None:
+def _reached_member(model: SourceModule, node: ast.AST, members: frozenset[str]) -> str | None:
     """Return the mangled ``Parser`` member that ``node`` reaches, by attribute or by a string ``*attr`` argument."""
-    attr = node.attr if isinstance(node, ast.Attribute) else _attribute_argument(node)
+    attr = node.attr if isinstance(node, ast.Attribute) else _attribute_argument(model, node)
     return attr if attr is not None and (attr.startswith("_Parser__") or attr in members) else None
 
 
-def _attribute_argument(node: ast.AST) -> str | None:
+ATTRIBUTE_FUNCTIONS = frozenset({"builtins.getattr", "builtins.setattr", "builtins.hasattr", "builtins.delattr"})
+"""The calls that reach an attribute by a string name, by origin."""
+
+
+def _attribute_argument(model: SourceModule, node: ast.AST) -> str | None:
     """Return the string attribute name a ``getattr``-family call passes, if ``node`` is one."""
-    if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
+    if not isinstance(node, ast.Call) or model.origin(node.func) not in ATTRIBUTE_FUNCTIONS:
         return None
-    if node.func.id not in {"getattr", "setattr", "hasattr", "delattr"} or len(node.args) < 2:  # noqa: PLR2004
+    if len(node.args) < 2:  # noqa: PLR2004
         return None
     name = node.args[1]
     return name.value if isinstance(name, ast.Constant) and isinstance(name.value, str) else None
 
 
+def reached_members(model: SourceModule, members: frozenset[str], *, own: bool) -> Iterator[tuple[int, str]]:
+    """Yield the line and the member of each place of a module that reaches a mangled ``Parser`` member.
+
+    With ``own``, the module's ``Parser`` is the one that defines them, and the places inside its body are left out.
+    """
+    body = parser_body(model) if own else None
+    inside = {id(node) for node in ast.walk(body.node)} if body is not None else set()
+    for node in ast.walk(model.tree):
+        if id(node) not in inside and (attr := _reached_member(model, node, members)) is not None:
+            yield node.lineno, attr
+
+
 def mangling_problems(package: Path = PACKAGE) -> list[str]:
     """Return the places outside the body of ``Parser`` that reach a name-mangled member of ``Parser``."""
     base = package / "parser" / "base.py"
-    members = _mangled_members(_parser_body(ast.parse(base.read_text(encoding="utf-8"))))
-    problems: list[str] = []
-    for path in sorted(package.rglob("*.py")):
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        inside = {id(node) for node in ast.walk(_parser_body(tree))} if path == base else set()
-        problems.extend(
-            f"{path.relative_to(package).as_posix()}:{node.lineno} reaches Parser.{attr} outside the body of Parser"
-            for node in ast.walk(tree)
-            if id(node) not in inside and (attr := _reached_member(node, members)) is not None
-        )
-    return problems
+    members = mangled_members(_model(base))
+    return [
+        f"{path.relative_to(package).as_posix()}:{line} reaches Parser.{attr} outside the body of Parser"
+        for path in _holding(package.rglob("*.py"), "_Parser__", *members)
+        for line, attr in reached_members(_model(path), members, own=path == base)
+    ]
 
 
-def _deep_warning(call: ast.Call) -> bool:
+def _deep_warning(model: SourceModule, call: ast.Call) -> bool:
     """Return whether ``call`` warns with a ``stacklevel`` that is a call or a number above 2."""
-    func = call.func
-    name = func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else None
-    return name in WARNING_FUNCTIONS and any(
+    return _callee(model, call) in WARNING_FUNCTIONS and any(
         keyword.arg == "stacklevel"
         and (
             isinstance(keyword.value, ast.Call)
@@ -609,21 +651,27 @@ def _deep_warning(call: ast.Call) -> bool:
     )
 
 
+def deep_warnings(model: SourceModule) -> Iterator[tuple[str, int]]:
+    """Yield the function and the line of each deep warning of a module, once for every function that holds it."""
+    for function in model.scopes:
+        if function.kind == "function":
+            for node in ast.walk(function.node):
+                if isinstance(node, ast.Call) and _deep_warning(model, node):
+                    yield function.code_name, node.lineno
+
+
 def warning_problems(package: Path = PACKAGE) -> list[str]:
     """Return the deep warnings of the parser, model and type modules that ``DEEP_WARNINGS`` does not list.
 
     The entries that no warning matches any more are problems too.
     """
-    sites: set[str] = set()
-    for path in sorted({*package.glob("parser/**/*.py"), *package.glob("model/**/*.py"), package / "types.py"}):
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for function in ast.walk(tree):
-            if isinstance(function, ast.FunctionDef):
-                sites.update(
-                    f"{path.relative_to(package).as_posix()}:{function.name}"
-                    for node in ast.walk(function)
-                    if isinstance(node, ast.Call) and _deep_warning(node)
-                )
+    sites = {
+        f"{path.relative_to(package).as_posix()}:{function}"
+        for path in _holding(
+            {*package.glob("parser/**/*.py"), *package.glob("model/**/*.py"), package / "types.py"}, "stacklevel"
+        )
+        for function, _ in deep_warnings(_model(path))
+    }
     return [
         *(
             f"{site} warns with a stacklevel above 2: list the frame it names in DEEP_WARNINGS"

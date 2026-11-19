@@ -1,6 +1,7 @@
 """Reject writes of generation facts that bypass GenerationStore.
 
-The checker reads two tables with ``ast``, so it never imports the package: the store mutation API
+The checker reads Python through ``scripts/_source_model.py``, so it never imports the package. It reads two tables:
+the store mutation API
 (``GENERATION_STORE_MUTATION_METHODS``, the names of ``SITE_EFFECTS`` and ``NO_SITE_EFFECT`` in
 ``parser/generation.py``) and the attribute-to-fact table (``ATTRIBUTE_FACTS`` in ``scripts/fact_tables.py``, whose rows
 name the ``Phase`` members of ``parser/_facts.py``). It scans
@@ -32,13 +33,21 @@ import re
 import subprocess
 import sys
 from collections import Counter
-from dataclasses import dataclass, field, replace
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
+from functools import cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
+
+    from scripts._source_model import Binding, Reference
+    from scripts._source_model import Scope as ModelScope
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._source_model import SourceModelError, SourceModule, Unreadable, annotation, nested_name
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -94,7 +103,8 @@ CONTAINER_MUTATORS = frozenset({
     "update",
 })
 KEYED_MUTATORS = frozenset({"pop", "setdefault"})
-SETATTR_FUNCTIONS = frozenset({"setattr", "object.__setattr__"})
+SETATTR_ORIGINS = frozenset({"builtins.setattr", "builtins.object.__setattr__"})
+"""What a call writes an attribute through, by origin: aliases of them, at any level, are the same call."""
 
 PARSER_HOOK_METHODS = frozenset({
     "_apply_literal_default",
@@ -200,49 +210,69 @@ ALLOWLIST_HEADER = """\
 """
 
 
-def _module_assignment(tree: ast.Module, name: str) -> ast.expr | None:
-    for node in tree.body:
-        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == name:
-            return node.value
-        if isinstance(node, ast.Assign) and any(
-            isinstance(target, ast.Name) and target.id == name for target in node.targets
-        ):
-            return node.value
-    return None
+_MODELS: dict[tuple[Path, str], SourceModule] = {}
 
 
-def _literal_names(tree: ast.Module, name: str) -> frozenset[str]:
-    """Return the strings of the literal set, or the keys of the literal dict, that ``tree`` assigns to ``name``.
+def _display_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
 
-    The literal may be wrapped in a ``frozenset(...)`` or ``MappingProxyType(...)`` call.
+
+def _module_name(path: Path) -> str:
+    """Return the dotted name of a repository module (``src/`` dropped), or none for a file outside the repository."""
+    try:
+        relative = path.resolve().relative_to(ROOT)
+    except ValueError:
+        return ""
+    parts = relative.with_suffix("").parts
+    parts = parts[1:] if parts[:1] == ("src",) else parts
+    return ".".join(parts[:-1] if parts[-1:] == ("__init__",) else parts)
+
+
+def read_model(path: Path) -> SourceModule:
+    """Return the source model of a file; it raises `SourceModelError` for a module the model cannot read."""
+    text = path.read_text(encoding="utf-8")
+    key = (path.resolve(), text)
+    if (model := _MODELS.get(key)) is None:
+        model = _MODELS[key] = SourceModule(text, _display_path(path), _module_name(path))
+    return model
+
+
+def _model_or_error(path: Path) -> SourceModule | SourceModelError:
+    try:
+        return read_model(path)
+    except SourceModelError as error:
+        return error
+
+
+def _module_value(model: SourceModule, name: str) -> ast.expr | None:
+    """Return the value of the first module-level assignment of ``name``."""
+    return next((item.value for item in model.bindings(name, model.module_scope) if item.value is not None), None)
+
+
+def _literal_names(model: SourceModule, name: str) -> frozenset[str]:
+    """Return the strings of the literal set, or the keys of the literal dict, that a module binds ``name`` to once.
+
+    The literal may be built with ``frozenset(...)``, ``dict(...)`` or ``MappingProxyType(...)``.
     """
-    if (node := _module_assignment(tree, name)) is None:
+    if isinstance(value := model.constant(name), Unreadable) and not model.bindings(name, model.module_scope):
         msg = f"{name} was not found"
         raise RuntimeError(msg)
-    if (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id in {"frozenset", "MappingProxyType"}
-        and node.args
-    ):
-        node = node.args[0]
-    if not isinstance(node, ast.Set | ast.Dict):
+    if isinstance(value, Unreadable) or not isinstance(value, (set, frozenset, Mapping)):
         msg = f"{name} must be a literal set or dict of strings"
         raise TypeError(msg)
-    values: set[str] = set()
-    for item in node.elts if isinstance(node, ast.Set) else node.keys:
-        if not isinstance(item, ast.Constant) or not isinstance(item.value, str):
-            msg = f"{name} must contain only literal strings"
-            raise TypeError(msg)
-        values.add(item.value)
-    return frozenset(values)
+    if not all(isinstance(item, str) for item in value):
+        msg = f"{name} must contain only literal strings"
+        raise TypeError(msg)
+    return frozenset(value)
 
 
 def _load_generation_store_mutation_methods() -> frozenset[str]:
     """Return the store mutations: the keys of ``SITE_EFFECTS`` and the names of ``NO_SITE_EFFECT``."""
-    generation_store_module = ROOT / GENERATION_STORE_MODULE
-    tree = ast.parse(generation_store_module.read_text(), filename=str(generation_store_module))
-    return _literal_names(tree, "SITE_EFFECTS") | _literal_names(tree, "NO_SITE_EFFECT")
+    model = read_model(ROOT / GENERATION_STORE_MODULE)
+    return _literal_names(model, "SITE_EFFECTS") | _literal_names(model, "NO_SITE_EFFECT")
 
 
 GENERATION_STORE_MUTATION_METHODS = _load_generation_store_mutation_methods()
@@ -280,43 +310,39 @@ class FactRow:
         return item[0] if (item := self.item) else self.attribute
 
 
-def _enum_members(tree: ast.Module) -> dict[str, tuple[str, ...]]:
+def _module_classes(model: SourceModule) -> list[ModelScope]:
+    return [scope for scope in model.scopes if scope.kind == "class" and scope.parent is model.module_scope]
+
+
+def _enum_members(model: SourceModule) -> dict[str, tuple[str, ...]]:
+    """Return the members of each module-level ``enum.Enum`` subclass: the names its body assigns, in order."""
     return {
-        node.name: tuple(
-            target.id
-            for statement in node.body
-            if isinstance(statement, ast.Assign)
-            for target in statement.targets
-            if isinstance(target, ast.Name)
-        )
-        for node in tree.body
-        if isinstance(node, ast.ClassDef)
-        and any(isinstance(base, ast.Name) and base.id == "Enum" for base in node.bases)
+        scope.code_name: tuple(binding.name for binding in model.bindings(scope=scope) if binding.kind == "assign")
+        for scope in _module_classes(model)
+        if any(model.origin(base) == "enum.Enum" for base in scope.node.bases)
     }
 
 
-def _row_fields(tree: ast.Module) -> tuple[list[str], dict[str, ast.expr]]:
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef) and node.name == "AttributeFact":
-            names: list[str] = []
-            defaults: dict[str, ast.expr] = {}
-            for statement in node.body:
-                if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name):
-                    names.append(statement.target.id)
-                    if statement.value is not None:
-                        defaults[statement.target.id] = statement.value
-            return names, defaults
+def _row_fields(model: SourceModule) -> tuple[list[str], dict[str, ast.expr]]:
+    for scope in _module_classes(model):
+        if scope.code_name == "AttributeFact":
+            fields = [
+                binding for binding in model.bindings(scope=scope) if binding.kind in {"annassign", "annotation-only"}
+            ]
+            return [binding.name for binding in fields], {
+                binding.name: binding.value for binding in fields if binding.value is not None
+            }
     msg = "AttributeFact was not found"
     raise RuntimeError(msg)
 
 
-def _row_value(node: ast.expr, field_name: str, enums: dict[str, tuple[str, ...]]) -> object:
+def _row_value(model: SourceModule, node: ast.expr, field_name: str, enums: dict[str, tuple[str, ...]]) -> object:
     match node:
         case ast.Constant(value=str() | None as literal):
             return literal
         case ast.Tuple(elts=items):
-            return tuple(_row_value(item, field_name, enums) for item in items)
-        case ast.Attribute(value=ast.Name(id=enum_name), attr=member) if enum_name in ROW_ENUMS.get(
+            return tuple(_row_value(model, item, field_name, enums) for item in items)
+        case ast.Attribute(value=receiver, attr=member) if (enum_name := model.source(receiver)) in ROW_ENUMS.get(
             field_name, frozenset()
         ) and member in enums.get(enum_name, ()):
             return f"{enum_name}.{member}"
@@ -342,14 +368,14 @@ def _member(value: str) -> str:
     return value.partition(".")[2]
 
 
-def _load_freeze_points(tree: ast.Module, enums: dict[str, tuple[str, ...]]) -> dict[str, str]:
-    if not isinstance(table := _module_assignment(tree, "RENDER_FACT_FREEZE_POINTS"), ast.Dict):
+def _load_freeze_points(model: SourceModule, enums: dict[str, tuple[str, ...]]) -> dict[str, str]:
+    if not isinstance(table := _module_value(model, "RENDER_FACT_FREEZE_POINTS"), ast.Dict):
         msg = "RENDER_FACT_FREEZE_POINTS must be a literal dict"
         raise TypeError(msg)
     points: dict[str, str] = {}
     for key, value in zip(table.keys, table.values, strict=True):
-        fact = _row_value(key, "facts", enums) if key is not None else None
-        point = _row_value(value, "frozen_at", enums) if isinstance(fact, str) else None
+        fact = _row_value(model, key, "facts", enums) if key is not None else None
+        point = _row_value(model, value, "frozen_at", enums) if isinstance(fact, str) else None
         if not (isinstance(fact, str) and fact.startswith("RenderFact.") and isinstance(point, str)):
             msg = "RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members"
             raise TypeError(msg)
@@ -409,32 +435,29 @@ def _make_row(values: dict[str, object], freeze_points: dict[str, str]) -> FactR
     return row
 
 
-def _vocabulary(tree: ast.Module) -> dict[str, tuple[str, ...]]:
-    """Return the members of every enum of ``tree`` and of ``Phase`` in ``parser/_facts.py``, ``tree`` first."""
-    phase_module = ROOT / PHASE_MODULE
-    return {**_enum_members(ast.parse(phase_module.read_text(), filename=str(phase_module))), **_enum_members(tree)}
+def _vocabulary(model: SourceModule) -> dict[str, tuple[str, ...]]:
+    """Return the members of every enum of a module and of ``Phase`` in ``parser/_facts.py``, the module's first."""
+    return {**_enum_members(read_model(ROOT / PHASE_MODULE)), **_enum_members(model)}
 
 
 def fact_vocabulary(path: Path | None = None) -> dict[str, tuple[str, ...]]:
     """Return the members of every enum of the fact tables, ``Phase`` included, in declaration order."""
-    facts_module = path or ROOT / FACTS_MODULE
-    return _vocabulary(ast.parse(facts_module.read_text(), filename=str(facts_module)))
+    return _vocabulary(read_model(path or ROOT / FACTS_MODULE))
 
 
 def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
     """Read ``ATTRIBUTE_FACTS`` from ``scripts/fact_tables.py`` without importing it."""
-    facts_module = path or ROOT / FACTS_MODULE
-    tree = ast.parse(facts_module.read_text(), filename=str(facts_module))
-    enums = _vocabulary(tree)
-    names, defaults = _row_fields(tree)
-    freeze_points = _load_freeze_points(tree, enums)
-    if not isinstance(table := _module_assignment(tree, "ATTRIBUTE_FACTS"), ast.Tuple):
+    model = read_model(path or ROOT / FACTS_MODULE)
+    enums = _vocabulary(model)
+    names, defaults = _row_fields(model)
+    freeze_points = _load_freeze_points(model, enums)
+    if not isinstance(table := _module_value(model, "ATTRIBUTE_FACTS"), ast.Tuple):
         msg = "ATTRIBUTE_FACTS must be a literal tuple"
         raise TypeError(msg)
     rows: list[FactRow] = []
     seen: set[tuple[str, str]] = set()
     for entry in table.elts:
-        if not (isinstance(entry, ast.Call) and isinstance(entry.func, ast.Name) and entry.func.id == "AttributeFact"):
+        if not (isinstance(entry, ast.Call) and model.source(entry.func) == "AttributeFact"):
             msg = f"ATTRIBUTE_FACTS rows must be AttributeFact(...) calls: {ast.unparse(entry)}"
             raise TypeError(msg)
         arguments = {
@@ -445,7 +468,8 @@ def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
             msg = f"ATTRIBUTE_FACTS row {ast.unparse(entry)} misses {', '.join(missing)}"
             raise TypeError(msg)
         row = _make_row(
-            {name: _row_value(arguments.get(name) or defaults[name], name, enums) for name in names}, freeze_points
+            {name: _row_value(model, arguments.get(name) or defaults[name], name, enums) for name in names},
+            freeze_points,
         )
         if (row.owner, row.attribute) in seen:
             msg = f"ATTRIBUTE_FACTS has two rows for {row.owner}.{row.attribute}"
@@ -520,13 +544,6 @@ class Violation:
         return f"{self.path.as_posix()}:{self.line}:{self.column}: {self.message} (in {self.function})"
 
 
-def _display_path(path: Path) -> str:
-    try:
-        return path.resolve().relative_to(ROOT).as_posix()
-    except ValueError:
-        return path.as_posix()
-
-
 def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
     names: list[str] = []
     current = node
@@ -586,35 +603,25 @@ def _indexed_object(node: ast.expr) -> tuple[ast.expr, ast.AST | None]:
     return node, key
 
 
-def _annotation_names(node: ast.expr | None) -> set[str]:
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        try:
-            node = ast.parse(node.value, mode="eval").body
-        except SyntaxError:
-            return set()
-    if node is None:
-        return set()
-    return {
-        child.id if isinstance(child, ast.Name) else child.attr
-        for child in ast.walk(node)
-        if isinstance(child, (ast.Name, ast.Attribute))
-    }
+def _type_names(model: SourceModule, node: ast.expr | None) -> set[str]:
+    """Return the names an annotation gives in its type positions: each name, and the last part of each chain."""
+    return set() if node is None else {ast.unparse(item).rpartition(".")[2] for item in model.type_expressions(node)}
 
 
-def _is_non_graph_annotation(node: ast.expr | None) -> bool:
-    names = _annotation_names(node)
+def _is_non_graph_annotation(model: SourceModule, node: ast.expr | None) -> bool:
+    names = _type_names(model, node)
     return bool(names & NON_GRAPH_ANNOTATIONS) and not names & GRAPH_ANNOTATIONS
 
 
-def _is_schema_object_value(node: ast.expr, schema_names: set[str]) -> bool:
-    match node:
-        case ast.Call(func=ast.Attribute(attr="model_validate", value=factory)):
-            return bool(set(_attribute_chain(factory)) & SCHEMA_OBJECT_FACTORIES)
-        case ast.Call(func=ast.Attribute(attr="_schema_object", value=ast.Name(id="self" | "parser"))):
-            return True
-        case ast.Call(func=ast.Attribute(attr=method, value=ast.Name(id=name))) if method in SCHEMA_OBJECT_COPIES:
-            return name in schema_names
-    return False
+@cache
+def _spellings(model: SourceModule) -> dict[ast.AST, Reference]:
+    """Return the name occurrence of each name node of a model's tree."""
+    return {reference.node: reference for reference in model.references}
+
+
+def _spelled(model: SourceModule, node: ast.AST) -> str | None:
+    """Return the name a node spells when it is a name, else None."""
+    return reference.name if (reference := _spellings(model).get(node)) is not None else None
 
 
 def _facts_text(rows: Iterable[FactRow]) -> str:
@@ -641,134 +648,109 @@ class _Alias:
     key: ast.AST | None = None
 
 
-@dataclass
-class _FunctionState:
-    schema_names: set[str] = field(default_factory=set)
-    aliases: dict[str, _Alias] = field(default_factory=dict)
-
-
 class GenerationStoreUsageVisitor(ast.NodeVisitor):
-    """AST visitor for code that must change generation facts through GenerationStore."""
+    """Visitor of a module's tree for code that must change generation facts through GenerationStore.
+
+    Names are read through the module's source model: each binding (of any form) replaces what its name held in its
+    scope, a read sees the latest binding of the scope the language resolves it to, and the binding is the key of what
+    the visitor tracks about values: the guarded container (or entry) an assignment aliases, and the schema objects
+    that parameters and assignments hold. Which binding reaches a read is the visitor's walk order, the one value-flow
+    question the model leaves to its callers.
+    """
 
     def __init__(
-        self,
-        path: Path,
-        scope: Scope = "parser",
-        *,
-        hooks: frozenset[str] = frozenset(),
-        setattr_aliases: frozenset[str] = frozenset(),
+        self, path: Path, model: SourceModule, scope: Scope = "parser", *, hooks: frozenset[str] = frozenset()
     ) -> None:
-        """Create a visitor for ``path`` checked in ``scope``."""
+        """Create a visitor for ``path`` (read as ``model``) checked in ``scope``."""
         self.path = path
+        self.model = model
         self.scope = scope
         self.hooks = hooks
-        self.setattr_functions = SETATTR_FUNCTIONS | setattr_aliases
         self.violations: list[Violation] = []
         self.dict_keys_written: set[str] = set()
         self._qualname: list[str] = []
         self._functions: list[str] = []
-        self._states: list[_FunctionState] = [_FunctionState()]
-
-    @property
-    def _state(self) -> _FunctionState:
-        return self._states[-1]
+        self._opened = {item.node: item for item in model.scopes if item.kind in {"class", "function"}}
+        self._latest: dict[tuple[ModelScope, str], Binding] = {}
+        self._aliases: dict[Binding, _Alias] = {}
+        self._schema_objects: set[Binding] = set()
 
     @property
     def _checks_fact_writes(self) -> bool:
         return self.scope == "parser" or any(name in self.hooks for name in self._functions)
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        """Track the qualified name and report cached properties of model classes."""
-        self._qualname.append(node.name)
-        if self.scope == "model":
-            for statement in node.body:
-                if isinstance(statement, ast.FunctionDef) and any(
-                    _attribute_chain(decorator)[-1:] == ("cached_property",) for decorator in statement.decorator_list
-                ):
-                    self._qualname.append(statement.name)
-                    self._report_dict_key(statement, statement.name, "@cached_property")
-                    self._qualname.pop()
-        self.generic_visit(node)
+    def visit(self, node: ast.AST) -> None:
+        """Let a binding replace what its name held, and track the names of the classes and functions node opens."""
+        if (binding := self.model.binding_at(node)) is not None and binding.kind != "annotation-only":
+            self._latest[binding.scope, binding.mangled] = binding
+        if (opened := self._opened.get(node)) is None:
+            super().visit(node)
+            return
+        self._qualname.append(opened.code_name)
+        if opened.kind == "class":
+            if self.scope == "model":
+                self._report_cached_properties(opened)
+            super().visit(node)
+        else:
+            self._functions.append(opened.code_name)
+            self._schema_objects.update(
+                binding
+                for binding in self.model.bindings(scope=opened)
+                if binding.kind == "param" and _is_non_graph_annotation(self.model, annotation(binding))
+            )
+            enclosing = dict(self._latest)
+            super().visit(node)
+            self._latest = enclosing
+            self._functions.pop()
         self._qualname.pop()
 
-    def visit_FunctionDef(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
-        """Track the qualified name, schema-object parameters and local aliases of a function."""
-        self._qualname.append(node.name)
-        self._functions.append(node.name)
-        state = _FunctionState(schema_names=set(self._state.schema_names))
-        arguments = node.args
-        for argument in (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs):
-            if _is_non_graph_annotation(argument.annotation):
-                state.schema_names.add(argument.arg)
-            else:
-                state.schema_names.discard(argument.arg)
-        self._states.append(state)
-        self.generic_visit(node)
-        self._states.pop()
-        self._functions.pop()
-        self._qualname.pop()
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        """Track an async function like any other."""
-        self.visit_FunctionDef(node)
+    def _report_cached_properties(self, scope: ModelScope) -> None:
+        for method in scope.children:
+            if method.kind == "function" and any(
+                _attribute_chain(decorator)[-1:] == ("cached_property",) for decorator in method.node.decorator_list
+            ):
+                self._qualname.append(method.code_name)
+                self._report_dict_key(method.node, method.code_name, "@cached_property")
+                self._qualname.pop()
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """Check assignment targets and record local aliases."""
+        self.visit(node.value)
+        classified = self._classify(node.value)
         for target in node.targets:
             self._check_target(target)
-            self._record_binding(target, node.value)
-        self.generic_visit(node)
+            self._record_binding(target, classified)
+            self.visit(target)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         """Check annotated assignment targets."""
         self._check_target(node.target)
         if node.value is not None:
-            self._record_binding(node.target, node.value)
-        self.generic_visit(node)
+            self.visit(node.value)
+            self._record_binding(node.target, self._classify(node.value))
+        self.visit(node.target)
+        self.visit(node.annotation)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        """Check augmented assignment targets, including in-place operators on aliases and ``__dict__``."""
+        """Check augmented assignment targets, including in-place operators on aliases and ``__dict__``.
+
+        An in-place operator keeps the object a name holds, so the new binding keeps the alias.
+        """
         operator = ast.unparse(node).removeprefix(ast.unparse(node.target)).split()[0]
-        match node.target:
-            case ast.Name(id=name) if (alias := self._state.aliases.get(name)) is not None:
-                written = alias.attribute if alias.key is None else _item_target(alias.attribute, "", alias.key)
-                if alias.attribute == "__dict__":
-                    key = _key_text(alias.key)
-                    self._report_dict_key(node, key, f"{written} {operator}", computed=key == "...")
-                else:
-                    self._check_container_write(node, alias.attribute, f"{written} {operator}", alias.key)
-            case ast.Attribute(attr="__dict__", value=receiver) if not self._excluded(receiver):
-                self._report_dict_key(node, "...", f"__dict__ {operator}", computed=True)
-            case ast.Name():
-                self._unbind(node.target)
-            case _:
-                self._check_target(node.target)
-        self.generic_visit(node)
-
-    def visit_For(self, node: ast.For | ast.AsyncFor) -> None:
-        """Forget what the loop target named before."""
-        self._unbind(node.target)
-        self.generic_visit(node)
-
-    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
-        """Forget what the loop target named before."""
-        self.visit_For(node)
-
-    def visit_withitem(self, node: ast.withitem) -> None:
-        """Forget what a ``with ... as`` target named before."""
-        if node.optional_vars is not None:
-            self._unbind(node.optional_vars)
-        self.generic_visit(node)
-
-    def visit_comprehension(self, node: ast.comprehension) -> None:
-        """Forget what a comprehension target named before."""
-        self._unbind(node.target)
-        self.generic_visit(node)
-
-    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
-        """Forget what an ``except ... as`` name named before."""
-        if node.name:
-            self._unbind(ast.Name(id=node.name))
+        target = node.target
+        if (alias := self._alias_read(target)) is not None:
+            written = alias.attribute if alias.key is None else _item_target(alias.attribute, "", alias.key)
+            if alias.attribute == "__dict__":
+                key = _key_text(alias.key)
+                self._report_dict_key(node, key, f"{written} {operator}", computed=key == "...")
+            else:
+                self._check_container_write(node, alias.attribute, f"{written} {operator}", alias.key)
+            if (binding := self.model.binding_at(target)) is not None:
+                self._aliases[binding] = alias
+        elif isinstance(target, ast.Attribute) and target.attr == "__dict__" and not self._excluded(target.value):
+            self._report_dict_key(node, "...", f"__dict__ {operator}", computed=True)
+        elif self.model.binding_at(target) is None:
+            self._check_target(target)
         self.generic_visit(node)
 
     def visit_Delete(self, node: ast.Delete) -> None:
@@ -779,8 +761,9 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
 
     def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
         """Record aliases bound by assignment expressions."""
-        self._record_binding(node.target, node.value)
-        self.generic_visit(node)
+        self.visit(node.value)
+        self._record_binding(node.target, self._classify(node.value))
+        self.visit(node.target)
 
     def visit_Call(self, node: ast.Call) -> None:
         """Check mutating method calls, ``setattr`` with a literal name and reads of the data-type children."""
@@ -788,7 +771,7 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
             self._check_method_call(node, node.func.attr, node.func.value)
         if _attribute_chain(node.func)[-1:] == (CHILDREN_READER,) and self._checks_fact_writes:
             self._add(node, "children (read)", CHILDREN_READ_MESSAGE)
-        if ".".join(_attribute_chain(node.func)) in self.setattr_functions and len(node.args) > 1:
+        if self.model.origin(node.func) in SETATTR_ORIGINS and len(node.args) > 1:
             match node.args[1]:
                 case ast.Constant(value=str() as attribute):
                     self._check_attribute_write(node, node.args[0], attribute)
@@ -846,19 +829,29 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
         self, node: ast.AST, container: ast.expr, method: str, key: ast.AST | None, *, entry: bool = False
     ) -> None:
         match container:
-            case ast.Attribute(attr="__dict__", value=receiver) | ast.Call(func=ast.Name(id="vars"), args=[receiver]):
+            case ast.Attribute(attr="__dict__", value=receiver):
+                if not self._excluded(receiver):
+                    self._report_dict_entry(node, method, key, entry=entry)
+            case ast.Call(func=function, args=[receiver]) if _spelled(self.model, function) == "vars":
                 if not self._excluded(receiver):
                     self._report_dict_entry(node, method, key, entry=entry)
             case ast.Attribute(attr=attribute, value=receiver) if not self._excluded(receiver):
                 self._check_container_write(node, attribute, _item_target(attribute, method, key, entry=entry), key)
-            case ast.Name(id=name) if (alias := self._state.aliases.get(name)) is not None:
-                if alias.key is not None:
-                    key, entry = alias.key, bool(method)
-                if alias.attribute == "__dict__":
-                    self._report_dict_entry(node, method, key, entry=entry)
-                else:
-                    target = _item_target(alias.attribute, method, key, entry=entry)
-                    self._check_container_write(node, alias.attribute, target, key)
+            case _:
+                self._check_alias_write(node, container, method, key, entry=entry)
+
+    def _check_alias_write(
+        self, node: ast.AST, container: ast.expr, method: str, key: ast.AST | None, *, entry: bool
+    ) -> None:
+        if (alias := self._alias_read(container)) is None:
+            return
+        if alias.key is not None:
+            key, entry = alias.key, bool(method)
+        if alias.attribute == "__dict__":
+            self._report_dict_entry(node, method, key, entry=entry)
+        else:
+            target = _item_target(alias.attribute, method, key, entry=entry)
+            self._check_container_write(node, alias.attribute, target, key)
 
     def _check_legacy_assignment(self, target: ast.AST) -> bool:
         if not self._checks_fact_writes:
@@ -913,39 +906,60 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
             message = _write_message(target, rows)
         self._add(node, target, message)
 
-    def _unbind(self, target: ast.AST) -> None:
-        for node in _bound_targets(target):
-            if isinstance(node, ast.Name):
-                self._state.aliases.pop(node.id, None)
-                self._state.schema_names.discard(node.id)
+    def _binding_read(self, node: ast.AST) -> Binding | None:
+        """Return the binding a name read sees: the latest one, in walk order, of the scope the name resolves to."""
+        if (reference := _spellings(self.model).get(node)) is None:
+            return None
+        resolution = self.model.resolve(reference.node)
+        while resolution is not None:
+            if resolution.scope is not None and (found := self._latest.get((resolution.scope, reference.mangled))):
+                return found
+            resolution = resolution.fallback
+        return None
 
-    def _record_binding(self, target: ast.AST, value: ast.expr) -> None:
-        schema = _is_schema_object_value(value, self._state.schema_names)
-        alias = None if schema else self._alias_of(value)
-        self._unbind(target)
-        if not isinstance(target, ast.Name):
+    def _alias_read(self, node: ast.AST) -> _Alias | None:
+        return self._aliases.get(binding) if (binding := self._binding_read(node)) is not None else None
+
+    def _is_schema_object_value(self, node: ast.expr) -> bool:
+        match node:
+            case ast.Call(func=ast.Attribute(attr="model_validate", value=factory)):
+                return bool(set(_attribute_chain(factory)) & SCHEMA_OBJECT_FACTORIES)
+            case ast.Call(func=ast.Attribute(attr="_schema_object", value=receiver)):
+                return _spelled(self.model, receiver) in {"self", "parser"}
+            case ast.Call(func=ast.Attribute(attr=method, value=receiver)) if method in SCHEMA_OBJECT_COPIES:
+                return self._binding_read(receiver) in self._schema_objects
+        return False
+
+    def _classify(self, value: ast.expr) -> tuple[bool, _Alias | None]:
+        """Return whether ``value`` is a schema object, and the guarded container it names, read before it binds."""
+        schema = self._is_schema_object_value(value)
+        return schema, None if schema else self._alias_of(value)
+
+    def _record_binding(self, target: ast.AST, classified: tuple[bool, _Alias | None]) -> None:
+        schema, alias = classified
+        if (binding := self.model.binding_at(target)) is None:
             return
+        self._latest[binding.scope, binding.mangled] = binding
         if schema:
-            self._state.schema_names.add(target.id)
+            self._schema_objects.add(binding)
         elif alias is not None:
-            self._state.aliases[target.id] = alias
+            self._aliases[binding] = alias
 
     def _alias_of(self, value: ast.expr) -> _Alias | None:
         """Return the guarded container, or the entry of one, that ``value`` names, following existing aliases."""
         match value:
-            case ast.Name(id=name):
-                return self._state.aliases.get(name)
             case ast.Subscript():
                 container, key = _indexed_object(value)
                 if (alias := self._alias_of(container)) is None:
                     return None
                 return alias if alias.key is not None else _Alias(alias.attribute, key)
-            case (
-                ast.Attribute(attr=attribute, value=receiver)
-                | ast.Call(func=ast.Name(id="getattr"), args=[receiver, ast.Constant(value=str() as attribute), *_])
-            ) if self._is_guarded_container(attribute, receiver):
+            case ast.Attribute(attr=attribute, value=receiver) if self._is_guarded_container(attribute, receiver):
                 return _Alias(attribute)
-        return None
+            case ast.Call(func=function, args=[receiver, ast.Constant(value=str() as attribute), *_]) if _spelled(
+                self.model, function
+            ) == "getattr" and self._is_guarded_container(attribute, receiver):
+                return _Alias(attribute)
+        return self._alias_read(value)
 
     def _is_guarded_container(self, attribute: str, receiver: ast.expr) -> bool:
         return not self._excluded(receiver) and (
@@ -953,12 +967,10 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
         )
 
     def _excluded(self, receiver: ast.expr) -> bool:
-        match receiver:
-            case ast.Name(id="self" | "cls"):
-                return self.scope == "parser"
-            case ast.Name(id=name):
-                return name in self._state.schema_names
-        return False
+        """Whether writes through ``receiver`` are no model-graph writes: the parser itself or a schema object."""
+        if (name := _spelled(self.model, receiver)) in {"self", "cls"}:
+            return self.scope == "parser"
+        return name is not None and self._binding_read(receiver) in self._schema_objects
 
     def _add(self, node: ast.AST, target: str, message: str) -> None:
         self.violations.append(
@@ -1010,56 +1022,44 @@ def classify_path(path: Path) -> Scope:
     return "model" if relative.parts[0] == "model" or relative.parts == ("types.py",) else "parser"
 
 
-def _setattr_aliases(tree: ast.Module) -> frozenset[str]:
-    return frozenset(
-        target.id
-        for node in tree.body
-        if isinstance(node, ast.Assign) and ".".join(_attribute_chain(node.value)) in SETATTR_FUNCTIONS
-        for target in node.targets
-        if isinstance(target, ast.Name)
-    )
+ModelFunctions: TypeAlias = dict[str, list[tuple[Path, SourceModule, ast.AST]]]
 
 
-FunctionNode: TypeAlias = ast.FunctionDef | ast.AsyncFunctionDef
-ModelFunctions: TypeAlias = dict[str, list[tuple[Path, FunctionNode]]]
-
-
-def _parse_files(paths: Iterable[Path]) -> list[tuple[Path, ast.Module]]:
-    return [(path, ast.parse(path.read_text(), filename=str(path))) for path in iter_python_files(paths)]
+def _models(paths: Iterable[Path]) -> list[tuple[Path, SourceModule]]:
+    """Return the model of each checked file below ``paths``; the scan reports a file the model cannot read."""
+    read = [(path, _model_or_error(path)) for path in iter_python_files(paths)]
+    return [(path, model) for path, model in read if isinstance(model, SourceModule)]
 
 
 def _default_model_paths() -> list[Path]:
     return [ROOT / target for target in DEFAULT_TARGETS[1:]]
 
 
-def _functions_by_name(modules: Iterable[tuple[Path, ast.Module]]) -> ModelFunctions:
+def _functions_by_name(modules: Iterable[tuple[Path, SourceModule]]) -> ModelFunctions:
     functions: ModelFunctions = {}
     seen: set[Path] = set()
-    for path, tree in modules:
+    for path, model in modules:
         if (resolved := path.resolve()) in seen:
             continue
         seen.add(resolved)
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                functions.setdefault(node.name, []).append((path, node))
+        for scope in model.scopes:
+            if scope.kind == "function":
+                functions.setdefault(scope.code_name, []).append((path, model, scope.node))
     return functions
 
 
-def _called_names(node: ast.AST) -> Iterator[str]:
+def _called_names(model: SourceModule, node: ast.AST) -> Iterator[str]:
     """Yield the names ``node`` calls, and the attribute names it reads through ``getattr``/``hasattr``."""
     for call in ast.walk(node):
         if not isinstance(call, ast.Call):
             continue
-        match call.func:
-            case ast.Attribute(attr=name) | ast.Name(id=name) if name not in DYNAMIC_ATTRIBUTE_FUNCTIONS:
-                yield name
-            case ast.Name():
-                if (
-                    len(call.args) > 1
-                    and isinstance(call.args[1], ast.Constant)
-                    and isinstance(call.args[1].value, str)
-                ):
-                    yield call.args[1].value
+        spelled = call.func.attr if isinstance(call.func, ast.Attribute) else _spelled(model, call.func)
+        if spelled is not None and spelled not in DYNAMIC_ATTRIBUTE_FUNCTIONS:
+            yield spelled
+        elif not isinstance(call.func, ast.Attribute) and spelled is not None and len(call.args) > 1:
+            match call.args[1]:
+                case ast.Constant(value=str() as attribute):
+                    yield attribute
 
 
 def _call_closure(roots: Iterable[str], functions: ModelFunctions) -> frozenset[str]:
@@ -1073,22 +1073,22 @@ def _call_closure(roots: Iterable[str], functions: ModelFunctions) -> frozenset[
         reached.add(name)
         pending.extend(
             called
-            for _, function in functions.get(name, ())
-            for called in _called_names(function)
+            for _, model, function in functions.get(name, ())
+            for called in _called_names(model, function)
             if called in functions and called not in stop
         )
     return frozenset(reached)
 
 
-def hook_names(modules: Iterable[tuple[Path, ast.Module]]) -> frozenset[str]:
+def hook_names(modules: Iterable[tuple[Path, SourceModule]]) -> frozenset[str]:
     """Return the hook methods and every model function they reach through calls."""
     return _call_closure(PARSER_HOOK_METHODS | RENDER_STATE_WRITERS, _functions_by_name(modules))
 
 
-def _writes_only_hooks_see(path: Path, function: FunctionNode) -> bool:
+def _writes_only_hooks_see(path: Path, model: SourceModule, function: ast.AST) -> bool:
     counts = []
-    for hooks in (frozenset(), frozenset({function.name})):
-        visitor = GenerationStoreUsageVisitor(path, "model", hooks=hooks)
+    for hooks in (frozenset(), frozenset({model.scope_defined_by(function).code_name})):
+        visitor = GenerationStoreUsageVisitor(path, model, "model", hooks=hooks)
         visitor.visit(function)
         counts.append(len(visitor.violations))
     return counts[1] > counts[0]
@@ -1098,24 +1098,25 @@ def unlisted_parser_hooks(
     parser_paths: Iterable[Path] | None = None, model_paths: Iterable[Path] | None = None
 ) -> list[str]:
     """Return model methods that parser code calls and that reach a fact write no hook list covers."""
-    called = {name for _, tree in _parse_files(parser_paths or [ROOT / DEFAULT_TARGET]) for name in _called_names(tree)}
-    functions = _functions_by_name(_parse_files(model_paths or _default_model_paths()))
+    parser_models = _models(parser_paths or [ROOT / DEFAULT_TARGET])
+    called = {name for _, model in parser_models for name in _called_names(model, model.tree)}
+    functions = _functions_by_name(_models(model_paths or _default_model_paths()))
     hooks = _call_closure(PARSER_HOOK_METHODS | RENDER_STATE_WRITERS, functions)
     exempt = hooks | CONSTRUCTION_METHODS | REFERENCE_METHODS | RENDER_ENTRY_POINTS.keys()
     return sorted(
         name
         for name in called & functions.keys() - exempt
         if any(
-            _writes_only_hooks_see(path, function)
+            _writes_only_hooks_see(path, model, function)
             for reached in _call_closure([name], functions) - hooks
-            for path, function in functions[reached]
+            for path, model, function in functions[reached]
         )
     )
 
 
 def undefined_listed_names(model_paths: Iterable[Path] | None = None) -> list[str]:
     """Return names in the hook, construction and render-entry lists that no model module defines."""
-    functions = _functions_by_name(_parse_files(model_paths or _default_model_paths()))
+    functions = _functions_by_name(_models(model_paths or _default_model_paths()))
     listed = PARSER_HOOK_METHODS | RENDER_STATE_WRITERS | CONSTRUCTION_METHODS | RENDER_ENTRY_POINTS.keys()
     return sorted(listed - functions.keys())
 
@@ -1134,24 +1135,32 @@ class ScanResult:
         return Counter(violation.key for violation in self.violations)
 
 
+def _unreadable(path: Path, error: SourceModelError) -> Violation:
+    return Violation(path, 0, 0, f"the source model cannot read this module: {error}", target="unreadable-source")
+
+
 def scan_files(files: Iterable[tuple[Path, Scope]]) -> ScanResult:
-    """Scan explicitly scoped files; hooks come from every model module and the ``model`` files among them."""
-    parsed = [(path, scope, ast.parse(path.read_text(), filename=str(path))) for path, scope in files]
+    """Scan explicitly scoped files; hooks come from every model module and the ``model`` files among them.
+
+    A file the source model cannot read is a finding of its own, which no allowlist entry names.
+    """
+    listed = [(path, scope, _model_or_error(path)) for path, scope in files]
+    violations = [_unreadable(path, model) for path, _, model in listed if isinstance(model, SourceModelError)]
+    parsed = [(path, scope, model) for path, scope, model in listed if isinstance(model, SourceModule)]
     hooks = hook_names([
-        *_parse_files(_default_model_paths()),
-        *((path, tree) for path, scope, tree in parsed if scope == "model"),
+        *_models(_default_model_paths()),
+        *((path, model) for path, scope, model in parsed if scope == "model"),
     ])
-    violations: list[Violation] = []
     dict_keys_written: set[str] = set()
-    for path, scope, tree in parsed:
-        visitor = GenerationStoreUsageVisitor(path, scope, hooks=hooks, setattr_aliases=_setattr_aliases(tree))
-        visitor.visit(tree)
+    for path, scope, model in parsed:
+        visitor = GenerationStoreUsageVisitor(path, model, scope, hooks=hooks)
+        visitor.visit(model.tree)
         violations.extend(visitor.violations)
         dict_keys_written |= visitor.dict_keys_written
     return ScanResult(
         violations=violations,
         dict_keys_written=frozenset(dict_keys_written),
-        scanned_paths=frozenset(_display_path(path) for path, _, _ in parsed),
+        scanned_paths=frozenset(_display_path(path) for path, _, _ in listed),
     )
 
 
@@ -1270,38 +1279,53 @@ def check_paths(paths: list[Path], *, allowlist: Counter[StoreKey] | None = None
 @dataclass(frozen=True)
 class _ClassDeclaration:
     path: Path
-    node: ast.ClassDef
+    model: SourceModule
+    scope: ModelScope
     bases: tuple[str, ...]
 
 
-def _imported_names(tree: ast.Module) -> tuple[set[str], dict[str, str]]:
-    """Return the names a module imports from outside the package, and package imports by local name."""
+def _scope_chain(scope: ModelScope | None) -> Iterator[ModelScope]:
+    """Yield ``scope`` and the scopes around it, innermost first."""
+    current = scope
+    while current is not None:
+        yield current
+        current = current.parent
+
+
+def _imported_names(model: SourceModule, declared: ModelScope) -> tuple[set[str], dict[str, str]]:
+    """Return the names a class sees imported from outside the package, and package imports by local name.
+
+    The bases of a class are read where the class is declared: the imports of the scopes around it count, an import
+    inside one of its methods binds no name there.
+    """
+    visible = {id(item) for item in _scope_chain(declared.parent)}
     external: set[str] = set()
     internal: dict[str, str] = {}
-    for node in ast.walk(tree):
-        match node:
-            case ast.ImportFrom(module=module, level=0, names=names) if not (module or "").startswith(PACKAGE):
-                external.update(alias.asname or alias.name for alias in names)
-            case ast.ImportFrom(names=names):
-                internal.update((alias.asname or alias.name, alias.name) for alias in names)
-            case ast.Import(names=names):
-                external.update((alias.asname or alias.name).partition(".")[0] for alias in names)
+    for item in model.imports:
+        if id(item.scope) not in visible or item.bound is None:
+            continue
+        if item.kind == "import":
+            external.add(item.bound)
+        elif item.kind == "from" and item.alias is not None:
+            if not item.level and not str(item.source).startswith(PACKAGE):
+                external.add(item.bound)
+            else:
+                internal[item.bound] = item.alias.name
     return external, internal
 
 
-def _class_declarations(paths: Iterable[Path]) -> dict[str, list[_ClassDeclaration]]:
+def _class_declarations(models: Iterable[tuple[Path, SourceModule]]) -> dict[str, list[_ClassDeclaration]]:
     declarations: dict[str, list[_ClassDeclaration]] = {}
-    for path in iter_python_files(paths):
-        tree = ast.parse(path.read_text(), filename=str(path))
-        external, internal = _imported_names(tree)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef):
+    for path, model in models:
+        for scope in model.scopes:
+            if scope.kind == "class":
+                external, internal = _imported_names(model, scope)
                 bases = tuple(
                     internal.get(chain[-1], chain[-1])
-                    for base in node.bases
+                    for base in scope.node.bases
                     if (chain := _attribute_chain(base)) and chain[0] not in external
                 )
-                declarations.setdefault(node.name, []).append(_ClassDeclaration(path, node, bases))
+                declarations.setdefault(scope.code_name, []).append(_ClassDeclaration(path, model, scope, bases))
     return declarations
 
 
@@ -1317,18 +1341,21 @@ def _graph_ancestry(name: str, declarations: dict[str, list[_ClassDeclaration]])
     return tuple(ancestry) if GRAPH_ROOT_CLASSES & set(ancestry) else ()
 
 
-def _declared_attributes(node: ast.ClassDef) -> Iterator[tuple[str, ast.AST]]:
-    for statement in node.body:
+def _declared_attributes(declaration: _ClassDeclaration) -> Iterator[tuple[str, ast.AST]]:
+    model = declaration.model
+    for statement in declaration.scope.node.body:
         match statement:
-            case ast.AnnAssign(target=ast.Name(id=name), annotation=annotation) if (
-                not name.isupper() and "ClassVar" not in _annotation_names(annotation)
+            case ast.AnnAssign(target=target, annotation=annotation) if (
+                (name := _spelled(model, target)) is not None
+                and not name.isupper()
+                and "ClassVar" not in _type_names(model, annotation)
             ):
                 yield name, statement
             case ast.FunctionDef() | ast.AsyncFunctionDef():
-                yield from _self_attribute_writes(statement)
+                yield from _self_attribute_writes(model, statement)
 
 
-def _self_attribute_writes(function: FunctionNode) -> Iterator[tuple[str, ast.AST]]:
+def _self_attribute_writes(model: SourceModule, function: ast.AST) -> Iterator[tuple[str, ast.AST]]:
     """Yield the attributes a method sets on ``self`` by assignment or by ``setattr`` with a literal name."""
     for child in ast.walk(function):
         targets: list[ast.AST] = []
@@ -1337,24 +1364,13 @@ def _self_attribute_writes(function: FunctionNode) -> Iterator[tuple[str, ast.AS
                 targets = [node for target in assigned for node in _bound_targets(target)]
             case ast.AnnAssign(target=annotated) | ast.AugAssign(target=annotated):
                 targets = [annotated]
-            case ast.Call(func=func, args=[ast.Name(id="self"), ast.Constant(value=str() as name), *_]) if (
-                ".".join(_attribute_chain(func)) in SETATTR_FUNCTIONS
+            case ast.Call(func=func, args=[receiver, ast.Constant(value=str() as name), *_]) if (
+                _spelled(model, receiver) == "self" and model.origin(func) in SETATTR_ORIGINS
             ):
                 yield name, child
         for target in targets:
             if isinstance(target, ast.Attribute) and _attribute_chain(target.value) == ("self",):
                 yield target.attr, target
-
-
-def _class_members(node: ast.ClassDef) -> set[str]:
-    members: set[str] = set()
-    for statement in node.body:
-        match statement:
-            case ast.FunctionDef(name=name) | ast.AsyncFunctionDef(name=name) | ast.AnnAssign(target=ast.Name(id=name)):
-                members.add(name)
-            case ast.Assign(targets=targets):
-                members.update(target.id for target in targets if isinstance(target, ast.Name))
-    return members
 
 
 def table_problems(
@@ -1366,18 +1382,19 @@ def table_problems(
     """Report model-graph attributes without a row, and rows that name nothing the sources declare or write."""
     table = ATTRIBUTE_FACTS if rows is None else rows
     paths = [ROOT / path for path in DECLARATION_MODULES] if declaration_paths is None else declaration_paths
-    declarations = _class_declarations(paths)
+    read = [(path, _model_or_error(path)) for path in iter_python_files(paths)]
+    problems = [_unreadable(path, model) for path, model in read if isinstance(model, SourceModelError)]
+    declarations = _class_declarations((path, model) for path, model in read if isinstance(model, SourceModule))
     rows_by_owner: dict[str, set[str]] = {}
     for row in table:
         rows_by_owner.setdefault(row.owner, set()).add(row.declared_name)
-    problems: list[Violation] = []
     declared_by_owner: dict[str, set[str]] = {}
     for name, entries in sorted(declarations.items()):
         ancestry = _graph_ancestry(name, declarations)
         declared = declared_by_owner.setdefault(name, set())
         for declaration in entries:
-            declared |= _class_members(declaration.node)
-            for attribute, node in _declared_attributes(declaration.node):
+            declared.update(declaration.model.class_members(declaration.scope, spelled=True))
+            for attribute, node in _declared_attributes(declaration):
                 declared.add(attribute)
                 if ancestry and not any(attribute in rows_by_owner.get(owner, ()) for owner in ancestry):
                     problems.append(
@@ -1492,21 +1509,11 @@ _FUNCTIONS_AT: dict[tuple[Path, int], str] = {}
 def _function_spans(path: Path) -> list[tuple[int, int, str]]:
     """Return the line span and qualified name of every function in ``path``, named as the visitor names them."""
     if (spans := _FUNCTION_SPANS.get(path)) is None:
-        spans = _FUNCTION_SPANS[path] = []
-        pending: list[tuple[ast.AST, tuple[str, ...]]] = [
-            (ast.parse(path.read_text(encoding="utf-8"), filename=str(path)), ())
+        spans = _FUNCTION_SPANS[path] = [
+            (scope.node.lineno, scope.node.end_lineno or scope.node.lineno, nested_name(scope))
+            for scope in read_model(path).scopes
+            if scope.kind == "function"
         ]
-        while pending:
-            node, names = pending.pop()
-            for child in ast.iter_child_nodes(node):
-                match child:
-                    case ast.FunctionDef(name=name) | ast.AsyncFunctionDef(name=name):
-                        spans.append((child.lineno, child.end_lineno or child.lineno, ".".join((*names, name))))
-                        pending.append((child, (*names, name)))
-                    case ast.ClassDef(name=name):
-                        pending.append((child, (*names, name)))
-                    case _:
-                        pending.append((child, names))
     return spans
 
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import re
 import sys
 from bisect import bisect_left, bisect_right
 from pathlib import Path
@@ -13,13 +12,13 @@ from coverage import Coverage
 from coverage.exceptions import CoverageException
 from coverage.python import PythonFileReporter
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._source_model import SourceModule
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from coverage.python import PythonParser
-
-KEYWORD_HEADER = re.compile(r"\s*(?:else|finally)\s*:")
-"""The header of an `else` or `finally` clause, the clauses without a node of their own."""
 
 
 def _area(path: str) -> str:
@@ -29,35 +28,16 @@ def _area(path: str) -> str:
     return package[0] if package else "(top level)"
 
 
-def _span(suite: list[ast.stmt]) -> tuple[int, int]:
-    return suite[0].lineno, suite[-1].end_lineno or suite[-1].lineno
+def _clauses(model: SourceModule) -> Iterator[tuple[int, int, int, int]]:
+    """Yield `(first header line, last header line, suite start, suite end)` of each clause of the module.
 
-
-def _clauses(tree: ast.Module, lines: list[str]) -> Iterator[tuple[int, int, int, int]]:
-    """Yield `(first line, header line, suite start, suite end)` of each clause, a header and the suite it owns.
-
-    A definition starts at its first decorator; an `else` or `finally` header is the line of its keyword, the only line
-    between the preceding suite and its own that matches `KEYWORD_HEADER`.
+    A clause is a header and the suite it owns, as the source model reads it: a definition's header starts at its first
+    decorator, an `else` or `finally` header is the line of its keyword.
     """
-    for node in ast.walk(tree):
-        match node:
-            case ast.FunctionDef() | ast.AsyncFunctionDef() | ast.ClassDef():
-                first = min((decorator.lineno for decorator in node.decorator_list), default=node.lineno)
-                yield first, node.lineno, *_span(node.body)
-            case ast.Match():
-                yield node.lineno, node.lineno, node.cases[0].pattern.lineno, _span(node.cases[-1].body)[1]
-            case ast.match_case():
-                yield node.pattern.lineno, node.pattern.lineno, *_span(node.body)
-            case ast.ExceptHandler() | ast.With() | ast.AsyncWith():
-                yield node.lineno, node.lineno, *_span(node.body)
-            case ast.If() | ast.For() | ast.AsyncFor() | ast.While() | ast.Try() | ast.TryStar():
-                yield node.lineno, node.lineno, *_span(node.body)
-                before = [*node.body, *getattr(node, "handlers", ())]
-                for suite in (node.orelse, getattr(node, "finalbody", [])):
-                    window = range(_span(before)[1] + 1, suite[0].lineno + 1) if suite else range(0)
-                    if header := next((line for line in window if KEYWORD_HEADER.match(lines[line - 1])), None):
-                        yield header, header, *_span(suite)
-                    before += suite
+    for node in ast.walk(model.tree):
+        if isinstance(node, ast.stmt):
+            for clause in model.clauses(node):
+                yield clause.header.start, clause.header.stop - 1, clause.suite.start, clause.suite.stop - 1
 
 
 def _executed_regions(parser: PythonParser, executed: set[int]) -> Iterator[tuple[int, int]]:
@@ -73,12 +53,8 @@ def _executed_regions(parser: PythonParser, executed: set[int]) -> Iterator[tupl
     def between(start: int, end: int) -> set[int]:
         return set(statements[bisect_left(statements, start) : bisect_right(statements, end)])
 
-    ends: dict[int, int] = {}
-    for line, first in parser.multiline_map.items():
-        ends[first] = max(ends.get(first, first), line)
     headers: dict[int, tuple[int, int, int, int]] = {}
-    for first, header, start, end in _clauses(ast.parse(parser.text), parser.text.splitlines()):
-        last = ends.get(header, header)
+    for first, last, start, end in _clauses(SourceModule(parser.text, parser.filename)):
         headers.update(dict.fromkeys(range(first, last + 1), (first, last, start, end)))
     regions: dict[int, tuple[int, set[int]]] = {}
     for mark in sorted(parser.raw_excluded):
@@ -87,7 +63,10 @@ def _executed_regions(parser: PythonParser, executed: set[int]) -> Iterator[tupl
             regions.setdefault(first, (mark, between(start, end) - between(first, last)))
         else:
             statement = parser.first_line(mark)
-            regions.setdefault(statement, (mark, between(statement, statement)))
+            body = between(statement, statement)
+            if clause := headers.get(statement):
+                body -= between(clause[0], clause[1])
+            regions.setdefault(statement, (mark, body))
     for mark, body in regions.values():
         if ran := body & executed:
             yield mark, len(ran)
