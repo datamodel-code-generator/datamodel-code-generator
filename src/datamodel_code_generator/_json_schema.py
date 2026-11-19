@@ -440,3 +440,41 @@ def _rewrite_schema_refs(
     if isinstance(value, list):
         return [_rewrite_schema_refs(item, ref_map, references) for item in value]
     return value
+
+
+__all__ = [
+    "COMBINATOR_POSITIONS",
+    "DEFINITION_KEYS",
+    "INSTANCE_DATA_KEYWORDS",
+    "ITEM_POSITIONS",
+    "MODELED_SCHEMA_MAPS",
+    "MODEL_VALUE_POSITIONS",
+    "NAMED_SCHEMA_MAPS",
+    "NAMESPACE_DEFINITION_KEYS",
+    "REF_PRE_PASS_FIELDS",
+    "REF_PRE_PASS_POSITIONS",
+    "SCHEMA_MAP_KEYS",
+    "SCHEMA_POSITIONS",
+    "SCHEMA_SHAPES",
+    "SCHEMA_VALUE_KEYS",
+    "SCHEMA_VALUE_SHAPES",
+    "SEQUENCE_SCHEMA_SHAPES",
+    "SINGLE_SCHEMA_SHAPES",
+    "DefinitionKey",
+    "LiteralValueKind",
+    "SchemaPosition",
+    "SchemaRole",
+    "SchemaShape",
+    "admitted_types",
+    "declared_types",
+    "definition_ref",
+    "json_nodes",
+    "json_type",
+    "json_value_key",
+    "json_value_type",
+    "json_values_equal",
+    "literal_value_kind",
+    "non_null_types",
+    "schema_positions",
+    "subschema_entries",
+]
