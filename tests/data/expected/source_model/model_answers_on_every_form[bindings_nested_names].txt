@@ -1,0 +1,42 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1; nested name ''
+  Outer: class@8 [always]
+  outer: def@19 [always]
+  rebased: def@22 [function:body@19]
+scope class Outer#0 'Outer': code yes; first line 8; nested name 'Outer'
+  opened by a node evaluated in <module>#0
+  method: def@9 [always]
+  Nested: class@15 [always]
+  members: Nested, method
+scope function Outer.method#0 'method': code yes; first line 9; nested name 'Outer.method'
+  opened by a node evaluated in Outer#0
+  self: param@9 [function:body@9]
+  inner: def@10 [function:body@9]
+  receiver: self@9
+scope function Outer.method.<locals>.inner#0 'inner': code yes; first line 10; nested name 'Outer.method.inner'
+  opened by a node evaluated in Outer.method#0
+scope comprehension Outer.method.<locals>.inner.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 11; nested name 'Outer.method.inner'
+  opened by a node evaluated in Outer.method.<locals>.inner#0
+  _: comprehension@11 [function:body@9|function:body@10|loop:body@11]
+scope lambda Outer.method.<locals>.inner.<locals>.<lambda>#0 '<lambda>': code yes; first line 11; nested name 'Outer.method.inner'
+  opened by a node evaluated in Outer.method.<locals>.inner.<locals>.<listcomp>#0
+scope comprehension Outer.method.<locals>.inner.<locals>.<lambda>.<locals>.<genexpr>#0 '<genexpr>': code yes; first line 11; nested name 'Outer.method.inner'
+  opened by a node evaluated in Outer.method.<locals>.inner.<locals>.<lambda>#0
+  x: comprehension@11 [function:body@9|function:body@10|loop:body@11|function:body@11|loop:body@11]
+scope class Outer.Nested#0 'Nested': code yes; first line 15; nested name 'Outer.Nested'
+  opened by a node evaluated in Outer#0
+  attribute: assign@16 [always]; value [value for value in ()]
+  members: attribute
+scope comprehension Outer.Nested.<listcomp>#0 '<listcomp>': code 3.11 only; first line 16; nested name 'Outer.Nested'
+  opened by a node evaluated in Outer.Nested#0
+  value: comprehension@16 [loop:body@16]
+scope function outer#0 'outer': code yes; first line 19; global rebased; nested name 'outer'
+  opened by a node evaluated in <module>#0
+scope function rebased#0 'rebased': code yes; first line 22; nested name 'outer.rebased'
+  opened by a node evaluated in outer#0
+scope lambda outer.<locals>.<lambda>#0 '<lambda>': code yes; first line 25; nested name 'outer'
+  opened by a node evaluated in outer#0
+scope comprehension outer.<locals>.<lambda>.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 25; nested name 'outer'
+  opened by a node evaluated in outer.<locals>.<lambda>#0
+  item: comprehension@25 [function:body@19|function:body@25|loop:body@25]
+== code objects: one per scope that compiles on this Python

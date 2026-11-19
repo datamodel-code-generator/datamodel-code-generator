@@ -1,0 +1,11 @@
+verdict problems: none
+undeclared questions: none
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:13: 1 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:22: 1 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:26: 1 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:28: 1 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:31: 1 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:34: 2 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:35: 1 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:37: 1 statement(s) of the excluded region ran
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:40: 3 statement(s) of the excluded region ran

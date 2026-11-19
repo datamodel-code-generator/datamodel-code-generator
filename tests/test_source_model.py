@@ -19,14 +19,18 @@ from typing import TYPE_CHECKING
 
 import pytest
 import tomllib
+from coverage.config import DEFAULT_EXCLUDE
+from coverage.python import PythonParser
 
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import (
     check_architecture_boundaries,
     check_generation_store_usage,
+    check_pass_pipeline,
     check_ratchets,
     check_source_rules,
+    coverage_exclusions,
     where,
 )
 from tests import test_checks_are_run as checks_are_run
@@ -44,7 +48,8 @@ PYTHON = (sys.version_info.major, sys.version_info.minor)
 OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
-    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases)"
+    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases"
+    r"|nested-names)"
     r": *(.*)$",
     re.MULTILINE,
 )
@@ -168,6 +173,7 @@ def _bindings(model: source_model.SourceModule, directives: dict[str, str]) -> l
         marks += [f"global {','.join(sorted(scope.declared_global))}"] * bool(scope.declared_global)
         marks += [f"nonlocal {','.join(sorted(scope.declared_nonlocal))}"] * bool(scope.declared_nonlocal)
         marks += ["star import"] * scope.star_import
+        marks += [f"nested name {source_model.nested_name(scope)!r}"] * bool(directives.get("nested-names"))
         out.append(f"scope {scope.kind} {scope.qualname}#{scope.ordinal} {scope.code_name!r}: {'; '.join(marks)}")
         defined = scope.kind not in {"module", "type-params"} and model.scope_defined_by(scope.node) is scope
         out += [f"  opened by a node evaluated in {_name(model.scope_of(scope.node))}"] if defined else []
@@ -832,6 +838,44 @@ def _generation_store_usage(form: Path) -> list[Finding]:
     return found
 
 
+def _pass_pipeline(form: Path) -> list[Finding]:
+    """Run the pass pipeline check's readings over a form's modules, each one standing as the module of ``Parser``.
+
+    The readings are the calls that build ``FinalFacts``, the places outside the body of the form's ``Parser`` that
+    reach a mangled member of it, and the deep warnings.
+    """
+    found = []
+    for name, text in _form_files(form):
+        model = source_model.SourceModule(text, name, "forms.form")
+        members = check_pass_pipeline.mangled_members(model)
+        found += [
+            Finding("final-facts", _site(form, name, line), f"{name}:{line}: FinalFacts built in {scope or '<module>'}")
+            for scope, line in check_pass_pipeline.calls(model, "FinalFacts")
+        ]
+        found += [
+            Finding("mangled-member", _site(form, name, line), f"{name}:{line}: reaches Parser.{attr}")
+            for line, attr in check_pass_pipeline.reached_members(model, members, own=True)
+        ]
+        found += [
+            Finding("deep-warning", _site(form, name, line), f"{name}:{line}: deep warning in {function}")
+            for function, line in check_pass_pipeline.deep_warnings(model)
+        ]
+    return found
+
+
+def _coverage_exclusions(form: Path) -> list[Finding]:
+    """Run coverage_exclusions over a form's modules as if every statement ran, with coverage's default marks."""
+    found = []
+    for name, text in _form_files(form):
+        parser = PythonParser(text=text, filename=name, exclude="|".join(DEFAULT_EXCLUDE))
+        parser.parse_source()
+        found += [
+            Finding("ran", _site(form, name, mark), f"{name}:{mark}: {ran} statement(s) of the excluded region ran")
+            for mark, ran in coverage_exclusions._executed_regions(parser, set(parser.raw_statements))
+        ]
+    return found
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -855,6 +899,8 @@ RULES: dict[str, RuleRun] = {
         "tests.checks.template_assignments", frozenset({"bindings", "references"}), _template_assignment_lines
     ),
     "check-run-on-the-tree": RuleRun("tests.test_checks_are_run", frozenset({"bindings", "references"}), _check_runs),
+    "pass-pipeline": RuleRun("scripts.check_pass_pipeline", frozenset({"bindings", "references"}), _pass_pipeline),
+    "coverage-exclusions": RuleRun("scripts.coverage_exclusions", frozenset({"extents"}), _coverage_exclusions),
     "generation-store-usage": RuleRun(
         "scripts.check_generation_store_usage",
         frozenset({"bindings", "references", "imports"}),

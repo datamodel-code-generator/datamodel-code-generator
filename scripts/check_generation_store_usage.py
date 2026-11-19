@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from scripts._source_model import Scope as ModelScope
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts._source_model import SourceModelError, SourceModule, Unreadable, annotation
+from scripts._source_model import SourceModelError, SourceModule, Unreadable, annotation, nested_name
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -1484,21 +1484,11 @@ def _function_spans(path: Path) -> list[tuple[int, int, str]]:
     """Return the line span and qualified name of every function in ``path``, named as the visitor names them."""
     if (spans := _FUNCTION_SPANS.get(path)) is None:
         spans = _FUNCTION_SPANS[path] = [
-            (scope.node.lineno, scope.node.end_lineno or scope.node.lineno, _visitor_name(scope))
+            (scope.node.lineno, scope.node.end_lineno or scope.node.lineno, nested_name(scope))
             for scope in read_model(path).scopes
             if scope.kind == "function"
         ]
     return spans
-
-
-def _visitor_name(scope: ModelScope) -> str:
-    """Return the names of the classes and functions around a scope and its own, as the visitor joins them."""
-    names = []
-    probe: ModelScope | None = scope
-    while probe is not None:
-        names += [probe.code_name] if probe.kind in {"class", "function"} else []
-        probe = probe.parent
-    return ".".join(reversed(names))
 
 
 def function_at(path: Path, line: int) -> str:

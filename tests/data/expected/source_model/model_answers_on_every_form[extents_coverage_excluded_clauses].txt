@@ -1,0 +1,92 @@
+== extents
+Expr@1 lines 1-5
+FunctionDef@8 lines 8-9: function 8/9
+Return@9 lines 9
+FunctionDef@13 lines 12-16: function 12-15/16
+Return@16 lines 16
+FunctionDef@19 lines 19-37: function 19/20-37
+For@20 lines 20-23: for 20/21; else 22/23
+Pass@21 lines 21
+Assign@23 lines 23
+Try@24 lines 24-29: try 24/25; except 26/27; finally 28/29
+Pass@25 lines 25
+Assign@27 lines 27
+Assign@29 lines 29
+Match@30 lines 30-32: match 30/31-32; case 31/32
+Assign@32 lines 32
+If@33 lines 33: if 33/33
+Assign@33 lines 33
+With@34 lines 34-36: with 34/35-36
+If@35 lines 35-36: if 35/36
+Assign@36 lines 36
+Return@37 lines 37
+ClassDef@40 lines 40-43: class 40/41-43
+FunctionDef@42 lines 41-43: function 41-42/43
+Return@43 lines 43
+code lines: 1-5,8-9,12-16,19-37,40-43
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: Expr@1; owner <module>#0; tokens -
+line 3: Expr@1; owner <module>#0; tokens -
+line 4: Expr@1; owner <module>#0; tokens -
+line 5: Expr@1; owner <module>#0; tokens -
+line 6: -; owner <module>#0; tokens -
+line 7: -; owner <module>#0; tokens -
+line 8: FunctionDef@8; owner decorate#0; tokens decorate#0:header
+line 9: Return@9; owner decorate#0; tokens decorate#0:body
+line 10: -; owner <module>#0; tokens -
+line 11: -; owner <module>#0; tokens -
+line 12: FunctionDef@13; owner decorated#0; tokens decorated#0:header
+line 13: FunctionDef@13; owner decorated#0; tokens decorated#0:header
+line 14: FunctionDef@13; owner decorated#0; tokens decorated#0:header
+line 15: FunctionDef@13; owner decorated#0; tokens decorated#0:header
+line 16: Return@16; owner decorated#0; tokens decorated#0:body
+line 17: -; owner <module>#0; tokens -
+line 18: -; owner <module>#0; tokens -
+line 19: FunctionDef@19; owner clauses#0; tokens clauses#0:header
+line 20: For@20; owner clauses#0; tokens clauses#0:body
+line 21: Pass@21; owner clauses#0; tokens clauses#0:body
+line 22: For@20; owner clauses#0; tokens clauses#0:body
+line 23: Assign@23; owner clauses#0; tokens clauses#0:body
+line 24: Try@24; owner clauses#0; tokens clauses#0:body
+line 25: Pass@25; owner clauses#0; tokens clauses#0:body
+line 26: Try@24; owner clauses#0; tokens clauses#0:body
+line 27: Assign@27; owner clauses#0; tokens clauses#0:body
+line 28: Try@24; owner clauses#0; tokens clauses#0:body
+line 29: Assign@29; owner clauses#0; tokens clauses#0:body
+line 30: Match@30; owner clauses#0; tokens clauses#0:body
+line 31: Match@30; owner clauses#0; tokens clauses#0:body
+line 32: Assign@32; owner clauses#0; tokens clauses#0:body
+line 33: Assign@33; owner clauses#0; tokens clauses#0:body
+line 34: With@34; owner clauses#0; tokens clauses#0:body
+line 35: If@35; owner clauses#0; tokens clauses#0:body
+line 36: Assign@36; owner clauses#0; tokens clauses#0:body
+line 37: Return@37; owner clauses#0; tokens clauses#0:body
+line 38: -; owner <module>#0; tokens -
+line 39: -; owner <module>#0; tokens -
+line 40: ClassDef@40; owner Holder#0; tokens Holder#0:header
+line 41: FunctionDef@42; owner Holder.method#0; tokens Holder.method#0:header
+line 42: FunctionDef@42; owner Holder.method#0; tokens Holder.method#0:header
+line 43: Return@43; owner Holder.method#0; tokens Holder.method#0:body
+header decorate: 8
+header decorated: 12-15
+header clauses: 19
+header Holder: 40
+header Holder.method: 41-42
+source @1: """coverage_exclusions: the region a coverage mark excludes is the marked statement, or a clause header and its suite.
+
+A definition's header starts at its first decorator; ``else`` and ``finally`` have no node of their own and are found
+by their keyword; a one-line clause has no body apart from its header, and a nested region stays in its owner's suite.
+"""
+source @9: return function
+source @16: return value
+source @21: pass
+source @23: items = None
+source @25: pass
+source @27: items = []
+source @29: subject = None
+source @32: subject = 0
+source @33: subject = 1
+source @36: handle = None
+source @37: return items
+source @43: return self
+== code objects: one per scope that compiles on this Python
