@@ -80,8 +80,6 @@ from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, NoReturn
 
-from typing_extensions import override
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Generator, Iterable, Iterator
 
@@ -1608,10 +1606,7 @@ class _TypingForms(_Reads):
 
     _guards: dict[ast.stmt, Guard]
     _node_scope: dict[ast.AST, Scope]
-
-    def _origin(self, node: ast.expr, active: frozenset[Binding] = frozenset()) -> str | None:
-        """Return the one dotted path a name or attribute chain names (`SourceModule.origin`)."""
-        raise NotImplementedError
+    _origin: Callable[..., str | None]
 
     def typing_only(self, line: int, column: int) -> str | None:
         """Return the form that makes a position code only type checkers read, or None where it may run.
@@ -2233,7 +2228,6 @@ class SourceModule(_TypingForms):
         )
 
     # ---- pass 2: resolution and classification -------------------------------------------------------------------
-    @override
     def _origin(self, node: ast.expr, active: frozenset[Binding] = frozenset()) -> str | None:
         head, parts = _chain(node)
         resolution = self._resolved.get(head) if head is not None else None

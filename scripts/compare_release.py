@@ -27,8 +27,17 @@ printed, with the frames of tracebacks left out, so an error is its class and me
 output file for a modular one is run again into a directory, and `Outcome.first` keeps the refusal (its exit status,
 messages, warnings and handled exceptions).
 
-Prints one line per differing or failing run and a summary; exits 1 when any run differs or fails on the
-candidate only.
+A run's working directory is its output directory, so what it writes to a relative path (a client's package) is
+compared with the rest of its output; an output its arguments name elsewhere is not (`_outside`).
+
+Prints one line per differing or failing run, a summary and the evidence (`Evidence`): per input group the runs
+compared (generated on both sides, all output in the run's directory) and the others, the runs the candidate refuses
+and the base generated, and, against a git revision, which changed code objects compared runs ran on their side
+(`scripts/_change_units.py` maps the change to code objects and probes; each side's workers trace them, `_Tracer`,
+Python 3.12+). Exits 1 when any run differs or fails on the candidate only (a single output file it refuses and the
+base wrote included), or when the evidence compared too little: no input group, an input group that compared nothing,
+or a changed code object no compared run ran, that is unmeasurable, or that no run could measure. `--evidence` writes
+what each run proved (exit status and hashes) as JSON.
 """
 
 from __future__ import annotations
@@ -86,8 +95,9 @@ PROCESS_STATE_OPTIONS = frozenset({"--debug"})
 worker of such a run is closed after it, as after running out of memory, so later runs do not inherit it."""
 RECYCLE = 200
 """Jobs a worker runs before a new one takes its place, which bounds the memory and the state a worker gathers."""
-CACHE_FORMAT = 4
+CACHE_FORMAT = 5
 ROOT = Path(__file__).resolve().parents[1]
+PACKAGE = "datamodel_code_generator"
 RELEASE = re.compile(r"\d+(?:\.\d+)+")
 """A base that is a released version, installed from the package index; any other base is a git revision."""
 TRACEBACK_FRAMES = re.compile(r"^Traceback \(most recent call last\):\n(?:[ \t].*(?:\n|\Z))*", re.MULTILINE)
@@ -730,11 +740,14 @@ def run_environment(source: Path | None) -> dict[str, str]:
 class Worker:
     """A warm worker process for one interpreter; `jobs` counts the jobs it was given."""
 
-    def __init__(self, python: Path, env: dict[str, str], package: Path | None) -> None:
+    def __init__(
+        self, python: Path, env: dict[str, str], package: Path | None, probes: list[Record] | None = None
+    ) -> None:
         """Start the worker with Python's default warning filters, which its runs show warnings under.
 
         It refuses a datamodel-code-generator imported from outside `package` (any where None). Both paths are
-        normalized, not resolved: a side's package path and its `package` come from the same unresolved path.
+        normalized, not resolved: a side's package path and its `package` come from the same unresolved path. It
+        traces `probes` (`Runner.probes`) from before it imports the package, where the interpreter can (`measured`).
         """
         self.process = subprocess.Popen(
             [str(python), str(Path(__file__).resolve()), "--worker"],
@@ -743,12 +756,17 @@ class Worker:
             text=True,
             env={name: value for name, value in env.items() if name != "PYTHONWARNINGS"},
         )
+        stdin = self.process.stdin
+        assert stdin is not None
+        stdin.write(json.dumps({"probes": probes}) + "\n")
+        stdin.flush()
         self.jobs = 0
         if (ready := self._reply()) is None:
             self.close()
             msg = f"worker exited with {self.process.returncode}"
             raise RuntimeError(msg)
         self.package = Path(os.path.normpath(Path(ready["package"]).absolute())).parent
+        self.measured = bool(ready.get("measured"))
         if package is not None and not self.package.is_relative_to(os.path.normpath(package.absolute())):
             self.close()
             msg = f"{python} imports datamodel_code_generator from {self.package}, not from below {package}"
@@ -804,6 +822,10 @@ class Outcome:
     warnings it showed as records (category, message, module) and `handled` the classes of the exceptions
     `datamodel_code_generator.__main__` caught; paths of the run's directory, output and package read `<tmp>`,
     `<output>` and `<package>`. `first` holds these facts of a refused single-file attempt before a modular run.
+    `tree` is every file the run wrote below its directory, which is its working directory too, so an output written
+    to a relative path (a client's package) is compared; `outside` the outputs its arguments name elsewhere
+    (`_outside`). `ran` are the probes of its runner (`Runner.probes`, by index) the run ran, over both attempts; None
+    where none were asked for or the interpreter cannot tell.
     """
 
     ok: bool
@@ -816,6 +838,8 @@ class Outcome:
     warnings: list[list[str]] = field(default_factory=list)
     handled: list[str] = field(default_factory=list)
     first: Record = field(default_factory=dict)
+    outside: list[str] = field(default_factory=list)
+    ran: list[int] | None = None
 
     def stopped(self) -> bool:
         """Whether the timeout or the memory cap stopped the run: another cap may let it finish."""
@@ -1032,10 +1056,10 @@ def resolve_base(spec: str, candidate: Path, cache_dir: Path, repo: Path = ROOT)
 
 
 def _tree(path: Path) -> dict[str, str]:
+    """Return every file below a run's directory by its relative path, outside hidden and cache directories."""
     return {
-        file.relative_to(path).as_posix(): file.read_text(encoding="utf-8")
-        for file in sorted(path.rglob("*.py"))
-        if "__pycache__" not in file.parts
+        file.relative_to(path).as_posix(): file.read_text(encoding="utf-8", errors="surrogateescape")
+        for file in _hashed_files(path)
     }
 
 
@@ -1077,6 +1101,8 @@ def _attempt(rc: int, log: Path, record: Path, paths: tuple[Path, Path, Path]) -
             [category, _relative(message, *paths), module] for category, message, module in recorded.get("warnings", [])
         ],
         "handled": recorded.get("handled", []),
+        "outside": [_relative(path, *paths) for path in recorded.get("outside", [])],
+        "ran": recorded.get("ran"),
     }
 
 
@@ -1086,13 +1112,19 @@ class Runner:
     def __init__(
         self, side: Side, env: dict[str, str], *, import_check: bool, timeout: int, memory_mb: int = 0
     ) -> None:
-        """Prepare a runner; workers start lazily. `memory_mb` caps the data memory of a worker's run (0: no cap)."""
+        """Prepare a runner; workers start lazily. `memory_mb` caps the data memory of a worker's run (0: no cap).
+
+        `probes` are the probes of this side's changed code objects (`changed_units`) each outcome reports as run or
+        not (`Outcome.ran`); None asks for none. `measured` turns false once a worker cannot trace them.
+        """
         self.side = side
         self.env = env
         self.import_check = import_check
         self.timeout = timeout
         self.memory_mb = memory_mb
         self.recycle = RECYCLE
+        self.probes: list[Record] | None = None
+        self.measured = True
         self.workers: dict[int, Worker] = {}
         self.lock = threading.Lock()
 
@@ -1112,20 +1144,22 @@ class Runner:
         ):
             if worker is not None:
                 worker.close()
-            worker = Worker(self.side.python, self.env, self.side.package)
+            worker = Worker(self.side.python, self.env, self.side.package, self.probes)
             with self.lock:
                 self.workers[thread] = worker
+                self.measured = self.measured and (worker.measured or self.probes is None)
         return worker
 
     def generate(self, args: list[str], tmp: Path) -> Outcome:
-        """Generate one run into a fresh directory under `tmp`."""
+        """Generate one run into a fresh directory under `tmp`, which is its working directory too."""
         out = tmp / self.side.name
         out.mkdir()
         log = tmp / f"{self.side.name}.log"
         record = tmp / f"{self.side.name}-record.json"
         job = {
             "kind": "generate",
-            "cwd": str(tmp),
+            "cwd": str(out),
+            "out": str(out),
             "log": str(log),
             "record": str(record),
             "timeout": self.timeout,
@@ -1144,6 +1178,8 @@ class Runner:
         if rc == OUT_OF_MEMORY or fresh:
             worker.close()
         facts = _attempt(rc, log, record, (out, tmp, worker.package)) | {"first": first}
+        if (earlier := first.pop("ran", None)) is not None:
+            facts["ran"] = sorted({*earlier, *(facts["ran"] or [])})
         if rc != 0:
             return Outcome(
                 ok=False,
@@ -1237,9 +1273,14 @@ class OutputCache:
     such as `--aliases` or `--custom-template-dir`. Runs whose files cannot all be read are not cached.
     """
 
-    def __init__(self, root: Path | None) -> None:
-        """Use `root` as the cache directory, or disable caching when it is None."""
+    def __init__(self, root: Path | None, measured: str = "") -> None:
+        """Use `root` as the cache directory, or disable caching when it is None.
+
+        `measured` keys what a traced base ran (`Outcome.ran`): the digest of its probes, the interpreter that
+        measured and these scripts (empty for an untraced base).
+        """
         self.root = root
+        self.measured = measured
         self.hits = 0
 
     def _path(self, schema: Path, args: list[str], *, import_check: bool) -> Path | None:
@@ -1250,7 +1291,7 @@ class OutputCache:
         files = [(str(path), _content_hash(path)) for path in paths]
         if any(digest is None for _, digest in files):
             return None
-        key = json.dumps([CACHE_FORMAT, str(schema), files, args, import_check])
+        key = json.dumps([CACHE_FORMAT, str(schema), files, args, import_check, self.measured])
         return self.root / f"{hashlib.sha256(key.encode()).hexdigest()}.json"
 
     def get(self, schema: Path, args: list[str], *, import_check: bool) -> Outcome | None:
@@ -1270,6 +1311,311 @@ class OutputCache:
         tmp = path.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.write_text(json.dumps(outcome.__dict__), encoding="utf-8")
         tmp.replace(path)
+
+
+CHANGE_UNITS = Path(__file__).with_name("_change_units.py")
+"""The script that maps a change to the code objects a comparison must run (run by the measuring interpreter)."""
+
+
+@dataclass
+class Units:
+    """The changed code objects of both sides and their probes, as `scripts/_change_units.py` maps them.
+
+    `probes` are each side's probes in one list (a probe's ``unit`` is its unit's index), which the side's workers
+    trace and its outcomes name by index (`Outcome.ran`).
+    """
+
+    units: list[Record] = field(default_factory=list)
+    unreferenced: list[str] = field(default_factory=list)
+    readers: list[str] = field(default_factory=list)
+    probes: dict[str, list[Record]] = field(default_factory=dict)
+
+    @classmethod
+    def mapped(cls, mapped: Record) -> Units:
+        """Return the units of a `_change_units` reply, with each side's probes numbered."""
+        found = cls(mapped["units"], mapped["unreferenced"], mapped["annotation_readers"], {"base": [], "head": []})
+        for index, unit in enumerate(found.units):
+            unit["index"] = index
+            for probe in unit["probes"]:
+                found.probes[unit["side"]].append(probe | {"unit": index})
+        return found
+
+    def key(self, side: str) -> str:
+        """Return the digest of a side's probes, what a cached outcome of that side ran depends on."""
+        return _digest(json.dumps(self.probes.get(side, []), sort_keys=True))
+
+
+def changed_units(
+    python: Path, repo: Path, base: Base, candidate: str | None = None, head: Path | None = None
+) -> Units | None:
+    """Return the code objects a comparison of a candidate with a base revision must run (`scripts/_change_units.py`).
+
+    `python` is the interpreter that measures both sides (a revision's base runs on the candidate's interpreter);
+    `candidate` a revision of `repo` or None for its working tree, `head` the `src` the candidate runs. None for a
+    base that is no revision: a release's change is a whole cycle.
+    """
+    if base.revision is None or base.source is None:
+        return None
+    request = {
+        "repo": str(repo),
+        "base": base.revision,
+        "candidate": candidate,
+        "roots": {"base": str(base.source), "head": str(head or repo / "src")},
+    }
+    mapped = subprocess.run(
+        [str(python), str(CHANGE_UNITS)],
+        input=json.dumps(request),
+        capture_output=True,
+        text=True,
+        env=run_environment(None),
+        check=False,
+    )
+    if mapped.returncode:
+        msg = f"mapping the change to code objects failed:\n{mapped.stderr}"
+        raise SystemExit(msg)
+    return Units.mapped(json.loads(mapped.stdout))
+
+
+def tested_lines(data: Path) -> dict[str, set[int]]:
+    """Return the lines of the package a coverage.py data file (the test suite's) records as run, by path below it."""
+    from coverage import CoverageData  # ruff: ignore[import-outside-top-level] - only the driver reads test coverage
+
+    coverage = CoverageData(basename=str(data))
+    coverage.read()
+    found: dict[str, set[int]] = {}
+    marker = f"/{PACKAGE}/"
+    for name in coverage.measured_files():
+        posix = Path(name).as_posix()
+        if (index := posix.rfind(marker)) >= 0:
+            found.setdefault(posix[index + len(marker) :], set()).update(coverage.lines(name) or ())
+    return found
+
+
+def _digest(text: str) -> str:
+    return hashlib.blake2b(text.encode("utf-8", "surrogateescape"), digest_size=16).hexdigest()
+
+
+Facts = tuple[int, tuple[tuple[str, str], ...], str, str]
+"""What one side of a run proved (`_facts`): exit status, each output file's hash, its warnings' and others' hash."""
+
+
+def _facts(outcome: Outcome) -> Facts:
+    """Return what a cell's run proved: its exit status, each file's hash, its warnings' hash, its other facts' hash."""
+    files = tuple((sys.intern(name), _digest(text)) for name, text in sorted(outcome.tree.items()))
+    other = json.dumps([outcome.handled, outcome.messages, outcome.first], sort_keys=True)
+    return outcome.code, files, _digest(json.dumps(outcome.warnings)), _digest(other)
+
+
+def refused_on_head(base: Outcome, candidate: Outcome) -> str:
+    """Return what the candidate refuses that the base generated: the run, or the single output file it wrote.
+
+    Empty where the candidate refuses nothing more than the base.
+    """
+    if base.ok and not candidate.ok:
+        return candidate.error
+    if base.ok and candidate.first and not base.first:
+        refusal = candidate.first["messages"].strip().splitlines() or ["error"]
+        return f"the single output file: {refusal[-1]}"
+    return ""
+
+
+GROUP_COUNTS = ("compared", "failed on both sides", "failed on one side", "wrote outside their directory")
+"""How `Evidence` counts the runs of an input group: only the first are compared."""
+ALWAYS_COUNTED = (True, True, False, False)
+"""Which of `GROUP_COUNTS` a group prints when they are 0."""
+SIDE_NAMES = {"base": "base", "head": "head"}
+
+
+def _lines_of(where: str) -> set[int]:
+    """Return the lines a probe's source span (`L:C-L:C,...`) covers."""
+    found: set[int] = set()
+    for span in where.split(","):
+        start, _, end = span.partition("-")
+        if start.partition(":")[0].isdigit() and end.partition(":")[0].isdigit():
+            found.update(range(int(start.partition(":")[0]), int(end.partition(":")[0]) + 1))
+    return found
+
+
+@dataclass
+class Evidence:
+    """What the runs of a comparison compared: per input group and per run, and the changed code objects they ran.
+
+    An input group is the directory of its inputs, whether they are files or directories (modular inputs), the output
+    model type and the option set. A run is compared where both sides generated and wrote all their output in the
+    run's directory (`Outcome.outside`): a run that failed on one side or both, or wrote elsewhere, compared nothing,
+    and the probes its sides ran do not count. Per run it keeps what the run proved (`_facts`: exit status and
+    hashes), so its size grows with neither the outputs nor the change; per side the probes compared runs ran.
+    """
+
+    units: Units | None
+    groups: dict[str, list[int]] = field(default_factory=dict)
+    cells: dict[str, tuple[str, bool, Facts, Facts]] = field(default_factory=dict)
+    ran: dict[str, set[int]] = field(default_factory=lambda: {"base": set(), "head": set()})
+    measured: dict[str, bool] = field(default_factory=lambda: {"base": False, "head": False})
+    refused: list[str] = field(default_factory=list)
+    outside: list[str] = field(default_factory=list)
+    lock: threading.Lock = field(default_factory=threading.Lock)
+
+    @staticmethod
+    def group(path: Path, directory: str, model_type: str, options: str) -> str:
+        """Return the name of the input group of a run of `path`, an input in `directory`."""
+        return sys.intern(f"{directory} {'directories' if path.is_dir() else 'files'} | {model_type} | {options}")
+
+    def add(self, group: str, name: str, base: Outcome, candidate: Outcome) -> None:
+        """Count the run `name` of `group` with what each side showed."""
+        outside = sorted({
+            *base.outside,
+            *candidate.outside,
+            *base.first.get("outside", ()),
+            *candidate.first.get("outside", ()),
+        })
+        if base.ok and candidate.ok:
+            kind = GROUP_COUNTS.index("wrote outside their directory") if outside else 0
+        else:
+            kind = GROUP_COUNTS.index(
+                "failed on both sides" if not base.ok and not candidate.ok else "failed on one side"
+            )
+        refused = refused_on_head(base, candidate)
+        before, after = _facts(base), _facts(candidate)
+        with self.lock:
+            self.groups.setdefault(group, [0] * len(GROUP_COUNTS))[kind] += 1
+            self.cells[name] = (group, not kind, before, before if after == before else after)
+            if refused:
+                self.refused.append(f"{name}: {refused}")
+            if outside:
+                self.outside.append(f"{name}: {', '.join(outside)}")
+            for side, outcome in (("base", base), ("head", candidate)):
+                if not kind and outcome.ran is not None:
+                    self.measured[side] = True
+                    self.ran[side].update(outcome.ran)
+
+    def _missing(self, unit: Record) -> list[Record]:
+        probes = self.units.probes[unit["side"]] if self.units else []
+        return [
+            probe
+            for index, probe in enumerate(probes)
+            if probe["unit"] == unit["index"] and index not in self.ran[unit["side"]]
+        ]
+
+    def report(self, tests: dict[str, set[int]] | None) -> list[str]:
+        """Print the evidence and return why it is incomplete.
+
+        It is where no input group ran (a selection that matched nothing), where an input group compared nothing, or
+        where a changed code object ran in no compared run (it ran in a test of `tests` only, or not at all), cannot
+        be measured or is unmeasurable.
+        """
+        for name, counts in sorted(self.groups.items()):
+            nothing = "" if counts[0] else ": compared nothing"
+            text = ", ".join(
+                f"{count} {kind}"
+                for count, kind, shown in zip(counts, GROUP_COUNTS, ALWAYS_COUNTED, strict=True)
+                if shown or count
+            )
+            print(f"evidence: input group {name}: {text}{nothing}")
+        empty = sum(not counts[0] for counts in self.groups.values())
+        problems = [f"input groups that compared nothing: {empty}"] if empty else []
+        if not self.groups:
+            print("evidence: input groups: none, the selection matched no input")
+            problems.append("no input group")
+        problems += self._report_units(tests)
+        for refusal in sorted(self.refused):
+            print(f"evidence: refused on head only: {refusal}")
+        for written in sorted(self.outside):
+            print(f"evidence: not compared, an output outside the run's directory: {written}")
+        print(f"evidence: {'incomplete: ' + ', '.join(problems) if problems else 'complete'}")
+        return problems
+
+    def _report_units(self, tests: dict[str, set[int]] | None) -> list[str]:
+        """Print what became of each changed code object and return the problems."""
+        units = self.units.units if self.units else []
+        for path in self.units.unreferenced if self.units else []:
+            print(f"evidence: removed, unreferenced on base: {path}")
+        for site in self.units.readers if self.units else []:
+            print(f"evidence: function annotations count, read at {site}")
+        if not units:
+            return []
+        unmeasured = [side for side in ("head", "base") if any(unit["side"] == side for unit in units)]
+        unmeasured = [side for side in unmeasured if not self.measured[side]]
+        if unmeasured:
+            print(f"evidence: changed code objects: {len(units)}, not measured: no compared run reported which ran")
+            return [f"changed code objects not measured: {len(units)}"]
+        missing = {unit["index"]: self._missing(unit) for unit in units}
+        unmeasurable = [
+            unit for unit in units if any(probe["kind"] == "unmeasurable" for probe in missing[unit["index"]])
+        ]
+        tested = [
+            unit
+            for unit in units
+            if unit["side"] == "head"
+            and missing[unit["index"]]
+            and unit not in unmeasurable
+            and all(
+                _lines_of(probe["where"]) & (tests or {}).get(unit["path"], set()) for probe in missing[unit["index"]]
+            )
+        ]
+        unrun = [unit for unit in units if missing[unit["index"]] and unit not in tested and unit not in unmeasurable]
+        counts = {side: sum(unit["side"] == side for unit in units) for side in ("head", "base")}
+        run = sum(not missing[unit["index"]] for unit in units)
+        print(
+            f"evidence: changed code objects: head {counts['head']}, base {counts['base']}; run by a compared cell "
+            f"{run}/{len(units)}; run by a test only {len(tested)}; not run {len(unrun)}/{len(units)}; unmeasurable "
+            f"{len(unmeasurable)}"
+        )
+        for label, found in (("run by a test only", tested), ("not run", unrun), ("unmeasurable", unmeasurable)):
+            for unit in found:
+                probes = "; ".join(f"{probe['kind']} {probe['where']}" for probe in missing[unit["index"]])
+                print(f"evidence: {label}: {unit['side']} {unit['path']} {unit['qualname']}: {probes}")
+        for unit in units:
+            if unit["note"] == "run at import only":
+                print(f"evidence: run at import only: {unit['side']} {unit['path']} {unit['qualname']}")
+        not_run = len(tested) + len(unrun) + len(unmeasurable)
+        return [f"changed code objects no compared cell ran: {not_run}"] if not_run else []
+
+    def write(self, path: Path) -> None:
+        """Write what each run proved, and whether a compared run ran each changed code object, as JSON."""
+
+        def side(facts: Facts) -> dict[str, object]:
+            code, files, warned, other = facts
+            return {"exit": code, "files": dict(files), "warnings": warned, "facts": other}
+
+        cells = [
+            {"cell": name, "group": group, "compared": compared, "base": side(base), "candidate": side(candidate)}
+            for name, (group, compared, base, candidate) in sorted(self.cells.items())
+        ]
+        units = [
+            {key: unit[key] for key in ("side", "path", "qualname")} | {"ran": not self._missing(unit)}
+            for unit in (self.units.units if self.units else [])
+        ]
+        path.write_text(json.dumps({"cells": cells, "units": units}) + "\n", encoding="utf-8")
+
+
+def add_evidence_args(parser: argparse.ArgumentParser) -> None:
+    """Add `--test-coverage`, which tells changed code run by a test only, and `--evidence` (`Evidence.write`)."""
+    parser.add_argument(
+        "--test-coverage",
+        type=Path,
+        help="coverage.py data file of the test suite: changed code objects it ran and no compared run ran are 'run "
+        "by a test only' (default: 'not run')",
+    )
+    parser.add_argument(
+        "--evidence",
+        type=Path,
+        help="write what each run proved (exit status, a hash of each output file, of its warnings and of its other "
+        "facts, per side) and whether a compared run ran each changed code object to this JSON file",
+    )
+
+
+def measured_key(units: Units | None, python: Path) -> str:
+    """Return what keys a traced base's cached outcomes: its probes, the interpreter that measured, these scripts."""
+    if units is None:
+        return ""
+    version = subprocess.run(
+        [str(python), "-c", "import sys; print(sys.version)"], capture_output=True, text=True, check=True
+    ).stdout
+    scripts = b"".join(
+        path.read_bytes() for path in (Path(__file__), CHANGE_UNITS, CHANGE_UNITS.with_name("_source_model.py"))
+    )
+    return _digest(units.key("base") + version + hashlib.sha256(scripts).hexdigest())
 
 
 def _diff(base: dict[str, str], cand: dict[str, str], limit: int) -> str:
@@ -1296,6 +1642,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--timeout", type=int, default=300, help="seconds before one generation or import fails")
     parser.add_argument("--cache-dir", type=Path, default=_default_cache_dir())
     parser.add_argument("--no-cache", action="store_true", help="regenerate base outputs instead of reusing them")
+    add_evidence_args(parser)
     parser.add_argument("inputs", nargs="+", type=Path)
     return parser.parse_args(argv)
 
@@ -1316,7 +1663,11 @@ def main(argv: list[str] | None = None) -> int:
     base = Runner(side, resolved.env(), import_check=ns.import_check, timeout=ns.timeout)
     side = Side("cand", candidate_python, ROOT / "src")
     cand = Runner(side, run_environment(ROOT / "src"), import_check=ns.import_check, timeout=ns.timeout)
-    cache = OutputCache(cache_root)
+    units = changed_units(candidate_python, ROOT, resolved)
+    if units is not None:
+        base.probes, cand.probes = units.probes["base"], units.probes["head"]
+    evidence = Evidence(units)
+    cache = OutputCache(cache_root, measured_key(units, resolved.python))
     extra = shlex.split(ns.extra)
     runs = [
         (schema.absolute(), model_type, [] if opts == "default" else shlex.split(opts), opts)
@@ -1326,7 +1677,7 @@ def main(argv: list[str] | None = None) -> int:
     ]
     counts = dict.fromkeys(("identical", "differ", "fail-both", "fail-base-only", "fail-candidate-only"), 0)
 
-    def one(run: tuple[Path, str, list[str], str]) -> tuple[str, str]:
+    def one(run: tuple[Path, str, list[str], str]) -> tuple[str, str, Outcome, Outcome]:
         schema, model_type, options, label = run
         args = ["--input", str(schema), "--output-model-type", model_type, *COMMON_ARGS, *extra, *options]
         with tempfile.TemporaryDirectory() as tmp_name:
@@ -1338,11 +1689,11 @@ def main(argv: list[str] | None = None) -> int:
             c = cand.generate(args, tmp)
         name = f"{schema.name} | {model_type} | {label}"
         if not b.ok and not c.ok:
-            return "fail-both", f"{name}: {c.error}"
-        if not c.ok:
-            return "fail-candidate-only", f"{name}: {c.error}"
+            return "fail-both", f"{name}: {c.error}", b, c
+        if refused := refused_on_head(b, c):
+            return "fail-candidate-only", f"{name}: {refused}", b, c
         if not b.ok:
-            return "fail-base-only", f"{name}: {b.error}"
+            return "fail-base-only", f"{name}: {b.error}", b, c
         note = ""
         if c.import_error and not b.import_error:
             note = f" [import fails on candidate only: {c.import_error}]"
@@ -1352,17 +1703,27 @@ def main(argv: list[str] | None = None) -> int:
             note = f" [import fails on both sides: {c.import_error}]"
         if b.tree == c.tree:
             if c.import_error and not b.import_error:
-                return "fail-candidate-only", f"{name}:{note}"
-            return "identical", (f"{name}:{note}" if note else "")
-        return "differ", f"{name}{note}{_diff(b.tree, c.tree, ns.show_diff) if ns.show_diff else ''}"
+                return "fail-candidate-only", f"{name}:{note}", b, c
+            return "identical", (f"{name}:{note}" if note else ""), b, c
+        return "differ", f"{name}{note}{_diff(b.tree, c.tree, ns.show_diff) if ns.show_diff else ''}", b, c
+
+    def count(run: tuple[Path, str, list[str], str], result: tuple[str, str, Outcome, Outcome]) -> None:
+        (schema, model_type, _, label), (status, line, b, c) = run, result
+        counts[status] += 1
+        if line:
+            print(f"{status}: {line}", flush=True)
+        directory = (
+            schema.parent.relative_to(ROOT) if schema.parent.is_relative_to(ROOT) else schema.parent
+        ).as_posix()
+        options = label.replace(f"{ROOT}{os.sep}", "")
+        group = Evidence.group(schema, directory, model_type, options)
+        evidence.add(group, f"{directory}/{schema.name} | {model_type} | {options}", b, c)
 
     started = time.monotonic()
     pool = ThreadPoolExecutor(ns.j)
     try:
-        for status, line in pool.map(one, runs):
-            counts[status] += 1
-            if line:
-                print(f"{status}: {line}", flush=True)
+        for run, result in zip(runs, pool.map(one, runs), strict=True):
+            count(run, result)
     except BaseException:
         pool.shutdown(wait=True, cancel_futures=True)
         raise
@@ -1373,11 +1734,11 @@ def main(argv: list[str] | None = None) -> int:
         cand.close()
     print("summary:", ", ".join(f"{k}={v}" for k, v in counts.items()))
     print(f"cached base outputs: {cache.hits} of {len(runs)}")
+    incomplete = evidence.report(tested_lines(ns.test_coverage) if ns.test_coverage else None)
+    if ns.evidence:
+        evidence.write(ns.evidence)
     print(f"elapsed: {time.monotonic() - started:.1f}s", file=sys.stderr)
-    if counts["fail-both"] == len(runs):
-        print("every run failed on both sides; check the inputs and option sets", file=sys.stderr)
-        return 1
-    return 1 if counts["differ"] or counts["fail-candidate-only"] else 0
+    return 1 if counts["differ"] or counts["fail-candidate-only"] or incomplete else 0
 
 
 if __name__ == "__main__":

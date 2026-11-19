@@ -1,0 +1,7 @@
+--options --client-output client plain.json: exit=1
+differ: plain.json | pydantic_v2.BaseModel | --client-output client
+summary: identical=0, differ=1, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | --client-output client: 1 compared, 0 failed on both sides
+evidence: changed code objects: head 1, base 1; run by a compared cell 2/2; run by a test only 0; not run 0/2; unmeasurable 0
+evidence: complete

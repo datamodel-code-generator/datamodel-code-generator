@@ -1,7 +1,11 @@
 exit=0, 0
 summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 1
+evidence: input group tests/data/jsonschema files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: complete
 summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 1
+evidence: input group tests/data/jsonschema files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: complete
 no-such-revision is neither a released version nor a revision of <root>
 <release>/bin/python imports datamodel_code_generator from <package>, not from below <release>

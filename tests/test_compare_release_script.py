@@ -163,7 +163,8 @@ def test_compare_release_tracks_referenced_files(tmp_path: Path) -> None:
                 "--extra=--input-file-type jsonschema",
                 str(schema),
             ])
-        outputs.append(f"{revision}: exit={code}\n{stdout.getvalue()}")
+        text = stdout.getvalue().replace(os.path.realpath(tmp_path), "<tmp>").replace(str(tmp_path), "<tmp>")
+        outputs.append(f"{revision}: exit={code}\n{text}")
     assert_output("\n".join(outputs), EXPECTED / "referenced_files.txt")
 
 
@@ -238,7 +239,7 @@ def test_the_record_is_published_by_a_replace(monkeypatch: pytest.MonkeyPatch, t
     record = tmp_path / "record.json"
     monkeypatch.setattr(os, "replace", lambda *_: (_ for _ in ()).throw(KeyboardInterrupt))
     with contextlib.suppress(KeyboardInterrupt):
-        compare_release._generate_recorded({"record": str(record), "args": []}, lambda _: 0)
+        compare_release._generate_recorded({"record": str(record), "out": str(tmp_path), "args": []}, lambda _: 0)
     assert_output(repr(record.read_text(encoding="utf-8")))
 
 
@@ -325,6 +326,7 @@ def test_a_run_out_of_memory_closes_its_worker(tmp_path: Path) -> None:
 ORACLE_MAIN = """import json
 from pathlib import Path
 
+import datamodel_code_generator._config_fields
 from datamodel_code_generator import _case
 from datamodel_code_generator.arguments import arg_parser
 
@@ -1101,7 +1103,7 @@ def _oracle_project(tmp_path: Path, oracle: Oracle) -> tuple[Path, list[str]]:
         (package / name).parent.mkdir(parents=True, exist_ok=True)
         (package / name).write_text(text, encoding="utf-8")
     (repo / "scripts").mkdir()
-    for script in ("compare_release.py", "_source_model.py"):
+    for script in ("compare_release.py", "_change_units.py", "_source_model.py"):
         shutil.copy(ROOT / "scripts" / script, repo / "scripts" / script)
     for name, spec in ORACLE_INPUTS.items():
         (repo / "inputs" / name).parent.mkdir(parents=True, exist_ok=True)

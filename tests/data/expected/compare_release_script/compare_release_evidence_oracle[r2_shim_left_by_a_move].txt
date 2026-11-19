@@ -1,0 +1,6 @@
+plain.json: exit=0
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: changed code objects: head 3, base 2; run by a compared cell 5/5; run by a test only 0; not run 0/5; unmeasurable 0
+evidence: complete

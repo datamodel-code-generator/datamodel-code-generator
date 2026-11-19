@@ -1,0 +1,14 @@
+plain.json: exit=1
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: changed code objects: head 1, base 0; run by a compared cell 0/1; run by a test only 0; not run 1/1; unmeasurable 0
+evidence: not run: head _runtime/codec.py <file>: read _runtime/codec.py
+evidence: incomplete: changed code objects no compared cell ran: 1
+
+reached.json: exit=0
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: changed code objects: head 1, base 0; run by a compared cell 1/1; run by a test only 0; not run 0/1; unmeasurable 0
+evidence: complete

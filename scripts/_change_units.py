@@ -24,8 +24,9 @@ From a change to its units (`changes`, then `map_units`):
   instructions inside the innermost expression that holds it, never outside its `Segment` (a part that runs as a
   unit). A statement with no value instruction falls back to any instruction, then to the owner's start; a part of a
   statement with none is unmeasurable, and its unit can never pass.
-- **Module and class bodies** run as their module is imported. A token of a statement there that binds names needs a
-  reader of a name it binds to run (an instruction that loads it: in its module, through ``from m import NAME``, as an
+- **Module and class bodies** run as their module is imported. A token of a statement there that binds names needs
+  its own probe (which the import runs, unless the token is in a part the import skipped) and a reader of a name it
+  binds to run (an instruction that loads it: in its module, through ``from m import NAME``, as an
   attribute ``m.NAME`` or ``C.X``, or ``self.X``/``cls.X`` in a method started with a receiver whose class finds ``X``
   in that class); a binding no reader reads counts at import, and its unit says ``run at import only``.
 - **Typing-only forms** give no unit (`SourceModule.typing_only`): ``TYPE_CHECKING`` bodies, ``overload`` stubs,
@@ -203,7 +204,12 @@ def file_changes(repo: Path, base: str, candidate: str | None) -> list[FileChang
         elif match := HUNK.match(line):
             first, count, start, added = (int(group) if group is not None else 1 for group in match.groups())
             found[-1].hunks.append((range(first, first + count), range(start, start + added)))
-    return found
+    return [change for change in found if not any(_bytecode(path) for path in (change.base, change.head) if path)]
+
+
+def _bytecode(path: str) -> bool:
+    """Whether a path is bytecode a run left in the tree (a working tree without an ignore file stages it)."""
+    return "__pycache__" in Path(path).parts or path.endswith((".pyc", ".pyo"))
 
 
 def module_name(path: str) -> str:
@@ -613,6 +619,8 @@ class Mapper:
         self.deferred = deferred_annotations
         self.codes: dict[str, Code] = {}
         self.readers = Readers(side)
+        self.typed: set[tuple[str, str]] = set()
+        """The code objects (path, qualname) that compile a typing-only token: what only type checkers read."""
 
     def code(self, path: str) -> Code:
         """Return the code objects of a module of this side."""
@@ -628,6 +636,7 @@ class Mapper:
         for position in sorted(positions):
             form = model.typing_only(*position)
             if form is not None and (form != "deferred-annotation" or self.deferred):
+                self.typed.update((path, scope.qualname) for scope in self._compiling(code, position))
                 continue
             for scope, probe, note in self.probes(code, position):
                 unit = found.setdefault(
@@ -636,6 +645,16 @@ class Mapper:
                 if not any(_same_probe(probe, other) for other in unit.probes):
                     unit.probes.append(probe)
                 unit.note = unit.note or note
+        return found
+
+    @staticmethod
+    def _compiling(code: Code, position: Position) -> list[Scope]:
+        """Return the code objects a token compiles into: its owner's, and for a header token the enclosing one's."""
+        model = code.model
+        found = [code.lifted(model.owner(*position))]
+        header = model.header_of(*position)
+        if header is not None and header.parent is not None:
+            found.append(code.lifted(header.parent))
         return found
 
     def probes(self, code: Code, position: Position) -> list[tuple[Scope, Probe, str]]:
@@ -690,10 +709,10 @@ class Mapper:
             else sorted({binding.name for binding in model.bindings(scope=owner) if binding.line in extent})
         )
         readers = [reader for name in names for reader in self.readers.of(code.path, owner, name)]
+        probe = self._body_probe(code, owner, position)
         if readers:
             where = _span_text([model.span(statement)])
-            return [(owner, Probe("readers", code.key(owner), where=where, readers=readers), "")]
-        probe = self._body_probe(code, owner, position)
+            return [(owner, Probe("readers", code.key(owner), where=where, readers=readers), ""), (owner, probe, "")]
         return [(owner, probe, "run at import only" if names else "")]
 
 
@@ -796,7 +815,7 @@ def compile_time_units(mappers: dict[str, Mapper], pairs: dict[str, str], units:
     """Add a ``start`` unit on both sides for code objects of a changed file whose compiled code differs alone.
 
     Code objects pair by qualname and ordinal (`Scope.ordinal`); a pair with a changed token on either side is a unit
-    already.
+    already, and one that compiles a typing-only token (`Mapper.typed`) differs by what only type checkers read.
     """
     for base_path, head_path in pairs.items():
         codes = {"base": mappers["base"].code(base_path), "head": mappers["head"].code(head_path)}
@@ -807,6 +826,8 @@ def compile_time_units(mappers: dict[str, Mapper], pairs: dict[str, str], units:
             scopes = {side: keyed[side][key] for side in SIDES}
             paths = {"base": base_path, "head": head_path}
             if any((paths[side], scopes[side].qualname) in units[side] for side in SIDES):
+                continue
+            if any((paths[side], scopes[side].qualname) in mappers[side].typed for side in SIDES):
                 continue
             if normalized(codes["base"].objects[scopes["base"]]) == normalized(codes["head"].objects[scopes["head"]]):
                 continue

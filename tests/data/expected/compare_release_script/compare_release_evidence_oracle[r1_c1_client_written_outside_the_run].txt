@@ -1,0 +1,7 @@
+--options --client-output {tmp}/client plain.json: exit=1
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | --client-output <tmp>/client: 0 compared, 0 failed on both sides, 1 wrote outside their directory: compared nothing
+evidence: changed code objects: 1, not measured: no compared run reported which ran
+evidence: not compared, an output outside the run's directory: inputs/plain.json | pydantic_v2.BaseModel | --client-output <tmp>/client: <tmp>/client
+evidence: incomplete: input groups that compared nothing: 1, changed code objects not measured: 1
