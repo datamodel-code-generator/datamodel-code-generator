@@ -74,7 +74,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, NoReturn
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator
+    from collections.abc import Callable, Container, Generator, Iterable, Iterator
 
 VERIFY_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SOURCE_MODEL"
 """Set to ``1`` to compare every model with the compiler (``tests/test_source_model.py`` sets it)."""
@@ -303,6 +303,8 @@ _COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 _DEFINITIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
 _ANNOTATION_SCOPES = frozenset({"type-params", "type-alias", "type-bound"})
 _NOT_RUN = frozenset({"deferred", "never"})
+_DEFERRED_SCOPES = frozenset({"function", "lambda", "type-alias", "type-bound"})
+"""The scopes whose code runs later than the statement that defines them."""
 _LOAD_CONST = dis.opmap["LOAD_CONST"]
 _NEVER = ((99, 0), (99, 0))
 _TYPE_CHECKING = frozenset({"typing.TYPE_CHECKING", "typing_extensions.TYPE_CHECKING"})
@@ -494,6 +496,24 @@ class Scope:
         if not isinstance(self.node, _INLINED_KINDS) or parent is None or parent.sees_class:
             return _NEVER
         return ((3, 12), (3, 14)) if self.annotation == "evaluated" and parent.kind == "class" else ((3, 12), (99, 0))
+
+    @property
+    def runs_in(self) -> str:
+        """Where the scope's code runs: ``module`` or ``class`` as the module is imported, else ``function``.
+
+        A list, set or dict comprehension and a type-parameter scope run where they stand; a ``def``, a ``lambda``, a
+        ``type`` alias or bound and a generator expression's own scope (its element, conditions and later ``for``
+        clauses; its first iterable is evaluated in the enclosing scope) run when they are called, read or iterated,
+        and so does everything inside them, a class body included.
+        """
+        level = ""
+        probe: Scope | None = self
+        while probe is not None:
+            if probe.kind in _DEFERRED_SCOPES or isinstance(probe.node, ast.GeneratorExp):
+                return "function"
+            level = level or (probe.kind if probe.kind in {"module", "class"} else "")
+            probe = probe.parent
+        return level or "module"
 
     @property
     def sees_class(self) -> bool:
@@ -726,8 +746,8 @@ class Definition:
 class Edge:
     """An import edge between two modules of a tree.
 
-    ``via`` is ``import``, ``from``, ``submodule``, ``parent`` or ``dynamic-literal``; ``level`` is the kind of the
-    scope the import runs in (``module``, ``class`` or ``function``).
+    ``via`` is ``import``, ``from``, ``submodule``, ``parent`` or ``dynamic-literal``; ``level`` is where the import
+    runs (`Scope.runs_in`): ``module`` or ``class`` as the module is imported, ``function`` when a function runs.
     """
 
     importer: str
@@ -2304,13 +2324,20 @@ def _path_parts(path: Path) -> tuple[str, ...]:
 class SourceTree:
     """The modules of packages under a root, read on first use, for the questions that cross modules."""
 
-    def __init__(self, root: Path, packages: Iterable[str], *, verify: bool | None = None) -> None:
-        """Index the ``.py`` files of each package directory under ``root`` by dotted module name."""
+    def __init__(
+        self, root: Path, packages: Iterable[str], *, verify: bool | None = None, files: Container[str] | None = None
+    ) -> None:
+        """Index the ``.py`` files of each package directory under ``root`` by dotted module name.
+
+        ``files`` limits the tree to the files whose path relative to ``root`` (``/``-separated) it holds.
+        """
         self.root = root
         self.verify = verify
         self.paths: dict[str, Path] = {}
         for package in packages:
             for path in sorted((root / package).rglob("*.py"), key=_path_parts):
+                if files is not None and path.relative_to(root).as_posix() not in files:
+                    continue
                 parts = path.relative_to(root).with_suffix("").parts
                 self.paths[".".join(parts[:-1] if parts[-1] == "__init__" else parts)] = path
         self._modules: dict[str, SourceModule] = {}
@@ -2393,7 +2420,7 @@ class SourceTree:
         for importer in self.paths:
             for item in self.module(importer).imports:
                 source = item.source if isinstance(item.source, str) else ""
-                level = item.scope.kind if item.scope.kind in {"module", "class"} else "function"
+                level = item.scope.runs_in
                 parts = source.split(".")
                 via = {"import": "import", "dynamic": "dynamic-literal"}.get(item.kind, "from")
                 found = [(".".join(parts[:count]), "parent") for count in range(1, len(parts))] + [(source, via)]
