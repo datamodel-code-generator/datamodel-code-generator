@@ -1,7 +1,8 @@
-exit status 0
+exit status 1
 Escape hatches: base (merge-base <commit>) -> working tree
 
 key                                                                                base    head  change
+named-stored-output@tests                                                             0       3      +3
 ruff-config:exclude:scripts                                                           1       1       0
 ruff-config:hook-exclude:^src/pkg/generated/                                          1       1       0
 ruff-config:ignore:CPY                                                                1       1       0
@@ -14,4 +15,7 @@ stored-list:test_generated_models_decide_value_neighbours_like_the_schema:blind 
 stored-list:test_generated_models_decide_value_neighbours_like_the_schema:items       0       2      +2
 stored-list:test_generated_models_decide_value_neighbours_like_the_schema:lines       0       1      +1
 
-No key rose.
+named-stored-output@tests rose by 3 (0 -> 3). Name no stored output: call the assert helper without an expected path or directory, run the test and commit what pytest writes (AGENTS.md, Tests); `name=` for a second output stays inside the derived name. A path, a case list or a helper that makes the stored name is the same thing.
+  tests/main/test_payload_validation.refs: 0 -> 3
+
+Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. Re-run with `python scripts/check_ratchets.py --base base`.

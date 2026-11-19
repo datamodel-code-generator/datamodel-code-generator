@@ -12,6 +12,7 @@ import pytest
 
 from scripts import check_ratchets
 from tests.conftest import assert_output
+from tests.units import RefLine, derived_file_name, format_refs
 
 ROOT = Path(__file__).resolve().parents[1]
 GIT = ["git", "-c", "user.name=CI", "-c", "user.email=ci@example.com", "-c", "commit.gpgsign=false"]
@@ -208,8 +209,9 @@ COUNTER = {
     "scripts/_source_model.py": (ROOT / "scripts/_source_model.py").read_text(encoding="utf-8"),
     "scripts/_import_cycles.py": (ROOT / "scripts/_import_cycles.py").read_text(encoding="utf-8"),
     "scripts/check_source_rules.py": (ROOT / "scripts/check_source_rules.py").read_text(encoding="utf-8"),
+    "tests/units.py": (ROOT / "tests/units.py").read_text(encoding="utf-8"),
 }
-"""The counter and the modules it reads Python, import cycles and source rules with, as a copy in a tree needs them."""
+"""The counter and the modules it reads Python, cycles, source rules and ``.refs`` files with, as a copy needs them."""
 IMPORT_ONE_WAY = {
     "scripts/report.py": FUTURE + "\nfrom scripts import guide\n\nTITLE = guide.TITLE\n",
     "scripts/guide.py": FUTURE + '\nTITLE = "guide"\n',
@@ -230,6 +232,87 @@ IMPORT_IGNORED = {
     "scripts/local_b.py": FUTURE + "\nfrom scripts import local_a\n\nVALUE = 1\n",
 }
 """Two ignored files of ``scripts`` import each other: the ratchet reads the tree's files, so no cycle is counted."""
+
+
+def _refs(*lines: tuple[str, str, str, str]) -> str:
+    """Return a ``.refs`` file with the (function, parameter id, label, predicate) lines, as pytest writes it."""
+    return format_refs(
+        RefLine(function, param, label, predicate=(("python", predicate),) if predicate else ())
+        for function, param, label, predicate in lines
+    )
+
+
+A_MODULE = (
+    FUTURE
+    + """
+
+def test_size() -> None: ...
+
+
+def test_a_size() -> None: ...
+
+
+def test_a_other() -> None: ...
+
+
+def test_p(one) -> None: ...
+
+
+def test_window(one) -> None: ...
+
+
+class TestCase:
+    def test_q(self) -> None: ...
+
+
+class Helper:
+    def test_not_collected(self) -> None: ...
+"""
+)
+"""The tests of ``tests/test_a.py``: ``test_a_size`` keeps its module prefix because ``test_size`` exists."""
+WINDOW = "p" * 111
+"""An id with which ``window[<id>]`` is 119 characters: any role and suffix push the name over 120."""
+SHORT_WINDOW = WINDOW[:-3]
+"""An id with which ``window[<id>]`` plus ``.txt`` is exactly 120 characters; ``.warnings.txt`` pushes it over."""
+
+
+def _window(param: str, role: str = "", suffix: str = ".txt") -> tuple[str, str, str, str]:
+    """Return the line of a ``test_window`` output as the harness names it, with the role and suffix it appends."""
+    return "test_window", param, f"a/{derived_file_name('a', 'test_window', param, frozenset(), role, suffix)}", ""
+
+
+DERIVED_LINES = (
+    ("test_size", "", "a/size.txt", ""),
+    ("test_size", "", "a/size.txt", "3.11"),
+    ("test_size", "", "a/size.warnings.txt", ""),
+    ("test_size", "", "a/size/", ""),
+    ("test_a_size", "", "a/a_size.txt", ""),
+    ("test_a_other", "", "a/other.txt", ""),
+    ("test_p", "one", "a/p[one].txt", ""),
+    ("TestCase::test_q", "", "a/TestCase.q.txt", ""),
+    _window(WINDOW, ".warnings"),
+    _window(SHORT_WINDOW),
+    _window(SHORT_WINDOW, ".warnings"),
+)
+"""Stored outputs that the harness names for the tests of ``tests/test_a.py``, in every form it writes them."""
+NAMED_LINES = (
+    ("test_size", "", "other/size.txt", ""),
+    ("test_size", "", "other/size.txt", "3.11"),
+    ("test_size", "", "a/shared.txt", ""),
+    ("test_size", "", "a/size-extra.txt", ""),
+    ("test_size", "", "a/size//*.py", ""),
+    ("test_p", "one", "a/p[two].txt", ""),
+    ("TestCase::test_q", "", "a/q.txt", ""),
+    ("test_a_size", "", "a/size.txt", ""),
+    ("test_a_other", "", "a/a_other.txt", ""),
+    ("test_window", WINDOW, f"a/window[{WINDOW}].warnings.txt", ""),
+)
+"""Nine stored outputs that tests name by hand: outside the directory, beside or inside the derived name, in a tree
+with a pattern, of another item, with the prefix the harness drops, or with the id the harness shortens."""
+NO_MODULE_LINES = (("test_b_x", "", "b/x.txt", ""),)
+"""An output of a module whose file is gone, which the harness still names by its test."""
+DERIVED_REFS, NAMED_REFS, BOTH_REFS = _refs(*DERIVED_LINES), _refs(*NAMED_LINES), _refs(*DERIVED_LINES, *NAMED_LINES)
+
 SCOPE_WALK = """import ast as syntax
 import symtable
 import tokenize
@@ -371,6 +454,21 @@ CASES = {
     "scope-walk": {
         "base": COUNTER,
         "head": {"scripts/rule.py": SCOPE_WALK, "tests/test_rule.py": SCOPE_WALK, "src/pkg/rule.py": SCOPE_WALK},
+        "args": ["--enforce"],
+    },
+    "named-outputs": {
+        "base": {"tests/test_a.py": A_MODULE, "tests/test_a.refs": DERIVED_REFS},
+        "head": {"tests/test_a.refs": BOTH_REFS},
+        "args": ["--enforce"],
+    },
+    "named-outputs-moved": {
+        "base": {"tests/test_a.py": A_MODULE, "tests/test_a.refs": BOTH_REFS},
+        "head": {"tests/test_a.refs": DERIVED_REFS, "tests/test_b.refs": _refs(*NAMED_LINES, *NO_MODULE_LINES)},
+        "args": ["--enforce"],
+    },
+    "named-outputs-fall": {
+        "base": {"tests/test_a.py": A_MODULE, "tests/test_a.refs": BOTH_REFS},
+        "head": {"tests/test_a.refs": DERIVED_REFS},
         "args": ["--enforce"],
     },
     "moved-line": {"head": {"src/pkg/a.py": FUTURE + NAME, "src/pkg/b.py": FUTURE + SIZE}, "args": ["--enforce"]},

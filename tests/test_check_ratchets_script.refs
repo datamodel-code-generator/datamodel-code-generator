@@ -37,6 +37,9 @@ host-baseline-unreadable-value	check_ratchets_script/check_ratchets_against_base
 import-cycles	check_ratchets_script/check_ratchets_against_base[import-cycles].txt
 import-cycles-ignored-files	check_ratchets_script/check_ratchets_against_base[import-cycles-ignored-files].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 moved-line	check_ratchets_script/check_ratchets_against_base[moved-line].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
+named-outputs	check_ratchets_script/check_ratchets_against_base[named-outputs].txt
+named-outputs-fall	check_ratchets_script/check_ratchets_against_base[named-outputs-fall].txt
+named-outputs-moved	check_ratchets_script/check_ratchets_against_base[named-outputs-moved].txt
 nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff-config].txt
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt
 quoted-hook-id	check_ratchets_script/check_ratchets_against_base[quoted-hook-id].txt

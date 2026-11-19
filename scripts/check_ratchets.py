@@ -28,6 +28,17 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``private-scope-walk``, in ``scripts`` and ``tests``: a check that reads bindings, scopes, imports or comments with
   ``ast``, ``symtable`` or ``tokenize`` itself instead of through ``scripts/_source_model.py`` (`scope_walk_sites`),
   read by origin with the model; the model and its test are not counted.
+- ``named-stored-output@tests``: the stored outputs that a test names by hand. Each ``.refs`` reference (a test item and
+  the label it compares) whose label is not where the harness derives it for that item counts once: not in the module's
+  derived directory (``main/test_x.py`` stores in ``main/x/``) or not starting with the item's derived name (a ``name=``
+  role or a suffix after it stays inside). AGENTS.md forbids it, because pytest names, shares and splits stored files
+  itself. The count reads the ``.refs`` files the harness reads and asks `tests/units.py`, which also names the outputs
+  of running tests, whether the harness writes each label (`is_derived_label`). It leaves out what no ``.refs`` file
+  records: a stored file read through ``stored_expected`` (another test's output), an output compared outside
+  ``tests/data/expected``, a hand-named label equal to the one the harness would write, and (see `_module_tests`)
+  a test whose sibling the module gets by inheritance, import or assignment. Renaming a test counts the hand-named
+  labels that happened to match its old derived name. It may stay or fall, never rise: the base is the
+  budget.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
   (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
@@ -82,7 +93,7 @@ import tempfile
 import tokenize
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 import tomllib
@@ -93,6 +104,7 @@ from scripts._source_model import SourceModule
 from scripts.check_source_rules import RULES
 from scripts.check_source_rules import Tree as SourceTree
 from scripts.check_source_rules import run as run_source_rules
+from tests.units import RefsIndex, derived_siblings, is_derived_label
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -101,6 +113,7 @@ SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
 EXPECTED_ROOT = "tests/data/expected"
+TESTS_ROOT = "tests"
 STORED_LIST = "stored-list"
 STORED_LISTS = (
     ("tests/main/test_payload_validation.refs", "test_generated_models_decide_value_neighbours_like_the_schema"),
@@ -242,6 +255,11 @@ ADVICE = {
     "private-scope-walk": (
         "Read bindings, references, imports, suppressions and extents through scripts/_source_model.py; add a form "
         "to tests/data/source_forms/ when it lacks one."
+    ),
+    "named-stored-output": (
+        "Name no stored output: call the assert helper without an expected path or directory, run the test and commit "
+        "what pytest writes (AGENTS.md, Tests); `name=` for a second output stays inside the derived name. A path, a "
+        "case list or a helper that makes the stored name is the same thing."
     ),
     "coverage-config": "An omitted or excluded file is never measured: reach it with tests instead.",
     "ty-config": "A ty rule set below error hides its findings: fix them and keep the rule an error.",
@@ -868,6 +886,56 @@ def _stored_list_tally(tally: Tally, root: Path) -> None:
                 )
 
 
+def _module_tests(root: Path, module: Path) -> list[str]:
+    """Return the tests a test module defines as nodeids show them: ``test*`` functions, in ``Test*`` classes too.
+
+    A test a class inherits, or a module imports or assigns, is not seen (the harness counts it as a sibling): none
+    exists under ``tests/`` today, and it would make a harness-written label count.
+    """
+    try:
+        model = SourceModule(module.read_text(encoding="utf-8"), module.relative_to(root).as_posix())
+    except (OSError, SyntaxError, ValueError):
+        return []
+    tests = []
+    for binding in model.bindings():
+        owners, scope = [], binding.scope
+        while scope.kind == "class":
+            owners.insert(0, scope.qualname.rpartition(".")[2])
+            scope = scope.parent
+        named = binding.kind == "def" and binding.name.startswith("test") and scope.kind == "module"
+        if named and all(owner.startswith("Test") for owner in owners):
+            tests.append("::".join([*owners, binding.name]))
+    return tests
+
+
+def _named_output_tally(tally: Tally, root: Path) -> None:
+    """Count the stored outputs that a test names itself, from the ``.refs`` file of each test module.
+
+    The files are the ones the harness reads (`RefsIndex.all_lines`), and a reference is derived where
+    `is_derived_label` says the harness writes its label. A reference counts once per item and label, whatever its
+    environment overrides and flags. The key leaves out what no ``.refs`` file records: a stored file read through
+    ``stored_expected`` (it names another test's output), an output compared outside ``tests/data/expected`` (never
+    stored by the harness), a hand-named label that equals the one the harness would derive, and the tests a module
+    gets by inheritance, import or assignment (`_module_tests`).
+    """
+    tests_root = root / TESTS_ROOT
+    for sidecar, lines in RefsIndex(tests_root).all_lines().items():
+        module = PurePosixPath(sidecar.relative_to(tests_root).with_suffix(".py").as_posix())
+        prefix = f"{module.stem.removeprefix('test_')}_"
+        tests = (
+            _module_tests(root, sidecar.with_suffix(".py"))
+            if any(line.function.rpartition("::")[2].removeprefix("test_").startswith(prefix) for line in lines)
+            else []
+        )
+        siblings: dict[str, set[str]] = {}
+        for line in {(line.function, line.param, line.label): line for line in lines}.values():
+            owner = line.function.rpartition("::")[0]
+            if owner not in siblings:
+                siblings[owner] = derived_siblings(line.function, tests)
+            if not is_derived_label(module, line, siblings[owner]):
+                tally.add("named-stored-output@tests", sidecar.relative_to(root).as_posix())
+
+
 def _import_cycle_tally(tally: Tally, root: Path, files: list[str]) -> None:
     """Count the modules on the import cycles of the package and of ``scripts`` among the tree's files."""
     for key, found in import_cycles(root, files=files).items():
@@ -912,6 +980,7 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _source_tally(tally, root, files)
     _config_tally(tally, root, pyproject)
     _stored_list_tally(tally, root)
+    _named_output_tally(tally, root)
     _import_cycle_tally(tally, root, files)
     _source_rule_tally(tally, root, files)
     return tally

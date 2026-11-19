@@ -1,0 +1,25 @@
+[[change]]
+id = "stored-output-names-held-by-the-ratchet"
+category = "harness"
+title = "Count the stored outputs that tests name by hand in the ratchet"
+refs = ["#7185"]
+summary = "The ratchet counts the stored outputs whose name the harness did not derive for their test and refuses a rise, so the reviewer checklist no longer lists that rule; the generated package writes the same output."
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[approved-rise].txt",
+    "check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule-approved-in-head].txt",
+    "check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule].txt",
+    "check_ratchets_script/check_ratchets_against_base[scope-walk].txt",
+    "check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt",
+    "check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt",
+    "check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt",
+    "check_ratchets_script/check_ratchets_against_base[stored-lists-shrink].txt",
+    "check_ratchets_script/check_ratchets_against_base[unchanged].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-absolute-rule].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-counter-unreadable].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-counter].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-source-rules].txt",
+    "review_checklist_script/review_checklist_of_a_diff[key-fallback].txt",
+    "review_checklist_script/review_checklist_of_a_diff[masked-comparison].txt",
+    "review_checklist_script/review_checklist_of_a_diff[nothing-triggered].txt",
+    "review_checklist_script/review_checklist_of_a_diff[working-tree].txt",
+]
