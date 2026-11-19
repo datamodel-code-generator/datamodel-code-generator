@@ -7,7 +7,9 @@ Entries only shrink: a new unbound name is a generator bug to fix, not an entry 
 from __future__ import annotations
 
 UNBOUND_NAME_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "custom-file-header": ("main/generate_custom_file_header_with_fstring.py::runtime_value",),
+    "custom-file-header": (
+        "main/main_general/generate_custom_file_header_does_not_treat_fstring_as_docstring.py::runtime_value",
+    ),
     "imports-left-out": (
         "main/malformed/parsed_array_pointer.py::Any",
         "main/malformed/parsed_array_pointer.py::RootModel",
