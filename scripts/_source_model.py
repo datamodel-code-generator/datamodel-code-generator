@@ -32,8 +32,9 @@ binds, ``global`` and ``nonlocal`` declarations, the reads the model records aga
 and back, per name and symbol table (a second read of a name in the same table stands behind a missing one), and the
 kind of each read (local, enclosing, global or builtin). A module the compiler rejects though `ast` reads it (a late
 ``from __future__`` import) is a disagreement too.
-The forms in ``tests/data/source_forms/`` alone stand behind the other answers: guards, origins, uses, class members,
-receivers, type positions, constants, imports, suppressions and extents.
+The forms in ``tests/data/source_forms/`` alone stand behind the other answers: guards, origins, uses (of names and of
+any expression), the binding of a node, class members, receivers, type positions and expressions, constants, imports,
+suppressions and extents.
 
 The compiler differs by version, and the check normalizes the differences in one place (`SourceModule._compare`): on
 3.11 list, set and dict comprehensions have tables of their own, from 3.12 they are inlined into the enclosing table
@@ -596,6 +597,10 @@ class Reference:
     column: int
 
 
+_TypeName = tuple[ast.expr, Reference]
+"""A name or attribute chain in a type position and the reference of its head name."""
+
+
 @dataclass(frozen=True, slots=True)
 class Resolution:
     """What a name occurrence reads: the kind, the scope and its binding sites.
@@ -616,8 +621,11 @@ class Resolution:
 class Use:
     """How a load is used.
 
-    Kinds: ``read``, ``call``, ``call:<method>``, ``subscript-store``, ``subscript-del``, ``attribute-store``,
-    ``attribute-del``, ``augassign``.
+    Kinds: ``call`` (the callee), ``call:<method>`` (the receiver of a method call), ``subscript-store``,
+    ``subscript-del``, ``attribute-store``, ``attribute-del`` (the receiver of such a target), ``augassign`` (the
+    target), ``iterate`` (the iterable of a ``for`` or of a comprehension's ``for``), ``unpack`` (under ``*`` or
+    ``**``), ``argument`` (an argument of a call) and ``read`` (any other load, such as an operand or the receiver of
+    an attribute that is read).
     """
 
     reference: Reference
@@ -765,6 +773,10 @@ class _SourceText:
     @cached_property
     def _tokens(self) -> list[tokenize.TokenInfo]:
         return list(tokenize.generate_tokens(StringIO(self.text).readline))
+
+    @cached_property
+    def _parents(self) -> dict[ast.AST, ast.AST]:
+        return {child: node for node in ast.walk(self.tree) for child in ast.iter_child_nodes(node)}
 
     @cached_property
     def _starts(self) -> list[tuple[int, int]]:
@@ -1096,7 +1108,207 @@ class _Suppressions(_Extents):
         return frozenset(self.extent(statement)) if statement is not None else frozenset({line})
 
 
-class SourceModule(_Suppressions):
+class _CompilerCheck(_Suppressions):
+    """The comparison of the model with the compiler of the running interpreter: symbol tables and code objects."""
+
+    future_annotations: bool
+    _references: list[Reference]
+    _resolved: dict[ast.Name, Resolution]
+    _augmented: set[ast.Name]
+
+    def compiled(self) -> dict[Scope, types.CodeType]:
+        """Map each scope that compiles to a code object of its own on the running interpreter to that code object.
+
+        Each scope is paired with a code object that the code of its nearest compiled enclosing scope loads, by
+        ``co_name`` and the position of the instruction that loads it (the position of the scope's node; 3.12 loads a
+        type parameter's bound at the parameter), so scopes with one name on one line each get their own; the
+        ``__annotate__`` functions of 3.14 have no scope, and the code objects they load count as loaded by the code
+        that loads them. Raises `SourceModelError` where a scope finds no code object or a code object no scope.
+        """
+        _ask("bindings")
+        module = self._code
+        loads = _loaded_code(module)
+        found: dict[Scope, types.CodeType] = {self._module_scope: module}
+        version = (sys.version_info.major, sys.version_info.minor)
+        for scope in self._scopes[1:]:
+            if not scope.compiles_on(version):
+                continue
+            parent = scope.parent
+            while parent is not None and parent not in found:
+                parent = parent.parent
+            loaded = loads[found[parent]] if parent is not None else {}
+            nodes = [scope.node, self._parents[scope.node]] if scope.kind == "type-bound" else [scope.node]
+            keys = [(scope.code_name, getattr(node, "lineno", 0), getattr(node, "col_offset", 0)) for node in nodes]
+            code = next((code for key in keys if (code := loaded.pop(key, None)) is not None), None)
+            if code is None:
+                self._refuse(scope.line, f"{scope.qualname} has no code object {keys[0]}")
+            found[scope] = code
+        if leftover := sorted(key for keys in loads.values() for key in keys):
+            self._refuse(leftover[0][1], f"code objects without a scope: {leftover[:3]}")
+        return found
+
+    def verify(self) -> None:
+        """Compare the model with the compiler's symbol table on the running interpreter; raise on a disagreement."""
+        if problems := self.disagreements():
+            raise SourceModelError(problems[0])
+
+    def disagreements(self) -> list[str]:
+        """Return where the model and the compiler's symbol table disagree on the running interpreter (the first)."""
+        try:
+            self._compare(self._module_scope, self._symbol_table())
+        except SourceModelError as error:
+            return [str(error)]
+        return []
+
+    @cached_property
+    def _code(self) -> types.CodeType:
+        """The module's code object on the running interpreter; a module the compiler rejects is a disagreement."""
+        try:
+            return compile(self.text, self.path, "exec", dont_inherit=True)
+        except SyntaxError as error:
+            self._rejected(error)
+
+    def _symbol_table(self) -> symtable.SymbolTable:
+        """Return the compiler's symbol table of the module, which the compiler must accept first (`_code`)."""
+        try:
+            return symtable.symtable(self.text, self._code.co_filename, "exec")
+        except SyntaxError as error:
+            self._rejected(error)
+
+    def _rejected(self, error: SyntaxError) -> NoReturn:
+        msg = f"{self.path}:{error.lineno or 0}: the compiler rejects the module, which ast reads ({error.msg})"
+        raise SourceModelError(msg) from None
+
+    def _compare(self, scope: Scope, table: symtable.SymbolTable) -> None:
+        group = [member for member in _inlined(scope) if not self._compiled_away(member)]
+        symbols = {symbol.get_name(): symbol for symbol in table.get_symbols()}
+        pool: dict[str, symtable.Symbol] = {}
+        tables: list[symtable.SymbolTable] = []
+        todo = list(table.get_children())
+        while todo:
+            child = todo.pop(0)
+            if _table_kind(child) == "annotation":
+                pool.update((symbol.get_name(), symbol) for symbol in child.get_symbols())
+                todo[:0] = child.get_children()
+            else:
+                tables.append(child)
+        children = [
+            child
+            for member in group
+            for child in member.children
+            if child not in _inlined(member) and not self._compiled_away(child)
+        ]
+        pairs = self._pair(scope, children, tables)
+        self._compare_bindings(scope, group, symbols, pool)
+        self._compare_reads(scope, group, symbols, pool)
+        for child, child_table in pairs:
+            self._compare(child, child_table)
+
+    def _compiled_away(self, scope: Scope) -> bool:
+        """Return whether the compiler never sees a scope: one inside an annotation the future import defers."""
+        return self.future_annotations and bool(scope.annotation)
+
+    def _compare_bindings(
+        self, scope: Scope, group: list[Scope], symbols: dict[str, symtable.Symbol], pool: dict[str, symtable.Symbol]
+    ) -> None:
+        bound = {key for member in group for key in member.bindings}
+        for member in group:
+            for key in member.bindings:
+                symbol = symbols.get(key) if member is scope else symbols.get(key, pool.get(key))
+                local = symbol is not None and (member is not scope or scope.kind == "module" or symbol.is_local())
+                if not local:
+                    self._refuse(member.line, f"{member.qualname} binds {key}, the compiler does not")
+        for name, symbol in [*symbols.items(), *pool.items()]:
+            binds = symbol.is_assigned() or symbol.is_imported() if scope.kind == "module" else symbol.is_local()
+            if binds and not _implicit(name) and name not in bound:
+                self._refuse(scope.line, f"the compiler binds {name} in {scope.qualname}, the model does not")
+        declared = scope.declared_global | scope.declared_nonlocal if scope.kind != "module" else set()
+        for name, symbol in symbols.items() if scope.kind != "module" else ():
+            if symbol.is_declared_global() != (name in scope.declared_global):
+                self._refuse(scope.line, f"{scope.qualname}: global {name} disagrees with the compiler")
+            if symbol.is_nonlocal() != (name in scope.declared_nonlocal):
+                self._refuse(scope.line, f"{scope.qualname}: nonlocal {name} disagrees with the compiler")
+        if unknown := sorted(declared - set(symbols)):
+            self._refuse(scope.line, f"{scope.qualname}: the compiler does not know the declared {unknown[0]}")
+
+    def _compare_reads(
+        self, scope: Scope, group: list[Scope], symbols: dict[str, symtable.Symbol], pool: dict[str, symtable.Symbol]
+    ) -> None:
+        reads = [ref for member in group for ref in self._by_scope.get(member, ()) if ref.context == "load"]
+        names = {reference.mangled for reference in reads}
+        for name, symbol in [*symbols.items(), *pool.items()]:
+            if symbol.is_referenced() and not _implicit(name) and name not in names:
+                self._refuse(scope.line, f"the compiler counts a read of {name} in {scope.qualname} the model misses")
+        in_annotations = sys.version_info >= (3, 14)
+        for reference in reads:
+            if reference.annotation in {"string", "deferred", "never"}:
+                continue
+            direct = reference.scope is scope
+            born = not direct and bool(reference.scope.annotation) and not scope.annotation
+            located = in_annotations and (bool(reference.annotation) or born)
+            symbol = (pool if located else symbols).get(reference.mangled)
+            if symbol is None:
+                self._refuse(reference.line, f"{reference.name} is read here, the compiler knows no such name")
+            if direct and not located and reference.node not in self._augmented and not symbol.is_referenced():
+                self._refuse(reference.line, f"{reference.name} is read here, the compiler counts no read")
+            if direct and not located and not self._agrees(reference, symbol):
+                kind = self._resolved[reference.node].kind
+                self._refuse(reference.line, f"{reference.name} is read as {kind}, the compiler disagrees")
+
+    @cached_property
+    def _by_scope(self) -> dict[Scope, list[Reference]]:
+        index: dict[Scope, list[Reference]] = {}
+        for reference in self._references:
+            index.setdefault(reference.scope, []).append(reference)
+        return index
+
+    def _agrees(self, reference: Reference, symbol: symtable.Symbol) -> bool:
+        resolution = self._resolved[reference.node]
+        if resolution.kind == "local":
+            return symbol.is_local() or symbol.is_parameter()
+        if reference.scope.kind == "module":
+            return not (symbol.is_assigned() or symbol.is_imported())
+        reads_class = (
+            resolution.kind == "enclosing" and resolution.scope is not None and resolution.scope.kind == "class"
+        )
+        if resolution.kind in {"enclosing", "class-cell"} and not reads_class:
+            return symbol.is_free()
+        return symbol.is_global()
+
+    def _pair(
+        self, scope: Scope, children: list[Scope], tables: list[symtable.SymbolTable]
+    ) -> list[tuple[Scope, symtable.SymbolTable]]:
+        left = list(tables)
+        pairs = []
+        for child in children:
+            own = frozenset(key for key in child.bindings if not _implicit(key))
+            inlined = own | {
+                key
+                for member in _inlined(child)
+                if not self._compiled_away(member)
+                for key in member.bindings
+                if not _implicit(key)
+            }
+            match = next(
+                (
+                    table
+                    for table in left
+                    if (table.get_lineno(), _table_kind(table)) == (child.line, child.kind)
+                    and own <= _table_names(table) <= inlined
+                ),
+                None,
+            )
+            if match is None:
+                self._refuse(child.line, f"{child.qualname} ({child.kind}) has no compiler scope in {scope.qualname}")
+            left.remove(match)
+            pairs.append((child, match))
+        if left:
+            kind = _table_kind(left[0])
+            self._refuse(left[0].get_lineno(), f"the compiler has a {kind} scope in {scope.qualname} the model lacks")
+        return pairs
+
+
+class SourceModule(_CompilerCheck):
     """The answers for one module's source text.
 
     ``path`` names the file in messages (``__init__.py`` marks a package), ``module`` is its dotted name (relative
@@ -1128,7 +1340,7 @@ class SourceModule(_Suppressions):
         self._augmented: set[ast.Name] = set()
         self._node_scope: dict[ast.AST, Scope] = {}
         self._defined: dict[ast.AST, Scope] = {}
-        self._string_refs: dict[ast.Constant, list[Reference]] = {}
+        self._string_refs: dict[ast.Constant, list[_TypeName]] = {}
         self._module_scope = self._new_scope("module", self.tree, None, "<module>", 0)
         self._walk_body(self.tree.body, self._module_scope, ())
         for binding in self._pending:
@@ -1194,10 +1406,27 @@ class SourceModule(_Suppressions):
             if name is None or name in {binding.name, binding.mangled}
         ]
 
-    def class_members(self, scope: Scope) -> dict[str, list[ast.AST]]:
-        """Return the names a class body binds plus the attributes its methods store on their receiver (mangled)."""
+    def binding_at(self, node: ast.AST) -> Binding | None:
+        """Return the binding a node of this module's tree makes, wherever the name lives; None for any other node.
+
+        The nodes that bind are a binding's `Binding.node`: an import's ``alias``, a target name, a parameter, a
+        ``def`` or ``class`` statement, an ``except`` handler, a pattern and a type parameter. A ``global`` or
+        ``nonlocal`` name gives the binding of the scope it lives in.
+        """
         _ask("bindings")
-        members = {key: [binding.node for binding in bindings] for key, bindings in scope.bindings.items()}
+        return self._binding_nodes.get(node)
+
+    def class_members(self, scope: Scope, *, spelled: bool = False) -> dict[str, list[ast.AST]]:
+        """Return the names a class body binds plus the attributes its methods store on their receiver.
+
+        The keys are the names the compiler stores (``_C__x`` for ``__x`` in class ``C``), or with ``spelled`` the
+        names as the source writes them.
+        """
+        _ask("bindings")
+        members: dict[str, list[ast.AST]] = {}
+        for key, bindings in scope.bindings.items():
+            for binding in bindings:
+                members.setdefault(binding.name if spelled else key, []).append(binding.node)
         methods = [child for child in scope.children if child.kind == "function"]
         methods += [inner for child in scope.children if child.kind == "type-params" for inner in child.children]
         for method in methods:
@@ -1205,7 +1434,8 @@ class SourceModule(_Suppressions):
             for use in self._uses.get(receiver, []) if receiver is not None else ():
                 attribute = self._parents[use.reference.node]
                 if use.kind == "attribute-store" and isinstance(attribute, ast.Attribute):
-                    members.setdefault(_mangle(attribute.attr, scope), []).append(attribute)
+                    name = attribute.attr if spelled else _mangle(attribute.attr, scope)
+                    members.setdefault(name, []).append(attribute)
         return members
 
     def receiver(self, scope: Scope) -> Binding | None:
@@ -1249,14 +1479,46 @@ class SourceModule(_Suppressions):
         _ask("references")
         return self._uses.get(binding, [])
 
+    def use_of(self, node: ast.expr) -> str:
+        """Return how the value of an expression of this module's tree is used: one of the kinds of `Use`.
+
+        ``globals()`` in ``for k in globals():`` is ``iterate``, in ``[*globals()]`` ``unpack``, in
+        ``dict(globals())`` ``argument`` and in ``globals().keys()`` ``call:keys``.
+        """
+        _ask("references")
+        return self._use_kind(node)
+
     def type_positions(self, node: ast.expr) -> list[Reference]:
         """Return the names in the type positions of an expression; strings parsed, ``Literal`` values left out.
 
         ``Annotated`` metadata is left out too. Names parsed here from strings outside annotations, ``cast`` targets,
-        ``TypeVar`` bounds and ``TypeAlias`` values do not join `references`.
+        ``TypeVar`` bounds and ``TypeAlias`` values do not join `references`. An attribute chain gives its head name
+        (``typing`` of ``typing.Any``); `type_expressions` gives the whole chain.
         """
         _ask("references")
-        found: list[Reference] = []
+        return [reference for _, reference in self._type_names(node)]
+
+    def type_expressions(self, node: ast.expr) -> list[ast.expr]:
+        """Return the types an expression names in its type positions: each name or attribute chain, read by `origin`.
+
+        The positions are those of `type_positions`; ``typing.Any`` and ``"t.Any"`` are one expression each, whose
+        `origin` is ``typing.Any``. A name parsed from a string is a node of its own at the string's position.
+
+        How a check counts ``Any`` with this answer (the ``any`` key of ``scripts/check_ratchets.py``): one site per
+        type expression whose `origin` is ``typing.Any`` or ``typing_extensions.Any``, in the annotation of a
+        parameter, a return or an annotated assignment and in the target of a ``cast``. `origin` follows aliases, so
+        each use of an alias of ``Any`` (``Config: TypeAlias = Any``) is a site where it is used, and the alias's own
+        value is none. A name whose bindings name different things (a ``TYPE_CHECKING`` import beside an ``Any``
+        bound for run time) has no single origin and is no site: type checkers read the import. A name imported from
+        another module of the tree is followed there with `SourceTree.definition`, and is a site when every definition
+        it leads to is an assignment whose value's `origin` is ``Any``, so moving an alias to another module hides none
+        of its uses.
+        """
+        _ask("references")
+        return [expression for expression, _ in self._type_names(node)]
+
+    def _type_names(self, node: ast.expr) -> list[_TypeName]:
+        found: list[_TypeName] = []
         self._type_positions(node, self._node_scope[node], (), found, record=False)
         return found
 
@@ -1279,69 +1541,6 @@ class SourceModule(_Suppressions):
             return self._literal(value)
         except _NotLiteralError as error:
             return Unreadable(f"{name} is not a literal: {error}", lines)
-
-    def compiled(self) -> dict[Scope, types.CodeType]:
-        """Map each scope that compiles to a code object of its own on the running interpreter to that code object.
-
-        Each scope is paired with a code object that the code of its nearest compiled enclosing scope loads, by
-        ``co_name`` and the position of the instruction that loads it (the position of the scope's node; 3.12 loads a
-        type parameter's bound at the parameter), so scopes with one name on one line each get their own; the
-        ``__annotate__`` functions of 3.14 have no scope, and the code objects they load count as loaded by the code
-        that loads them. Raises `SourceModelError` where a scope finds no code object or a code object no scope.
-        """
-        _ask("bindings")
-        module = self._code
-        loads = _loaded_code(module)
-        found: dict[Scope, types.CodeType] = {self._module_scope: module}
-        version = (sys.version_info.major, sys.version_info.minor)
-        for scope in self._scopes[1:]:
-            if not scope.compiles_on(version):
-                continue
-            parent = scope.parent
-            while parent is not None and parent not in found:
-                parent = parent.parent
-            loaded = loads[found[parent]] if parent is not None else {}
-            nodes = [scope.node, self._parents[scope.node]] if scope.kind == "type-bound" else [scope.node]
-            keys = [(scope.code_name, getattr(node, "lineno", 0), getattr(node, "col_offset", 0)) for node in nodes]
-            code = next((code for key in keys if (code := loaded.pop(key, None)) is not None), None)
-            if code is None:
-                self._refuse(scope.line, f"{scope.qualname} has no code object {keys[0]}")
-            found[scope] = code
-        if leftover := sorted(key for keys in loads.values() for key in keys):
-            self._refuse(leftover[0][1], f"code objects without a scope: {leftover[:3]}")
-        return found
-
-    def verify(self) -> None:
-        """Compare the model with the compiler's symbol table on the running interpreter; raise on a disagreement."""
-        if problems := self.disagreements():
-            raise SourceModelError(problems[0])
-
-    def disagreements(self) -> list[str]:
-        """Return where the model and the compiler's symbol table disagree on the running interpreter (the first)."""
-        try:
-            self._compare(self._module_scope, self._symbol_table())
-        except SourceModelError as error:
-            return [str(error)]
-        return []
-
-    @cached_property
-    def _code(self) -> types.CodeType:
-        """The module's code object on the running interpreter; a module the compiler rejects is a disagreement."""
-        try:
-            return compile(self.text, self.path, "exec", dont_inherit=True)
-        except SyntaxError as error:
-            self._rejected(error)
-
-    def _symbol_table(self) -> symtable.SymbolTable:
-        """Return the compiler's symbol table of the module, which the compiler must accept first (`_code`)."""
-        try:
-            return symtable.symtable(self.text, self._code.co_filename, "exec")
-        except SyntaxError as error:
-            self._rejected(error)
-
-    def _rejected(self, error: SyntaxError) -> NoReturn:
-        msg = f"{self.path}:{error.lineno or 0}: the compiler rejects the module, which ast reads ({error.msg})"
-        raise SourceModelError(msg) from None
 
     # ---- pass 1: one walk ----------------------------------------------------------------------------------------
     def _new_scope(self, kind: ScopeKind, node: ast.AST, parent: Scope | None, code_name: str, line: int) -> Scope:
@@ -1837,8 +2036,9 @@ class SourceModule(_Suppressions):
         return self.module if self.is_package else self.module.rpartition(".")[0]
 
     def _type_positions(
-        self, node: ast.expr, scope: Scope, guard: Guard, found: list[Reference], *, record: bool
+        self, node: ast.expr, scope: Scope, guard: Guard, found: list[_TypeName], *, record: bool
     ) -> None:
+        head = _chain(node)[0] if isinstance(node, (ast.Name, ast.Attribute)) else None
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             if node not in self._string_refs:
                 self._string_refs[node] = self._parse_string(node, scope, guard, record=record)
@@ -1851,14 +2051,14 @@ class SourceModule(_Suppressions):
                 index = index.elts[0]
             if head not in _LITERAL_HEADS:
                 self._type_positions(index, scope, guard, found, record=record)
-        elif isinstance(node, ast.Name):
-            found.append(self._load_of(node, scope, guard, record=record))
+        elif head is not None:
+            found.append((node, self._load_of(head, scope, guard, record=record)))
         else:
             for child in ast.iter_child_nodes(node):
                 if isinstance(child, ast.expr):
                     self._type_positions(child, scope, guard, found, record=record)
 
-    def _parse_string(self, node: ast.Constant, scope: Scope, guard: Guard, *, record: bool) -> list[Reference]:
+    def _parse_string(self, node: ast.Constant, scope: Scope, guard: Guard, *, record: bool) -> list[_TypeName]:
         try:
             inner = ast.parse(str(node.value).strip(), mode="eval").body
         except SyntaxError:
@@ -1866,7 +2066,7 @@ class SourceModule(_Suppressions):
         for part in ast.walk(inner):
             if isinstance(part, ast.expr):
                 part.lineno, part.col_offset = node.lineno, node.col_offset
-        found: list[Reference] = []
+        found: list[_TypeName] = []
         self._type_positions(inner, scope, guard, found, record=record)
         return found
 
@@ -1919,152 +2119,43 @@ class SourceModule(_Suppressions):
                 resolution = resolution.fallback
         return index
 
-    def _use_kind(self, node: ast.Name) -> str:
+    def _use_kind(self, node: ast.expr) -> str:
         parent = self._parents.get(node)
-        context = getattr(parent, "ctx", None)
-        receiver = isinstance(parent, (ast.Subscript, ast.Attribute)) and parent.value is node
-        if receiver and not isinstance(context, ast.Load):
-            kind = "subscript" if isinstance(parent, ast.Subscript) else "attribute"
-            return f"{kind}-{'del' if isinstance(context, ast.Del) else 'store'}"
         grandparent = self._parents.get(parent) if parent is not None else None
-        if receiver and isinstance(parent, ast.Attribute) and isinstance(grandparent, ast.Call):
-            return f"call:{parent.attr}" if grandparent.func is parent else "read"
-        if isinstance(parent, ast.Call) and parent.func is node:
-            return "call"
-        return "augassign" if isinstance(parent, ast.AugAssign) and parent.target is node else "read"
+        if isinstance(parent, (ast.Subscript, ast.Attribute)) and parent.value is node:
+            return _receiver_use(parent, grandparent)
+        return _position_use(node, parent, grandparent)
 
     @cached_property
-    def _parents(self) -> dict[ast.AST, ast.AST]:
-        return {child: node for node in ast.walk(self.tree) for child in ast.iter_child_nodes(node)}
+    def _binding_nodes(self) -> dict[ast.AST, Binding]:
+        return {binding.node: binding for binding in self.bindings()}
 
-    # ---- the compiler check ----------------------------------------------------------------------------------------
-    def _compare(self, scope: Scope, table: symtable.SymbolTable) -> None:
-        group = [member for member in _inlined(scope) if not self._compiled_away(member)]
-        symbols = {symbol.get_name(): symbol for symbol in table.get_symbols()}
-        pool: dict[str, symtable.Symbol] = {}
-        tables: list[symtable.SymbolTable] = []
-        todo = list(table.get_children())
-        while todo:
-            child = todo.pop(0)
-            if _table_kind(child) == "annotation":
-                pool.update((symbol.get_name(), symbol) for symbol in child.get_symbols())
-                todo[:0] = child.get_children()
-            else:
-                tables.append(child)
-        children = [
-            child
-            for member in group
-            for child in member.children
-            if child not in _inlined(member) and not self._compiled_away(child)
-        ]
-        pairs = self._pair(scope, children, tables)
-        self._compare_bindings(scope, group, symbols, pool)
-        self._compare_reads(scope, group, symbols, pool)
-        for child, child_table in pairs:
-            self._compare(child, child_table)
 
-    def _compiled_away(self, scope: Scope) -> bool:
-        """Return whether the compiler never sees a scope: one inside an annotation the future import defers."""
-        return self.future_annotations and bool(scope.annotation)
+def _receiver_use(parent: ast.Subscript | ast.Attribute, grandparent: ast.AST | None) -> str:
+    """Return the use of a value a subscript or an attribute is taken on: a store, a delete, a method call or a read."""
+    if not isinstance(parent.ctx, ast.Load):
+        kind = "subscript" if isinstance(parent, ast.Subscript) else "attribute"
+        return f"{kind}-{'del' if isinstance(parent.ctx, ast.Del) else 'store'}"
+    called = isinstance(parent, ast.Attribute) and isinstance(grandparent, ast.Call) and grandparent.func is parent
+    return f"call:{parent.attr}" if isinstance(parent, ast.Attribute) and called else "read"
 
-    def _compare_bindings(
-        self, scope: Scope, group: list[Scope], symbols: dict[str, symtable.Symbol], pool: dict[str, symtable.Symbol]
-    ) -> None:
-        bound = {key for member in group for key in member.bindings}
-        for member in group:
-            for key in member.bindings:
-                symbol = symbols.get(key) if member is scope else symbols.get(key, pool.get(key))
-                local = symbol is not None and (member is not scope or scope.kind == "module" or symbol.is_local())
-                if not local:
-                    self._refuse(member.line, f"{member.qualname} binds {key}, the compiler does not")
-        for name, symbol in [*symbols.items(), *pool.items()]:
-            binds = symbol.is_assigned() or symbol.is_imported() if scope.kind == "module" else symbol.is_local()
-            if binds and not _implicit(name) and name not in bound:
-                self._refuse(scope.line, f"the compiler binds {name} in {scope.qualname}, the model does not")
-        declared = scope.declared_global | scope.declared_nonlocal if scope.kind != "module" else set()
-        for name, symbol in symbols.items() if scope.kind != "module" else ():
-            if symbol.is_declared_global() != (name in scope.declared_global):
-                self._refuse(scope.line, f"{scope.qualname}: global {name} disagrees with the compiler")
-            if symbol.is_nonlocal() != (name in scope.declared_nonlocal):
-                self._refuse(scope.line, f"{scope.qualname}: nonlocal {name} disagrees with the compiler")
-        if unknown := sorted(declared - set(symbols)):
-            self._refuse(scope.line, f"{scope.qualname}: the compiler does not know the declared {unknown[0]}")
 
-    def _compare_reads(
-        self, scope: Scope, group: list[Scope], symbols: dict[str, symtable.Symbol], pool: dict[str, symtable.Symbol]
-    ) -> None:
-        reads = [ref for member in group for ref in self._by_scope.get(member, ()) if ref.context == "load"]
-        names = {reference.mangled for reference in reads}
-        for name, symbol in [*symbols.items(), *pool.items()]:
-            if symbol.is_referenced() and not _implicit(name) and name not in names:
-                self._refuse(scope.line, f"the compiler counts a read of {name} in {scope.qualname} the model misses")
-        in_annotations = sys.version_info >= (3, 14)
-        for reference in reads:
-            if reference.annotation in {"string", "deferred", "never"}:
-                continue
-            direct = reference.scope is scope
-            born = not direct and bool(reference.scope.annotation) and not scope.annotation
-            located = in_annotations and (bool(reference.annotation) or born)
-            symbol = (pool if located else symbols).get(reference.mangled)
-            if symbol is None:
-                self._refuse(reference.line, f"{reference.name} is read here, the compiler knows no such name")
-            if direct and not located and reference.node not in self._augmented and not symbol.is_referenced():
-                self._refuse(reference.line, f"{reference.name} is read here, the compiler counts no read")
-            if direct and not located and not self._agrees(reference, symbol):
-                kind = self._resolved[reference.node].kind
-                self._refuse(reference.line, f"{reference.name} is read as {kind}, the compiler disagrees")
-
-    @cached_property
-    def _by_scope(self) -> dict[Scope, list[Reference]]:
-        index: dict[Scope, list[Reference]] = {}
-        for reference in self._references:
-            index.setdefault(reference.scope, []).append(reference)
-        return index
-
-    def _agrees(self, reference: Reference, symbol: symtable.Symbol) -> bool:
-        resolution = self._resolved[reference.node]
-        if resolution.kind == "local":
-            return symbol.is_local() or symbol.is_parameter()
-        if reference.scope.kind == "module":
-            return not (symbol.is_assigned() or symbol.is_imported())
-        reads_class = (
-            resolution.kind == "enclosing" and resolution.scope is not None and resolution.scope.kind == "class"
-        )
-        if resolution.kind in {"enclosing", "class-cell"} and not reads_class:
-            return symbol.is_free()
-        return symbol.is_global()
-
-    def _pair(
-        self, scope: Scope, children: list[Scope], tables: list[symtable.SymbolTable]
-    ) -> list[tuple[Scope, symtable.SymbolTable]]:
-        left = list(tables)
-        pairs = []
-        for child in children:
-            own = frozenset(key for key in child.bindings if not _implicit(key))
-            inlined = own | {
-                key
-                for member in _inlined(child)
-                if not self._compiled_away(member)
-                for key in member.bindings
-                if not _implicit(key)
-            }
-            match = next(
-                (
-                    table
-                    for table in left
-                    if (table.get_lineno(), _table_kind(table)) == (child.line, child.kind)
-                    and own <= _table_names(table) <= inlined
-                ),
-                None,
-            )
-            if match is None:
-                self._refuse(child.line, f"{child.qualname} ({child.kind}) has no compiler scope in {scope.qualname}")
-            left.remove(match)
-            pairs.append((child, match))
-        if left:
-            kind = _table_kind(left[0])
-            self._refuse(left[0].get_lineno(), f"the compiler has a {kind} scope in {scope.qualname} the model lacks")
-        return pairs
+def _position_use(node: ast.expr, parent: ast.AST | None, grandparent: ast.AST | None) -> str:
+    """Return the use of a value by where it stands: callee, argument, ``*``/``**``, iterable or augmented target."""
+    if isinstance(parent, ast.Call):
+        return "call" if parent.func is node else "argument"
+    if isinstance(parent, ast.keyword):
+        return "unpack" if parent.arg is None else "argument" if isinstance(grandparent, ast.Call) else "read"
+    spread = isinstance(parent, ast.Starred) or (
+        isinstance(parent, ast.Dict)
+        and any(key is None and value is node for key, value in zip(parent.keys, parent.values, strict=True))
+    )
+    kinds = {
+        "augassign": isinstance(parent, ast.AugAssign) and parent.target is node,
+        "iterate": isinstance(parent, (ast.For, ast.AsyncFor, ast.comprehension)) and parent.iter is node,
+        "unpack": spread,
+    }
+    return next((kind for kind, hit in kinds.items() if hit), "read")
 
 
 def _mangle(name: str, scope: Scope) -> str:

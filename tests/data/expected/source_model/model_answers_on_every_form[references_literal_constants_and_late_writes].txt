@@ -23,7 +23,7 @@
 22:0 TUPLE_CALL store in <module> -> local <module> @22
 22:13 tuple load in <module> -> builtin; origin builtins.tuple
 uses of <module>:Final@6: read@11
-uses of <module>:PLAIN@8: read@19
+uses of <module>:PLAIN@8: unpack@19
 uses of <module>:WRITTEN@12: subscript-store@13
 uses of <module>:APPENDED@14: call:append@15
 type positions @11: Final

@@ -70,8 +70,8 @@ scope comprehension f.<locals>.<genexpr>#3 '<genexpr>': code yes; first line 11
 19:14 b load in f -> local f @9
 19:17 c load in f -> local f @10
 19:20 d load in f -> local f @11
-uses of f:rows@7: read@8, read@9, read@10, read@14
-uses of f:kinds@7: read@10, read@15
+uses of f:rows@7: iterate@8, iterate@9, read@10, iterate@14
+uses of f:kinds@7: argument@10, argument@15
 uses of f:a@8: read@19
 uses of f:b@9: read@19
 uses of f:c@10: read@19

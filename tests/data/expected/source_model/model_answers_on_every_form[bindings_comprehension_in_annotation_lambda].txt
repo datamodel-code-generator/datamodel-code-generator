@@ -112,7 +112,7 @@ uses of Order.<lambda>.<locals>.<dictcomp>:k@16: read@16, read@16
 uses of Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp>:s@17: read@17
 uses of <lambda>.<locals>.<listcomp>:s@20: read@20
 uses of read:q@20: read@21
-uses of <genexpr>:i@24: read@24
+uses of <genexpr>:i@24: iterate@24
 uses of <genexpr>.<locals>.<listcomp>:j@24: read@24
 uses of <lambda>.<locals>.<setcomp>:n@28: read@28
 type positions @20: list, str

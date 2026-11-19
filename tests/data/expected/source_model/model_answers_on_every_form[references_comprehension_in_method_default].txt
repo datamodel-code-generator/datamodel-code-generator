@@ -5,7 +5,7 @@
 7:25 i store in C.<listcomp> -> local C.<listcomp> @7
 7:19 i load in C.<listcomp> -> local C.<listcomp> @7
 8:15 d load in C.m -> local C.m @7
-uses of C:size@5: read@7
+uses of C:size@5: argument@7
 uses of C.<listcomp>:i@7: read@7
 uses of C.m:d@7: read@8
 == code objects: one per scope that compiles on this Python
