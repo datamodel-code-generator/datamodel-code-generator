@@ -1,0 +1,16 @@
+exit status 0
+symbol DEFAULT_FORMATTERS
+  defined (3):
+    scripts/collect_release_benchmarks.py:<line> assign DEFAULT_FORMATTERS
+    src/datamodel_code_generator/_format_types.py:<line> annassign DEFAULT_FORMATTERS
+    src/datamodel_code_generator/format.py:<line> assign DEFAULT_FORMATTERS
+  users (5):
+    scripts/build_architecture_docs.py: generate_formatter_table
+    scripts/build_release_benchmark_docs.py: _scenario_formatters
+    scripts/collect_release_benchmarks.py: <module>, parse_args
+    src/datamodel_code_generator/_format_types.py: <module>
+    src/datamodel_code_generator/format.py: <module>, CodeFormatter.__init__
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (2):
+    mirror: none
+    other rows (by changed lines): source-model-importers

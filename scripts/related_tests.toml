@@ -164,3 +164,15 @@ prs = [7161]
 incident = "a change of the behaviour signature moved two stored classify_trees outputs that no selected test ran"
 paths = ["scripts/_behaviour_*.py"]
 tests = ["tests/test_behaviour_diff_script.py"]
+
+[[rule]]
+id = "source-model-importers"
+prs = [7170]
+incident = "a new importer of the source model failed the test that wants a rule for every importer only on hosted CI"
+paths = ["scripts/*", "tests/*"]
+exclude = ["tests/data/*"]
+pattern = "_source_model"
+tests = [
+  "tests/test_source_model.py::test_rules_declare_what_they_ask",
+  "tests/test_source_model.py::test_every_rule_states_its_verdicts",
+]

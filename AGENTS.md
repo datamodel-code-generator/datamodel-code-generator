@@ -26,6 +26,9 @@ the ones failures print, inside the development environment (`.tox/dev` from `to
 [Model processing passes](docs/architecture.md#model-processing-passes) lists the passes in order, when each fact
 becomes final and where a decision belongs.
 
+- To find where a decision lives, run `python -m scripts.where <option, symbol, pass, fact, legacy row or path:line>`
+  before reading the page: it prints the rows that name it, the pass and its facts, where it is defined and used, and
+  its tests, in at most 60 lines.
 - Before writing a fix, list the facts the decision reads. Put the decision after the pass where the last of them
   becomes final, or move the pass that sets the fact earlier. Never predict what a later pass will do.
 - Decide scope on the schema object, for example a marker set where the document is rewritten, not from the parse

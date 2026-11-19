@@ -1,0 +1,14 @@
+exit status 0
+symbol render_type_expr
+  defined (1):
+    src/datamodel_code_generator/types.py:<line> function render_type_expr - Write a type expression, through the rendering hooks of the data types that it holds.
+  users (1):
+    src/datamodel_code_generator/types.py: DataType.base_type_hint, DataType.type_hint, _drop_none_after_none_alias (+3)
+  rows that claim it as home, claimed by 2 rows (2):
+    home: how a data type writes its type hint, and the base hint of RootModel generics: one expression of ... [Placement Guide]
+    home: targets: the structure and spelling of a model type: the model's `TypeExpr`, frozen once at the s... [Placement Guide]
+  rows that list it as a site (1):
+    site: which members a union holds, in which order, whether it writes None itself, and how it ... [Placement Guide] (home `model/_decisions/union_assembly...
+  tests (2):
+    mirror: tests/test_types.py
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

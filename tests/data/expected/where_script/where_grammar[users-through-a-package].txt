@@ -1,0 +1,18 @@
+exit status 0
+symbol ConstraintsBase
+  defined (2):
+    src/datamodel_code_generator/model/base.py:<line> class ConstraintsBase - Base class for field constraints (min/max, patterns, etc.).
+    src/datamodel_code_generator/model/pydantic_base.py:<line> assign ConstraintsBase
+  users (8):
+    src/datamodel_code_generator/model/_constraints.py: <module>
+    src/datamodel_code_generator/model/base.py: <module>, _has_root_field_constraints, _overlay_constraints (+1)
+    src/datamodel_code_generator/model/pydantic_base.py: <module>
+    src/datamodel_code_generator/parser/_passes/_shared.py: _declares_unique_items
+    src/datamodel_code_generator/parser/_passes/modules.py: <module>, _discriminator_tag_constraints, _field_constraints_class (+2)
+    src/datamodel_code_generator/parser/_tag_plan.py: _tag_field_patterns
+    src/datamodel_code_generator/parser/_type_overrides.py: decide_overridden_constraints
+    src/datamodel_code_generator/parser/_value_keywords.py: union_sibling_constraints
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (2):
+    mirror: tests/model/test_base.py
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

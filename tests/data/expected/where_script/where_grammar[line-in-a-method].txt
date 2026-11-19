@@ -1,0 +1,35 @@
+exit status 0
+src/datamodel_code_generator/types.py:<line>
+  scope chain (3):
+    <module> (module, line <line>)
+    DataType (class, line <line>)
+    DataType.type_hint (function, line <line>)
+symbol DataType.type_hint
+  defined (1):
+    src/datamodel_code_generator/types.py:<line> function DataType.type_hint - Generate the Python type hint string for this DataType.
+  same name elsewhere (12):
+    src/datamodel_code_generator/model/_field_imports.py:<line> function _DataTypeView.type_hint - The hint the type writes.
+    src/datamodel_code_generator/model/base.py:<line> function DataModelFieldBase.type_hint - Get the type hint string for this field, including nullability.
+    src/datamodel_code_generator/model/msgspec.py:<line> function _MetaAnnotatedType.type_hint - Write ``Annotated`` over the hint of the copied type, ``None`` ...
+    src/datamodel_code_generator/model/msgspec.py:<line> function _MetaType.type_hint - Write ``Annotated`` over the type and the ``Meta()`` call, its arguments...
+    ... 8 more (--all)
+  users of .type_hint by name (attribute types are not resolved) (23):
+    src/datamodel_code_generator/_target_binding.py x1
+    src/datamodel_code_generator/_target_module.py x1
+    src/datamodel_code_generator/model/_field_imports.py x1
+    src/datamodel_code_generator/model/base.py x2
+    src/datamodel_code_generator/model/msgspec.py x12
+    src/datamodel_code_generator/model/pydantic_base.py x9
+    src/datamodel_code_generator/model/pydantic_v2/base_model.py x3
+    src/datamodel_code_generator/model/pydantic_v2/root_model.py x2
+    src/datamodel_code_generator/model/pydantic_v2/types.py x1
+    src/datamodel_code_generator/model/runtime_validation.py x2
+    src/datamodel_code_generator/model/typed_dict.py x3
+    src/datamodel_code_generator/parser/_object_maps.py x3
+    ... 11 more (--all)
+  rows that list it as a site (2):
+    site: how a data type writes its type hint, and the base hint of RootModel generics: one expr... [Placement Guide] (home `types.py`: `type_expr_of`, `ren...
+    site: which data types and models name a `Reference` (its back links, `Reference.children`, i... [Placement Guide] (home `_graph_links.py`: `add_child`, ...
+  tests (2):
+    mirror: tests/test_types.py
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

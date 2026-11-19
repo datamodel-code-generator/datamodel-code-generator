@@ -1,0 +1,16 @@
+exit status 0
+symbol plans
+  defined (2):
+    src/datamodel_code_generator/_client/render.py:<line> function _Helpers.plans - Return the module of every helper's accessors and plan, then each stream an...
+    src/datamodel_code_generator/parser/base.py:<line> assign plans
+  users (1):
+    src/datamodel_code_generator/parser/base.py: <module>
+  users of .plans by name (attribute types are not resolved) (1):
+    src/datamodel_code_generator/_client/render.py x1
+  rows that list it as a site (3):
+    site: what a protocol helper's configuration stands for at run time, so that the validator ch... [Placement Guide] (home `_client/protocols.py` (`selecto...
+    site: how generated code spells a runtime record the generator holds, so that a record's clas... [Placement Guide] (home `_target_render.py`: `runtime_re...
+    site: how an SSE, NDJSON or webhook helper routes its events, so that the planners, the strea... [Placement Guide] (home `_client/streams.py`: `discrimin...
+  tests (2):
+    mirror: none
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

@@ -1,0 +1,31 @@
+exit status 0
+fact RenderFact.PLANS
+  freezes at B1 (facts-final)
+  final after its last declared writer: set_circular_root_model_paths (PLAN)
+  the tables disagree: ATTRIBUTE_FACTS rows say CROSS_MODULE, MODULES, SETTLE, the last writer of PASS_DECLS runs in PLAN
+  read by 6 passes, first delete_duplicate_models (STRUCTURE), last render_modules (RENDER)
+  attribute rows (4):
+    Parser._tag_plan fact, final after CROSS_MODULE, frozen at B1; store ops: -
+    Parser._recursion_facts fact, final after MODULES, frozen at B1; store ops: -
+    Parser._reuse_groups fact, final after SETTLE, frozen at B1; store ops: -
+    Parser._naming_plan fact, final after SETTLE, frozen at B1; store ops: -
+  written by (pipeline order) (4):
+    settle_yielding_names (SETTLE)
+    name_models (SETTLE)
+    snapshot_union_tags (STRUCTURE)
+    set_circular_root_model_paths (PLAN)
+symbol plans
+  defined (2):
+    src/datamodel_code_generator/_client/render.py:<line> function _Helpers.plans - Return the module of every helper's accessors and plan, then each stream an...
+    src/datamodel_code_generator/parser/base.py:<line> assign plans
+  users (1):
+    src/datamodel_code_generator/parser/base.py: <module>
+  users of .plans by name (attribute types are not resolved) (1):
+    src/datamodel_code_generator/_client/render.py x1
+  rows that list it as a site (3):
+    site: what a protocol helper's configuration stands for at run time, so that the validator ch... [Placement Guide] (home `_client/protocols.py` (`selecto...
+    site: how generated code spells a runtime record the generator holds, so that a record's clas... [Placement Guide] (home `_target_render.py`: `runtime_re...
+    site: how an SSE, NDJSON or webhook helper routes its events, so that the planners, the strea... [Placement Guide] (home `_client/streams.py`: `discrimin...
+  tests (2):
+    mirror: none
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

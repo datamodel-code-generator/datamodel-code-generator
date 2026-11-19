@@ -1,0 +1,4 @@
+exit status 0
+issue #4855
+  legacy rows (1):
+    legacy-closest-registered-parent [#4855] the parent whose name `--naming-strategy full-path` and `parent-prefixed` put before a model's is...

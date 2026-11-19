@@ -1,0 +1,13 @@
+exit status 0
+path src/datamodel_code_generator/model/_decisions/tag_value.py
+  Discriminator tag values: which value tags a union variant, which field holds it, which schemas a mapping names.
+  rows that claim it as home (1):
+    home: discriminator tags: which value tags a union variant (L1 branch literals, L5 tag fields, L6 redec... [Placement Guide]
+  rows that list it as a site (1):
+    site: the kind of a const or enum value, the kinds of the members an enum class holds (its va... [Placement Guide] (home `model/_decisions/enum_kind.py`:...
+  legacy rows (2):
+    legacy-mapped-tags-only [keep] without `--use-unmapped-variant-tag-values`, a discriminated variant a mapping key names takes on...
+    legacy-nested-enum-members-untagged [keep] under `--use-enum-values-in-discriminator`, a variant that a union lists through a nested discrim...
+  tests (2):
+    mirror: none
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

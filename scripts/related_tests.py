@@ -73,7 +73,7 @@ def _matches(path: str, globs: list[str]) -> bool:
     return any(fnmatchcase(path, glob) for glob in globs)
 
 
-def _mirrors(path: str) -> list[str]:
+def mirrors(path: str) -> list[str]:
     """Name the test modules that mirror a source module or a script."""
     if path.startswith(SRC) and path.endswith(".py"):
         directory, _, name = path.removeprefix(SRC).rpartition("/")
@@ -113,7 +113,7 @@ def select(root: Path, base: str, head: str | None, rules: list[dict]) -> list[s
     for path, letter in changed.items():
         if letter == "D":
             continue
-        nodes.update(next(([test] for test in _mirrors(path) if _exists(root, head, test)), []))
+        nodes.update(next(([test] for test in mirrors(path) if _exists(root, head, test)), []))
     listed = _fast_path_modules(root, base, head)
     if any(_module_name(path) in listed for path, letter in changed.items() if letter != "D") and _exists(
         root, head, FAST_PATH_TEST

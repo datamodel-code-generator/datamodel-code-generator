@@ -1,0 +1,12 @@
+exit status 0
+symbol _GenerationInput
+  defined (1):
+    src/datamodel_code_generator/__init__.py:<line> annassign _GenerationInput
+  users (3):
+    src/datamodel_code_generator/__init__.py: <module>, _GenerationRun, _RunInput
+    src/datamodel_code_generator/_api_generation.py: <module>
+    src/datamodel_code_generator/_target_selection.py: <module>
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (2):
+    mirror: none
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

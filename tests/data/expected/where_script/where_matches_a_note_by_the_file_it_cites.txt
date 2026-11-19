@@ -1,0 +1,24 @@
+exit status 0
+symbol _format_types.py:DEFAULT_FORMATTERS
+  defined (1):
+    src/datamodel_code_generator/_format_types.py:<line> annassign DEFAULT_FORMATTERS
+  users (3):
+    scripts/build_architecture_docs.py: generate_formatter_table
+    src/datamodel_code_generator/_format_types.py: <module>
+    src/datamodel_code_generator/format.py: <module>, CodeFormatter.__init__
+  case notes (1):
+    #9 `_format_types.py:DEFAULT_FORMATTERS`
+  tests (2):
+    mirror: none
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...
+exit status 0
+symbol format.py:DEFAULT_FORMATTERS
+  defined (1):
+    src/datamodel_code_generator/format.py:<line> assign DEFAULT_FORMATTERS
+  users (2):
+    scripts/build_architecture_docs.py: generate_formatter_table
+    src/datamodel_code_generator/format.py: <module>, CodeFormatter.__init__
+  rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
+  tests (2):
+    mirror: tests/test_format.py
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

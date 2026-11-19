@@ -1,0 +1,8 @@
+exit status 0
+pass omit_held_null
+  Drops the None a type restates of the model it names when that model holds null itself.
+  DECIDE, scope global, transform; condition: --omit-redundant-reference-null
+  reads: field_types, model_kind, nullable
+  writes: field_types, nullable
+  neighbours: runs after apply_generic_base_class, before serialize_as_any_for_every_subclass
+  defined: no definition found

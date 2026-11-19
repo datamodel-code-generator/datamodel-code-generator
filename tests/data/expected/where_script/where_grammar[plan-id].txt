@@ -1,0 +1,4 @@
+exit status 0
+issue DC12
+  legacy rows (1):
+    legacy-stdlib-annotated [DC12] a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned

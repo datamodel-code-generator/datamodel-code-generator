@@ -1,0 +1,2 @@
+exit status 2
+python -m scripts.where: error: give exactly one query

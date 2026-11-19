@@ -1,0 +1,13 @@
+exit status 0
+src/datamodel_code_generator/_mro.py:<line>
+  scope chain (1):
+    <module> (module, line <line>)
+path src/datamodel_code_generator/_mro.py
+  The C3 linearization: the order in which a class and its bases are searched, over items of any kind.
+  rows that claim it as home (1):
+    home: the method resolution order of generated models and the effective fields a model has with its bas... [Placement Guide]
+  rows that list it as a site (1):
+    site: what a sequence read item by item gives: the value of every item in order, or none for ... [Placement Guide] (home `_all_or_none.py:all_or_none`)
+  tests (2):
+    mirror: none
+    other rows (by changed lines): legacy-rows, pattern-writing, src-architecture-boundaries, src-public-api, src-schema-docs, src-generation-observation, sr...

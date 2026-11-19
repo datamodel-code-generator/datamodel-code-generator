@@ -1,0 +1,2 @@
+exit status 2
+where: docs/architecture.md: cannot be read (No such file or directory)
