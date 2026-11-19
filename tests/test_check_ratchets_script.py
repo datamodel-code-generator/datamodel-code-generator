@@ -266,8 +266,66 @@ def bound(text: str) -> list[str]:
     return [binding.name for binding in SourceModule(text).bindings()]
 """
 """A rule module that reads bindings and comments itself, by alias and by name, and one that asks the model."""
+JUSTIFIED = 'JUSTIFIED_VIOLATIONS = {"g": ("a",)}\n'
+APPROVAL = """[[approved]]
+key = "allowlist:JUSTIFIED_VIOLATIONS"
+head = 2
+pr = 7172
+decision = ["#7172"]
+reason = "a pure test of private cores"
+"""
+APPROVED_BASE = {"tests/assert_helper_allowlists.py": JUSTIFIED, "scripts/ratchet_approvals.toml": APPROVAL}
+"""A base whose table approves one more justified violation, up to 2, for pull request 7172."""
+ONE_MORE = {
+    "tests/assert_helper_allowlists.py": JUSTIFIED.replace('("a",)', '("a", "b")'),
+    "scripts/ratchet_approvals.toml": "# No pending approval.\n",
+}
+"""The approved rise, with the entry removed as the pull request that reaches the count does."""
+TWO_MORE = {**ONE_MORE, "tests/assert_helper_allowlists.py": JUSTIFIED.replace('("a",)', '("a", "b", "c")')}
+PULL_REQUEST = {"GITHUB_EVENT_NAME": "pull_request", "GITHUB_REF": "refs/pull/7172/merge"}
+MALFORMED_APPROVALS = """note = "not a table of the file"
+approved = [
+  1,
+  {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 2, extra = true},
+  {key = "allowlist:X:unreadable", head = 0, pr = "7172", decision = ["7172"], reason = " "},
+  {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 2, pr = 7172, decision = ["#7172"], reason = "kept"},
+  {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 3, pr = 7172, decision = [], reason = "again"},
+  {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 3, pr = 7172, decision = ["#7172"], reason = "again"},
+  {key = "allowlist:JUSTIFIED_VIOLATIONS", head = 2026-11-19, pr = 7173, decision = ["#7173"], reason = 07:32:00},
+]
+"""
 CASES = {
     "unchanged": {"base": COUNTER, "head": {}},
+    "approved-rise": {
+        "base": {**COUNTER, **APPROVED_BASE},
+        "head": ONE_MORE,
+        "env": PULL_REQUEST,
+        "args": ["--enforce"],
+    },
+    "approved-rise-exceeded": {"base": APPROVED_BASE, "head": TWO_MORE, "env": PULL_REQUEST, "args": ["--enforce"]},
+    "approved-rise-other-pull-request": {
+        "base": APPROVED_BASE,
+        "head": ONE_MORE,
+        "env": {**PULL_REQUEST, "GITHUB_REF": "refs/pull/7200/merge"},
+        "args": ["--enforce"],
+    },
+    "approved-rise-local-run": {"base": APPROVED_BASE, "head": ONE_MORE, "args": ["--enforce"]},
+    "approved-rise-merged": {
+        "base": APPROVED_BASE,
+        "head": ONE_MORE,
+        "subject": "Check the merge cores (#7172)",
+        "env": {"GITHUB_EVENT_NAME": "push"},
+        "args": ["--enforce"],
+    },
+    "approval-stale": {
+        "base": APPROVED_BASE,
+        "head": {"tests/assert_helper_allowlists.py": ONE_MORE["tests/assert_helper_allowlists.py"]},
+        "env": PULL_REQUEST,
+        "args": ["--enforce"],
+    },
+    "approvals-malformed": {"head": {"scripts/ratchet_approvals.toml": MALFORMED_APPROVALS}, "args": ["--enforce"]},
+    "approvals-not-a-list": {"head": {"scripts/ratchet_approvals.toml": "approved = 1\n"}, "args": ["--enforce"]},
+    "approvals-not-toml": {"head": {"scripts/ratchet_approvals.toml": "[[approved]\n"}, "args": ["--enforce"]},
     "added-hatch": {"head": {"src/pkg/b.py": FUTURE + SIZE}, "args": ["--enforce"]},
     "scope-walk": {
         "base": COUNTER,
@@ -573,7 +631,11 @@ def _write(root: Path, files: dict[str, str]) -> None:
 
 
 def _repository(
-    tmp_path: Path, base: dict[str, str], head: dict[str, str], ahead: dict[str, str] | None = None
+    tmp_path: Path,
+    base: dict[str, str],
+    head: dict[str, str],
+    ahead: dict[str, str] | None = None,
+    subject: str = "head",
 ) -> Path:
     """Commit the base files on branch ``base``, ``ahead`` files on a branch beyond it, then the head on ``main``."""
     repository = tmp_path / "repository"
@@ -586,7 +648,7 @@ def _repository(
         for command in (["add", "-A"], ["commit", "-q", "-m", "ahead"], ["switch", "-q", "main"]):
             subprocess.run([*GIT, *command], cwd=repository, check=True)
     _write(repository, head)
-    for command in (["add", "-A"], ["commit", "-q", "--allow-empty", "-m", "head"]):
+    for command in (["add", "-A"], ["commit", "-q", "--allow-empty", "-m", subject]):
         subprocess.run([*GIT, *command], cwd=repository, check=True)
     return repository
 
@@ -600,9 +662,18 @@ def _stable(text: str) -> str:
 def test_check_ratchets_against_base(
     case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Rises are reported with their files and fix; moves and form swaps are neutral; the base's counter also judges."""
+    """Rises are reported with their files and fix; moves and form swaps are neutral; the base's counter also judges.
+
+    The run of the pull request an approval names accepts the rise up to the approved count; the table is checked.
+    """
     spec = CASES[case]
-    repository = _repository(tmp_path, spec.get("base", {}), spec["head"], spec.get("ahead"))
+    for name in ("GITHUB_EVENT_NAME", "GITHUB_REF"):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in spec.get("env", {}).items():
+        monkeypatch.setenv(name, value)
+    repository = _repository(
+        tmp_path, spec.get("base", {}), spec["head"], spec.get("ahead"), spec.get("subject", "head")
+    )
     args = ["--base", spec.get("base_ref", "base"), *spec.get("args", [])]
     if spec.get("subprocess"):
         command = [sys.executable, "scripts/check_ratchets.py", *args]

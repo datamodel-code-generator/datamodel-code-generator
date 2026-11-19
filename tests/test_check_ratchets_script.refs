@@ -7,6 +7,15 @@ allowlist-subscript-writes	check_ratchets_script/check_ratchets_against_base[all
 allowlist-unreadable	check_ratchets_script/check_ratchets_against_base[allowlist-unreadable].txt
 any-uses	check_ratchets_script/check_ratchets_against_base[any-uses].txt
 any-values	check_ratchets_script/check_ratchets_against_base[any-values].txt
+approval-stale	check_ratchets_script/check_ratchets_against_base[approval-stale].txt
+approvals-malformed	check_ratchets_script/check_ratchets_against_base[approvals-malformed].txt
+approvals-not-a-list	check_ratchets_script/check_ratchets_against_base[approvals-not-a-list].txt
+approvals-not-toml	check_ratchets_script/check_ratchets_against_base[approvals-not-toml].txt
+approved-rise	check_ratchets_script/check_ratchets_against_base[approved-rise].txt
+approved-rise-exceeded	check_ratchets_script/check_ratchets_against_base[approved-rise-exceeded].txt
+approved-rise-local-run	check_ratchets_script/check_ratchets_against_base[approved-rise-local-run].txt
+approved-rise-merged	check_ratchets_script/check_ratchets_against_base[approved-rise-merged].txt
+approved-rise-other-pull-request	check_ratchets_script/check_ratchets_against_base[approved-rise-other-pull-request].txt
 block-style-args	check_ratchets_script/check_ratchets_against_base[block-style-args].txt
 coverage-omit-widened	check_ratchets_script/check_ratchets_against_base[coverage-omit-widened].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
