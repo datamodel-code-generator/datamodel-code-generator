@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 import re
 import subprocess
-from contextlib import suppress
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, cast
 
@@ -138,10 +137,6 @@ def test_formatter_extras_preserve_required_ranges_and_markers() -> None:
 
 def test_no_local_only_file_is_tracked() -> None:
     """No CLAUDE.md and no coverage data file (``.coverage``, ``.coverage.*``) is committed; none outside a checkout."""
-    listing = ""
-    with suppress(OSError):
-        listing = subprocess.run(
-            ["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, text=True, check=False
-        ).stdout
+    listing = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, text=True, check=False).stdout
     tracked = [name for name in listing.split("\0") if LOCAL_ONLY_FILE.fullmatch(name)]
     assert_output("\n".join(["Tracked files that stay local:", *(tracked or ["none"]), ""]))

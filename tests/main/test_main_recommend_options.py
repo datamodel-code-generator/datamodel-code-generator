@@ -48,7 +48,7 @@ RECOMMEND_DOCS = Path(__file__).parents[2] / "docs" / "recommend-options.md"
 GRAPHQL_INPUT = DATA_PATH / "graphql" / "simple-star-wars.graphql"
 RULES_FILE = "src/datamodel_code_generator/resources/recommender_rules.json"
 RECOMMENDER = "datamodel_code_generator._recommend"
-ISSUE_NUMBER = re.compile(r"#\d+|\b(?:issues?|PRs?|pull requests?)\s+\d+", re.IGNORECASE)
+ISSUE_NUMBER = re.compile(r"#\d+|\b(?:issues?|PRs?|pull requests?)\s+\d+|/(?:issues|pull|pulls)/\d+\b", re.IGNORECASE)
 REGISTRY_GUIDE = (
     f'Every option needs an entry in "options" of {RULES_FILE}: {{"rules": ["<rule id>"]}} when a rule sets it, '
     'or {"not_recommended": "<category>", "reason": "<why the schema does not decide it>"} with category io, '
