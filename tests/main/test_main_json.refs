@@ -5,18 +5,18 @@
 [test_main_json]
 	main/json/general.py
 [test_main_json_array_include_null]
-	main/json/json_array_include_null.py
+	main/main_json/array_include_null.py
 [test_main_json_collapse_reuse_model]
 	main/json/json_collapse_reuse_model.py
 [test_main_json_reuse_model]
-	main/json/json_reuse_model.py
+	main/main_json/reuse_model.py
 [test_main_json_reuse_model_pydantic2]
-	main/json/json_reuse_model_pydantic2.py	= main/json/json_reuse_model.py
+	main/main_json/reuse_model_pydantic2.py	= main/main_json/reuse_model.py
 [test_main_json_snake_case_field]
-	main/json/json_snake_case_field.py
+	main/main_json/snake_case_field.py
 [test_main_typed_dict_space_and_special_characters]
-	main/json/typed_dict_space_and_special_characters.py
+	main/main_json/main_typed_dict_space_and_special_characters.py
 [test_simple_json_snake_case_field]
-	main/json/simple_json_snake_case_field.py
+	main/main_json/simple_json_snake_case_field.py
 [test_space_and_special_characters_json]
-	main/json/space_and_special_characters.py
+	main/main_json/space_and_special_characters_json.py

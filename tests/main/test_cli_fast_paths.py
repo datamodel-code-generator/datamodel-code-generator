@@ -914,7 +914,6 @@ def test_version_fast_path_uses_embedded_version(version_option: str) -> None:
 
     assert_output(
         f"{json.dumps(output, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/version_fast_path.txt",
     )
 
 
@@ -924,7 +923,6 @@ def test_agent_skill_fast_path_skips_generation_imports() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/agent_skill_install.txt",
     )
 
 
@@ -960,7 +958,6 @@ def test_empty_formatters_skip_formatter_runtime() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/empty_formatters.txt",
     )
 
 
@@ -970,7 +967,6 @@ def test_custom_template_include_uses_jinja_in_a_fresh_process() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/custom_template_include.txt",
     )
 
 
@@ -986,7 +982,6 @@ def test_schema_runtime_validation_module_helper_skips_jinja_in_a_fresh_process(
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/schema_runtime_validation_helper.txt",
     )
 
 
@@ -996,7 +991,6 @@ def test_playground_builtin_generation_skips_jinja_and_custom_templates() -> Non
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/playground_builtin_templates.txt",
     )
 
 
@@ -1006,7 +1000,6 @@ def test_input_model_transport_skips_codec_and_preserves_metadata() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/input_model_type_transport.txt",
     )
 
 
@@ -1016,7 +1009,6 @@ def test_input_model_without_runtime_type_skips_nonce_and_codec() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/input_model_without_runtime_type.txt",
     )
 
 
@@ -1031,7 +1023,6 @@ def test_external_ref_parses_only_external_raw_python_type() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/external_ref_type_transport.txt",
     )
 
 
@@ -1041,7 +1032,6 @@ def test_python_type_codec_supports_codec_first_import() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/python_type_codec_import_order.txt",
     )
 
 
@@ -1051,7 +1041,6 @@ def test_file_url_join_skips_http_backend_imports() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/file_url_http_imports.txt",
     )
 
 
@@ -1071,7 +1060,6 @@ def test_generate_prompt_fast_path_suggests_invalid_options() -> None:
 
     assert_output(
         f"{json.dumps(result, indent=2, sort_keys=True)}\n",
-        ROOT / "tests/data/expected/main/cli_fast_paths/generate_prompt_invalid_option.txt",
     )
 
 

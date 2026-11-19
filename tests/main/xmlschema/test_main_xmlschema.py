@@ -62,7 +62,6 @@ def test_convert_xml_schema_data_preserves_yaml_safe_non_finite_defaults() -> No
 
     assert_output(
         yaml.safe_dump(converted["definitions"]["NonFinite"]["enum"], sort_keys=False),
-        EXPECTED_XML_SCHEMA_PATH / "converted_non_finite_defaults.txt",
     )
 
 
@@ -520,7 +519,6 @@ def test_main_xmlschema_output_model_types(
             f"{message}\n"
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
-        EXPECTED_XML_SCHEMA_PATH / "output_model_types" / f"advanced_constructs_{expected_name}_warnings.txt",
     )
 
 
@@ -1112,7 +1110,7 @@ def test_xmlschema_pattern_alternatives(
                 else:
                     valid = True
                 results.append({"field": field, "value": value, "valid": valid})
-    assert_output(json.dumps(results, indent=2) + "\n", EXPECTED_XML_SCHEMA_PATH / f"{fixture}.validation.txt")
+    assert_output(json.dumps(results, indent=2) + "\n")
     if backend != "msgspec.Struct":
         assert_generated_model_json_validation(
             output_file,
@@ -1390,20 +1388,16 @@ def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, ou
                 try:
                     _model_json_validator(native_model)
                 except PydanticUserError as native_error:
-                    assert_output(
-                        f"{native_error.code}: {native_error.message}\n",
-                        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/typeddict_native_error.txt",
-                    )
+                    assert_output(f"{native_error.code}: {native_error.message}\n", name="typeddict_error")
                     with pytest.raises(PydanticUserError) as generated_error:
                         _model_json_validator(model)
                     assert_output(
-                        f"{generated_error.value.code}: {generated_error.value.message}\n",
-                        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/typeddict_native_error.txt",
+                        f"{generated_error.value.code}: {generated_error.value.message}\n", name="typeddict_error"
                     )
                     assert_output(
                         json.dumps({"fields": fields, "item": model(**json.loads(valid_json))["item"]}, indent=2)
                         + "\n",
-                        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/ordinary_runtime.txt",
+                        name="typeddict_item",
                     )
                     return
         if backend == DataModelType.MsgspecStruct:
@@ -1420,7 +1414,6 @@ def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, ou
 
     assert_output(
         json.dumps({"fields": fields, "item": item}, indent=2) + "\n",
-        EXPECTED_XML_SCHEMA_PATH / "field_name_collisions/ordinary_runtime.txt",
     )
 
 
@@ -1480,7 +1473,6 @@ def test_xmlschema_composed_content(output_file: Path, entrypoint: str, schema_g
         if schema_group == "simple_content_inheritance":
             assert_output(
                 json.dumps(results, indent=2) + "\n",
-                EXPECTED_XML_SCHEMA_PATH / schema_group / f"{case.get('expected', name)}.txt",
             )
 
 

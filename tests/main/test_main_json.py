@@ -78,8 +78,6 @@ def test_space_and_special_characters_json(output_file: Path) -> None:
         input_path=JSON_DATA_PATH / "space_and_special_characters.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
-        expected_file="space_and_special_characters.py",
     )
 
 
@@ -101,7 +99,6 @@ def test_main_json_array_include_null(output_file: Path) -> None:
         input_path=JSON_DATA_PATH / "array_include_null.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
     )
 
 
@@ -111,7 +108,6 @@ def test_main_json_reuse_model(output_file: Path) -> None:
         input_path=JSON_DATA_PATH / "duplicate_models.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
         extra_args=["--reuse-model"],
     )
 
@@ -122,7 +118,6 @@ def test_main_json_reuse_model_pydantic2(output_file: Path) -> None:
         input_path=JSON_DATA_PATH / "duplicate_models.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--reuse-model"],
     )
 
@@ -162,7 +157,6 @@ def test_simple_json_snake_case_field(output_file: Path) -> None:
             input_path=JSON_DATA_PATH / "simple.json",
             output_path=output_file,
             input_file_type="json",
-            assert_func=assert_file_content,
             extra_args=["--snake-case-field"],
         )
 
@@ -194,7 +188,6 @@ def test_main_typed_dict_space_and_special_characters(output_file: Path) -> None
         input_path=JSON_DATA_PATH / "space_and_special_characters.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
         extra_args=["--output-model-type", "typing.TypedDict", "--target-python-version", "3.11"],
     )
 
@@ -205,6 +198,5 @@ def test_main_json_snake_case_field(output_file: Path) -> None:
         input_path=JSON_DATA_PATH / "snake_case.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
         extra_args=["--snake-case-field"],
     )
