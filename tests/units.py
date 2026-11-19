@@ -57,7 +57,10 @@ __all__ = [
     "common_contents",
     "decode_payload",
     "deduplicate",
+    "derived_directory",
+    "derived_file_name",
     "derived_name",
+    "derived_siblings",
     "duplicate_inputs_message",
     "duplicate_storages_message",
     "duplicates",
@@ -66,6 +69,7 @@ __all__ = [
     "facts_fit",
     "format_refs",
     "input_duplicates",
+    "is_derived_label",
     "item_problem",
     "label_path",
     "label_problem",
@@ -758,6 +762,65 @@ def derived_name(name: str) -> str:
     if len(safe) <= _MAX_NAME:
         return safe
     return f"{safe[:80]}~{hashlib.sha1(name.encode()).hexdigest()[:8]}"
+
+
+def derived_directory(module: PurePosixPath) -> PurePosixPath:
+    """Return the directory below the expected root that holds the derived outputs of a test module.
+
+    ``module`` is the module's path relative to the tests root: ``main/test_x.py`` gives ``main/x``.
+    """
+    return module.parent / module.stem.removeprefix("test_")
+
+
+def derived_file_name(
+    stem: str, function: str, param: str, siblings: Collection[str], role: str = "", suffix: str = ""
+) -> str:
+    """Name the output of a test that names no expected path: ``<function>[<id>]<role><suffix>``.
+
+    ``stem`` is the module name without its ``test_`` prefix and ``function`` the test with its class
+    (``Class::test_x``). The ``<module>_`` prefix of the function is dropped unless that collides with a name in
+    ``siblings`` (the other tests of its class or module without their ``test_`` prefix), so the name never depends
+    on which tests ran first.
+    """
+    owner, _, name = function.rpartition("::")
+    short = name.removeprefix("test_")
+    if short.startswith(f"{stem}_"):
+        stripped = short[len(stem) + 1 :]
+        short = short if stripped in siblings else stripped
+    base = f"{owner.replace('::', '.')}.{short}" if owner else short
+    identifier = param
+    if len(f"{base}[{identifier}]{role}{suffix}") > _MAX_NAME:
+        identifier = f"{param[:80]}~{hashlib.sha1(param.encode()).hexdigest()[:8]}"
+    return derived_name(f"{base}[{identifier}]" if param else base) + role + suffix
+
+
+def derived_siblings(function: str, tests: Iterable[str]) -> set[str]:
+    """Return the names, without ``test_``, of the other tests of the class or module of ``function``.
+
+    ``tests`` holds the tests of a module as nodeids show them, with their classes (``Class::test_x``).
+    """
+    owner = function.rpartition("::")[0]
+    return {test.rpartition("::")[2].removeprefix("test_") for test in tests if test.rpartition("::")[0] == owner}
+
+
+def is_derived_label(module: PurePosixPath, line: RefLine, siblings: Collection[str]) -> bool:
+    """Return whether the harness itself names the stored output a reference line compares, not the test.
+
+    The label lies in the module's derived directory, and its file name is what `derived_file_name` writes for the
+    item and the rest of the name after some ``.``: the role and suffix the harness appends. Each split is tried with
+    that function, so the shortening of long ids, which depends on the role and suffix, and the ``<module>_`` prefix,
+    which depends on the ``siblings`` of the item (`derived_siblings`), are decided as the harness decides them. A tree
+    label has the pattern ``*`` where the harness names it; another pattern comes from a test that names its directory.
+    """
+    label, pattern = split_label(line.label)
+    path = PurePosixPath(label)
+    stem, name = module.stem.removeprefix("test_"), path.name
+    splits = [*(index for index, character in enumerate(name) if character == "."), len(name)]
+    return (
+        pattern in {None, "*"}
+        and path.parent == derived_directory(module)
+        and any(derived_file_name(stem, line.function, line.param, siblings, name[index:]) == name for index in splits)
+    )
 
 
 @dataclass(frozen=True)

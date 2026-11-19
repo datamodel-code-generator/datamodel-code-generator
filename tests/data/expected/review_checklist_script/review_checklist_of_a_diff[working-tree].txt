@@ -1,5 +1,5 @@
 exit status 0
-Review checklist against base: 2 of 6 items.
+Review checklist against base: 2 of 5 items.
 
 1. A comparison judges a stand-in for the output [comparison-reads-output]
    Rule (docs/development-contributing.md): Prefer full expected-file or inline snapshot comparisons for generated output over substring checks.

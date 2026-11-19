@@ -8,25 +8,6 @@
 # of a hunk that also adds lines; a trigger without either fires on every added line of its paths.
 
 [[item]]
-id = "stored-output-name"
-title = "A test names its stored output"
-rule = "AGENTS.md"
-words = "Never add or change an expected path to create, split, share or rename stored output"
-question = """Does the test pass an expected path, a stored file name or a `name=` to a helper? Call the helper \
-without one and commit what pytest writes; a module-local helper that takes a stored-output name gets none either."""
-pulls = [5874, 7119]
-
-[[item.trigger]]
-paths = ["tests/**/*.py"]
-added = [
-  '\bexpected_(?:file|path)\s*=',
-  '\boutput_to_expected\s*=',
-  '\bEXPECTED\w*\s*/',
-  "['\"]tests/data/expected/",
-  '\b(?:assert_\w+|run_\w*and_assert\w*)\(.*\bname\s*=',
-]
-
-[[item]]
 id = "home-keeps-site-reading"
 title = "A site moved into a home reads what it read before"
 rule = "docs/architecture.md"

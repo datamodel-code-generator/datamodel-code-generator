@@ -1,14 +1,7 @@
 exit status 0
-Review checklist against base up to main: 2 of 6 items.
+Review checklist against base up to main: 1 of 5 items.
 
-1. A test names its stored output [stored-output-name]
-   Rule (AGENTS.md): Never add or change an expected path to create, split, share or rename stored output
-   Ask: Does the test pass an expected path, a stored file name or a `name=` to a helper? Call the helper without one and commit what pytest writes; a module-local helper that takes a stored-output name gets none either.
-   Triggered by:
-     tests/test_coverage.py:9 adds `assert_output(capsys.readouterr().out, transform=str.strip, expected_path=EXPECTED / f"{case}.txt")`
-   Pull requests: #5874, #7119
-
-2. A comparison judges a stand-in for the output [comparison-reads-output]
+1. A comparison judges a stand-in for the output [comparison-reads-output]
    Rule (docs/development-contributing.md): Prefer full expected-file or inline snapshot comparisons for generated output over substring checks.
    Ask: What does each side of the comparison read: the output this code generates, or a stand-in (a stored file, a signature, a transformed, normalized or masked text)? Name an output change a user would see that the comparison now calls equal, and run it; a normalization replaces only what differs by host or run (paths, commit ids, line numbers of warnings).
    Triggered by:

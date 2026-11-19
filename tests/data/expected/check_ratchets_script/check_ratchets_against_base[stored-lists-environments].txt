@@ -2,6 +2,7 @@ exit status 1
 Escape hatches: base (merge-base <commit>) -> working tree
 
 key                                                                                base    head  change
+named-stored-output@tests                                                             6       7      +1
 ruff-config:exclude:scripts                                                           1       1       0
 ruff-config:hook-exclude:^src/pkg/generated/                                          1       1       0
 ruff-config:ignore:CPY                                                                1       1       0
@@ -12,6 +13,9 @@ ruff-config:per-file:tests/**/*.py:S101                                         
 ruff:PLC0415@src                                                                      1       1       0
 stored-list:test_generated_models_decide_value_neighbours_like_the_schema:items       8       8       0
 stored-list:test_generated_models_decide_value_neighbours_like_the_schema:lines       9      10      +1
+
+named-stored-output@tests rose by 1 (6 -> 7). Name no stored output: call the assert helper without an expected path or directory, run the test and commit what pytest writes (AGENTS.md, Tests); `name=` for a second output stays inside the derived name. A path, a case list or a helper that makes the stored name is the same thing.
+  tests/main/test_payload_validation.refs: 6 -> 7
 
 stored-list:test_generated_models_decide_value_neighbours_like_the_schema:lines has 3 new lines (9 -> 10). A stored list of known gaps only shrinks: the new line is a regression of the generated output (or, for a blind line, an item whose checks no longer run). Fix the change or file the defect; never store the line with the fix command the test prints.
   five	/k const 8: invalid, model accepts	@pydantic=2.0: 0 -> 1

@@ -1,2 +1,2 @@
 exit status 0
-Review checklist against base up to main: the diff triggers none of the 6 items.
+Review checklist against base up to main: the diff triggers none of the 5 items.

@@ -1,5 +1,5 @@
 exit status 0
-Review checklist against base up to main: 1 of 6 items.
+Review checklist against base up to main: 1 of 5 items.
 
 1. A site moved into a home reads what it read before [home-keeps-site-reading]
    Rule (docs/architecture.md): A new exception to a home is a new named row, never an anonymous `if`.
