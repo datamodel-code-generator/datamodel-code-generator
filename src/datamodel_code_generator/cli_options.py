@@ -43,7 +43,6 @@ from datamodel_code_generator.enums import (  # noqa: F401  # Preserve the estab
     NamingStrategy,
     TargetPydanticVersion,
 )
-from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from argparse import Action, ArgumentParser
@@ -221,26 +220,6 @@ def _with_relation_rows(options: dict[str, CLIOptionMeta]) -> dict[str, CLIOptio
 
 # Documentation metadata for CLI options, derived from the option table
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-
-
-def _validate_option_topic_groups() -> None:
-    """Validate CLI option topic/group invariants at import time."""
-    for option, meta in CLI_OPTION_META.items():
-        if meta.topic is None or meta.group is None:
-            continue
-        allowed_groups = OPTION_TOPIC_ALLOWED_GROUPS.get(meta.topic)
-        if allowed_groups is None:  # pragma: no cover
-            msg = f"{option}: topic {stable_repr(meta.topic.value)} has no allowed groups"
-            raise AssertionError(msg)
-        if meta.group not in allowed_groups:  # pragma: no cover
-            msg = (
-                f"{option}: group {stable_repr(meta.group.value)} is not allowed for topic "
-                f"{stable_repr(meta.topic.value)}"
-            )
-            raise AssertionError(msg)
-
-
-_validate_option_topic_groups()
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,10 @@
+[[change]]
+id = "no-cover-sites-decided"
+extends = "fast-path-lazy-exports"
+refs = []
+covers = [
+    "main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generate-prompt].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generation].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-structured-output].txt",
+]

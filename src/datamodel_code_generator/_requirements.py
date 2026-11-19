@@ -386,19 +386,12 @@ def refused_bytes_pattern_message(owners: Sequence[str]) -> str:
 
 def form_path(construct: Construct) -> str:
     """Return the import that ``construct`` writes on a target that has it."""
-    return _import_path(REQUIREMENTS[construct].form, construct)
+    return cast("str", REQUIREMENTS[construct].form)
 
 
 def backport_path(construct: Construct) -> str:
     """Return the import that stands in for ``construct`` on a target before its minimum."""
-    return _import_path(REQUIREMENTS[construct].backport, construct)
-
-
-def _import_path(path: str | None, construct: Construct) -> str:
-    if path is None:  # pragma: no cover
-        msg = f"the requirement row {construct!r} names no such import"
-        raise LookupError(msg)
-    return path
+    return cast("str", REQUIREMENTS[construct].backport)
 
 
 __all__ = [

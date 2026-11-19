@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import black
 import pytest
@@ -25,6 +27,9 @@ from datamodel_code_generator.preset import (
 )
 from scripts import build_preset_docs
 from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_preset_docs.py"
 EXPECTED_PRESET_DOCS_PATH = Path(__file__).resolve().parent / "data" / "expected" / "preset_docs"
@@ -136,6 +141,46 @@ def test_preset_api_refuses_an_unknown_format_and_an_unknown_field() -> None:
         render_presets("xml")  # ty: ignore[invalid-argument-type]
     with pytest.raises(PresetError, match="Preset field 'no_such_field' is not a BaseGenerateConfig field"):
         PresetConfig(no_such_field=True)  # ty: ignore[unknown-argument]
+
+
+@pytest.mark.parametrize(
+    ("build", "message"),
+    [
+        pytest.param(
+            lambda: PresetConfig(extra_fields="bogus"),
+            "Unsupported extra_fields preset value: 'bogus'",
+            id="extra-fields-value",
+        ),
+        pytest.param(
+            lambda: PresetConfig(wrap_string_literal=None),
+            "Preset field 'wrap_string_literal' cannot be rendered as a preset CLI option",
+            id="value-without-a-rendering",
+        ),
+        pytest.param(
+            lambda: PresetOptionGroup(title="order", config=PresetConfig(keep_model_order=True), description=""),
+            "has no --no- form to turn it off",
+            id="enabled-option-without-a-negative",
+        ),
+        pytest.param(
+            lambda: (
+                PresetOptionGroup(title="dot", config=PresetConfig(treat_dot_as_module=True), description="").options
+            ),
+            "Preset field 'treat_dot_as_module' does not map to a documented CLI option",
+            id="field-without-an-option",
+        ),
+        pytest.param(
+            lambda: (
+                PresetOptionGroup(title="order", config=PresetConfig(keep_model_order=False), description="").options
+            ),
+            "Preset field 'keep_model_order' does not map to a documented negative CLI option",
+            id="disabled-option-without-a-negative",
+        ),
+    ],
+)
+def test_preset_config_refuses_what_the_command_line_cannot_write(build: Callable[[], object], message: str) -> None:
+    """A config or option group that no CLI option spells is refused, naming the field."""
+    with pytest.raises(PresetError, match=re.escape(message)):
+        build()
 
 
 @pytest.mark.allow_direct_assert("states which contexts a preset option group applies to, which writes no output")
