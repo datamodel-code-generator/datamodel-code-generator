@@ -1,0 +1,9 @@
+{
+  "title": "RootTwo",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  }
+}
