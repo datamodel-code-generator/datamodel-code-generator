@@ -1572,10 +1572,6 @@ def test_get_model_by_path_rejects_invalid_list_index(path: str, match: str) -> 
         get_model_by_path(schema, path.split("/"))
 
 
-@pytest.mark.skipif(
-    not hasattr(sys, "set_int_max_str_digits"),
-    reason="int string-conversion length limit requires Python 3.11+",
-)
 def test_get_model_by_path_rejects_overlong_list_index() -> None:
     """Test a digit string above the int conversion limit raises Error, not ValueError."""
     schema = {"a": [{"x": 1}]}
@@ -1616,8 +1612,8 @@ def test_parse_deferred_json_pointer_rejects_invalid_array_index(ref: str, match
 
 
 @pytest.mark.skipif(
-    not hasattr(sys, "set_int_max_str_digits") or sys.get_int_max_str_digits() == 0,
-    reason="int string-conversion length limit requires Python 3.11+",
+    sys.get_int_max_str_digits() == 0,
+    reason="the int string-conversion length limit is switched off",
 )
 def test_parse_deferred_json_pointer_rejects_overlong_array_index() -> None:
     """Keep integer-conversion failures outside dangling-reference diagnostics."""
@@ -2981,7 +2977,6 @@ def test_no_class_decorators() -> None:
         ),
     ],
 )
-@pytest.mark.skipif(pydantic.VERSION < "2.0.0", reason="Require Pydantic version 2.0.0 or later ")
 def test_json_schema_parser_extension(source_obj: dict[str, Any], generated_classes: str) -> None:
     """Test JSON schema parser extension with alt_type support."""
 

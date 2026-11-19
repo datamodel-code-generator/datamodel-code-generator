@@ -61,10 +61,6 @@ to generate either Pydantic models or dataclasses.""",
         "dataclass": "graphql/simple_star_wars_dataclass.py",
     },
 )
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_simple_star_wars(output_model: str, expected_output: str, output_file: Path) -> None:
     """Generate models from GraphQL with different output model types.
 
@@ -82,10 +78,6 @@ def test_main_graphql_simple_star_wars(output_model: str, expected_output: str, 
 
 
 @LEGACY_BLACK_SKIP
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_different_types_of_fields(output_file: Path) -> None:
     """Test GraphQL code generation with different field types."""
     run_main_and_assert(
@@ -203,7 +195,7 @@ def test_main_use_default_kwarg(output_file: Path) -> None:
 
 
 @pytest.mark.skipif(
-    black.__version__.split(".")[0] in {"19", "22"},
+    black.__version__.split(".")[0] == "22",
     reason="Installed black doesn't support Python 3.12 target version",
 )
 def test_main_graphql_empty_list_default(output_file: Path) -> None:
@@ -273,10 +265,6 @@ def test_main_graphql_collapse_root_models_keeps_list_item_enums(
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_custom_scalar_types(output_file: Path) -> None:
     """Test GraphQL code generation with custom scalar types."""
     run_main_and_assert(
@@ -330,10 +318,6 @@ def test_main_graphql_custom_scalar_template_data_remains_raw(output_file: Path)
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--aliases"],
     option_description="""Apply custom field and class name aliases via inline JSON or a JSON file path.
@@ -360,10 +344,6 @@ def test_main_graphql_field_aliases(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_multiple_aliases_pydantic_v2(output_file: Path) -> None:
     """Test GraphQL with multiple aliases using Pydantic v2 AliasChoices."""
     run_main_and_assert(
@@ -401,10 +381,6 @@ def test_main_graphql_serialization_aliases_pydantic_v2(output_file: Path) -> No
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_casing(output_file: Path) -> None:
     """Test GraphQL code generation with casing transformations."""
     run_main_and_assert(
@@ -416,10 +392,6 @@ def test_main_graphql_casing(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_enums(output_file: Path) -> None:
     """Test GraphQL code generation with enums."""
     run_main_and_assert(
@@ -590,10 +562,6 @@ def test_main_graphql_specialized_enums_disabled(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--use-subclass-enum"],
     option_description="""Generate typed Enum subclasses for enums with specific field types.
@@ -652,10 +620,6 @@ def test_main_graphql_enums_dated_preset(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_union(output_file: Path) -> None:
     """Test GraphQL code generation with union types."""
     run_main_and_assert(
@@ -765,10 +729,6 @@ def test_main_graphql_union_description_comment_is_safe(
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--additional-imports"],
     option_description="""Add custom imports to generated output files.
@@ -830,10 +790,6 @@ def test_main_graphql_scalar_type_name_follows_target(output_file: Path, target_
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_additional_imports_in_extra_template_data(output_file: Path) -> None:
     """Test additional_imports specified in extra-template-data JSON file (string format)."""
     run_main_and_assert(
@@ -849,10 +805,6 @@ def test_main_graphql_additional_imports_in_extra_template_data(output_file: Pat
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_additional_imports_in_extra_template_data_inline_json(output_file: Path) -> None:
     """Test extra-template-data loaded from inline JSON."""
     run_main_and_assert(
@@ -868,10 +820,6 @@ def test_main_graphql_additional_imports_in_extra_template_data_inline_json(outp
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_additional_imports_in_extra_template_data_list_format(output_file: Path) -> None:
     """Test additional_imports specified in extra-template-data JSON file (list format)."""
     run_main_and_assert(
@@ -887,10 +835,6 @@ def test_main_graphql_additional_imports_in_extra_template_data_list_format(outp
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_additional_imports_merged(output_file: Path) -> None:
     """Test merging additional_imports from CLI and extra-template-data JSON."""
     run_main_and_assert(
@@ -908,10 +852,6 @@ def test_main_graphql_additional_imports_merged(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--custom-formatters"],
     option_description="""Apply custom Python code formatters to generated output.
@@ -944,10 +884,6 @@ def test_main_graphql_custom_formatters(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_use_standard_collections(output_file: Path) -> None:
     """Test GraphQL code generation with standard collections."""
     run_main_and_assert(
@@ -960,10 +896,6 @@ def test_main_graphql_use_standard_collections(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_use_union_operator(output_file: Path) -> None:
     """Test GraphQL code generation with union operator syntax."""
     run_main_and_assert(
@@ -1057,10 +989,6 @@ def test_main_graphql_type_alias_py312(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--dataclass-arguments"],
     option_description="""Customize dataclass decorator arguments via JSON dictionary.
@@ -1102,10 +1030,6 @@ def test_main_graphql_dataclass_arguments(output_file: Path) -> None:
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 def test_main_graphql_dataclass_arguments_with_pydantic(output_file: Path) -> None:
     """Test GraphQL code generation with dataclass arguments passed but using Pydantic model.
 
@@ -1126,10 +1050,6 @@ def test_main_graphql_dataclass_arguments_with_pydantic(output_file: Path) -> No
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @pytest.mark.cli_doc(
     options=["--keyword-only"],
     option_description="""Generate dataclasses with keyword-only fields (Python 3.10+).

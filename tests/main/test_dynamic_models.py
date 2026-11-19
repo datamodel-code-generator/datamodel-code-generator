@@ -63,8 +63,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.dynamic import DynamicModule
 
 
-pytestmark = pytest.mark.skipif(pydantic.VERSION < "2.0.0", reason="generate_dynamic_models requires Pydantic v2")
-
 DATA_PATH = Path(__file__).parent.parent / "data" / "dynamic_models"
 EXPECTED_PATH = Path(__file__).parent.parent / "data" / "expected" / "dynamic_models"
 

@@ -436,10 +436,6 @@ class MyEnum(Enum):
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] == "19",
-    reason="Installed black doesn't support the old style",
-)
 @freeze_time("2019-07-26")
 def test_pyproject_with_tool_section(output_file: Path, tmp_path: Path) -> None:
     """Test that a pyproject.toml with [tool.datamodel-codegen] section is found and applied."""
@@ -4198,7 +4194,6 @@ conint/confloat with ge/le parameters.""",
     cli_args=["--use-non-positive-negative-number-constrained-types"],
     golden_output="main_kr/use_non_positive_negative/output.py",
 )
-@pytest.mark.skipif(pydantic.VERSION < "2.0.0", reason="Require Pydantic version 2.0.0 or later")
 @freeze_time("2019-07-26")
 def test_use_non_positive_negative_number_constrained_types(output_file: Path) -> None:
     """Use NonPositive/NonNegative types for number constraints."""
@@ -4212,7 +4207,6 @@ def test_use_non_positive_negative_number_constrained_types(output_file: Path) -
     )
 
 
-@pytest.mark.skipif(pydantic.VERSION < "2.0.0", reason="Require Pydantic version 2.0.0 or later")
 @freeze_time("2019-07-26")
 def test_use_non_positive_negative_number_constrained_types_with_use_annotated(output_file: Path) -> None:
     """Use NonPositive/NonNegative types combined with --use-annotated."""
