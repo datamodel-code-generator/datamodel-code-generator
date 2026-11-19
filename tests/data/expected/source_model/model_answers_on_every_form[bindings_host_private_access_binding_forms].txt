@@ -1,0 +1,246 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  annotations: import-from@4 [always]; origin __future__.annotations
+  Protocol: import-from@6 [always]; origin typing.Protocol
+  FixtureHost: class@9 [always]
+  FixtureParser: class@13 [always]
+  assignment: def@17 [always]
+  augmented_assignment: def@29 [always]
+  annotated_assignment: def@37 [always]
+  for_target: def@49 [always]
+  comprehension_targets: def@58 [always]
+  with_target: def@68 [always]
+  except_name: def@76 [always]
+  import_names: def@86 [always]
+  def_and_class_names: def@115 [always]
+  match_captures: def@135 [always]
+  walrus_targets: def@157 [always]
+  delete_target: def@174 [always]
+  global_and_nonlocal: def@183 [always]
+  class_bodies: def@206 [always]
+scope class FixtureHost#0 'FixtureHost': code yes; first line 9
+  opened by a node evaluated in <module>#0
+  _state: annotation-only@10 [always]
+  members: _state
+scope class FixtureParser#0 'FixtureParser': code yes; first line 13
+  opened by a node evaluated in <module>#0
+  _state: assign@14 [always]; value 1
+  members: _state
+scope function assignment#0 'assignment': code yes; first line 17
+  opened by a node evaluated in <module>#0
+  parser: param@17 [function:body@17]
+  models: param@17 [function:body@17]
+  rebinds: def@18 [function:body@17]
+  unpacks: def@22 [function:body@17]
+scope function assignment.<locals>.rebinds#0 'rebinds': code yes; first line 18
+  opened by a node evaluated in assignment#0
+  parser: assign@19 [function:body@17|function:body@18]; value models[0]
+scope function assignment.<locals>.unpacks#0 'unpacks': code yes; first line 22
+  opened by a node evaluated in assignment#0
+  first: assign@23 [function:body@17|function:body@22]
+  parser: assign@23 [function:body@17|function:body@22]
+scope function augmented_assignment#0 'augmented_assignment': code yes; first line 29
+  opened by a node evaluated in <module>#0
+  parser: param@29 [function:body@29]
+  rebinds: def@30 [function:body@29]
+scope function augmented_assignment.<locals>.rebinds#0 'rebinds': code yes; first line 30
+  opened by a node evaluated in augmented_assignment#0
+  parser: augassign@31 [function:body@29|function:body@30]
+scope function annotated_assignment#0 'annotated_assignment': code yes; first line 37
+  opened by a node evaluated in <module>#0
+  parser: param@37 [function:body@37]
+  model: param@37 [function:body@37]
+  rebinds: def@38 [function:body@37]
+  declares: def@42 [function:body@37]
+scope function annotated_assignment.<locals>.rebinds#0 'rebinds': code yes; first line 38
+  opened by a node evaluated in annotated_assignment#0
+  parser: annassign@39 [function:body@37|function:body@38]; value model
+scope function annotated_assignment.<locals>.declares#0 'declares': code yes; first line 42
+  opened by a node evaluated in annotated_assignment#0
+  parser: annotation-only@43 [function:body@37|function:body@42]
+scope function for_target#0 'for_target': code yes; first line 49
+  opened by a node evaluated in <module>#0
+  parser: param@49 [function:body@49]
+  models: param@49 [function:body@49]
+  rebinds: def@50 [function:body@49]
+scope function for_target.<locals>.rebinds#0 'rebinds': code yes; first line 50
+  opened by a node evaluated in for_target#0
+  parser: for@51 [function:body@49|function:body@50|loop:body@51]
+scope function comprehension_targets#0 'comprehension_targets': code yes; first line 58
+  opened by a node evaluated in <module>#0
+  parser: param@58 [function:body@58]
+  models: param@58 [function:body@58]
+  states: assign@59 [function:body@58]; value [parser._state for parser in models]
+  unique: assign@60 [function:body@58]; value {parser._state for parser in models}
+  by_name: assign@61 [function:body@58]; value {parser._state: parser for parser in models}
+  total: assign@62 [function:body@58]; value sum(parser._state for parser in models)
+  nested: assign@63 [function:body@58]; value [[parser._state for parser in models] for _ in parser._state]
+  first_iterable: assign@64 [function:body@58]; value [state for parser in parser._state for state in parser._state]
+scope comprehension comprehension_targets.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 59
+  opened by a node evaluated in comprehension_targets#0
+  parser: comprehension@59 [function:body@58|loop:body@59]
+scope comprehension comprehension_targets.<locals>.<setcomp>#0 '<setcomp>': code 3.11 only; first line 60
+  opened by a node evaluated in comprehension_targets#0
+  parser: comprehension@60 [function:body@58|loop:body@60]
+scope comprehension comprehension_targets.<locals>.<dictcomp>#0 '<dictcomp>': code 3.11 only; first line 61
+  opened by a node evaluated in comprehension_targets#0
+  parser: comprehension@61 [function:body@58|loop:body@61]
+scope comprehension comprehension_targets.<locals>.<genexpr>#0 '<genexpr>': code yes; first line 62
+  opened by a node evaluated in comprehension_targets#0
+  parser: comprehension@62 [function:body@58|loop:body@62]
+scope comprehension comprehension_targets.<locals>.<listcomp>#1 '<listcomp>': code 3.11 only; first line 63
+  opened by a node evaluated in comprehension_targets#0
+  _: comprehension@63 [function:body@58|loop:body@63]
+scope comprehension comprehension_targets.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 63
+  opened by a node evaluated in comprehension_targets.<locals>.<listcomp>#1
+  parser: comprehension@63 [function:body@58|loop:body@63|loop:body@63]
+scope comprehension comprehension_targets.<locals>.<listcomp>#2 '<listcomp>': code 3.11 only; first line 64
+  opened by a node evaluated in comprehension_targets#0
+  parser: comprehension@64 [function:body@58|loop:body@64]
+  state: comprehension@64 [function:body@58|loop:body@64]
+scope function with_target#0 'with_target': code yes; first line 68
+  opened by a node evaluated in <module>#0
+  parser: param@68 [function:body@68]
+  model: param@68 [function:body@68]
+  rebinds: def@69 [function:body@68]
+scope function with_target.<locals>.rebinds#0 'rebinds': code yes; first line 69
+  opened by a node evaluated in with_target#0
+  parser: with@70 [function:body@68|function:body@69]
+scope function except_name#0 'except_name': code yes; first line 76
+  opened by a node evaluated in <module>#0
+  parser: param@76 [function:body@76]
+  error: param@76 [function:body@76]
+  rebinds: def@77 [function:body@76]
+scope function except_name.<locals>.rebinds#0 'rebinds': code yes; first line 77
+  opened by a node evaluated in except_name#0
+  parser: except@80 [function:body@76|function:body@77|try:except@80]
+scope function import_names#0 'import_names': code yes; first line 86
+  opened by a node evaluated in <module>#0
+  parser: param@86 [function:body@86]
+  imports: def@87 [function:body@86]
+  imports_a_package: def@92 [function:body@86]
+  imports_as: def@97 [function:body@86]
+  imports_from: def@102 [function:body@86]
+  imports_from_as: def@107 [function:body@86]
+scope function import_names.<locals>.imports#0 'imports': code yes; first line 87
+  opened by a node evaluated in import_names#0
+  parser: import@88 [function:body@86|function:body@87]; origin parser
+scope function import_names.<locals>.imports_a_package#0 'imports_a_package': code yes; first line 92
+  opened by a node evaluated in import_names#0
+  parser: import@93 [function:body@86|function:body@92]; origin parser
+scope function import_names.<locals>.imports_as#0 'imports_as': code yes; first line 97
+  opened by a node evaluated in import_names#0
+  parser: import@98 [function:body@86|function:body@97]; origin sys
+scope function import_names.<locals>.imports_from#0 'imports_from': code yes; first line 102
+  opened by a node evaluated in import_names#0
+  parser: import-from@103 [function:body@86|function:body@102]; origin forms.bindings.models.parser
+scope function import_names.<locals>.imports_from_as#0 'imports_from_as': code yes; first line 107
+  opened by a node evaluated in import_names#0
+  parser: import-from@108 [function:body@86|function:body@107]; origin forms.bindings.models.model
+scope function def_and_class_names#0 'def_and_class_names': code yes; first line 115
+  opened by a node evaluated in <module>#0
+  parser: param@115 [function:body@115]
+  defines: def@116 [function:body@115]
+  defines_async: def@121 [function:body@115]
+  declares_a_class: def@126 [function:body@115]
+scope function def_and_class_names.<locals>.defines#0 'defines': code yes; first line 116
+  opened by a node evaluated in def_and_class_names#0
+  parser: def@117 [function:body@115|function:body@116]
+scope function def_and_class_names.<locals>.defines.<locals>.parser#0 'parser': code yes; first line 117
+  opened by a node evaluated in def_and_class_names.<locals>.defines#0
+scope function def_and_class_names.<locals>.defines_async#0 'defines_async': code yes; first line 121
+  opened by a node evaluated in def_and_class_names#0
+  parser: def@122 [function:body@115|function:body@121]
+scope function def_and_class_names.<locals>.defines_async.<locals>.parser#0 'parser': code yes; first line 122
+  opened by a node evaluated in def_and_class_names.<locals>.defines_async#0
+scope function def_and_class_names.<locals>.declares_a_class#0 'declares_a_class': code yes; first line 126
+  opened by a node evaluated in def_and_class_names#0
+  parser: class@127 [function:body@115|function:body@126]
+scope class def_and_class_names.<locals>.declares_a_class.<locals>.parser#0 'parser': code yes; first line 127
+  opened by a node evaluated in def_and_class_names.<locals>.declares_a_class#0
+  _state: assign@128 [function:body@115|function:body@126]; value 1
+  members: _state
+scope function match_captures#0 'match_captures': code yes; first line 135
+  opened by a node evaluated in <module>#0
+  parser: param@135 [function:body@135]
+  value: param@135 [function:body@135]
+  captures: def@136 [function:body@135]
+  ignores_wildcards: def@147 [function:body@135]
+scope function match_captures.<locals>.captures#0 'captures': code yes; first line 136
+  opened by a node evaluated in match_captures#0
+  parser: match@138 [function:body@135|function:body@136|case:body@138]
+  parser: match@140 [function:body@135|function:body@136|case:body@140]
+  parser: match@142 [function:body@135|function:body@136|case:body@142]
+  parser: match@144 [function:body@135|function:body@136|case:body@144]
+scope function match_captures.<locals>.ignores_wildcards#0 'ignores_wildcards': code yes; first line 147
+  opened by a node evaluated in match_captures#0
+scope function walrus_targets#0 'walrus_targets': code yes; first line 157
+  opened by a node evaluated in <module>#0
+  parser: param@157 [function:body@157]
+  models: param@157 [function:body@157]
+  rebinds: def@158 [function:body@157]
+  rebinds_from_a_comprehension: def@163 [function:body@157]
+  rebinds_in_a_lambda: def@167 [function:body@157]
+scope function walrus_targets.<locals>.rebinds#0 'rebinds': code yes; first line 158
+  opened by a node evaluated in walrus_targets#0
+  parser: walrus@159 [function:body@157|function:body@158]
+scope function walrus_targets.<locals>.rebinds_from_a_comprehension#0 'rebinds_from_a_comprehension': code yes; first line 163
+  opened by a node evaluated in walrus_targets#0
+  states: assign@164 [function:body@157|function:body@163]; value [(parser := model)._state for model in models]
+  parser: walrus@164 [function:body@157|function:body@163|loop:body@164]
+scope comprehension walrus_targets.<locals>.rebinds_from_a_comprehension.<locals>.<listcomp>#0 '<listcomp>': code 3.11 only; first line 164; nonlocal parser
+  opened by a node evaluated in walrus_targets.<locals>.rebinds_from_a_comprehension#0
+  model: comprehension@164 [function:body@157|function:body@163|loop:body@164]
+scope function walrus_targets.<locals>.rebinds_in_a_lambda#0 'rebinds_in_a_lambda': code yes; first line 167
+  opened by a node evaluated in walrus_targets#0
+  read: assign@168 [function:body@157|function:body@167]; value lambda: (parser := models[0])._state + parser._state
+scope lambda walrus_targets.<locals>.rebinds_in_a_lambda.<locals>.<lambda>#0 '<lambda>': code yes; first line 168
+  opened by a node evaluated in walrus_targets.<locals>.rebinds_in_a_lambda#0
+  parser: walrus@168 [function:body@157|function:body@167|function:body@168]
+scope function delete_target#0 'delete_target': code yes; first line 174
+  opened by a node evaluated in <module>#0
+  parser: param@174 [function:body@174]
+  deletes: def@175 [function:body@174]
+scope function delete_target.<locals>.deletes#0 'deletes': code yes; first line 175
+  opened by a node evaluated in delete_target#0
+  state: assign@176 [function:body@174|function:body@175]; value parser._state
+  parser: del@177 [function:body@174|function:body@175]
+scope function global_and_nonlocal#0 'global_and_nonlocal': code yes; first line 183
+  opened by a node evaluated in <module>#0
+  parser: param@183 [function:body@183]
+  parser: assign@190 [function:body@183|function:body@188]; value other
+  other: param@183 [function:body@183]
+  declares_global: def@184 [function:body@183]
+  declares_nonlocal: def@188 [function:body@183]
+  rebinds: def@193 [function:body@183]
+scope function global_and_nonlocal.<locals>.declares_global#0 'declares_global': code yes; first line 184; global parser
+  opened by a node evaluated in global_and_nonlocal#0
+scope function global_and_nonlocal.<locals>.declares_nonlocal#0 'declares_nonlocal': code yes; first line 188; nonlocal parser
+  opened by a node evaluated in global_and_nonlocal#0
+scope function global_and_nonlocal.<locals>.rebinds#0 'rebinds': code yes; first line 193
+  opened by a node evaluated in global_and_nonlocal#0
+  parser: assign@194 [function:body@183|function:body@193]; value FixtureParser()
+  parser: assign@198 [function:body@183|function:body@193|function:body@196]; value FixtureParser()
+  declares_nonlocal_of_the_rebound_name: def@196 [function:body@183|function:body@193]
+scope function global_and_nonlocal.<locals>.rebinds.<locals>.declares_nonlocal_of_the_rebound_name#0 'declares_nonlocal_of_the_rebound_name': code yes; first line 196; nonlocal parser
+  opened by a node evaluated in global_and_nonlocal.<locals>.rebinds#0
+scope function class_bodies#0 'class_bodies': code yes; first line 206
+  opened by a node evaluated in <module>#0
+  parser: param@206 [function:body@206]
+  models: param@206 [function:body@206]
+  Rebinds: class@207 [function:body@206]
+scope class class_bodies.<locals>.Rebinds#0 'Rebinds': code yes; first line 207
+  opened by a node evaluated in class_bodies#0
+  parser: assign@208 [function:body@206]; value models[0]
+  state: assign@209 [function:body@206]; value parser._state
+  states: assign@210 [function:body@206]; value [parser._state for _ in models]
+  method: def@212 [function:body@206]
+  members: method, parser, state, states
+scope comprehension class_bodies.<locals>.Rebinds.<listcomp>#0 '<listcomp>': code 3.11 only; first line 210
+  opened by a node evaluated in class_bodies.<locals>.Rebinds#0
+  _: comprehension@210 [function:body@206|loop:body@210]
+scope function class_bodies.<locals>.Rebinds.method#0 'method': code yes; first line 212
+  opened by a node evaluated in class_bodies.<locals>.Rebinds#0
+  self: param@212 [function:body@206|function:body@212]
+  receiver: self@212
+== code objects: one per scope that compiles on this Python

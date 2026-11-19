@@ -1,0 +1,13 @@
+== references
+9:0 package store in <module> -> local <module> @9,10
+10:0 package store in <module> -> local <module> @9,10
+14:11 load load in aliased -> global <module> @7; origin importlib.import_module
+18:11 importlib load in two_packages -> global <module> @6; origin importlib
+18:51 package load in two_packages -> global <module> @9,10
+uses of <module>:importlib@6: call:import_module@18
+uses of <module>:load@7: call@14
+uses of <module>:package@9: argument@18
+uses of <module>:package@10: argument@18
+type positions @9: neutral
+type positions @10: datamodel_code_generator; chains datamodel_code_generator.model = None
+== code objects: one per scope that compiles on this Python

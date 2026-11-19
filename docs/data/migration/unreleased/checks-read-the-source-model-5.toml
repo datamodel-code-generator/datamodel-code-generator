@@ -1,0 +1,6 @@
+[[change]]
+id = "checks-read-the-source-model-5"
+extends = "checks-read-the-source-model-2"
+covers = [
+    "source_model/every_rule_states_its_verdicts[template-assignments].txt",
+]

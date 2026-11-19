@@ -776,6 +776,24 @@ def argument(call: ast.Call, position: int | None, keyword: str | None) -> ast.e
     return UNKNOWN if any(item.arg is None for item in call.keywords) else None
 
 
+def bases(scope: Scope) -> list[ast.expr]:
+    """Return the bases a class scope lists, each as the name or attribute chain `SourceModule.origin` reads.
+
+    A subscript gives its value (``Protocol[T]`` gives ``Protocol``) and a keyword (``metaclass=``) is no base; any
+    other expression stays as written. A scope that is no class has none.
+    """
+    _ask("bindings")
+    node = scope.node
+    listed = node.bases if scope.kind == "class" and isinstance(node, ast.ClassDef) else []
+    return [base.value if isinstance(base, ast.Subscript) else base for base in listed]
+
+
+def annotation(binding: Binding) -> ast.expr | None:
+    """Return the annotation of the parameter a binding makes, None for any other binding or a parameter without one."""
+    _ask("bindings")
+    return binding.node.annotation if isinstance(binding.node, ast.arg) else None
+
+
 def _verifying(*, verify: bool | None) -> bool:
     return os.environ.get(VERIFY_ENV) == "1" if verify is None else verify
 
@@ -1484,15 +1502,12 @@ class SourceModule(_CompilerCheck):
         return self._origin(node)
 
     def origins(self, node: ast.expr) -> list[tuple[str, Guard]]:
-        """Return every dotted path a name or attribute chain may name, each with the guard of its binding."""
+        """Return every dotted path a name or attribute chain may name, each with the guard of its binding.
+
+        An alias of a name bound more than once names the paths of each of its bindings, though `origin` gives none.
+        """
         _ask("references")
-        head, parts = _chain(node)
-        resolution = self._resolved.get(head) if head is not None else None
-        return [
-            (".".join([origin, *parts]), binding.guard)
-            for binding in (resolution.bindings if resolution is not None else ())
-            if (origin := self._binding_origin(binding, frozenset())) is not None
-        ]
+        return self._origins(node, frozenset())
 
     def uses(self, binding: Binding) -> list[Use]:
         """Return the loads that may read a binding (a class body's fallback reads included), with how each is used."""
@@ -1941,6 +1956,29 @@ class SourceModule(_CompilerCheck):
         origins = {self._binding_origin(binding, active) for binding in resolution.bindings}
         found = origins.pop() if len(origins) == 1 else None
         return ".".join([found, *parts]) if found is not None else None
+
+    def _origins(self, node: ast.expr, active: frozenset[Binding]) -> list[tuple[str, Guard]]:
+        head, parts = _chain(node)
+        resolution = self._resolved.get(head) if head is not None else None
+        return [
+            (".".join([origin, *parts]), guard)
+            for binding in (resolution.bindings if resolution is not None else ())
+            for origin, guard in self._binding_origins(binding, active)
+        ]
+
+    def _binding_origins(self, binding: Binding, active: frozenset[Binding]) -> list[tuple[str, Guard]]:
+        """Return every path a binding may give its name, each with the guard it holds under.
+
+        An alias of a multiply bound name gives each path of theirs, under its own guard and the alias's.
+        """
+        alias = binding.kind in {"assign", "annassign"} and isinstance(binding.value, (ast.Name, ast.Attribute))
+        if alias and binding.origin is None and binding not in active and binding.value is not None:
+            return [
+                (origin, (*binding.guard, *(condition for condition in guard if condition not in binding.guard)))
+                for origin, guard in self._origins(binding.value, active | {binding})
+            ]
+        found = self._binding_origin(binding, active)
+        return [] if found is None else [(found, binding.guard)]
 
     def _binding_origin(self, binding: Binding, active: frozenset[Binding]) -> str | None:
         if binding.origin is not None:

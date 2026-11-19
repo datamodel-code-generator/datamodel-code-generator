@@ -5,6 +5,9 @@ bindings/class_members_cited: docs/architecture.md:7: doc-citations: `Parser.oth
 bindings/class_members_cited: docs/architecture.md:7: doc-citations: `Parser.skipped`
 bindings/class_members_cited: docs/architecture.md:7: doc-citations: `class_members_cited.py:Parser.nothing`
 bindings/class_members_cited: docs/architecture.md:7: doc-citations: `class_members_cited.py:gone`
+bindings/host_private_access_binding_forms: src/host_private_access_binding_forms.py:117: ellipsis-statement: ...
+bindings/host_private_access_binding_forms: src/host_private_access_binding_forms.py:122: ellipsis-statement: ...
+bindings/host_private_access_concern: src/host_private_access_concern.py:23: ellipsis-statement: ...
 imports/dynamic_imports: scripts/dynamic_imports.py:16: globals-registry: leaf = __import__("leaf", globals(), level=1)
 imports/dynamic_imports: scripts/dynamic_imports.py:17: globals-registry: upper = __import__("up", globals(), None, (), 2)
 imports/dynamic_imports: scripts/dynamic_imports.py:18: globals-registry: absolute = __import__("email", globals(), level=0)

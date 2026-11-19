@@ -8,6 +8,17 @@ bindings/comprehension_in_annotation: comprehension_in_annotation.py:14: size wi
 bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:15: items no value
 bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:16: tags no value
 bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:17: nested with a value
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:10: _state no value
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:14: _state with a value
+bindings/host_private_access_concern: host_private_access_concern.py:16: _base_state no value
+bindings/host_private_access_concern: host_private_access_concern.py:20: _state no value
+bindings/host_private_access_concern: host_private_access_concern.py:21: _shared_state with a value
+bindings/host_private_access_concern: host_private_access_concern.py:27: _state no value
+bindings/host_private_access_concern: host_private_access_concern.py:31: _state no value
+bindings/host_private_access_concern: host_private_access_concern.py:35: _state with a value
+bindings/host_private_access_receivers: host_private_access_receivers.py:10: _state no value
+bindings/host_private_access_receivers: host_private_access_receivers.py:14: _state with a value
+bindings/host_private_access_unions: host_private_access_unions.py:13: _state no value
 bindings/lambda_in_class_annotation_future: lambda_in_class_annotation_future.py:9: x with a value
 bindings/match_captures: match_captures.py:7: __match_args__ with a value
 bindings/match_captures: match_captures.py:11: RED with a value
@@ -30,7 +41,14 @@ references/class_scope_skipped: class_scope_skipped.py:10: first with a value
 references/class_scope_skipped: class_scope_skipped.py:11: f with a value
 references/comprehension_in_method_default: comprehension_in_method_default.py:5: size with a value
 references/consumers_of_expressions: consumers_of_expressions.py:29: entries with a value
+references/output_policy_by_origin: output_policy_by_origin.py:10: output_type with a value
+references/output_policy_by_origin: output_policy_by_origin.py:11: literal_type with a value
 references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:44: _CLASS_BODY with a value
 references/reexport_chain_across_modules: _format_types.py:9: One with a value
 references/string_annotation_forward: string_annotation_forward.py:16: children no value
 references/string_annotation_forward: string_annotation_forward.py:17: broken no value
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:45: registry with a value
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:114: module_registry with a value
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:118: module_registry with a value
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:122: local_registry with a value
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:123: model with a value

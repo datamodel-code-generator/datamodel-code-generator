@@ -362,6 +362,16 @@ composition root, and move reusable helpers to a neutral package module. Do not
 add an allowlist entry for new code. Existing entries document compatibility debt,
 have bounded occurrence counts, and fail when stale.
 
+The guard reads names through `scripts/_source_model.py`, which does not say which
+binding of a name a read reaches, so a name holds every binding of its scope and the
+guard fails closed: a name bound both to a concrete backend (a module string,
+`importlib`, `sys.modules`) and to something else is read as the backend wherever it
+is read, and a name bound under `TYPE_CHECKING` and again at run time (an import and
+a fallback `Any`) has no single type, so a `*Host` annotation that uses it reaches
+no members. Rename the variable, or import the name once. A name another module of
+the package re-exports (`DataModelType`, `import_module`) is read as what that module
+imports.
+
 In the parser concern modules (every module below a `parser/_*` module or
 package, and `model/_field_imports.py`: the files where the `pyproject.toml`
 per-file ignores turn off ruff's `SLF001`) the guard owns private access: a

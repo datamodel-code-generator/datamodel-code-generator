@@ -1,0 +1,49 @@
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  t: import@6 [always]; origin typing
+  Generic: import-from@7 [always]; origin typing.Generic
+  Protocol: import-from@7 [always]; origin typing.Protocol
+  TypeVar: import-from@7 [always]; origin typing.TypeVar
+  models: import-from@9 [always]; origin forms.bindings.models; re-export 'from . import X'
+  T: assign@11 [always]; value TypeVar("T")
+  A: class@14 [always]
+  B: class@18 [always]
+  C: class@22 [always]
+  plain: def@27 [always]
+scope class A#0 'A': code yes; first line 14
+  opened by a node evaluated in <module>#0
+  members: 
+scope class B#0 'B': code yes; first line 18
+  opened by a node evaluated in <module>#0
+  members: 
+scope class C#0 'C': code yes; first line 22
+  opened by a node evaluated in <module>#0
+  method: def@23 [always]
+  members: method
+scope function C.method#0 'method': code yes; first line 23
+  opened by a node evaluated in C#0
+  self: param@23 [function:body@23]
+  other: param@23 [function:body@23]
+  rest: param@23 [function:body@23]
+  key: param@23 [function:body@23]
+  extra: param@23 [function:body@23]
+  receiver: self@23
+scope function plain#0 'plain': code yes; first line 27
+  opened by a node evaluated in <module>#0
+  a: param@27 [function:body@27]
+  b: param@27 [function:body@27]
+scope lambda plain.<locals>.<lambda>#0 '<lambda>': code yes; first line 28
+  opened by a node evaluated in plain#0
+  x: param@28 [function:body@27|function:body@28]
+bases of A: Protocol = typing.Protocol
+bases of B: t.Protocol = typing.Protocol, Generic = typing.Generic, models.Base = forms.bindings.models.Base, models.Sub = forms.bindings.models.Sub
+bases of C: make_base() = None
+annotation of C.method:self: None
+annotation of C.method:other: "C"
+annotation of C.method:rest: models.Host
+annotation of C.method:key: Host | None
+annotation of C.method:extra: type[Host]
+annotation of plain:a: None
+annotation of plain:b: int
+annotation of plain.<locals>.<lambda>:x: None
+== code objects: one per scope that compiles on this Python

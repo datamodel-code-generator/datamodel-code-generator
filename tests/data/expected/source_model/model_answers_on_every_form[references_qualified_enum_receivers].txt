@@ -1,0 +1,8 @@
+== references
+10:0 FIRST store in <module> -> local <module> @10
+10:8 enums load in <module> -> local <module> @8; origin datamodel_code_generator.enums
+11:0 SECOND store in <module> -> local <module> @11
+11:9 backend_enums load in <module> -> local <module> @7; origin datamodel_code_generator.enums
+uses of <module>:backend_enums@7: read@11
+uses of <module>:enums@8: read@10
+== code objects: one per scope that compiles on this Python

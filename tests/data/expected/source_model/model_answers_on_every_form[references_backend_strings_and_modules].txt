@@ -1,0 +1,92 @@
+== references
+14:0 BACKEND_MODULE store in <module> -> local <module> @14
+15:0 BACKEND_MODULE_ALIAS store in <module> -> local <module> @15
+15:23 BACKEND_MODULE load in <module> -> local <module> @14; origin forms.references.backend_strings_and_modules.BACKEND_MODULE
+16:0 TYPED_BACKEND_MODULE_ALIAS store in <module> -> local <module> @16
+16:28 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+16:34 BACKEND_MODULE load in <module> -> local <module> @14; origin forms.references.backend_strings_and_modules.BACKEND_MODULE
+17:0 OVERWRITTEN_BACKEND_MODULE store in <module> -> local <module> @17,19
+18:0 importlib load in <module> -> local <module> @5; origin importlib
+18:24 OVERWRITTEN_BACKEND_MODULE load in <module> -> local <module> @17,19
+19:0 OVERWRITTEN_BACKEND_MODULE store in <module> -> local <module> @17,19
+23:4 importlib load in load_backends -> global <module> @5; origin importlib
+23:28 BACKEND_MODULE_ALIAS load in load_backends -> global <module> @15; origin forms.references.backend_strings_and_modules.BACKEND_MODULE
+24:4 load_backend load in load_backends -> global <module> @11; origin importlib.import_module
+24:17 TYPED_BACKEND_MODULE_ALIAS load in load_backends -> global <module> @16; origin forms.references.backend_strings_and_modules.BACKEND_MODULE
+25:11 __import__ load in load_backends -> builtin; origin builtins.__import__
+29:11 dcg load in load_private_facade_helper -> global <module> @7; origin datamodel_code_generator
+33:4 direct store in inspect_backend -> local inspect_backend @33
+33:13 value load in inspect_backend -> local inspect_backend @32
+34:4 helpers store in inspect_backend -> local inspect_backend @34
+34:14 getattr load in inspect_backend -> builtin; origin builtins.getattr
+34:22 value load in inspect_backend -> local inspect_backend @32
+35:4 identity store in inspect_backend -> local inspect_backend @35
+35:15 value load in inspect_backend -> local inspect_backend @32
+35:95 value load in inspect_backend -> local inspect_backend @32
+38:11 direct load in inspect_backend -> local inspect_backend @33
+38:19 helpers load in inspect_backend -> local inspect_backend @34
+38:28 identity load in inspect_backend -> local inspect_backend @35
+38:38 msgspec load in inspect_backend -> global <module> @10; origin datamodel_code_generator.model.msgspec
+38:47 RootModel load in inspect_backend -> global <module> @12; origin forms.model.pydantic_v2.RootModel
+42:11 value load in inspect_async_backend -> local inspect_async_backend @41
+46:11 value load in build_backend -> local build_backend @45
+46:24 BACKEND_MODULE load in build_backend -> global <module> @14; origin forms.references.backend_strings_and_modules.BACKEND_MODULE
+46:41 value load in build_backend -> local build_backend @45
+46:54 BACKEND_MODULE load in build_backend -> global <module> @14; origin forms.references.backend_strings_and_modules.BACKEND_MODULE
+50:4 model load in inspect_output_metadata -> local inspect_output_metadata @49
+52:8 model load in inspect_output_metadata -> local inspect_output_metadata @49
+53:8 getattr load in inspect_output_metadata -> builtin; origin builtins.getattr
+53:16 model load in inspect_output_metadata -> local inspect_output_metadata @49
+54:8 model load in inspect_output_metadata -> local inspect_output_metadata @49
+55:8 python_version load in inspect_output_metadata -> local inspect_output_metadata @49
+56:8 getattr load in inspect_output_metadata -> builtin; origin builtins.getattr
+56:16 python_version load in inspect_output_metadata -> local inspect_output_metadata @49
+64:11 NamingType load in select_output_policy -> local select_output_policy @61; origin datamodel_code_generator.reference.ModelType
+64:32 NamingType load in select_output_policy -> local select_output_policy @61; origin datamodel_code_generator.reference.ModelType
+64:52 OutputType load in select_output_policy -> local select_output_policy @62; origin datamodel_code_generator.enums.DataModelType
+72:8 ModelType load in neutral_output_capabilities -> local neutral_output_capabilities @69; origin datamodel_code_generator.reference.ModelType
+73:8 ModelType load in neutral_output_capabilities -> local neutral_output_capabilities @69; origin datamodel_code_generator.reference.ModelType
+74:8 model load in neutral_output_capabilities -> local neutral_output_capabilities @67
+75:8 model load in neutral_output_capabilities -> local neutral_output_capabilities @67
+76:8 model load in neutral_output_capabilities -> local neutral_output_capabilities @67
+77:8 _model_field_name_collisions load in neutral_output_capabilities -> local neutral_output_capabilities @68; origin datamodel_code_generator.model.output._model_field_name_collisions
+77:37 model load in neutral_output_capabilities -> local neutral_output_capabilities @67
+78:8 model load in neutral_output_capabilities -> local neutral_output_capabilities @67
+79:8 field load in neutral_output_capabilities -> local neutral_output_capabilities @67
+87:8 python_target_meets load in inspect_typed_dict_requirements -> local inspect_typed_dict_requirements @84; origin datamodel_code_generator._requirements.python_target_meets
+87:56 python_version load in inspect_typed_dict_requirements -> local inspect_typed_dict_requirements @83
+88:8 python_target_meets load in inspect_typed_dict_requirements -> local inspect_typed_dict_requirements @84; origin datamodel_code_generator._requirements.python_target_meets
+88:84 python_version load in inspect_typed_dict_requirements -> local inspect_typed_dict_requirements @83
+89:8 python_version load in inspect_typed_dict_requirements -> local inspect_typed_dict_requirements @83
+90:8 python_target_meets load in inspect_typed_dict_requirements -> local inspect_typed_dict_requirements @84; origin datamodel_code_generator._requirements.python_target_meets
+90:46 python_version load in inspect_typed_dict_requirements -> local inspect_typed_dict_requirements @83
+uses of <module>:importlib@5: call:import_module@18, call:import_module@23
+uses of <module>:dcg@7: read@29
+uses of <module>:msgspec@10: read@38
+uses of <module>:load_backend@11: call@24
+uses of <module>:RootModel@12: read@38
+uses of <module>:BACKEND_MODULE@14: read@15, read@16, argument@46, argument@46
+uses of <module>:BACKEND_MODULE_ALIAS@15: argument@23
+uses of <module>:TYPED_BACKEND_MODULE_ALIAS@16: argument@24
+uses of <module>:OVERWRITTEN_BACKEND_MODULE@17: argument@18
+uses of <module>:OVERWRITTEN_BACKEND_MODULE@19: argument@18
+uses of inspect_backend:value@32: read@33, argument@34, read@35, read@35
+uses of inspect_backend:direct@33: read@38
+uses of inspect_backend:helpers@34: read@38
+uses of inspect_backend:identity@35: read@38
+uses of inspect_async_backend:value@41: read@42
+uses of build_backend:value@45: call@46, call@46
+uses of inspect_output_metadata:model@49: call:_append_internal_template_data@50, read@52, argument@53, read@54
+uses of inspect_output_metadata:python_version@49: read@55, argument@56
+uses of select_output_policy:NamingType@61: read@64, read@64
+uses of select_output_policy:OutputType@62: read@64
+uses of neutral_output_capabilities:model@67: read@74, read@75, read@76, argument@77, read@78
+uses of neutral_output_capabilities:field@67: read@79
+uses of neutral_output_capabilities:_model_field_name_collisions@68: call@77
+uses of neutral_output_capabilities:ModelType@69: read@72, read@73
+uses of inspect_typed_dict_requirements:python_version@83: read@87, read@88, call:_meets@89, read@90
+uses of inspect_typed_dict_requirements:python_target_meets@84: call@87, call@88, call@90
+type positions @14: datamodel_code_generator; chains datamodel_code_generator.model.dataclass = datamodel_code_generator.model.dataclass
+type positions @16: str
+type positions @17: datamodel_code_generator; chains datamodel_code_generator.model.dataclass = datamodel_code_generator.model.dataclass
+== code objects: one per scope that compiles on this Python

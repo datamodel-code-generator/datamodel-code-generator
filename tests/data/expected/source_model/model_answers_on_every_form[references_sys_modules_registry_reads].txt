@@ -1,0 +1,244 @@
+== references
+18:0 CONCRETE_BACKEND store in <module> -> local <module> @18
+19:0 CONCRETE_BACKEND_ALIAS store in <module> -> local <module> @19
+19:25 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+20:0 TYPED_CONCRETE_BACKEND store in <module> -> local <module> @20
+20:24 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+20:30 CONCRETE_BACKEND_ALIAS load in <module> -> local <module> @19; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+21:0 module_registry store in <module> -> local <module> @21
+21:18 loaded_modules load in <module> -> local <module> @13; origin sys.modules
+22:0 runtime_modules store in <module> -> local <module> @22
+22:18 runtime load in <module> -> local <module> @8; origin sys
+23:0 typed_registry store in <module> -> local <module> @23
+23:16 object load (evaluated annotation) in <module> -> builtin; origin builtins.object
+23:25 loaded_modules load in <module> -> local <module> @13; origin sys.modules
+24:0 TOP_LEVEL_BACKEND store in <module> -> local <module> @24,26
+25:0 runtime load in <module> -> local <module> @8; origin sys
+25:16 TOP_LEVEL_BACKEND load in <module> -> local <module> @24,26
+26:0 TOP_LEVEL_BACKEND store in <module> -> local <module> @24,26
+26:20 object load in <module> -> builtin; origin builtins.object
+27:3 enabled load in <module> -> unbound
+28:4 CONDITIONAL_LATER_BACKEND store in <module> -> local <module> @28
+32:4 import_loader load in inspect_backend -> global <module> @7; origin importlib
+32:32 CONCRETE_BACKEND load in inspect_backend -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+33:4 load_module load in inspect_backend -> global <module> @12; origin importlib.import_module
+33:16 CONCRETE_BACKEND_ALIAS load in inspect_backend -> global <module> @19; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+34:4 builtin_import load in inspect_backend -> global <module> @9; origin builtins.__import__
+34:19 CONCRETE_BACKEND load in inspect_backend -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+35:4 runtime load in inspect_backend -> global <module> @8; origin sys
+35:24 CONCRETE_BACKEND load in inspect_backend -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+36:4 loaded_modules load in inspect_backend -> global <module> @13; origin sys.modules
+36:23 CONCRETE_BACKEND_ALIAS load in inspect_backend -> global <module> @19; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+37:4 module_registry load in inspect_backend -> global <module> @21; origin sys.modules
+37:20 CONCRETE_BACKEND load in inspect_backend -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+38:4 runtime_modules load in inspect_backend -> global <module> @22; origin sys.modules
+38:20 CONCRETE_BACKEND_ALIAS load in inspect_backend -> global <module> @19; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+39:4 typed_registry load in inspect_backend -> global <module> @23; origin sys.modules
+39:19 TYPED_CONCRETE_BACKEND load in inspect_backend -> global <module> @20; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+43:4 local_registry store in inspect_local_registry -> local inspect_local_registry @43
+43:21 runtime load in inspect_local_registry -> global <module> @8; origin sys
+44:4 local_registry load in inspect_local_registry -> local inspect_local_registry @43; origin sys.modules
+44:19 CONCRETE_BACKEND load in inspect_local_registry -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+45:4 annotated_registry store in inspect_local_registry -> local inspect_local_registry @45
+45:24 object load (never annotation) in inspect_local_registry -> builtin; origin builtins.object
+45:33 loaded_modules load in inspect_local_registry -> global <module> @13; origin sys.modules
+46:4 annotated_registry load in inspect_local_registry -> local inspect_local_registry @45; origin sys.modules
+46:23 CONCRETE_BACKEND_ALIAS load in inspect_local_registry -> global <module> @19; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+52:4 local_sys store in inspect_local_import_aliases -> local inspect_local_import_aliases @52
+52:16 local_runtime load in inspect_local_import_aliases -> local inspect_local_import_aliases @50; origin sys
+53:4 local_registry store in inspect_local_import_aliases -> local inspect_local_import_aliases @53
+53:21 local_sys load in inspect_local_import_aliases -> local inspect_local_import_aliases @52; origin sys
+54:4 local_registry load in inspect_local_import_aliases -> local inspect_local_import_aliases @53; origin sys.modules
+54:19 CONCRETE_BACKEND load in inspect_local_import_aliases -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+57:4 local_modules load in inspect_local_import_aliases -> local inspect_local_import_aliases @55; origin sys.modules
+57:22 CONCRETE_BACKEND_ALIAS load in inspect_local_import_aliases -> global <module> @19; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+61:4 local_registry store in inspect_local_strings -> local inspect_local_strings @61
+61:21 runtime load in inspect_local_strings -> global <module> @8; origin sys
+62:4 local_backend store in inspect_local_strings -> local inspect_local_strings @62
+63:4 local_registry load in inspect_local_strings -> local inspect_local_strings @61; origin sys.modules
+63:19 local_backend load in inspect_local_strings -> local inspect_local_strings @62
+64:4 typed_backend store in inspect_local_strings -> local inspect_local_strings @64
+64:19 str load (never annotation) in inspect_local_strings -> builtin; origin builtins.str
+64:25 local_backend load in inspect_local_strings -> local inspect_local_strings @62
+65:4 local_registry load in inspect_local_strings -> local inspect_local_strings @61; origin sys.modules
+65:23 typed_backend load in inspect_local_strings -> local inspect_local_strings @64
+69:4 local_registry store in inspect_registry_rebinding -> local inspect_registry_rebinding @69,70
+69:21 runtime load in inspect_registry_rebinding -> global <module> @8; origin sys
+70:4 local_registry store in inspect_registry_rebinding -> local inspect_registry_rebinding @69,70
+70:21 local_registry load in inspect_registry_rebinding -> local inspect_registry_rebinding @69,70
+  may be sys.modules [function:body@68]
+70:40 CONCRETE_BACKEND load in inspect_registry_rebinding -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+74:4 local_loader store in inspect_local_dynamic_alias -> local inspect_local_dynamic_alias @74
+74:19 load_module load in inspect_local_dynamic_alias -> global <module> @12; origin importlib.import_module
+75:4 local_loader load in inspect_local_dynamic_alias -> local inspect_local_dynamic_alias @74; origin importlib.import_module
+75:17 CONCRETE_BACKEND load in inspect_local_dynamic_alias -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+79:4 runtime load in inspect_later_module_constant -> global <module> @8; origin sys
+79:20 LATER_CONCRETE_BACKEND load in inspect_later_module_constant -> global <module> @131; origin forms.references.sys_modules_registry_reads.LATER_CONCRETE_BACKEND
+83:4 runtime load in inspect_conditional_later_module_constant -> global <module> @8; origin sys
+83:20 CONDITIONAL_LATER_BACKEND load in inspect_conditional_later_module_constant -> global <module> @28; origin forms.references.sys_modules_registry_reads.CONDITIONAL_LATER_BACKEND
+86:42 bool load (evaluated annotation) in <module> -> builtin; origin builtins.bool
+87:4 conditional_registry store in inspect_conditional_registry -> local inspect_conditional_registry @87,89
+87:27 runtime load in inspect_conditional_registry -> global <module> @8; origin sys
+88:7 enabled load in inspect_conditional_registry -> local inspect_conditional_registry @86
+89:8 conditional_registry store in inspect_conditional_registry -> local inspect_conditional_registry @87,89
+90:4 conditional_registry load in inspect_conditional_registry -> local inspect_conditional_registry @87,89
+  may be sys.modules [function:body@86]
+90:25 CONCRETE_BACKEND load in inspect_conditional_registry -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+93:41 bool load (evaluated annotation) in <module> -> builtin; origin builtins.bool
+94:4 conditional_registry store in inspect_conditional_backend -> local inspect_conditional_backend @94
+94:27 runtime load in inspect_conditional_backend -> global <module> @8; origin sys
+95:4 conditional_backend store in inspect_conditional_backend -> local inspect_conditional_backend @95,97,99
+95:26 CONCRETE_BACKEND load in inspect_conditional_backend -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+96:7 enabled load in inspect_conditional_backend -> local inspect_conditional_backend @93
+97:8 conditional_backend store in inspect_conditional_backend -> local inspect_conditional_backend @95,97,99
+99:8 conditional_backend store in inspect_conditional_backend -> local inspect_conditional_backend @95,97,99
+99:30 CONCRETE_BACKEND_ALIAS load in inspect_conditional_backend -> global <module> @19; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+100:4 conditional_registry load in inspect_conditional_backend -> local inspect_conditional_backend @94; origin sys.modules
+100:25 conditional_backend load in inspect_conditional_backend -> local inspect_conditional_backend @95,97,99
+  may be forms.references.sys_modules_registry_reads.CONCRETE_BACKEND [function:body@93]
+  may be forms.references.sys_modules_registry_reads.CONCRETE_BACKEND [function:body@93|if:else@96]
+103:36 module_registry load in <module> -> local <module> @21; origin sys.modules
+103:56 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+107:1 module_registry load in <module> -> local <module> @21; origin sys.modules
+107:21 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+109:4 module_registry store in inspect_decorator -> local inspect_decorator @109
+112:1 module_registry load in <module> -> local <module> @21; origin sys.modules
+112:21 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+114:4 module_registry store in DecoratedClass -> local DecoratedClass @114, else global <module> @21
+117:25 module_registry load in <module> -> local <module> @21; origin sys.modules
+117:45 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+118:4 module_registry store in BaseEvaluatedClass -> local BaseEvaluatedClass @118, else global <module> @21
+122:4 local_registry store in ClassBackend -> local ClassBackend @122, else unbound
+122:21 runtime load in ClassBackend -> global <module> @8; origin sys
+123:4 model store in ClassBackend -> local ClassBackend @123, else unbound
+123:12 local_registry load in ClassBackend -> local ClassBackend @122, else unbound; origin sys.modules
+123:27 CONCRETE_BACKEND load in ClassBackend -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+128:8 runtime load in ForwardModuleClass.inspect -> global <module> @8; origin sys
+128:24 CLASS_LATER_CONCRETE_BACKEND load in ForwardModuleClass.inspect -> global <module> @132; origin forms.references.sys_modules_registry_reads.CLASS_LATER_CONCRETE_BACKEND
+131:0 LATER_CONCRETE_BACKEND store in <module> -> local <module> @131
+132:0 CLASS_LATER_CONCRETE_BACKEND store in <module> -> local <module> @132
+135:0 CLEARED_MODULE_BACKEND store in <module> -> local <module> @135,136
+135:25 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+136:0 CLEARED_MODULE_BACKEND store in <module> -> local <module> @135,136
+136:25 object load in <module> -> builtin; origin builtins.object
+137:0 REASSIGNED_MODULE_BACKEND store in <module> -> local <module> @137,168
+137:28 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+141:4 local_registry store in reassigned_registry -> local reassigned_registry @141,142
+141:21 runtime load in reassigned_registry -> global <module> @8; origin sys
+142:4 local_registry store in reassigned_registry -> local reassigned_registry @141,142
+143:4 local_registry load in reassigned_registry -> local reassigned_registry @141,142
+  may be sys.modules [function:body@140]
+143:19 CONCRETE_BACKEND load in reassigned_registry -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+147:4 local_registry store in reassigned_string -> local reassigned_string @147
+147:20 object load (never annotation) in reassigned_string -> builtin; origin builtins.object
+147:29 runtime load in reassigned_string -> global <module> @8; origin sys
+148:4 local_backend store in reassigned_string -> local reassigned_string @148,149
+148:20 CONCRETE_BACKEND load in reassigned_string -> global <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+149:4 local_backend store in reassigned_string -> local reassigned_string @148,149
+150:4 local_registry load in reassigned_string -> local reassigned_string @147; origin sys.modules
+150:19 local_backend load in reassigned_string -> local reassigned_string @148,149
+  may be forms.references.sys_modules_registry_reads.CONCRETE_BACKEND [function:body@146]
+154:4 local_registry store in cleared_module_constant -> local cleared_module_constant @154
+154:21 runtime load in cleared_module_constant -> global <module> @8; origin sys
+155:4 local_registry load in cleared_module_constant -> local cleared_module_constant @154; origin sys.modules
+155:19 CLEARED_MODULE_BACKEND load in cleared_module_constant -> global <module> @135,136
+  may be forms.references.sys_modules_registry_reads.CONCRETE_BACKEND [always]
+159:4 local_registry store in reassigned_module_constant -> local reassigned_module_constant @159
+159:21 runtime load in reassigned_module_constant -> global <module> @8; origin sys
+160:4 local_registry load in reassigned_module_constant -> local reassigned_module_constant @159; origin sys.modules
+160:19 REASSIGNED_MODULE_BACKEND load in reassigned_module_constant -> global <module> @137,168
+  may be forms.references.sys_modules_registry_reads.CONCRETE_BACKEND [always]
+164:4 local_registry store in cleared_later_module_constant -> local cleared_later_module_constant @164
+164:21 runtime load in cleared_later_module_constant -> global <module> @8; origin sys
+165:4 local_registry load in cleared_later_module_constant -> local cleared_later_module_constant @164; origin sys.modules
+165:19 CLEARED_LATER_BACKEND load in cleared_later_module_constant -> global <module> @169,170
+  may be forms.references.sys_modules_registry_reads.CONCRETE_BACKEND [always]
+168:0 REASSIGNED_MODULE_BACKEND store in <module> -> local <module> @137,168
+168:28 object load in <module> -> builtin; origin builtins.object
+169:0 CLEARED_LATER_BACKEND store in <module> -> local <module> @169,170
+169:24 CONCRETE_BACKEND load in <module> -> local <module> @18; origin forms.references.sys_modules_registry_reads.CONCRETE_BACKEND
+170:0 CLEARED_LATER_BACKEND store in <module> -> local <module> @169,170
+uses of <module>:import_loader@7: call:import_module@32
+uses of <module>:runtime@8: read@22, read@25, read@35, read@43, read@61, read@69, read@79, read@83, read@87, read@94, read@122, read@128, read@141, read@147, read@154, read@159, read@164
+uses of <module>:builtin_import@9: call@34
+uses of <module>:load_module@12: call@33, read@74
+uses of <module>:loaded_modules@13: read@21, read@23, call:get@36, read@45
+uses of <module>:CONCRETE_BACKEND@18: read@19, argument@32, argument@34, argument@35, read@37, read@44, read@54, argument@70, argument@75, read@90, read@95, argument@103, argument@107, argument@112, argument@117, read@123, read@135, read@137, read@143, read@148, read@169
+uses of <module>:CONCRETE_BACKEND_ALIAS@19: read@20, argument@33, argument@36, read@38, read@46, argument@57, read@99
+uses of <module>:TYPED_CONCRETE_BACKEND@20: read@39
+uses of <module>:module_registry@21: read@37, call:get@103, call:get@107, call:get@112, call:get@117
+uses of <module>:runtime_modules@22: read@38
+uses of <module>:typed_registry@23: read@39
+uses of <module>:TOP_LEVEL_BACKEND@24: read@25
+uses of <module>:TOP_LEVEL_BACKEND@26: read@25
+uses of <module>:CONDITIONAL_LATER_BACKEND@28: read@83
+uses of <module>:LATER_CONCRETE_BACKEND@131: read@79
+uses of <module>:CLASS_LATER_CONCRETE_BACKEND@132: read@128
+uses of <module>:CLEARED_MODULE_BACKEND@135: read@155
+uses of <module>:CLEARED_MODULE_BACKEND@136: read@155
+uses of <module>:REASSIGNED_MODULE_BACKEND@137: read@160
+uses of <module>:REASSIGNED_MODULE_BACKEND@168: read@160
+uses of <module>:CLEARED_LATER_BACKEND@169: read@165
+uses of <module>:CLEARED_LATER_BACKEND@170: read@165
+uses of inspect_local_registry:local_registry@43: read@44
+uses of inspect_local_registry:annotated_registry@45: read@46
+uses of inspect_local_import_aliases:local_runtime@50: read@52
+uses of inspect_local_import_aliases:local_sys@52: read@53
+uses of inspect_local_import_aliases:local_registry@53: read@54
+uses of inspect_local_import_aliases:local_modules@55: call:get@57
+uses of inspect_local_strings:local_registry@61: read@63, call:get@65
+uses of inspect_local_strings:local_backend@62: read@63, read@64
+uses of inspect_local_strings:typed_backend@64: argument@65
+uses of inspect_registry_rebinding:local_registry@69: call:get@70
+uses of inspect_registry_rebinding:local_registry@70: call:get@70
+uses of inspect_local_dynamic_alias:local_loader@74: call@75
+uses of inspect_conditional_registry:enabled@86: read@88
+uses of inspect_conditional_registry:conditional_registry@87: read@90
+uses of inspect_conditional_registry:conditional_registry@89: read@90
+uses of inspect_conditional_backend:enabled@93: read@96
+uses of inspect_conditional_backend:conditional_registry@94: read@100
+uses of inspect_conditional_backend:conditional_backend@95: read@100
+uses of inspect_conditional_backend:conditional_backend@97: read@100
+uses of inspect_conditional_backend:conditional_backend@99: read@100
+uses of ClassBackend:local_registry@122: read@123
+uses of reassigned_registry:local_registry@141: read@143
+uses of reassigned_registry:local_registry@142: read@143
+uses of reassigned_string:local_registry@147: read@150
+uses of reassigned_string:local_backend@148: read@150
+uses of reassigned_string:local_backend@149: read@150
+uses of cleared_module_constant:local_registry@154: read@155
+uses of reassigned_module_constant:local_registry@159: read@160
+uses of cleared_later_module_constant:local_registry@164: read@165
+type positions @18: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @20: str
+type positions @23: object
+type positions @24: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @31: -
+type positions @42: -
+type positions @49: -
+type positions @60: -
+type positions @68: -
+type positions @73: -
+type positions @78: -
+type positions @82: -
+type positions @86: -
+type positions @93: -
+type positions @103: -
+type positions @108: -
+type positions @131: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @132: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @140: -
+type positions @146: -
+type positions @153: -
+type positions @158: -
+type positions @163: -
+type positions @28: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @45: object
+type positions @62: datamodel_code_generator; chains datamodel_code_generator.model.pydantic_v2.base_model = None
+type positions @64: str
+type positions @127: -
+type positions @147: object
+type positions @86: bool
+type positions @93: bool
+type positions @97: neutral; chains neutral.module = None
+== code objects: one per scope that compiles on this Python
