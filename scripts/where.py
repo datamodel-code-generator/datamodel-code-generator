@@ -11,6 +11,8 @@ The script holds no row of its own: it reads the tables of ``docs/architecture.m
 couplings, case notes), ``scripts/pass_decls.py``, ``scripts/fact_tables.py``, the option table, the recommender rules,
 the presets, ``scripts/related_tests.toml`` and the Python sources through ``scripts/_source_model.py``. It checks
 nothing and decides nothing. A query that more than one table knows prints one block per table; ``--kind`` keeps one.
+A pass name's block holds the pass's definition, its users, its rows and tests, so the symbol block of that name (the
+same definition) is printed only with ``--kind symbol``.
 Without ``--all`` the answer is at most 60 lines of at most 160 characters. The exit status is 0 when a table knows the
 query, 1 when none does (near names follow), and 2 when a source cannot be read.
 
@@ -283,17 +285,24 @@ def read_page(text: str) -> Page:
             rows.append(Row(sections[index], cell_parts(lines[index])))
         return rows
 
-    return Page(table(DECISION_HEADER), table(LEGACY_HEADER), table(COUPLING_HEADER), _notes(lines, sections))
+    return Page(table(DECISION_HEADER), table(LEGACY_HEADER), table(COUPLING_HEADER), _notes(lines, sections, fenced))
 
 
-def _notes(lines: list[str], sections: list[str]) -> list[Row]:
-    """Return the bullets under the case notes heading, each keyed by the first issue number it names."""
-    start = next((index for index, line in enumerate(lines) if line.strip() == NOTES_HEADING), None)
+def _notes(lines: list[str], sections: list[str], fenced: list[bool]) -> list[Row]:
+    """Return the bullets under the case notes heading, each keyed by the first issue number it names.
+
+    Fenced examples hold no heading and no bullet of the page.
+    """
+    start = next(
+        (index for index, line in enumerate(lines) if line.strip() == NOTES_HEADING and not fenced[index]), None
+    )
     if start is None:
         message = f"{PAGE}: no heading {NOTES_HEADING}"
         raise UnreadableError(message)
     bullets: list[list[str]] = []
-    for line in lines[start + 1 :]:
+    for line, inside in zip(lines[start + 1 :], fenced[start + 1 :], strict=True):
+        if inside or line.lstrip().startswith("```"):
+            continue
         if line.startswith("#"):
             break
         if line.startswith("- "):
@@ -386,10 +395,11 @@ def _scope_name(scope: Scope) -> str:
 class Repo:
     """The repository read for one answer: the page, the sources and the source model's views of them."""
 
-    def __init__(self, root: Path, page: Page) -> None:
-        """Index the modules of the package and of the scripts under the root."""
+    def __init__(self, root: Path, page: Page, *, everything: bool = False) -> None:
+        """Index the modules of the package and of the scripts under the root; ``everything`` lifts the caps."""
         self.root = root
         self.page = page
+        self.everything = everything
         self.names: dict[str, tuple[SourceTree, str]] = {}
         for tree in _trees(root):
             for name, path in tree.paths.items():
@@ -483,18 +493,26 @@ class Repo:
             model = self.model(rel)
             imports = [binding for binding in model.bindings() if binding.kind in IMPORTS]
             direct = [binding for binding in imports if _reads(model, binding) in names]
-            if rel == found.path:
-                direct += model.module_scope.bindings.get(found.name, [])
-            aliases = {b.name: b.origin for b in imports if b.origin in modules}
+            direct += [
+                binding
+                for named, name in names
+                if named == self.names[rel][1]
+                for binding in model.module_scope.bindings.get(name, [])
+            ]
+            aliases = {b.name: b for b in imports if b.origin in modules}
             direct_names = {binding.name for binding in direct}
             lines = self.text(rel).splitlines()
             for reference in model.references:
                 if reference.name in direct_names:
                     if any(binding in direct for binding in model.resolve(reference.node).bindings):
                         users.setdefault(rel, set()).add(_scope_name(reference.scope))
-                elif reference.name in aliases:
+                elif (alias := aliases.get(reference.name)) is not None:
                     after = lines[reference.line - 1][reference.column + len(reference.name) :]
-                    if (read := ATTRIBUTE.match(after)) and (aliases[reference.name], read[1]) in names:
+                    if (
+                        (read := ATTRIBUTE.match(after))
+                        and (alias.origin, read[1]) in names
+                        and alias in model.resolve(reference.node).bindings
+                    ):
                         users.setdefault(rel, set()).add(_scope_name(reference.scope))
         return users
 
@@ -609,8 +627,9 @@ def _user_lines(repo: Repo, sites: list[Found]) -> list[str]:
     lines = []
     for path, names in sorted(users.items()):
         ordered = sorted(names)
-        more = f" (+{len(ordered) - USER_SCOPES})" if len(ordered) > USER_SCOPES else ""
-        lines.append(f"{path}: {', '.join(ordered[:USER_SCOPES])}{more}")
+        shown = ordered if repo.everything else ordered[:USER_SCOPES]
+        more = f" (+{len(ordered) - len(shown)})" if len(shown) < len(ordered) else ""
+        lines.append(f"{path}: {', '.join(shown)}{more}")
     return lines
 
 
@@ -666,8 +685,8 @@ def path_block(repo: Repo, path: str) -> Block:
     return Block(Kind.PATH, f"path {path}", sections)
 
 
-def line_block(repo: Repo, path: str, line: int) -> list[Block]:
-    """Return the scope chain of a line and the answer for its innermost definition (or its file)."""
+def line_block(repo: Repo, path: str, line: int, kinds: set[Kind]) -> list[Block]:
+    """Return the scope chain of a line and the answer for its innermost definition (or its file) if asked for."""
     source = repo.text(path).splitlines()
     if not 1 <= line <= len(source):
         message = f"{path}:{line}: the file has {len(source)} lines"
@@ -684,7 +703,9 @@ def line_block(repo: Repo, path: str, line: int) -> list[Block]:
         scope = scope.parent
     heading = Block(Kind.LINE, f"{path}:{line}", [Section("scope chain", chain[::-1], cap=6)])
     if scope.kind == "module":
-        return [heading, path_block(repo, path)]
+        return [heading, *([path_block(repo, path)] if Kind.PATH in kinds else [])]
+    if Kind.SYMBOL not in kinds:
+        return [heading]
     site = repo.found(path, scope)
     return [heading, symbol_block(repo, site.qualname, [site], repo.elsewhere(site.qualname, [site]))]
 
@@ -895,36 +916,45 @@ def issue_block(repo: Repo, query: str) -> Block:
 
 
 def _named_blocks(repo: Repo, query: str, kinds: set[Kind]) -> list[Block]:
-    blocks = [fact_block(member) for member in _facts(query)]
-    if (declaration := _passes().get(query)) is not None:
+    """Return the blocks of a name, running only the lookups of the kinds asked for."""
+    blocks = [fact_block(member) for member in _facts(query)] if Kind.FACT in kinds else []
+    declaration = _passes().get(query)
+    if declaration is not None and Kind.PASS in kinds:
         blocks.append(pass_block(repo, declaration))
-    if (path := repo.resolve_path(query)) is not None:
+    if Kind.PATH in kinds and (path := repo.resolve_path(query)) is not None:
         blocks.append(path_block(repo, path))
-    if (option := _option_of(query)) is not None:
+    if Kind.OPTION in kinds and (option := _option_of(query)) is not None:
         blocks.append(option_block(repo, option))
+    if Kind.SYMBOL not in kinds or (declaration is not None and kinds == set(Kind)):
+        return blocks
     name_path, _, name = query.rpartition(":")
     restricted = repo.resolve_path(name_path) if name_path.endswith(".py") else None
-    sites = repo.definitions(name if restricted else query, restricted)
-    is_pass = any(block.kind is Kind.PASS for block in blocks)
-    if sites and not (is_pass and kinds == set(Kind)):
+    if sites := repo.definitions(name if restricted else query, restricted):
         blocks.append(symbol_block(repo, query, sites, repo.elsewhere(query, sites) if "." in query else []))
     return blocks
 
 
 def blocks_for(repo: Repo, query: str, kinds: set[Kind]) -> list[Block]:
-    """Return the blocks the tables give for a query; the form of the query decides first."""
+    """Return the blocks the tables give for a query; the form of the query decides first.
+
+    Only the lookups of the kinds asked for run, so a file no selected lookup reads is never parsed.
+    """
     blocks: list[Block] = []
     if match := LINE_FORM.fullmatch(query):
         if (path := repo.resolve_path(match["path"])) is None:
             message = f"{match['path']}: not a module of src or scripts"
             raise UnreadableError(message)
-        blocks += line_block(repo, path, int(match["line"]))
+        blocks += line_block(repo, path, int(match["line"]), kinds)
     elif query.startswith("--"):
-        blocks += [option_block(repo, option)] if (option := _option_of(query)) else []
+        blocks += [option_block(repo, option)] if Kind.OPTION in kinds and (option := _option_of(query)) else []
     elif query.startswith("legacy-"):
-        blocks += [legacy_block(repo, row) for row in repo.page.legacy if row.cells[0].strip("`") == query]
+        blocks += [
+            legacy_block(repo, row)
+            for row in repo.page.legacy
+            if Kind.LEGACY in kinds and row.cells[0].strip("`") == query
+        ]
     elif ISSUE_FORM.fullmatch(query):
-        blocks.append(issue_block(repo, query))
+        blocks += [issue_block(repo, query)] if Kind.ISSUE in kinds else []
     else:
         blocks += _named_blocks(repo, query, kinds)
     return [block for block in blocks if block.kind in kinds and (block.kind is Kind.LINE or _filled(block))]
@@ -949,7 +979,8 @@ def _render_block(block: Block, share: int | None) -> list[str]:
     for section in block.sections:
         count = len(section.items)
         if not count:
-            lines += [f"  {section.title}: {section.empty}"] if section.empty and section.title else []
+            if section.empty and section.title and (share is None or share > len(lines)):
+                lines.append(f"  {section.title}: {section.empty}")
             continue
         title = 1 if section.title else 0
         shown = count if share is None else min(section.cap, count)
@@ -996,7 +1027,7 @@ def main(argv: list[str] | None = None, *, page: str | None = None, root: Path =
     query = queries[0]
     kinds = {Kind(args.kind)} if args.kind else set(Kind)
     try:
-        repo = Repo(root, read_page(page if page is not None else _text(root, PAGE)))
+        repo = Repo(root, read_page(page if page is not None else _text(root, PAGE)), everything=args.all)
         blocks = blocks_for(repo, query, kinds)
     except UnreadableError as error:
         sys.stderr.write(f"where: {error}\n")
@@ -1006,7 +1037,8 @@ def main(argv: list[str] | None = None, *, page: str | None = None, root: Path =
         known = (
             f"no {args.kind} answer for {query}" if args.kind and query in known_names() else f"no table knows {query}"
         )
-        sys.stdout.write(f"{known}\n" + (f"near: {', '.join(near)}\n" if near else ""))
+        lines = [known, *([f"near: {', '.join(near)}"] if near else [])]
+        sys.stdout.write("".join(f"{line if args.all else clip(line)}\n" for line in lines))
         return UNKNOWN
     sys.stdout.write("".join(f"{line}\n" for line in render(blocks, everything=args.all)))
     return FOUND

@@ -601,7 +601,8 @@ def _where_disagreements(form: Path) -> list[str]:
                 and (expected := model.owner(line, len(text) - len(text.lstrip()))).kind in where.SCOPES
                 and (
                     reported := [
-                        item.partition(" (")[0] for item in where.line_block(repo, path, line)[0].sections[0].items
+                        item.partition(" (")[0]
+                        for item in where.line_block(repo, path, line, {where.Kind.LINE})[0].sections[0].items
                     ]
                 )[-1:]
                 != [expected.qualname or "<module>"]

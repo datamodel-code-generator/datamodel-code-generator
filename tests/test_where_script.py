@@ -31,6 +31,7 @@ GRAMMAR = {
     "unknown-name": ["apply_generic_base_clas"],
     "unknown-with-kind": ["--kind", "fact", "apply_generic_base_class"],
     "unknown-flag": ["--no-such-option"],
+    "unknown-long-flag": [f"--{'x' * 200}"],
     "unknown-legacy-row": ["legacy-no-such-row"],
     "ambiguous-name": ["plans"],
     "kind-fact": ["--kind", "fact", "plans"],
@@ -70,6 +71,10 @@ OTHER = {
         ["#7"],
         f"{TABLES}\n\n### Case Notes\n\n- a note without a number\n- **[#7](url)** (seven): the note\n  goes on\n",
     ),
+    "page-with-a-fenced-notes-example": (
+        ["#7"],
+        f"{TABLES}\n\n```\n### Case Notes\n\n- **#7** the example\n```\n\n### Case Notes\n\n- **#7** the note\n",
+    ),
     "line-past-the-file": (["scripts/related_tests.py:99999"], None),
     "line-in-a-test": (["tests/test_where_script.py:1"], None),
 }
@@ -84,9 +89,9 @@ def _resolved(arg: str) -> str:
     return f"{path}:{next(number for number, line in enumerate(lines, 1) if text in line)}"
 
 
-def _where(capsys: pytest.CaptureFixture[str], args: list[str], page: str | None = None) -> str:
+def _where(capsys: pytest.CaptureFixture[str], args: list[str], page: str | None = None, root: Path = ROOT) -> str:
     """Run the script and return its exit status with what it printed."""
-    code = where.main([_resolved(arg) for arg in args], page=page)
+    code = where.main([_resolved(arg) if root == ROOT else arg for arg in args], page=page, root=root)
     captured = capsys.readouterr()
     return f"exit status {code}\n{captured.out}{captured.err}"
 
@@ -149,8 +154,67 @@ def test_where_keeps_to_its_line_limit(capsys: pytest.CaptureFixture[str]) -> No
         report.append(f"{query}: {len(lines) - 1 > LINE_LIMIT} {max(map(len, lines)) > LINE_WIDTH}")
     every_line = _where(capsys, ["--all", "use_annotated"]).splitlines()
     every_width = _where(capsys, ["--all", "apply_generic_base_class"]).splitlines()
-    report += [f"all: {len(every_line) > LINE_LIMIT}", f"all width: {max(map(len, every_width)) > LINE_WIDTH}"]
+    report += [f"all: {len(every_line) - 1 > LINE_LIMIT}", f"all width: {max(map(len, every_width)) > LINE_WIDTH}"]
     assert_output("\n".join(report))
+
+
+def _scratch(tmp_path: Path, files: dict[str, str]) -> Path:
+    """Write a repository of scripts, with the related-tests rules the answers read, and return its root."""
+    (tmp_path / "scripts").mkdir()
+    for name, text in {"__init__.py": "", "related_tests.toml": "rule = []\n", **files}.items():
+        (tmp_path / "scripts" / name).write_text(text, encoding="utf-8")
+    return tmp_path
+
+
+SCRATCH = {
+    "provider.py": '"""Provider."""\n\n\ndef answer():\n    return 1\n',
+    "consumer.py": (
+        '"""Consumer."""\n\nimport scripts.provider as mod\n\n\n'
+        "def inspect(mod):\n    return mod.answer\n\n\ndef use():\n    return mod.answer\n"
+    ),
+    "aliased.py": (
+        '"""Aliased."""\n\nfrom scripts.provider import answer\n\nlocal = answer\n\n\n'
+        "def use():\n    return local()\n\n\ndef other(local):\n    return local()\n"
+    ),
+    "busy.py": (
+        '"""Busy."""\n\nfrom scripts.provider import answer\n\n\n'
+        + "".join(f"def user_{name}():\n    return answer()\n\n\n" for name in "abcd")
+    ),
+}
+
+
+def test_where_follows_the_binding_each_use_reads(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A use counts when its name leads to the definition: through an alias of the file, not through a parameter."""
+    root = _scratch(tmp_path, SCRATCH)
+    assert_output(_where(capsys, ["scripts/provider.py:answer"], f"{TABLES}\n\n### Case Notes\n", root))
+
+
+def test_where_all_lists_every_user_scope(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Four scopes of one file are three names and a count by default, and all four with ``--all``."""
+    root = _scratch(tmp_path, SCRATCH)
+    answers = [
+        _where(capsys, [*flags, "scripts/provider.py:answer"], f"{TABLES}\n\n### Case Notes\n", root)
+        for flags in ([], ["--all"])
+    ]
+    assert_output("".join(answers))
+
+
+def test_where_runs_only_the_lookups_of_the_kind(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A source no selected lookup reads is never parsed: a half-written file does not fail ``--kind``."""
+    root = _scratch(tmp_path, {"broken.py": "MODEL_KIND = other = (\n", "other.py": "def other():\n    return 1\n"})
+    page = f"{TABLES}\n\n### Case Notes\n"
+    answers = [
+        _where(capsys, ["--kind", "fact", "Fact.MODEL_KIND"], page, root),
+        _where(capsys, ["--kind", "line", "scripts/other.py:2"], page, root),
+    ]
+    assert_output("".join(answers))
+
+
+def test_where_counts_an_empty_section_against_the_line_limit() -> None:
+    """Blocks that fill their shares by their listed sections show no empty-section message beyond the limit."""
+    sites = where.Section("defined", [f"site {number}" for number in range(9)], cap=9)
+    block = where.Block(where.Kind.SYMBOL, "symbol name", [sites, where.Section("rows", [], empty="none name it")])
+    assert_output(f"{len(where.render([block] * 6, everything=False))} lines of {where.LIMIT}")
 
 
 def test_where_line_answers_as_its_symbol(capsys: pytest.CaptureFixture[str]) -> None:

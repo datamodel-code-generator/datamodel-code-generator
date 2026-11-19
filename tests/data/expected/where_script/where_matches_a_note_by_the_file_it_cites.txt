@@ -5,7 +5,7 @@ symbol _format_types.py:DEFAULT_FORMATTERS
   users (3):
     scripts/build_architecture_docs.py: generate_formatter_table
     src/datamodel_code_generator/_format_types.py: <module>
-    src/datamodel_code_generator/format.py: <module>
+    src/datamodel_code_generator/format.py: <module>, CodeFormatter.__init__
   case notes (1):
     #9 `_format_types.py:DEFAULT_FORMATTERS`
   tests (2):
