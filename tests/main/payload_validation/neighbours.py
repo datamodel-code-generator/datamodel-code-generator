@@ -26,11 +26,12 @@ from .mutation import COMBINED_SCHEMA_KEYS, _resolve_internal_ref
 from .strategy import (
     NUMERIC_FORMAT_KINDS,
     _canonical_json_numbers,
+    _json_number,
     _regex_agreement_validator,
     _RegexEnginesDisagreeError,
     format_example,
     numeric_keywords,
-    numeric_text_is_valid,
+    numeric_text_schema,
     source_schema_validator,
     typed_string_formats,
 )
@@ -799,19 +800,14 @@ def _tag_values(site: _Site) -> Iterator[tuple[str, object]]:
             yield from (("discriminator", {**value, name: form}) for form in kind_forms(value[name]))
 
 
-def _numeric_format(site: _Site) -> str:
-    """Return the numeric string format of a site whose value is its text, else an empty string."""
-    name = site.schema.get("format")
-    return name if isinstance(name, str) and name in NUMERIC_FORMAT_KINDS and isinstance(site.value, str) else ""
-
-
-def _site_values(seeds: _Seeds, site: _Site) -> Iterator[tuple[str, object]]:
+def _site_values(seeds: _Seeds, site: _Site, *, numeric_text: bool) -> Iterator[tuple[str, object]]:
     """Yield each keyword of a site with a value next to its boundary.
 
-    The number keywords of a numeric string format apply to the number its text writes, so their values are texts.
+    The number keywords of a site whose value is the text of a numeric string format apply to the number the text
+    writes, so their values are texts.
     """
     yield from _member_values(site.schema)
-    if _numeric_format(site):
+    if numeric_text:
         yield from ((keyword, json.dumps(number)) for keyword, number in _number_values(site.schema))
     else:
         yield from _number_values(site.schema)
@@ -843,20 +839,23 @@ def _build_neighbours(case: SchemaCase) -> tuple[object, tuple[ValueNeighbour, .
     for site in sites:
         if isinstance(name := site.schema.get("format"), str):
             formats.setdefault(site.path, set()).add(name)
+    texts = {
+        site.path: site.value
+        for site in sites
+        if isinstance(site.value, str) and formats.get(site.path, set()) & NUMERIC_FORMAT_KINDS.keys()
+    }
+    numbers = numeric_text_schema(seeds.root) if texts else None
     for site in sites:
-        numeric = _numeric_format(site)
-        for keyword, value in _site_values(seeds, site):
+        for keyword, value in _site_values(seeds, site, numeric_text=site.path in texts):
             key = (site.path, keyword, json_form_key(value))
             if key in neighbours or json_form_key(value) == json_form_key(site.value):
                 continue
             payload = _replaced(seed, site.path, value)
             if (valid := _agrees(agreement, payload)) is None:
                 continue
-            counted = bool(numeric) and keyword in {*BOUND_KEYWORDS, "multipleOf"}
+            counted = site.path in texts and keyword in {*BOUND_KEYWORDS, "multipleOf"}
             if counted:
-                valid = valid and numeric_text_is_valid(
-                    NUMERIC_FORMAT_KINDS[numeric], _number_keywords(site.schema), str(value)
-                )
+                valid = valid and _numbers_are_valid(seeds, numbers, _replaced_texts(seed, texts, site.path, value))
             neighbours[key] = ValueNeighbour(
                 keyword,
                 site.path,
@@ -864,10 +863,23 @@ def _build_neighbours(case: SchemaCase) -> tuple[object, tuple[ValueNeighbour, .
                 payload,
                 valid,
                 frozenset(formats.get(site.path, ())),
-                numeric if counted else "",
+                min(formats[site.path] & NUMERIC_FORMAT_KINDS.keys()) if counted else "",
             )
     ordered = sorted(neighbours.values(), key=lambda neighbour: neighbour.label)
     return seed, (ValueNeighbour(SEED_KEYWORD, (), seed, seed, valid=True), *ordered)
+
+
+def _replaced_texts(seed: object, texts: dict[JsonPath, str], path: JsonPath, value: object) -> object:
+    """Return the seed with the text of every numeric format, and the value at the path, as the numbers they write."""
+    payload = seed
+    for at, text in {**texts, path: value}.items():
+        payload = _replaced(payload, at, _json_value(_json_number(str(text))))
+    return payload
+
+
+def _numbers_are_valid(seeds: _Seeds, schema: object, payload: object) -> bool:
+    """Return whether the whole schema, read with the texts of numeric formats as numbers, accepts the payload."""
+    return seeds.validator.evolve(schema=schema).is_valid(_canonical_json_numbers(payload))
 
 
 def _agrees(agreement: SourceSchemaValidator, payload: object) -> bool | None:
@@ -932,11 +944,11 @@ def schema_verdict(neighbour: ValueNeighbour, backend: PayloadBackend) -> str | 
     """Return the verdict a model gives a neighbour where it decides like the suite's validator, none where it cannot.
 
     The generator turns some string formats into types of their own, which the validator does not assert. A numeric
-    format's number keywords then apply to the number its text writes, and the neighbour's validity is that number's
-    (``numeric_text_is_valid``); the neighbours of a backend that keeps the format a string have no such verdict. A
-    text cut or padded to a length the validator accepts need not be a value of such a type, so a model rejecting it
-    proves nothing: only a text the validator rejects is compared, where a model accepting it is a real difference.
-    Which formats a backend types is ``typed_string_formats``, the one place the payload suite reads for it.
+    format's number keywords then apply to the number its text writes, and the neighbour's validity is that number's,
+    decided by the validator over ``numeric_text_schema``; a backend that keeps the format a string has no such
+    verdict. A text cut or padded to a length the validator accepts need not be a value of such a type, so a model
+    rejecting it proves nothing: only a text the validator rejects is compared, where a model accepting it is a real
+    difference. Which formats a backend types is ``typed_string_formats``, the one place the suite reads for it.
     """
     typed = typed_string_formats(backend)
     if neighbour.numeric_format and neighbour.numeric_format not in typed:

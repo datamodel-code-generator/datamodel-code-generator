@@ -1264,6 +1264,11 @@ VALUE_NEIGHBOUR_SHAPES: dict[str, dict[str, object]] = {
         "maxItems": 3,
     },
     "contains_min_items": {"type": "array", "minItems": 2, "contains": {"const": 1}},
+    "split_numeric_text_bounds": {
+        "type": "object",
+        "properties": {"p": {"allOf": [{"type": "string", "format": "decimal", "minimum": 10}, {"maximum": 10.05}]}},
+        "required": ["p"],
+    },
     "integer_exclusive_bound": {"type": "integer", "exclusiveMinimum": 1.9999, "maximum": 2},
     "integer_exclusive_bound_draft4": {
         "$schema": "http://json-schema.org/draft-04/schema#",
