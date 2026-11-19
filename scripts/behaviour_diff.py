@@ -66,6 +66,7 @@ from __future__ import annotations
 import argparse
 import ast
 import contextlib
+import datetime as dt
 import fnmatch
 import hashlib
 import json
@@ -1123,7 +1124,6 @@ def era_python(version: str, cache_dir: Path) -> Path:
     The newest Python of ERA_PYTHONS the release imports on is used. The signature step imports msgspec, which no
     release requires, so it is installed like black and isort, as is email-validator (`format: email` output).
     """
-    import datetime as dt  # ruff: ignore[import-outside-top-level]
     import fcntl  # ruff: ignore[import-outside-top-level] - POSIX only, like compare_release
 
     root = cache_dir / "era" / f"{version}-{ERA_EXTRAS.replace(',', '-')}-{'-'.join(ERA_PACKAGES)}"

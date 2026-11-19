@@ -69,7 +69,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -251,6 +251,15 @@ def _first_position(code: CodeType) -> tuple[int, int]:
     )
 
 
+class _Cached(Protocol):
+    """A `functools` cache wrapper: what `_Tracer` clears."""
+
+    __wrapped__: Callable[..., object]
+
+    def cache_clear(self) -> None:
+        """Forget every cached value."""
+
+
 def _started_frame() -> FrameType | None:
     """Return, from a `sys.monitoring` callback, the frame of the code whose event called it."""
     frame = inspect.currentframe()
@@ -301,9 +310,9 @@ class _Tracer:
             if probe["kind"] == "read"
         }
         self.armed: dict[int, tuple[CodeType, int]] = {}
-        self.caches: dict[int, Any] = {}
-        self.computed: list[tuple[Any, int]] = []
-        self.dirty: list[Any] = []
+        self.caches: dict[int, _Cached] = {}
+        self.computed: list[tuple[_Cached, int]] = []
+        self.dirty: list[_Cached] = []
         self.log: list[tuple[object, ...]] = []
         self.startup: set[tuple[object, ...]] = set()
         self.started = False
@@ -397,7 +406,7 @@ class _Tracer:
             frame = frame.f_back
         self._record(("read", path))
 
-    def watch_caches(self, module: Any) -> None:
+    def watch_caches(self, module: ModuleType) -> None:
         """Watch the `functools` caches a module of the package defines (at module level and in its classes)."""
         spaces = [vars(module), *(vars(value) for value in vars(module).values() if isinstance(value, type))]
         for space in spaces:

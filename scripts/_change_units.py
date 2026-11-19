@@ -58,16 +58,21 @@ import tempfile
 from dataclasses import asdict, dataclass, field
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._source_model import SourceModule, SourceTree
+
+try:
+    from scripts import compile_builtin_templates as compiler
+except ImportError:
+    compiler = None
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from types import CodeType
 
-    from scripts._source_model import Scope
+    from scripts._source_model import Reference, Scope
 
 PACKAGE = "datamodel_code_generator"
 PACKAGE_SOURCE = f"src/{PACKAGE}"
@@ -146,11 +151,11 @@ class Probe:
     """
 
     kind: str
-    code: list[Any] | None = None
+    code: list[str | int] | None = None
     offsets: list[int] = field(default_factory=list)
     where: str = ""
     file: str = ""
-    readers: list[dict[str, Any]] = field(default_factory=list)
+    readers: list[dict[str, object]] = field(default_factory=list)
 
 
 @dataclass
@@ -549,7 +554,7 @@ class Code:
         self.lines = model.lines
         self._instructions: dict[int, list[tuple[Position, Position, int, bool]]] = {}
 
-    def key(self, scope: Scope) -> list[Any]:
+    def key(self, scope: Scope) -> list[str | int]:
         """Return the key the tracer finds a scope's code object by (`Probe.code`)."""
         code = self.objects[scope]
         return [self.path, code.co_qualname, code.co_firstlineno, *first_position(code)]
@@ -735,7 +740,7 @@ class Readers:
             self.codes[path] = Code(self.side.model(path), path)
         return self.codes[path]
 
-    def of(self, path: str, scope: Scope, name: str) -> list[dict[str, Any]]:
+    def of(self, path: str, scope: Scope, name: str) -> list[dict[str, object]]:
         """Return the reader instructions of `name` bound in `scope` (a module or class body) of a module."""
         model = self.side.model(path)
         module = module_name(path)
@@ -764,7 +769,7 @@ class Readers:
         return found
 
     @staticmethod
-    def _receiver_read(model: SourceModule, node: ast.Attribute, names: dict[int, Any]) -> bool:
+    def _receiver_read(model: SourceModule, node: ast.Attribute, names: dict[int, Reference]) -> bool:
         """Whether an attribute is read on the receiver (``self``/``cls``) of the method it is read in."""
         reference = names.get(id(node.value))
         if reference is None or (resolved := model.resolve(reference.node)).scope is None:
@@ -772,7 +777,7 @@ class Readers:
         receiver = model.receiver(resolved.scope)
         return receiver is not None and any(binding is receiver for binding in resolved.bindings)
 
-    def _reader(self, path: str, node: ast.expr, receiver: list[str] | None) -> list[dict[str, Any]]:
+    def _reader(self, path: str, node: ast.expr, receiver: list[str] | None) -> list[dict[str, object]]:
         code = self.code(path)
         model = code.model
         owner = code.lifted(model.scope_of(node))
@@ -863,9 +868,7 @@ def _compiled_renderers(side: Side) -> set[str]:
     The template sets of ``scripts/compile_builtin_templates.py`` say which template directory compiles into which
     renderer directory; a repository without that script compiles none.
     """
-    try:
-        from scripts import compile_builtin_templates as compiler  # ruff: ignore[import-outside-top-level] - only for a changed template
-    except ImportError:
+    if compiler is None:
         return set()
     package = compiler.ROOT / PACKAGE_SOURCE
     found = set()
@@ -953,7 +956,7 @@ def reader_sites(side: Side) -> dict[tuple[str, str], list[int]]:
     return found
 
 
-def map_units(sides: dict[str, Side], found: Changes) -> dict[str, Any]:
+def map_units(sides: dict[str, Side], found: Changes) -> dict[str, object]:
     """Return every unit of both sides with its probes, and what the mapping noted (`Unit`)."""
     readers = [site for side in SIDES for site in annotation_readers(sides[side])] if _deferred(sides, found) else []
     mappers = {side: Mapper(sides[side], deferred_annotations=not readers) for side in SIDES}
