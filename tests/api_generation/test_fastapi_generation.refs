@@ -135,6 +135,8 @@ served-ids-30	main/generation_platform/fastapi/packages/served-ids-30/
 served-ids-30	main/generation_platform/fastapi/served-ids-30.txt
 served-inline-id	main/generation_platform/fastapi/packages/served-inline-id/
 served-inline-id	main/generation_platform/fastapi/served-inline-id.txt
+served-relative-root-id	main/generation_platform/fastapi/packages/served-relative-root-id/
+served-relative-root-id	main/generation_platform/fastapi/served-relative-root-id.txt
 served-root-id	main/generation_platform/fastapi/packages/served-root-id/
 served-root-id	main/generation_platform/fastapi/served-root-id.txt
 served-same-root-id	main/generation_platform/fastapi/packages/served-same-root-id/

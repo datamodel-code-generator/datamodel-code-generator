@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/pet.json",
+  "type": "object",
+  "properties": {
+    "friend": {"$ref": "friend.json"}
+  },
+  "$defs": {
+    "Friend": {
+      "$id": "friend.json",
+      "type": "object",
+      "properties": {"name": {"type": "string", "maxLength": 12}}
+    }
+  }
+}

@@ -69,7 +69,8 @@ class SourceDocument:
         ]
         self.declared = dict(lease.declared())
         self.aliases: dict[str, str] = {}
-        named = zip(self.uris, self.bases, lease.roots(), strict=True)
+        self.roots = lease.roots()
+        named = zip(self.uris, self.bases, self.roots, strict=True)
         for index, (*names, given) in enumerate(named):
             owner = self.declared.get(given) if given else None
             own = owner is not None and self.uris[owner[0]] == self.uris[index]
@@ -208,10 +209,12 @@ class SourceDocument:
         """Return a JSON copy of a mapping of one role.
 
         A schema's `$id` only sets the base its references resolve against, which the copy has applied to them, so the
-        copy leaves it out: every reference in the document is relative to the document itself.
+        copy leaves it out: every reference in the document is relative to the document itself. The `$id` of a
+        document's root sets the base the parser gives that root, however the copy reached it, so it applies once.
         """
         if role == "schema" and isinstance(own := value.get("$id"), str) and self.version != OpenAPIVersion.V30:
-            base = urljoin(base, own)
+            root = self.roots[document] if value is self.documents[document] else ""
+            base = root or urljoin(base, own)
         children = OBJECT_MEMBERS.get(role, {})
         copied: dict[str, JSON] = {}
         for key, child in value.items():

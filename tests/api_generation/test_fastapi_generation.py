@@ -81,6 +81,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "served-ids-30",
         "served-embedded-id",
         "served-same-root-id",
+        "served-relative-root-id",
         "served-inline-id",
         "served-held-by-path-item",
         "served-id-after-pointer",

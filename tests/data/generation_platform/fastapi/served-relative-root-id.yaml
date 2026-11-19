@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info: {title: A schema document whose root id is relative with a directory, version: "1"}
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "served-relative-root-id-pet.json"}

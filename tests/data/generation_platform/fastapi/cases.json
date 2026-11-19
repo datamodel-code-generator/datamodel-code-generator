@@ -480,6 +480,12 @@
       "served-same-root-id-v2.json"
     ]
   },
+  "served-relative-root-id": {
+    "input": "served-relative-root-id.yaml",
+    "files": [
+      "served-relative-root-id-pet.json"
+    ]
+  },
   "served-inline-id": {
     "input": "served-inline-id.yaml"
   },
