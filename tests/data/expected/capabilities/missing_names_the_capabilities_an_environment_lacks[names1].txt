@@ -1,1 +1,1 @@
-pydantic-2.5: the generated code needs Pydantic 2.5
+black-before-24: the test checks how black before 24 formats the output

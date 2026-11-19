@@ -14,7 +14,9 @@ environment are one lane. Its facts are those of `tests/units.py` (`FACTS`), rea
 tox settings are read as tox reads them for one environment: the section whose name expands (``{a,b}``) to it, else
 ``[testenv]``; ``{[section]key}`` substitutions; and factor-conditional lines (``py312-!nocov: value``). Environment
 markers of requirements are not read, and an environment that tox installs without the lock (``uv-venv-runner``)
-gets the locked version of an unpinned tool, though it may resolve a newer one. A lane whose Python or platform cannot
+gets the locked version of an unpinned tool, though it may resolve a newer one. A lane is a subset lane (a fixed
+list of tests, not the suite) when each of its entries lists test paths in its job or its tox environment runs no
+``tests`` target. A lane whose Python or platform cannot
 be read is a problem, never a lane with guessed facts. The workflow is read line by line (the checks that read it run
 without a YAML parser); `tests/test_source_rules.py` compares the lanes with a YAML parse of the real workflow.
 """
@@ -26,7 +28,7 @@ import itertools
 import operator
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import tomllib
@@ -46,6 +48,7 @@ _RUNS_ON = re.compile(r"^    runs-on:\s*(?P<value>.+?)\s*$")
 _INCLUDE = re.compile(r"^(?P<indent>\s+)include:\s*$")
 _ENTRY = re.compile(r"^(?P<indent>\s+)- (?P<key>[A-Za-z_]+):\s*(?P<value>.*?)\s*$")
 _KEY = re.compile(r"^(?P<indent>\s+)(?P<key>[A-Za-z_]+):\s*(?P<value>.*?)\s*$")
+_TEST_PATH = re.compile(r"^\s+tests/\S*(?: \\)?$")
 _BRACES = re.compile(r"\{([^{}]*)\}")
 _SUBSTITUTION = re.compile(r"\{\[(?P<section>[^\]]+)\](?P<key>[\w-]+)\}")
 _CONDITIONAL = re.compile(r"^(?P<factors>[\w!-]+(?:,\s*[\w!-]+)*):\s*(?P<value>.*)$")
@@ -61,6 +64,8 @@ class Lane:
 
     name: str
     facts: dict[str, str]
+    subset: bool = False
+    """The lane runs a fixed list of tests, not the suite: a skip no listed test reaches never fires there."""
 
 
 def _value(text: str) -> str:
@@ -70,12 +75,19 @@ def _value(text: str) -> str:
 
 
 def matrix_entries(text: str) -> list[dict[str, str]]:
-    """Return every ``include`` entry of every job matrix of a workflow, with its ``job`` and the job's ``runs-on``."""
+    """Return every ``include`` entry of every job matrix of a workflow, with its ``job`` and the job's ``runs-on``.
+
+    ``selection`` is ``listed`` for a job whose steps list test paths, one per line (a fixed list of tests), else
+    ``all``.
+    """
     found: list[dict[str, str]] = []
     runs_on: dict[str, str] = {}
+    listed: set[str] = set()
     job, include, entry, entry_indent = "", -1, None, -1
     for line in text.splitlines():
         indent = len(line) - len(line.lstrip())
+        if _TEST_PATH.match(line):
+            listed.add(job)
         if match := _JOB.match(line):
             job, include, entry = match["name"], -1, None
         elif match := _RUNS_ON.match(line):
@@ -89,7 +101,10 @@ def matrix_entries(text: str) -> list[dict[str, str]]:
             entry[match["key"]] = _value(match["value"])
         elif line.strip() and not line.lstrip().startswith("#") and indent <= include:
             include, entry = -1, None
-    return [{**entry, "runs-on": runs_on.get(entry["job"], "")} for entry in found]
+    return [
+        {**entry, "runs-on": runs_on.get(entry["job"], ""), "selection": "listed" if entry["job"] in listed else "all"}
+        for entry in found
+    ]
 
 
 def _expand(pattern: str) -> list[str]:
@@ -204,6 +219,11 @@ class Environments:
         candidates = [version for version in self.locked.get(tool, []) if _satisfies(version, spec)]
         return max(candidates, key=release, default="")
 
+    def runs_suite(self, env: str) -> bool:
+        """Return whether ``env`` runs the whole suite: no commands is read as the default, else a ``tests`` target."""
+        lines = self.tox.lines(env, "commands")
+        return not lines or any(word.rstrip("}") == "tests" for line in lines for word in line.split())
+
     def facts(self, env: str, runner: str) -> dict[str, str]:
         """Return the facts of ``env`` on ``runner``; a fact that cannot be read is empty."""
         python = next((f"3.{match['minor']}" for part in env.split("-") if (match := _PY_FACTOR.match(part))), "")
@@ -242,9 +262,11 @@ def read_lanes(root: Path) -> tuple[list[Lane], list[str]]:
         runner = entry.get("os") or entry.get("runs-on", "")
         for env in filter(None, (item.strip() for item in entry.get("tox_env", "").split(","))):
             name = f"{env} on {runner}"
+            subset = entry["selection"] == "listed" or not environments.runs_suite(env)
             if name in lanes:
+                lanes[name] = replace(lanes[name], subset=lanes[name].subset and subset)
                 continue
             facts = environments.facts(env, runner)
-            lanes[name] = Lane(name, facts)
+            lanes[name] = Lane(name, facts, subset)
             problems += [f"{name}: no {fact} can be read" for fact in ("python", "platform") if not facts[fact]]
     return list(lanes.values()), sorted(set(problems))

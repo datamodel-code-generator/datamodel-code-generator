@@ -821,7 +821,11 @@ def _capabilities(tree: Tree) -> _Capabilities | None:
 
 
 def dead_capability(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
-    """Report a capability of the table that no lane of the CI matrix has, a malformed one, and an unreadable lane.
+    """Report a capability of the table that no lane of the CI matrix has, or every lane has, or only subset lanes lack.
+
+    Also a malformed one and an unreadable lane. A capability every lane has never skips; one only subset lanes lack
+    (lanes that run a fixed list of tests, e.g. the formatter subset) skips no test of the suite. The lane reader
+    knows which lanes are subset lanes, not which tests a subset lane lists, so the second case is refused outright.
 
     The lanes and their facts are read from the workflow, ``tox.ini``, ``pyproject.toml`` and ``uv.lock``
     (`scripts/_ci_lanes.py`); a tree without the workflow has no lanes and nothing is judged.
@@ -836,8 +840,20 @@ def dead_capability(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
         line = found.lines.get(name, 1)
         if problems := [problem for problem in map(condition_problem, clauses) if problem]:
             yield Finding(CAPABILITY_HOME, line, "dead-capability", f"{name}: {'; '.join(problems)}")
-        elif not found.lanes_with([name]):
+            continue
+        holding = found.lanes_with([name])
+        lacking = [lane for lane in found.lanes if lane not in holding]
+        if not holding:
             yield Finding(CAPABILITY_HOME, line, "dead-capability", f"{name}: no lane has {' and '.join(clauses)}")
+        elif not lacking:
+            yield Finding(CAPABILITY_HOME, line, "dead-capability", f"{name}: every lane has it, so no skip fires")
+        elif all(lane.subset for lane in lacking):
+            yield Finding(
+                CAPABILITY_HOME,
+                line,
+                "dead-capability",
+                f"{name}: only subset lanes (fixed lists of tests) lack it, so no test of the suite is skipped",
+            )
 
 
 def _needed(model: SourceModule, node: ast.expr | None, seen: frozenset[Binding] = frozenset()) -> list[str]:

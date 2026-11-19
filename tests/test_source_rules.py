@@ -69,6 +69,8 @@ LANES: dict[str, str] = {
             pydantic25: python3.12
         deps =
             pydantic20: pydantic==2.0.3
+        commands =
+            pytest tests/main/test_payload_validation.py::test_numeric_payload_sampling
     """,
     "pyproject.toml": """
         [dependency-groups]
@@ -773,6 +775,9 @@ TREES: dict[str, dict[str, str]] = {
                 "windows-3.12": (("platform==win32", "python>=3.12"), "the Windows lane runs Python 3.11"),
                 "pydantic-1": (("pydantic<2",), "the floor is Pydantic 2"),
                 "malformed": (("platform>=win32", "node==20"), "not a version, not a fact"),
+                "python-3.11": (("python>=3.11",), "every lane runs Python 3.11 or newer: the skip never fires"),
+                "empty": ((), "no clause holds everywhere"),
+                "pydantic-2.1": (("pydantic>=2.1",), "only the pinned 2.0.3 subset lane lacks it"),
             }
         """,
     },
@@ -1008,8 +1013,69 @@ def test_lanes_are_read_from_the_matrix_and_tox(tmp_path: Path) -> None:
     assert_output("".join(f"{lane.name}: {lane.facts}\n" for lane in lanes) + f"problems: {problems}\n")
 
 
+def _beyond_include(jobs: dict[str, dict[str, dict[str, dict[str, object]]]]) -> list[str]:
+    """Return ``job: key`` for every key of a job matrix but ``include``: neither reader expands axes or excludes."""
+    return [
+        f"{name}: {key}"
+        for name, job in jobs.items()
+        for key in job.get("strategy", {}).get("matrix", {})
+        if key != "include"
+    ]
+
+
+def test_a_matrix_key_but_include_is_found() -> None:
+    """A plain axis or an ``exclude`` would drop lanes silently from both readers, so it is reported."""
+    text = """
+jobs:
+  axes:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+        tox_env: [py312-parallel]
+  mixed:
+    strategy:
+      matrix:
+        include:
+          - tox_env: py312-parallel
+        exclude:
+          - tox_env: py311-parallel
+  plain:
+    runs-on: ubuntu-latest
+"""
+    assert_output(f"{_beyond_include(yaml.load(text, Loader=yaml.BaseLoader)['jobs'])}\n")
+
+
+def test_a_job_that_lists_test_paths_selects_them() -> None:
+    """A job whose steps list test paths one per line runs a fixed list: its entries are ``listed``, others ``all``."""
+    text = """
+jobs:
+  subset:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - tox_env: py312-black22-parallel
+    steps:
+    - run: |
+        tox run -e "$TOX_ENV" -- \\
+          tests/test_format.py \\
+          tests/main/openapi
+  suite:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - tox_env: py312-parallel
+            exclude_tests: tests/main/test_payload_validation.py
+"""
+    assert_output("".join(f"{entry['job']}: {entry['selection']}\n" for entry in matrix_entries(text)))
+
+
 def test_the_line_reader_reads_the_matrix_a_yaml_parser_reads() -> None:
-    """The workflow's matrix entries read line by line equal those of a YAML parse, runner included."""
+    """The workflow's matrix entries read line by line equal those of a YAML parse, runner included.
+
+    Neither reader expands matrix axes or excludes, so no matrix has a key but ``include``.
+    """
     root = Path(__file__).parents[1]
     text = (root / WORKFLOW).read_text(encoding="utf-8")
     jobs = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]
@@ -1025,6 +1091,7 @@ def test_the_line_reader_reads_the_matrix_a_yaml_parser_reads() -> None:
         f"missed by the line reader: {sorted(set(parsed) - set(read))}\n"
         f"added by the line reader: {sorted(set(read) - set(parsed))}\n"
         f"entries equal: {parsed == read}\n"
+        f"matrix keys but include: {_beyond_include(jobs)}\n"
         f"formatter variable equal to the suite's: {same_variable}\n"
     )
 

@@ -3,6 +3,9 @@ tests/capabilities.py:5: dead-capability: black-19: no lane has black==19
 tests/capabilities.py:6: dead-capability: windows-3.12: no lane has platform==win32 and python>=3.12
 tests/capabilities.py:7: dead-capability: pydantic-1: no lane has pydantic<2
 tests/capabilities.py:8: dead-capability: malformed: 'platform>=win32' orders a fact that is not a version, or by a value that is not a release; 'node==20' is not <fact><op><value> with a fact of python, formatter, black, isort, platform, pydantic
+tests/capabilities.py:9: dead-capability: python-3.11: every lane has it, so no skip fires
+tests/capabilities.py:10: dead-capability: empty: every lane has it, so no skip fires
+tests/capabilities.py:11: dead-capability: pydantic-2.1: only subset lanes (fixed lists of tests) lack it, so no test of the suite is skipped
 
 rule counts:
-  dead-capability: 4 (absolute); fix: delete the capability and its uses (no lane of .github/workflows/test.yaml has it, so the tests it guards always run, or never), or fix the clause or the lane the message names
+  dead-capability: 7 (absolute); fix: delete the capability and its uses (no lane of .github/workflows/test.yaml has it, so the tests it guards always run, or never), or fix the clause or the lane the message names

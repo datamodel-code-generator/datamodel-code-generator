@@ -60,7 +60,12 @@ def test_malformed_clauses_say_why() -> None:
 
 @pytest.mark.parametrize(
     "names",
-    [("posix",), ("posix", "black-24", "pydantic-2.5"), ("black-before-24", "external-black-24"), ("gpu",)],
+    [
+        ("posix",),
+        ("posix", "black-before-24", "type-statements"),
+        ("black-before-24", "native-deferred-annotations"),
+        ("gpu",),
+    ],
 )
 def test_missing_names_the_capabilities_an_environment_lacks(names: tuple[str, ...]) -> None:
     """Each capability the facts lack is named with its reason; a name outside the table is refused."""
@@ -73,7 +78,7 @@ def test_missing_names_the_capabilities_an_environment_lacks(names: tuple[str, .
 
 def test_needs_skips_where_the_running_environment_lacks_a_capability() -> None:
     """The mark skips exactly where `missing` names a capability of the running environment, with its reasons."""
-    names = ("posix", "black-24")
+    names = ("posix", "black-before-24")
     mark = capabilities.needs(*names).mark
     lacking = capabilities.missing(names, expected_environment_facts())
     agrees = mark.args == (bool(lacking),) and mark.kwargs["reason"] == ("; ".join(lacking) or "every capability holds")

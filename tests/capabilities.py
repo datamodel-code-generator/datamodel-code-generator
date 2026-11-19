@@ -37,19 +37,7 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
     "typed-dict-validation": (("python>=3.12",), "Pydantic validates typing.TypedDict from Python 3.12 on"),
     "native-deferred-annotations": (("python>=3.14",), "Python defers annotations natively from 3.14 on"),
     "target-newer-than-runtime": (("python<3.14",), "the test needs a target Python version newer than the runtime"),
-    "black-23": (("black>=23",), "black 22 formats this output differently"),
-    "black-23.3": (("black>=23.3",), "black formats the Python 3.12 target from 23.3 on"),
-    "black-24": (("black>=24",), "black before 24 formats this output differently"),
     "black-before-24": (("black<24",), "the test checks how black before 24 formats the output"),
-    "external-black-24": (
-        ("formatter==builtin|black>=24",),
-        "an external black before 24 formats type annotations differently",
-    ),
-    "pydantic-2.4": (("pydantic>=2.4",), "the generated code needs Pydantic 2.4"),
-    "pydantic-2.5": (("pydantic>=2.5",), "the generated code needs Pydantic 2.5"),
-    "pydantic-2.9": (("pydantic>=2.9",), "the generated code needs Pydantic 2.9"),
-    "pydantic-2.10": (("pydantic>=2.10",), "the generated code needs Pydantic 2.10"),
-    "pydantic-2.12": (("pydantic>=2.12",), "the generated code needs Pydantic 2.12"),
 }
 """Every capability a test may need: its clauses over the environment facts and why a test needs it."""
 

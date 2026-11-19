@@ -431,7 +431,7 @@ A test that needs something of its environment names a capability of
 the table states each capability as clauses over the environment facts of
 `tests/units.py`, with its reason. `raw-skip` counts every other skip,
 `dead-capability` fails on a capability that no lane of
-`.github/workflows/test.yaml` has (`scripts/_ci_lanes.py` reads the facts of
+`.github/workflows/test.yaml` has, that every lane has, or that only subset lanes (fixed lists of tests) lack (`scripts/_ci_lanes.py` reads the facts of
 each lane from the matrix, `tox.ini`, `pyproject.toml` and `uv.lock`), and
 `never-run` fails on a test whose capabilities together exclude every lane.
 `tests/test_checks_are_run.py` names every `scripts/check_*.py` and every source
