@@ -42,6 +42,8 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   checked nothing (a seed the model rejects): it rises with a blind line the base record does not hold, in a new item
   too, once the base stores the test. These keys rise by their lines, not their totals, so a fix that drops one line
   does not pay for a regression that adds another, nor one environment's fix for another's regression.
+- ``source-rule:unreadable``: a file that parses and that the source model refuses, with its error, which no source
+  rule can read.
 - ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
   or ``--config`` argument) or an allowlist or host baseline this script cannot read. Such a key always fails under
   ``--enforce``, because what it hides cannot be counted.
@@ -276,6 +278,10 @@ ADVICE = {
     "unreadable-stored-list": (
         "Store the list as a JSON list of strings at the storage its `.refs` line names (pytest writes both), so "
         "that the counter can read it."
+    ),
+    "unreadable-source-rule": (
+        "The source model refuses the file (the error is named), so no source rule can read its sites. Fix the file, "
+        "or give the model a rule and a form for it (scripts/_source_model.py, tests/data/source_forms/)."
     ),
     "unreadable-allowlist": (
         "Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer "
@@ -871,9 +877,12 @@ def _import_cycle_tally(tally: Tally, root: Path, files: list[str]) -> None:
 
 def _source_rule_tally(tally: Tally, root: Path, files: list[str]) -> None:
     """Count the sites of every source rule that runs without a base, in the Python files of the tree."""
-    findings = run_source_rules(SourceTree(root, frozenset(files)), SOURCE_RULES, None)
+    tree = SourceTree(root, frozenset(files))
+    findings = run_source_rules(tree, SOURCE_RULES, None)
     for finding in (finding for found in findings.values() for finding in found):
         tally.add(f"source-rule:{finding.rule}", finding.path, finding.line)
+    for path, error in tree.unreadable().items():
+        tally.add("source-rule:unreadable", f"{path} ({error})")
 
 
 def _candidate_lines(base_root: Path, head_root: Path) -> list[str]:

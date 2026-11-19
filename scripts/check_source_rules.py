@@ -102,12 +102,28 @@ class Module:
         return ".".join(parts)
 
     @cached_property
-    def model(self) -> SourceModule:
-        """Return what the file's names, imports and comments are, by the language's rules (an empty one if unread)."""
+    def _read(self) -> tuple[SourceModule, str]:
+        """Read the file: its model (an empty one if unread) and why the source model refuses it (empty: it does not).
+
+        A file this Python cannot parse (newer syntax) holds nothing to report. One that parses and that the model
+        refuses is a failure of the model: `Tree.unreadable` reports it, since its sites are not counted.
+        """
         try:
-            return SourceModule((self.root / self.rel).read_text(encoding="utf-8"), self.rel, self.name)
-        except (SyntaxError, ValueError, SourceModelError):
-            return SourceModule("", self.rel, self.name)
+            return SourceModule((self.root / self.rel).read_text(encoding="utf-8"), self.rel, self.name), ""
+        except (SyntaxError, ValueError):
+            return SourceModule("", self.rel, self.name), ""
+        except SourceModelError as error:
+            return SourceModule("", self.rel, self.name), " ".join(str(error).split())
+
+    @property
+    def model(self) -> SourceModule:
+        """Return what the file's names, imports and comments are, by the language's rules."""
+        return self._read[0]
+
+    @property
+    def error(self) -> str:
+        """Return why the source model refuses the file, empty where it reads it or the file does not parse."""
+        return self._read[1]
 
     @cached_property
     def star_reads(self) -> dict[ast.AST, str]:
@@ -186,6 +202,11 @@ class Tree:
                     text = (self.root / rel).read_text(encoding="utf-8", errors="replace")
                     found[rel] = frozenset(_WORD.findall(text))
         return found
+
+    def unreadable(self) -> dict[str, str]:
+        """Return the files that parse and that the source model refuses, with its error: no rule can read them."""
+        modules = {module.rel: module for module in (*self.package, *self.scripts, *self.tests, *self._parsed.values())}
+        return {rel: module.error for rel, module in sorted(modules.items()) if module.error}
 
     def module(self, rel: str) -> Module:
         """Return the parsed file ``rel``, read once."""
@@ -815,7 +836,7 @@ def format_counts(findings: dict[str, list[Finding]]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the source rules and print their report; exit 1 when an absolute rule reports a site."""
+    """Run the source rules and print their report; exit 1 on a site of an absolute rule or an unreadable file."""
     parser = argparse.ArgumentParser(description="Report the code shapes that code reviews keep finding.")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1], help="checkout to read")
     parser.add_argument("--base", help="git revision that lost-last-caller compares with")
@@ -828,12 +849,14 @@ def main(argv: list[str] | None = None) -> int:
         base = _extract(args.root, args.base, Path(temporary)) if args.base else None
         findings = run(tree, rules, base)
     notes = {rule.name: rule.coverage(tree) for rule in rules if rule.coverage is not None and rule.name in findings}
+    unreadable = tree.unreadable()
+    sys.stderr.writelines(f"{path}: the source model refuses the file: {error}\n" for path, error in unreadable.items())
     if args.count:
         sys.stdout.write(format_counts(findings))
         sys.stderr.writelines(f"{name}: coverage: {note}\n" for name, note in notes.items())
     else:
         sys.stdout.write(format_report(rules, findings, notes))
-    return int(any(findings.get(rule.name) for rule in RULES if rule.absolute))
+    return int(bool(unreadable) or any(findings.get(rule.name) for rule in RULES if rule.absolute))
 
 
 if __name__ == "__main__":

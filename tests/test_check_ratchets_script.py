@@ -333,6 +333,8 @@ DEMOTED_RULES = COUNTER["scripts/check_source_rules.py"].replace(
 """The source rules with ``unused-private-global`` no longer absolute: only the base's rules still say it is."""
 UNPARSABLE = 'try:\n    VALUE = int("1")\nexcept (ValueError, TypeError:\n    VALUE = ...\n'
 """A test input this Python cannot parse: an unclosed bracket stands for syntax newer than the interpreter."""
+REFUSED = "def f():\n    nonlocal x\n    x = 1\n"
+"""A test input that parses and that the source model refuses: a ``nonlocal`` name no function binds."""
 CASES = {
     "unchanged": {"base": COUNTER, "head": {}},
     "approved-rise": {
@@ -650,6 +652,11 @@ def show(flag: bool) -> None:
     "source-rules": {"base": SOURCE_RULES_BASE, "head": SOURCE_RULES_HEAD, "args": ["--enforce"]},
     "source-rules-unchanged": {"base": SOURCE_RULES_BASE, "head": {}, "args": ["--enforce"]},
     "source-rules-unparsable": {"base": SOURCE_RULES_BASE, "head": {"tests/data/python/newer.py": UNPARSABLE}},
+    "source-rules-refused": {
+        "base": SOURCE_RULES_BASE,
+        "head": {"tests/data/python/refused.py": REFUSED},
+        "args": ["--enforce"],
+    },
     "demoted-absolute-rule": {
         "base": {**COUNTER, **SOURCE_RULES_BASE},
         "head": {"scripts/check_source_rules.py": DEMOTED_RULES},
