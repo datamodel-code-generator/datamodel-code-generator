@@ -43,7 +43,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from itertools import pairwise, starmap
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
 import tomllib
 
@@ -105,7 +105,6 @@ HEAD = "HEAD"
 GENERATION_TIMEOUT = 300
 DEFAULT_MODEL_TYPE = "pydantic_v2.BaseModel"
 TAG_FRAGMENTS = Path("docs", "data", "migration", UNRELEASED)
-TAG_PRESET_NAMES = Path("src", "datamodel_code_generator", "preset_names.py")
 SCHEMA_VERSION = 1
 ACTIONS = {
     Action.REQUIRED: "Required changes",
@@ -179,7 +178,6 @@ JSON_KEYS = (
     "source",
 )
 DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
-PRESET_DATE_PATTERN = re.compile(r'"(?:standard|practical)-py3\d+-(\d{8})"')
 RELEASES_HEADER = (
     "# Every published release since the oldest one the upgrade guide covers, oldest first.\n"
     "# `scripts/build_migration_docs.py --stamp` appends a row when a release is published.\n"
@@ -191,12 +189,20 @@ DERIVED_HEADER = (
     "# of the source tree that is not listed here is unreleased; an option the latest release lacks is unreleased.\n"
 )
 SURFACE_SCRIPT = """
+import hashlib
 import json
 from pathlib import Path
 
 import datamodel_code_generator
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
+from datamodel_code_generator.experimental import iter_experimental_features
+from datamodel_code_generator.preset import get_preset_infos
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()[:16]
+
 
 options = {}
 for action in arg_parser._actions:
@@ -207,16 +213,59 @@ for action in arg_parser._actions:
             "choices": sorted(map(str, action.choices)) if action.choices else None,
             "help": " ".join(str(action.help or "").split()),
         }
-templates = Path(datamodel_code_generator.__file__).parent / "model" / "template"
+presets = {}
+for info in get_preset_infos():
+    groups = [
+        {
+            "config": {item.field_name: item.pyproject_value for item in group.config.items()},
+            "input_file_types": sorted(kind.value for kind in group.input_file_types),
+            "output_model_types": sorted(kind.value for kind in group.output_model_types),
+        }
+        for group in info.option_groups
+    ]
+    presets.setdefault(info.name.value.rsplit("-", 1)[1], {})[info.name.value] = digest(sorted(map(digest, groups)))
+package = Path(datamodel_code_generator.__file__).parent
+rules = json.loads((package / "resources" / "recommender_rules.json").read_text(encoding="utf-8"))
+revision = rules.pop("rules_revision")
+rules.pop("options")
+templates = package / "model" / "template"
 print(json.dumps({
     "options": options,
     "python_api": sorted(datamodel_code_generator.__all__),
     "generate_config": sorted(GenerateConfig.model_fields),
     "templates": sorted(path.relative_to(templates).as_posix() for path in templates.rglob("*.jinja2")),
+    "presets": presets,
+    "recommender_rules": {"digest": digest(rules), "revision": revision},
+    "experimental": {feature.id: feature.since_version for feature in iter_experimental_features()},
 }))
 """
 CHANGES_HEADER = (
     "# The changes of {version}, moved from docs/data/migration/unreleased/ when the release was stamped.\n"
+)
+
+
+class SurfaceOption(TypedDict):
+    """An option of a surface: its other spellings and its choices; surface.json leaves out the help text."""
+
+    aliases: list[str]
+    choices: list[str] | None
+    help: NotRequired[str]
+
+
+class Surface(TypedDict):
+    """The public surface of a source tree (`read_surface`), and what surface.json keeps of the latest release's."""
+
+    options: dict[str, SurfaceOption]
+    python_api: list[str]
+    generate_config: list[str]
+    templates: list[str]
+    presets: dict[str, dict[str, str]]
+    recommender_rules: dict[str, str]
+    experimental: dict[str, str]
+
+
+EMPTY_SURFACE = Surface(
+    options={}, python_api=[], generate_config=[], templates=[], presets={}, recommender_rules={}, experimental={}
 )
 
 
@@ -290,7 +339,7 @@ class Registries:
     deprecations: tuple[Deprecation, ...]
     experimental: tuple[ExperimentalFeature, ...]
     preset_dates: tuple[PresetDate, ...]
-    surface: dict[str, Any]
+    surface: Surface
 
 
 @dataclass
@@ -367,10 +416,13 @@ def current_registries() -> Registries:
     )
 
 
-def read_surface(src: Path) -> dict[str, Any]:
+def read_surface(src: Path) -> Surface:
     """Return the public surface of the package under `src`: options and choices, `__all__`, config fields, templates.
 
-    It runs in a fresh interpreter, so the surface of a release tag's tree can be read next to this checkout's.
+    It also holds what a release fixes: a digest of the option set of each dated preset by date, the digest of the
+    recommender rules (everything but `rules_revision` and the option registry, which no recommendation reads) with
+    their revision, and the experimental feature ids with their `since_version`. It runs in a fresh interpreter, so the
+    surface of a release tag's tree can be read next to this checkout's.
     """
     env = {**os.environ, "PYTHONPATH": str(src), "PYTHONWARNINGS": "ignore"}
     result = subprocess.run(
@@ -379,7 +431,7 @@ def read_surface(src: Path) -> dict[str, Any]:
     return json.loads(result.stdout)
 
 
-def surface_items(surface: dict[str, Any]) -> dict[str, str]:
+def surface_items(surface: Surface) -> dict[str, str]:
     """Return every item of a surface by the name an entry's `affects` gives it, with the `affects` key it goes under.
 
     An option and each of its other spellings are `--name`, a choice `--name value`, a public name of the package its
@@ -394,7 +446,7 @@ def surface_items(surface: dict[str, Any]) -> dict[str, str]:
     return items | dict.fromkeys(surface["templates"], "templates")
 
 
-def _option_additions(current: dict[str, Any], released: dict[str, Any]) -> list[str]:
+def _option_additions(current: Surface, released: Surface) -> list[str]:
     """Return the options and choices of `current` that `released` lacks, as `--name` and `--name=value` keys.
 
     New `--preset` names are left out: the entry of their preset date lists what they add.
@@ -411,7 +463,7 @@ def _option_additions(current: dict[str, Any], released: dict[str, Any]) -> list
     return added
 
 
-def _option_entry(key: str, release: str, current: dict[str, Any]) -> dict[str, Any]:
+def _option_entry(key: str, release: str, current: Surface) -> dict[str, Any]:
     name, _, choice = key.partition("=")
     option = current["options"].get(name)
     title = f"New value `{choice}` of `{name}`" if choice else f"New option `{name}`"
@@ -733,18 +785,79 @@ def _ranges(
     return ranges
 
 
-def _read_surface_file(layout: Layout, problems: list[str]) -> dict[str, Any]:
+def _read_surface_file(layout: Layout, problems: list[str]) -> Surface | None:
     try:
-        return json.loads(layout.surface.read_text(encoding="utf-8"))
+        surface = json.loads(layout.surface.read_text(encoding="utf-8"))
     except OSError as error:
         problems.append(f"{layout.surface.name}: {error.strerror}")
     except json.JSONDecodeError as error:
         problems.append(f"{layout.surface.name}: {error}")
-    return {"options": {}, "python_api": [], "generate_config": [], "templates": []}
+    else:
+        if not (missing := [key for key in Surface.__annotations__ if key not in surface]):
+            return surface
+        problems.append(f"{layout.surface.name}: no {', '.join(missing)}")
+    return None
+
+
+def _check_released(
+    current: Surface,
+    released: Surface,
+    latest: str,
+    experimental: tuple[ExperimentalFeature, ...],
+    problems: list[str],
+) -> None:
+    """Report what changes the facts the latest release fixed.
+
+    The presets of a date the release ships are frozen and none of them is removed or replaced; one date at most is
+    unreleased. Rules that differ from the
+    release's carry a new `rules_revision`. An experimental feature the release lacks names a later `since_version`,
+    and one it has keeps the `since_version` it shipped with.
+    """
+    shipped = released["presets"]
+    if len(unreleased := sorted(current["presets"].keys() - shipped.keys())) > 1:
+        problems.append(
+            f"presets: dates {', '.join(unreleased)} are unreleased; add the options of this release to one date; "
+            "if the latest tag is not stamped yet, stamp it first"
+        )
+    problems.extend(
+        f"preset {name}: {'its options differ from' if name in shipped[date] else 'is not one of'} the {date} presets "
+        f"of {latest}; released presets are frozen, so change the unreleased date's"
+        for date, names in current["presets"].items()
+        if date in shipped
+        for name, digest in names.items()
+        if shipped[date].get(name) != digest
+    )
+    problems.extend(
+        f"preset {name}: the {date} presets of {latest} include it, but this tree no longer does; released presets "
+        "are frozen"
+        for date, names in shipped.items()
+        for name in names
+        if name not in current["presets"].get(date, {})
+    )
+    rules, released_rules = current["recommender_rules"], released["recommender_rules"]
+    if rules["digest"] != released_rules["digest"] and rules["revision"] == released_rules["revision"]:
+        problems.append(
+            f"recommender_rules.json: the rules differ from those of {latest} and rules_revision is still "
+            f"{rules['revision']}; set it to the date of the change"
+        )
+    problems.extend(
+        f"experimental feature {feature.id}: since_version {feature.since_version} differs from {since}, which "
+        f"{latest} ships"
+        for feature in experimental
+        if (since := released["experimental"].get(feature.id, feature.since_version)) != feature.since_version
+    )
+    problems.extend(
+        f"experimental feature {feature.id}: {latest} lacks it, so since_version {feature.since_version} must name a "
+        "later release"
+        for feature in experimental
+        if feature.id not in released["experimental"]
+        and feature.since_version != UNRELEASED
+        and version_key(feature.since_version) <= version_key(latest)
+    )
 
 
 def _check_removals(
-    current: dict[str, Any], released: dict[str, Any], changes: dict[str, dict[str, Any]], problems: list[str]
+    current: Surface, released: Surface, changes: dict[str, dict[str, Any]], problems: list[str]
 ) -> None:
     """Report each item of the latest release's surface that is gone and that no unreleased entry names."""
     named = {
@@ -814,7 +927,7 @@ def _check_records(
             )
 
 
-def _facts(registries: Registries, released_surface: dict[str, Any], changes: dict[str, dict[str, Any]]) -> Facts:
+def _facts(registries: Registries, released_surface: Surface, changes: dict[str, dict[str, Any]]) -> Facts:
     """Return what the rules of the records read: the derived entries give the releases of features and presets."""
     unreleased = {entry_id for entry_id, entry in changes.items() if entry["release"] == UNRELEASED}
     features = {feature.id for feature in registries.experimental}
@@ -833,10 +946,18 @@ def _facts(registries: Registries, released_surface: dict[str, Any], changes: di
     )
 
 
-def load(layout: Layout | None = None, registries: Registries | None = None, *, records: bool = True) -> Guide:
+def load(
+    layout: Layout | None = None,
+    registries: Registries | None = None,
+    *,
+    records: bool = True,
+    released_check: bool = True,
+) -> Guide:
     """Load, derive and check the change list; raise MigrationDataError with every problem found.
 
-    Without `records`, an entry with a fixture may lack the recorded output `--record` is about to write.
+    Without `records`, an entry with a fixture may lack the recorded output `--record` is about to write. Without
+    `released_check`, the tree is not held to the facts of surface.json, which `--stamp` is about to replace by the
+    tag's and checks the tree against.
     """
     layout = layout or Layout()
     registries = registries or current_registries()
@@ -846,7 +967,8 @@ def load(layout: Layout | None = None, registries: Registries | None = None, *, 
     derived = _read_toml(layout.derived, problems)
     presets = {str(date): str(version) for date, version in derived.get("presets", {}).items()}
     changes = _derived_changes(registries, presets, placed, problems)
-    released_surface = _read_surface_file(layout, problems)
+    released = _read_surface_file(layout, problems)
+    released_surface = released or EMPTY_SURFACE
     option_releases = {str(key): str(version) for key, version in derived.get("options", {}).items()}
     option_releases |= dict.fromkeys(_option_additions(registries.surface, released_surface), UNRELEASED)
     for key, version in option_releases.items():
@@ -862,6 +984,8 @@ def load(layout: Layout | None = None, registries: Registries | None = None, *, 
         problems += guide_problems(entry)
     _check_links(changes, order, problems)
     _check_removals(registries.surface, released_surface, changes, problems)
+    if released and released_check and placed.versions:
+        _check_released(registries.surface, released, placed.versions[-1], registries.experimental, problems)
     _check_allowlist(layout, placed.versions, changes, problems)
     if records and not problems:
         _check_records(layout, placed.versions, changes, problems)
@@ -1253,7 +1377,7 @@ def _toml_rows(table: dict[str, str]) -> str:
     return "".join(f"{json.dumps(key)} = {json.dumps(table[key])}\n" for key in sorted(table))
 
 
-def _surface_json(surface: dict[str, Any]) -> str:
+def _surface_json(surface: Surface) -> str:
     """Return a surface as surface.json keeps it: without the help texts, which may change freely."""
     options = {
         name: {"aliases": option["aliases"], "choices": option["choices"]}
@@ -1262,16 +1386,10 @@ def _surface_json(surface: dict[str, Any]) -> str:
     return json.dumps({**surface, "options": options}, indent=1, sort_keys=True) + "\n"
 
 
-def _preset_dates_of(tree: Path) -> set[str]:
-    return set(PRESET_DATE_PATTERN.findall((tree / TAG_PRESET_NAMES).read_text(encoding="utf-8")))
-
-
-def _tag_facts(tag_tree: Path) -> tuple[set[str], dict[str, Any]]:
-    """Return the preset dates and the public surface of a release tag's tree; raise MigrationDataError if unread."""
+def _tag_surface(tag_tree: Path) -> Surface:
+    """Return the public surface of a release tag's tree; raise MigrationDataError if it cannot be read."""
     try:
-        return _preset_dates_of(tag_tree), read_surface(tag_tree / "src")
-    except OSError:
-        raise MigrationDataError([f"--tag-tree: {TAG_PRESET_NAMES.as_posix()} cannot be read"]) from None
+        return read_surface(tag_tree / "src")
     except subprocess.CalledProcessError as error:
         last = [f"exit {error.returncode}", *error.stderr.splitlines()][-1]
         problem = f"--tag-tree: the surface of its src cannot be read: {last}"
@@ -1291,9 +1409,11 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     A moved guide entry loses its `covers`, and a record without a guide entry, or one that extends another, is
     deleted: their work, naming the stored outputs a change moves until it is released, is done. Every input is read
     and checked before the first write, so a refused stamp can run again: a fragment edited after the tag is refused,
-    as its release would get text it did not ship, and so is one that extends a record the tag contains.
+    as its release would get text it did not ship, and so is one that extends a record the tag contains. So is a tree
+    that changes a fact the tag fixes (`_check_released`), such as a preset date of the tag that a later merge edited.
     """
-    guide = load(layout, registries)
+    registries = registries or current_registries()
+    guide = load(layout, registries, released_check=False)
     if version_key(version) <= version_key(guide.latest):
         msg = f"{version} does not come after the latest release {guide.latest}"
         raise MigrationDataError([msg])
@@ -1315,7 +1435,11 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
         if extends and (layout.unreleased / f"{extends}.toml") in moved
     ]:
         raise MigrationDataError(orphaned)
-    tag_presets, tagged_surface = _tag_facts(tag_tree)
+    tagged_surface = _tag_surface(tag_tree)
+    problems: list[str] = []
+    _check_released(registries.surface, tagged_surface, version, registries.experimental, problems)
+    if problems:
+        raise MigrationDataError(problems)
     derived = tomllib.loads(layout.derived.read_text(encoding="utf-8"))
     released_surface = json.loads(layout.surface.read_text(encoding="utf-8"))
     if moved:
@@ -1328,7 +1452,7 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     with layout.releases.open("a", encoding="utf-8") as releases:
         releases.write(f'\n[[release]]\nversion = "{version}"\ndate = "{date}"\n')
     presets = derived.get("presets", {})
-    presets |= {preset_date: version for preset_date in tag_presets if preset_date not in presets}
+    presets |= {preset_date: version for preset_date in tagged_surface["presets"] if preset_date not in presets}
     options = derived.get("options", {})
     options |= dict.fromkeys(_option_additions(tagged_surface, released_surface), version)
     layout.derived.write_text(

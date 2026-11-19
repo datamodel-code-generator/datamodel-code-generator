@@ -10,7 +10,7 @@
 +The `--recommend-options` report for the input schema (experimental):
 +
 +````
-+Option recommendations (experimental; quick mode; rules 2026-10-19)
++Option recommendations (experimental; quick mode; rules 2026-11-19)
 +
 +Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
 +  components                       0, 0 operations

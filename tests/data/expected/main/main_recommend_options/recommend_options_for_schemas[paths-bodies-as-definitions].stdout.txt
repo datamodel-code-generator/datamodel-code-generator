@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-19)
+Option recommendations (experimental; quick mode; rules 2026-11-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: paths, webhooks)
   components                       0, 4 operations

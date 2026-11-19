@@ -277,12 +277,18 @@ source = "release-note"
 steps. The hub, the range pages, the per-release Markdown and the JSON mark the steps from an older release as
 incomplete and point to the changelog; move it back once the entries of the releases before it are written.
 
-Two rules are checked. An accepted default-output change in `scripts/behaviour_diff_allowlist.toml` names its entry
-in `migration`, and that entry must be unreleased. `docs/data/migration/surface.json` holds the options, option values,
-public names, `GenerateConfig` fields and builtin templates of the latest release; one that your change removes must
-be named in the `affects` of an unreleased entry (an option or value as `--name` or `--name value`, a field as
-`GenerateConfig.<field>`, a template by its path under the template directory), unless the deprecation registry
-schedules its removal. New options and option values get their entries from the same comparison.
+Three rules are checked. An accepted default-output change in `scripts/behaviour_diff_allowlist.toml` names its
+entry in `migration`, and that entry must be unreleased. `docs/data/migration/surface.json` holds the options, option
+values, public names, `GenerateConfig` fields and builtin templates of the latest release; one that your change
+removes must be named in the `affects` of an unreleased entry (an option or value as `--name` or `--name value`, a
+field as `GenerateConfig.<field>`, a template by its path under the template directory), unless the deprecation
+registry schedules its removal. New options and option values get their entries from the same comparison.
+`surface.json` also holds what the latest release fixes, and the build fails when your change moves it: a digest of
+the options of each dated preset (the presets of a released date are frozen, and one date at most is unreleased: add
+this release's options to it), the digest of the recommender rules with their `rules_revision` (rules that differ
+from the release's need a new revision, once per release), and the experimental feature ids with their `since_version` (a feature the release
+lacks names a later `since_version`; one it has keeps its own). If a release is tagged but not stamped, stamp it first. A preset option without a `--no-` form fails at import, in
+`PresetOptionGroup`.
 
 An entry with `source = "run"` carries a minimal fixture, `[change.verify]` with a `schema` and the `args` of every
 run, and is proven by runs. `python scripts/build_migration_docs.py --record <id>` generates the fixture with the
@@ -756,7 +762,9 @@ every JSON report, so record the changed expected reports.
    `--inline-snapshot=fix`, and check that each change is one the rule should make.
 3. A registry entry: list the rule id in `options.<field>.rules` for every field it sets (see
    [Step 4](#step-4-register-the-option-in-the-recommender-required)).
-4. A new `rules_revision`: the date of the change.
+4. A new `rules_revision`: the date of the change. `scripts/build_migration_docs.py --check` fails while the rules
+   differ from those of the latest release and the revision is still the release's; the `options` registry is not
+   part of the rules.
 
 ## ➕ Adding a New CLI Option
 

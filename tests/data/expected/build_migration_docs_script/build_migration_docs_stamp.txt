@@ -6,7 +6,7 @@ Invalid migration data:
 Invalid migration data:
 - --tag-tree: the surface of its src cannot be read: no surface
 Invalid migration data:
-- --tag-tree: src/datamodel_code_generator/preset_names.py cannot be read
+- experimental feature input-format.toml: 0.5.0 lacks it, so since_version 0.5.0 must name a later release
 Invalid migration data:
 - 0.5.0 does not come after the latest release 0.5.0
 
@@ -192,6 +192,10 @@ version = "0.5.0"
 date = "2026-05-01"
 --- surface.json ---
 {
+ "experimental": {
+  "input-format.avro": "0.3.0",
+  "input-format.toml": "0.5.0"
+ },
  "generate_config": [
   "output"
  ],
@@ -222,9 +226,25 @@ date = "2026-05-01"
    "choices": null
   }
  },
+ "presets": {
+  "20260101": {
+   "practical-py313-20260101": "1e9db6e35c701fb2",
+   "standard-py313-20260101": "1e9db6e35c701fb2"
+  },
+  "20260201": {
+   "standard-py313-20260201": "1e9db6e35c701fb2"
+  },
+  "20260301": {
+   "practical-py314-20260301": "1e9db6e35c701fb2"
+  }
+ },
  "python_api": [
   "generate"
  ],
+ "recommender_rules": {
+  "digest": "af4fc1e3a66777e5",
+  "revision": "2026-03-01"
+ },
  "templates": [
   "Kept.jinja2"
  ]

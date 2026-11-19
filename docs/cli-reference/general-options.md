@@ -2704,7 +2704,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
     <!-- fmt: off -->
 
     ```
-    Option recommendations (experimental; full mode; rules 2026-10-19)
+    Option recommendations (experimental; full mode; rules 2026-11-19)
 
     Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
       components                       6, 2 operations

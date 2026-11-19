@@ -20,7 +20,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
       "title-source"
     ]
   },
-  "rules_revision": "2026-10-19",
+  "rules_revision": "2026-11-19",
   "schemas": {
     "config": {
       "best": {
@@ -87,7 +87,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
 --- report.md
 # Recommender calibration
 
-- Rules: revision 2026-10-19, calibrated on 20261017 presets
+- Rules: revision 2026-11-19, calibrated on 20261017 presets
 - Settings: pydantic_v2.BaseModel, target Python 3.10
 - Grid: 12 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261118
 - Schemas: 2 (1 calibration, 1 holdout)
@@ -197,7 +197,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "title-source"
       ]
     },
-    "rules_revision": "2026-10-19",
+    "rules_revision": "2026-11-19",
     "schemas": {
       "config": {
         "best": {
@@ -968,7 +968,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             }
           }
         ],
-        "rules_revision": "2026-10-19",
+        "rules_revision": "2026-11-19",
         "signals": {
           "all_enums": 2,
           "boolean_exclusive_bounds": 0,
@@ -1720,7 +1720,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             }
           }
         ],
-        "rules_revision": "2026-10-19",
+        "rules_revision": "2026-11-19",
         "signals": {
           "all_enums": 2,
           "boolean_exclusive_bounds": 0,

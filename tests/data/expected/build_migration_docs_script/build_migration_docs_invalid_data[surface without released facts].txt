@@ -1,0 +1,4 @@
+exit 1
+Invalid migration data:
+- surface.json: no python_api, generate_config, presets, recommender_rules, experimental
+written: []

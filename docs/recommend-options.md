@@ -123,7 +123,7 @@ components:
 <!-- fmt: off -->
 
 ```text
-Option recommendations (experimental; full mode; rules 2026-10-19)
+Option recommendations (experimental; full mode; rules 2026-11-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       2, 0 operations
