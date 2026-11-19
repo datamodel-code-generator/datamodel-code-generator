@@ -6,6 +6,8 @@ import re
 from collections import Counter
 from pathlib import Path
 
+import pytest
+
 from datamodel_code_generator.cli_options import get_all_argparse_options
 from scripts.build_architecture_docs import LEGACY_BEGIN_MARKER, LEGACY_END_MARKER, generate_legacy_table
 from scripts.legacy_rows import KEEP, LEGACY_ROWS, LegacyRow
@@ -15,6 +17,7 @@ LEGACY_ROW = re.compile(r"legacy[-.][A-Za-z0-9_]+(?:[-.][A-Za-z0-9_]+)*(?![-\w])
 FLAGS = get_all_argparse_options()
 
 
+@pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
 def test_legacy_rows_are_the_rows_src_names() -> None:
     """Every row src/ names has one record in scripts/legacy_rows.py, and every record is a row src/ names."""
     used = {
@@ -67,6 +70,7 @@ def _problems(row: LegacyRow) -> list[str]:
     return [f"{row.name}: {message}" for holds, message in checks if not holds]
 
 
+@pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
 def test_legacy_row_records_are_complete() -> None:
     """A record's fix is keep or an issue, its option is a command-line option, and its witness runs an input."""
     problems = [problem for row in LEGACY_ROWS for problem in _problems(row)]
@@ -74,6 +78,7 @@ def test_legacy_row_records_are_complete() -> None:
     assert not problems, "\n".join(problems)
 
 
+@pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
 def test_the_page_table_is_written_from_the_records() -> None:
     """The "Legacy rows" table of docs/architecture.md is the table the records write, row for row."""
     docs = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")

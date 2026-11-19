@@ -3571,9 +3571,9 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "`represent_python_value` writes a `str` subclass that keeps the `repr()` of `str` (a `$ref` value that "
             "`--field-include-all-keys` writes into `json_schema_extra`) by the running interpreter's `repr()`, which "
             "escapes the characters its Unicode version does not print, where `stable_repr` writes them as the newest "
-            "target prints them: on a host Python older than 3.15 (Unicode below 17; the target version does not select "
-            "the interpreter) a `$ref` to a definition whose name holds U+A7CE, a letter of Unicode 17, is written "
-            "with the escape `\\ua7ce` beside the definition's key, which prints the letter"
+            "target prints them: on a host Python older than 3.15 (Unicode below 17; the target version does not "
+            "select the interpreter) a `$ref` to a definition whose name holds U+A7CE, a letter of Unicode 17, is "
+            "written with the escape `\\ua7ce` beside the definition's key, which prints the letter"
         ),
         fix=6906,
         witness=(
