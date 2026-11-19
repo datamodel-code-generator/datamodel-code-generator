@@ -1,0 +1,4 @@
+[
+  "/kind enum null: invalid, model accepts",
+  "/mode enum null: invalid, model accepts"
+]

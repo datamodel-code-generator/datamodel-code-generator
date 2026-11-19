@@ -1,0 +1,4 @@
+[
+  "/frac_items/0 maximum 10: invalid, model accepts",
+  "/frac_items/0 minimum 0: invalid, model accepts"
+]

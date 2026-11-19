@@ -1,0 +1,8 @@
+[
+  "/flagged/flag const 1: invalid, model accepts",
+  "/flagged/flag const 1.0: invalid, model accepts",
+  "/negated const 1: invalid, model accepts",
+  "/negated const 1.0: invalid, model accepts",
+  "/negated const null: invalid, model accepts",
+  "/statusCode/code const 7.0: valid, model rejects"
+]

@@ -1,0 +1,3 @@
+[
+  "/mode enum null: invalid, model accepts"
+]

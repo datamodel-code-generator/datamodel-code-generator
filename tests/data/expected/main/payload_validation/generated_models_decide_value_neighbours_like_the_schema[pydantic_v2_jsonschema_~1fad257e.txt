@@ -1,0 +1,7 @@
+[
+  "minimum 0: invalid, model accepts",
+  "minimum 0.9: invalid, model accepts",
+  "minimum 1: invalid, model accepts",
+  "minimum 1.1: invalid, model accepts",
+  "minimum 2: invalid, model accepts"
+]

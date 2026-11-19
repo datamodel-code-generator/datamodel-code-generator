@@ -1,0 +1,3 @@
+[
+  "/negated const null: invalid, model accepts"
+]

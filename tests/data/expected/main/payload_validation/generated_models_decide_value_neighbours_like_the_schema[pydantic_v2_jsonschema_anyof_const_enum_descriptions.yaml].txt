@@ -1,0 +1,7 @@
+[
+  "/mode const \"0\": invalid, model accepts",
+  "/mode const \"1\": invalid, model accepts",
+  "/mode const false: invalid, model accepts",
+  "/mode const null: invalid, model accepts",
+  "/mode const true: invalid, model accepts"
+]

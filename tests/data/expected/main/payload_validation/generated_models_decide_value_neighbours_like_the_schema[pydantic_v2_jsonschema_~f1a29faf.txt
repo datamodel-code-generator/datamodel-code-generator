@@ -1,0 +1,6 @@
+[
+  "/amount enum \"1\": invalid, model accepts",
+  "/amount enum \"2\": invalid, model accepts",
+  "/amount enum null: invalid, model accepts",
+  "/amount enum true: invalid, model accepts"
+]

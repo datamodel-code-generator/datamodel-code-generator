@@ -1,0 +1,5 @@
+[
+  "/numeric_boolean_alt enum true: invalid, model accepts",
+  "/numeric_boolean_descriptions enum true: invalid, model accepts",
+  "/numeric_boolean_names enum true: invalid, model accepts"
+]

@@ -1,0 +1,3 @@
+[
+  "/objects/x const 1.0: valid, model rejects"
+]
