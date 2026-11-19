@@ -73,7 +73,10 @@ OTHER = {
     ),
     "page-with-a-fenced-notes-example": (
         ["#7"],
-        f"{TABLES}\n\n```\n### Case Notes\n\n- **#7** the example\n```\n\n### Case Notes\n\n- **#7** the note\n",
+        (
+            f"{TABLES}\n\n```\n### Case Notes\n\n- **#7** the example\n```\n\n### Case Notes\n\n"
+            "```\n# a comment\n- **#8** in a fence\n```\n\n- **#7** the note\n"
+        ),
     ),
     "line-past-the-file": (["scripts/related_tests.py:99999"], None),
     "line-in-a-test": (["tests/test_where_script.py:1"], None),
@@ -186,6 +189,26 @@ SCRATCH = {
 def test_where_follows_the_binding_each_use_reads(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A use counts when its name leads to the definition: through an alias of the file, not through a parameter."""
     root = _scratch(tmp_path, SCRATCH)
+    assert_output(_where(capsys, ["scripts/provider.py:answer"], f"{TABLES}\n\n### Case Notes\n", root))
+
+
+SHAPES = {
+    "provider.py": SCRATCH["provider.py"],
+    "other.py": SCRATCH["provider.py"].replace("Provider", "Other"),
+    "shapes.py": (
+        '"""Shapes."""\n\nfrom scripts.provider import answer as mod\n\n\n'
+        "def one():\n    import scripts.provider as mod\n\n    return mod.answer()\n\n\n"
+        "def two():\n    import scripts.other as mod\n\n    return mod.answer()\n\n\n"
+        "def spaced():\n    import scripts.provider as lib\n\n    return lib .answer()\n\n\n"
+        "def parenthesised():\n    import scripts.provider as lib\n\n    return (lib).answer()\n\n\n"
+        "def unrelated(lib):\n    return lib.answer()\n"
+    ),
+}
+
+
+def test_where_decides_each_use_from_the_model(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """One name bound to two modules in two scopes and to a direct binding, and dots with spaces or parentheses."""
+    root = _scratch(tmp_path, SHAPES)
     assert_output(_where(capsys, ["scripts/provider.py:answer"], f"{TABLES}\n\n### Case Notes\n", root))
 
 

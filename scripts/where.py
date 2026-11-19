@@ -56,7 +56,7 @@ from scripts.related_tests import mirrors
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from scripts._source_model import Binding, Scope
+    from scripts._source_model import Binding, Reference, Scope
     from scripts.pass_decls import PassDecl
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,7 +83,6 @@ BULLET_KEY = re.compile(r"#(\d+)")
 NOTE_MARKUP = re.compile(r"\*\*|\[(#\d+)\]\([^)]*\)")
 DOC_LINE = re.compile(r'\s*[rRuU]?"""\s*(.*?)\s*(?:"""\s*)?$')
 HEADING = re.compile(r"^#{2,4} ")
-ATTRIBUTE = re.compile(r"\.(\w+)")
 SCOPES = {"module", "class", "function"}
 DEFS = {"function", "class"}
 ASSIGNS = {"assign", "annassign"}
@@ -487,7 +486,6 @@ class Repo:
         while more := {name for rel in files for name in self._reexports(rel, names)} - names:
             names |= more
             files = self._spelling(names, found.path, everywhere=everywhere)
-        modules = {name for _, name in self.names.values()}
         users: dict[str, set[str]] = {}
         for rel in files:
             model = self.model(rel)
@@ -499,22 +497,13 @@ class Repo:
                 if named == self.names[rel][1]
                 for binding in model.module_scope.bindings.get(name, [])
             ]
-            aliases = {b.name: b for b in imports if b.origin in modules}
-            direct_names = {binding.name for binding in direct}
-            lines = self.text(rel).splitlines()
-            for reference in model.references:
-                if reference.name in direct_names:
-                    if any(binding in direct for binding in model.resolve(reference.node).bindings):
-                        users.setdefault(rel, set()).add(_scope_name(reference.scope))
-                elif (alias := aliases.get(reference.name)) is not None:
-                    after = lines[reference.line - 1][reference.column + len(reference.name) :]
-                    if (
-                        (read := ATTRIBUTE.match(after))
-                        and (alias.origin, read[1]) in names
-                        and alias in model.resolve(reference.node).bindings
-                    ):
-                        users.setdefault(rel, set()).add(_scope_name(reference.scope))
-        return users
+            chains = {node.value: node for node in ast.walk(model.tree) if isinstance(node, ast.Attribute)}
+            users[rel] = {
+                _scope_name(reference.scope)
+                for reference in model.references
+                if _reaches(model, reference, direct, names, chains)
+            }
+        return {rel: scopes for rel, scopes in users.items() if scopes}
 
     def _spelling(self, names: set[tuple[str, str]], path: str, *, everywhere: bool) -> list[str]:
         """Return the defining file and the files that import one of the names or read it as an attribute, or all."""
@@ -543,6 +532,28 @@ class Repo:
             if (count := len(pattern.findall(text))) and (rel in paths or any(word(n).search(text) for n in names)):
                 counts[rel] = count
         return counts
+
+
+def _reaches(
+    model: SourceModule,
+    reference: Reference,
+    direct: list[Binding],
+    names: set[tuple[str, str]],
+    chains: dict[ast.expr, ast.Attribute],
+) -> bool:
+    """Whether a reference reads one of the names: by a direct binding, or as an attribute of what it imports.
+
+    The model resolves the name in its own scope; each attribute above it names a dotted path through the bindings
+    the name may read, whatever the spacing or parentheses around the dot.
+    """
+    if any(binding in direct for binding in model.resolve(reference.node).bindings):
+        return True
+    node: ast.expr = reference.node
+    while (up := chains.get(node)) is not None:
+        if any((path.rpartition(".")[0], path.rpartition(".")[2]) in names for path, _ in model.origins(up)):
+            return True
+        node = up
+    return False
 
 
 def _site_key(site: Found) -> tuple[str, int]:

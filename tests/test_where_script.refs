@@ -10,6 +10,8 @@ option	where_script/where_answers[option].txt
 pass	where_script/where_answers[pass].txt
 [test_where_counts_an_empty_section_against_the_line_limit]
 	where_script/where_counts_an_empty_section_against_the_line_limit.txt
+[test_where_decides_each_use_from_the_model]
+	where_script/where_decides_each_use_from_the_model.txt
 [test_where_follows_the_binding_each_use_reads]
 	where_script/where_follows_the_binding_each_use_reads.txt
 [test_where_grammar]
