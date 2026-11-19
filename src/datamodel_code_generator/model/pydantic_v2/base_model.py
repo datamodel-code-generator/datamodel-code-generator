@@ -29,8 +29,8 @@ from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY as FIELDLESS_SITE_KEY
 from datamodel_code_generator._model_keys import (
-    FIELDLESS_SITE_KEY,  # noqa: F401  # Preserve the established model.pydantic_v2.base_model export.
     is_fieldless_site,
 )
 from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate

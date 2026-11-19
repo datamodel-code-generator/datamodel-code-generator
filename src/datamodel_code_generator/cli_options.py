@@ -19,7 +19,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._config_fields import TARGET_SELECTORS
-from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  # Preserve the established cli_options export.
+from datamodel_code_generator._format_types import PythonVersion as PythonVersion
 from datamodel_code_generator._option_names import option_arguments as _arguments_negated_by
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._option_names import values_arguments as _values_arguments_negated_by

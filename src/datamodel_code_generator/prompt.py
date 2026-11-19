@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from datamodel_code_generator._json_output import JSON_SCHEMA_DRAFT_2020_12 as JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator._json_output import (
-    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established prompt export.
     JSON_SCHEMA_NAMES,
     OUTPUT_HEAD,
     dump_json,
@@ -25,8 +25,8 @@ from datamodel_code_generator._json_output import (
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._option_names import (
     mapping_argument,
-    option_arguments,  # noqa: F401  # Preserve the established prompt export.
 )
+from datamodel_code_generator._option_names import option_arguments as option_arguments
 from datamodel_code_generator._option_table import COMMAND_DESTS
 from datamodel_code_generator.cli_options import (
     CLI_OPTION_META,

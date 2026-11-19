@@ -13,7 +13,9 @@ from pydantic import ConfigDict as _PydanticConfigDict
 from typing_extensions import override
 
 from datamodel_code_generator.enums import UnionMode
-from datamodel_code_generator.model.base import declare_resolve_reference_action_capabilities
+from datamodel_code_generator.model.base import (
+    declare_resolve_reference_action_capabilities as declare_resolve_reference_action_capabilities,
+)
 
 from .base_model import BaseModel, DataModelField
 from .root_model import RootModel

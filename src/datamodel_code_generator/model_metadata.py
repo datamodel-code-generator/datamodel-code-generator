@@ -6,8 +6,8 @@ from typing import Literal
 
 from typing_extensions import TypedDict
 
+from datamodel_code_generator._json_output import JSON_SCHEMA_DRAFT_2020_12 as JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator._json_output import (
-    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established model_metadata export.
     dump_json,
 )
 

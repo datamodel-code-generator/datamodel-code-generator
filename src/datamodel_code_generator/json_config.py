@@ -15,8 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 from datamodel_code_generator._config_fields import DEFAULT_ENCODING, json_file
 from datamodel_code_generator._json_config_fields import JsonConfigFieldName as _JsonConfigFieldName
 from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
+from datamodel_code_generator._json_output import JSON_SCHEMA_DRAFT_2020_12 as JSON_SCHEMA_DRAFT_2020_12
 from datamodel_code_generator._json_output import (
-    JSON_SCHEMA_DRAFT_2020_12,  # noqa: F401  # Preserve the established json_config export.
     schema_document,
 )
 from datamodel_code_generator.deprecations import warn_deprecated

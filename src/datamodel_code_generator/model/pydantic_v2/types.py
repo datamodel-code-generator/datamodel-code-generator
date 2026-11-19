@@ -69,7 +69,6 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_PAST_DATETIME,
     IMPORT_POSITIVE_FLOAT,
     IMPORT_POSITIVE_INT,
-    IMPORT_SECRET_STR,
     IMPORT_SERIALIZE_AS_ANY,
     IMPORT_STRICT_BOOL,
     IMPORT_STRICT_BYTES,
@@ -82,6 +81,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_UUID4,
     IMPORT_UUID5,
 )
+from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_SECRET_STR as IMPORT_SECRET_STR
 from datamodel_code_generator.model.types import standard_primitive_type_map_factory
 from datamodel_code_generator.model.types import type_map_factory as _type_map_factory
 from datamodel_code_generator.python_literal import PythonCode, represent_python_value, stable_repr

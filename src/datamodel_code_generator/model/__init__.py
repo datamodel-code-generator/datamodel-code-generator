@@ -9,9 +9,11 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING, NamedTuple
 
-from datamodel_code_generator._format_types import NEWEST_TARGET, PythonVersion
-from datamodel_code_generator._option_rules import implied_options
-from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
+from datamodel_code_generator._format_types import NEWEST_TARGET as NEWEST_TARGET
+from datamodel_code_generator._format_types import PythonVersion as PythonVersion
+from datamodel_code_generator._option_rules import implied_options as implied_options
+from datamodel_code_generator._requirements import pydantic_target_meets as pydantic_target_meets
+from datamodel_code_generator._requirements import python_target_meets as python_target_meets
 
 from .base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 

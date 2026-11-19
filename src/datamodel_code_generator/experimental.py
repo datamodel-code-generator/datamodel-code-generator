@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from textwrap import fill  # noqa: F401  # Preserve the established experimental export.
+from textwrap import fill as fill
 from typing import Literal
 
 from datamodel_code_generator._message_text import extra_requirement

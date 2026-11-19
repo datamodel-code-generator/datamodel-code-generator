@@ -30,9 +30,9 @@ from typing import (
 )
 from urllib.parse import ParseResult
 
-from datamodel_code_generator._generation_timestamp import current_timestamp
+from datamodel_code_generator._generation_timestamp import current_timestamp as current_timestamp
 from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
-from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
+from datamodel_code_generator._process_state import PROCESS_STATE_LOCK as PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -50,12 +50,6 @@ from datamodel_code_generator._source import (
     _load_json,
     _load_json_document,
     enable_parsed_source_cache,
-    load_data,
-    load_data_from_path,
-    load_text_data,
-    load_yaml,
-    load_yaml_dict,
-    load_yaml_dict_from_path,
 )
 from datamodel_code_generator._source import (
     _is_parsed_source_cache_enabled as _is_parsed_source_cache_enabled,
@@ -71,8 +65,16 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._source import decoding_from as _decoding_from
 from datamodel_code_generator._source import input_text as _input_text
-from datamodel_code_generator._url_redaction import redact_path, redact_url
-from datamodel_code_generator._warning_control import held, quiet
+from datamodel_code_generator._source import load_data as load_data
+from datamodel_code_generator._source import load_data_from_path as load_data_from_path
+from datamodel_code_generator._source import load_text_data as load_text_data
+from datamodel_code_generator._source import load_yaml as load_yaml
+from datamodel_code_generator._source import load_yaml_dict as load_yaml_dict
+from datamodel_code_generator._source import load_yaml_dict_from_path as load_yaml_dict_from_path
+from datamodel_code_generator._url_redaction import redact_path as redact_path
+from datamodel_code_generator._url_redaction import redact_url as redact_url
+from datamodel_code_generator._warning_control import held as held
+from datamodel_code_generator._warning_control import quiet as quiet
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
@@ -91,8 +93,6 @@ from datamodel_code_generator.enums import (
     CollapseRootModelsNameStrategy,
     ConstructorFieldOrder,
     CustomFileHeaderMode,
-    DataclassArguments,
-    DataModelType,
     DefaultValueType,
     FieldTypeCollisionStrategy,
     GraphQLScope,
@@ -118,6 +118,8 @@ from datamodel_code_generator.enums import (
     VersionMode,
     XMLSchemaVersion,
 )
+from datamodel_code_generator.enums import DataclassArguments as DataclassArguments
+from datamodel_code_generator.enums import DataModelType as DataModelType
 
 # Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
 if sys.version_info >= (3, 14):

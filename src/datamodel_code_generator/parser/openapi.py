@@ -6,7 +6,7 @@ specifications, including paths, operations, parameters, and request/response bo
 
 from __future__ import annotations
 
-import fnmatch  # noqa: F401  # Preserve the established parser.openapi export.
+import fnmatch as fnmatch
 import re
 from collections import defaultdict
 from contextlib import contextmanager, nullcontext
@@ -59,7 +59,8 @@ from datamodel_code_generator.parser._rw_split import update_field_refs_for_vari
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref, validate_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
-from datamodel_code_generator.parser._schema_refs import read_ref_value, ref_file_document  # noqa: F401  # Preserve the established parser.openapi export.
+from datamodel_code_generator.parser._schema_refs import read_ref_value as read_ref_value
+from datamodel_code_generator.parser._schema_refs import ref_file_document as ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     Discriminator,
@@ -77,8 +78,8 @@ from datamodel_code_generator.parser.jsonschema import (
     _parse_combined_root,
     _parse_root_type_site,
     _ref_applies,
-    get_model_by_path,  # noqa: F401  # Preserve the established parser.openapi export.
 )
+from datamodel_code_generator.parser.jsonschema import get_model_by_path as get_model_by_path
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
     FIELD_ORIGIN_KEY,
@@ -89,9 +90,9 @@ from datamodel_code_generator.reference import (
 )
 from datamodel_code_generator.types import (
     DataType,
-    EmptyDataType,  # noqa: F401  # Preserve the established parser.openapi export.
     build_union,
 )
+from datamodel_code_generator.types import EmptyDataType as EmptyDataType
 from datamodel_code_generator.util import BaseModel, YamlStringKeywords
 
 if TYPE_CHECKING:
