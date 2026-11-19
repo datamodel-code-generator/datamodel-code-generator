@@ -73,6 +73,7 @@ from tests.conftest import (
     CHECK_RENDER_PLANS_ENV,
     CHECK_SCHEMA_LOCATIONS_ENV,
     CHECK_STORE_WRITES_ENV,
+    CHECK_TEMPLATE_ASSIGNMENTS_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -3481,6 +3482,142 @@ def test_render_plan_that_drops_a_declared_item(monkeypatch: pytest.MonkeyPatch,
         return
     assert_output(str(parser.parse()))
     assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+_NESTED_OPTIONAL_MODEL = (
+    '{"title": "Holder", "type": "object", "properties": {"pet": {"$ref": "#/definitions/Pet"}},'
+    ' "definitions": {"Pet": {"type": "object", "properties": {"name": {"type": "string"}}}}}'
+)
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_template_assignment_check_reports_a_line_the_facts_do_not_bind(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A field class that strips every ``None`` default makes the dataclass template write a default Python drops.
+
+    The template reads ``--strip-default-none`` itself and writes ``= None``; the row reads the field's
+    ``should_strip_default_none`` and decides that the class body binds nothing. The check (`1`, as the test suite
+    sets it) raises when the model renders; `report:<path>` appends a JSON line per field and goes on; `0` writes the
+    lines as the template does.
+    """
+    from datamodel_code_generator.model.dataclass import DataClass, DataModelField
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class StripsEveryNone(DataModelField):
+        def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
+            return self.default is None or super().should_strip_default_none(keep_optional=keep_optional)
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(
+        CHECK_TEMPLATE_ASSIGNMENTS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag]
+    )
+    parser = JsonSchemaParser(
+        JSON_SCHEMA_DATA_PATH / "person.json",
+        data_model_type=DataClass,
+        data_model_field_type=StripsEveryNone,
+        formatters=[Formatter.BUILTIN],
+    )
+    if flag == "check":
+        with pytest.raises(Error) as raised:
+            parser.parse()
+        assert_output(f"{raised.value}\n")
+        return
+    output = str(parser.parse())
+    assert_output(output + (report_path.read_text(encoding="utf-8") if flag == "report" else ""))
+
+
+def test_template_assignment_check_records_the_legacy_annotated_factory_row(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Under ``--use-annotated``, a nested model's default factory goes into ``Annotated`` and its line has no value.
+
+    The model row still counts the default as an assignment, the shape row ``legacy-annotated-factory-binds`` of
+    ``tests/checks/template_assignments.py`` names: a report file records it, the check never raises for it, and this
+    output changes when the row decides the line the template writes.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_TEMPLATE_ASSIGNMENTS_ENV, f"report:{report_path}")
+    output = JsonSchemaParser(
+        _NESTED_OPTIONAL_MODEL,
+        use_annotated=True,
+        field_constraints=True,
+        use_default_factory_for_optional_nested_models=True,
+        formatters=[Formatter.BUILTIN],
+    ).parse()
+    assert_output(f"{output}{report_path.read_text(encoding='utf-8')}")
+
+
+_EVERY_FIELD_LINE_SCHEMA = (
+    '{"title": "Holder", "type": "object", "properties": {"kind": {"$ref": "#/definitions/Kind"},'
+    ' "tags": {"$ref": "#/definitions/Tags"}, "count": {"type": "integer", "default": 3}, "name": {"type": "string"}},'
+    ' "required": ["name"], "definitions": {"Kind": {"type": "string", "enum": ["a", "b"]},'
+    ' "Tags": {"type": "array", "items": {"type": "string"}}}}'
+)
+
+
+@pytest.mark.allow_direct_assert("a scope gate fails on its own, never through a stored output a fix run accepts")
+@pytest.mark.parametrize("output_model_type", list(DataModelType), ids=lambda model_type: model_type.value)
+def test_template_assignment_check_compares_every_field_line(
+    monkeypatch: pytest.MonkeyPatch, output_model_type: DataModelType
+) -> None:
+    """Every class-scope field line of every built-in output model type, enums and root models too, is compared.
+
+    A built-in model class whose template writes field lines that the check does not compare, by its scope or by the
+    form of its lines, leaves lines of the output uncompared and fails this test.
+    """
+    from tests.checks import template_assignments
+
+    facts = template_assignments.assignment_facts
+    compared: set[tuple[str, str]] = set()
+
+    def recorded(
+        model: template_assignments.DataModel, field: template_assignments.DataModelFieldBase
+    ) -> template_assignments.AssignmentFacts:
+        compared.add((model.class_name, template_assignments.line_name(model, field)))
+        return facts(model, field)
+
+    monkeypatch.setattr(template_assignments, "assignment_facts", recorded)
+    output = str(
+        generate(
+            _EVERY_FIELD_LINE_SCHEMA,
+            input_file_type=InputFileType.JsonSchema,
+            output_model_type=output_model_type,
+            formatters=[Formatter.BUILTIN],
+        )
+    )
+    written = {(line.scope.qualname, line.name) for line in template_assignments.field_lines(output) or ()}
+    assert written, output
+    assert written <= compared, f"lines the check does not compare: {sorted(written - compared)}"
+    assert_output(f"{output}\n" + "".join(f"compared {model}.{name}\n" for model, name in sorted(compared)))
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [DataModelType.TypingTypedDict, DataModelType.PydanticV2BaseModel],
+    ids=lambda model_type: model_type.value,
+)
+def test_template_assignment_check_records_the_legacy_typed_dict_and_enum_rows(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, output_model_type: DataModelType
+) -> None:
+    """A TypedDict field with a default is written without a value and an enum member with one, unlike their rows.
+
+    The model row counts the defaults of the TypedDict ``Holder`` as assignments and decides that the members of the
+    enum ``Kind`` bind nothing, the shape rows ``legacy-typed-dict-binds`` and ``legacy-enum-member-unbound`` of
+    ``tests/checks/template_assignments.py`` name: a report file records them, the check never raises for them, and
+    this output changes when the row decides the line the template writes.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_TEMPLATE_ASSIGNMENTS_ENV, f"report:{report_path}")
+    output = generate(
+        _EVERY_FIELD_LINE_SCHEMA,
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=output_model_type,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(f"{output}\n{report_path.read_text(encoding='utf-8')}")
 
 
 @pytest.mark.parametrize("nested", [False, True])

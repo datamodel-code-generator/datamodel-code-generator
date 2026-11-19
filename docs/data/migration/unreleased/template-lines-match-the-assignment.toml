@@ -1,0 +1,9 @@
+[[change]]
+id = "template-lines-match-the-assignment"
+category = "harness"
+title = "Check the field lines of built-in templates against the assignment decision"
+refs = ["#7184"]
+summary = "A debug check of the test suite wraps one more internal, which the seam report lists; the package writes the same output."
+covers = [
+    "checks/checks/check_seams.txt",
+]

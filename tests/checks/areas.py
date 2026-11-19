@@ -48,6 +48,11 @@ class Area(Enum):
     modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
     with it renders as the type hint then (``render_plans.py``)."""
 
+    TEMPLATE_ASSIGNMENTS = "DATAMODEL_CODE_GENERATOR_CHECK_TEMPLATE_ASSIGNMENTS"
+    """Every class-scope field line a model's built-in template renders after B2 binds the field's name exactly where
+    the model's row of ``classify_assignment`` decides that the class body binds the field
+    (``template_assignments.py``)."""
+
     NAMING = "DATAMODEL_CODE_GENERATOR_CHECK_NAMING"
     """The names the L1 resolver and the L2 settle give are a function of the resolver's naming calls: replayed on a
     copy of the resolver when ``name_models`` starts, they give every reference its name, and every model of the parse

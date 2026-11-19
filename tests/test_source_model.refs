@@ -16,6 +16,7 @@
 import-cycle	source_model/every_rule_states_its_verdicts[import-cycle].txt
 private-scope-walk	source_model/every_rule_states_its_verdicts[private-scope-walk].txt
 source-model-compiler-check	source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
+template-assignments	source_model/every_rule_states_its_verdicts[template-assignments].txt
 where-agrees-with-the-model	source_model/every_rule_states_its_verdicts[where-agrees-with-the-model].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 [test_model_answers_on_every_form]
 bindings/annotation_without_value	source_model/model_answers_on_every_form[bindings_annotation_without_value].txt

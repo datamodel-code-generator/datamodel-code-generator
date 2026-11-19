@@ -120,6 +120,7 @@ SEAMS: Final = (
     Seam(
         f"{_PACKAGE}.model.base", "DataModel", "_refresh_field_render_plans", "render_plans.refresh_field_render_plans"
     ),
+    Seam(f"{_PACKAGE}.model.base", "DataModel", "_render_template", "template_assignments.render_template"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "value", "memos.value"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "derived", "memos.derived"),
     Seam(f"{_PACKAGE}._parse_memo", "ParseMemo", "keep_union_members", "memos.keep_union_members"),

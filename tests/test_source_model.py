@@ -21,6 +21,7 @@ import tomllib
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import check_ratchets, where
+from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
@@ -618,6 +619,14 @@ def _import_cycle(form: Path) -> list[str]:
     return [f"{measure}: {', '.join(cycle)}" for measure, cycles in found.items() for cycle in cycles]
 
 
+def _template_assignment_lines(form: Path) -> list[str]:
+    return [
+        f"{name}:{binding.line}: {binding.name} {'no value' if binding.value is None else 'with a value'}"
+        for name, text in _form_files(form)
+        for binding in field_lines(text) or ()
+    ]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -627,6 +636,9 @@ RULES: dict[str, RuleRun] = {
         "scripts.where", frozenset({"bindings", "references", "imports", "extents"}), _where_disagreements
     ),
     "import-cycle": RuleRun("scripts._import_cycles", frozenset({"imports", "references"}), _import_cycle),
+    "template-assignments": RuleRun(
+        "tests.checks.template_assignments", frozenset({"bindings", "references"}), _template_assignment_lines
+    ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 

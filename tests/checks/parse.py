@@ -3,7 +3,8 @@
 The run of the whole pipeline (``PIPELINE``) of a parse reads the modes of its checks and, when ``STORE_WRITES`` or
 ``FACT_FINALITY`` is on, opens the checks of ``finality.py`` (``PARSE_CHECKS``). When the pipeline enters ``PARSED``,
 the checks of L1 run and those of ``finality.py`` arm; when the modules are final (``FINALIZE_SEGMENTS``), the model
-graph check compares the models they write with the emitted ones. Every pass and decision runs inside the finality
+graph check compares the models they write with the emitted ones; from B2 on (``render_ready``), every fact and render
+plan of the parse is final. Every pass and decision runs inside the finality
 scope of its declaration, every output module inside its module checkpoint, and every segment with a scope name inside
 that pass scope, as the pass trace (``trace.py``) records them. ``Parser.parse`` itself stays unwrapped: it remembers
 the frame that called it, which warnings name.
@@ -43,6 +44,10 @@ _SEGMENT_SCOPES: Final[dict[int, tuple[str, Any]]] = {}
 """The scope name (``SCOPE_NAMES``) and phase of each segment with a scope name, by the id of its steps."""
 _PARSED_STEPS: Final[set[int]] = set()
 """The ids of the steps of the segments that enter ``PARSED`` (``BOUNDARY_BEFORE``)."""
+_RENDER_READY_STEPS: Final[set[int]] = set()
+"""The ids of the steps of the segments that enter B2 (``Boundary.RENDER_READY`` in ``BOUNDARY_BEFORE``)."""
+_PAST_RENDER_READY: Final[ContextVar[bool]] = ContextVar("past_render_ready", default=False)
+"""Whether the parse that runs has entered B2."""
 _DECLS: Final = {decl.name: decl for decl in PASS_DECLS}
 """The declaration of each table pass, by the name of its ``PassSpec``."""
 _HOOKS: Final = ("_process_single_module",)
@@ -52,6 +57,16 @@ _HOOKS: Final = ("_process_single_module",)
 def viewed(value: Any) -> Any:
     """Return the object a guarded view stands for, or ``value`` itself when it is no view."""
     return value._object if isinstance(value, GuardedView) else value
+
+
+def render_ready() -> bool:
+    """Return whether the parse that runs has entered B2: its facts and its fields' render plans are final from then on.
+
+    The pipeline enters B2 where its segment ``imports`` starts (``BOUNDARY_BEFORE``), right after
+    ``freeze_field_render_plans`` froze the render plans; the renders before only build what passes compare, such as
+    the deduplication keys of ``--reuse-model``.
+    """
+    return _PAST_RENDER_READY.get()
 
 
 def _traced(name: str) -> None:
@@ -68,8 +83,10 @@ def _segment_scopes(steps: Iterable[Any]) -> None:
         if isinstance(step, Segment):
             if (scope_name := SCOPE_NAMES.get(step.name)) is not None:
                 _SEGMENT_SCOPES[id(step.steps)] = (scope_name, step.phase)
-            if BOUNDARY_BEFORE.get(step.name) is Boundary.PARSED:
+            if (boundary := BOUNDARY_BEFORE.get(step.name)) is Boundary.PARSED:
                 _PARSED_STEPS.add(id(step.steps))
+            elif boundary is Boundary.RENDER_READY:
+                _RENDER_READY_STEPS.add(id(step.steps))
             _segment_scopes(step.steps)
         elif isinstance(step, ForEachModule):
             _segment_scopes(step.body)
@@ -192,8 +209,9 @@ def _wrap_hooks(parser_class: type) -> None:
 def run_steps(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``Runner.run_steps``: the pipeline of a parse runs with its checks, a segment's steps in its scope.
 
-    The steps after ``PARSED`` start with the checks of L1 and the arming of those of the parse; the modules that the
-    steps of ``FINALIZE_SEGMENTS`` leave are compared with the emitted models.
+    The steps after ``PARSED`` start with the checks of L1 and the arming of those of the parse, and the steps after B2
+    mark the parse as past B2 (``render_ready``); the modules that the steps of ``FINALIZE_SEGMENTS`` leave are
+    compared with the emitted models.
     """
 
     @wraps(original)
@@ -209,6 +227,8 @@ def run_steps(original: Callable[..., None]) -> Callable[..., None]:
             )
         if id(steps) in _PARSED_STEPS:
             _enter_parsed(parser)
+        if id(steps) in _RENDER_READY_STEPS:
+            _PAST_RENDER_READY.set(True)
         if (
             (scope := _SEGMENT_SCOPES.get(id(steps))) is not None
             and (checks := PARSE_CHECKS.get()) is not None
@@ -230,12 +250,13 @@ def _run_pipeline(original: Callable[..., None], runner: Any, steps: Any, parser
         _segment_scopes(steps)
     _wrap_hooks(type(parser))
     modes = read_modes()
-    token, module = MODES.set(modes), _IN_MODULE.set(False)
+    token, module, ready = MODES.set(modes), _IN_MODULE.set(False), _PAST_RENDER_READY.set(False)
     try:
         start_naming(parser)
         with NO_SCOPE if Area.STORE_WRITES not in modes and Area.FACT_FINALITY not in modes else _checks(parser):
             return original(runner, steps, parser, state)
     finally:
+        _PAST_RENDER_READY.reset(ready)
         _IN_MODULE.reset(module)
         MODES.reset(token)
 
