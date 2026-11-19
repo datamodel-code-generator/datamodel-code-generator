@@ -61,6 +61,23 @@
 100:4 again store in bound_twice -> local bound_twice @99,100
 100:12 field load in bound_twice -> local bound_twice @95
 101:4 again load in bound_twice -> local bound_twice @99,100
+105:4 extras store in uncalled_nonlocal_keeps_the_alias -> local uncalled_nonlocal_keeps_the_alias @105,109
+105:13 field load in uncalled_nonlocal_keeps_the_alias -> local uncalled_nonlocal_keeps_the_alias @104
+109:8 extras store in uncalled_nonlocal_keeps_the_alias.<locals>.inner -> enclosing uncalled_nonlocal_keeps_the_alias @105,109
+111:4 extras load in uncalled_nonlocal_keeps_the_alias -> local uncalled_nonlocal_keeps_the_alias @105,109
+115:4 extras store in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @115,116
+115:13 field load in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @114
+116:4 extras store in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @115,116
+116:13 extras load in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @115,116
+117:4 other store in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @117,118
+117:12 field load in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @114
+118:4 other store in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @117,118
+118:11 dict load (never annotation) in right_side_reads_the_old_binding -> builtin; origin builtins.dict
+118:18 other load in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @117,118
+119:4 third store in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @119,120
+119:12 field load in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @114
+120:14 third load in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @119,120
+120:5 third store in right_side_reads_the_old_binding -> local right_side_reads_the_old_binding @119,120
 55:40 JsonSchemaObject load (string annotation) in <module> -> unbound
 55:68 JsonSchemaObject load (string annotation) in <module> -> unbound
 uses of closure_writes_the_alias:field@12: read@13
@@ -103,7 +120,18 @@ uses of bound_twice:extras@96: subscript-store@98
 uses of bound_twice:extras@97: subscript-store@98
 uses of bound_twice:again@99: subscript-store@101
 uses of bound_twice:again@100: subscript-store@101
+uses of uncalled_nonlocal_keeps_the_alias:field@104: read@105
+uses of uncalled_nonlocal_keeps_the_alias:extras@105: subscript-store@111
+uses of uncalled_nonlocal_keeps_the_alias:extras@109: subscript-store@111
+uses of right_side_reads_the_old_binding:field@114: read@115, read@117, read@119
+uses of right_side_reads_the_old_binding:extras@115: call:pop@116
+uses of right_side_reads_the_old_binding:extras@116: call:pop@116
+uses of right_side_reads_the_old_binding:other@117: call:pop@118
+uses of right_side_reads_the_old_binding:other@118: call:pop@118
+uses of right_side_reads_the_old_binding:third@119: call:pop@120
+uses of right_side_reads_the_old_binding:third@120: call:pop@120
 type positions @85: dict
+type positions @118: dict
 type positions @21: JsonSchemaObject
 type positions @55: list, JsonSchemaObject
 type positions @55: JsonSchemaObject

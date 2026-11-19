@@ -23,7 +23,10 @@ Return@37 lines 37
 ClassDef@40 lines 40-43: class 40/41-43
 FunctionDef@42 lines 41-43: function 41-42/43
 Return@43 lines 43
-code lines: 1-5,8-9,12-16,19-37,40-43
+FunctionDef@46 lines 46-49: function 46/47-49
+If@47 lines 47-49: if 47/47-49
+Assign@47 lines 47-49
+code lines: 1-5,8-9,12-16,19-37,40-43,46-49
 line 1: Expr@1; owner <module>#0; tokens <module>#0:body
 line 2: Expr@1; owner <module>#0; tokens -
 line 3: Expr@1; owner <module>#0; tokens -
@@ -67,11 +70,18 @@ line 40: ClassDef@40; owner Holder#0; tokens Holder#0:header
 line 41: FunctionDef@42; owner Holder.method#0; tokens Holder.method#0:header
 line 42: FunctionDef@42; owner Holder.method#0; tokens Holder.method#0:header
 line 43: Return@43; owner Holder.method#0; tokens Holder.method#0:body
+line 44: -; owner <module>#0; tokens -
+line 45: -; owner <module>#0; tokens -
+line 46: FunctionDef@46; owner continued#0; tokens continued#0:header
+line 47: Assign@47; owner continued#0; tokens continued#0:body
+line 48: Assign@47; owner continued#0; tokens continued#0:body
+line 49: Assign@47; owner continued#0; tokens continued#0:body
 header decorate: 8
 header decorated: 12-15
 header clauses: 19
 header Holder: 40
 header Holder.method: 41-42
+header continued: 46
 source @1: """coverage_exclusions: the region a coverage mark excludes is the marked statement, or a clause header and its suite.
 
 A definition's header starts at its first decorator; ``else`` and ``finally`` have no node of their own and are found
@@ -89,4 +99,5 @@ source @33: subject = 1
 source @36: handle = None
 source @37: return items
 source @43: return self
+source @47: flag = print( flag, )
 == code objects: one per scope that compiles on this Python

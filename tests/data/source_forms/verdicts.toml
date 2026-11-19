@@ -1127,7 +1127,7 @@
 "references/shared_model_importlib_dunder_import" = "no finding: no write of a generation fact"
 "references/star_import_hides_builtins" = "no finding: no write of a generation fact"
 "references/star_import_hides_dynamic_imports" = "no finding: no write of a generation fact"
-"references/store_writes_through_bindings" = "finding: parser/extras[a] 16 86 92; parser/extras[after] 52; parser/extras[b] 101; parser/extras|= 91; parser/required 32 37"
+"references/store_writes_through_bindings" = "finding: parser/extras.pop(a) 116; parser/extras.pop(b) 118; parser/extras.pop(c) 120; parser/extras[a] 16 86 92 111; parser/extras[after] 52; parser/extras[b] 101; parser/extras|= 91; parser/required 32 37"
 "references/string_annotation_forward" = "no finding: no write of a generation fact"
 "references/string_annotation_type_positions" = "no finding: no write of a generation fact"
 "references/syntax_read_by_origin" = "no finding: no write of a generation fact"

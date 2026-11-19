@@ -698,7 +698,9 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
                 for binding in self.model.bindings(scope=opened)
                 if binding.kind == "param" and _is_non_graph_annotation(self.model, annotation(binding))
             )
+            enclosing = dict(self._latest)
             super().visit(node)
+            self._latest = enclosing
             self._functions.pop()
         self._qualname.pop()
 
@@ -713,17 +715,21 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """Check assignment targets and record local aliases."""
+        self.visit(node.value)
+        classified = self._classify(node.value)
         for target in node.targets:
             self._check_target(target)
-            self._record_binding(target, node.value)
-        self.generic_visit(node)
+            self._record_binding(target, classified)
+            self.visit(target)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         """Check annotated assignment targets."""
         self._check_target(node.target)
         if node.value is not None:
-            self._record_binding(node.target, node.value)
-        self.generic_visit(node)
+            self.visit(node.value)
+            self._record_binding(node.target, self._classify(node.value))
+        self.visit(node.target)
+        self.visit(node.annotation)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         """Check augmented assignment targets, including in-place operators on aliases and ``__dict__``.
@@ -755,8 +761,9 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
 
     def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
         """Record aliases bound by assignment expressions."""
-        self._record_binding(node.target, node.value)
-        self.generic_visit(node)
+        self.visit(node.value)
+        self._record_binding(node.target, self._classify(node.value))
+        self.visit(node.target)
 
     def visit_Call(self, node: ast.Call) -> None:
         """Check mutating method calls, ``setattr`` with a literal name and reads of the data-type children."""
@@ -923,9 +930,13 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
                 return self._binding_read(receiver) in self._schema_objects
         return False
 
-    def _record_binding(self, target: ast.AST, value: ast.expr) -> None:
+    def _classify(self, value: ast.expr) -> tuple[bool, _Alias | None]:
+        """Return whether ``value`` is a schema object, and the guarded container it names, read before it binds."""
         schema = self._is_schema_object_value(value)
-        alias = None if schema else self._alias_of(value)
+        return schema, None if schema else self._alias_of(value)
+
+    def _record_binding(self, target: ast.AST, classified: tuple[bool, _Alias | None]) -> None:
+        schema, alias = classified
         if (binding := self.model.binding_at(target)) is None:
             return
         self._latest[binding.scope, binding.mangled] = binding
@@ -1273,14 +1284,29 @@ class _ClassDeclaration:
     bases: tuple[str, ...]
 
 
-def _imported_names(model: SourceModule) -> tuple[set[str], dict[str, str]]:
-    """Return the names a module imports from outside the package, and package imports by local name."""
+def _scope_chain(scope: ModelScope | None) -> Iterator[ModelScope]:
+    """Yield ``scope`` and the scopes around it, innermost first."""
+    current = scope
+    while current is not None:
+        yield current
+        current = current.parent
+
+
+def _imported_names(model: SourceModule, declared: ModelScope) -> tuple[set[str], dict[str, str]]:
+    """Return the names a class sees imported from outside the package, and package imports by local name.
+
+    The bases of a class are read where the class is declared: the imports of the scopes around it count, an import
+    inside one of its methods binds no name there.
+    """
+    visible = {id(item) for item in _scope_chain(declared.parent)}
     external: set[str] = set()
     internal: dict[str, str] = {}
     for item in model.imports:
-        if item.kind == "import" and item.bound is not None:
+        if id(item.scope) not in visible or item.bound is None:
+            continue
+        if item.kind == "import":
             external.add(item.bound)
-        elif item.kind == "from" and item.bound is not None and item.alias is not None:
+        elif item.kind == "from" and item.alias is not None:
             if not item.level and not str(item.source).startswith(PACKAGE):
                 external.add(item.bound)
             else:
@@ -1291,9 +1317,9 @@ def _imported_names(model: SourceModule) -> tuple[set[str], dict[str, str]]:
 def _class_declarations(models: Iterable[tuple[Path, SourceModule]]) -> dict[str, list[_ClassDeclaration]]:
     declarations: dict[str, list[_ClassDeclaration]] = {}
     for path, model in models:
-        external, internal = _imported_names(model)
         for scope in model.scopes:
             if scope.kind == "class":
+                external, internal = _imported_names(model, scope)
                 bases = tuple(
                     internal.get(chain[-1], chain[-1])
                     for base in scope.node.bases

@@ -41,3 +41,9 @@ class Holder:  # pragma: no cover
     @decorate
     def method(self):
         return self
+
+
+def continued(flag):
+    if flag: flag = print(
+        flag,
+    )  # pragma: no cover

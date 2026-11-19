@@ -99,3 +99,22 @@ def bound_twice(field, other):
     again = other
     again = field.extras
     again["b"] = 2
+
+
+def uncalled_nonlocal_keeps_the_alias(field):
+    extras = field.extras
+
+    def inner():
+        nonlocal extras
+        extras = {}
+
+    extras["a"] = 1
+
+
+def right_side_reads_the_old_binding(field):
+    extras = field.extras
+    extras = extras.pop("a")
+    other = field.extras
+    other: dict = other.pop("b")
+    third = field.extras
+    (third := third.pop("c"))

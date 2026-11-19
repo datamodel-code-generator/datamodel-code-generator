@@ -63,7 +63,10 @@ def _executed_regions(parser: PythonParser, executed: set[int]) -> Iterator[tupl
             regions.setdefault(first, (mark, between(start, end) - between(first, last)))
         else:
             statement = parser.first_line(mark)
-            regions.setdefault(statement, (mark, between(statement, statement)))
+            body = between(statement, statement)
+            if clause := headers.get(statement):
+                body -= between(clause[0], clause[1])
+            regions.setdefault(statement, (mark, body))
     for mark, body in regions.values():
         if ran := body & executed:
             yield mark, len(ran)
