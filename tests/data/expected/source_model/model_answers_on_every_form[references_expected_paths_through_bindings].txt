@@ -15,9 +15,8 @@
 13:8 item store in test_reads -> local test_reads @13
 13:17 EXPECTED load in test_reads -> global <module> @5; origin forms.references.expected_paths_through_bindings.EXPECTED
 14:8 item load in test_reads -> local test_reads @13
-15:9 open load in test_reads -> builtin; origin builtins.open
-15:14 EXPECTED load in test_reads -> global <module> @5; origin forms.references.expected_paths_through_bindings.EXPECTED
-15:37 handle store in test_reads -> local test_reads @15
+15:9 EXPECTED load in test_reads -> global <module> @5; origin forms.references.expected_paths_through_bindings.EXPECTED
+15:31 handle store in test_reads -> local test_reads @15
 16:8 handle load in test_reads -> local test_reads @15
 17:14 EXPECTED load in test_reads -> global <module> @5; origin forms.references.expected_paths_through_bindings.EXPECTED
 17:5 found store in test_reads -> local test_reads @17
@@ -30,6 +29,6 @@ uses of <listcomp>:path@6: call:read_text@6
 uses of test_reads:first@10: call:read_text@11
 uses of test_reads:other@10: call:read_text@12
 uses of test_reads:item@13: call:read_bytes@14
-uses of test_reads:handle@15: call:read@16
+uses of test_reads:handle@15: call:read_text@16
 uses of test_reads:found@17: read@19
 == code objects: one per scope that compiles on this Python

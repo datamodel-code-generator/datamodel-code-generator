@@ -14,7 +14,6 @@ bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:13: Late
 bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:44: parser
 bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:186: parser
 bindings/host_private_access_concern: host_private_access_concern.py:99: NoSuchHost
-bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:4: last
 references/aliased_library_names: aliased_library_names.py:10: second
 references/all_augmented: all_augmented.py:9: sep
 references/annotations_and_string_reads: annotations_and_string_reads.py:14: 'not valid('

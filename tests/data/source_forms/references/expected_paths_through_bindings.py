@@ -12,8 +12,8 @@ def test_reads():
     other.read_text()
     for item in [EXPECTED / "c.txt"]:
         item.read_bytes()
-    with open(EXPECTED / "d.txt") as handle:
-        handle.read()
+    with EXPECTED / "d.txt" as handle:
+        handle.read_text()
     (found := EXPECTED / "e.txt").read_text()
     sorted(EXPECTED.glob("*.py"))
     return found

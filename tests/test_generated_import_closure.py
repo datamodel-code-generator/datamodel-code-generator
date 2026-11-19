@@ -20,6 +20,7 @@ Files the running Python cannot parse are skipped, so the allowlist is compared 
 from __future__ import annotations
 
 import ast
+import operator
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -65,18 +66,23 @@ STALE_FAILURE_MESSAGE = (
     "allowlist only shrinks and stays exact."
 )
 
-Position = tuple[int, int]
+Position = tuple[int, ...]
 
 
 @dataclass(frozen=True)
 class _Load:
-    """A loaded name: where it is read (the clock of code that runs on import), and whether it is a deferred type."""
+    """A loaded name: where it is read (the clock of code that runs on import), and whether it is a deferred type.
+
+    ``deferred`` is set for every load that runs after import (a function body, an annotation, a string);
+    ``delayed`` for the loads that run after the code of the class body that holds them (an annotation, a string).
+    """
 
     name: str
     line: int
     position: Position
     deferred: bool
     in_type: bool
+    delayed: bool = False
 
 
 @dataclass
@@ -103,8 +109,33 @@ class _Reader:
         self.loads = {reference.node: reference for reference in model.references if reference.context == "load"}
         self.parts = _TypeParts()
         self.parsed: dict[ast.expr, Scope] = {}
+        self.late = self._late_parts()
         for root in self._type_roots():
             self._collect(root, model.scope_of(root))
+
+    def _late_parts(self) -> list[tuple[Position, Position, Position]]:
+        """Return the parts Python evaluates after code the text writes later: (start, end, where they run after).
+
+        A comprehension's element (or key and value) runs after its generators, and a conditional expression's body
+        after its test.
+        """
+        parts = []
+        for scope in self.model.scopes:
+            if scope.kind == "comprehension":
+                last = scope.node.generators[-1]
+                after = _end(last.ifs[-1] if last.ifs else last.iter)
+                elements = [scope.node.key, scope.node.value] if hasattr(scope.node, "key") else [scope.node.elt]
+                parts += [(_start(element), _end(element), after) for element in elements]
+        for node in ast.walk(self.model.tree):
+            if isinstance(node, ast.IfExp):
+                parts.append((_start(node.body), _end(node.body), _end(node.test)))
+        return parts
+
+    def order(self, position: Position) -> Position:
+        """Return a position as the order code runs: a part that runs after later-written code sorts after it."""
+        inside = [part for part in self.late if part[0] <= position <= part[1]]
+        outer_first = sorted(sorted(inside, key=operator.itemgetter(1), reverse=True), key=operator.itemgetter(0))
+        return (*(number for _, _, after in outer_first for number in (*after, 1)), *position)
 
     def _type_roots(self) -> list[ast.expr]:
         """Return the expressions a type evaluation reads: annotations that run, type aliases, bounds, generic bases."""
@@ -186,40 +217,44 @@ class _Reader:
         for reference in self.loads.values():
             if reference.annotation in {"never", "string"}:
                 continue
-            deferred = bool(reference.annotation) or reference.scope.runs_in == "function"
+            delayed = bool(reference.annotation)
+            deferred = delayed or reference.scope.runs_in == "function"
             in_type = reference.node in self.parts.names
             found.append((
-                self._load(reference, deferred=deferred, in_type=in_type),
+                self._load(reference, deferred=deferred, in_type=in_type, delayed=delayed),
                 self.model.resolve(reference.node),
             ))
         for string, scope in self.parts.strings:
             if (parsed := string_type(string)) is None:
-                found.append((_Load(repr(string.value), string.lineno, _start(string), True, True), None))
+                found.append((
+                    _Load(repr(string.value), string.lineno, self.order(_start(string)), True, True, True),
+                    None,
+                ))
                 continue
             names = name_reads(parsed)
             self.parsed.update(dict.fromkeys(names, scope))
             self._collect(parsed, scope)
             found += [
                 (
-                    _Load(name.id, string.lineno, _start(string), True, name in self.parts.names),
+                    _Load(name.id, string.lineno, self.order(_start(string)), True, name in self.parts.names, True),
                     self.model.lookup(name.id, scope),
                 )
                 for name in names
             ]
         return found
 
-    @staticmethod
-    def _load(reference: Reference, *, deferred: bool, in_type: bool) -> _Load:
-        return _Load(reference.name, reference.line, _start(reference.node), deferred, in_type)
+    def _load(self, reference: Reference, *, deferred: bool, in_type: bool, delayed: bool) -> _Load:
+        position = self.order(_start(reference.node))
+        return _Load(reference.name, reference.line, position, deferred, in_type, delayed)
 
     def clock(self, binding: Binding) -> Position:
         """Return the position from which a binding holds as the code that makes it runs."""
         if binding.kind in {"def", "class"}:
-            return _end(binding.node)
+            return self.order(_end(binding.node))
         if binding.kind == "except":
-            return _start(binding.node)
+            return self.order(_start(binding.node))
         assignment = self.model.assignment(binding.node)
-        return _end(assignment.value if assignment is not None else binding.node)
+        return self.order(_end(assignment.value if assignment is not None else binding.node))
 
     def typing_only(self, binding: Binding) -> bool:
         """Return whether only type checkers run a binding (it sits in the body of a ``TYPE_CHECKING`` test)."""
@@ -233,7 +268,9 @@ class _Reader:
         """Return whether the scope a load resolves to holds the name for it; None where its fallback decides.
 
         A module or class body runs on import, so a load that is not deferred sees the last binding or deletion before
-        it; a deferred load sees the last one. A function's name is held by any binding.
+        it, in the order the code runs; a deferred load sees the last one. A class body runs its own loads in order
+        wherever the class is defined, so only its annotations and strings are delayed past it. A function's name is
+        held by any binding.
         """
         scope = resolution.scope
         bindings = [binding for binding in resolution.bindings if binding.kind != "annotation-only"]
@@ -246,16 +283,18 @@ class _Reader:
                 return True
             if load.deferred and any(self.later(binding) for binding in bindings):
                 return True
-            return self._state(runtime, load) if runtime else typing
+            return self._state(runtime, load, deferred=load.deferred) if runtime else typing
         held = (
-            (bool(runtime) if load.deferred else self._state(runtime, load)) if scope.kind == "class" else bool(runtime)
+            (bool(runtime) if load.delayed else self._state(runtime, load, deferred=False))
+            if scope.kind == "class"
+            else bool(runtime)
         )
         return True if held or typing else None
 
-    def _state(self, runtime: list[Binding], load: _Load) -> bool:
+    def _state(self, runtime: list[Binding], load: _Load, *, deferred: bool) -> bool:
         """Return whether the last binding or deletion a load sees binds the name."""
         events = sorted((self.clock(binding), binding.kind != "del") for binding in runtime)
-        states = [bound for clock, bound in events if load.deferred or clock < load.position]
+        states = [bound for clock, bound in events if deferred or clock < load.position]
         return bool(states) and states[-1]
 
     def resolves(self, load: _Load, resolution: Resolution | None) -> bool:
@@ -311,6 +350,21 @@ UNBOUND_NAME_CASES = [
     pytest.param("class C:\n    x = Later\n    Later = 1\n", {"Later"}, id="class-body-loads-before-binding"),
     pytest.param("class C:\n    x = 1\n    y = x\n", set(), id="class-body-loads-after-binding"),
     pytest.param(
+        "def f():\n    class C:\n        x = Later\n        Later = 1\n\n    return C\n",
+        {"Later"},
+        id="class-body-in-function-loads-before-binding",
+    ),
+    pytest.param(
+        "def f():\n    class C:\n        Later = 1\n        x = Later\n\n    return C\n",
+        set(),
+        id="class-body-in-function-loads-after-binding",
+    ),
+    pytest.param(
+        "class C:\n    def m(self, x: Later) -> None: ...\n\n    Later = 1\n",
+        set(),
+        id="class-body-annotation-sees-later-binding",
+    ),
+    pytest.param(
         "Later = 1\n\n\nclass C:\n    x = Later\n    Later = 2\n", set(), id="class-body-falls-back-to-module"
     ),
     pytest.param(
@@ -335,6 +389,12 @@ UNBOUND_NAME_CASES = [
         "def f(v):\n    match v:\n        case {'a': 1, **rest}:\n            return rest\n", set(), id="match-mapping"
     ),
     pytest.param("values = [x for x in range(3) if (last := x)]\nprint(last)\n", set(), id="walrus-in-comprehension"),
+    pytest.param("values = [x for _ in [(x := 1)]]\n", set(), id="comprehension-element-runs-after-its-generators"),
+    pytest.param(
+        "values = [(x := 1) for _ in range(x)]\n", {"x"}, id="comprehension-generator-runs-before-its-element"
+    ),
+    pytest.param("value = x if (x := 1) else 0\n", set(), id="conditional-body-runs-after-its-test"),
+    pytest.param("value = (x := 1) if x else 0\n", {"x"}, id="conditional-test-runs-before-its-body"),
     pytest.param(
         "def f[T](x: T, y: Missing) -> T: ...\n\n\nvalue: T = None\n",
         {"Missing", "T"},

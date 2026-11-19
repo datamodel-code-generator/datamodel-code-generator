@@ -3,5 +3,5 @@ undeclared questions: none
 references/expected_paths_through_bindings: expected_paths_through_bindings.py:6: path.read_text()
 references/expected_paths_through_bindings: expected_paths_through_bindings.py:11: first.read_text()
 references/expected_paths_through_bindings: expected_paths_through_bindings.py:14: item.read_bytes()
-references/expected_paths_through_bindings: expected_paths_through_bindings.py:15: open(EXPECTED / 'd.txt')
+references/expected_paths_through_bindings: expected_paths_through_bindings.py:16: handle.read_text()
 references/expected_paths_through_bindings: expected_paths_through_bindings.py:18: EXPECTED.glob('*.py')

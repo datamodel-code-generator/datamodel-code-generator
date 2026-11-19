@@ -20,7 +20,7 @@ from tests.conftest import assert_output
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = ROOT / "tests/data/expected/ci_coverage"
 MAIN_ONLY_IF = "github.event_name != 'pull_request'"
-TEST_TARGET = re.compile(r"(?<![\w/.\-])tests/[\w/.\-]*(?:::[\w:]+)?")
+TEST_TARGET = re.compile(r"(?<![\w/.\-])(?:\./)?tests/[\w/.\-]*(?:::[\w:]+)?")
 ANY_MEMBER = "::*"
 MISSING_TARGETS_MESSAGE = (
     "tox.ini or a workflow names a test path or node id the repository lacks, so the lane that runs it collects "
@@ -213,7 +213,7 @@ def missing_test_targets(root: Path, files: dict[str, str]) -> list[str]:
     found = []
     for file, text in files.items():
         for target in sorted(set(TEST_TARGET.findall(text))):
-            path, _, node = target.partition("::")
+            path, _, node = target.removeprefix("./").partition("::")
             where = root / path
             if not where.exists():
                 found.append(f"{file}: {path} does not exist")
@@ -256,6 +256,21 @@ def test_a_renamed_test_id_is_missing() -> None:
     missing = missing_test_targets(ROOT, listed)
     assert "tox.ini: tests/test_ci_workflow.py defines no test_ci_files_name_only_existing_tests_renamed" in missing
     assert_output("".join(f"{line}\n" for line in missing))
+
+
+@pytest.mark.allow_direct_assert("each spelling of a path must decide its target, not only stored")
+def test_a_dot_slash_path_is_read_like_a_plain_one() -> None:
+    """A target spelled with a leading ``./`` is checked, and a path inside ``.tox`` or ``../`` is not a target."""
+    listed = {
+        "tox.ini": "commands = pytest ./tests/test_ci_workflow.py::test_ci_files_name_only_existing_tests_renamed "
+        "./tests/gone.py ./tests/test_ci_workflow.py::test_ci_files_name_only_existing_tests "
+        ".tox/py/tests/never.py ../tests/never.py {toxinidir}/tests/never.py\n"
+    }
+
+    assert missing_test_targets(ROOT, listed) == [
+        "tox.ini: tests/gone.py does not exist",
+        "tox.ini: tests/test_ci_workflow.py defines no test_ci_files_name_only_existing_tests_renamed",
+    ]
 
 
 @pytest.mark.allow_direct_assert("each inheritance shape must decide its target, not only stored")
