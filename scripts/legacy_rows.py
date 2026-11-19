@@ -370,7 +370,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "the base requires those names when a 2020-12 document inheriting it is parsed before, and not when the "
             "draft-07 document is parsed first"
         ),
-        fix=0,
+        fix=7197,
         witness=(
             "--input",
             "tests/data/openapi/json_pointer.yaml",
@@ -776,7 +776,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "OpenAPI `nullable` is read as a type list only after the first `_get_data_type` of a schema (a list item "
             "is nullable under a root model and not elsewhere)"
         ),
-        fix=0,
+        fix=5120,
         witness=(
             "--input",
             "tests/data/avro/root_string.avsc",
@@ -1253,7 +1253,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
     LegacyRow(
         "legacy-anyurl-keeps-string-keywords",
         "`AnyUrl` takes every string keyword and Pydantic then drops them all at render",
-        fix=0,
+        fix=7198,
         witness=(
             "--input",
             "tests/data/avro/root_string.avsc",
@@ -1719,7 +1719,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
     LegacyRow(
         "legacy-python-equality",
         "`1 == True` share a tag at L5 and L6 but not at L1",
-        fix=0,
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/openapi/discriminator_mapping_other_document/a/openapi.yaml",
@@ -2147,7 +2147,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "a Pydantic dataclass drops the `Annotated` import whenever it must see the field's metadata, also when "
             "the hint writes `Annotated`"
         ),
-        fix=0,
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/jsonschema/boolean_property.json",
@@ -3588,7 +3588,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "accepts, such as a `$ref` to a nullable model beside `nullable: false` "
             "(`_target_binding.py:_Models.wire_null`), where `TypeTables.takes_null` reads that null"
         ),
-        fix=0,
+        fix=7115,
         witness=(
             "--input",
             "tests/data/openapi/responses_extensions.yaml",
@@ -3620,7 +3620,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "enum (`enum: [a, null]`) and none of a type it cannot read (a custom type, an `x-python-type`, a "
             "configured import, `Any`, a reference that binds no symbol), where `TypeTables.takes_null` reads both"
         ),
-        fix=0,
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/openapi/responses_extensions.yaml",

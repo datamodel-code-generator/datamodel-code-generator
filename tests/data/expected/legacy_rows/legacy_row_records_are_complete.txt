@@ -1,7 +1,0 @@
-legacy-inherited-reads-at-first-ask: the fix 0 is neither keep nor an issue
-legacy-nullable-as-type-list: the fix 0 is neither keep nor an issue
-legacy-anyurl-keeps-string-keywords: the fix 0 is neither keep nor an issue
-legacy-python-equality: the fix 0 is neither keep nor an issue
-legacy.pdc-annotated-strip: the fix 0 is neither keep nor an issue
-legacy-wire-null-ignores-nullable-false: the fix 0 is neither keep nor an issue
-legacy-wire-null-unknown-type: the fix 0 is neither keep nor an issue
