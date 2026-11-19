@@ -755,8 +755,11 @@ class Segment:
     ``and``/``or`` after the first); ``element`` (a comprehension's element, a dict comprehension's key and value as
     one); ``target`` (a ``for`` clause's target with its first condition: two spans, since 3.13+ fuses the store of
     the target with the first load of the condition); ``condition`` (a later condition of a ``for`` clause);
-    ``iterable`` (the iterable of a ``for`` clause after the first). ``spans`` are ``(start, end)`` positions
-    (columns in characters, ends exclusive); ``node`` is the statement or the expression the segment starts with.
+    ``iterable`` (the iterable of a ``for`` clause after the first); ``case`` (a ``case`` of a ``match`` after the
+    first, from its keyword to the end of its pattern and guard: it runs only where the cases above it fail);
+    ``guard`` (a case's guard: it runs only where the pattern matched). ``spans`` are ``(start, end)`` positions
+    (columns in characters, ends exclusive); ``node`` is the statement or the expression the segment starts with, the
+    ``match_case`` of a ``case``.
     """
 
     kind: str
@@ -1014,10 +1017,14 @@ class _Extents(_SourceText):
                 previous = token.end
         return "".join(parts)
 
-    def nodes_at(self, line: int, column: int) -> list[ast.expr | ast.stmt]:
-        """Return the expressions and statements that hold a position, innermost first (a def's from its ``@``)."""
+    def nodes_at(self, line: int, column: int) -> list[ast.expr | ast.stmt | ast.pattern]:
+        """Return the expressions, patterns and statements at a position, innermost first (a def's from its ``@``)."""
         _ask("extents")
-        return [node for node in reversed(self._holders((line, column))) if isinstance(node, (ast.expr, ast.stmt))]
+        return [
+            node
+            for node in reversed(self._holders((line, column)))
+            if isinstance(node, (ast.expr, ast.stmt, ast.pattern))
+        ]
 
     def segment(self, line: int, column: int) -> Segment:
         """Return the innermost `Segment` that holds a position: a statement, or a part of one that may be skipped.
@@ -1031,15 +1038,28 @@ class _Extents(_SourceText):
         if not chain:
             self._refuse(line, "a position outside every statement")
         found = Segment("statement", (self._span(chain[0]),), chain[0])
-        for node, inner in itertools.pairwise(chain):
-            found = self._segment_of(node, inner) or found
+        for node, inner in itertools.pairwise([*chain, None]):
+            if isinstance(node, ast.Match):
+                found = self._case_of(node, (line, column)) or found
+            if inner is not None:
+                found = self._segment_of(node, inner) or found
         return found
+
+    def _case_of(self, node: ast.Match, position: tuple[int, int]) -> Segment | None:
+        """Return the segment of the case after the first whose keyword, pattern or guard holds a position, if any."""
+        for case in node.cases[1:]:
+            start = self._name_before("case", self._position(case.pattern))
+            if start <= position < self._statement_start(case.body[0]):
+                return Segment("case", ((start, self._end(case.guard or case.pattern)),), case)
+        return None
 
     def _segment_of(self, node: Positioned, inner: Positioned) -> Segment | None:
         """Return the segment that `inner`, the child of `node` on the way to a position, opens, if any."""
         kind, spans = "", (self._span(inner),)
         if isinstance(inner, ast.stmt):
             kind = "statement"
+        elif isinstance(node, ast.Match):
+            kind = "guard" if any(inner is case.guard for case in node.cases) else ""
         elif isinstance(node, ast.IfExp):
             kind = "arm" if inner is not node.test else ""
         elif isinstance(node, ast.BoolOp):

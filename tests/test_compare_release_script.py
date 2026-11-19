@@ -889,6 +889,118 @@ CLIENT = """CLIENT = "base"
 def run(spec):
     return spec["value"]
 """
+LATER_CASE = """def run(spec):
+    match spec.get("reach"):
+        case None:
+            return spec["value"]
+        case True:
+            return spec["value"].upper()
+    return "other"
+"""
+LATER_CASE_PASSES = """def run(spec):
+    value = spec["value"]
+    match spec.get("reach"):
+        case None:
+            value = value + ""
+        case True:
+            pass
+    return value
+"""
+FIELDS = """from dataclasses import astuple, dataclass
+
+
+@dataclass
+class Row:
+    a: str = "a"
+    b: str = "b"
+
+
+def run(spec):
+    if spec.get("reach"):
+        return "".join(astuple(Row()))
+    return spec["value"]
+"""
+BASE_LABEL = """class Base:
+    def label(self, value):
+        return value
+"""
+OVERRIDING_FIELD = """from datamodel_code_generator._base import Base
+
+
+class Field(Base):
+    def label(self, value):
+        return value.upper()
+"""
+PLAIN_FIELD = """from datamodel_code_generator._base import Base
+
+
+class Field(Base):
+    pass
+"""
+CALLS_FIELD = """import datamodel_code_generator._y
+from datamodel_code_generator._x import Field
+
+
+def run(spec):
+    if spec.get("reach"):
+        return Field().label(spec["value"])
+    return spec["value"]
+"""
+REEXPORTED = """from datamodel_code_generator._reexport import LIMIT
+
+
+def run(spec):
+    if spec.get("reach"):
+        return spec["value"] * LIMIT
+    return spec["value"]
+"""
+READ_ON_A_VARIABLE = """class Table:
+    LIMIT = 1
+
+
+def scale(kind, value):
+    return value * kind.LIMIT
+
+
+def run(spec):
+    if spec.get("reach"):
+        return scale(Table, spec["value"])
+    return spec["value"]
+"""
+READ_ON_A_VARIABLE_AND_SELF = """class Table:
+    LIMIT = 1
+
+    def unused(self):
+        return self.LIMIT
+
+
+def scale(kind, value):
+    return value * kind.LIMIT
+
+
+def run(spec):
+    if spec.get("reach"):
+        return scale(Table, spec["value"])
+    return spec["value"]
+"""
+TUPLE_ASSIGNED = """A, B = "a", "b"
+
+
+def run(spec):
+    if spec.get("reach"):
+        return A + B
+    return spec["value"] + A
+"""
+DOCUMENTED = """def unused(value):
+    \"\"\"Return the value.\"\"\"
+    return value
+
+
+def run(spec):
+    if spec.get("reach"):
+        return unused(spec["value"])
+    return spec["value"]
+"""
 RENAMED = """def f1(value):
     return value + "1"
 
@@ -1094,8 +1206,45 @@ ORACLES: dict[str, Oracle] = {
         },
         (("complete", PLAIN),),
     ),
+    "r3_m1_pattern_of_a_later_case": _changed(LATER_CASE, ("case True:", "case False | True:")),
+    "r3_m1_wildcard_of_a_later_case": _changed(LATER_CASE, ("case True:", "case _:")),
+    "r3_m1_wildcard_with_nothing_to_run": _changed(LATER_CASE_PASSES, ("case True:", "case _:")),
+    "r3_m1_alternative_no_run_tries": _changed(
+        LATER_CASE, ("case True:", "case True | False:"), runs=(("incomplete", PLAIN), ("incomplete", REACHED))
+    ),
+    "r3_m2_dataclass_fields_reordered": _changed(
+        FIELDS,
+        ('    a: str = "a"\n    b: str = "b"\n', '    b: str = "b"\n    a: str = "a"\n'),
+        runs=(("incomplete", PLAIN), ("differ", REACHED)),
+    ),
+    "r3_m2_method_moved_between_same_named_classes": Oracle(
+        {"_base.py": BASE_LABEL, "_x.py": OVERRIDING_FIELD, "_y.py": PLAIN_FIELD, "_case.py": CALLS_FIELD},
+        {"_x.py": PLAIN_FIELD, "_y.py": OVERRIDING_FIELD},
+        (("incomplete", PLAIN), ("differ", REACHED)),
+    ),
+    "r3_m3_constant_read_through_a_reexport": Oracle(
+        {
+            "_consts.py": "LIMIT = 1\n",
+            "_reexport.py": 'from datamodel_code_generator._consts import LIMIT\n\n__all__ = ["LIMIT"]\n',
+            "_case.py": REEXPORTED,
+        },
+        {"_consts.py": "LIMIT = 2\n"},
+        (("incomplete", PLAIN), ("differ", REACHED)),
+    ),
+    "r3_m4_class_attribute_read_on_a_variable": _changed(
+        READ_ON_A_VARIABLE, ("LIMIT = 1", "LIMIT = 2"), runs=(("incomplete", PLAIN), ("differ", REACHED))
+    ),
+    "r3_m4_class_attribute_read_on_a_variable_reached": _changed(
+        READ_ON_A_VARIABLE_AND_SELF, ("    LIMIT = 1\n", "    LIMIT = int(1)\n")
+    ),
+    "r3_s1_tuple_assignment_other_name_read": _changed(
+        TUPLE_ASSIGNED, ('"a", "b"', '"a", "c"'), runs=(("incomplete", PLAIN), ("differ", REACHED))
+    ),
+    "r3_s3_docstring_of_a_function_no_run_calls": _changed(
+        DOCUMENTED, ("Return the value.", "Return the given value."), runs=NO_UNIT
+    ),
 }
-"""The shapes of the three oracle reviews of C3 and of its design, each with the verdict it must give."""
+"""The shapes of the four oracle reviews of C3 and of its design, each with the verdict it must give."""
 
 
 def _oracle_project(tmp_path: Path, oracle: Oracle) -> tuple[Path, list[str]]:
@@ -1205,4 +1354,15 @@ def test_the_annotation_reader_sites_are_the_package_s() -> None:
     assert found == listed, f"not listed: {sorted(found - listed)}; listed, not found: {sorted(listed - found)}"
     assert_output(
         "".join(f"{path} {qualname}: {change_units.READER_SITES[path, qualname]}\n" for path, qualname in sorted(found))
+    )
+
+
+@pytest.mark.allow_direct_assert("a table pinned to the package fails on its own, never through a stored output")
+def test_the_docstring_reader_sites_are_the_package_s() -> None:
+    """`DOC_READER_SITES` lists exactly the code of the package that may read docstrings at run time, both ways."""
+    found = set(change_units.reader_sites(change_units.Side("head", ROOT / "src"), change_units.DOCSTRINGS))
+    listed = set(change_units.DOC_READER_SITES)
+    assert found == listed, f"not listed: {sorted(found - listed)}; listed, not found: {sorted(listed - found)}"
+    assert_output(
+        "".join(f"{path} {name}: {change_units.DOC_READER_SITES[path, name]}\n" for path, name in sorted(found))
     )

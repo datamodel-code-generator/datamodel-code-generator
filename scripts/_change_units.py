@@ -15,31 +15,37 @@ From a change to its units (`changes`, then `map_units`):
   qualname of a ``def`` or ``class``, else the enclosing qualname, the names bound and the kind of statement) and every
   free name resolves to corresponding bindings on the two sides (`SourceTree.definition`: builtins by name, outside
   modules by dotted path, package bindings by name in paired modules, or bound by statements that pair themselves),
-  as a greatest fixpoint. Paired statements drop out on both sides. A renamed file (``-M``) keeps its pair diff, and
+  as a greatest fixpoint. A class-level statement pairs only inside the same class (or one that pairs itself) and
+  only where it keeps its place among the binding statements of the class body (the order of its fields). Paired
+  statements drop out on both sides. A renamed file (``-M``) keeps its pair diff, and
   each of its unchanged statements whose free names no longer correspond counts as added. A copy is new code.
 - **Owner and probes** (`map_units`, on the interpreter that measures, which compiles the code objects): each changed
   token belongs to the innermost scope that holds it, lifted to the nearest one with a code object. A token in a
   header (decorators, signature, bases; a lambda's parameters; a generator expression's first iterable) needs the
   scope to start and the code that evaluates it to run there; any other token needs one of the owner's value
   instructions inside the innermost expression that holds it, never outside its `Segment` (a part that runs as a
-  unit). A statement with no value instruction falls back to any instruction, then to the owner's start; a part of a
+  unit; a ``case`` after the first is one, so is a case's guard). A statement with no value instruction falls back
+  to any instruction, then to the owner's start; a case with none (a wildcard) to its body; any other part of a
   statement with none is unmeasurable, and its unit can never pass.
 - **Module and class bodies** run as their module is imported. A token of a statement there that binds names needs
-  its own probe (which the import runs, unless the token is in a part the import skipped) and a reader of a name it
-  binds to run (an instruction that loads it: in its module, through ``from m import NAME``, as an
-  attribute ``m.NAME`` or ``C.X``, or ``self.X``/``cls.X`` in a method started with a receiver whose class finds ``X``
-  in that class); a binding no reader reads counts at import, and its unit says ``run at import only``.
+  its own probe (which the import runs, unless the token is in a part the import skipped) and a reader of a name the
+  token binds to run (`target_names`; a reader is an instruction that loads it, `Readers`); a binding no reader reads
+  counts at import, and its unit says ``run at import only``. A change of a class as a whole (its header, the order
+  of its binding statements, its compiled body) needs a reader of the class name.
 - **Typing-only forms** give no unit (`SourceModule.typing_only`): ``TYPE_CHECKING`` bodies, ``overload`` stubs,
   ``override``/``final`` decorators and function-local annotations; function annotations under the future import only
-  while the package reads no function annotations at run time beyond `READER_SITES`.
+  while the package reads no function annotations at run time beyond `READER_SITES`. A function's docstring gives
+  none while the package reads no docstring beyond `DOC_READER_SITES`.
 - **Compile-time effects**: code objects of a file on both sides, paired by qualname and ordinal, whose normalized
-  code differs while neither side has a changed token in them, need to start on both sides.
+  code differs while neither side has a changed token in them, need to run on both sides: a function its start, a
+  class body a reader of the class, a module body its import and a reader of a name its differing statements bind.
 - **Files that run as text**: a changed ``resources/*.json``, a ``.jinja2`` template without a compiled renderer and
   any file under ``_runtime/`` need a compared run to read them (a ``read`` probe). A ``_runtime`` module no other
   module of the package imports is only copied into generated packages: it has the ``read`` probe alone.
 - **A removed private definition nothing reads**: a module-level private ``def`` or ``class`` the base removes, whose
-  name occurs nowhere else in the base package and whose module the package reads through no namespace, needs no run;
-  it reads ``removed, unreferenced on base``. Methods are not proven this way.
+  name occurs nowhere else in the base package, whose definition registers it nowhere (no decorator but typing ones,
+  no base but ``object``, no keyword) and whose module the package reads through no namespace, needs no run; it reads
+  ``removed, unreferenced on base``. Methods are not proven this way.
 
 Run as a script by the interpreter that measures: it reads ``{"repo", "base", "candidate", "roots"}`` as JSON on stdin
 and writes the units of both sides as JSON (`Unit`).
@@ -121,7 +127,42 @@ READER_SITES = {
 
 While every reader site is one of these, a function's annotations under the future import are strings nothing
 evaluates, so a change to them needs no run. A site not listed here turns that off for the whole comparison."""
+DOC_READER_SITES = {
+    ("_records.py", "_plain"): "a record class's namespace",
+    ("model/field_name.py", "<module>"): "the names a pydantic BaseModel reserves",
+}
+"""The docstring reader sites of the package that read no function's docstring, by path below it and qualname.
+
+While every reader site is one of these, a function's docstring is text nothing reads, so a change to it needs no
+run. A site not listed here turns that off for the whole comparison."""
 Position = tuple[int, int]
+Positioned = tuple[Position, Position, int, bool]
+"""An instruction's start, end, offset and whether it is evidence (`Code.instructions`)."""
+
+
+@dataclass(frozen=True)
+class Sites:
+    """What reads a kind of compile-time text at run time (`reader_sites`).
+
+    The words find the modules to look into; the readers by origin, the modules whose every name reads it and the
+    names that hold the text are the sites.
+    """
+
+    words: re.Pattern[str]
+    readers: frozenset[str]
+    modules: tuple[str, ...]
+    names: frozenset[str]
+
+
+ANNOTATIONS = Sites(
+    re.compile(r"get_type_hints|signature|get_annotations|singledispatch|annotationlib|__annotat"),
+    ANNOTATION_READERS,
+    ("annotationlib.",),
+    ANNOTATION_NAMES,
+)
+DOCSTRINGS = Sites(
+    re.compile(r"__doc__|getdoc|pydoc"), frozenset({"inspect.getdoc"}), ("pydoc.",), frozenset({"__doc__"})
+)
 
 
 @dataclass
@@ -145,7 +186,8 @@ class Probe:
 
     ``start`` (the code object starts), ``instr`` (one of ``offsets`` of the code object runs), ``read`` (the file is
     opened outside the import system), ``readers`` (one of ``readers`` runs, each an ``instr`` probe that may also need
-    its method to start with a receiver whose class finds the attribute in a class, ``receiver``), ``unmeasurable``.
+    its method to start with a receiver whose class finds the attribute in a class, ``receiver``, or with ``chain``
+    its instruction to run while the object that name and attribute chain names finds it there), ``unmeasurable``.
     ``code`` keys a code object: path below the package, ``co_qualname``, ``co_firstlineno`` and the position of its
     first instruction. ``where`` is the source span the probe stands for.
     """
@@ -322,6 +364,24 @@ def _binding_key(model: SourceModule, node: ast.stmt, scope: Scope) -> str:
     return f"{scope.qualname}|{','.join(names)}|{type(node).__name__}"
 
 
+def class_order(model: SourceModule, scope: Scope) -> list[str]:
+    """Return the binding keys of the statements of a class body that bind names, in source order."""
+    keys = [_binding_key(model, node, scope) for node in getattr(scope.node, "body", [])]
+    return [key for key in keys if "|" not in key or key.split("|")[-2]]
+
+
+def reordered_classes(before: SourceModule, after: SourceModule) -> list[tuple[Scope, Scope]]:
+    """Return the classes of a module on both sides whose binding statements both sides hold come in another order."""
+    heads = {(scope.qualname, scope.ordinal): scope for scope in after.scopes if scope.kind == "class"}
+    found = []
+    for scope in before.scopes:
+        if scope.kind == "class" and (other := heads.get((scope.qualname, scope.ordinal))) is not None:
+            old, new = class_order(before, scope), class_order(after, other)
+            if [key for key in old if key in new] != [key for key in new if key in old]:
+                found.append((scope, other))
+    return found
+
+
 def _free_names(model: SourceModule, node: ast.stmt) -> set[str]:
     """Return the names a statement reads from its module or from builtins."""
     extent = model.extent(node)
@@ -361,7 +421,12 @@ class Moves:
         for removed in candidates["base"]:
             dumped = ast.dump(removed.node)
             for added in candidates["head"]:
-                if id(added) not in taken and added.key == removed.key and ast.dump(added.node) == dumped:
+                if (
+                    id(added) not in taken
+                    and added.key == removed.key
+                    and ast.dump(added.node) == dumped
+                    and self._order_kept(removed, added)
+                ):
                     self.pairs[id(removed)] = added
                     self.pairs[id(added)] = removed
                     taken.add(id(added))
@@ -372,14 +437,37 @@ class Moves:
             for statement in candidates[side]
             for line in sides[side].model(statement.path).extent(statement.node)
         }
+        self.defining = {
+            (statement.side, id(statement.node)): statement for side in SIDES for statement in candidates[side]
+        }
         while dropped := [statement for statement in candidates["base"] if self._dropped(statement)]:
             for statement in dropped:
                 self.pairs.pop(id(self.pairs.pop(id(statement))), None)
 
+    def _order_kept(self, removed: Statement, added: Statement) -> bool:
+        """Whether a class-body statement keeps its place among the binding statements both class bodies hold.
+
+        The order of a class body is the order of its fields (``__init__``, ``fields()``, ``model_fields``) and of its
+        validators; a module-level statement may move anywhere.
+        """
+        if removed.scope.kind != "class":
+            return True
+        before = class_order(self.sides["base"].model(removed.path), removed.scope)
+        after = class_order(self.sides["head"].model(added.path), added.scope)
+        if removed.key not in before:
+            return True
+        common = set(before) & set(after)
+        return set(before[: before.index(removed.key)]) & common == set(after[: after.index(added.key)]) & common
+
     def _dropped(self, removed: Statement) -> bool:
+        """Whether a pair no longer holds: a free name leads elsewhere, or the class around it is another class."""
         added = self.pairs.get(id(removed))
         if added is None:
             return False
+        if removed.scope.kind == "class" and self.modules.get(removed.module, removed.module) != added.module:
+            outer = self.defining.get(("base", id(removed.scope.node)))
+            if outer is None or self.pairs.get(id(outer)) is not self.defining.get(("head", id(added.scope.node))):
+                return True
         names = _free_names(self.sides["base"].model(removed.path), removed.node)
         names |= _free_names(self.sides["head"].model(added.path), added.node)
         return not all(self.corresponds(removed.module, added.module, name) for name in names)
@@ -465,6 +553,11 @@ def changes(repo: Path, base: str, candidate: str | None, roots: dict[str, Path]
         and (scope := next((child for child in statement.scope.children if child.node is statement.node), None))
         and scope.kind in {"function", "class"}
     ]
+    for change in python:
+        if change.base and change.head:
+            for before, after in reordered_classes(sides["base"].model(change.base), sides["head"].model(change.head)):
+                found.reordered["base"].add((change.base, before.qualname))
+                found.reordered["head"].add((change.head, after.qualname))
     proven = unreferenced(sides, removed)
     found.unreferenced = sorted(f"{path} {scope.qualname}" for path, _, scope in proven)
     dropped: dict[str, set[int]] = {}
@@ -506,6 +599,22 @@ class Changes:
     files: dict[str, set[str]] = field(default_factory=dict)
     pairs: dict[str, str] = field(default_factory=dict)
     unreferenced: list[str] = field(default_factory=list)
+    reordered: dict[str, set[tuple[str, str]]] = field(default_factory=lambda: {"base": set(), "head": set()})
+
+
+def _registers(model: SourceModule, node: ast.stmt) -> bool:
+    """Whether defining a function or class may register it where its name is never spelled.
+
+    A decorator that only type checkers read does not; any other decorator, a base other than ``object`` (its
+    ``__init_subclass__``) or a keyword (a metaclass) may.
+    """
+    decorators = getattr(node, "decorator_list", [])
+    bases = getattr(node, "bases", [])
+    return (
+        any(model.typing_only(item.lineno, item.col_offset) != "typing-decorator" for item in decorators)
+        or bool(getattr(node, "keywords", []))
+        or any(model.origin(base) != "builtins.object" for base in bases)
+    )
 
 
 def unreferenced(
@@ -515,7 +624,8 @@ def unreferenced(
 
     Reachable: its name anywhere else in the package's text (a read, an attribute, a string, ``__all__``), a namespace
     site of its module (``globals()``, ``vars()``, ...), ``sys.modules`` anywhere, or a ``getattr`` family call on
-    its module with a name that is no constant.
+    its module with a name that is no constant. A class with a base other than ``object`` or a keyword is not proven:
+    defining it may register it (`_registers`).
     """
     base = sides["base"]
     texts = {
@@ -528,12 +638,11 @@ def unreferenced(
     for path, node, scope in statements:
         model = base.model(path)
         name = scope.qualname
-        decorators = getattr(node, "decorator_list", [])
         if (
             namespaced
             or not name.startswith("_")
             or name.startswith("__")
-            or any(model.typing_only(item.lineno, item.col_offset) != "typing-decorator" for item in decorators)
+            or _registers(model, node)
             or any(site.kind in NAMESPACE_SITES for site in model.dynamic_sites)
         ):
             continue
@@ -557,7 +666,7 @@ class Code:
         self.path = path
         self.objects = model.compiled()
         self.lines = model.lines
-        self._instructions: dict[int, list[tuple[Position, Position, int, bool]]] = {}
+        self._instructions: dict[int, tuple[list[Positioned], list[Positioned]]] = {}
 
     def key(self, scope: Scope) -> list[str | int]:
         """Return the key the tracer finds a scope's code object by (`Probe.code`)."""
@@ -575,11 +684,28 @@ class Code:
         text = self.lines[line - 1] if 0 < line <= len(self.lines) else ""
         return offset if text.isascii() else len(text.encode()[:offset].decode(errors="replace"))
 
-    def instructions(self, scope: Scope) -> list[tuple[Position, Position, int, bool]]:
+    def instructions(self, scope: Scope) -> list[Positioned]:
         """Return the instructions of a scope's code object with a position: start, end, offset, and if evidence."""
+        return self._positioned(scope)[0]
+
+    def nops(self, scope: Scope, spans: Iterable[tuple[Position, Position]]) -> list[int]:
+        """Return the offsets of a scope's ``NOP`` instructions inside any of `spans`.
+
+        A ``NOP`` keeps the line of a statement that compiles to nothing else (``pass``, a wildcard ``case _:``); it
+        runs where that statement does, which is evidence only where nothing else stands for it.
+        """
+        spans = list(spans)
+        return [
+            offset
+            for start, end, offset, _ in self._positioned(scope)[1]
+            if any(a <= start and end <= b for a, b in spans)
+        ]
+
+    def _positioned(self, scope: Scope) -> tuple[list[Positioned], list[Positioned]]:
+        """Return the positioned instructions of a scope's code object, and apart its ``NOP`` instructions."""
         code = self.objects[scope]
         if id(code) not in self._instructions:
-            found = []
+            found: tuple[list[Positioned], list[Positioned]] = ([], [])
             for item in dis.get_instructions(code):
                 position = item.positions
                 line, last = (position.lineno, position.end_lineno) if position is not None else (None, None)
@@ -589,7 +715,9 @@ class Code:
                 end = (last, self._column(last, position.end_col_offset or 0))
                 evidence = item.opname not in NOT_EVIDENCE and item.opcode not in JUMPS
                 if item.opname not in NO_POSITION:
-                    found.append((start, end, item.offset, evidence))
+                    found[0].append((start, end, item.offset, evidence))
+                elif item.opname == "NOP":
+                    found[1].append((start, end, item.offset, False))
             self._instructions[id(code)] = found
         return self._instructions[id(code)]
 
@@ -624,9 +752,10 @@ def _span_text(spans: Iterable[tuple[Position, Position]]) -> str:
 class Mapper:
     """Maps the changed tokens of one side to its units and probes (`map_units`)."""
 
-    def __init__(self, side: Side, *, deferred_annotations: bool) -> None:
+    def __init__(self, side: Side, *, deferred_annotations: bool, unread_docstrings: bool = True) -> None:
         self.side = side
         self.deferred = deferred_annotations
+        self.docless = unread_docstrings
         self.codes: dict[str, Code] = {}
         self.readers = Readers(side)
         self.typed: set[tuple[str, str]] = set()
@@ -647,6 +776,9 @@ class Mapper:
             form = model.typing_only(*position)
             if form is not None and (form != "deferred-annotation" or self.deferred):
                 self.typed.update((path, scope.qualname) for scope in self._compiling(code, position))
+                continue
+            if self.docless and function_docstring(model, position):
+                self.typed.add((path, model.owner(*position).qualname))
                 continue
             for scope, probe, note in self.probes(code, position):
                 unit = found.setdefault(
@@ -700,6 +832,10 @@ class Mapper:
                 return Probe("instr", code.key(owner), offsets, _span_text([span]))
         if offsets := code.inside(owner, spans):
             return Probe("instr", code.key(owner), offsets, _span_text(spans))
+        if isinstance(case := segment.node, ast.match_case):
+            body = [(model.span(case.body[0])[0], model.span(case.body[-1])[1])]
+            if offsets := code.inside(owner, body) or code.nops(owner, [*spans, *body]):
+                return Probe("instr", code.key(owner), offsets, _span_text(body))
         if segment.kind == "statement":
             if offsets := code.inside(owner, spans, evidence=False):
                 return Probe("instr", code.key(owner), offsets, _span_text(spans))
@@ -709,21 +845,95 @@ class Mapper:
     def _binding_probes(
         self, code: Code, owner: Scope, position: Position, defined: Scope | None
     ) -> list[tuple[Scope, Probe, str]]:
-        """Return the probes of a token of a module or class body: a reader of what its statement binds, else import."""
+        """Return the probes of a token of a module or class body: a reader of what its statement binds, else import.
+
+        The names are the class's for a class header, else those the token binds (`target_names`).
+        """
         model = code.model
         statement = next(node for node in model.nodes_at(*position) if isinstance(node, ast.stmt))
-        extent = model.extent(statement)
         names = (
             [defined.qualname.rpartition(".")[2]]
             if defined is not None
-            else sorted({binding.name for binding in model.bindings(scope=owner) if binding.line in extent})
+            else target_names(model, statement, owner, position)
         )
-        readers = [reader for name in names for reader in self.readers.of(code.path, owner, name)]
         probe = self._body_probe(code, owner, position)
-        if readers:
-            where = _span_text([model.span(statement)])
-            return [(owner, Probe("readers", code.key(owner), where=where, readers=readers), ""), (owner, probe, "")]
+        if readers := self.readers_probe(code, owner, names, _span_text([model.span(statement)])):
+            return [(owner, readers, ""), (owner, probe, "")]
         return [(owner, probe, "run at import only" if names else "")]
+
+    def class_binding(self, path: str, scope: Scope) -> tuple[list[Probe], str]:
+        """Return the probes of a change of a class as a whole (its order, its compiled body), and the unit's note.
+
+        It is a change of the binding of the class, as a change of its header is: a reader of the class name.
+        """
+        code = self.code(path)
+        statement = code.model.statement_at(scope.first_line)
+        position = code.model.span(statement)[0] if statement is not None else (scope.first_line, 0)
+        found = self._binding_probes(code, code.lifted(scope.parent or scope), position, scope)
+        return [probe for _, probe, _ in found], next((note for _, _, note in found if note), "")
+
+    def readers_probe(self, code: Code, scope: Scope, names: Iterable[str], where: str) -> Probe | None:
+        """Return the probe one reader of `names` (bound in a module or class body) runs; None where none reads them.
+
+        A read whose receiver no run can tell (`Readers.of`) is a reader too, one no run credits.
+        """
+        readers: list[dict[str, object]] = []
+        unknown = 0
+        for name in names:
+            found, missing = self.readers.of(code.path, scope, name)
+            readers += found
+            unknown += missing
+        if not readers and not unknown:
+            return None
+        where += f"; {unknown} read on a receiver no run can tell" if unknown else ""
+        return Probe("readers", code.key(scope), where=where, readers=readers)
+
+
+def target_names(model: SourceModule, statement: ast.stmt, scope: Scope, position: Position) -> list[str]:
+    """Return the names a token of a module- or class-level statement binds: all, unless the token is in one part.
+
+    The part is an alias of an import, or an element of a tuple or list assignment and the target it assigns.
+    """
+    extent = model.extent(statement)
+    bound = [binding for binding in model.bindings(scope=scope) if binding.line in extent]
+    kinds = {binding.kind for binding in bound}
+    parts: list[tuple[ast.AST, ...]] = []
+    if kinds and kinds <= {"import", "import-from"}:
+        parts = [(binding.node,) for binding in bound]
+    elif kinds == {"assign"}:
+        parts = _element_pairs(statement)
+    for part in parts:
+        spans = [model.span(node) for node in part]
+        if any(start <= position < end for start, end in spans):
+            within = spans[0]
+            return sorted({
+                binding.name
+                for binding in bound
+                if within[0] <= model.span(binding.node)[0] and model.span(binding.node)[1] <= within[1]
+            })
+    return sorted({binding.name for binding in bound})
+
+
+def _element_pairs(statement: ast.stmt) -> list[tuple[ast.AST, ...]]:
+    """Return each target of a tuple or list assignment with the value it gets, where each gets one element."""
+    targets = getattr(statement, "targets", [])
+    targets = targets[0] if len(targets) == 1 else None
+    values = getattr(statement, "value", None)
+    if not isinstance(targets, (ast.Tuple, ast.List)) or not isinstance(values, (ast.Tuple, ast.List)):
+        return []
+    elements = [*targets.elts, *values.elts]
+    if len(targets.elts) != len(values.elts) or any(isinstance(item, ast.Starred) for item in elements):
+        return []
+    return list(zip(targets.elts, values.elts, strict=True))
+
+
+def _attribute_chain(node: ast.expr, references: dict[int, Reference]) -> list[str]:
+    """Return a name and the attributes read on it (``a.b.c``: ``["a", "b", "c"]``); empty for any other expression."""
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    return [reference.name, *parts[::-1]] if (reference := references.get(id(node))) is not None else []
 
 
 def _run_time(reference: Reference) -> bool:
@@ -732,7 +942,16 @@ def _run_time(reference: Reference) -> bool:
 
 
 class Readers:
-    """The instructions that read a module or class binding, across the modules of one side (`Probe.readers`)."""
+    """The instructions that read a module or class binding, across the modules of one side (`Probe.readers`).
+
+    A reader is a load of the name the binding defines, followed through imports and re-exports to it
+    (`SourceTree.definition`): in its own scope, in any module or function that imports it (``from m import NAME``,
+    under any name a re-export gives it), as an attribute ``m.NAME`` or ``C.X``. A class attribute is also read as
+    ``self.X``/``cls.X`` in a method, which counts where the method starts with a receiver whose class finds ``X`` in
+    that class, and as ``v.X`` on any other name or attribute chain ``v``, which counts where the instruction runs while
+    the object ``v`` names finds ``X`` in that class. A read of ``X`` on any other receiver (a call, a subscript) is
+    a reader no run credits.
+    """
 
     def __init__(self, side: Side) -> None:
         self.side = side
@@ -743,7 +962,8 @@ class Readers:
         )
         self.texts = {path: side.text(path) for path in self.paths}
         self.codes: dict[str, Code] = {}
-        self.found: dict[tuple[str, str, int, str], list[dict[str, object]]] = {}
+        self.found: dict[tuple[str, str, int, str], tuple[list[dict[str, object]], int]] = {}
+        self.leads: dict[str, frozenset[str]] = {}
 
     def code(self, path: str) -> Code:
         """Return the code objects of a module of this side."""
@@ -751,49 +971,121 @@ class Readers:
             self.codes[path] = Code(self.side.model(path), path)
         return self.codes[path]
 
-    def of(self, path: str, scope: Scope, name: str) -> list[dict[str, object]]:
-        """Return the reader instructions of `name` bound in `scope` (a module or class body) of a module."""
+    def of(self, path: str, scope: Scope, name: str) -> tuple[list[dict[str, object]], int]:
+        """Return the reader instructions of `name` bound in `scope` (a module or class body) of a module.
+
+        Also return how many reads of it no run can credit: a receiver no run can tell, or a read with no instruction.
+        """
         if (key := (path, scope.qualname, scope.ordinal, name)) not in self.found:
             self.found[key] = self._of(path, scope, name)
         return self.found[key]
 
-    def _of(self, path: str, scope: Scope, name: str) -> list[dict[str, object]]:
+    def canonical(self, origin: str) -> frozenset[str]:
+        """Return the dotted paths an origin names: itself and where the package's imports and re-exports lead it."""
+        if (found := self.leads.get(origin)) is None:
+            found = self.leads[origin] = self._canonical(origin, frozenset())
+        return found
+
+    def _canonical(self, origin: str, seen: frozenset[str]) -> frozenset[str]:
+        tree = self.side.tree
+        parts = origin.split(".")
+        prefix = next((count for count in range(len(parts), 0, -1) if ".".join(parts[:count]) in tree.paths), 0)
+        if not prefix or prefix == len(parts) or origin in seen:
+            return frozenset({origin})
+        found = {origin}
+        for definition in tree.definition(".".join(parts[:prefix]), parts[prefix]):
+            if definition.kind not in {"unreadable", "cycle", "unbound", "outside"}:
+                target = ".".join([definition.module, *[definition.name] * bool(definition.name), *parts[prefix + 1 :]])
+                found |= self._canonical(target, seen | {origin}) if target != origin else set()
+        return frozenset(found)
+
+    def _names(self, dotted: str, name: str) -> set[str]:
+        """Return the names a binding is imported under anywhere in the package: its own and each re-export's."""
+        names = {name}
+        while True:
+            word = re.compile(rf"\b(?:{'|'.join(map(re.escape, sorted(names)))})\b")
+            more = {
+                item.bound
+                for other in self.paths
+                if word.search(self.texts[other])
+                for item in self.side.model(other).imports
+                if item.kind == "from"
+                and item.bound
+                and isinstance(item.target, str)
+                and dotted in self.canonical(item.target)
+            }
+            if more <= names:
+                return names
+            names |= more
+
+    def _of(self, path: str, scope: Scope, name: str) -> tuple[list[dict[str, object]], int]:
         model = self.side.model(path)
         module = module_name(path)
         dotted = f"{module}.{name}" if scope.kind == "module" else f"{module}.{scope.qualname}.{name}"
-        found = []
-        for binding in model.bindings(name, scope):
-            for use in model.uses(binding):
-                found += self._reader(path, use.reference.node, None) if _run_time(use.reference) else []
-        word = re.compile(rf"\b{re.escape(name)}\b")
+        found: list[dict[str, object]] = []
+        unknown = 0
+        loads: list[tuple[str, ast.expr, Reference | None]] = [
+            (path, use.reference.node, use.reference)
+            for binding in model.bindings(name, scope)
+            for use in model.uses(binding)
+        ]
+        names = self._names(dotted, name) if scope.kind == "module" else {name}
+        word = re.compile(rf"\b(?:{'|'.join(map(re.escape, sorted(names)))})\b")
         for other in self.paths:
             if not word.search(self.texts[other]):
                 continue
             other_model = self.side.model(other)
             for item in other_model.imports:
-                if item.target == dotted and item.bound and item.kind == "from":
-                    for binding in other_model.bindings(item.bound, other_model.module_scope):
-                        for use in other_model.uses(binding):
-                            found += self._reader(other, use.reference.node, None) if _run_time(use.reference) else []
-            names = {id(reference.node): reference for reference in other_model.references}
+                if (
+                    item.kind == "from"
+                    and item.alias is not None
+                    and isinstance(item.target, str)
+                    and dotted in self.canonical(item.target)
+                    and (binding := other_model.binding_at(item.alias)) is not None
+                ):
+                    loads += [(other, use.reference.node, use.reference) for use in other_model.uses(binding)]
+            references = {id(reference.node): reference for reference in other_model.references}
             for node in ast.walk(other_model.tree):
-                if isinstance(node, ast.Attribute) and node.attr == name and isinstance(node.ctx, ast.Load):
-                    if other_model.origin(node) == dotted:
-                        found += self._reader(other, node, None)
-                    elif scope.kind == "class" and self._receiver_read(other_model, node, names):
-                        found += self._reader(other, node, [module, scope.qualname, name])
-        return found
+                if not (isinstance(node, ast.Attribute) and node.attr in names and isinstance(node.ctx, ast.Load)):
+                    continue
+                if (origin := other_model.origin(node)) is not None and dotted in self.canonical(origin):
+                    loads.append((other, node, None))
+                elif scope.kind == "class" and (check := self._check(other_model, node, references)) is not None:
+                    reader = self._reader(other, node, [module, scope.qualname, name], check or None)
+                    found += reader
+                    unknown += not reader
+        for where, node, reference in loads:
+            if reference is None or _run_time(reference):
+                reader = self._reader(where, node, None, None)
+                found += reader
+                unknown += not reader
+        return found, unknown
 
-    @staticmethod
-    def _receiver_read(model: SourceModule, node: ast.Attribute, names: dict[int, Reference]) -> bool:
-        """Whether an attribute is read on the receiver (``self``/``cls``) of the method it is read in."""
-        reference = names.get(id(node.value))
-        if reference is None or (resolved := model.resolve(reference.node)).scope is None:
-            return False
-        receiver = model.receiver(resolved.scope)
-        return receiver is not None and any(binding is receiver for binding in resolved.bindings)
+    def _check(self, model: SourceModule, node: ast.Attribute, references: dict[int, Reference]) -> list[str] | None:
+        """Return how a run tells that an attribute read reads a class attribute; None where it reads no class's.
 
-    def _reader(self, path: str, node: ast.expr, receiver: list[str] | None) -> list[dict[str, object]]:
+        ``[]``: the method's receiver (``self``/``cls``) at its start. A name or attribute chain: the object it names
+        where the read runs. ``["?"]``: no run can tell (a call, a subscript). None: the receiver is a module or
+        something outside the package.
+        """
+        reference = references.get(id(node.value))
+        if reference is not None and (resolved := model.resolve(reference.node)).scope is not None:
+            receiver = model.receiver(resolved.scope)
+            if receiver is not None and any(binding is receiver for binding in resolved.bindings):
+                return []
+        origin = model.origin(node.value)
+        if origin is not None and any(
+            lead in self.side.tree.paths or lead.partition(".")[0] != PACKAGE for lead in self.canonical(origin)
+        ):
+            return None
+        return _attribute_chain(node.value, references) or ["?"]
+
+    def _reader(
+        self, path: str, node: ast.expr, receiver: list[str] | None, chain: list[str] | None
+    ) -> list[dict[str, object]]:
+        """Return the reader of a load: the instructions inside it, the last one alone where it checks its object."""
+        if chain == ["?"]:
+            return []
         code = self.code(path)
         model = code.model
         owner = code.lifted(model.scope_of(node))
@@ -801,9 +1093,12 @@ class Readers:
         offsets = code.inside(owner, [span])
         if not offsets:
             return []
-        return [
-            {"code": code.key(owner), "offsets": offsets, "where": f"{path} {_span_text([span])}", "receiver": receiver}
-        ]
+        reader: dict[str, object] = {
+            "code": code.key(owner),
+            "offsets": offsets,
+            "where": f"{path} {_span_text([span])}",
+        }
+        return [reader | {"receiver": receiver, "chain": chain, "offsets": offsets[-1:] if chain else offsets}]
 
 
 def normalized(code: CodeType) -> tuple[object, ...]:
@@ -813,8 +1108,16 @@ def normalized(code: CodeType) -> tuple[object, ...]:
     order), the argument that feeds a class body's ``__firstlineno__`` store left out; flags, argument counts and the
     names the code uses. Positions and the file name are left out, so moving code changes nothing here.
     """
+    found = tuple(item for item, _ in _instructions(code))
+    names = (code.co_varnames, code.co_cellvars, code.co_freevars, code.co_names)
+    counts = (code.co_argcount, code.co_posonlyargcount, code.co_kwonlyargcount, code.co_flags)
+    return found, names, counts, code.co_exceptiontable
+
+
+def _instructions(code: CodeType) -> list[tuple[tuple[str, object], int | None]]:
+    """Return the instructions of a code object as `normalized` compares them, each with the line it stands for."""
     instructions = list(dis.get_instructions(code))
-    found: list[tuple[str, object]] = []
+    found: list[tuple[tuple[str, object], int | None]] = []
     for index, item in enumerate(instructions):
         following = instructions[index + 1] if index + 1 < len(instructions) else None
         value: object = item.argval
@@ -826,17 +1129,41 @@ def normalized(code: CodeType) -> tuple[object, ...]:
             value = ("frozenset", tuple(sorted(map(repr, value))))
         elif item.opname.startswith("LOAD_") and item.opname not in {"LOAD_FAST", "LOAD_GLOBAL", "LOAD_NAME"}:
             value = (type(value).__name__, repr(value))
-        found.append((item.opname, value))
-    names = (code.co_varnames, code.co_cellvars, code.co_freevars, code.co_names)
-    counts = (code.co_argcount, code.co_posonlyargcount, code.co_kwonlyargcount, code.co_flags)
-    return tuple(found), names, counts, code.co_exceptiontable
+        found.append(((item.opname, value), item.positions.lineno if item.positions is not None else None))
+    return found
+
+
+def changed_bindings(codes: dict[str, Code], scopes: dict[str, Scope]) -> dict[str, list[str]]:
+    """Return, per side, the names bound by the statements of a module body whose compiled instructions differ."""
+    found = {side: _instructions(codes[side].objects[scopes[side]]) for side in SIDES}
+    keys = {side: [item for item, _ in found[side]] for side in SIDES}
+    lines: dict[str, set[int | None]] = {side: set() for side in SIDES}
+    for tag, first, last, start, end in SequenceMatcher(None, keys["base"], keys["head"], autojunk=False).get_opcodes():
+        if tag != "equal":
+            lines["base"].update(line for _, line in found["base"][first:last])
+            lines["head"].update(line for _, line in found["head"][start:end])
+    names: dict[str, list[str]] = {}
+    for side in SIDES:
+        model = codes[side].model
+        bound = model.bindings(scope=scopes[side])
+        names[side] = sorted({
+            binding.name
+            for node in getattr(scopes[side].node, "body", [])
+            if lines[side] & set(extent := model.extent(node))
+            for binding in bound
+            if binding.line in extent
+        })
+    return names
 
 
 def compile_time_units(mappers: dict[str, Mapper], pairs: dict[str, str], units: dict[str, dict]) -> None:
-    """Add a ``start`` unit on both sides for code objects of a changed file whose compiled code differs alone.
+    """Add a unit on both sides for code objects of a changed file whose compiled code differs alone.
 
     Code objects pair by qualname and ordinal (`Scope.ordinal`); a pair with a changed token on either side is a unit
-    already, and one that compiles a typing-only token (`Mapper.typed`) differs by what only type checkers read.
+    already, and one that compiles a typing-only token (`Mapper.typed`) differs by what only type checkers read. A
+    function needs to start; a class body is a change of the class, which needs a reader of the class name
+    (`Mapper.class_binding`); a module body needs its import and a reader of a name its differing statements bind
+    (`changed_bindings`), else it runs at import only.
     """
     for base_path, head_path in pairs.items():
         codes = {"base": mappers["base"].code(base_path), "head": mappers["head"].code(head_path)}
@@ -852,10 +1179,19 @@ def compile_time_units(mappers: dict[str, Mapper], pairs: dict[str, str], units:
                 continue
             if normalized(codes["base"].objects[scopes["base"]]) == normalized(codes["head"].objects[scopes["head"]]):
                 continue
+            names = changed_bindings(codes, scopes) if scopes["base"].kind == "module" else {}
             for side in SIDES:
-                probe = Probe("start", codes[side].key(scopes[side]), where="compiled code")
-                unit = Unit(side, paths[side], scopes[side].qualname or "<module>", [probe], "compiled differently")
-                units[side][paths[side], scopes[side].qualname] = unit
+                scope = scopes[side]
+                probes, note = [Probe("start", codes[side].key(scope), where="compiled code")], "compiled differently"
+                if scope.kind == "class":
+                    probes, note = mappers[side].class_binding(paths[side], scope)
+                elif scope.kind == "module":
+                    readers = mappers[side].readers_probe(codes[side], scope, names[side], "compiled code")
+                    probes += [readers] if readers is not None else []
+                    note = note if readers is not None else "run at import only"
+                units[side][paths[side], scope.qualname] = Unit(
+                    side, paths[side], scope.qualname or "<module>", probes, note
+                )
 
 
 def _runtime(path: str) -> bool:
@@ -933,17 +1269,28 @@ def annotation_readers(side: Side) -> list[str]:
     )
 
 
-def reader_sites(side: Side) -> dict[tuple[str, str], list[int]]:
-    """Return the code of a side's package that may read annotations at run time, by path and qualname, with its lines.
+def doc_readers(side: Side) -> list[str]:
+    """Return the sites of a side's package that read docstrings at run time and `DOC_READER_SITES` lacks."""
+    return sorted(
+        f"{path}:{line} {qualname}"
+        for (path, qualname), lines in reader_sites(side, DOCSTRINGS).items()
+        if (path, qualname) not in DOC_READER_SITES
+        for line in lines
+    )
 
-    A site is a reference to an annotation reader (`ANNOTATION_READERS`, ``annotationlib``), a read of
-    ``__annotations__``/``__annotate__`` (a name, an attribute or a string, as ``getattr`` takes it).
+
+def reader_sites(side: Side, kind: Sites | None = None) -> dict[tuple[str, str], list[int]]:
+    """Return the code of a side's package that may read annotations (or `kind`) at run time, by path and qualname.
+
+    A site is a reference to a reader (`ANNOTATION_READERS`, ``annotationlib``), a read of a name the reader reads
+    (``__annotations__``/``__annotate__``: a name, an attribute or a string, as ``getattr`` takes it). Each site has
+    its lines.
     """
-    words = re.compile(r"get_type_hints|signature|get_annotations|singledispatch|annotationlib|__annotat")
+    kind = kind or ANNOTATIONS
     found: dict[tuple[str, str], list[int]] = {}
     for path in sorted((side.root / PACKAGE).rglob("*.py")):
         relative = path.relative_to(side.root / PACKAGE).as_posix()
-        if "__pycache__" in path.parts or not words.search(side.text(relative)):
+        if "__pycache__" in path.parts or not kind.words.search(side.text(relative)):
             continue
         model = side.model(relative)
         sites: list[ast.AST] = [
@@ -951,9 +1298,9 @@ def reader_sites(side: Side) -> dict[tuple[str, str], list[int]]:
             for reference in model.references
             if reference.context == "load"
             and (
-                (origin := model.origin(reference.node) or "") in ANNOTATION_READERS
-                or origin.startswith("annotationlib.")
-                or reference.name in ANNOTATION_NAMES
+                (origin := model.origin(reference.node) or "") in kind.readers
+                or origin.startswith(kind.modules)
+                or reference.name in kind.names
             )
         ]
         sites += [
@@ -962,9 +1309,9 @@ def reader_sites(side: Side) -> dict[tuple[str, str], list[int]]:
             if (
                 isinstance(node, ast.Attribute)
                 and isinstance(node.ctx, ast.Load)
-                and (node.attr in ANNOTATION_NAMES or (model.origin(node) or "") in ANNOTATION_READERS)
+                and (node.attr in kind.names or (model.origin(node) or "") in kind.readers)
             )
-            or (isinstance(node, ast.Constant) and node.value in ANNOTATION_NAMES)
+            or (isinstance(node, ast.Constant) and node.value in kind.names)
         ]
         for node in sites:
             lines = found.setdefault((relative, model.scope_of(node).qualname or "<module>"), [])
@@ -975,7 +1322,16 @@ def reader_sites(side: Side) -> dict[tuple[str, str], list[int]]:
 def map_units(sides: dict[str, Side], found: Changes) -> dict[str, object]:
     """Return every unit of both sides with its probes, and what the mapping noted (`Unit`)."""
     readers = [site for side in SIDES for site in annotation_readers(sides[side])] if _deferred(sides, found) else []
-    mappers = {side: Mapper(sides[side], deferred_annotations=not readers) for side in SIDES}
+    documented = any(
+        function_docstring(sides[side].model(path), position)
+        for side in SIDES
+        for path, positions in found.tokens.get(side, {}).items()
+        for position in positions
+    )
+    docs = [site for side in SIDES for site in doc_readers(sides[side])] if documented else []
+    mappers = {
+        side: Mapper(sides[side], deferred_annotations=not readers, unread_docstrings=not docs) for side in SIDES
+    }
     units: dict[str, dict[tuple[str, str], Unit]] = {side: {} for side in SIDES}
     copied: dict[str, set[str]] = {}
     files: list[Unit] = []
@@ -986,6 +1342,16 @@ def map_units(sides: dict[str, Side], found: Changes) -> dict[str, object]:
         for path in python:
             if path not in copied[side]:
                 units[side].update(mappers[side].units(path, found.tokens[side][path]))
+        for path, qualname in sorted(found.reordered[side]):
+            if path in copied[side]:
+                continue
+            scope = next(
+                item for item in sides[side].model(path).scopes if (item.kind, item.qualname) == ("class", qualname)
+            )
+            unit = units[side].setdefault((path, qualname), Unit(side, path, qualname))
+            probes, note = mappers[side].class_binding(path, scope)
+            unit.probes += [probe for probe in probes if not any(_same_probe(probe, other) for other in unit.probes)]
+            unit.note = "" if any(probe.kind == "readers" for probe in unit.probes) else unit.note or note
     pairs = {
         base: head
         for base, head in found.pairs.items()
@@ -997,7 +1363,22 @@ def map_units(sides: dict[str, Side], found: Changes) -> dict[str, object]:
         "units": [asdict(unit) for unit in every],
         "unreferenced": found.unreferenced,
         "annotation_readers": readers,
+        "docstring_readers": docs,
     }
+
+
+def function_docstring(model: SourceModule, position: Position) -> bool:
+    """Whether a position is in the docstring of a function: compile-time text only ``__doc__`` reads."""
+    scope = model.owner(*position)
+    first = getattr(scope.node, "body", [None])[0] if scope.kind == "function" else None
+    if (
+        not isinstance(first, ast.Expr)
+        or not isinstance(first.value, ast.Constant)
+        or not isinstance(first.value.value, str)
+    ):
+        return False
+    start, end = model.span(first)
+    return start <= position < end
 
 
 def _deferred(sides: dict[str, Side], found: Changes) -> bool:

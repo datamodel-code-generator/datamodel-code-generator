@@ -650,12 +650,16 @@ Against a git revision both scripts also say whether the compared runs ran what 
 object (a module or class body, a function, a lambda, a generator expression; `scripts/_change_units.py`). What your
 commits add has to run on your side, what they remove on the base's, in a compared run. The change is read token by
 token, so a comment, a blank line or a reformatted line changes nothing, and a changed part of a line counts only where
-it runs: an arm of a conditional expression, an operand of `and`/`or`, a part of a comprehension. A change of a
-signature, a decorator or a default needs the function to start; a change of a module- or class-level value needs a
-read of the name it binds (or, for a name nothing reads, the import); a removed private function nothing in the base
+it runs: an arm of a conditional expression, an operand of `and`/`or`, a part of a comprehension, a `case` after the
+first (or the alternative of a pattern) that a run tried. A change of a signature, a decorator or a default needs the
+function to start; a change of a module- or class-level value needs a read of the name it binds (through any import or
+re-export; `kind.LIMIT` on a variable counts where the object it names finds `LIMIT` in that class, and a read on a
+receiver no run can tell never counts), or, for a name nothing reads, the import; a change of a class as a whole (its
+header, the order of its fields) needs a read of the class name; a removed private function nothing in the base
 package names needs nothing (`removed, unreferenced on base`). Code only type checkers read (`if TYPE_CHECKING:`
-bodies, `@overload` stubs, `@override`/`@final`, local and postponed function annotations) gives no code object to
-run, a statement moved unchanged (with every name it reads leading to the same place) gives none either, and a
+bodies, `@overload` stubs, `@override`/`@final`, local and postponed function annotations) and a function's docstring
+give no code object to run, a statement moved unchanged (with every name it reads leading to the same place, and in a
+class body with its place among the fields kept) gives none either, and a
 changed `resources/*.json`, a template without a compiled renderer or a file of `_runtime/` has to be read by a
 compared run. What a module's import ran counts for every cell that imports the module, and a `functools` cache
 whose computation in another cell ran changed code is computed again, so the order of the cells does not decide what

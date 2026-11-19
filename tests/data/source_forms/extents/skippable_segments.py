@@ -14,6 +14,10 @@ def pick(flag, value, default=(1 if True else 2)):
     match value:
         case str() if flag:
             label = "s"
+        case [1, *_] | (2, _):
+            label = "t"
+        case _:
+            label = "u"
     convert = lambda item, scale=(2 if flag else 3): item * scale
     rows = (row for row in (x for x in value))
     return label, found, names, table, convert, rows

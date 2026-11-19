@@ -269,6 +269,45 @@ class _Cached(Protocol):
         """Return how often the cache found a value."""
 
 
+_MISSING = object()
+"""What `_named` returns where a run cannot tell the object a name or attribute chain names."""
+
+
+def _named(frame: FrameType, code: CodeType, chain: list[str]) -> object:
+    """Return the object a name and its attributes name in a running frame, without running any code.
+
+    An attribute is read from the object's or its class's namespace (`inspect.getattr_static`), from a slot or as its
+    ``__class__``; any other descriptor (a property, a method) would run code: the object is unknown (`_MISSING`).
+    """
+    head, *attributes = chain
+    if head in code.co_varnames or head in code.co_cellvars or head in code.co_freevars:
+        value = frame.f_locals.get(head, _MISSING)
+    else:
+        value = frame.f_globals.get(head, frame.f_builtins.get(head, _MISSING))
+    for attribute in attributes:
+        if value is _MISSING:
+            break
+        found = type(value) if attribute == "__class__" else inspect.getattr_static(value, attribute, _MISSING)
+        if inspect.ismemberdescriptor(found):
+            found = getattr(value, attribute, _MISSING)
+        elif not isinstance(found, type) and hasattr(type(found), "__get__"):
+            found = _MISSING
+        value = found
+    return value
+
+
+def _finds(value: object, module: str, qualname: str, name: str) -> bool:
+    """Whether an object (a class or an instance) finds an attribute in the class `module`/`qualname`.
+
+    It finds it in the first class of its method resolution order whose namespace holds it.
+    """
+    if value is _MISSING:
+        return False
+    kind = value if isinstance(value, type) else type(value)
+    owner = next((item for item in kind.__mro__ if name in vars(item)), None)
+    return owner is not None and (owner.__module__, owner.__qualname__) == (module, qualname)
+
+
 def _started_frame() -> FrameType | None:
     """Return, from a `sys.monitoring` callback, the frame of the code whose event called it."""
     frame = inspect.currentframe()
@@ -282,7 +321,9 @@ class _Tracer:
     Two `sys.monitoring` tools: the finder (`HANDLED_TOOL`, held for the worker's lifetime) has the global `PY_START`
     and disables it for every code object, after it records the first start of a unit's code object and arms the
     local events of `LOCAL_TOOL` on it: `PY_START` where a probe needs the start or a receiver, `INSTRUCTION` where it
-    needs instructions. Each local event records once per job and disables itself; every job arms them again. `LINE`
+    needs instructions. Each local event records once per job and disables itself; every job arms them again. A read
+    of a class attribute on a name or attribute chain (`_change_units.Readers`) checks at its instruction the object
+    the chain names, and keeps reporting until that object finds the attribute in the class in the job. `LINE`
     is never used (a `LINE` callback that disables itself drops the `INSTRUCTION` event of the line's first
     instruction).
 
@@ -302,6 +343,8 @@ class _Tracer:
         self.events: list[int] = []
         self.offsets: list[set[int]] = []
         self.receivers: dict[int, list[list[str]]] = {}
+        self.loads: dict[tuple[int, int], list[tuple[list[str], list[str]]]] = {}
+        self.seen: set[tuple[object, ...]] = set()
         events = sys.monitoring.events
         self.cache_events = events.PY_START | events.PY_RETURN
         for probe in probes:
@@ -315,7 +358,10 @@ class _Tracer:
                 self.offsets += [set() for _ in range(len(self.codes) - len(self.offsets))]
                 self.offsets[index].update(member.get("offsets") or ())
                 self.events[index] |= events.INSTRUCTION if member.get("offsets") else events.PY_START
-                if member.get("receiver"):
+                if member.get("chain"):
+                    for offset in member["offsets"]:
+                        self.loads.setdefault((index, offset), []).append((member["chain"], member["receiver"]))
+                elif member.get("receiver"):
                     self.events[index] |= events.PY_START
                     self.receivers.setdefault(index, []).append(member["receiver"])
         self.names = {(key[1], key[2]) for key in self.codes}
@@ -401,11 +447,9 @@ class _Tracer:
         if not checks or not code.co_argcount or frame is None:
             return bool(checks)
         receiver = frame.f_locals.get(code.co_varnames[0])
-        kind = receiver if isinstance(receiver, type) else type(receiver)
         seen = 0
         for module, qualname, name in checks:
-            owner = next((item for item in kind.__mro__ if name in vars(item)), None)
-            if owner is not None and (owner.__module__, owner.__qualname__) == (module, qualname):
+            if _finds(receiver, module, qualname, name):
                 self._record(("receiver", index, module, qualname, name))
                 seen += 1
         return seen < len(checks)
@@ -426,10 +470,39 @@ class _Tracer:
         return None
 
     def _instruction(self, code: CodeType, offset: int) -> object:
-        """Record an instruction a probe names; the others of the code object only disable themselves."""
+        """Record an instruction a probe names; the others of the code object only disable themselves.
+
+        An instruction that reads a class attribute keeps reporting while the object it reads it on has not found the
+        attribute in the class in the job.
+        """
         if (armed := self.armed.get(id(code))) is not None and offset in self.offsets[armed[1]]:
-            self._record(("offset", armed[1], offset))
+            if (event := ("offset", armed[1], offset)) not in self.seen:
+                self.seen.add(event)
+                self._record(event)
+            checks = self.loads.get((armed[1], offset))
+            if checks and self._loaded(_started_frame(), code, (armed[1], offset), checks):
+                return None
         return sys.monitoring.DISABLE
+
+    def _loaded(
+        self,
+        frame: FrameType | None,
+        code: CodeType,
+        where: tuple[int, int],
+        checks: list[tuple[list[str], list[str]]],
+    ) -> bool:
+        """Record the class attributes an instruction reads on the objects its chains name; return whether some wait."""
+        waiting = False
+        for chain, receiver in checks:
+            event = ("load", *where, *receiver)
+            if event in self.seen:
+                continue
+            if frame is not None and _finds(_named(frame, code, chain), *receiver):
+                self.seen.add(event)
+                self._record(event)
+            else:
+                waiting = True
+        return waiting
 
     def _audit(self, event: str, args: tuple[object, ...]) -> None:
         """Record an `open` of a file a probe reads, unless the import system opens it."""
@@ -464,7 +537,7 @@ class _Tracer:
             self.startup, self.started = set(self.log), True
         for wrapper in self.dirty:
             wrapper.cache_clear()
-        self.dirty, self.computing, self.log, self.requested = [], [], [], set()
+        self.dirty, self.computing, self.log, self.requested, self.seen = [], [], [], set(), set()
         for code, index in self.armed.values():
             sys.monitoring.set_local_events(LOCAL_TOOL, code, 0)
             sys.monitoring.set_local_events(LOCAL_TOOL, code, self._local(code, index))
@@ -489,6 +562,7 @@ class _Tracer:
     def first_import(self, names: list[str]) -> Generator[None, None, None]:
         """Record what the first import of the modules `names` runs; probes that ran already report again."""
         self.windows.append((len(self.log), set()))
+        self.seen = set()
         for code, index in self.armed.values():
             sys.monitoring.set_local_events(LOCAL_TOOL, code, 0)
             sys.monitoring.set_local_events(LOCAL_TOOL, code, self._local(code, index))
@@ -550,12 +624,17 @@ def _satisfied(probe: Record, events: set[tuple[object, ...]]) -> bool:
         case "read":
             return ("read", probe["file"]) in events
         case "readers":
-            return any(
-                any(("offset", member["index"], offset) in events for offset in member["offsets"])
-                and (member["receiver"] is None or ("receiver", member["index"], *member["receiver"]) in events)
-                for member in probe["readers"]
-            )
+            return any(_read(member, events) for member in probe["readers"])
     return False
+
+
+def _read(reader: Record, events: set[tuple[object, ...]]) -> bool:
+    """Whether a reader of a binding ran (`_change_units.Readers`), with its receiver check where it has one."""
+    index, offsets, receiver = reader["index"], reader["offsets"], reader["receiver"]
+    if reader.get("chain"):
+        return any(("load", index, offset, *receiver) in events for offset in offsets)
+    ran = any(("offset", index, offset) in events for offset in offsets)
+    return ran and (receiver is None or ("receiver", index, *receiver) in events)
 
 
 def _track_imports(tracer: _Tracer) -> None:
@@ -1384,11 +1463,18 @@ class Units:
     unreferenced: list[str] = field(default_factory=list)
     readers: list[str] = field(default_factory=list)
     probes: dict[str, list[Record]] = field(default_factory=dict)
+    docs: list[str] = field(default_factory=list)
 
     @classmethod
     def mapped(cls, mapped: Record) -> Units:
         """Return the units of a `_change_units` reply, with each side's probes numbered."""
-        found = cls(mapped["units"], mapped["unreferenced"], mapped["annotation_readers"], {"base": [], "head": []})
+        found = cls(
+            mapped["units"],
+            mapped["unreferenced"],
+            mapped["annotation_readers"],
+            {"base": [], "head": []},
+            mapped["docstring_readers"],
+        )
         for index, unit in enumerate(found.units):
             unit["index"] = index
             for probe in unit["probes"]:
@@ -1587,6 +1673,8 @@ class Evidence:
             print(f"evidence: removed, unreferenced on base: {path}")
         for site in self.units.readers if self.units else []:
             print(f"evidence: function annotations count, read at {site}")
+        for site in self.units.docs if self.units else []:
+            print(f"evidence: function docstrings count, read at {site}")
         if not units:
             return []
         unmeasured = [side for side in ("head", "base") if any(unit["side"] == side for unit in units)]
