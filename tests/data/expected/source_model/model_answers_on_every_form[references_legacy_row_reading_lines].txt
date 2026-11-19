@@ -10,14 +10,19 @@
 11:18 value load in read -> local read @8
 11:26 str load in read -> builtin; origin builtins.str
 11:30 LOCAL load in read -> local read @9; origin legacy_row_reading_lines.rows.DOCUMENTED
+14:24 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+17:11 rows load in read_attribute -> local read_attribute @15; origin legacy_row_reading_lines.rows
 uses of <module>:KEPT@3: read@5, read@11
 uses of read:value@8: read@11
 uses of read:LOCAL@9: argument@11
+uses of read_attribute:rows@15: read@17
 type positions @8: str
+type positions @14: str
 type positions @8: str
 definition legacy_row_reading_lines.reader:AT_IMPORT -> assign legacy_row_reading_lines.rows:KEPT@5 via legacy_row_reading_lines.reader [always] > legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.reader:KEPT -> assign legacy_row_reading_lines.rows:KEPT@5 via legacy_row_reading_lines.reader [always] > legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.reader:read -> def legacy_row_reading_lines.reader:read@8 via legacy_row_reading_lines.reader [always]
+definition legacy_row_reading_lines.reader:read_attribute -> def legacy_row_reading_lines.reader:read_attribute@14 via legacy_row_reading_lines.reader [always]
 === module legacy_row_reading_lines.rows
 == references
 5:0 KEPT store in <module> -> local <module> @5
@@ -42,36 +47,86 @@ definition legacy_row_reading_lines.reader:read -> def legacy_row_reading_lines.
 35:12 DOCUMENTED load (never annotation) in documented -> global <module> @6; origin legacy_row_reading_lines.rows.DOCUMENTED
 36:11 choice load in documented -> local documented @35
 36:20 row load in documented -> local documented @33
-uses of <module>:Literal@3: read@6
+43:0 TABLE store in <module> -> local <module> @43
+44:0 ATTRIBUTE_READ store in <module> -> local <module> @44
+47:18 bool load (evaluated annotation) in <module> -> builtin; origin builtins.bool
+47:27 frozenset load (evaluated annotation) in <module> -> builtin; origin builtins.frozenset
+47:37 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+49:4 rows store in collect -> local collect @49,50
+50:4 rows load in collect -> local collect @49,50
+50:4 rows store in collect -> local collect @49,50
+51:4 rows load in collect -> local collect @49,50
+52:49 flag load in collect -> local collect @47
+52:11 frozenset load in collect -> builtin; origin builtins.frozenset
+52:21 rows load in collect -> local collect @49,50
+52:29 frozenset load in collect -> builtin; origin builtins.frozenset
+52:39 TABLE load in collect -> global <module> @43; origin legacy_row_reading_lines.rows.TABLE
+52:59 frozenset load in collect -> builtin; origin builtins.frozenset
+55:16 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+55:27 frozenset load (evaluated annotation) in <module> -> builtin; origin builtins.frozenset
+55:37 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+55:46 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+56:40 rows load in branch -> local branch @55
+58:7 row load in branch -> local branch @55
+59:15 row load in branch -> local branch @55
+60:11 hand load in branch -> global <module> @63; origin legacy_row_reading_lines.rows.hand
+60:39 str load in branch -> builtin; origin builtins.str
+60:43 TABLE load in branch -> global <module> @43; origin legacy_row_reading_lines.rows.TABLE
+63:14 Literal load (evaluated annotation) in <module> -> local <module> @3; origin typing.Literal
+63:61 str load (evaluated annotation) in <module> -> builtin; origin builtins.str
+64:11 row load in hand -> local hand @63
+uses of <module>:Literal@3: read@6, read@63
 uses of <module>:TypeAlias@3: read@6
 uses of <module>:KEPT@5: read@22
 uses of <module>:DOCUMENTED@6: read@35
+uses of <module>:TABLE@43: argument@52, argument@60
+uses of <module>:hand@63: call@60
 uses of Policy.choose:row@16: read@17
 uses of decide:row@20: read@21, read@23
 uses of decide:flag@20: read@28
 uses of documented:row@33: read@36
 uses of documented:choice@35: read@36
+uses of collect:flag@47: read@52
+uses of collect:rows@49: augassign@50, call:add@51, argument@52
+uses of collect:rows@50: augassign@50, call:add@51, argument@52
+uses of branch:row@55: read@58, read@59
+uses of branch:rows@55: read@56
+uses of hand:row@63: read@64
 type positions @5: legacy, constant
 type positions @6: TypeAlias
 type positions @8: legacy, unread, constant
 type positions @20: str
 type positions @33: str
 type positions @39: -
+type positions @44: legacy, attribute, constant
+type positions @47: frozenset, str
+type positions @55: str
+type positions @63: str
 type positions @14: -
 type positions @16: str
 type positions @35: DOCUMENTED
 type positions @20: str
 type positions @20: bool
 type positions @33: str
+type positions @47: bool
+type positions @55: str
+type positions @55: frozenset, str
+type positions @63: Literal
 type positions @16: str
+definition legacy_row_reading_lines.rows:ATTRIBUTE_READ -> assign legacy_row_reading_lines.rows:ATTRIBUTE_READ@44 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:DOCUMENTED -> annassign legacy_row_reading_lines.rows:DOCUMENTED@6 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:KEPT -> assign legacy_row_reading_lines.rows:KEPT@5 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:Literal -> outside typing.Literal@3 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:Policy -> class legacy_row_reading_lines.rows:Policy@11 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:TABLE -> assign legacy_row_reading_lines.rows:TABLE@43 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:TypeAlias -> outside typing.TypeAlias@3 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:UNREAD -> assign legacy_row_reading_lines.rows:UNREAD@8 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:branch -> def legacy_row_reading_lines.rows:branch@55 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:collect -> def legacy_row_reading_lines.rows:collect@47 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:decide -> def legacy_row_reading_lines.rows:decide@20 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:documented -> def legacy_row_reading_lines.rows:documented@33 via legacy_row_reading_lines.rows [always]
 definition legacy_row_reading_lines.rows:empty -> def legacy_row_reading_lines.rows:empty@39 via legacy_row_reading_lines.rows [always]
+definition legacy_row_reading_lines.rows:hand -> def legacy_row_reading_lines.rows:hand@63 via legacy_row_reading_lines.rows [always]
 edge legacy_row_reading_lines.reader -> legacy_row_reading_lines.rows @3 via from (module) [always]
 edge legacy_row_reading_lines.reader -> legacy_row_reading_lines.rows @9 via from (function) [function:body@8]
+edge legacy_row_reading_lines.reader -> legacy_row_reading_lines.rows @15 via submodule (function) [function:body@14]

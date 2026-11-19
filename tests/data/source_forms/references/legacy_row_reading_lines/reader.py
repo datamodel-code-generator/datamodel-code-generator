@@ -9,3 +9,9 @@ def read(value: str) -> str:
     from .rows import DOCUMENTED as LOCAL
 
     return KEPT + value + str(LOCAL)
+
+
+def read_attribute() -> str:
+    from . import rows
+
+    return rows.ATTRIBUTE_READ

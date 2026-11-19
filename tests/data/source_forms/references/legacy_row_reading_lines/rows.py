@@ -38,3 +38,27 @@ def documented(row: str = "legacy-default") -> str:
 
 def empty() -> None:
     """Row ``legacy-empty-function``: a function with nothing but its docstring."""
+
+
+TABLE = {"legacy-tabled": "a table of rows names no line"}
+ATTRIBUTE_READ = "legacy-attribute-constant"
+
+
+def collect(flag: bool) -> frozenset[str]:
+    """Row ``legacy-collected-and-tested``: a line tests it, so neither this docstring nor its collection reads it."""
+    rows = {"legacy-collected"}
+    rows |= {"legacy-collected-and-tested"}
+    rows.add("legacy-added")
+    return frozenset(rows) | frozenset(TABLE) if flag else frozenset()
+
+
+def branch(row: str, rows: frozenset[str]) -> str:
+    if "legacy-collected-and-tested" in rows:
+        return "old"
+    if row in ("legacy-in-tuple", "new"):
+        return row
+    return hand(row="legacy-handed") + str(TABLE)
+
+
+def hand(row: Literal["new", "legacy-annotated"] = "new") -> str:
+    return row

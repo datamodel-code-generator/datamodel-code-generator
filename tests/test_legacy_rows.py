@@ -11,8 +11,15 @@ import pytest
 
 from datamodel_code_generator.cli_options import get_all_argparse_options
 from scripts.build_architecture_docs import LEGACY_BEGIN_MARKER, LEGACY_END_MARKER, generate_legacy_table
-from scripts.legacy_row_reads import ROW, reading_lines, run_witness, write_reading_lines
-from scripts.legacy_rows import KEEP, LEGACY_ROWS, LegacyRow
+from scripts.legacy_row_reads import (
+    ROW,
+    reading_lines,
+    reading_sites,
+    run_witness,
+    untested_rows,
+    write_reading_lines,
+)
+from scripts.legacy_rows import KEEP, LEGACY_ROWS, UNTESTED, LegacyRow
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -86,6 +93,25 @@ def test_legacy_row_records_are_complete() -> None:
 
 
 @pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
+def test_untested_rows_are_the_rows_no_line_tests() -> None:
+    """The rows no line of src/ tests are the rows of UNTESTED: none joins unseen, and a row that is tested leaves."""
+    untested = untested_rows(reading_sites())
+    report = [
+        *(
+            f"{row}: no line of src/ tests it (only {', '.join(sorted(untested[row]))} sites name it); "
+            "name it in the comparison, case or call that decides its branch"
+            for row in sorted(set(untested) - UNTESTED)
+        ),
+        *(
+            f"{row}: a line of src/ tests it, or src/ names it no more; drop it from UNTESTED in scripts/legacy_rows.py"
+            for row in sorted(UNTESTED - set(untested))
+        ),
+    ]
+
+    assert not report, "\n".join(report)
+
+
+@pytest.mark.allow_direct_assert("an invariant of the records must fail the test, not be stored as an expected output")
 def test_the_page_table_is_written_from_the_records() -> None:
     """The "Legacy rows" table of docs/architecture.md is the table the records write, row for row."""
     docs = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
@@ -135,6 +161,32 @@ SEEDED_ROWS = (
         "legacy-msgspec-float-bounds", "seeded: a msgspec row on Pydantic output", fix=KEEP, witness=SEEDED_WITNESS
     ),
     LegacyRow(
+        "legacy-combined-branch-row",
+        "seeded: a witness that loads the table of the intersection rows and runs no line that tests the row",
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/inherited_required_names/alias.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
+        "legacy-map-pattern-keys-only",
+        "seeded: a witness that collects the object map rows and runs no line that tests the row",
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/type_union_constraints/keys_root.json",
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
         "legacy-exact-ints-as-floats",
         "seeded: an option of msgspec output on Pydantic output",
         fix=KEEP,
@@ -142,16 +194,23 @@ SEEDED_ROWS = (
         option="--read-msgspec-union-bounds-exactly",
     ),
 )
-"""Records with a witness that runs no line of the row, and with an option that changes nothing on the witness."""
+"""Records with a witness that runs no line of the row (one that only collects or tabulates rows runs none), and with
+an option that changes nothing on the witness."""
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="sys.monitoring records the lines a run executes from 3.12")
 @pytest.mark.allow_direct_assert("the problems of seeded records are the check's verdict, not a stored output")
 def test_legacy_row_witness_check_fails_on_seeded_records(tmp_path: Path, reading_lines_file: Path) -> None:
     """A witness that runs no line of its row, or an option that changes nothing on the witness, is a problem."""
-    problems = _witness_problems(SEEDED_ROWS, tmp_path, reading_lines_file)
+    problems: list[str] = []
+    for index, witness in enumerate(dict.fromkeys(row.witness for row in SEEDED_ROWS)):
+        (directory := tmp_path / str(index)).mkdir()
+        rows = [row for row in SEEDED_ROWS if row.witness == witness]
+        problems += _witness_problems(rows, directory, reading_lines_file)
 
     assert problems == [
         "legacy-msgspec-float-bounds: its witness runs no line that reads it",
         "legacy-exact-ints-as-floats: its witness writes the same with --read-msgspec-union-bounds-exactly",
+        "legacy-combined-branch-row: its witness runs no line that reads it",
+        "legacy-map-pattern-keys-only: its witness runs no line that reads it",
     ]

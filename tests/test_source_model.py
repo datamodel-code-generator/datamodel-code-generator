@@ -1006,7 +1006,10 @@ def _defined_tests(form: Path) -> list[Finding]:
 
 
 def _legacy_row_reads(form: Path) -> list[Finding]:
-    """Return the lines that read each row a form names, the form standing as a package (a module form inside one)."""
+    """Return the lines that read each row a form names, with their kinds, the form standing as a package.
+
+    A module form stands inside one.
+    """
     with tempfile.TemporaryDirectory() as folder:
         package = Path(folder) / "form"
         package.mkdir()
@@ -1015,11 +1018,13 @@ def _legacy_row_reads(form: Path) -> list[Finding]:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
         (package / "__init__.py").touch()
+        sites = legacy_row_reads.reading_sites_of(Path(folder), "form")
         return [
-            Finding("reads", _site(form, place, line), f"{place}:{line}: {row}")
+            Finding("reads", _site(form, place, line), f"{place}:{line}: {row} ({', '.join(kinds)})")
             for row, lines in sorted(legacy_row_reads.reading_lines_of(Path(folder), "form").items())
             for filename, line in sorted(lines)
             for place in [Path(filename).relative_to(package).as_posix()]
+            for kinds in [sorted(kind for kind, held in sites[row].items() if (filename, line) in held)]
         ]
 
 

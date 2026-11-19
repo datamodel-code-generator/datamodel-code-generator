@@ -2062,7 +2062,7 @@
 "references/lambda_closure_in_comprehension" = "no finding: the form names no legacy row"
 "references/late_attribute_writes" = "no finding: the form names no legacy row"
 "references/lazy_table_module_getattr" = "no finding: the form names no legacy row"
-"references/legacy_row_reading_lines" = "finding: reads reader.py:11 reader.py:11 rows.py:17 rows.py:21 rows.py:22 rows.py:24 rows.py:26 rows.py:27 rows.py:28 rows.py:29 rows.py:30 rows.py:35 rows.py:35"
+"references/legacy_row_reading_lines" = "finding: reads reader.py:11 reader.py:11 reader.py:17 rows.py:17 rows.py:21 rows.py:22 rows.py:24 rows.py:26 rows.py:27 rows.py:28 rows.py:29 rows.py:30 rows.py:35 rows.py:35 rows.py:56 rows.py:58 rows.py:60"
 "references/literal_constants_and_late_writes" = "no finding: the form names no legacy row"
 "references/mangled_module_global" = "no finding: the form names no legacy row"
 "references/method_receiver_by_position" = "no finding: the form names no legacy row"
