@@ -1,0 +1,13 @@
+[[change]]
+id = "checks-read-the-source-model-2"
+category = "harness"
+title = "Read the source rules through the source model"
+refs = ["#7186"]
+summary = "The ratchet tests store the private scope walk counts of a copy of the source rules, which now read names through the source model (globals-registry also flags globals() passed as a keyword argument); the package writes the same output."
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule-approved-in-head].txt",
+    "check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-absolute-rule].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-source-rules].txt",
+    "source_model/every_rule_states_its_verdicts[template-assignments].txt",
+]

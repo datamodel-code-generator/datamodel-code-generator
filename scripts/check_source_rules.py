@@ -2,7 +2,8 @@
 
 usage: python scripts/check_source_rules.py [--root DIR] [--base REF] [--rule NAME]... [--count]
 
-Every rule reads the tree with ``ast`` or ``tokenize`` (standard library only) and reports each site as
+Every rule reads the tree with ``ast`` and reads bindings, scopes, references, imports and suppression comments through
+`scripts/_source_model.py` (`Module.model`), never with a walk of its own; it reports each site as
 ``path:line: rule: detail``; a file the running Python cannot parse (newer syntax, say) reports none. The summary gives
 the count of every rule and how to fix its sites. The counts are ratchet keys ``source-rule:<rule>`` (``--count``
 prints them as JSON, ``{key: {file: count}}``), which `scripts/check_ratchets.py` counts on every tree it compares:
@@ -27,17 +28,21 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import tokenize
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 import tomllib
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._source_model import SourceModelError, SourceModule
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
+
+    from scripts._source_model import Import, Scope
 
 PACKAGE = "src/datamodel_code_generator"
 PACKAGE_NAME = "datamodel_code_generator"
@@ -49,15 +54,15 @@ CLONE_SKIPPED = (f"{PACKAGE}/_types/",)
 NAMESPACE_HOOKS = frozenset({"__getattr__", "__dir__"})
 CUT_METHODS = frozenset({"split", "rsplit", "partition", "rpartition", "find", "rfind", "index", "rindex"})
 ENUMERATING_METHODS = frozenset({"values", "items", "keys", "copy"})
+ENUMERATING_USES = frozenset({"iterate", "unpack", "argument", *(f"call:{method}" for method in ENUMERATING_METHODS)})
+"""How the value of ``globals()`` is used when it is enumerated (`SourceModule.use_of`)."""
+IF_CONDITIONS = frozenset({"type-checking", "version", "platform", "if"})
+"""The kinds of condition that an ``if`` makes (`Condition.kind`): an import under one loads nothing for certain."""
 UNUSED_IMPORT = ("F401", "unused-import")
 TESTS = "tests"
 TESTS_STORED = "tests/data/expected/"
 SLEEP_ALLOWLIST = "scripts/test_sleep_allowlist.toml"
 RERUN_MODULES = frozenset({"flaky", "pytest_rerunfailures", "rerunfailures"})
-_CODES = r"(?::\s*(?P<codes>[A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*))?"
-_NOQA = re.compile(rf"#\s*noqa(?![\w-]){_CODES}", re.IGNORECASE)
-_FILE_NOQA = re.compile(rf"#\s*(?:ruff|flake8):\s*noqa(?![\w-]){_CODES}")
-_RUFF_RULES = re.compile(r"#\s*ruff:\s*(?P<action>ignore|disable|enable)\[(?P<rules>[^\]]*)\]")
 _FILE_CITATION = re.compile(r"`([A-Za-z_][\w/]*\.py):([A-Za-z_][\w.]*)")
 _CLASS_CITATION = re.compile(r"`([A-Z][A-Za-z0-9_]*)\.([A-Za-z_]\w*)")
 _WORD = re.compile(r"\w+")
@@ -79,29 +84,54 @@ class Finding:
 
 
 class Module:
-    """One Python file of the tree, parsed once."""
+    """One Python file of the tree, read through the source model (`model`) on first use."""
 
     def __init__(self, root: Path, rel: str) -> None:
-        """Read and parse ``rel`` below ``root``; a file this Python cannot read or parse holds nothing to report."""
+        """Name ``rel`` below ``root``; a file this Python cannot read or parse holds nothing to report."""
+        self.root = root
         self.rel = rel
-        try:
-            self.text = (root / rel).read_text(encoding="utf-8")
-            self.tree = ast.parse(self.text)
-        except (SyntaxError, ValueError):
-            self.text, self.tree = "", ast.Module(body=[], type_ignores=[])
 
     @cached_property
     def name(self) -> str:
-        """Return the dotted module name of a package file."""
-        parts = list(Path(self.rel).relative_to("src").with_suffix("").parts)
+        """Return the dotted module name of a file (``src/`` dropped, a package ``__init__`` its package)."""
+        parts = list(Path(self.rel).with_suffix("").parts)
+        if parts[0] == "src":
+            parts.pop(0)
         if parts[-1] == "__init__":
             parts.pop()
         return ".".join(parts)
 
     @cached_property
-    def is_package(self) -> bool:
-        """Return whether the file is the ``__init__.py`` of a package."""
-        return self.rel.endswith("/__init__.py")
+    def model(self) -> SourceModule:
+        """Return what the file's names, imports and comments are, by the language's rules (an empty one if unread)."""
+        try:
+            return SourceModule((self.root / self.rel).read_text(encoding="utf-8"), self.rel, self.name)
+        except (SyntaxError, ValueError, SourceModelError):
+            return SourceModule("", self.rel, self.name)
+
+    @cached_property
+    def star_reads(self) -> dict[ast.AST, str]:
+        """Return the names read where a star import may bind them: a name the model leaves open (``star``) by node.
+
+        A rule that looks for a builtin (``str``, ``globals``) counts such a read as the builtin it spells, unless the
+        model knows the star import binds it: what a star import binds is not read from another module.
+        """
+        model = self.model
+        return {
+            reference.node: reference.name
+            for reference in model.references
+            if reference.context == "load" and model.resolve(reference.node).kind == "star"
+        }
+
+    @property
+    def text(self) -> str:
+        """Return the text of the file."""
+        return self.model.text
+
+    @property
+    def tree(self) -> ast.Module:
+        """Return the syntax tree the model reads (its nodes are the ones the model answers about)."""
+        return self.model.tree
 
     @cached_property
     def lines(self) -> list[str]:
@@ -112,20 +142,6 @@ class Module:
     def nodes(self) -> list[ast.AST]:
         """Return every node of the file, in ``ast.walk`` order."""
         return list(ast.walk(self.tree))
-
-    @cached_property
-    def bindings(self) -> _Bindings:
-        """Return which scope binds each name the file reads."""
-        return _Bindings(self.tree)
-
-    @cached_property
-    def comments(self) -> dict[int, str]:
-        """Return the comments of the file by line."""
-        found: dict[int, str] = {}
-        for token in tokenize.generate_tokens(io.StringIO(self.text).readline):
-            if token.type == tokenize.COMMENT:
-                found[token.start[0]] = token.string
-        return found
 
 
 class Tree:
@@ -192,31 +208,15 @@ class Rule:
     coverage: Callable[[Tree], str] | None = None
 
 
-def _leaves(target: ast.expr) -> Iterator[ast.expr]:
-    """Yield the names, attributes and subscripts a target assigns, those inside tuples, lists and ``*`` included."""
-    if isinstance(target, (ast.Tuple, ast.List)):
-        for element in target.elts:
-            yield from _leaves(element)
-    elif isinstance(target, ast.Starred):
-        yield from _leaves(target.value)
-    else:
-        yield target
+def _cuts_at_hash(call: ast.Call, module: Module) -> bool:
+    """Return whether ``call`` cuts at ``#``: ``s.split("#")``, ``str.split(s, "#")`` or ``s.split(sep="#")``.
 
-
-def _targets(node: ast.AST) -> list[ast.expr]:
-    """Return what an assignment statement assigns, destructuring unpacked (nothing for any other node)."""
-    if isinstance(node, ast.Assign):
-        return [leaf for target in node.targets for leaf in _leaves(target)]
-    if isinstance(node, (ast.AnnAssign, ast.AugAssign)):
-        return list(_leaves(node.target))
-    return []
-
-
-def _cuts_at_hash(call: ast.Call) -> bool:
-    """Return whether ``call`` cuts at ``#``: ``s.split("#")``, ``str.split(s, "#")`` or ``s.split(sep="#")``."""
+    ``str`` is the builtin by origin: a parameter or an import named ``str`` is not it, and a star import that may
+    bind it does not hide it (`Module.star_reads`).
+    """
     if not isinstance(call.func, ast.Attribute) or call.func.attr not in CUT_METHODS:
         return False
-    unbound = isinstance(call.func.value, ast.Name) and call.func.value.id == "str"
+    unbound = module.model.origin(call.func.value) == "builtins.str" or module.star_reads.get(call.func.value) == "str"
     position = 1 if unbound else 0
     separators = call.args[position : position + 1]
     if call.func.attr in {"split", "rsplit"}:
@@ -233,7 +233,7 @@ def hash_split(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
         if module.rel == REFERENCE_HOME:
             continue
         for node in module.nodes:
-            if isinstance(node, ast.Call) and _cuts_at_hash(node):
+            if isinstance(node, ast.Call) and _cuts_at_hash(node, module):
                 yield Finding(module.rel, node.lineno, "hash-split", ast.unparse(node))
 
 
@@ -244,14 +244,16 @@ class _CitationIndex:
         self.top: dict[str, set[str]] = {}
         self.classes: dict[str, dict[str, set[str]]] = {}
         for module in modules:
+            model = module.model
             rel = module.rel.removeprefix(f"{PACKAGE}/")
-            names: set[str] = set()
+            top = model.bindings(scope=model.module_scope)
             classes: dict[str, set[str]] = {}
-            for node in module.tree.body:
-                names |= _bound(node)
-                if isinstance(node, ast.ClassDef):
-                    classes[node.name] = _members(node)
-            self.top[rel], self.classes[rel] = names, classes
+            for binding in top:
+                if binding.kind == "class":
+                    members = model.class_members(model.scope_defined_by(binding.node), spelled=True)
+                    classes.setdefault(binding.name, set()).update(members)
+            self.top[rel] = {binding.name for binding in top if binding.kind != "del"}
+            self.classes[rel] = classes
 
     def resolves_file(self, rel: str, dotted: str) -> bool | None:
         if rel.startswith(("scripts/", "tests/", "docs/")):
@@ -270,34 +272,6 @@ class _CitationIndex:
         if not holders:
             return None  # not a class of the package (an Enum member, a pydantic name, a type)
         return any(attr in members for members in holders)
-
-
-def _bound(node: ast.stmt) -> set[str]:
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-        return {node.name}
-    if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
-        return {target.id for target in _targets(node) if isinstance(target, ast.Name)}
-    if isinstance(node, (ast.Import, ast.ImportFrom)):
-        return {(alias.asname or alias.name).split(".")[0] for alias in node.names}
-    if isinstance(node, ast.If):  # TYPE_CHECKING blocks, version branches
-        return set().union(*(_bound(child) for child in (*node.body, *node.orelse)))
-    return set()
-
-
-def _members(node: ast.ClassDef) -> set[str]:
-    members: set[str] = set()
-    for item in node.body:
-        members |= _bound(item)
-        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            members |= {
-                sub.attr
-                for sub in ast.walk(item)
-                if isinstance(sub, ast.Attribute)
-                and isinstance(sub.ctx, ast.Store)
-                and isinstance(sub.value, ast.Name)
-                and sub.value.id == "self"
-            }
-    return members
 
 
 def doc_citations(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
@@ -332,328 +306,81 @@ def ellipsis_statement(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
                 yield Finding(module.rel, node.lineno, "ellipsis-statement", "...")
 
 
-def _names_rule(codes: str | None, rule: tuple[str, str]) -> bool:
-    """Return whether the code list of a ``noqa`` comment (None: no list, every rule) names ``rule``."""
-    return codes is None or rule[0] in re.split(r"[\s,]+", codes.upper())
-
-
-def _next_code_line(module: Module, line: int) -> int:
-    """Return the first line after ``line`` that holds code (``line`` itself when none follows)."""
-    for number in range(line + 1, len(module.lines) + 1):
-        if (text := module.lines[number - 1].strip()) and not text.startswith("#"):
-            return number
-    return line
-
-
-def _rule_items(match: re.Match[str]) -> tuple[str, ...]:
-    return tuple(item.strip() for item in match["rules"].split(","))
-
-
-def _range_end(module: Module, line: int, listed: tuple[str, ...]) -> int:
-    """Return the line that ends a ``ruff: disable`` at ``line``.
-
-    That is an ``enable`` at the same indentation with the identical list of rules in the same order (ruff 0.17.4
-    ends a range on nothing else), or the end of the block or of the file.
-    """
-    indent = len(module.lines[line - 1]) - len(module.lines[line - 1].lstrip())
-    for number in range(line + 1, len(module.lines) + 1):
-        text = module.lines[number - 1]
-        if not (stripped := text.lstrip()):
-            continue
-        column = len(text) - len(stripped)
-        if not stripped.startswith("#"):
-            if column < indent:
-                return number
-        elif column == indent and any(
-            match["action"] == "enable" and _rule_items(match) == listed for match in _RUFF_RULES.finditer(stripped)
-        ):
-            return number
-    return len(module.lines) + 1
-
-
-def suppressed_lines(module: Module, rule: tuple[str, str]) -> frozenset[int]:
-    """Return the lines on which ruff does not report ``rule`` (its code and its name), from every comment form.
-
-    The forms: ``# noqa`` (bare or naming the code) on the line; ``# ruff: ignore[...]`` naming the code or the name,
-    on the line or on its own line before it; ``# ruff: disable[...]`` up to its ``enable`` or the end of its block;
-    a file-level ``# ruff: noqa`` or ``# flake8: noqa`` (bare or naming the code) on its own line.
-    """
-    lines: set[int] = set()
-    for number, comment in module.comments.items():
-        own_line = module.lines[number - 1].lstrip().startswith("#")
-        if (match := _NOQA.search(comment)) is not None and _names_rule(match["codes"], rule):
-            lines.add(number)
-        if own_line and (match := _FILE_NOQA.match(comment)) is not None and _names_rule(match["codes"], rule):
-            return frozenset(range(1, len(module.lines) + 1))
-        for match in _RUFF_RULES.finditer(comment):
-            if not set(rule) & set(listed := _rule_items(match)):
-                continue
-            if match["action"] == "ignore":
-                lines.add(_next_code_line(module, number) if own_line else number)
-            elif match["action"] == "disable" and own_line:
-                lines.update(range(number, _range_end(module, number, listed)))
-    return frozenset(lines)
-
-
-_COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
-_FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
-
-
-class _Scope(NamedTuple):
-    node: ast.AST
-    names: frozenset[str]
-    is_class: bool
-
-
-def _own_names(
-    scope: ast.FunctionDef
-    | ast.AsyncFunctionDef
-    | ast.Lambda
-    | ast.ClassDef
-    | ast.ListComp
-    | ast.SetComp
-    | ast.DictComp
-    | ast.GeneratorExp,
-) -> frozenset[str]:
-    """Return the names a function, lambda, class or comprehension binds in its own scope."""
-    names: set[str] = set()
-    todo: list[ast.AST] = []
-    if isinstance(scope, _FUNCTIONS):
-        arguments = scope.args
-        names |= {arg.arg for arg in (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs)}
-        names |= {arg.arg for arg in (arguments.vararg, arguments.kwarg) if arg is not None}
-        todo += scope.body if isinstance(scope.body, list) else [scope.body]
-    elif isinstance(scope, ast.ClassDef):
-        todo += scope.body
-    else:
-        todo += [generator.target for generator in scope.generators]
-    declared: set[str] = set()
-    while todo:
-        node = todo.pop()
-        if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
-            names.add(node.id)
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            names.add(node.name)
-            continue
-        elif isinstance(node, (ast.Import, ast.ImportFrom)):
-            names |= {(alias.asname or alias.name).split(".")[0] for alias in node.names}
-        elif isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name:
-            names.add(node.name)
-        elif isinstance(node, ast.MatchMapping) and node.rest:
-            names.add(node.rest)
-        elif isinstance(node, (ast.Global, ast.Nonlocal)):
-            declared.update(node.names)
-        if not isinstance(node, (*_FUNCTIONS, *_COMPREHENSIONS)):
-            todo += ast.iter_child_nodes(node)
-    return frozenset(names - declared)
-
-
-class _Bindings:
-    """Which scope binds each name a file reads, and the scope of each import: the one resolver of the rules.
-
-    A scope is the module tree, a function, a lambda, a class or a comprehension. A name that no enclosing function
-    scope (nor the class body that reads it) binds belongs to the module.
-    """
-
-    def __init__(self, tree: ast.Module) -> None:
-        self.tree = tree
-        self.reads: set[tuple[ast.AST, str]] = set()
-        self.scope_of: dict[ast.AST, ast.AST] = {}
-        self.read_scope: dict[ast.Name, ast.AST] = {}
-        self.origins: dict[tuple[ast.AST, str], str] = {}
-        self._visit(tree, (_Scope(tree, frozenset(), is_class=False),))
-
-    def global_reads(self) -> set[str]:
-        """Return the names the file reads as module-level bindings."""
-        return {name for scope, name in self.reads if scope is self.tree}
-
-    def import_is_read(self, node: ast.Import | ast.ImportFrom, name: str) -> bool:
-        """Return whether the scope that holds the import ``node`` reads the ``name`` it binds."""
-        return (self.scope_of[node], name) in self.reads
-
-    def origin(self, node: ast.expr) -> str | None:
-        """Return the dotted path of the module member that ``node`` reads through an import, else None.
-
-        ``sleep`` after ``from time import sleep`` and ``clock.sleep`` after ``import time as clock`` are both
-        ``time.sleep``; a name that an enclosing function binds in another way (a parameter, an assignment) has none.
-        """
-        attrs: list[str] = []
-        while isinstance(node, ast.Attribute):
-            attrs.append(node.attr)
-            node = node.value
-        if not isinstance(node, ast.Name) or node not in self.read_scope:
-            return None
-        root = self.origins.get((self.read_scope[node], node.id))
-        return None if root is None else ".".join([root, *reversed(attrs)])
-
-    def _enter(
-        self,
-        node: ast.FunctionDef
-        | ast.AsyncFunctionDef
-        | ast.Lambda
-        | ast.ClassDef
-        | ast.ListComp
-        | ast.SetComp
-        | ast.DictComp
-        | ast.GeneratorExp,
-        chain: tuple[_Scope, ...],
-    ) -> None:
-        """Visit what a scope node evaluates in the scope around it, then its body in its own scope."""
-        inner = (*chain, _Scope(node, _own_names(node), isinstance(node, ast.ClassDef)))
-        outside: list[ast.AST | None] = []
-        body: list[ast.AST] = []
-        if isinstance(node, _FUNCTIONS):
-            arguments = node.args
-            outside += [*arguments.defaults, *arguments.kw_defaults]
-            if not isinstance(node, ast.Lambda):
-                outside += [*node.decorator_list, node.returns]
-                outside += [arg.annotation for arg in ast.walk(arguments) if isinstance(arg, ast.arg)]
-            body += node.body if isinstance(node.body, list) else [node.body]
-        elif isinstance(node, ast.ClassDef):
-            outside += [*node.decorator_list, *node.bases, *(keyword.value for keyword in node.keywords)]
-            body += node.body
-        else:
-            first, *later = node.generators
-            outside.append(first.iter)
-            body += [first.target, *first.ifs]
-            for generator in later:
-                body += [generator.target, generator.iter, *generator.ifs]
-            body += [node.key, node.value] if isinstance(node, ast.DictComp) else [node.elt]
-        for item in outside:
-            if item is not None:
-                self._visit(item, chain)
-        for item in body:
-            self._visit(item, inner)
-
-    def _visit(self, node: ast.AST, chain: tuple[_Scope, ...]) -> None:
-        if isinstance(node, (*_FUNCTIONS, *_COMPREHENSIONS, ast.ClassDef)):
-            self._enter(node, chain)
-            return
-        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-            self.read_scope[node] = self._scope(node.id, chain)
-            self.reads.add((self.read_scope[node], node.id))
-        elif isinstance(node, (ast.Import, ast.ImportFrom)):
-            self.scope_of[node] = chain[-1].node
-            self._bind_origins(node, chain[-1].node)
-        for child in ast.iter_child_nodes(node):
-            self._visit(child, chain)
-
-    def _bind_origins(self, node: ast.Import | ast.ImportFrom, scope: ast.AST) -> None:
-        if isinstance(node, ast.ImportFrom) and (node.module is None or node.level):
-            return
-        for alias in node.names:
-            if isinstance(node, ast.ImportFrom):
-                self.origins[scope, alias.asname or alias.name] = f"{node.module}.{alias.name}"
-            elif alias.asname:
-                self.origins[scope, alias.asname] = alias.name
-            else:
-                root = alias.name.split(".")[0]
-                self.origins[scope, root] = root
-
-    @staticmethod
-    def _scope(name: str, chain: tuple[_Scope, ...]) -> ast.AST:
-        for index in range(len(chain) - 1, 0, -1):
-            if name in chain[index].names and (not chain[index].is_class or index == len(chain) - 1):
-                return chain[index].node
-        return chain[0].node
-
-
 def private_reexport(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report an import of a private name that only a suppression of unused imports keeps: a private re-export.
 
-    Every comment form counts (``suppressed_lines``), on the name's line or on the first line of its statement. An
-    import that its own scope reads is no re-export.
+    Every comment form counts (`SourceModule.suppressed`), on the name's line or on the first line of its statement.
+    An import that its own scope reads is no re-export.
 
     Review class: a copy of the step's decision left outside the routed sites (a second reader through an old path).
     """
     for module in tree.package:
+        model = module.model
         suppressed: frozenset[int] | None = None
-        for node in module.nodes:
-            if not isinstance(node, (ast.Import, ast.ImportFrom)):
+        for item in model.imports:
+            if item.alias is None or item.bound is None:
                 continue
-            for alias in node.names:
-                bound = (alias.asname or alias.name).split(".")[0]
-                if not bound.startswith("_") or bound.startswith("__"):
-                    continue
-                if suppressed is None:
-                    suppressed = suppressed_lines(module, UNUSED_IMPORT)
-                if {node.lineno, alias.lineno} & suppressed and not module.bindings.import_is_read(node, bound):
-                    yield Finding(module.rel, alias.lineno, "private-reexport", bound)
+            if not item.bound.startswith("_") or item.bound.startswith("__"):
+                continue
+            if suppressed is None:
+                suppressed = model.suppressed("ruff", UNUSED_IMPORT)
+            binding = model.binding_at(item.alias)
+            if {item.node.lineno, item.alias.lineno} & suppressed and binding is not None and not model.uses(binding):
+                yield Finding(module.rel, item.alias.lineno, "private-reexport", item.bound)
 
 
-def _parents(module: ast.Module) -> dict[ast.AST, ast.AST]:
-    return {child: node for node in ast.walk(module) for child in ast.iter_child_nodes(node)}
-
-
-def _enclosing_function(node: ast.AST, parents: dict[ast.AST, ast.AST]) -> str | None:
-    while (node := parents.get(node)) is not None:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            return node.name
-    return None
-
-
-def _enumerates(call: ast.Call, parents: dict[ast.AST, ast.AST]) -> bool:
-    parent = parents.get(call)
-    if isinstance(parent, ast.Attribute):
-        return parent.attr in ENUMERATING_METHODS
-    return isinstance(parent, (ast.For, ast.AsyncFor, ast.comprehension, ast.Starred, ast.Call))
+def _enclosing_function(scope: Scope | None) -> str | None:
+    """Return the name of the function whose code runs ``scope`` (the nearest ``def``), None outside any."""
+    while scope is not None and scope.kind != "function":
+        scope = scope.parent
+    return None if scope is None else scope.code_name
 
 
 def globals_registry(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report ``globals()`` enumerated as a registry, outside a module ``__getattr__`` or ``__dir__``.
 
+    ``globals`` is the builtin by origin (`SourceModule.dynamic_sites`), or a name a star import may bind
+    (`Module.star_reads`), and the enumeration is how the value is used (`SourceModule.use_of`): iterated, unpacked,
+    passed as an argument or asked for its ``values``, ``items``, ``keys`` or ``copy``.
+
     Review class: a CodeQL alert group (every entry of such a registry reads as an unused global).
     """
     for module in (*tree.package, *tree.scripts):
-        calls = [
-            node
-            for node in module.nodes
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "globals"
-        ]
-        parents = _parents(module.tree) if calls else {}
-        for node in calls:
-            if _enumerates(node, parents) and _enclosing_function(node, parents) not in NAMESPACE_HOOKS:
+        model = module.model
+        calls = {site.node: site.scope for site in model.dynamic_sites if site.kind == "globals"}
+        opened = {
+            reference.node: reference.scope
+            for reference in model.references
+            if module.star_reads.get(reference.node) == "globals"
+        }
+        for node in module.nodes:
+            if isinstance(node, ast.Call) and node.func in opened:
+                calls[node] = opened[node.func]
+        for node, scope in calls.items():
+            if (
+                isinstance(node, ast.expr)
+                and model.use_of(node) in ENUMERATING_USES
+                and _enclosing_function(scope) not in NAMESPACE_HOOKS
+            ):
                 yield Finding(module.rel, node.lineno, "globals-registry", module.lines[node.lineno - 1].strip())
-
-
-def _dotted(node: ast.expr) -> str | None:
-    """Return ``a.b.c`` for a chain of attribute reads on a name (None for any other expression)."""
-    parts: list[str] = []
-    while isinstance(node, ast.Attribute):
-        parts.append(node.attr)
-        node = node.value
-    if not isinstance(node, ast.Name):
-        return None
-    return ".".join([node.id, *reversed(parts)])
 
 
 def _module_reads(module: Module, names: set[str]) -> set[tuple[str, str]]:
     """Return the ``(module, name)`` pairs of ``names`` that ``module`` reads from a module by its name.
 
     A read is an import of the name (``from m import _x``), an attribute read on an imported module (``import m``
-    then ``m._x``) or a string holding its dotted path (``"m._x"``, ``"m:_x"``).
+    then ``m._x``, by the origin the model gives the receiver) or a string holding its dotted path (``"m._x"``,
+    ``"m:_x"``).
     """
-    reads: set[tuple[str, str]] = set()
-    bound: dict[str, set[str]] = defaultdict(set)
+    model = module.model
+    reads = {
+        (item.source, item.alias.name)
+        for item in model.imports
+        if item.kind in {"from", "star"} and item.alias is not None and isinstance(item.source, str)
+    }
     for node in module.nodes:
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                head = alias.name.split(".")[0]
-                bound[alias.asname or head].add(alias.name if alias.asname else head)
-        elif isinstance(node, ast.ImportFrom) and (not node.level or module.rel.startswith("src/")):
-            source = _from_module(module, node)
-            for alias in node.names:
-                bound[alias.asname or alias.name].add(f"{source}.{alias.name}")
-                reads.add((source, alias.name))
-    for node in module.nodes:
-        if (
-            isinstance(node, ast.Attribute)
-            and node.attr in names
-            and not isinstance(node.ctx, ast.Store)
-            and (chain := _dotted(node.value)) is not None
-        ):
-            head, _, rest = chain.partition(".")
-            reads |= {(".".join(filter(None, (target, rest))), node.attr) for target in bound.get(head, ())}
+        if isinstance(node, ast.Attribute) and node.attr in names and isinstance(node.ctx, ast.Load):
+            reads |= {(origin, node.attr) for origin, _ in model.origins(node.value)}
         elif (
             isinstance(node, ast.Constant)
             and isinstance(node.value, str)
@@ -666,24 +393,24 @@ def _module_reads(module: Module, names: set[str]) -> set[tuple[str, str]]:
 def unused_private_global(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """Report a module-level private name (``_NAME = ...``) that nothing which can reach it reads.
 
-    What can reach it: a read in its module, and from any other file of the package, the scripts or the tests, an
-    import of it, an attribute read on its module or a string holding its dotted path. The same name in another module
-    is another global.
+    What can reach it: a read in its module (an augmented assignment is no read), and from any other file of the
+    package, the scripts or the tests, an import of it, an attribute read on its module or a string holding its dotted
+    path. The same name in another module is another global.
 
     Review class: dead code left by a move (a CodeQL unused global).
     """
     unread: dict[tuple[str, str], tuple[Module, int]] = {}
     for module in tree.package:
-        loads = module.bindings.global_reads()
-        for node in module.tree.body:
-            for target in _targets(node):
-                if (
-                    isinstance(target, ast.Name)
-                    and target.id.startswith("_")
-                    and not target.id.startswith("__")
-                    and target.id not in loads
-                ):
-                    unread.setdefault((module.name, target.id), (module, node.lineno))
+        model = module.model
+        for binding in model.bindings(scope=model.module_scope):
+            if (
+                binding.kind in {"assign", "annassign", "augassign"}
+                and not binding.guard
+                and binding.name.startswith("_")
+                and not binding.name.startswith("__")
+                and not any(use.kind != "augassign" for use in model.uses(binding))
+            ):
+                unread.setdefault((module.name, binding.name), (module, binding.node.lineno))
     names = {name for _, name in unread}
     for rel, words in tree.words.items():
         if names & words:
@@ -693,21 +420,11 @@ def unused_private_global(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
         yield Finding(module.rel, line, "unused-private-global", name)
 
 
-def _from_module(module: Module, node: ast.ImportFrom) -> str:
-    """Return the dotted name of the module ``from ... import`` reads, relative forms resolved."""
-    base = node.module or ""
-    if not node.level:
-        return base
-    package = module.name.split(".") if module.is_package else module.name.split(".")[:-1]
-    package = package[: len(package) - (node.level - 1)]
-    return ".".join([*package, base] if base else package)
-
-
-def _import_targets(module: Module, node: ast.Import | ast.ImportFrom, names: set[str]) -> list[str]:
-    if isinstance(node, ast.Import):
-        return [alias.name for alias in node.names]
-    base = _from_module(module, node)
-    return [candidate if (candidate := f"{base}.{alias.name}") in names else base for alias in node.names]
+def _import_targets(item: Import, names: set[str]) -> list[str]:
+    """Return the module an import loads: the submodule a ``from`` import names, else the module it reads."""
+    if not isinstance(item.source, str):
+        return []
+    return [item.target if item.kind == "from" and item.target in names else item.source]
 
 
 class _ImportGraph:
@@ -716,28 +433,21 @@ class _ImportGraph:
     def __init__(self, modules: list[Module]) -> None:
         self.names = {module.name for module in modules}
         self.edges: dict[str, set[str]] = defaultdict(set)
-        self.local: list[tuple[Module, ast.Import | ast.ImportFrom, list[str]]] = []
+        self.local: list[tuple[Module, ast.stmt | ast.expr, list[str]]] = []
         for module in modules:
-            self._visit(module, module.tree, in_function=False, guarded=False)
-        self._reach: dict[str, set[str]] = {}
-
-    def _visit(self, module: Module, node: ast.AST, *, in_function: bool, guarded: bool) -> None:
-        for child in ast.iter_child_nodes(node):
-            if isinstance(child, (ast.Import, ast.ImportFrom)):
-                targets = [target for target in _import_targets(module, child, self.names) if target in self.names]
-                if in_function:
-                    self.local.append((module, child, targets))
-                elif not guarded:
+            statements: dict[ast.stmt | ast.expr, list[str]] = {}
+            for item in module.model.imports:
+                if item.kind == "dynamic":
+                    continue
+                targets = [target for target in _import_targets(item, self.names) if target in self.names]
+                if item.scope.runs_in == "function":
+                    statements.setdefault(item.node, []).extend(targets)
+                elif not any(condition.kind in IF_CONDITIONS for condition in item.guard):
                     for target in targets:
                         self.edges[module.name].add(target)
                         self.edges[module.name].update(self._parents(target))
-                continue
-            self._visit(
-                module,
-                child,
-                in_function=in_function or isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)),
-                guarded=guarded or isinstance(child, ast.If),
-            )
+            self.local += [(module, node, targets) for node, targets in statements.items()]
+        self._reach: dict[str, set[str]] = {}
 
     def _parents(self, name: str) -> list[str]:
         """Return the packages that importing ``name`` initialises first, the root package aside."""
@@ -843,19 +553,22 @@ def _public_callables(modules: Iterable[Module]) -> dict[tuple[str, str], tuple[
     for module in modules:
         if not _is_public_module(module.rel):
             continue
-        for node in module.tree.body:
-            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) or node.name.startswith("_"):
+        model = module.model
+        for binding in model.bindings(scope=model.module_scope):
+            if binding.kind not in {"def", "class"} or binding.guard or binding.name.startswith("_"):
                 continue
-            found[module.rel, node.name] = (module.name, node.lineno, node.end_lineno or node.lineno)
-            if isinstance(node, ast.ClassDef):
-                for item in node.body:
-                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and not item.name.startswith("_"):
-                        found[module.rel, f"{node.name}.{item.name}"] = (
-                            module.name,
-                            item.lineno,
-                            item.end_lineno or item.lineno,
-                        )
+            found[module.rel, binding.name] = _extent(module, binding.node)
+            if binding.kind == "class":
+                for method in model.bindings(scope=model.scope_defined_by(binding.node)):
+                    if method.kind == "def" and not method.guard and not method.name.startswith("_"):
+                        found[module.rel, f"{binding.name}.{method.name}"] = _extent(module, method.node)
     return found
+
+
+def _extent(module: Module, node: ast.AST) -> tuple[str, int, int]:
+    """Return the module name and the first and last line of a ``def`` or ``class`` statement."""
+    start = getattr(node, "lineno", 0)
+    return module.name, start, getattr(node, "end_lineno", None) or start
 
 
 def _references(modules: Iterable[Module]) -> dict[str, list[tuple[str, int]]]:
@@ -865,16 +578,18 @@ def _references(modules: Iterable[Module]) -> dict[str, list[tuple[str, int]]]:
     """
     found: dict[str, list[tuple[str, int]]] = defaultdict(list)
     for module in modules:
+        model = module.model
         exports = {
             id(element)
-            for node in module.tree.body
-            if any(isinstance(target, ast.Name) and target.id == "__all__" for target in _targets(node))
-            for element in ast.walk(node)
+            for binding in model.bindings("__all__", model.module_scope)
+            if (statement := model.statement_at(binding.line)) is not None
+            for element in ast.walk(statement)
         }
+        for reference in model.references:
+            if reference.context == "load" and reference.annotation != "string":
+                found[reference.name].append((module.rel, reference.line))
         for node in module.nodes:
-            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-                found[node.id].append((module.rel, node.lineno))
-            elif isinstance(node, ast.Attribute) and not isinstance(node.ctx, ast.Store):
+            if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load):
                 found[node.attr].append((module.rel, node.lineno))
             elif (
                 isinstance(node, ast.Constant)
@@ -906,10 +621,10 @@ def undecided_callers(tree: Tree) -> str:
     """Return how many public callables ``lost-last-caller`` cannot follow, and why."""
     callables = _public_callables(tree.package)
     defined = Counter(
-        node.name
+        scope.code_name
         for module in tree.package
-        for node in module.nodes
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        for scope in module.model.scopes
+        if scope.kind in {"function", "class"}
     )
     shared = sum(1 for _, qualname in callables if defined[qualname.rpartition(".")[2]] > 1)
     return (
@@ -938,26 +653,19 @@ def lost_last_caller(tree: Tree, base: Tree | None) -> Iterator[Finding]:
             )
 
 
-def _retry_form(node: ast.AST, bindings: _Bindings) -> str | None:
+def _retry_form(node: ast.AST, model: SourceModule, hits: frozenset[ast.AST], loads: frozenset[ast.AST]) -> str | None:
     """Return what kind of rerun or flaky marker, plugin or option ``node`` is, if it is one.
 
-    A marker is ``pytest.mark.flaky`` or a name that an import from the ``flaky`` package binds, read where that
-    import binds it.
+    A marker is ``pytest.mark.flaky`` or a name that an import from the ``flaky`` package binds, read by the origin
+    the model gives it. ``hits`` are the import statements of a rerun plugin and ``loads`` the names that are read.
     """
-    match node:
-        case ast.Attribute(attr="flaky"):
-            return "flaky marker" if bindings.origin(node) == "pytest.mark.flaky" else None
-        case ast.Name(ctx=ast.Load()):
-            return "flaky marker" if (bindings.origin(node) or "").split(".")[0] == "flaky" else None
-        case ast.Import(names=aliases):
-            hit = any(alias.name.split(".")[0] in RERUN_MODULES for alias in aliases)
-        case ast.ImportFrom(module=str() as name, level=0):
-            hit = name.split(".")[0] in RERUN_MODULES
-        case ast.Constant(value=str() as text):
-            hit = _RERUN_OPTION.fullmatch(text.strip()) is not None
-        case _:
-            hit = False
-    return "rerun plugin or option" if hit else None
+    if isinstance(node, ast.Attribute) and node.attr == "flaky":
+        return "flaky marker" if model.origin(node) == "pytest.mark.flaky" else None
+    if node in loads:
+        return "flaky marker" if (model.origin(node) or "").split(".")[0] == "flaky" else None
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return "rerun plugin or option" if _RERUN_OPTION.fullmatch(node.value.strip()) else None
+    return "rerun plugin or option" if node in hits else None
 
 
 def _allowed_sleeps(tree: Tree) -> dict[str, int]:
@@ -977,11 +685,20 @@ def flaky_test_workarounds(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     allowed = _allowed_sleeps(tree)
     found: Counter[str] = Counter()
     for module in tree.tests:
-        bindings = module.bindings
+        model = module.model
+        hits = frozenset(
+            item.node
+            for item in model.imports
+            if item.level == 0
+            and item.kind in {"import", "from"}
+            and isinstance(item.source, str)
+            and item.source.split(".")[0] in RERUN_MODULES
+        )
+        loads = frozenset(reference.node for reference in model.references if reference.context == "load")
         for node in module.nodes:
-            if form := _retry_form(node, bindings):
+            if form := _retry_form(node, model, hits, loads):
                 yield Finding(module.rel, node.lineno, "flaky-test-workarounds", form)
-            elif isinstance(node, ast.Call) and bindings.origin(node.func) == "time.sleep":
+            elif isinstance(node, ast.Call) and model.origin(node.func) == "time.sleep":
                 found[module.rel] += 1
                 if found[module.rel] > allowed.get(module.rel, 0):
                     yield Finding(module.rel, node.lineno, "flaky-test-workarounds", "time.sleep beyond the allowlist")

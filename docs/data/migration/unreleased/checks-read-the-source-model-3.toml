@@ -1,0 +1,6 @@
+[[change]]
+id = "checks-read-the-source-model-3"
+extends = "import-cycles-as-ratchet-keys"
+covers = [
+    "source_model/every_rule_states_its_verdicts[import-cycle].txt",
+]

@@ -3,6 +3,7 @@ undeclared questions: none
 bindings/annotation_without_value: annotation_without_value.py:21: name no value
 bindings/annotation_without_value: annotation_without_value.py:22: size with a value
 bindings/binding_of_a_node: binding_of_a_node.py:46: size with a value
+bindings/class_members_cited: class_members_cited.py:19: kind with a value
 bindings/comprehension_in_annotation: comprehension_in_annotation.py:14: size with a value
 bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:15: items no value
 bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:16: tags no value
@@ -29,6 +30,7 @@ references/class_scope_skipped: class_scope_skipped.py:10: first with a value
 references/class_scope_skipped: class_scope_skipped.py:11: f with a value
 references/comprehension_in_method_default: comprehension_in_method_default.py:5: size with a value
 references/consumers_of_expressions: consumers_of_expressions.py:29: entries with a value
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:44: _CLASS_BODY with a value
 references/reexport_chain_across_modules: _format_types.py:9: One with a value
 references/string_annotation_forward: string_annotation_forward.py:16: children no value
 references/string_annotation_forward: string_annotation_forward.py:17: broken no value

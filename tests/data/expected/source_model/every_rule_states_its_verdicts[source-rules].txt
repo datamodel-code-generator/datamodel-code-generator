@@ -1,0 +1,95 @@
+verdict problems: none
+undeclared questions: none
+bindings/class_members_cited: docs/architecture.md:7: doc-citations: `Parser.missing`
+bindings/class_members_cited: docs/architecture.md:7: doc-citations: `Parser.other`
+bindings/class_members_cited: docs/architecture.md:7: doc-citations: `Parser.skipped`
+bindings/class_members_cited: docs/architecture.md:7: doc-citations: `class_members_cited.py:Parser.nothing`
+bindings/class_members_cited: docs/architecture.md:7: doc-citations: `class_members_cited.py:gone`
+imports/dynamic_imports: scripts/dynamic_imports.py:16: globals-registry: leaf = __import__("leaf", globals(), level=1)
+imports/dynamic_imports: scripts/dynamic_imports.py:17: globals-registry: upper = __import__("up", globals(), None, (), 2)
+imports/dynamic_imports: scripts/dynamic_imports.py:18: globals-registry: absolute = __import__("email", globals(), level=0)
+imports/dynamic_imports: scripts/dynamic_imports.py:20: globals-registry: dotted = __import__(".leaf", globals())
+imports/dynamic_imports: src/dynamic_imports.py:16: globals-registry: leaf = __import__("leaf", globals(), level=1)
+imports/dynamic_imports: src/dynamic_imports.py:17: globals-registry: upper = __import__("up", globals(), None, (), 2)
+imports/dynamic_imports: src/dynamic_imports.py:18: globals-registry: absolute = __import__("email", globals(), level=0)
+imports/dynamic_imports: src/dynamic_imports.py:20: globals-registry: dotted = __import__(".leaf", globals())
+imports/redundant_local_imports: src/redundant_local_imports/loader.py:24: redundant-local-import: datamodel_code_generator.redundant_local_imports.leaf
+imports/redundant_local_imports: src/redundant_local_imports/loader.py:25: redundant-local-import: datamodel_code_generator.redundant_local_imports.leaf
+imports/redundant_local_imports: src/redundant_local_imports/loader.py:49: redundant-local-import: datamodel_code_generator.redundant_local_imports.optional
+imports/redundant_local_imports: src/redundant_local_imports/loader.py:62: redundant-local-import: datamodel_code_generator.redundant_local_imports.leaf
+imports/redundant_local_imports: src/redundant_local_imports/loader.py:69: redundant-local-import: datamodel_code_generator.redundant_local_imports.leaf
+imports/try_import_error_by_origin: src/try_import_error_by_origin.py:18: ellipsis-statement: ...
+references/builtin_shadowed_and_spelled: scripts/builtin_shadowed_and_spelled.py:3: globals-registry: TABLE = tuple(globals ().items())
+references/builtin_shadowed_and_spelled: src/builtin_shadowed_and_spelled.py:3: globals-registry: TABLE = tuple(globals ().items())
+references/call_arguments_by_parameter: src/call_arguments_by_parameter.py:13: hash-split: ref.split(sep='#', maxsplit=1)
+references/call_arguments_by_parameter: src/call_arguments_by_parameter.py:14: hash-split: ref.rsplit('#', 1)
+references/call_arguments_by_parameter: src/call_arguments_by_parameter.py:15: hash-split: str.split(ref, '#')
+references/check_main_calls: src/check_main_calls.py:32: clone-bodies: inner = src/datamodel_code_generator/check_main_calls.py:27 helper
+references/consumers_of_expressions: scripts/consumers_of_expressions.py:9: globals-registry: for _name in globals():
+references/consumers_of_expressions: scripts/consumers_of_expressions.py:11: globals-registry: KEYS = [key for key in globals().keys()]
+references/consumers_of_expressions: scripts/consumers_of_expressions.py:12: globals-registry: COPY = dict(globals())
+references/consumers_of_expressions: scripts/consumers_of_expressions.py:13: globals-registry: SPREAD = [*globals()]
+references/consumers_of_expressions: scripts/consumers_of_expressions.py:14: globals-registry: MERGED = {**globals()}
+references/consumers_of_expressions: scripts/consumers_of_expressions.py:19: globals-registry: TOTAL = sum(1 for _ in globals())
+references/consumers_of_expressions: src/consumers_of_expressions.py:9: globals-registry: for _name in globals():
+references/consumers_of_expressions: src/consumers_of_expressions.py:11: globals-registry: KEYS = [key for key in globals().keys()]
+references/consumers_of_expressions: src/consumers_of_expressions.py:12: globals-registry: COPY = dict(globals())
+references/consumers_of_expressions: src/consumers_of_expressions.py:13: globals-registry: SPREAD = [*globals()]
+references/consumers_of_expressions: src/consumers_of_expressions.py:14: globals-registry: MERGED = {**globals()}
+references/consumers_of_expressions: src/consumers_of_expressions.py:19: globals-registry: TOTAL = sum(1 for _ in globals())
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:11: flaky-test-workarounds: rerun plugin or option
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:13: flaky-test-workarounds: rerun plugin or option
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:16: flaky-test-workarounds: flaky marker
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:19: flaky-test-workarounds: flaky marker
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:21: flaky-test-workarounds: flaky marker
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:22: flaky-test-workarounds: time.sleep beyond the allowlist
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:23: flaky-test-workarounds: time.sleep beyond the allowlist
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:24: flaky-test-workarounds: rerun plugin or option
+references/flaky_markers_by_origin: tests/flaky_markers_by_origin.py:24: flaky-test-workarounds: rerun plugin or option
+references/globals_registry_shapes: scripts/globals_registry_shapes.py:9: globals-registry: for key in globals ():
+references/globals_registry_shapes: scripts/globals_registry_shapes.py:11: globals-registry: ITEMS = [*builtins.globals().values()]
+references/globals_registry_shapes: scripts/globals_registry_shapes.py:12: globals-registry: SPREAD = {**namespace()}
+references/globals_registry_shapes: scripts/globals_registry_shapes.py:13: globals-registry: KEYS = sorted(namespace().keys())
+references/globals_registry_shapes: scripts/globals_registry_shapes.py:16: globals-registry: COUNT = len(globals())
+references/globals_registry_shapes: scripts/globals_registry_shapes.py:33: globals-registry: return dict(globals())
+references/globals_registry_shapes: src/globals_registry_shapes.py:9: globals-registry: for key in globals ():
+references/globals_registry_shapes: src/globals_registry_shapes.py:11: globals-registry: ITEMS = [*builtins.globals().values()]
+references/globals_registry_shapes: src/globals_registry_shapes.py:12: globals-registry: SPREAD = {**namespace()}
+references/globals_registry_shapes: src/globals_registry_shapes.py:13: globals-registry: KEYS = sorted(namespace().keys())
+references/globals_registry_shapes: src/globals_registry_shapes.py:16: globals-registry: COUNT = len(globals())
+references/globals_registry_shapes: src/globals_registry_shapes.py:33: globals-registry: return dict(globals())
+references/hash_split_receivers: src/hash_split_receivers.py:10: hash-split: str.split(ref, '#')
+references/hash_split_receivers: src/hash_split_receivers.py:10: hash-split: text.rpartition(ref, '#')
+references/hash_split_receivers: src/hash_split_receivers.py:10: hash-split: text.split(ref, sep='#')
+references/hash_split_receivers: src/hash_split_receivers.py:10: hash-split: ref.split('#')
+references/keyword_separator: src/keyword_separator.py:8: hash-split: ref.split(sep='#', maxsplit=1)
+references/keyword_separator: src/keyword_separator.py:8: hash-split: ref.rsplit('#', 1)
+references/keyword_separator: src/keyword_separator.py:8: hash-split: str.split(ref, '#')
+references/late_attribute_writes: src/late_attribute_writes.py:4: ellipsis-statement: ...
+references/late_attribute_writes: src/late_attribute_writes.py:7: ellipsis-statement: ...
+references/lazy_table_module_getattr: src/lazy_table_module_getattr.py:10: unused-private-global: _COMPUTED
+references/parameter_shadows_global: src/parameter_shadows_global.py:3: unused-private-global: _CACHE
+references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:6: unused-private-global: _UNUSED
+references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:8: unused-private-global: _SHADOWED
+references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:9: unused-private-global: _COMPREHENSION
+references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:10: unused-private-global: _LISTED
+references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:11: unused-private-global: _COUNTER
+references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:12: unused-private-global: _SECOND
+references/star_import_hides_builtins: src/star_import_hides_builtins.py:14: hash-split: str.split(ref, '#')
+references/star_import_hides_builtins: scripts/star_import_hides_builtins.py:8: globals-registry: for key in list(globals()):
+references/star_import_hides_builtins: scripts/star_import_hides_builtins.py:10: globals-registry: TABLE = [value for value in globals().values()]
+references/star_import_hides_builtins: src/star_import_hides_builtins.py:8: globals-registry: for key in list(globals()):
+references/star_import_hides_builtins: src/star_import_hides_builtins.py:10: globals-registry: TABLE = [value for value in globals().values()]
+references/typevar_string_bound_and_cast: src/typevar_string_bound_and_cast.py:15: ellipsis-statement: ...
+suppressions/file_level_noqa: src/file_level_noqa.py:8: private-reexport: _unread
+suppressions/private_reexport_forms: src/private_reexport_forms.py:8: private-reexport: _bare
+suppressions/private_reexport_forms: src/private_reexport_forms.py:9: private-reexport: _coded
+suppressions/private_reexport_forms: src/private_reexport_forms.py:12: private-reexport: _above
+suppressions/private_reexport_forms: src/private_reexport_forms.py:14: private-reexport: _first
+suppressions/private_reexport_forms: src/private_reexport_forms.py:15: private-reexport: _second
+suppressions/private_reexport_forms: src/private_reexport_forms.py:17: private-reexport: _named
+suppressions/private_reexport_forms: src/private_reexport_forms.py:18: private-reexport: _shadowed
+suppressions/private_reexport_forms: src/private_reexport_forms.py:19: private-reexport: _alias
+suppressions/private_reexport_forms: src/private_reexport_forms.py:33: private-reexport: _inside
+suppressions/ruff_disable_ranges: src/ruff_disable_ranges.py:9: private-reexport: _path
+suppressions/ruff_disable_ranges: src/ruff_disable_ranges.py:11: private-reexport: _sep

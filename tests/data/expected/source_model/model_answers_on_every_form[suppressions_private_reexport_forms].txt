@@ -1,0 +1,27 @@
+== suppressions
+comment @8: # noqa
+comment @9: # noqa: F401
+comment @10: # noqa: E501
+comment @11: # ruff: ignore[F401]
+comment @13: # noqa: F401
+comment @17: # ruff: ignore[unused-import]
+comment @18: # noqa: F401
+comment @19: # noqa: F401
+comment @20: # noqa: F401
+comment @21: # noqa: F401
+comment @33: # noqa: F401
+comment @34: # noqa: F401
+ruff noqa @8 (every code): lines 8
+ruff noqa @9 (F401): lines 9
+ruff noqa @10 (E501): lines 10
+ruff ignore @11 (F401): lines 12
+ruff noqa @13 (F401): lines 13
+ruff ignore @17 (unused-import): lines 17
+ruff noqa @18 (F401): lines 18
+ruff noqa @19 (F401): lines 19
+ruff noqa @20 (F401): lines 20
+ruff noqa @21 (F401): lines 21
+ruff noqa @33 (F401): lines 33
+ruff noqa @34 (F401): lines 34
+suppressed ruff F401 unused-import: 8-9,12-13,17-21,33-34
+== code objects: one per scope that compiles on this Python

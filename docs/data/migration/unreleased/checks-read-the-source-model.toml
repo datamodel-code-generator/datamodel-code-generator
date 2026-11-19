@@ -1,0 +1,10 @@
+[[change]]
+id = "checks-read-the-source-model"
+extends = "source-rules-run-on-the-tree"
+covers = [
+    "check_ratchets_script/check_ratchets_against_base[approved-rise].txt",
+    "check_ratchets_script/check_ratchets_against_base[scope-walk].txt",
+    "check_ratchets_script/check_ratchets_against_base[unchanged].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-counter-unreadable].txt",
+    "check_ratchets_script/check_ratchets_against_base[weakened-counter].txt",
+]

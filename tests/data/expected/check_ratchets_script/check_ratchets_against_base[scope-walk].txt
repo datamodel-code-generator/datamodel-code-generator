@@ -2,7 +2,7 @@ exit status 1
 Escape hatches: base (merge-base <commit>) -> working tree
 
 key                                             base    head  change
-private-scope-walk@scripts                       132     140      +8
+private-scope-walk@scripts                        19      27      +8
 private-scope-walk@tests                           0       8      +8
 ruff-config:exclude:scripts                        1       1       0
 ruff-config:hook-exclude:^src/pkg/generated/       1       1       0
@@ -13,7 +13,7 @@ ruff-config:ignore:INP                             1       1       0
 ruff-config:per-file:tests/**/*.py:S101            1       1       0
 ruff:PLC0415@src                                   1       1       0
 
-private-scope-walk@scripts rose by 8 (132 -> 140). Read bindings, references, imports, suppressions and extents through scripts/_source_model.py; add a form to tests/data/source_forms/ when it lacks one.
+private-scope-walk@scripts rose by 8 (19 -> 27). Read bindings, references, imports, suppressions and extents through scripts/_source_model.py; add a form to tests/data/source_forms/ when it lacks one.
   scripts/rule.py: 0 -> 8 (lines 13, 13, 19, 19, 23, 26, 31, 31)
 
 private-scope-walk@tests rose by 8 (0 -> 8). Read bindings, references, imports, suppressions and extents through scripts/_source_model.py; add a form to tests/data/source_forms/ when it lacks one.
