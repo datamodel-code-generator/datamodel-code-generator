@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import difflib
-import hashlib
 import importlib
 import inspect
 import json
@@ -51,7 +50,9 @@ from tests.units import (
     UnsafeWriteError,
     apply_payload,
     common_contents,
-    derived_name,
+    derived_directory,
+    derived_file_name,
+    derived_siblings,
     encode_payload,
     facts_fit,
     format_refs,
@@ -1386,25 +1387,11 @@ class _Ledger:
         module, so the name never depends on which tests ran first.
         """
         module_path = item.path
-        stem = module_path.stem.removeprefix("test_")
         function, param = self.key(item)
-        owner, _, name = function.rpartition("::")
-        short = name.removeprefix("test_")
-        if short.startswith(f"{stem}_"):
-            stripped = short[len(stem) + 1 :]
-            siblings = {
-                test.rpartition("::")[2].removeprefix("test_")
-                for test in self.module_tests.get(module_path, set())
-                if test.rpartition("::")[0] == owner
-            }
-            short = short if stripped in siblings else stripped
-        base = f"{owner.replace('::', '.')}.{short}" if owner else short
-        identifier = param
-        if len(f"{base}[{identifier}]{role}{suffix}") > 120:
-            identifier = f"{param[:80]}~{hashlib.sha1(param.encode()).hexdigest()[:8]}"
-        file_name = derived_name(f"{base}[{identifier}]" if param else base) + role + suffix
-        directory = self.expected_root / module_path.parent.relative_to(self.tests_root) / stem
-        return directory / file_name
+        siblings = derived_siblings(function, self.module_tests.get(module_path, set()))
+        file_name = derived_file_name(module_path.stem.removeprefix("test_"), function, param, siblings, role, suffix)
+        module = PurePosixPath(module_path.relative_to(self.tests_root).as_posix())
+        return self.expected_root / derived_directory(module) / file_name
 
     def unnamed_output(self, item: pytest.Item) -> None:
         count = self.unnamed[item.nodeid] = self.unnamed.get(item.nodeid, 0) + 1

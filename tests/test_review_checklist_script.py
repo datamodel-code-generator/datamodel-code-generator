@@ -44,16 +44,6 @@ BASE = {
     "docs/old.md": "gone\n",
 }
 CASES = {
-    "expected-path": {
-        "head": {
-            "tests/test_coverage.py": COVERAGE_TEST
-            + """
-
-def test_exclusions(case, capsys):
-    assert_output(capsys.readouterr().out, EXPECTED / f"exclusions-{case}.txt")
-"""
-        }
-    },
     "key-fallback": {
         "head": {
             "src/datamodel_code_generator/parser/base.py": FORWARD.replace(
@@ -108,7 +98,7 @@ def _repository(tmp_path: Path, spec: dict) -> Path:
 def test_review_checklist_of_a_diff(
     case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """The three misses of 2026-11-18 trigger their items; untouched paths and deletions trigger none."""
+    """The misses of 2026-11-18 that no check holds trigger their items; untouched paths and deletions trigger none."""
     spec = CASES[case]
     monkeypatch.chdir(_repository(tmp_path, spec) / "docs")
     code = review_checklist.main(["--base", "base", *([] if spec.get("uncommitted") else ["--head", "main"])])
