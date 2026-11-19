@@ -997,6 +997,7 @@ RULES: tuple[Rule, ...] = (
         "doc-citations",
         doc_citations,
         "cite the current name of the code in docs/architecture.md, or drop the citation if the code is gone",
+        absolute=True,
     ),
     Rule("ellipsis-statement", ellipsis_statement, "give the body a docstring instead of `...`"),
     Rule(
