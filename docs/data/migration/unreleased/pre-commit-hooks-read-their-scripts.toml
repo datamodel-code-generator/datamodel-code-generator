@@ -1,0 +1,9 @@
+[[change]]
+id = "pre-commit-hooks-read-their-scripts"
+category = "harness"
+title = "The source-rules check runs as a pre-commit hook"
+summary = "The list of where each check runs gains the new hook; the package writes the same output."
+refs = ["#7190"]
+covers = [
+    "checks_are_run/every_check_runs_on_the_tree.txt",
+]

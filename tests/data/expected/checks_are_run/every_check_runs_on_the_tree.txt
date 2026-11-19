@@ -5,7 +5,7 @@ scripts/check_overview_sync.py: tox docs-check-all (run by .github/workflows/llm
 scripts/check_pass_pipeline.py: test tests/parser/test_pipeline.py::test_pipeline_tables_follow_the_rules
 scripts/check_ratchets.py: workflow .github/workflows/test.yaml
 scripts/check_sdist_test_support.py: tox pkg_meta (run by .github/workflows/test.yaml)
-scripts/check_source_rules.py: ratchet
+scripts/check_source_rules.py: hook .pre-commit-config.yaml, ratchet
 scripts/check_source_rules.py::hash-split: ratchet
 scripts/check_source_rules.py::doc-citations: ratchet
 scripts/check_source_rules.py::ellipsis-statement: ratchet
