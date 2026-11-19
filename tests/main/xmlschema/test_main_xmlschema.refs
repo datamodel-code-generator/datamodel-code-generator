@@ -362,8 +362,9 @@ api-DataModelType.PydanticV2BaseModel	main/xmlschema/main_xmlschema/xsd_ordinary
 api-DataModelType.PydanticV2Dataclass	main/xmlschema/field_name_collisions/ordinary_PydanticV2Dataclass.py
 api-DataModelType.PydanticV2Dataclass	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.PydanticV2Dataclass].txt	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
 api-DataModelType.TypingTypedDict	main/xmlschema/field_name_collisions/ordinary_TypingTypedDict.py
-api-DataModelType.TypingTypedDict	main/xmlschema/field_name_collisions/typeddict_native_error.txt	?
-api-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.TypingTypedDict].txt	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
+api-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.TypingTypedDict].txt	?	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
+api-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.TypingTypedDict].typeddict_error.txt	?
+api-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.TypingTypedDict].typeddict_item.txt	?	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
 cli-DataModelType.DataclassesDataclass	main/xmlschema/field_name_collisions/ordinary_DataclassesDataclass.py
 cli-DataModelType.DataclassesDataclass	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[cli-DataModelType.DataclassesDataclass].txt	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
 cli-DataModelType.MsgspecStruct	main/xmlschema/field_name_collisions/ordinary_MsgspecStruct.py
@@ -373,8 +374,9 @@ cli-DataModelType.PydanticV2BaseModel	main/xmlschema/main_xmlschema/xsd_ordinary
 cli-DataModelType.PydanticV2Dataclass	main/xmlschema/field_name_collisions/ordinary_PydanticV2Dataclass.py
 cli-DataModelType.PydanticV2Dataclass	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[cli-DataModelType.PydanticV2Dataclass].txt	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
 cli-DataModelType.TypingTypedDict	main/xmlschema/field_name_collisions/ordinary_TypingTypedDict.py
-cli-DataModelType.TypingTypedDict	main/xmlschema/field_name_collisions/typeddict_native_error.txt	?
-cli-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[cli-DataModelType.TypingTypedDict].txt	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
+cli-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[cli-DataModelType.TypingTypedDict].txt	?	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
+cli-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[cli-DataModelType.TypingTypedDict].typeddict_error.txt	?	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.TypingTypedDict].typeddict_error.txt
+cli-DataModelType.TypingTypedDict	main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[cli-DataModelType.TypingTypedDict].typeddict_item.txt	?	= main/xmlschema/main_xmlschema/xsd_ordinary_fields_runtime[api-DataModelType.DataclassesDataclass].txt
 [test_xsd_property_reuse]
 api-chameleon_reuse	main/xmlschema/field_name_collisions/chameleon_reuse.py
 api-choice_reuse	main/xmlschema/field_name_collisions/choice_reuse.py

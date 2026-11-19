@@ -1388,17 +1388,16 @@ def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, ou
                 try:
                     _model_json_validator(native_model)
                 except PydanticUserError as native_error:
-                    assert_output(
-                        f"{native_error.code}: {native_error.message}\n",
-                    )
+                    assert_output(f"{native_error.code}: {native_error.message}\n", name="typeddict_error")
                     with pytest.raises(PydanticUserError) as generated_error:
                         _model_json_validator(model)
                     assert_output(
-                        f"{generated_error.value.code}: {generated_error.value.message}\n",
+                        f"{generated_error.value.code}: {generated_error.value.message}\n", name="typeddict_error"
                     )
                     assert_output(
                         json.dumps({"fields": fields, "item": model(**json.loads(valid_json))["item"]}, indent=2)
                         + "\n",
+                        name="typeddict_item",
                     )
                     return
         if backend == DataModelType.MsgspecStruct:
