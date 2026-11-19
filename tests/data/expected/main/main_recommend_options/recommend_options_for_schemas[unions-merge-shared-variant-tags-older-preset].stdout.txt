@@ -23,11 +23,11 @@ Add (1 option)
       the schema name. A variant has one tag field, so without merged tags it keeps the tags of the
       first union, and the other union rejects every document that selects the variant by its own
       tag; merged, the variant takes every tag its unions give it.
-      measured: #5361: Cat listed by ByName (tag Cat) and ByKey (mapping key cat); without the
-      option ByKey rejected {"kind": "cat"}, with it Cat takes Literal['Cat', 'cat'] and both unions
-      decode their documents
-      measured: #4666: a variant two discriminator mappings tag differently; with the option each
-      union decodes its own tag
+      measured: Cat listed by ByName (tag Cat) and ByKey (mapping key cat); without the option ByKey
+      rejected {"kind": "cat"}, with it Cat takes Literal['Cat', 'cat'] and both unions decode their
+      documents
+      measured: A variant two discriminator mappings tag differently; with the option each union
+      decodes its own tag
 
 Your configuration
   --preset standard-py314-20261027: a newer preset is available, standard-py314-20261118

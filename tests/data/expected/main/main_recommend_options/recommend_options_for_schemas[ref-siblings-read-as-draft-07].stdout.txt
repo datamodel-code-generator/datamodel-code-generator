@@ -102,9 +102,9 @@
         "reason": "The keywords beside a $ref apply in the version the document declares otherwise than the parse reads them (validation keywords beside a $ref of an OpenAPI 3.1 or AsyncAPI 3 document, read as draft 7, which ignores them: 1; minProperties or maxProperties beside an allOf $ref in a version that ignores them, which --generate-schema-validators checks: 0). Read in the version each document declares, they apply or are left out as that version says.",
         "caveats": [],
         "evidence": [
-          "OpenAPI 3.1 uniqueItems beside a $ref (#5699): with --generate-schema-validators Holder(tags=['a', 'a']) is rejected, as the same schema in JSON Schema 2020-12 is",
-          "Draft-07 minProperties beside an allOf $ref (#5700): with --generate-schema-validators Holder(a='x') is accepted, as draft 7 ignores the keyword",
-          "Directory of draft-07 and 2020-12 documents (#5380): each module equals the output of its document read alone, so Wd keeps le=10 beside its allOf $ref"
+          "OpenAPI 3.1 uniqueItems beside a $ref: with --generate-schema-validators Holder(tags=['a', 'a']) is rejected, as the same schema in JSON Schema 2020-12 is",
+          "Draft-07 minProperties beside an allOf $ref: with --generate-schema-validators Holder(a='x') is accepted, as draft 7 ignores the keyword",
+          "Directory of draft-07 and 2020-12 documents: each module equals the output of its document read alone, so Wd keeps le=10 beside its allOf $ref"
         ],
         "trial": null
       }

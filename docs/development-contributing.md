@@ -736,7 +736,8 @@ every JSON report, so record the changed expected reports.
   generation option may be one.
 - `test_recommender_rules_match_the_option_registry` in `tests/main/test_main_recommend_options.py` fails when a
   field a rule sets has no registry entry listing the rule or has no CLI option, when a field is decided by more than
-  one decision, or when a text uses a placeholder that is neither a signal nor a fact.
+  one decision, when a text uses a placeholder that is neither a signal nor a fact, when a rule text cites an issue or
+  pull request number, or when no stored report names a rule (it has no fixture).
 
 ### What a new rule needs
 
