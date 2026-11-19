@@ -37,6 +37,7 @@ GRAMMAR = {
     "kind-symbol": ["--kind", "symbol", "plans"],
     "all": ["--all", "Fact.BASES"],
     "negated-flag": ["--no-use-annotated"],
+    "negated-flag-of-no-toggle": ["--no-output"],
     "config-field": ["--kind", "option", "use_annotated"],
     "path": ["model/_decisions/tag_value.py"],
     "path-from-src": ["src/datamodel_code_generator/_mro.py"],
@@ -50,8 +51,12 @@ GRAMMAR = {
     "plan-id": ["DC12"],
     "legacy-row-without-an-option": ["legacy-exact-ints-as-floats"],
     "decision-without-a-definition": ["omit_held_null"],
+    "decision-in-registry-order": ["omit_untaken_union_constraints"],
+    "fact-without-attribute-rows": ["Fact.MODEL_KIND"],
     "undocumented-option": ["--treat-dot-as-module"],
     "users-through-a-package": ["ConstraintsBase"],
+    "users-through-a-reexport": ["--kind", "symbol", "DEFAULT_FORMATTERS"],
+    "definition-in-a-conditional-block": ["--kind", "symbol", "_GenerationInput"],
     "path-with-no-rows": ["scripts/where.py"],
     "line-in-a-comprehension": ['scripts/related_tests.py::_git(root, "show", f"{left}:{name}") for name'],
 }
@@ -109,11 +114,24 @@ def test_where_reads_other_inputs(args: list[str], page: str | None, capsys: pyt
     assert_output(_where(capsys, args, page))
 
 
+def test_where_matches_a_note_by_the_file_it_cites(capsys: pytest.CaptureFixture[str]) -> None:
+    """A case note that cites ``file.py:name`` names that file's definition, not one of the same name elsewhere."""
+    page = f"{TABLES}\n\n### Case Notes\n\n- **#9** `_format_types.py:DEFAULT_FORMATTERS`\n"
+    answers = [_where(capsys, [f"{path}:DEFAULT_FORMATTERS"], page) for path in ("_format_types.py", "format.py")]
+    assert_output(_unmasked("".join(answers)))
+
+
 def test_where_refuses_a_path_outside_the_repository(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A file outside the repository is never read."""
     outside = tmp_path / "outside.py"
     outside.write_text("value = 1\n", encoding="utf-8")
     assert_output(_where(capsys, [str(outside)]).replace(str(outside), "<path>"))
+
+
+def test_where_reports_a_source_it_cannot_read(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A repository without the architecture page exits 2 and names the page."""
+    code = where.main(["Fact.BASES"], root=tmp_path)
+    assert_output(f"exit status {code}\n{capsys.readouterr().err}")
 
 
 def test_where_needs_one_query(capsys: pytest.CaptureFixture[str]) -> None:
@@ -129,7 +147,9 @@ def test_where_keeps_to_its_line_limit(capsys: pytest.CaptureFixture[str]) -> No
     for query in ("plans", "use_annotated", "required"):
         lines = _where(capsys, [query]).splitlines()
         report.append(f"{query}: {len(lines) - 1 > LINE_LIMIT} {max(map(len, lines)) > LINE_WIDTH}")
-    report.append(f"all: {len(_where(capsys, ['--all', 'use_annotated']).splitlines()) > LINE_LIMIT}")
+    every_line = _where(capsys, ["--all", "use_annotated"]).splitlines()
+    every_width = _where(capsys, ["--all", "apply_generic_base_class"]).splitlines()
+    report += [f"all: {len(every_line) > LINE_LIMIT}", f"all width: {max(map(len, every_width)) > LINE_WIDTH}"]
     assert_output("\n".join(report))
 
 

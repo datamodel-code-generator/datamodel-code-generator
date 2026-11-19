@@ -44,6 +44,7 @@ from datamodel_code_generator.cli_options import (
     OPTIONS,
     get_cli_option_doc_path,
 )
+from datamodel_code_generator.parser.base import Parser
 from datamodel_code_generator.preset import get_preset_infos
 from scripts._source_model import SourceModule, SourceTree
 from scripts.fact_tables import ATTRIBUTE_FACTS, RENDER_FACT_FREEZE_POINTS, Fact, FreezePoint, RenderFact
@@ -80,9 +81,11 @@ BULLET_KEY = re.compile(r"#(\d+)")
 NOTE_MARKUP = re.compile(r"\*\*|\[(#\d+)\]\([^)]*\)")
 DOC_LINE = re.compile(r'\s*[rRuU]?"""\s*(.*?)\s*(?:"""\s*)?$')
 HEADING = re.compile(r"^#{2,4} ")
+ATTRIBUTE = re.compile(r"\.(\w+)")
 SCOPES = {"module", "class", "function"}
 DEFS = {"function", "class"}
 ASSIGNS = {"assign", "annassign"}
+IMPORTS = {"import", "import-from"}
 
 
 class UnreadableError(Exception):
@@ -167,12 +170,13 @@ class Found(NamedTuple):
 
 
 class OptionInfo(NamedTuple):
-    """What the option table says of one option: its flag, config field, help section and help text."""
+    """What the option table says of one option: its flag, config field, help section, help text and spellings."""
 
     flag: str
     dest: str
     section: str
     help: str
+    spellings: tuple[str, ...]
 
 
 class Section(NamedTuple):
@@ -199,17 +203,21 @@ def short(text: str, width: int = WIDTH) -> str:
     return text if len(text) <= width else text[: width - 3] + "..."
 
 
-def _imports(text: str, module: str) -> bool:
-    """Whether the text has an import statement that names the module (its last part) in a module path or a list."""
-    name = re.escape(module)
-    return bool(
-        re.search(
-            rf"^[ \t]*(?:from[ \t]+\S*\b{name}\b\S*[ \t]+import\b|from[ \t]+\S+[ \t]+import[ \t]+(?:\([^)]*)?\b{name}\b"
-            rf"|import[ \t]+[^\n]*\b{name}\b)",
-            text,
-            re.MULTILINE,
-        )
-    )
+def _reads(model: SourceModule, binding: Binding) -> tuple[str, str]:
+    """Return the module and name a ``from`` import or a simple alias assignment reads, from the model's origin."""
+    alias = model.origin(binding.value) if binding.value is not None else None
+    source, _, name = ((binding.origin if binding.kind == "import-from" else alias) or "").rpartition(".")
+    return source, name
+
+
+def read_through(names: Iterable[str]) -> re.Pattern[str]:
+    """Return the pattern of the text by which a module reads a name of another: an import of it or ``.name``.
+
+    Between ``import`` and the name only the characters of an import list (names, ``as``, commas, parentheses, line
+    breaks and comments) may stand.
+    """
+    alternatives = "|".join(map(re.escape, sorted(names)))
+    return re.compile(rf"\bimport\b(?:[\s\w,()\\]|#[^\n]*\n)*?\b(?:{alternatives})\b|\.\s*(?:{alternatives})\b")
 
 
 def clip(line: str) -> str:
@@ -301,8 +309,13 @@ def _notes(lines: list[str], sections: list[str]) -> list[Row]:
 
 
 @cache
-def _text(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+def _text(root: Path, relative: str) -> str:
+    """Return the text of a file of the repository; a file that cannot be read raises `UnreadableError`."""
+    try:
+        return (root / relative).read_text(encoding="utf-8")
+    except OSError as error:
+        message = f"{relative}: cannot be read ({error.strerror})"
+        raise UnreadableError(message) from error
 
 
 @cache
@@ -312,7 +325,7 @@ def _trees(root: Path) -> tuple[SourceTree, SourceTree]:
 
 @cache
 def _rules(root: Path) -> list[dict]:
-    return tomllib.loads(_text(root / RULES))["rule"]
+    return tomllib.loads(_text(root, RULES))["rule"]
 
 
 @cache
@@ -321,16 +334,24 @@ def _recommender_options() -> dict[str, dict]:
     return json.loads(resource.read_text(encoding="utf-8"))["options"]
 
 
+def _registry(cls: type[Parser]) -> list[PassDecl]:
+    """Return the declarations of a parser class's decision registry, in the order the decision phase runs them."""
+    return [DECISION_DECLS[decision.spec["name"]] for decision in cls._DECISION_PASSES]
+
+
+@cache
+def _pipeline() -> tuple[PassDecl, ...]:
+    """Return the passes in execution order: ``PASS_DECLS`` as listed, the registry of ``Parser`` where it runs."""
+    decisions = _registry(Parser)
+    start = next(
+        (index for index, other in enumerate(PASS_DECLS) if other.phase.value > decisions[0].phase.value),
+        len(PASS_DECLS),
+    )
+    return (*PASS_DECLS[:start], *decisions, *PASS_DECLS[start:])
+
+
 def _passes() -> dict[str, PassDecl]:
-    return {declaration.name: declaration for declaration in [*PASS_DECLS, *DECISION_DECLS.values()]}
-
-
-def _phase_of(declaration: PassDecl) -> int:
-    return declaration.phase.value
-
-
-def _pipeline() -> list[PassDecl]:
-    return sorted([*PASS_DECLS, *DECISION_DECLS.values()], key=_phase_of)
+    return {declaration.name: declaration for declaration in _pipeline()}
 
 
 def _facts(query: str) -> list[Fact | RenderFact]:
@@ -344,13 +365,14 @@ def _facts(query: str) -> list[Fact | RenderFact]:
 
 
 def _option_of(query: str) -> OptionInfo | None:
-    """Return the option a flag, its ``--no-`` form or its config field names."""
+    """Return the option a flag, its ``--no-`` form (a toggle's, as argparse adds it) or its config field names."""
     for option in OPTIONS:
-        names = {*option.flags, option.dest}
-        names |= {f"--no-{flag[2:]}" for flag in option.flags if flag.startswith("--")}
-        if query in names:
+        toggle = option.arguments.get("action") is argparse.BooleanOptionalAction
+        negated = tuple(f"--no-{flag[2:]}" for flag in option.flags if toggle and flag.startswith("--"))
+        if query in {*option.flags, *negated, option.dest}:
             flag = next((flag for flag in option.flags if flag.startswith("--")), option.flags[0])
-            return OptionInfo(flag, option.dest, option.section.value, str(option.arguments.get("help", "")))
+            help_text = str(option.arguments.get("help", ""))
+            return OptionInfo(flag, option.dest, option.section.value, help_text, (flag, *negated))
     return None
 
 
@@ -375,10 +397,11 @@ class Repo:
 
     def text(self, path: str) -> str:
         """Return the source text of a module path."""
-        return _text(self.root / path)
+        return _text(self.root, path)
 
     def model(self, path: str) -> SourceModule:
-        """Return the source model of a module path."""
+        """Return the source model of a module path; its text is read first, where a failed read raises."""
+        self.text(path)
         tree, name = self.names[path]
         return tree.module(name)
 
@@ -406,15 +429,17 @@ class Repo:
         parent = scope.parent.kind if scope.parent else "module"
         return Found(path, scope.line, scope.kind, scope.qualname, module, parent, doc[1] if doc else "")
 
-    def definitions(self, name: str, path: str | None = None) -> list[Found]:
-        """Return every definition of a name: defs and classes by qualified name, module-level assignments by name."""
-        leaf = name.rpartition(".")[2]
-        declared = re.compile(
-            rf"^\s*(?:async\s+def|def|class)\s+{re.escape(leaf)}\b|^{re.escape(leaf)}\s*[:=]", re.MULTILINE
-        )
+    def definitions(self, name: str, path: str | None = None, *, everywhere: bool = False) -> list[Found]:
+        """Return every definition of a name: defs and classes by qualified name, module-level assignments by name.
+
+        Only the files whose text can hold one are read: a ``def`` or ``class`` statement of the name, or the name
+        before ``=``, ``:``, ``,``, ``)`` or ``]`` as an assignment target is; ``everywhere`` reads every file.
+        """
+        leaf = re.escape(name.rpartition(".")[2])
+        declared = re.compile(rf"^\s*(?:async\s+def|def|class)\s+{leaf}\b|(?<![\w.]){leaf}\s*[=:,)\]]", re.MULTILINE)
         found: list[Found] = []
         for rel in [path] if path else self.names:
-            if not declared.search(self.text(rel)):
+            if not (everywhere or declared.search(self.text(rel))):
                 continue
             model = self.model(rel)
             found += [
@@ -438,50 +463,55 @@ class Repo:
         known = {(site.path, site.line) for site in found}
         return [site for site in self.definitions(name.rpartition(".")[2]) if (site.path, site.line) not in known]
 
-    def module_users(self, found: Found) -> dict[str, set[str]]:
-        """Return the scopes by file that read a module-level definition, by the binding the name leads to."""
+    def module_users(self, found: Found, *, everywhere: bool = False) -> dict[str, set[str]]:
+        """Return the scopes by file that read a module-level definition, by the binding the name leads to.
+
+        A name leads to the definition when its binding reads it or a module-level name that does (a re-export or an
+        alias, found until no new one appears), as the model gives what each binding reads. Outside the defining file
+        such a binding imports the name or reads it as ``module.name``, so only the files whose text does either are
+        read; ``everywhere`` reads every file.
+        """
         _, module = self.names[found.path]
-        leaf, last = found.name, module.rpartition(".")[2]
+        names = {(module, found.name)}
+        files = self._spelling(names, found.path, everywhere=everywhere)
+        while more := {name for rel in files for name in self._reexports(rel, names)} - names:
+            names |= more
+            files = self._spelling(names, found.path, everywhere=everywhere)
+        modules = {name for _, name in self.names.values()}
         users: dict[str, set[str]] = {}
-        for rel, (tree, other) in self.names.items():
-            text = self.text(rel)
-            if rel != found.path and not (word(leaf).search(text) and _imports(text, last)):
-                continue
+        for rel in files:
             model = self.model(rel)
-            direct, aliases = self._bindings_of(model, tree, other, module, leaf)
+            imports = [binding for binding in model.bindings() if binding.kind in IMPORTS]
+            direct = [binding for binding in imports if _reads(model, binding) in names]
             if rel == found.path:
-                direct = [*direct, *model.module_scope.bindings.get(leaf, [])]
-            direct_names, alias_names = {b.name for b in direct}, {b.name for b in aliases}
-            lines = text.splitlines()
+                direct += model.module_scope.bindings.get(found.name, [])
+            aliases = {b.name: b.origin for b in imports if b.origin in modules}
+            direct_names = {binding.name for binding in direct}
+            lines = self.text(rel).splitlines()
             for reference in model.references:
                 if reference.name in direct_names:
                     if any(binding in direct for binding in model.resolve(reference.node).bindings):
                         users.setdefault(rel, set()).add(_scope_name(reference.scope))
-                elif reference.name in alias_names:
+                elif reference.name in aliases:
                     after = lines[reference.line - 1][reference.column + len(reference.name) :]
-                    if after.startswith(".") and word(leaf).match(after[1:]):
+                    if (read := ATTRIBUTE.match(after)) and (aliases[reference.name], read[1]) in names:
                         users.setdefault(rel, set()).add(_scope_name(reference.scope))
         return users
 
-    @staticmethod
-    def _bindings_of(
-        model: SourceModule, tree: SourceTree, module: str, target: str, leaf: str
-    ) -> tuple[list[Binding], list[Binding]]:
-        """Return the import bindings of a module that lead to ``target.leaf``, and those of ``target`` itself."""
-        direct: list[Binding] = []
-        aliases: list[Binding] = []
-        for binding in model.bindings():
-            if binding.kind not in {"import", "import-from"} or binding.origin is None:
-                continue
-            if binding.origin == target:
-                aliases.append(binding)
-            elif binding.origin == f"{target}.{leaf}":
-                direct.append(binding)
-            elif binding.scope is model.module_scope and leaf in {binding.name, binding.origin.rpartition(".")[2]}:
-                leads = tree.definition(module, binding.name)
-                if any(site.module == target and site.name == leaf for site in leads):
-                    direct.append(binding)
-        return direct, aliases
+    def _spelling(self, names: set[tuple[str, str]], path: str, *, everywhere: bool) -> list[str]:
+        """Return the defining file and the files that import one of the names or read it as an attribute, or all."""
+        pattern = read_through({name for _, name in names})
+        return [rel for rel in self.names if everywhere or rel == path or pattern.search(self.text(rel))]
+
+    def _reexports(self, path: str, names: set[tuple[str, str]]) -> set[tuple[str, str]]:
+        """Return the module-level names of a file whose binding reads one of the names."""
+        _, module = self.names[path]
+        model = self.model(path)
+        return {
+            (module, name)
+            for name, bindings in model.module_scope.bindings.items()
+            if any(_reads(model, binding) in names for binding in bindings)
+        }
 
     def attribute_users(self, leaf: str, owners: Iterable[Found]) -> dict[str, int]:
         """Return the files that spell ``.leaf`` with the count: the defining modules and those naming the class."""
@@ -515,7 +545,7 @@ def _cited(found: tuple[Cite, ...], sites: list[Found]) -> bool:
 def _named(found: tuple[Cite, ...], sites: list[Found]) -> bool:
     """Whether a cell names a definition: as `_cited` does, or by the bare name of a module-level one."""
     return _cited(found, sites) or any(
-        cite.name == site.qualname for cite in found for site in sites if site.parent == "module"
+        cite.file is None and cite.name == site.qualname for cite in found for site in sites if site.parent == "module"
     )
 
 
@@ -711,22 +741,14 @@ def pass_block(repo: Repo, declaration: PassDecl) -> Block:
     return Block(Kind.PASS, f"pass {name}", sections)
 
 
-def _freeze_index(point: FreezePoint | None) -> int:
-    return list(FreezePoint).index(point) if point else -1
-
-
 def fact_block(member: Fact | RenderFact) -> Block:
     """Return the answer for a fact: its attributes, the passes that write and read it, where it becomes final."""
     rows = [row for row in ATTRIBUTE_FACTS if member in row.facts]
     order = _pipeline()
     writers = [declaration for declaration in order if member in declaration.writes]
     readers = [declaration for declaration in order if member in declaration.reads]
-    frozen = (
-        RENDER_FACT_FREEZE_POINTS[member]
-        if isinstance(member, RenderFact)
-        else max((row.frozen_at for row in rows), key=_freeze_index, default=None)
-    )
-    head = [f"freezes at {frozen.name} ({frozen.value})" if frozen else "no freeze point"]
+    frozen = RENDER_FACT_FREEZE_POINTS[member] if isinstance(member, RenderFact) else FreezePoint.B1
+    head = [f"freezes at {frozen.name} ({frozen.value})"]
     final = {row.final_after for row in rows}
     head += [f"final after its last declared writer: {last.name} ({last.phase.name})" for last in writers[-1:]]
     head += [
@@ -815,7 +837,7 @@ def option_block(repo: Repo, option: OptionInfo) -> Block:
         if field_line.search(repo.text(rel))
         and any(dest in s.bindings for s in repo.model(rel).scopes if s.kind == "class")
     ]
-    names = {option.flag, f"--no-{option.flag[2:]}"}
+    names = set(option.spellings)
     rows = [row for row in repo.page.decisions if any(cite.name in names for cite in cites(row.text))]
     legacy = [row for row in repo.page.legacy if any(cite.name in names for cite in cites(row.cells[1]))]
     sections = [
@@ -954,11 +976,11 @@ def render(blocks: list[Block], *, everything: bool) -> list[str]:
     for index, block in enumerate(blocks):
         share = None if everything else (LIMIT - len(out)) // (len(blocks) - index)
         out += _render_block(block, share)
-    return [clip(line) for line in out]
+    return out if everything else [clip(line) for line in out]
 
 
-def main(argv: list[str] | None = None, *, page: str | None = None) -> int:
-    """Print the answer for a query; ``page`` replaces the text of the architecture page (for tests)."""
+def main(argv: list[str] | None = None, *, page: str | None = None, root: Path = ROOT) -> int:
+    """Print the answer for a query; ``page`` replaces the text of the architecture page, ``root`` the repository."""
     parser = argparse.ArgumentParser(
         prog="python -m scripts.where", description=(__doc__ or "").partition("Usage:")[0].strip(), allow_abbrev=False
     )
@@ -974,7 +996,7 @@ def main(argv: list[str] | None = None, *, page: str | None = None) -> int:
     query = queries[0]
     kinds = {Kind(args.kind)} if args.kind else set(Kind)
     try:
-        repo = Repo(ROOT, read_page(page if page is not None else _text(ROOT / PAGE)))
+        repo = Repo(root, read_page(page if page is not None else _text(root, PAGE)))
         blocks = blocks_for(repo, query, kinds)
     except UnreadableError as error:
         sys.stderr.write(f"where: {error}\n")

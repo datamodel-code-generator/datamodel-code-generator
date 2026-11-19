@@ -11,7 +11,10 @@ all	where_script/where_grammar[all].txt
 ambiguous-name	where_script/where_grammar[ambiguous-name].txt
 case-note	where_script/where_grammar[case-note].txt
 config-field	where_script/where_grammar[config-field].txt	= where_script/where_answers[option].txt
+decision-in-registry-order	where_script/where_grammar[decision-in-registry-order].txt
 decision-without-a-definition	where_script/where_grammar[decision-without-a-definition].txt
+definition-in-a-conditional-block	where_script/where_grammar[definition-in-a-conditional-block].txt
+fact-without-attribute-rows	where_script/where_grammar[fact-without-attribute-rows].txt
 issue	where_script/where_grammar[issue].txt
 kind-fact	where_script/where_grammar[kind-fact].txt
 kind-symbol	where_script/where_grammar[kind-symbol].txt
@@ -22,6 +25,7 @@ line-in-a-script	where_script/where_grammar[line-in-a-script].txt
 line-in-module-scope	where_script/where_grammar[line-in-module-scope].txt
 method-with-users	where_script/where_grammar[method-with-users].txt
 negated-flag	where_script/where_grammar[negated-flag].txt	= where_script/where_answers[option].txt
+negated-flag-of-no-toggle	where_script/where_grammar[negated-flag-of-no-toggle].txt
 path	where_script/where_grammar[path].txt
 path-from-src	where_script/where_grammar[path-from-src].txt
 path-with-no-rows	where_script/where_grammar[path-with-no-rows].txt
@@ -33,10 +37,13 @@ unknown-legacy-row	where_script/where_grammar[unknown-legacy-row].txt
 unknown-name	where_script/where_grammar[unknown-name].txt
 unknown-with-kind	where_script/where_grammar[unknown-with-kind].txt
 users-through-a-package	where_script/where_grammar[users-through-a-package].txt
+users-through-a-reexport	where_script/where_grammar[users-through-a-reexport].txt
 [test_where_keeps_to_its_line_limit]
 	where_script/where_keeps_to_its_line_limit.txt
 [test_where_line_answers_as_its_symbol]
 	where_script/where_line_answers_as_its_symbol.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_where_matches_a_note_by_the_file_it_cites]
+	where_script/where_matches_a_note_by_the_file_it_cites.txt
 [test_where_needs_one_query]
 	where_script/where_needs_one_query.txt
 [test_where_reads_other_inputs]
@@ -47,5 +54,7 @@ page-without-case-notes	where_script/where_reads_other_inputs[page-without-case-
 page-without-tables	where_script/where_reads_other_inputs[page-without-tables].txt
 [test_where_refuses_a_path_outside_the_repository]
 	where_script/where_refuses_a_path_outside_the_repository.txt
+[test_where_reports_a_source_it_cannot_read]
+	where_script/where_reports_a_source_it_cannot_read.txt
 [test_where_spells_no_table_entry]
 	where_script/where_spells_no_table_entry.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt

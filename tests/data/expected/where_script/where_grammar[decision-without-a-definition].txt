@@ -4,5 +4,5 @@ pass omit_held_null
   DECIDE, scope global, transform; condition: --omit-redundant-reference-null
   reads: field_types, model_kind, nullable
   writes: field_types, nullable
-  neighbours: runs after apply_generic_base_class, before omit_untaken_union_constraints
+  neighbours: runs after apply_generic_base_class, before serialize_as_any_for_every_subclass
   defined: no definition found

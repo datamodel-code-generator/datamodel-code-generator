@@ -494,31 +494,67 @@ def _private_scope_walk(form: Path) -> list[str]:
 
 
 def _where_disagreements(form: Path) -> list[str]:
-    """Compare what `scripts.where` reports for a form's symbols and lines with the model's own answers."""
-    found = []
+    """Compare what `scripts.where` answers on a form's modules with the model's own answers and with every file read.
+
+    The form keeps its layout under ``scripts/`` so that its imports between modules resolve. Each scope is defined
+    where the model has it, each line belongs to the scope the model gives, and reading only the files whose text can
+    hold an answer gives the same definitions and users as reading every file.
+    """
     with tempfile.TemporaryDirectory() as folder:
         root = Path(folder)
+        (root / "src" / where.PACKAGE).mkdir(parents=True)
         (root / "scripts").mkdir()
         (root / where.RULES).write_text("rule = []\n", encoding="utf-8")
-        (root / "src" / where.PACKAGE).mkdir(parents=True)
-        for index, (name, text) in enumerate(_form_files(form)):
-            (root / "scripts" / f"form{index}_{name}.py").write_text(text, encoding="utf-8")
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            target = (
+                root
+                / "scripts"
+                / (form.name / path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+            )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
         repo = where.Repo(root, where.Page([], [], [], []))
+        found = []
         for path in sorted(repo.names):
             model = repo.model(path)
-            for scope in model.scopes:
-                if scope.kind in where.DEFS and "<locals>" not in scope.qualname:
-                    sites = {(site.path, site.line) for site in repo.definitions(scope.qualname, path)}
-                    if (path, scope.line) not in sites:
-                        found.append(f"{path}:{scope.line}: where does not define {scope.qualname}")
-            for line, text in enumerate(repo.text(path).splitlines(), 1):
-                if not text.strip():
-                    continue
-                expected = model.owner(line, len(text) - len(text.lstrip()))
-                reported = where.line_block(repo, path, line)[0].sections[0].items
-                names = [item.partition(" (")[0] for item in reported]
-                if expected.kind in where.SCOPES and names[-1:] != [expected.qualname or "<module>"]:
-                    found.append(f"{path}:{line}: where reports {names}, the model {expected.qualname!r}")
+            scopes = [scope for scope in model.scopes if scope.kind in where.DEFS and "<locals>" not in scope.qualname]
+            names = {scope.qualname for scope in scopes}
+            names |= {
+                name
+                for name, bindings in model.module_scope.bindings.items()
+                if any(binding.kind in where.ASSIGNS for binding in bindings)
+            }
+            definitions = {name: repo.definitions(name) for name in sorted(names)}
+            found += [
+                f"{path}:{scope.line}: where does not define {scope.qualname}"
+                for scope in scopes
+                if (path, scope.line) not in {(site.path, site.line) for site in definitions[scope.qualname]}
+            ]
+            found += [
+                f"{path}: {name} is defined in files where does not read: {sorted(set(every) - set(sites))}"
+                for name, sites in definitions.items()
+                if sites != (every := repo.definitions(name, everywhere=True))
+            ]
+            found += [
+                f"{site.path}:{site.line}: {site.qualname} is read in files where does not read: {sorted(every)}"
+                for sites in definitions.values()
+                for site in sites
+                if site.path == path
+                and site.parent == "module"
+                and repo.module_users(site) != (every := repo.module_users(site, everywhere=True))
+            ]
+            found += [
+                f"{path}:{line}: where reports {reported}, the model {expected.qualname!r}"
+                for line, text in enumerate(repo.text(path).splitlines(), 1)
+                if text.strip()
+                and (expected := model.owner(line, len(text) - len(text.lstrip()))).kind in where.SCOPES
+                and (
+                    reported := [
+                        item.partition(" (")[0] for item in where.line_block(repo, path, line)[0].sections[0].items
+                    ]
+                )[-1:]
+                != [expected.qualname or "<module>"]
+            ]
     return found
 
 
@@ -528,7 +564,7 @@ RULES: dict[str, RuleRun] = {
     ),
     "private-scope-walk": RuleRun("scripts.check_ratchets", frozenset({"bindings", "references"}), _private_scope_walk),
     "where-agrees-with-the-model": RuleRun(
-        "scripts.where", frozenset({"bindings", "references", "extents"}), _where_disagreements
+        "scripts.where", frozenset({"bindings", "references", "imports", "extents"}), _where_disagreements
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
