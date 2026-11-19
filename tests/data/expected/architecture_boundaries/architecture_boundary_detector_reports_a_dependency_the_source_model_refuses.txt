@@ -1,0 +1,2 @@
+Architecture boundary violations found:
+TMP/src/datamodel_code_generator/dependency.py:0:0: [unreadable-source] the source model refuses it: TMP/src/datamodel_code_generator/dependency.py:3: nonlocal missing has no enclosing binding (form: Assign); the source model has no rule for this form: teach scripts/_source_model.py and add a form under tests/data/source_forms/<question>/ in the same pull request (in <module>)

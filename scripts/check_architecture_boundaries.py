@@ -651,6 +651,14 @@ def _scope_qualname(scope: Scope | None) -> str:
     return ".".join(reversed(parts)) or "<module>"
 
 
+def _absolute_name(name: str, anchor: str) -> str:
+    """Return a relative module name counted from a package, the name itself where it leaves the package."""
+    try:
+        return importlib.util.resolve_name(name, anchor)
+    except ImportError:
+        return name
+
+
 class ArchitectureBoundaryReader:
     """Find forbidden imports and semantic backend inspection for one layer, from the source model's answers."""
 
@@ -717,10 +725,17 @@ class ArchitectureBoundaryReader:
         if module == "datamodel_code_generator.model" and name in CONCRETE_BACKEND_ROOTS:
             self._check_import(item.node, target)
             return
+        a_pass_module = (
+            self.layer == "parser-passes"
+            and module == "datamodel_code_generator.parser"
+            and any(_is_below(target, allowed) for allowed in _PARSER_PASS_IMPORTS)
+        )
         self._check_import(
             item.node,
             target
-            if self.layer in {"reference", "target", "requirements", "constraints", "regex"} or name.startswith("_")
+            if self.layer in {"reference", "target", "requirements", "constraints", "regex"}
+            or name.startswith("_")
+            or a_pass_module
             else module,
         )
 
@@ -884,7 +899,10 @@ class ArchitectureBoundaryReader:
                 )
         elif self.layer == "input-model":
             head = reading.head(node)
-            if head is not None and reading.origins(head.node) & _DATA_MODEL_TYPE_ORIGINS:
+            if (
+                head is not None
+                and (reading.origins(head.node) | reading.origins(node.value)) & _DATA_MODEL_TYPE_ORIGINS
+            ):
                 self._add(
                     node,
                     "input-model-output-policy",
@@ -895,8 +913,8 @@ class ArchitectureBoundaryReader:
     def _parser_attribute(self, node: ast.Attribute) -> None:
         reading = self.reading
         receiver = node.value
-        origins = reading.origins(receiver) if receiver in reading.names else set()
-        if "datamodel_code_generator" in origins and node.attr.startswith("_"):
+        origins = reading.origins(receiver) if reading.head(receiver) is not None else set()
+        if receiver in reading.names and "datamodel_code_generator" in origins and node.attr.startswith("_"):
             self._add(
                 node,
                 "parser-root-private-import",
@@ -957,25 +975,24 @@ class ArchitectureBoundaryReader:
         """Return the modules a dynamic import call may load, the strings its name argument may hold."""
         if not self._is_dynamic_import(node.func) or (argument := call_argument(node, 0, "name")) is None:
             return []
-        return [target for value in self.reading.strings(argument) if (target := self._resolved_target(node, value))]
+        targets = (target for value in self.reading.strings(argument) for target in self._resolved_targets(node, value))
+        return list(dict.fromkeys(target for target in targets if target))
 
-    def _resolved_target(self, node: ast.Call, target: str) -> str:
-        """Return the absolute module a relative ``import_module`` name reads, given its ``package``."""
-        if self.reading.last_name(node.func) != "import_module" or not target.startswith("."):
-            return target
+    def _resolved_targets(self, node: ast.Call, target: str) -> list[str]:
+        """Return the absolute modules a relative ``import_module`` name reads from each ``package`` it may have."""
+        reads_relative = "importlib.import_module" in self.reading.origins(node.func) or (
+            self.reading.last_name(node.func) == "import_module"
+        )
         package = call_argument(node, 1, "package")
-        if package is None or (anchor := self._resolved_package(package)) is None:
-            return target
-        try:
-            return importlib.util.resolve_name(target, anchor)
-        except ImportError:
-            return target
+        anchors = [] if package is None or not reads_relative or not target.startswith(".") else self._packages(package)
+        resolved = [_absolute_name(target, anchor) for anchor in anchors]
+        return resolved or [target]
 
-    def _resolved_package(self, node: ast.expr) -> str | None:
-        """Return the package name an expression gives: ``__package__`` of this module, or a string."""
+    def _packages(self, node: ast.expr) -> list[str]:
+        """Return the package names an expression may give: ``__package__`` of this module, or its strings."""
         if self.reading.spelled(node) == "__package__":
-            return self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]
-        return next(iter(self.reading.strings(node)), None)
+            return [self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]]
+        return self.reading.strings(node)
 
     def _is_sys_modules_registry(self, node: ast.expr) -> bool:
         return "sys.modules" in self.reading.origins(node)
@@ -1151,6 +1168,13 @@ def _in_host_scope(path: Path) -> bool:
     return False
 
 
+def _annotation_shape(annotation: ast.expr) -> ast.expr:
+    """Return an annotation as written: the expression a string annotation holds, else the annotation itself."""
+    if isinstance(annotation, ast.Constant) and isinstance(annotation.value, str):
+        return ast.parse(annotation.value.strip(), mode="eval").body
+    return annotation
+
+
 class PackageIndex:
     """The models of the package's modules, read once, and the names a module takes from another one."""
 
@@ -1158,6 +1182,8 @@ class PackageIndex:
         """Start with no module read."""
         self._models: dict[str, SourceModule | None] = {}
         self._resolved: dict[str, str] = {}
+        self.refused: dict[str, str] = {}
+        """The files the source model refuses when they are read as dependencies: display path -> its message."""
 
     def add(self, module: str, model: SourceModule) -> None:
         """Register a module's model, so that its own definitions and imports resolve."""
@@ -1171,7 +1197,12 @@ class PackageIndex:
             for path in (relative.with_name(f"{relative.name}.py"), relative / "__init__.py"):
                 if package == "datamodel_code_generator" and path.is_file():
                     text = path.read_text(encoding="utf-8")
-                    self._models[module] = SourceModule(text, _display_path(path.resolve()), module)
+                    display = _display_path(path.resolve())
+                    try:
+                        self._models[module] = SourceModule(text, display, module)
+                    except SourceModelError as error:
+                        self._models[module] = None
+                        self.refused[display] = str(error)
                     break
             else:
                 self._models[module] = None
@@ -1207,12 +1238,17 @@ class HostIndex(PackageIndex):
     def of_annotation(self, model: SourceModule, annotation: ast.expr | None) -> frozenset[str] | None:
         """Return the members of the Host Protocol that a parameter's annotation names, else None.
 
-        The annotation names a Host as ``Host``, ``mod.Host``, ``Host[...]``, ``type[Host]`` or ``"Host"``.
+        The annotation names a Host as ``Host``, ``mod.Host``, ``Host[...]``, ``type[Host]`` or ``"Host"``; a union
+        (``Host | None``) names every member of it, and a receiver that may be another type reaches no Host's members.
         """
         types = model.type_expressions(annotation) if annotation is not None else []
-        if types and model.origin(types[0]) == "builtins.type":
+        if annotation is None or not types:
+            return None
+        shape = _annotation_shape(annotation)
+        if model.origin(types[0]) == "builtins.type":
             types = types[1:]
-        return self.members(model.origin(types[0])) if types else None
+            shape = shape.slice if isinstance(shape, ast.Subscript) else shape
+        return None if isinstance(shape, ast.BinOp) or not types else self.members(model.origin(types[0]))
 
     def members(self, origin: str | None) -> frozenset[str] | None:
         """Return the members the Host Protocol that a dotted origin names declares, else None."""
@@ -1460,29 +1496,26 @@ def check_files(
     return sorted(violations, key=lambda item: (item.path, item.line, item.column, item.rule, item.target))
 
 
+def _unreadable(path: str, error: object) -> Violation:
+    """Return the violation of a file the source model refuses: no rule can read it, so none is silently skipped."""
+    return Violation(path, 0, 0, "<module>", "unreadable-source", "the source model refuses it", str(error))
+
+
 def _raw_violations(files: list[tuple[Path, Layer]], host_files: list[Path]) -> list[Violation]:
     """Return every finding of the layer rules on ``files`` and of the host rule on ``host_files``."""
     layers = dict(files)
     host_scope = set(host_files)
     hosts = HostIndex()
     raw_violations: list[Violation] = []
+    reported: set[str] = set()
     for path in dict.fromkeys((*layers, *host_files)):
         layer = layers.get(path)
         module = _module_name(path, layer or "parser")
         try:
             model = SourceModule(path.read_text(encoding="utf-8"), _display_path(path), module)
         except SourceModelError as error:
-            raw_violations.append(
-                Violation(
-                    _display_path(path),
-                    0,
-                    0,
-                    "<module>",
-                    "unreadable-source",
-                    "the source model refuses it",
-                    str(error),
-                )
-            )
+            raw_violations.append(_unreadable(_display_path(path), error))
+            reported.add(_display_path(path))
             continue
         hosts.add(module, model)
         reading = _Reading(model, hosts)
@@ -1490,6 +1523,7 @@ def _raw_violations(files: list[tuple[Path, Layer]], host_files: list[Path]) -> 
             raw_violations.extend(ArchitectureBoundaryReader(path, layer, reading).run())
         if path in host_scope:
             raw_violations.extend(HostPrivateAccessReader(path, reading, hosts).run())
+    raw_violations.extend(_unreadable(path, message) for path, message in hosts.refused.items() if path not in reported)
     return raw_violations
 
 

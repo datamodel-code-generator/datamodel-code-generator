@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import typing
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -605,7 +606,7 @@ ARCHITECTURE_LAYERS: tuple[check_architecture_boundaries.Layer, ...] = (
     "reference",
     "shared-model",
 )
-"""The layers with rules of their own on names; a leaf layer checks only the modules a dynamic import names."""
+"""The layers a form runs under unless it names its own: those with rules of their own on names."""
 
 
 def _architecture_boundaries(form: Path) -> list[str]:
@@ -619,9 +620,13 @@ def _architecture_boundaries(form: Path) -> list[str]:
             target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
             paths.append(target)
         asked = [item.strip() for item in _directives(form).get("layers", "").split(",") if item.strip()]
-        runs = [(layer, [(path, layer) for path in paths], []) for layer in ARCHITECTURE_LAYERS]
-        runs.append(("host", [], paths))
-        runs = [run for run in runs if run[0] in asked or not asked]
+        known = {*typing.get_args(check_architecture_boundaries.Layer), "host"}
+        if unknown := sorted(set(asked) - known):
+            msg = f"{form.name}: layers that are none of the guard's: {unknown}"
+            raise ValueError(msg)
+        layers = [name for name in asked if name != "host"] or ([] if asked else list(ARCHITECTURE_LAYERS))
+        runs = [(layer, [(path, layer) for path in paths], []) for layer in layers]
+        runs += [("host", [], paths)] if "host" in asked or not asked else []
         found = []
         for name, files, hosts in runs:
             violations = check_architecture_boundaries.check_files(files, allowlist={}, host_files=hosts)
@@ -631,6 +636,15 @@ def _architecture_boundaries(form: Path) -> list[str]:
                 for violation in violations
             ]
         return found
+
+
+def test_a_form_names_only_the_layers_the_guard_has(tmp_path: Path) -> None:
+    """A layer the guard does not have stops the form, instead of selecting no run and finding nothing."""
+    form = tmp_path / "form.py"
+    form.write_text('"""A form.\nlayers: parser, shared_model\n"""\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="layers") as error:
+        _architecture_boundaries(form)
+    assert_output(str(error.value) + "\n")
 
 
 def _where_disagreements(form: Path) -> list[str]:

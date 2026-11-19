@@ -1961,18 +1961,24 @@ class SourceModule(_CompilerCheck):
         head, parts = _chain(node)
         resolution = self._resolved.get(head) if head is not None else None
         return [
-            (".".join([origin, *parts]), binding.guard)
+            (".".join([origin, *parts]), guard)
             for binding in (resolution.bindings if resolution is not None else ())
-            for origin in self._binding_origins(binding, active)
+            for origin, guard in self._binding_origins(binding, active)
         ]
 
-    def _binding_origins(self, binding: Binding, active: frozenset[Binding]) -> list[str]:
-        """Return every path a binding may give its name; an alias of a multiply bound name gives each of theirs."""
+    def _binding_origins(self, binding: Binding, active: frozenset[Binding]) -> list[tuple[str, Guard]]:
+        """Return every path a binding may give its name, each with the guard it holds under.
+
+        An alias of a multiply bound name gives each path of theirs, under its own guard and the alias's.
+        """
         alias = binding.kind in {"assign", "annassign"} and isinstance(binding.value, (ast.Name, ast.Attribute))
         if alias and binding.origin is None and binding not in active and binding.value is not None:
-            return [origin for origin, _ in self._origins(binding.value, active | {binding})]
+            return [
+                (origin, (*binding.guard, *(condition for condition in guard if condition not in binding.guard)))
+                for origin, guard in self._origins(binding.value, active | {binding})
+            ]
         found = self._binding_origin(binding, active)
-        return [] if found is None else [found]
+        return [] if found is None else [(found, binding.guard)]
 
     def _binding_origin(self, binding: Binding, active: frozenset[Binding]) -> str | None:
         if binding.origin is not None:

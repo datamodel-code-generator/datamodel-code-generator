@@ -18,6 +18,7 @@ bindings/host_private_access_concern: host_private_access_concern.py:31: _state 
 bindings/host_private_access_concern: host_private_access_concern.py:35: _state with a value
 bindings/host_private_access_receivers: host_private_access_receivers.py:10: _state no value
 bindings/host_private_access_receivers: host_private_access_receivers.py:14: _state with a value
+bindings/host_private_access_unions: host_private_access_unions.py:13: _state no value
 bindings/lambda_in_class_annotation_future: lambda_in_class_annotation_future.py:9: x with a value
 bindings/match_captures: match_captures.py:7: __match_args__ with a value
 bindings/match_captures: match_captures.py:11: RED with a value
