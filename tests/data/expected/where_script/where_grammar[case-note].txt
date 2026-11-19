@@ -1,4 +1,7 @@
 exit status 0
 issue #4834
+  legacy rows (2):
+    legacy-collapse-reuse [#4834] collapse-reuse skips root models, renders each round anew and tells bases apart by reference
+    legacy-tree-scope [#4834] tree-scope reuse compares models by its own key
   case notes (1):
     #4834 (set and list models merged): L3 deduplication (`delete_duplicate_models` with `--collapse-reuse-models`, `reuse_model_tr...

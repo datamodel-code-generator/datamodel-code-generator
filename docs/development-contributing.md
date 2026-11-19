@@ -445,8 +445,12 @@ A decision that several parser passes or output models need has one home in
 `docs/architecture.md` ("One home per decision"): a pure core and its adapters.
 Build the facts in an adapter and call the core; for a decision without a home,
 add the home in the same change instead of writing a second copy. A new `legacy-*`
-row needs a row of the "Legacy rows" table in `docs/architecture.md` with what
-deletes it (`fix`); `tests/test_legacy_rows.py` fails for a row on one side only.
+row needs a record in `scripts/legacy_rows.py`: what it keeps, what deletes it
+(`fix`: an issue number or `keep`), the option that writes the new form, if any,
+and the arguments of a generation that reaches it (`witness`). Run
+`python scripts/build_architecture_docs.py` to write the "Legacy rows" table of
+`docs/architecture.md` from the records; `tests/test_legacy_rows.py` fails for a
+row on one side only.
 
 ## Parser generation state
 

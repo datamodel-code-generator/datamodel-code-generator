@@ -7,7 +7,8 @@ Usage:
 The architecture page is intentionally not fully generated. This script only
 syncs the code-sourced inventory that tends to drift during releases: parser
 routes, parser inheritance, output backends, config model sizes, and formatter
-names, and the pass table that ``scripts/pass_decls.py`` declares.
+names, the pass table that ``scripts/pass_decls.py`` declares, and the table of legacy rows that
+``scripts/legacy_rows.py`` declares.
 """
 
 from __future__ import annotations
@@ -47,13 +48,15 @@ from datamodel_code_generator.config import (  # noqa: E402
 )
 from datamodel_code_generator.format import DEFAULT_FORMATTERS, Formatter, PythonVersionMin  # noqa: E402
 from datamodel_code_generator.model import get_data_model_types  # noqa: E402
-from scripts.fact_tables import Fact  # noqa: E402
+from scripts import fact_tables, legacy_rows  # noqa: E402
 from scripts.pass_decls import PASS_DECLS, PassDecl  # noqa: E402
 
 BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED ARCHITECTURE INVENTORY -->"
 END_MARKER = "<!-- END AUTO-GENERATED ARCHITECTURE INVENTORY -->"
 PASS_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED PASS DECLARATIONS -->"
 PASS_END_MARKER = "<!-- END AUTO-GENERATED PASS DECLARATIONS -->"
+LEGACY_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED LEGACY ROWS -->"
+LEGACY_END_MARKER = "<!-- END AUTO-GENERATED LEGACY ROWS -->"
 
 PARSER_ROUTE_NOTES: dict[InputFileType, str] = {
     InputFileType.Auto: "Resolved before parser selection by content inference.",
@@ -241,8 +244,10 @@ def generate_architecture_inventory() -> str:
 
 def _facts_cell(facts: frozenset[Any]) -> str:
     """List the facts of a declaration, with ``every Fact`` for all members of ``Fact``."""
-    names = sorted(fact.name for fact in facts if not isinstance(fact, Fact) or not set(Fact) <= facts)
-    return ", ".join(["every Fact"] * (set(Fact) <= facts) + names) or "-"
+    names = sorted(
+        fact.name for fact in facts if not isinstance(fact, fact_tables.Fact) or not set(fact_tables.Fact) <= facts
+    )
+    return ", ".join(["every Fact"] * (set(fact_tables.Fact) <= facts) + names) or "-"
 
 
 def _pass_notes(decl: PassDecl) -> str:
@@ -289,9 +294,20 @@ def generate_pass_table() -> str:
     return "\n".join(lines) + "\n"
 
 
+def generate_legacy_table() -> str:
+    """Generate the table of legacy rows, in the order ``scripts/legacy_rows.py`` lists them."""
+    lines = ["", "| Row | Keeps | Fix |", "| --- | --- | --- |"]
+    lines.extend(
+        f"| `{row.name}` | {row.keeps} | {row.fix if row.fix == legacy_rows.KEEP else f'#{row.fix}'} |"
+        for row in legacy_rows.LEGACY_ROWS
+    )
+    return "\n".join(lines) + "\n"
+
+
 GENERATED_BLOCKS = (
     (BEGIN_MARKER, END_MARKER, generate_architecture_inventory),
     (PASS_BEGIN_MARKER, PASS_END_MARKER, generate_pass_table),
+    (LEGACY_BEGIN_MARKER, LEGACY_END_MARKER, generate_legacy_table),
 )
 """Each generated block of docs/architecture.md: its markers and the function that writes it."""
 

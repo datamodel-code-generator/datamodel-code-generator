@@ -34,4 +34,4 @@ option --use-annotated (config field use_annotated)
     row: which output model types are Pydantic's (`pydantic_v2.BaseModel`, `pydantic_v2.dataclass`): the o... [Placement Guide]
   legacy rows (2):
     legacy-alias-option-only [#5588] a required name without a property or an inherited field, and the tag field the discriminator pas...
-    legacy-stdlib-annotated [DC12] a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned
+    legacy-stdlib-annotated [keep] a stdlib dataclass `field(...)` under `--use-annotated` counts as unassigned

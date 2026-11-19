@@ -2,7 +2,8 @@ exit status 0
 legacy legacy-document-order
   fix: keep; keeps: without `--read-allof-parents-in-mro-order`, the C3 merge of an inherited schema reads the allOf parents of each sche...
   option --read-allof-parents-in-mro-order (config field read_allof_parents_in_mro_order): Typing customization; Typing Customization/-; since -
-  sites that spell it (5):
+  sites that spell it (6):
+    scripts/legacy_rows.py:<line> <module>
     src/datamodel_code_generator/parser/_inherited_schemas.py:<line> <module>
     src/datamodel_code_generator/parser/_inherited_schemas.py:<line> inherited_schema_parents
     src/datamodel_code_generator/parser/_inherited_schemas.py:<line> inherited_schema_parents

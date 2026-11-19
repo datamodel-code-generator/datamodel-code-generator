@@ -1,0 +1,14 @@
+[[change]]
+id = "legacy-rows-typed-table"
+category = "harness"
+title = "The where script reads the fixes of the legacy rows records"
+summary = "The legacy rows table cites an issue or keep instead of a plan id, and the where script lists scripts/legacy_rows.py among the places that spell a row; no generated output changes."
+covers = [
+    "where_script/where_answers[legacy-row].txt",
+    "where_script/where_answers[option].txt",
+    "where_script/where_grammar[case-note].txt",
+    "where_script/where_grammar[config-field].txt",
+    "where_script/where_grammar[legacy-row-without-an-option].txt",
+    "where_script/where_grammar[negated-flag].txt",
+    "where_script/where_grammar[plan-id].txt",
+]
