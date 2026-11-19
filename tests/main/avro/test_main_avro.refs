@@ -14,17 +14,17 @@ bytes_default_controls.yaml	main/avro/bytes_default_controls_pydantic_v2.py
 container_bytes_defaults.avsc	main/avro/container_bytes_defaults_pydantic_v2.py
 [test_avro_container_bytes_defaults]
 api-DataModelType.DataclassesDataclass-dataclass	main/avro/container_bytes_defaults_dataclass.py
-api-DataModelType.DataclassesDataclass-dataclass	main/avro/container_bytes_defaults_dataclass.txt
+api-DataModelType.DataclassesDataclass-dataclass	main/avro/main_avro/avro_container_bytes_defaults[api-DataModelType.DataclassesDataclass-dataclass].txt
 api-DataModelType.MsgspecStruct-msgspec	main/avro/container_bytes_defaults_msgspec.py
-api-DataModelType.MsgspecStruct-msgspec	main/avro/container_bytes_defaults_msgspec.txt
+api-DataModelType.MsgspecStruct-msgspec	main/avro/main_avro/avro_container_bytes_defaults[api-DataModelType.MsgspecStruct-msgspec].txt
 api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/container_bytes_defaults_pydantic_v2.py
-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/container_bytes_defaults_pydantic_v2.txt
+api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/main_avro/avro_container_bytes_defaults[api-DataModelType.PydanticV2BaseModel-pydantic_v2].txt
 cli-DataModelType.DataclassesDataclass-dataclass	main/avro/container_bytes_defaults_dataclass.py
-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/container_bytes_defaults_dataclass.txt
+cli-DataModelType.DataclassesDataclass-dataclass	main/avro/main_avro/avro_container_bytes_defaults[cli-DataModelType.DataclassesDataclass-dataclass].txt	= main/avro/main_avro/avro_container_bytes_defaults[api-DataModelType.DataclassesDataclass-dataclass].txt
 cli-DataModelType.MsgspecStruct-msgspec	main/avro/container_bytes_defaults_msgspec.py
-cli-DataModelType.MsgspecStruct-msgspec	main/avro/container_bytes_defaults_msgspec.txt
+cli-DataModelType.MsgspecStruct-msgspec	main/avro/main_avro/avro_container_bytes_defaults[cli-DataModelType.MsgspecStruct-msgspec].txt	= main/avro/main_avro/avro_container_bytes_defaults[api-DataModelType.MsgspecStruct-msgspec].txt
 cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/container_bytes_defaults_pydantic_v2.py
-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/container_bytes_defaults_pydantic_v2.txt
+cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/main_avro/avro_container_bytes_defaults[cli-DataModelType.PydanticV2BaseModel-pydantic_v2].txt	= main/avro/main_avro/avro_container_bytes_defaults[api-DataModelType.PydanticV2BaseModel-pydantic_v2].txt
 [test_avro_decimal_defaults]
 False-decimal_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_dataclass.py
 False-decimal_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_dataclass.txt
@@ -99,10 +99,10 @@ True-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_data
 True-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/decimal_defaults_simple_typed_dict.py
 [test_avro_decimal_defaults_preserve_raw_input]
-decimal_defaults.avsc	main/avro/decimal_defaults_converted.txt
 decimal_defaults.avsc	main/avro/decimal_defaults_pydantic_v2.py
+decimal_defaults.avsc	main/avro/main_avro/avro_decimal_defaults_preserve_raw_input[decimal_defaults.avsc].txt
 decimal_defaults_raw.yaml	main/avro/decimal_defaults_raw.py
-decimal_defaults_raw.yaml	main/avro/decimal_defaults_raw_converted.txt
+decimal_defaults_raw.yaml	main/avro/main_avro/avro_decimal_defaults_preserve_raw_input[decimal_defaults_raw.yaml].txt
 [test_avro_duration_defaults]
 False-duration_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_dataclass.py
 False-duration_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_dataclass.txt
@@ -177,10 +177,10 @@ True-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dat
 True-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 True-duration_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/duration_defaults_simple_typed_dict.py
 [test_avro_duration_defaults_preserve_raw_input]
-duration_defaults.avsc	main/avro/duration_defaults_converted.txt
 duration_defaults.avsc	main/avro/duration_defaults_pydantic_v2.py
+duration_defaults.avsc	main/avro/main_avro/avro_duration_defaults_preserve_raw_input[duration_defaults.avsc].txt
 duration_defaults_raw.yaml	main/avro/duration_defaults_raw.py
-duration_defaults_raw.yaml	main/avro/duration_defaults_raw_converted.txt
+duration_defaults_raw.yaml	main/avro/main_avro/avro_duration_defaults_preserve_raw_input[duration_defaults_raw.yaml].txt
 [test_avro_mapped_logical_defaults]
 DataModelType.DataclassesDataclass-dataclass	main/avro/mapped_logical_defaults.txt
 DataModelType.DataclassesDataclass-dataclass	main/avro/mapped_logical_defaults_dataclass.py
@@ -279,7 +279,7 @@ temporal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2-None	
 temporal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict-None	main/avro/temporal_defaults_simple_typed_dict.py
 temporal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_typed_dict_datetime.py
 [test_avro_temporal_defaults_preserve_raw_input]
-	main/avro/temporal_defaults_converted.txt
+	main/avro/main_avro/avro_temporal_defaults_preserve_raw_input.txt
 	main/avro/temporal_defaults_pydantic_v2.py
 [test_main_avro_auto_detection_leaves_json_schema_shapes_as_json_schema]
 {"$schema": "http://json-schema.org/draft-07/schema#", "type": "object"}	main/avro/main_avro/auto_detection_leaves_json_schema_shapes_as_json_schema[{_$schema__ _http___json~42bacfda.py
@@ -535,7 +535,7 @@ root_union_named.avsc-False	main/avro/py314/schema_declaration_forms/root_union_
 	main/avro/py313/spec_matrix.py	?	= main/avro/py311/spec_matrix.py
 	main/avro/py314/spec_matrix.py	?
 [test_main_avro_spec_matrix]
-	main/avro/default_values.txt
+	main/avro/main_avro/spec_matrix.txt
 	main/avro/py310/spec_matrix.py	?
 	main/avro/py311/spec_matrix.py	?
 	main/avro/py312/spec_matrix.py	?	= main/avro/py311/spec_matrix.py

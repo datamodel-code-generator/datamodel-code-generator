@@ -193,7 +193,7 @@ def test_avro_container_bytes_defaults(
         first.mapping["z"] = b"changed"
         first.nested[0]["z"].append(b"changed")
         rendered = repr(model())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/container_bytes_defaults_{backend}.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize("fixture_name", ["container_bytes_defaults.avsc", "bytes_default_controls.yaml"])
@@ -302,7 +302,7 @@ def test_avro_temporal_defaults_preserve_raw_input(output_file: Path) -> None:
         converted = convert_avro_schema_data(raw_schema)
     assert_file_content(output_file, "temporal_defaults_pydantic_v2.py")
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / "expected/main/avro/temporal_defaults_converted.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize(
@@ -641,7 +641,7 @@ def test_avro_decimal_defaults_preserve_raw_input(output_file: Path, fixture: st
         output_file, "decimal_defaults_pydantic_v2.py" if fixture.endswith("avsc") else "decimal_defaults_raw.py"
     )
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{Path(fixture).stem}_converted.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize("collapse_args", [[], ["--collapse-root-models"]], ids=["named", "collapsed"])
@@ -855,7 +855,7 @@ def test_avro_duration_defaults_preserve_raw_input(output_file: Path, fixture: s
         output_file, "duration_defaults_pydantic_v2.py" if fixture.endswith("avsc") else "duration_defaults_raw.py"
     )
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{Path(fixture).stem}_converted.txt")
+    assert_output(f"{rendered}\n")
 
 
 def test_main_avro_duration_default_controls(output_file: Path) -> None:
@@ -1092,7 +1092,7 @@ def test_main_avro_spec_matrix(output_file: Path) -> None:
             )
             if (value := getattr(second, name)) is not ...
         )
-    assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / "expected/main/avro/default_values.txt")
+    assert_output(f"{rendered}\n")
 
 
 @pytest.mark.parametrize(

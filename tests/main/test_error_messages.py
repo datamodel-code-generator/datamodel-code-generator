@@ -134,7 +134,6 @@ def test_output_path_does_not_overwrite_input(
     )
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -160,7 +159,6 @@ def test_model_metadata_path_does_not_overwrite_input(
     )
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -187,7 +185,6 @@ def test_symlinked_output_path_does_not_overwrite_input(
     )
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -205,7 +202,6 @@ def test_generate_symlinked_output_path_does_not_overwrite_input(tmp_path: Path)
 
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -223,7 +219,6 @@ def test_generate_hardlinked_output_path_does_not_overwrite_input(tmp_path: Path
 
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -238,7 +233,6 @@ def test_generate_list_input_does_not_overwrite_input(tmp_path: Path) -> None:
 
     assert_output(
         f"{input_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -307,7 +301,6 @@ def test_output_path_can_write_inside_input_directory(
             )
     assert_output(
         f"{(input_path / source.name).read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -1189,7 +1182,6 @@ def test_generate_output_and_model_metadata_symlinks_must_differ(tmp_path: Path)
 
     assert_output(
         f"{output_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -1212,7 +1204,6 @@ def test_generate_output_and_model_metadata_hardlinks_must_differ(tmp_path: Path
 
     assert_output(
         f"{output_path.read_text(encoding='utf-8')}\n",
-        EXPECTED_MALFORMED_PATH / "path_conflict_input.txt",
     )
 
 
@@ -1780,7 +1771,6 @@ def test_request_response_dedupe_generates_legacy_stops(
         input_path=input_path,
         output_path=output_file,
         input_file_type=input_file_type,
-        assert_func=assert_file_content,
         extra_args=[
             "--read-only-write-only-model-type",
             "request-response",
@@ -2112,8 +2102,6 @@ def test_dangling_local_ref_warns_and_preserves_generated_output(
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "dangling_local_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
             importable_module_name="generated_dangling_local_ref",
@@ -2124,7 +2112,6 @@ def test_dangling_local_ref_warns_and_preserves_generated_output(
         "".join(
             f"{filename}\n" for filename in dict.fromkeys(Path(warning.filename).name for warning in dangling_warnings)
         ),
-        EXPECTED_MALFORMED_PATH / "dangling_ref_warning_location.txt",
     )
 
 
@@ -2253,8 +2240,6 @@ def test_auto_detected_dangling_ref_keeps_source_context_and_generated_output(
             output_path=output_file,
             input_file_type=None,
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "auto_dangling_local_ref.py",
             capsys=capsys,
         )
 
@@ -2287,8 +2272,6 @@ def test_out_of_range_array_ref_warns_and_generates_importable_fallback(
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "out_of_range_array_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
             importable_module_name="generated_out_of_range_array_ref",
@@ -2382,8 +2365,6 @@ def test_openapi_dangling_component_ref_warns(
             output_path=output_file,
             input_file_type="openapi",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "dangling_component_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
         )
@@ -2504,8 +2485,6 @@ def test_external_dangling_pointer_warns_and_preserves_output(
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MALFORMED_PATH / "external_dangling_ref.py",
             capsys=capsys,
             assert_no_stderr=True,
         )
@@ -2521,8 +2500,6 @@ def test_boolean_openapi_schema_remains_valid(
         output_path=output_file,
         input_file_type="openapi",
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MALFORMED_PATH / "boolean_schema_openapi.py",
         capsys=capsys,
         assert_no_stderr=True,
     )
