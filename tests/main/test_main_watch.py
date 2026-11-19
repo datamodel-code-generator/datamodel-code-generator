@@ -22,6 +22,7 @@ import pytest
 
 import datamodel_code_generator
 from datamodel_code_generator.__main__ import Exit
+from tests.capabilities import needs
 from tests.conftest import CHILD_COVERAGE_ENV, assert_output
 from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
@@ -469,10 +470,7 @@ def test_watch_cli_command_skips_coverage_for_nocov_env(tmp_path: Path, monkeypa
 
 
 @pytest.mark.allow_direct_assert
-@pytest.mark.skipif(
-    os.name == "nt",
-    reason="CTRL_BREAK_EVENT does not flush coverage.py parallel data before the helper exits the subprocess",
-)
+@needs("posix")
 def test_watch_cli_resolves_relative_coverage_file_for_other_working_directory(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1149,7 +1147,7 @@ def test_watch_cli_regenerates_for_consecutive_input_changes_without_restart(
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="the lexical input fixture requires POSIX symlinks")
+@needs("symlinks")
 def test_watch_cli_regenerates_when_a_symlinked_input_is_repointed(tmp_path: Path) -> None:
     """Watch both the lexical input link and its resolved schema target."""
     file_change_data_path = WATCH_DATA_PATH / "file_change"
@@ -1184,7 +1182,7 @@ def test_watch_cli_regenerates_when_a_symlinked_input_is_repointed(tmp_path: Pat
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="the lexical input fixture requires POSIX symlinks")
+@needs("symlinks")
 def test_watch_cli_regenerates_when_a_symlinked_input_directory_is_repointed(tmp_path: Path) -> None:
     """Watch the symlink ancestor of a lexical ``link/schema.json`` input path."""
     file_change_data_path = WATCH_DATA_PATH / "file_change"
@@ -3085,13 +3083,7 @@ def test_watch_polling_keeps_its_roots_when_the_input_is_renamed_away_and_back(
     assert "restarting the watcher" not in capsys.readouterr().out
 
 
-POSIX_DIRECTORY_RENAME_ONLY = pytest.mark.skipif(
-    os.name == "nt",
-    reason=(
-        "the darwin polling simulation renames a directory the watchfiles poller thread holds open, "
-        "which Windows refuses, and a test cannot pause or synchronize that thread"
-    ),
-)
+POSIX_DIRECTORY_RENAME_ONLY = needs("posix")
 
 
 @POSIX_DIRECTORY_RENAME_ONLY
@@ -4609,7 +4601,7 @@ def test_watch_dependencies_handle_path_resolution_errors(monkeypatch: pytest.Mo
     assert _logical_working_directory() == Path.cwd()
 
 
-@pytest.mark.skipif(os.name == "nt", reason="requires POSIX symlinks")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_watch_dependencies_track_symlink_parent_events(tmp_path: Path) -> None:
     """Directory events from symlink replacement remain part of the graph."""

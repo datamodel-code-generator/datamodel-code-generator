@@ -35,6 +35,7 @@ from datamodel_code_generator.parser.base import Source, dump_templates
 from datamodel_code_generator.parser.graphql import GraphQLParser
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from tests.capabilities import needs
 from tests.conftest import (
     assert_output,
     assert_warnings_contain,
@@ -162,7 +163,7 @@ def test_model_metadata_path_does_not_overwrite_input(
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_symlinked_output_path_does_not_overwrite_input(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -188,7 +189,7 @@ def test_symlinked_output_path_does_not_overwrite_input(
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_symlinked_output_path_does_not_overwrite_input(tmp_path: Path) -> None:
     """Protect public API inputs when an output keeps its symlink spelling."""
     source = DATA_PATH / "jsonschema" / "person.json"
@@ -205,7 +206,7 @@ def test_generate_symlinked_output_path_does_not_overwrite_input(tmp_path: Path)
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="hardlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_hardlinked_output_path_does_not_overwrite_input(tmp_path: Path) -> None:
     """Protect public API inputs when an output is a hardlink."""
     source = DATA_PATH / "jsonschema" / "person.json"
@@ -441,7 +442,7 @@ def test_directory_input_custom_header_trailing_newlines(
         assert_output(generated, DATA_PATH / "expected" / "main" / "person.py")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.parametrize("target_inside", [False, True])
 def test_directory_input_excludes_metadata_symlink_spellings(tmp_path: Path, target_inside: bool) -> None:
     """Exclude both a configured metadata symlink and its in-directory target."""
@@ -1068,7 +1069,7 @@ def test_cli_rejects_default_project_lock_inside_root_directory_input(
     assert not (project / "datamodel-codegen.lock").exists()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_cli_rejects_resolved_lockfile_alias_inside_directory_input(
     tmp_path: Path,
@@ -1122,7 +1123,7 @@ def test_public_api_rejects_lockfile_inside_any_listed_directory_input(
     assert not lockfile.exists()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 @pytest.mark.allow_direct_assert
 def test_public_api_rejects_lockfile_inside_resolved_directory_input_alias(tmp_path: Path) -> None:
     """A symlink-spelled directory input protects its resolved contents too."""
@@ -1163,7 +1164,7 @@ def test_public_api_rejects_default_lock_inside_root_directory_input(
     assert not (tmp_path / "datamodel-codegen.lock").exists()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_output_and_model_metadata_symlinks_must_differ(tmp_path: Path) -> None:
     """Reject public API artifact paths that alias the same existing file."""
     source = DATA_PATH / "jsonschema" / "person.json"
@@ -1185,7 +1186,7 @@ def test_generate_output_and_model_metadata_symlinks_must_differ(tmp_path: Path)
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="hardlink creation requires elevated privileges")
+@needs("symlinks")
 def test_generate_output_and_model_metadata_hardlinks_must_differ(tmp_path: Path) -> None:
     """Reject public API artifact paths that are hardlinks to the same file."""
     source = DATA_PATH / "jsonschema" / "person.json"

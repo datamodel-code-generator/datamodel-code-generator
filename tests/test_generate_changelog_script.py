@@ -5,19 +5,19 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-import sys
 import textwrap
 from pathlib import Path
 
 import pytest
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "generate_changelog.sh"
 
 
 @pytest.mark.skipif(shutil.which("jq") is None, reason="generate_changelog.sh requires jq")
-@pytest.mark.skipif(sys.platform == "win32", reason="generate_changelog.sh is tested on POSIX runners")
+@needs("posix")
 @pytest.mark.parametrize("repo", [None, "datamodel-code-generator/datamodel-code-generator", "another/project"])
 def test_prepend_release_entry_replaces_existing_tag(tmp_path: Path, repo: str | None) -> None:
     """Existing release entries are replaced instead of duplicated."""

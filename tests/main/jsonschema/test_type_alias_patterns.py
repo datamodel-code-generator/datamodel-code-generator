@@ -13,6 +13,7 @@ from jsonschema import Draft7Validator
 from jsonschema import ValidationError as SchemaValidationError
 from pydantic import ConfigDict, TypeAdapter, ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -106,7 +107,7 @@ def _validation_results(namespace: dict[str, Any], fixture: str, target_pydantic
             "type_statement",
             [*TYPE_ALIAS, "--target-python-version", "3.12"],
             marks=[
-                pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements need Python 3.12"),
+                needs("type-statements"),
                 pytest.mark.skipif(
                     not installed_pydantic_runs_target("2.10"),
                     reason="Pydantic builds models that use type statements from 2.10",

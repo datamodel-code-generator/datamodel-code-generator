@@ -18,6 +18,7 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
@@ -38,9 +39,7 @@ OUTPUT_MODEL_TYPES = (
     "dataclasses.dataclass",
     pytest.param(
         "typing.TypedDict",
-        marks=pytest.mark.skipif(
-            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-        ),
+        marks=needs("typed-dict-validation"),
     ),
     "msgspec.Struct",
 )

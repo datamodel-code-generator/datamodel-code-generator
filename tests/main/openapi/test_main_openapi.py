@@ -48,6 +48,7 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import base as model_base
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.reference import get_singular_name
+from tests.capabilities import needs
 from tests.conftest import (
     HttpxGetMockFactory,
     MockHttpxResponse,
@@ -3475,10 +3476,7 @@ def test_main_openapi_schema_extensions_enum(
         )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 def test_pyproject(tmp_path: Path) -> None:
     """Test code generation using pyproject.toml configuration."""
     if platform.system() == "Windows":  # pragma: no cover
@@ -4598,10 +4596,7 @@ def test_main_use_standard_collections(output_dir: Path) -> None:
         )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 def test_main_use_generic_container_types(output_dir: Path) -> None:
     """Test OpenAPI generation with generic container types."""
     with freeze_time(TIMESTAMP):
@@ -4613,10 +4608,7 @@ def test_main_use_generic_container_types(output_dir: Path) -> None:
         )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 @pytest.mark.benchmark
 def test_main_use_generic_container_types_standard_collections(
     output_dir: Path,
@@ -5044,10 +5036,7 @@ def test_main_openapi_use_one_literal_as_default_keeps_nullable(output_file: Pat
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 def test_main_openapi_enum_models_as_literal_all(min_version: str, output_file: Path) -> None:
     """Test OpenAPI generation with all enum models as literal."""
     run_main_and_assert(
@@ -5060,10 +5049,7 @@ def test_main_openapi_enum_models_as_literal_all(min_version: str, output_file: 
     )
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 def test_main_openapi_enum_models_as_literal(output_file: Path) -> None:
     """Test OpenAPI generation with enum models as literal."""
     run_main_and_assert(
@@ -11194,7 +11180,7 @@ ALIAS_DEFAULT_WARNING = pytest.mark.filterwarnings("ignore:.*which has no effect
             ["--force-optional", "--use-type-alias", "--target-python-version", "3.13"],
             marks=[
                 ALIAS_DEFAULT_WARNING,
-                pytest.mark.skipif(sys.version_info < (3, 12), reason="A type statement needs Python 3.12"),
+                needs("type-statements"),
             ],
         ),
         pytest.param(
@@ -17279,7 +17265,7 @@ def test_main_openapi_typed_dict_extra_items_final_name(
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on")
+@needs("typed-dict-validation")
 def test_main_openapi_typed_dict_extra_items_modules(output_dir: Path) -> None:
     """Import the class of another module that TypedDict ``extra_items`` names, as field types import it.
 
@@ -17367,7 +17353,7 @@ def test_main_openapi_typed_dict_functional_forward_references(
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on")
+@needs("typed-dict-validation")
 @pytest.mark.parametrize(
     ("input_name", "extra_args"),
     [

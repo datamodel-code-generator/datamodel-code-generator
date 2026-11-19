@@ -23,6 +23,7 @@ import pytest
 from scripts import behaviour_diff
 from scripts._behaviour_classify import Allowlist, Side, classify_base_skipped, classify_cell, diff
 from scripts._behaviour_signature import Context, _pydantic_item, canonical, example_value, meta_items
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1070,7 +1071,7 @@ def test_candidate_payload_path_does_not_import_the_guide_builder() -> None:
     assert_output(f"builder imported: {result.stdout.strip()}\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_gate(tmp_path: Path) -> None:
     """The gate generates the selected fixtures on both sides; the PR tier judges no stale entry."""
     allowlist = tmp_path / "allowlist.toml"
@@ -1108,7 +1109,7 @@ def test_gate(tmp_path: Path) -> None:
     assert_output("\n".join(outputs))
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_gate_skips_the_release_on_a_listed_input(tmp_path: Path) -> None:
     """A release that `[[base_skip]]` names does not run for the input: its cells are `base-skipped`."""
     allowlist = tmp_path / "allowlist.toml"
@@ -1147,7 +1148,7 @@ def test_gate_skips_the_release_on_a_listed_input(tmp_path: Path) -> None:
     assert_output(f"exit={code}\n" + "\n".join([*skipped, *cells]) + "\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_gate_shards_judge_the_stale_entries_of_an_unsharded_run(tmp_path: Path) -> None:
     """The shards of a run report the stale entries the unsharded run reports, each from the shard of its cells."""
     allowlist = tmp_path / "allowlist.toml"
@@ -1197,7 +1198,7 @@ def test_gate_shards_judge_the_stale_entries_of_an_unsharded_run(tmp_path: Path)
     assert_output("\n".join([*outputs, f"shards == unsharded: {union == sorted(problems['1/1'])}"]) + "\n")
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="RLIMIT_DATA caps the memory of a run on Linux only")
+@needs("linux")
 def test_gate_memory_cap_fails_the_run_and_is_not_cached(tmp_path: Path) -> None:
     """A run over its memory cap fails on both sides; like a timeout it is not cached, so the next run tries again."""
     allowlist = tmp_path / "allowlist.toml"
@@ -1474,7 +1475,7 @@ def test_project_cell_problems_are_violations(case: str, tmp_path: Path) -> None
     )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_gate_projects_and_option_sets(tmp_path: Path) -> None:
     """The nightly tier adds option sets, TypedDict payload cells and the projects of a manifest.
 
@@ -1805,7 +1806,7 @@ REVISION_CASES = {
 }
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 @pytest.mark.parametrize("case", sorted(REVISION_CASES))
 def test_gate_against_a_git_revision(case: str, tmp_path: Path) -> None:
     """A git revision as BASE: its `src/` runs from the candidate's interpreter, and `--identity` fails on any change.
@@ -1858,7 +1859,7 @@ def main(argv):
 )
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) -> None:
     """Two sides that fail with the same status and message but wrote different files are a difference."""
     repo = tmp_path / "repo"
@@ -1876,7 +1877,7 @@ def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) ->
     assert_output("\n".join(_gate_lines(argv, tmp_path / "cells.jsonl")).replace(commits[0][:9], "<sha>") + "\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     """A BASE or CANDIDATE that names no release, directory or revision stops the gate.
 
@@ -1915,7 +1916,7 @@ def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     assert_output("\n".join([*refusals, f"a candidate that does not import: {crashed.value}"]) + "\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_gate_identity_of_a_candidate_revision(tmp_path: Path) -> None:
     """A CANDIDATE revision of this repository runs from its extracted `src` and `tests`.
 
@@ -1983,7 +1984,7 @@ def _tree(directory: Path) -> dict[str, str]:
     }
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="behaviour_diff.py needs POSIX (SIGALRM, resource, fork)")
+@needs("posix")
 def test_record_shards_merge_into_the_unsharded_record(tmp_path: Path) -> None:
     """The records of `record --shard I/N` merge into the unsharded record; a missing shard fails the merge."""
     common = [

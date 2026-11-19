@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING
 
@@ -16,6 +15,7 @@ from datamodel_code_generator.reference import (
     is_url,
     snake_to_upper_camel,
 )
+from tests.capabilities import needs
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -357,7 +357,7 @@ def test_resolve_ref_normalizes_empty_path_as_root_fragment() -> None:
         assert resolver.resolve_ref("") == "root#"
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="requires POSIX symlinks")
+@needs("symlinks")
 @pytest.mark.parametrize("symlink_kind", ["file", "parent"])
 def test_resolve_ref_local_file_cache_tracks_retargeted_symlinks(
     tmp_path: Path, symlink_kind: Literal["file", "parent"]

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING, Any
 
 import msgspec
@@ -13,6 +12,7 @@ from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
 from pydantic import TypeAdapter, ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -33,9 +33,7 @@ OUTPUT_MODEL_TYPES = (
     "typing.TypedDict",
     "msgspec.Struct",
 )
-TYPED_DICT_SKIP = pytest.mark.skipif(
-    sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-)
+TYPED_DICT_SKIP = needs("typed-dict-validation")
 MATRIX_PAYLOADS: dict[str, Any] = {
     "valid": {
         "name_f": None,

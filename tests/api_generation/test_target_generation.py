@@ -15,6 +15,7 @@ from datamodel_code_generator import _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from tests.api_generation.support.target_generation import SOURCE, target_render_report
+from tests.capabilities import needs
 from tests.conftest import assert_directory_content, assert_output, freeze_time
 from tests.main.conftest import run_main_and_assert, run_main_with_args
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
@@ -234,7 +235,7 @@ def test_target_jobs_rollback(
     assert_output("\n".join(lines) + "\n", EXPECTED / "jobs-publish-failure.txt")
 
 
-@pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_target_render_nested_models_symlink(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -248,7 +249,7 @@ def test_target_render_nested_models_symlink(
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
+@needs("symlinks")
 def test_target_render_local_references_symlink(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -259,7 +260,7 @@ def test_target_render_local_references_symlink(
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")
+@needs("posix")
 def test_target_generate_modes(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

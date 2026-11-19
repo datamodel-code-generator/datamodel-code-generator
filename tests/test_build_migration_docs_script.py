@@ -19,6 +19,7 @@ import pytest
 from datamodel_code_generator.deprecations import Deprecation
 from datamodel_code_generator.experimental import ExperimentalFeature
 from scripts.build_migration_docs import PresetDate, Registries, main, read_surface
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1135,7 +1136,7 @@ class Order(BaseModel):
 """
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the generations fork their workers")
+@needs("posix")
 def test_build_migration_docs_verify(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Keep claims are checked against the recorded output of the previous release; a stale record is refused.
 
@@ -1171,7 +1172,7 @@ def test_build_migration_docs_verify(tmp_path: Path, capsys: pytest.CaptureFixtu
     assert_output("\n".join([f"exit {unrecorded}", missing, json.dumps(codes, indent=1), printed, errors]))
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the generations fork their workers")
+@needs("posix")
 def test_build_migration_docs_record_without_change(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A fixture both releases generate alike is not recorded: the entry claims a change that is not there."""
     data = _write_data(tmp_path, RUN_CHANGES, {}, **UNCHANGED)

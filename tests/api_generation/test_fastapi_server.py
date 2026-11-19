@@ -6,10 +6,11 @@ The cross-target cases call each server through the client generated from the sa
 from __future__ import annotations
 
 import shutil
-import sys
 from pathlib import Path
 
 import pytest
+
+from tests.capabilities import needs
 
 pytest.importorskip("fastapi")
 
@@ -47,7 +48,7 @@ CODECS = DATA / "generation_platform/codecs/pydantic"
 CODEC_EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi/servers"
 CROSS = Path(__file__).parents[1] / "data/expected/main/generation_platform/cross"
-PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start preset emits type statements")
+PRESET = needs("type-statements")
 assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
 
 

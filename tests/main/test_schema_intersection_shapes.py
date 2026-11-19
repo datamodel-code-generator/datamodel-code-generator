@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import warnings
 from typing import TYPE_CHECKING, Any
 
@@ -15,6 +14,7 @@ from jsonschema.validators import validator_for
 from pydantic import TypeAdapter, ValidationError
 
 from datamodel_code_generator import DataModelType
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -214,10 +214,7 @@ def _payload_params(stems: Iterable[str]) -> list[pytest.ParameterSet]:
         pytest.param(
             stem,
             id=stem,
-            marks=pytest.mark.skipif(
-                stem in TYPED_DICT_PAYLOAD_DOCUMENTS and sys.version_info < (3, 12),
-                reason="Pydantic validates typing.TypedDict from Python 3.12 on",
-            ),
+            marks=[needs("typed-dict-validation")] if stem in TYPED_DICT_PAYLOAD_DOCUMENTS else [],
         )
         for stem in stems
     ]

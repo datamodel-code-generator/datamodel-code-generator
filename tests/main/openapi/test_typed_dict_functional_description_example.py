@@ -6,18 +6,18 @@ raw text and the module did not parse (#7000); they are left out as the field de
 
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.capabilities import needs
 from tests.main.conftest import OPEN_API_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on")
+@needs("typed-dict-validation")
 @pytest.mark.parametrize(
     "extra_args",
     [

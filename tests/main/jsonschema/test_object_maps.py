@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import operator
-import sys
 import typing
 from functools import reduce
 from typing import TYPE_CHECKING, Any
@@ -20,6 +19,7 @@ from referencing import Registry, Resource
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
@@ -57,9 +57,7 @@ OUTPUT_MODEL_TYPES = (
     "dataclasses.dataclass",
     pytest.param(
         "typing.TypedDict",
-        marks=pytest.mark.skipif(
-            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
-        ),
+        marks=needs("typed-dict-validation"),
     ),
     "msgspec.Struct",
 )

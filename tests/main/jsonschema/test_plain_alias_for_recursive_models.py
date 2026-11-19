@@ -8,11 +8,11 @@ its 0.89.0 bytes and a warning names the alias, its class and the classes that u
 
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
 
@@ -31,7 +31,7 @@ TARGETS = (
     pytest.param(
         "3.12",
         id="3.12",
-        marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="Runtime requires Python type statements"),
+        marks=needs("type-statements"),
     ),
 )
 

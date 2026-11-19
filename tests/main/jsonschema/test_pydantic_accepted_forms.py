@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from typing import TYPE_CHECKING
 
 import msgspec
 import pytest
 from pydantic import ValidationError
 
+from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
@@ -569,7 +569,7 @@ def test_patterns_python_re_rejects_in_a_root_union_and_in_a_base(
         pytest.param(
             ["--use-type-alias", "--target-python-version", "3.12"],
             id="type_alias",
-            marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="PEP 695 syntax needs Python 3.12 or later"),
+            marks=needs("type-statements"),
         ),
     ],
 )

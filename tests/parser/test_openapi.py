@@ -9,7 +9,6 @@ from ipaddress import ip_address
 from pathlib import Path
 from typing import Any
 
-import black
 import pydantic
 import pytest
 from packaging import version
@@ -28,6 +27,7 @@ from datamodel_code_generator.parser.openapi import (
     RequestBodyObject,
     ResponseObject,
 )
+from tests.capabilities import needs
 from tests.conftest import (
     assert_generated_runtime_package,
     assert_output,
@@ -898,10 +898,7 @@ def test_openapi_parser_responses_with_tag(tmp_path: Path, monkeypatch: pytest.M
     assert_output(parser.parse(), EXPECTED_OPEN_API_PATH / "openapi_parser_responses_with_tag" / "output.py")
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 def test_openapi_parser_with_query_parameters() -> None:
     """Test parsing OpenAPI with query parameters."""
     parser = OpenAPIParser(
@@ -916,10 +913,7 @@ def test_openapi_parser_with_query_parameters() -> None:
     assert_output(parser.parse(), EXPECTED_OPEN_API_PATH / "openapi_parser_with_query_parameters" / "output.py")
 
 
-@pytest.mark.skipif(
-    black.__version__.split(".")[0] >= "24",
-    reason="Installed black doesn't support the old style",
-)
+@needs("black-before-24")
 def test_openapi_parser_with_include_path_parameters() -> None:
     """Test parsing OpenAPI with included path parameters."""
     parser = OpenAPIParser(

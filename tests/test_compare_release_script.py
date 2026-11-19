@@ -16,6 +16,7 @@ import pytest
 import datamodel_code_generator
 import datamodel_code_generator.__main__  # noqa: F401
 from scripts import compare_release
+from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,9 +24,7 @@ IMPORTED = re.compile(r"from \S+,")
 """Where a refused side imported datamodel-code-generator from: the interpreter's own installation."""
 EXPECTED = ROOT / "tests/data/expected/compare_release"
 
-pytestmark = pytest.mark.skipif(
-    sys.platform == "win32", reason="compare_release.py needs POSIX (SIGALRM, resource, fork)"
-)
+pytestmark = needs("posix")
 
 
 @pytest.mark.parametrize(
@@ -312,7 +311,7 @@ def test_a_worker_runs_each_job_as_a_fresh_process(tmp_path: Path) -> None:
     assert_output(_worker_runs(runner, tmp_path, steps))
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="RLIMIT_DATA caps the memory of a run on Linux only")
+@needs("linux")
 def test_a_run_out_of_memory_closes_its_worker(tmp_path: Path) -> None:
     """The worker of a run that ran out of its memory cap is replaced: the next run starts in a fresh one."""
     runner = _fake_runner(tmp_path, 1, import_check=False)

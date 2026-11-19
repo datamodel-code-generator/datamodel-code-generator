@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 import shutil
-import sys
 import warnings
 from pathlib import Path
 from typing import Any
@@ -28,6 +27,7 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
+from tests.capabilities import needs
 from tests.conftest import (
     assert_directory_content,
     assert_generated_modules_output,
@@ -583,7 +583,7 @@ def test_generate_reads_a_leading_tilde_of_an_output_as_the_home_directory(
     assert_output(f"package: {(package / '__init__.py').is_file()}\nwritten: {written}\n")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows reads ~user as a sibling of the home directory")
+@needs("posix")
 @pytest.mark.parametrize(
     ("field", "option", "options"),
     [
