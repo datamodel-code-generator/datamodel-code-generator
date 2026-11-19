@@ -78,7 +78,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from types import CodeType
 
-    from scripts._source_model import Reference, Scope
+    from scripts._source_model import Import, Reference, Scope
 
 PACKAGE = "datamodel_code_generator"
 PACKAGE_SOURCE = f"src/{PACKAGE}"
@@ -1008,15 +1008,23 @@ class Readers:
                 item.bound
                 for other in self.paths
                 if word.search(self.texts[other])
-                for item in self.side.model(other).imports
-                if item.kind == "from"
-                and item.bound
-                and isinstance(item.target, str)
-                and dotted in self.canonical(item.target)
+                for item in self._imports(self.side.model(other), dotted, names)
+                if item.bound
             }
             if more <= names:
                 return names
             names |= more
+
+    def _imports(self, model: SourceModule, dotted: str, names: set[str]) -> list[Import]:
+        """Return the ``from`` imports of a module that import one of `names` and lead to the binding `dotted`."""
+        return [
+            item
+            for item in model.imports
+            if item.kind == "from"
+            and isinstance(item.target, str)
+            and item.target.rpartition(".")[2] in names
+            and dotted in self.canonical(item.target)
+        ]
 
     def _of(self, path: str, scope: Scope, name: str) -> tuple[list[dict[str, object]], int]:
         model = self.side.model(path)
@@ -1035,14 +1043,8 @@ class Readers:
             if not word.search(self.texts[other]):
                 continue
             other_model = self.side.model(other)
-            for item in other_model.imports:
-                if (
-                    item.kind == "from"
-                    and item.alias is not None
-                    and isinstance(item.target, str)
-                    and dotted in self.canonical(item.target)
-                    and (binding := other_model.binding_at(item.alias)) is not None
-                ):
+            for item in self._imports(other_model, dotted, names):
+                if item.alias is not None and (binding := other_model.binding_at(item.alias)) is not None:
                     loads += [(other, use.reference.node, use.reference) for use in other_model.uses(binding)]
             references = {id(reference.node): reference for reference in other_model.references}
             for node in ast.walk(other_model.tree):
