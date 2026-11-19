@@ -1,4 +1,4 @@
-FROM python:3.14.7-slim-bookworm AS base
+FROM python:3.15.2-slim-bookworm AS base
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y ca-certificates \
