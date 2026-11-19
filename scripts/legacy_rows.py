@@ -236,7 +236,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=KEEP,
         witness=(
             "--input",
-            "tests/data/openapi/legacy_witnesses_request_response_all_of_ref.yaml",
+            "tests/data/legacy_rows/request_response_all_of_ref.yaml",
             "--input-file-type",
             "openapi",
             "--formatters",
@@ -376,7 +376,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=7197,
         witness=(
             "--input",
-            "tests/data/jsonschema/inherited_reads_at_first_ask",
+            "tests/data/legacy_rows/inherited_reads_at_first_ask",
             "--input-file-type",
             "jsonschema",
             "--output-model-type",
@@ -786,7 +786,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=5120,
         witness=(
             "--input",
-            "tests/data/openapi/legacy_witnesses_nullable_root.yaml",
+            "tests/data/legacy_rows/nullable_root.yaml",
             "--input-file-type",
             "openapi",
             "--formatters",
@@ -825,7 +825,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=5426,
         witness=(
             "--input",
-            "tests/data/openapi/legacy_witnesses_nullable_root.yaml",
+            "tests/data/legacy_rows/nullable_root.yaml",
             "--input-file-type",
             "openapi",
             "--formatters",
@@ -839,7 +839,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=KEEP,
         witness=(
             "--input",
-            "tests/data/jsonschema/legacy_witnesses/null_target.json",
+            "tests/data/legacy_rows/jsonschema_witnesses/null_target.json",
             "--input-file-type",
             "jsonschema",
             "--formatters",
@@ -1267,7 +1267,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=7198,
         witness=(
             "--input",
-            "tests/data/jsonschema/legacy_witnesses/anyurl_keywords.json",
+            "tests/data/legacy_rows/jsonschema_witnesses/anyurl_keywords.json",
             "--input-file-type",
             "jsonschema",
             "--output-model-type",
@@ -3578,7 +3578,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=6906,
         witness=(
             "--input",
-            "tests/data/jsonschema/legacy_witnesses/host_repr_reference.json",
+            "tests/data/legacy_rows/jsonschema_witnesses/host_repr_reference.json",
             "--input-file-type",
             "jsonschema",
             "--output-model-type",
