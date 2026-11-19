@@ -1,0 +1,22 @@
+[[change]]
+id = "asyncapi-client-messages-walked-by-parser"
+category = "experimental"
+refs = ["#7163"]
+kind = "experimental"
+action = "review"
+title = "Generated AsyncAPI clients carry the messages the models are generated for"
+summary = "With `--generate-client` and AsyncAPI input, a channel carries the messages the parser's walk generates models for: a message value stands for each message its `$ref` and `oneOf` lead to at any depth, so an AsyncAPI 2 `message` whose `oneOf` names a message with its own `oneOf` opens its channel instead of leaving it out with \"declares no payload\". A payload that is a `$ref` beside annotations only (such as a `description`) is typed by the model of the schema it names, as an OpenAPI body is, instead of the payload's own wrapper model. A message `$ref` that loops is read as the message it is written in (\"declares no payload\" instead of \"a message of it references another document\"), and a channel whose messages the walk never reached (a reply channel in another document that no channel lists) is left out with \"the messages at ... were not read\"."
+affects = { experimental = ["cli-option.generate-client"] }
+before = "SOCKET_0: Final[ChannelPlan[models.FeedTradePayload | models.Quote, Never]]"
+after = "SOCKET_0: Final[ChannelPlan[models.Trade | models.Quote, Never]]"
+source = "release-note"
+covers = [
+    "main/generation_platform/client/asyncapi-connections.txt",
+    "main/generation_platform/client/asyncapi-nested-messages-v2.txt",
+    "main/generation_platform/client/asyncapi-payload-siblings.txt",
+    "main/generation_platform/client/asyncapi-reference-cycles.txt",
+    "main/generation_platform/client/asyncapi-unloaded-references-v2.txt",
+    "main/generation_platform/client/packages/asyncapi-nested-messages-v2/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/packages/asyncapi-payload-siblings/pydantic_v2_BaseModel//*.py",
+    "main/generation_platform/client/runtime/asyncapi-connections.txt",
+]

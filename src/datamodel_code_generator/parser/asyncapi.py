@@ -619,6 +619,7 @@ class AsyncAPIParser(OpenAPIParser):
         schemas = self._member_format_schemas(
             message, "payload", _make_model_name(name, "Payload"), path, payload_schema_format
         )
+        self._walked_message(message, schemas[0] if schemas else None)
         headers_name = _make_model_name(name, "Headers")
         trait_headers_name = None if "headers" in message else headers_name
         if self.config.merge_message_trait_headers and len(headers := self._message_headers(message)) > 1:
@@ -632,6 +633,13 @@ class AsyncAPIParser(OpenAPIParser):
         )
         schemas.extend(_member_schemas(message, "bindings", self._iter_binding_schemas, name, path, seen_paths))
         return schemas
+
+    def _walked_message(self, message: object, payload: AsyncAPISchema | None) -> None:
+        """Note a Message Object the walk reached, after every `$ref` and `oneOf`, and its payload schema, if any.
+
+        ``payload`` is the first schema of the payload, the payload itself where it is read in place. The model walk
+        keeps nothing of it; the target walk records it.
+        """
 
     def _message_headers(self, message: dict[str, Any]) -> list[YamlValue]:
         """Return the headers of each trait of a message that defines them, in order, then the message's own.

@@ -1046,6 +1046,20 @@ class OpenAPIParser(JsonSchemaParser):
             return item_schema, True
         return None
 
+    def _declared(self, value: object) -> SchemaLocation:
+        """Return the location L0 recorded for a JSON object of a loaded document; a value below it is ``.child()``."""
+        return cast("SchemaLocation", self._raw_location(value))
+
+    def _reference_use(self, raw: YamlValue, path: list[str]) -> tuple[str | None, JsonSchemaObject | None]:
+        """Return the reference ``raw`` is used as, if any, and ``raw`` validated when a reference has siblings.
+
+        A reference is used as the model it names unless a sibling keyword constrains it.
+        """
+        if not isinstance(raw, dict) or not isinstance(ref := raw.get("$ref"), str):
+            return None, None
+        validated = self._validate_schema_object(raw, path) if len(raw) > 1 else None
+        return (None if validated and validated.has_ref_with_schema_keywords else ref), validated
+
     def _get_media_schema(self, media_obj: MediaObject) -> MediaSchemaSource | None:
         """Return the schema represented by an OpenAPI media type object.
 

@@ -1,0 +1,21 @@
+asyncapi: 3.0.0
+info: {title: A message reference to a missing component, version: 1.0.0}
+servers:
+  socket: {host: socket.example.com, protocol: wss}
+channels:
+  feed:
+    address: /feed
+    messages:
+      ghost:
+        $ref: '#/components/messages/Missing'
+      real:
+        payload: {type: object, properties: {x: {type: integer}}}
+  other:
+    address: /other
+    messages:
+      real:
+        payload: {type: string}
+operations:
+  sendFeed: {action: send, channel: {$ref: '#/channels/feed'}}
+  readOther: {action: receive, channel: {$ref: '#/channels/other'}}
+components:

@@ -25,6 +25,7 @@ from pydantic import ValidationError
 from typing_extensions import override
 
 from datamodel_code_generator import Error, SchemaParseError
+from datamodel_code_generator._asyncapi_connections import ReadMember, Walk, WalkedMessage, read
 from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
     CONTAINERS,
@@ -109,7 +110,7 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator._target_types import TypeTables, is_none, present
-from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
+from datamodel_code_generator.enums import AsyncAPIVersion, DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
@@ -141,7 +142,7 @@ from datamodel_code_generator.model.pydantic_v2.type_alias import TypeAlias as P
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType, _writes_serialize_as_any
 from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasModel
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
-from datamodel_code_generator.parser.asyncapi import AsyncAPIParser, AsyncAPISchema
+from datamodel_code_generator.parser.asyncapi import AsyncAPIParser, AsyncAPIResolvedRef, AsyncAPISchema
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi import HeaderObject, OpenAPIParser, ParameterObject, RequestBodyObject
@@ -820,7 +821,8 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
 class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
     """Record the schema acquisitions and loaded documents of an AsyncAPI document for one client generation attempt.
 
-    The channels themselves are read from the loaded documents when the attempt is bound (``_asyncapi_connections``).
+    The channels themselves are read from the loaded documents when the attempt is bound (``_asyncapi_connections``),
+    with the messages the walk reached from each message value (``walked_messages``).
     """
 
     def __init__(
@@ -834,7 +836,66 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
         self._api_roots: set[str] = set()
         self._declaration_types: dict[SchemaLocation, DataType] = {}
         self.ignored_declarations: list[ApiIgnoredDeclaration] = []
+        self._missing_messages: dict[int, tuple[dict[str, YamlValue], SchemaLocation]] = {}
+        self.walked_messages: dict[SchemaLocation, tuple[WalkedMessage, ...]] = {}
+        """The messages the walk reached from each message value, after every `$ref` and `oneOf`, by its location."""
+        self._message_frames: list[list[WalkedMessage]] = []
         super().__init__(source, config=config)  # ty: ignore[invalid-argument-type]
+
+    def _framed(
+        self, walker: Callable[..., list[AsyncAPISchema]], value: object, *rest: object
+    ) -> list[AsyncAPISchema]:
+        """Walk a message value, recording the messages it reaches under where it is written.
+
+        A value in no located container, such as a list of messages, records none itself; each of its items does.
+        """
+        if (use := self._raw_location(value)) is None:
+            return walker(value, *rest)
+        self._message_frames.append(found := [])
+        try:
+            schemas = walker(value, *rest)
+        finally:
+            self._message_frames.pop()
+        self.walked_messages.setdefault(use, tuple(found))
+        return schemas
+
+    @override
+    def _iter_message_payload_schemas(
+        self, message: object, name: str, path: list[str], seen_paths: set[tuple[str, ...]] | None = None
+    ) -> list[AsyncAPISchema]:
+        return self._framed(super()._iter_message_payload_schemas, message, name, path, seen_paths)
+
+    @override
+    def _iter_operation_message_schemas(self, message: object, name: str, path: list[str]) -> list[AsyncAPISchema]:
+        return self._framed(super()._iter_operation_message_schemas, message, name, path)
+
+    @override
+    def _walked_message(self, message: object, payload: AsyncAPISchema | None) -> None:
+        """Record a message the walk reached, and the reference its payload is used as (``_reference_use``)."""
+        ref = location = None
+        if payload is not None and (location := payload.location) is not None:
+            with self._asyncapi_context(payload.context):
+                ref = self._reference_use(payload.raw_schema, payload.path)[0]
+        declaration = self._raw_location(message) or self._missing_messages[id(message)][1]
+        walked = WalkedMessage(declaration, location, ref)
+        for frame in self._message_frames:
+            frame.append(walked)
+
+    @override
+    def _resolve_ref_object(self, value: object, seen_paths: set[tuple[str, ...]]) -> AsyncAPIResolvedRef | None:
+        """Note the location a reference names where its target is missing, which reads as an empty message."""
+        resolved = super()._resolve_ref_object(value, seen_paths)
+        if (
+            resolved is None
+            or not isinstance(resolved.value, dict)
+            or self._raw_location(resolved.value) is not None
+            or not isinstance(value, dict)
+        ):
+            return resolved
+        source = self._raw_location(value)
+        named = source and self._schema_reference_location(source.document, value["$ref"])
+        self._missing_messages.update({id(resolved.value): (resolved.value, named)} if named is not None else {})
+        return resolved
 
     @override
     def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
@@ -865,10 +926,12 @@ class TargetAsyncAPIParser(_TargetRecording, AsyncAPIParser):
 
     @override
     def release_records(self) -> None:
-        """Drop the recorded graph anchors and the loaded documents."""
+        """Drop the recorded graph anchors, the loaded documents and the messages their walk reached."""
         super().release_records()
         self._api_documents.clear()
+        self._missing_messages.clear()
         self._api_roots.clear()
+        self.walked_messages.clear()
 
 
 TargetParser: TypeAlias = TargetApiOpenAPIParser | TargetAsyncAPIParser
@@ -4130,14 +4193,14 @@ class _Contracts(_Octets):
 
         The security schemes are those of each input document that a handshake can send, as OpenAPI declares them.
         """
-        from datamodel_code_generator._asyncapi_connections import read  # noqa: PLC0415
-
         contracts: list[ChannelContract] = []
         schemes: list[WireDeclaration] = []
         locate = self.documents.location
         for document in self.documents.walked:
             if document in self.parser._api_roots:  # noqa: SLF001
-                found = read(document, self.documents.borrow, self.loaded_target, self.handshake_members)
+                v2 = _recorded_version(self.parser, document) == AsyncAPIVersion.V2
+                walk = Walk(v2, self.parser.walked_messages.get)
+                found = read(document, self.documents.borrow, self.loaded_target, self.handshake_members, walk)
                 contracts.extend(
                     self.channel(channel, len(contracts) + index) for index, channel in enumerate(found.channels)
                 )
@@ -4296,8 +4359,6 @@ class _Contracts(_Octets):
         like the other properties of a model, its keys stand for no parameter. A schema no model types, or one the
         models type otherwise, such as a string, gives no parameters.
         """
-        from datamodel_code_generator._asyncapi_connections import ReadMember  # noqa: PLC0415
-
         if self.bound_node(location, "value") is None:
             return "has no model"
         value = self.projection(location, "value", "request").value
@@ -4417,9 +4478,8 @@ def bind_operations(
     security_schemes = security_schemes if asyncapi else builder.security_schemes()
     documents = builder.documents
     root = next(iter(documents.ids), "")
-    graph = parser._graph  # ruff: ignore[private-member-access]
-    dialect = None if asyncapi else graph.known(graph.names.get(root, root)).dialect
-    version = OpenAPIVersion.V31 if dialect is None else cast("OpenAPIVersion", dialect.version)
+    recorded = None if asyncapi else _recorded_version(parser, root)
+    version = OpenAPIVersion.V31 if recorded is None else cast("OpenAPIVersion", recorded)
     return BoundAttempt(
         GeneratedTypeContractBatch(
             attempt,
@@ -4442,6 +4502,12 @@ def bind_operations(
         ),
         _pristine(parser, documents.documents),
     )
+
+
+def _recorded_version(parser: TargetParser, document: str) -> SchemaVersion | None:
+    """Return the version the parser reads a loaded document by, as its load recorded it (L0); None: no record."""
+    graph = parser._graph  # ruff: ignore[private-member-access]
+    return None if (dialect := graph.known(graph.names.get(document, document)).dialect) is None else dialect.version
 
 
 def _own_versions(
@@ -4492,7 +4558,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._asyncapi_connections import (
         ReadChannel,
         ReadHandshakeParameter,
-        ReadMember,
         ReadParameter,
         ReadServer,
     )
@@ -4522,4 +4587,5 @@ if TYPE_CHECKING:
         ApiObjectKind,
         ApiParameterDeclaration,
     )
+    from datamodel_code_generator.parser.schema_version import SchemaVersion
     from datamodel_code_generator.reference import ModelResolver, _RwDirection

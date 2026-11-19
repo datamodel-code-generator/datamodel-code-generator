@@ -6714,5 +6714,39 @@
     "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "strip_default_none": true},
     "backends": ["pydantic_v2.BaseModel", "dataclasses.dataclass"],
     "modules": [["client", "_generated", "model_bindings.py"], ["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-events-both-v2": {
+    "input": "asyncapi-events-both-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"]]
+  },
+  "asyncapi-schema-version-v2": {
+    "input": "asyncapi-market-v3.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"], "schema_version": "2.0"}
+  },
+  "asyncapi-payload-siblings": {
+    "input": "asyncapi-payload-siblings.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-nested-messages-v2": {
+    "input": "asyncapi-nested-messages-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-missing-messages": {
+    "input": "asyncapi-missing-messages.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": [["client", "protocols", "_plans.py"], ["models.py"]]
+  },
+  "asyncapi-missing-messages-v2": {
+    "input": "asyncapi-missing-messages-v2.yaml",
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]},
+    "modules": false
+  },
+  "asyncapi-missing-messages-external": {
+    "input": "asyncapi-missing-messages-external.yaml",
+    "references": ["asyncapi-missing-messages-library.yaml"],
+    "model": {"input_file_type": "asyncapi", "openapi_scopes": ["schemas"]}
   }
 }

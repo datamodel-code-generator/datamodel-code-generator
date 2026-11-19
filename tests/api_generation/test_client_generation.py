@@ -264,6 +264,13 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "fields-strip",
         "fields-strip-nullable",
         "asyncapi-optional-tags",
+        "asyncapi-events-both-v2",
+        "asyncapi-schema-version-v2",
+        "asyncapi-payload-siblings",
+        "asyncapi-nested-messages-v2",
+        "asyncapi-missing-messages",
+        "asyncapi-missing-messages-v2",
+        "asyncapi-missing-messages-external",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
