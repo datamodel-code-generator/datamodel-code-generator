@@ -862,7 +862,7 @@
 "references/lambda_closure_in_comprehension" = "no finding: the form holds none of the shapes a source rule reports"
 "references/late_attribute_writes" = "finding: ellipsis-statement src:4 src:7"
 "references/lazy_table_module_getattr" = "finding: unused-private-global src:10"
-"references/legacy_row_reading_lines" = "finding: redundant-local-import src/reader.py:9"
+"references/legacy_row_reading_lines" = "finding: redundant-local-import src/reader.py:9 src/reader.py:15"
 "references/literal_constants_and_late_writes" = "no finding: the form holds none of the shapes a source rule reports"
 "references/mangled_module_global" = "no finding: the form holds none of the shapes a source rule reports"
 "references/method_receiver_by_position" = "no finding: the form holds none of the shapes a source rule reports"

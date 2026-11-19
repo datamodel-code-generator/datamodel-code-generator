@@ -1,7 +1,8 @@
 exit status 0
 legacy legacy-exact-ints-as-floats
   fix: keep; keeps: the schema models read an int constraint as a float where one equals it and is written as it
-  sites that spell it (3):
+  sites that spell it (4):
+    scripts/legacy_rows.py:<line> <module>
     scripts/legacy_rows.py:<line> <module>
     src/datamodel_code_generator/_constraint_applicability.py:<line> <module>
     src/datamodel_code_generator/_constraint_applicability.py:<line> exact_float
