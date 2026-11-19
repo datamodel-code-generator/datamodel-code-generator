@@ -15,7 +15,6 @@ from .constants import (
     ARRAY_SCHEMA_KEYWORDS,
     COMBINED_SCHEMA_KEYS,
     OBJECT_SCHEMA_KEYWORDS,
-    PAYLOAD_FORMAT_ENUMS,
     SIMPLE_ALLOF_IGNORED_KEYS,
     SIMPLE_ALLOF_SUPPORTED_KEYS,
 )
@@ -609,14 +608,6 @@ def _rewrite_contains(schema: dict[str, Any]) -> None:
                 schema["maxItems"] = min(schema.get("maxItems", max_contains), max_contains)
 
 
-def _set_payload_format_enum(schema: dict[str, Any]) -> None:
-    if schema.get("type") == "string" and isinstance(
-        format_enum := PAYLOAD_FORMAT_ENUMS.get(schema.get("format")),
-        list,
-    ):
-        schema.setdefault("enum", format_enum)
-
-
 def _schema_for_payload_generation(value: Any) -> Any:
     payload_schema = value
     match value:
@@ -627,7 +618,6 @@ def _schema_for_payload_generation(value: Any) -> Any:
                 schema["$schema"] = "http://json-schema.org/draft-07/schema#"
             _rewrite_prefix_items(schema)
             _rewrite_contains(schema)
-            _set_payload_format_enum(schema)
             payload_schema = schema
         case list():
             payload_schema = [_schema_for_payload_generation(child) for child in value]

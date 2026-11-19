@@ -1,0 +1,13 @@
+[
+  "seed: valid",
+  "/p maximum \"10\": valid",
+  "/p maximum \"10.049\": valid",
+  "/p maximum \"10.05\": valid",
+  "/p maximum \"10.051\": invalid",
+  "/p maximum \"11\": invalid",
+  "/p minimum \"10\": valid",
+  "/p minimum \"10.1\": invalid",
+  "/p minimum \"11\": invalid",
+  "/p minimum \"9\": invalid",
+  "/p minimum \"9.9\": invalid"
+]
