@@ -9,5 +9,6 @@ symbol _fast_path_modules
   users (1):
     scripts/related_tests.py: select
   rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
-  tests (1):
+  tests (2):
     mirror: tests/test_related_tests_script.py
+    other rows (by changed lines): source-model-importers

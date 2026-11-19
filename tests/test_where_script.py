@@ -10,7 +10,6 @@ import pytest
 
 from datamodel_code_generator.cli_options import OPTIONS
 from scripts import where
-from scripts._source_model import SourceModule
 from scripts.fact_tables import Fact, RenderFact
 from scripts.pass_decls import DECISION_DECLS, PASS_DECLS
 from tests.conftest import assert_output
@@ -136,11 +135,8 @@ def test_where_keeps_to_its_line_limit(capsys: pytest.CaptureFixture[str]) -> No
 
 def test_where_line_answers_as_its_symbol(capsys: pytest.CaptureFixture[str]) -> None:
     """The symbol block of a line is that of the definition that holds it."""
-    line = next(
-        scope.line
-        for scope in SourceModule((ROOT / "src/datamodel_code_generator/types.py").read_text("utf-8")).scopes
-        if scope.qualname == "render_type_expr"
-    )
+    lines = (ROOT / "src/datamodel_code_generator/types.py").read_text("utf-8").splitlines()
+    line = next(number for number, text in enumerate(lines, 1) if text.startswith("def render_type_expr("))
 
     def block(query: str) -> str:
         text = _where(capsys, [query])
@@ -163,7 +159,7 @@ def _vocabulary() -> set[str]:
 
 def test_where_spells_no_table_entry() -> None:
     """The script holds nothing that could go stale: no entry of a table it reads, no list that copies one."""
-    tree = SourceModule(SCRIPT.read_text(encoding="utf-8"), "scripts/where.py").tree
+    tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
     vocabulary = sorted(_vocabulary())
     statements = {id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Expr)}
     found = []

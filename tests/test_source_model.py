@@ -10,6 +10,7 @@ import ast
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -18,7 +19,7 @@ import pytest
 import tomllib
 
 from scripts import _source_model as source_model
-from scripts import check_ratchets
+from scripts import check_ratchets, where
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
@@ -492,11 +493,43 @@ def _private_scope_walk(form: Path) -> list[str]:
     ]
 
 
+def _where_disagreements(form: Path) -> list[str]:
+    """Compare what `scripts.where` reports for a form's symbols and lines with the model's own answers."""
+    found = []
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        (root / "scripts").mkdir()
+        (root / where.RULES).write_text("rule = []\n", encoding="utf-8")
+        (root / "src" / where.PACKAGE).mkdir(parents=True)
+        for index, (name, text) in enumerate(_form_files(form)):
+            (root / "scripts" / f"form{index}_{name}.py").write_text(text, encoding="utf-8")
+        repo = where.Repo(root, where.Page([], [], [], []))
+        for path in sorted(repo.names):
+            model = repo.model(path)
+            for scope in model.scopes:
+                if scope.kind in where.DEFS and "<locals>" not in scope.qualname:
+                    sites = {(site.path, site.line) for site in repo.definitions(scope.qualname, path)}
+                    if (path, scope.line) not in sites:
+                        found.append(f"{path}:{scope.line}: where does not define {scope.qualname}")
+            for line, text in enumerate(repo.text(path).splitlines(), 1):
+                if not text.strip():
+                    continue
+                expected = model.owner(line, len(text) - len(text.lstrip()))
+                reported = where.line_block(repo, path, line)[0].sections[0].items
+                names = [item.partition(" (")[0] for item in reported]
+                if expected.kind in where.SCOPES and names[-1:] != [expected.qualname or "<module>"]:
+                    found.append(f"{path}:{line}: where reports {names}, the model {expected.qualname!r}")
+    return found
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
     ),
     "private-scope-walk": RuleRun("scripts.check_ratchets", frozenset({"bindings", "references"}), _private_scope_walk),
+    "where-agrees-with-the-model": RuleRun(
+        "scripts.where", frozenset({"bindings", "references", "extents"}), _where_disagreements
+    ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
 
