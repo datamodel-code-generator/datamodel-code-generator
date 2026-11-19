@@ -5239,12 +5239,12 @@ helper_normal-external-cli	payloads/field_name_bindings_runtime/helper_normal.tx
 [test_force_optional_required]
 	main/jsonschema/force_optional_required.py
 [test_generate_external_ref_slash_containing_key_strict]
-	main/jsonschema/external_ref_slash_key_strict.py
+	main/jsonschema/main_jsonschema/generate_external_ref_slash_containing_key_strict.py
 [test_generate_jsonschema_custom_base_path]
 custom_base_path.json	main/jsonschema/custom_base_path.py
 custom_base_paths_list.json	main/jsonschema/custom_base_paths_list.py
 [test_generate_jsonschema_leaf_schema_traversal_dynamic_reference]
-	main/jsonschema/dynamic_ref_pydantic_v2.py
+	main/jsonschema/main_jsonschema/generate_jsonschema_leaf_schema_traversal_dynamic_reference.py	= main/jsonschema/dynamic_ref_pydantic_v2.py
 [test_generate_jsonschema_structured_enum_values]
 generic-option	main/jsonschema/structured_enum_values.py
 legacy-option-custom-template	main/jsonschema/structured_enum_values.py
@@ -5366,7 +5366,7 @@ api-True	main/jsonschema/json_pointer_decoding_api.py
 cli-False	main/jsonschema/json_pointer_decoding.py
 cli-True	main/jsonschema/json_pointer_decoding.py
 [test_json_pointer_decoding_preserves_ordinary_references]
-	main/jsonschema/json_pointer_decoding_control.py
+	main/jsonschema/main_jsonschema/json_pointer_decoding_preserves_ordinary_references.py
 [test_jsonschema_array_type_union_self_ref]
 	main/jsonschema/array_type_union_self_ref.py
 [test_jsonschema_classvar_extra_annotated_pydantic_v2]
@@ -5453,7 +5453,7 @@ default	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_d
 pinned	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass[pinned].py
 pinned	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass[pinned].round_trip.txt
 [test_main_alias_generator_keeps_camel_case_names]
-	main/jsonschema/alias_generator_camel_case_names.py
+	main/jsonschema/main_jsonschema/main_alias_generator_keeps_camel_case_names.py
 [test_main_alias_generator_model_config]
 dataclass-to_camel-target-2-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2-default].py
 dataclass-to_camel-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2-pinned].py
@@ -5484,35 +5484,37 @@ default	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_a
 pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_and_nested[pinned].py
 pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_and_nested[pinned].round_trip.txt
 [test_main_alias_generator_no_alias]
+2	main/jsonschema/main_jsonschema/main_alias_generator_no_alias[2].py	= main/jsonschema/alias_generator_no_alias_target_2.py
 2-alias_generator_no_alias_target_2.py	main/jsonschema/alias_generator_no_alias_target_2.py
+None	main/jsonschema/main_jsonschema/main_alias_generator_no_alias[None].py	= main/jsonschema/alias_generator_no_alias.py
 None-alias_generator_no_alias.py	main/jsonschema/alias_generator_no_alias.py
 [test_main_alias_generator_pydantic_v2]
-	main/jsonschema/alias_generator_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_alias_generator_pydantic_v2.py
 [test_main_alias_generator_target_pydantic_version]
-to_camel-target-2	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_camel-target-2	main/jsonschema/alias_generator_target_pydantic/to_camel_2.py
-to_camel-target-2.12	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_camel-target-2.12	main/jsonschema/alias_generator_target_pydantic/to_camel_2.12.py
-to_camel-target-unset	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_camel-target-unset	main/jsonschema/alias_generator_target_pydantic/to_camel_unset.py
-to_pascal-target-2	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_pascal-target-2	main/jsonschema/alias_generator_target_pydantic/to_pascal_2.py
-to_pascal-target-2.12	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_pascal-target-2.12	main/jsonschema/alias_generator_target_pydantic/to_pascal_2.12.py
-to_pascal-target-unset	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_pascal-target-unset	main/jsonschema/alias_generator_target_pydantic/to_pascal_unset.py
-to_snake-target-2	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_snake-target-2	main/jsonschema/alias_generator_target_pydantic/to_snake_2.py
-to_snake-target-2.12	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_snake-target-2.12	main/jsonschema/alias_generator_target_pydantic/to_snake_2.12.py
-to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/round_trip.txt
-to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/to_snake_unset.py
+to_camel-target-2	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_camel-target-2	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].py
+to_camel-target-2.12	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2.12].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_camel-target-2.12	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2.12].py
+to_camel-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-unset].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_camel-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-unset].py
+to_pascal-target-2	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_pascal-target-2].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_pascal-target-2	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_pascal-target-2].py
+to_pascal-target-2.12	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_pascal-target-2.12].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_pascal-target-2.12	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_pascal-target-2.12].py
+to_pascal-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_pascal-target-unset].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_pascal-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_pascal-target-unset].py
+to_snake-target-2	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_snake-target-2].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_snake-target-2	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_snake-target-2].py
+to_snake-target-2.12	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_snake-target-2.12].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_snake-target-2.12	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_snake-target-2.12].py
+to_snake-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_snake-target-unset].alias_generator_target_pydantic.txt	= main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_camel-target-2].alias_generator_target_pydantic.txt
+to_snake-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version[to_snake-target-unset].py
 [test_main_alias_generator_target_pydantic_version_enum_only]
-	main/jsonschema/oneof_const_enum.py
+	main/jsonschema/main_jsonschema/main_alias_generator_target_pydantic_version_enum_only.py	= main/jsonschema/oneof_const_enum.py
 [test_main_alias_generator_template_data_dataclass_default]
 	main/jsonschema/main_jsonschema/main_alias_generator_template_data_dataclass_default.py
 [test_main_alias_generator_template_data_dataclass_target_pydantic_version]
-	main/jsonschema/alias_generator_template_data_dataclass_target_2.py
+	main/jsonschema/main_jsonschema/main_alias_generator_template_data_dataclass_target_pydantic_version.py
 [test_main_alias_generator_template_data_dataclass_type_alias]
 	main/jsonschema/main_jsonschema/main_alias_generator_template_data_dataclass_type_alias.py
 [test_main_alias_import_alias]
@@ -5578,11 +5580,11 @@ pydantic_v2.BaseModel-extra_args1	main/jsonschema/all_of_value_site_keywords.py	
 [test_main_allof_root_model_constraints_none]
 	main/jsonschema/allof_root_model_constraints.py
 [test_main_allow_leading_underscore_class_name_cli]
-	main/jsonschema/allow_leading_underscore_class_name.py
+	main/jsonschema/main_jsonschema/main_allow_leading_underscore_class_name_cli.py
 [test_main_array_field_constraints]
 	main/jsonschema/array_field_constraints.py
 [test_main_array_uri_items_preserves_min_items]
-	main/jsonschema/array_uri_items_min_items.py
+	main/jsonschema/main_jsonschema/main_array_uri_items_preserves_min_items.py
 [test_main_autodetect]
 	main/jsonschema/autodetect.py
 [test_main_builtin_boolean_wrapping]
@@ -5656,13 +5658,13 @@ python-3.14	main/jsonschema/identifier_case_target_314.py
 [test_main_circular_reference]
 	main/jsonschema/circular_reference.py
 [test_main_class_name_affix_scope_models]
-	main/jsonschema/class_name_affix_scope_models/output.py
+	main/jsonschema/main_jsonschema/main_class_name_affix_scope_models.py
 [test_main_class_name_prefix]
-	main/jsonschema/class_name_prefix/output.py
+	main/jsonschema/main_jsonschema/main_class_name_prefix.py
 [test_main_class_name_suffix]
-	main/jsonschema/class_name_suffix/output.py
+	main/jsonschema/main_jsonschema/main_class_name_suffix.py
 [test_main_class_name_suffix_with_class_name]
-	main/jsonschema/class_name_suffix_with_class_name/output.py
+	main/jsonschema/main_jsonschema/main_class_name_suffix_with_class_name.py
 [test_main_collapse_constrained_roots_in_containers]
 msgspec	main/jsonschema/collapse_constrained_roots_in_containers.py
 pydantic	main/jsonschema/collapse_constrained_roots_in_containers.py	= main/jsonschema/collapse_constrained_roots_in_containers~main_collapse_constrained_roots_in_containers[pydantic].py
@@ -5676,6 +5678,8 @@ without-option	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschem
 [test_main_combined_array]
 	main/jsonschema/combined_array.py
 [test_main_complicated_enum_default_member]
+dataclasses.dataclass---set-default-enum-member	main/jsonschema/main_jsonschema/main_complicated_enum_default_member[dataclasses.dataclass---set-default-enum-member].py	= main/jsonschema/complicated_enum_default_member_dataclass.py
+dataclasses.dataclass-None	main/jsonschema/main_jsonschema/main_complicated_enum_default_member[dataclasses.dataclass-None].py	= main/jsonschema/complicated_enum_default_member_dataclass.py
 dataclasses.dataclass-complicated_enum_default_member_dataclass.py---set-default-enum-member	main/jsonschema/complicated_enum_default_member_dataclass.py
 dataclasses.dataclass-complicated_enum_default_member_dataclass.py-None	main/jsonschema/complicated_enum_default_member_dataclass.py
 [test_main_const_complex_values]
@@ -5809,14 +5813,14 @@ pydantic-v2	main/jsonschema/main_jsonschema/main_discriminator_tag_value_kinds[p
 [test_main_duplicate_name_suffix]
 	main/jsonschema/naming_strategy/duplicate_name_suffix/output.py
 [test_main_emit_model_metadata]
-	main/jsonschema/model_metadata_map.txt
+	main/jsonschema/main_jsonschema/main_emit_model_metadata.txt
 	main/jsonschema/model_metadata_module_split//*.py
 [test_main_emit_model_metadata_keeps_source_model_named_base_model]
-	main/jsonschema/model_metadata_base_model_name.py
-	main/jsonschema/model_metadata_base_model_name_map.txt
+	main/jsonschema/main_jsonschema/main_emit_model_metadata_keeps_source_model_named_base_model.model_metadata_base_model_name_map.txt
+	main/jsonschema/main_jsonschema/main_emit_model_metadata_keeps_source_model_named_base_model.py	= main/jsonschema/model_metadata_base_model_name.py
 [test_main_emit_model_metadata_preserves_source_ref_for_internal_modules]
+	main/jsonschema/main_jsonschema/main_emit_model_metadata_preserves_source_ref_for_internal_modules.txt
 	main/jsonschema/use_generic_base_class_circular//*.py
-	main/jsonschema/use_generic_base_class_circular_metadata_map.txt
 [test_main_encoded_str_for_constrained_base64]
 collapse_root_models	main/jsonschema/encoded_str_for_constrained_base64.py
 collapse_root_models	main/jsonschema/main_jsonschema/main_encoded_str_for_constrained_base64[collapse_root_models].verdicts.txt
@@ -5909,7 +5913,7 @@ discriminator	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_ali
 	main/jsonschema/external_files_in_directory.py
 [test_main_external_files_in_directory_collapse_keeps_import_aliases]
 	main/jsonschema/external_files_in_directory_collapse/friends.py
-	main/jsonschema/external_files_in_directory_collapse/friends_runtime.txt
+	main/jsonschema/main_jsonschema/main_external_files_in_directory_collapse_keeps_import_aliases.txt
 [test_main_external_ref_slash_containing_key]
 	main/jsonschema/external_ref_slash_key//*.py
 [test_main_extra_fields]
@@ -6043,7 +6047,7 @@ typed-dict-3.14	main/jsonschema/identifier_unicode_target_typed_dict_314.py
 [test_main_json_capitalise_enum_members]
 	main/jsonschema/json_capitalise_enum_members.py
 [test_main_json_capitalise_enum_members_without_enum]
-	main/jsonschema/autodetect.py
+	main/jsonschema/main_jsonschema/main_json_capitalise_enum_members_without_enum.py	= main/jsonschema/autodetect.py
 [test_main_json_pointer]
 	main/jsonschema/json_pointer.py
 [test_main_json_pointer_empty_token]
@@ -6057,7 +6061,7 @@ released	main/jsonschema/json_pointer_through_scalar.py
 [test_main_json_reuse_enum_default_member]
 	main/jsonschema/json_reuse_enum_default_member.py
 [test_main_jsonschema]
-	main/jsonschema/general.py	= main/jsonschema/autodetect.py
+	main/jsonschema/main_jsonschema/main_jsonschema.py	= main/jsonschema/autodetect.py
 [test_main_jsonschema_additional_import_named_like_model]
 qualified-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_named_like_model[qualified-dataclasses.dataclass].payloads.txt
 qualified-dataclasses.dataclass	main/jsonschema/main_jsonschema/additional_import_named_like_model[qualified-dataclasses.dataclass].py
@@ -6161,7 +6165,7 @@ allof_mapping_ref_sibling_type	main/jsonschema/main_jsonschema/allof_mapping_wit
 [test_main_jsonschema_allof_ref_true_schema]
 	main/jsonschema/allof_ref_true_schema.py
 [test_main_jsonschema_allof_scalar_roots]
-	main/jsonschema/allof_scalar_roots.py
+	main/jsonschema/main_jsonschema/allof_scalar_roots.py
 [test_main_jsonschema_allof_unevaluated_closed_member]
 pydantic_v2.BaseModel-extra_forbidden	main/jsonschema/jsonschema_allof_unevaluated_closed_member.py
 pydantic_v2.dataclass-unexpected_keyword_argument	main/jsonschema/jsonschema_allof_unevaluated_closed_member.py	= main/jsonschema/jsonschema_allof_unevaluated_closed_member~allof_unevaluated_closed_member[pydantic_v2.dataclass-unexpected_keyword_argument].py
@@ -6184,7 +6188,7 @@ released	main/jsonschema/main_jsonschema/anchor_declared_twice_in_document_with_
 [test_main_jsonschema_anchor_of_a_document_loaded_by_reference]
 	main/jsonschema/main_jsonschema/anchor_of_a_document_loaded_by_reference/
 [test_main_jsonschema_anchor_ref]
-	main/jsonschema/anchor_ref.py
+	main/jsonschema/main_jsonschema/anchor_ref.py
 [test_main_jsonschema_anyof_const_enum_descriptions]
 	main/jsonschema/anyof_const_enum_descriptions.py
 [test_main_jsonschema_anyof_const_enum_nested]
@@ -6411,7 +6415,7 @@ one_of	main/jsonschema/combined_branch_enum_intersection/one_of.py
 [test_main_jsonschema_complex_one_of]
 	main/jsonschema/complex_one_of.py
 [test_main_jsonschema_constrained_types_keyword_order]
-	main/jsonschema/constrained_types_keyword_order.py
+	main/jsonschema/main_jsonschema/constrained_types_keyword_order.py
 [test_main_jsonschema_container_nullable_item_union]
 msgspec.Struct-pattern_properties_nullable_value_union	main/jsonschema/main_jsonschema/container_nullable_item_union[msgspec.Struct-pattern_properties_nullable_value_union].py
 msgspec.Struct-prefix_items_closed_nullable_positions	main/jsonschema/main_jsonschema/container_nullable_item_union[msgspec.Struct-prefix_items_closed_nullable_positions].py
@@ -6449,13 +6453,18 @@ use_annotated	main/jsonschema/main_jsonschema/contains_count_beside_model_refere
 [test_main_jsonschema_custom_template_escapes_docstrings]
 custom_template_docstring_escaping.json-dataclasses.dataclass-custom_template_docstring_escaping_dataclass.py-templates_docstring_escaping-field_description_args0	main/jsonschema/custom_template_docstring_escaping_dataclass.py
 custom_template_docstring_escaping.json-dataclasses.dataclass-custom_template_docstring_escaping_without_field_descriptions.py-templates_docstring_escaping-field_description_args4	main/jsonschema/custom_template_docstring_escaping_without_field_descriptions.py
+custom_template_docstring_escaping.json-dataclasses.dataclass-templates_docstring_escaping-field_description_args0	main/jsonschema/main_jsonschema/custom_template_escapes_docstrings[custom_template_docstring_escaping.json-datac~0c9de0eb.py	= main/jsonschema/custom_template_docstring_escaping_dataclass.py
+custom_template_docstring_escaping.json-dataclasses.dataclass-templates_docstring_escaping-field_description_args4	main/jsonschema/main_jsonschema/custom_template_escapes_docstrings[custom_template_docstring_escaping.json-datac~ab50613d.py	= main/jsonschema/custom_template_docstring_escaping_without_field_descriptions.py
 custom_template_docstring_escaping.json-pydantic_v2.BaseModel-custom_template_docstring_escaping_format_filter.py-templates_docstring_filter_escaping-field_description_args3	main/jsonschema/custom_template_docstring_escaping_format_filter.py
+custom_template_docstring_escaping.json-pydantic_v2.BaseModel-templates_docstring_filter_escaping-field_description_args3	main/jsonschema/main_jsonschema/custom_template_escapes_docstrings[custom_template_docstring_escaping.json-pydan~23bf80fc.py	= main/jsonschema/custom_template_docstring_escaping_format_filter.py
 custom_template_docstring_escaping.json-typing.TypedDict-custom_template_docstring_escaping_typed_dict.py-templates_docstring_escaping-field_description_args1	main/jsonschema/custom_template_docstring_escaping_typed_dict.py
+custom_template_docstring_escaping.json-typing.TypedDict-templates_docstring_escaping-field_description_args1	main/jsonschema/main_jsonschema/custom_template_escapes_docstrings[custom_template_docstring_escaping.json-typin~0092464b.py	= main/jsonschema/custom_template_docstring_escaping_typed_dict.py
 custom_template_root_docstring_escaping.json-pydantic_v2.BaseModel-custom_template_docstring_escaping_root_model.py-templates_docstring_escaping-field_description_args2	main/jsonschema/custom_template_docstring_escaping_root_model.py
+custom_template_root_docstring_escaping.json-pydantic_v2.BaseModel-templates_docstring_escaping-field_description_args2	main/jsonschema/main_jsonschema/custom_template_escapes_docstrings[custom_template_root_docstring_escaping.json-~55f29719.py	= main/jsonschema/custom_template_docstring_escaping_root_model.py
 [test_main_jsonschema_dataclass_frozen_keyword_only]
-	main/jsonschema/general_dataclass_frozen_kw_only.py
+	main/jsonschema/main_jsonschema/dataclass_frozen_keyword_only.py
 [test_main_jsonschema_dataclass_use_annotated]
-	main/jsonschema/general_dataclass_use_annotated.py
+	main/jsonschema/main_jsonschema/dataclass_use_annotated.py
 [test_main_jsonschema_decimal_fractional_constraints]
 	main/jsonschema/decimal_fractional_constraints.py
 [test_main_jsonschema_default_values_allof]
@@ -6465,7 +6474,7 @@ custom_template_root_docstring_escaping.json-pydantic_v2.BaseModel-custom_templa
 [test_main_jsonschema_default_values_override_inline_json]
 	main/jsonschema/jsonschema_default_values_override.py
 [test_main_jsonschema_definitions_namespace]
-	main/jsonschema/definitions_v2_namespace.py
+	main/jsonschema/main_jsonschema/definitions_namespace.py
 [test_main_jsonschema_diamond_inherited_field_override]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/diamond_inherited_field_override[dataclasses.dataclass].py
 msgspec.Struct	main/jsonschema/main_jsonschema/diamond_inherited_field_override[msgspec.Struct].py
@@ -6861,7 +6870,7 @@ pydantic_v2.BaseModel-discriminator_with_external_reference.py	main/jsonschema/d
 [test_main_jsonschema_external_discriminator_folder]
 msgspec.Struct-discriminator_with_external_references_folder_msgspec	main/jsonschema/discriminator_with_external_references_folder_msgspec//*.py
 [test_main_jsonschema_external_files]
-	main/jsonschema/external_files.py
+	main/jsonschema/main_jsonschema/external_files.py
 [test_main_jsonschema_external_ref_mapping_modules]
 	main/jsonschema/main_jsonschema/external_ref_mapping_modules/
 [test_main_jsonschema_external_ref_mapping_whole_document_in_input_directory]
@@ -6909,17 +6918,17 @@ pydantic_v2.dataclass	main/jsonschema/jsonschema_field_named_like_type_beside_en
 	main/jsonschema/jsonschema_field_named_like_type_beside_enum_named_custom_base.py
 [test_main_jsonschema_field_type_collision_cross_module]
 base-model-exact-import	main/jsonschema/field_type_collision_cross_module/base_model_exact//*.py
-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-exact-import	main/jsonschema/main_jsonschema/field_type_collision_cross_module[base-model-exact-import].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-module-import	main/jsonschema/field_type_collision_cross_module/base_model//*.py
-base-model-module-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-module-import	main/jsonschema/main_jsonschema/field_type_collision_cross_module[base-model-module-import].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 exact-import	main/jsonschema/field_type_collision_cross_module/exact//*.py
-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+exact-import	main/jsonschema/main_jsonschema/field_type_collision_cross_module[exact-import].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 exact-import-rename-field	main/jsonschema/field_type_collision_cross_module/exact//*.py
-exact-import-rename-field	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+exact-import-rename-field	main/jsonschema/main_jsonschema/field_type_collision_cross_module[exact-import-rename-field].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 module-import	main/jsonschema/field_type_collision_cross_module/default//*.py
-module-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+module-import	main/jsonschema/main_jsonschema/field_type_collision_cross_module[module-import].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 module-import-rename-field	main/jsonschema/field_type_collision_cross_module/default//*.py
-module-import-rename-field	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+module-import-rename-field	main/jsonschema/main_jsonschema/field_type_collision_cross_module[module-import-rename-field].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_main_jsonschema_field_type_collision_dataclass]
 defaults	main/jsonschema/field_type_collision_runtime/dataclass_defaults_no_future_imports.py
 defaults	main/jsonschema/field_type_collision_runtime/dataclass_defaults_no_future_imports.txt	= main/jsonschema/field_type_collision_runtime/dataclass_defaults_py314.txt
@@ -6950,131 +6959,131 @@ slots-py314	main/jsonschema/field_type_collision_runtime/dataclass_slots_py314.t
 speed	main/jsonschema/field_type_collision_runtime/dataclass_no_future_imports.py
 speed	main/jsonschema/field_type_collision_runtime/dataclass_no_future_imports.txt	= main/jsonschema/field_type_collision_runtime/dataclass.txt
 [test_main_jsonschema_field_type_collision_dataclass_class_var]
-	main/jsonschema/field_type_collision_runtime/dataclass_class_var.py
+	main/jsonschema/main_jsonschema/field_type_collision_dataclass_class_var.py
 [test_main_jsonschema_field_type_collision_inherited_modules]
 base-module-first	main/jsonschema/field_type_collision_inherited_modules//*.py
-base-module-first	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-module-first	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[base-module-first].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-module-first-rename-type	main/jsonschema/field_type_collision_inherited_modules_rename_type/dataclass//*.py
-base-module-first-rename-type	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-module-first-rename-type	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[base-module-first-rename-type].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-module-first-rename-type-base-model	main/jsonschema/field_type_collision_inherited_modules_rename_type/base_model//*.py
-base-module-first-rename-type-base-model	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-module-first-rename-type-base-model	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[base-module-first-rename-type-base-model].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-module-first-rename-type-base-model-exact-import	main/jsonschema/field_type_collision_inherited_modules_rename_type/base_model_exact//*.py
-base-module-first-rename-type-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-module-first-rename-type-base-model-exact-import	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[base-module-first-rename-type-base-model-exact-import].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 child-module-first	main/jsonschema/field_type_collision_inherited_modules_child_first/dataclass//*.py
-child-module-first	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+child-module-first	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[child-module-first].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 child-module-first-base-model	main/jsonschema/field_type_collision_inherited_modules_child_first/base_model//*.py
-child-module-first-base-model	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+child-module-first-base-model	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[child-module-first-base-model].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 child-module-first-rename-type-base-model-exact-import	main/jsonschema/field_type_collision_inherited_modules_child_first/base_model_rename_type_exact//*.py
-child-module-first-rename-type-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+child-module-first-rename-type-base-model-exact-import	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[child-module-first-rename-type-base-model-exact-import].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 packages-first-rename-type-base-model	main/jsonschema/field_type_collision_inherited_modules_package/base_model_rename_type//*.py
-packages-first-rename-type-base-model	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+packages-first-rename-type-base-model	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[packages-first-rename-type-base-model].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 packages-first-rename-type-base-model-exact-import	main/jsonschema/field_type_collision_inherited_modules_package/base_model_rename_type_exact//*.py
-packages-first-rename-type-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+packages-first-rename-type-base-model-exact-import	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules[packages-first-rename-type-base-model-exact-import].txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_main_jsonschema_field_type_collision_inherited_modules_default_order]
 	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules_default_order/
 [test_main_jsonschema_field_type_collision_rename_type_double]
 	main/jsonschema/field_type_collision_rename_type_double.py
 [test_main_jsonschema_field_type_collision_runtime]
-base-model-other	main/jsonschema/field_type_collision_runtime/base_model_other.py
-base-model-other	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-base-model-other-before-inherited-taken-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_inherited_taken_no_future_imports.py
-base-model-other-before-inherited-taken-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-base-model-other-before-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_no_future_imports.py
-base-model-other-before-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-base-model-other-before-taken-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_taken_no_future_imports.py
-base-model-other-before-taken-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-base-model-other-before-taken-rename-type-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_taken_rename_type_no_future_imports.py
-base-model-other-before-taken-rename-type-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-base-model-other-py314	main/jsonschema/field_type_collision_runtime/base_model_other_py314.py
-base-model-other-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-base-model-other-rename-type	main/jsonschema/field_type_collision_runtime/base_model_other_rename_type.py
-base-model-other-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec	main/jsonschema/field_type_collision_runtime/msgspec.py	= main/jsonschema/field_type_collision_runtime/msgspec_py314.py
-msgspec	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-defaults-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_defaults_no_future_imports.py
-msgspec-defaults-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-defaults-py311-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_defaults_py311_no_future_imports.py
-msgspec-defaults-py311-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-inherited-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_inherited_no_future_imports.py
-msgspec-inherited-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-later-default-factory	main/jsonschema/field_type_collision_runtime/msgspec_later_default_factory.py
-msgspec-later-default-factory	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-later-default-factory-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_later_default_factory_no_future_imports.py
-msgspec-later-default-factory-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-later-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_later_no_future_imports.py
-msgspec-later-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-later-py314	main/jsonschema/field_type_collision_runtime/msgspec_later_py314.py
-msgspec-later-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_no_future_imports.py
-msgspec-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-other-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_other_no_future_imports.py
-msgspec-other-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-py314	main/jsonschema/field_type_collision_runtime/msgspec_py314.py
-msgspec-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-rename-type	main/jsonschema/field_type_collision_runtime/msgspec_rename_type.py	= main/jsonschema/field_type_collision_runtime/msgspec_py314.py
-msgspec-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-rename-type-py314	main/jsonschema/field_type_collision_runtime/msgspec_py314.py
-msgspec-rename-type-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-required	main/jsonschema/field_type_collision_runtime/msgspec_required.py
-msgspec-required	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-required-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_required_no_future_imports.py
-msgspec-required-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-required-py314	main/jsonschema/field_type_collision_runtime/msgspec_required_py314.py	= main/jsonschema/field_type_collision_runtime/msgspec_required.py
-msgspec-required-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-msgspec-required-py314-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_required_py314_no_future_imports.py	= main/jsonschema/field_type_collision_runtime/msgspec_required_no_future_imports.py
-msgspec-required-py314-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass	main/jsonschema/field_type_collision_runtime/pydantic_dataclass.py
-pydantic-dataclass	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-described	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_described.py
-pydantic-dataclass-described	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-described-annotated	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_described_annotated.py
-pydantic-dataclass-described-annotated	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-forward-annotated	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_forward_annotated.py
-pydantic-dataclass-forward-annotated	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-forward-annotated-pydantic-2	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2.py	= main/jsonschema/field_type_collision_runtime/pydantic_dataclass_forward_annotated.py
-pydantic-dataclass-forward-annotated-pydantic-2	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-forward-annotated-pydantic-2-slots	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2_slots.py
-pydantic-dataclass-forward-annotated-pydantic-2-slots	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-inherited	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_inherited.py
-pydantic-dataclass-inherited	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-nullable-strip-default-none	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_nullable_strip_default_none.py
-pydantic-dataclass-nullable-strip-default-none	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-other	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other.py
-pydantic-dataclass-other	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-other-before-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_before_no_future_imports.py
-pydantic-dataclass-other-before-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-other-before-taken-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_before_taken_no_future_imports.py
-pydantic-dataclass-other-before-taken-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-other-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_no_future_imports.py	= main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_py314.py
-pydantic-dataclass-other-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-other-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_py314.py
-pydantic-dataclass-other-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_py314.py
-pydantic-dataclass-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-rename-type	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_rename_type.py
-pydantic-dataclass-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-required	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required.py
-pydantic-dataclass-required	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-required-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_no_future_imports.py	= main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_py314.py
-pydantic-dataclass-required-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-required-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_py314.py
-pydantic-dataclass-required-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-required-rename-type	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required.py
-pydantic-dataclass-required-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-required-slots	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_slots.py
-pydantic-dataclass-required-slots	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-required-slots-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_slots_no_future_imports.py	= main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_slots_py314.py
-pydantic-dataclass-required-slots-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-required-slots-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_slots_py314.py
-pydantic-dataclass-required-slots-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-self-named	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_self_named.py
-pydantic-dataclass-self-named	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-self-named-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_self_named_py314.py
-pydantic-dataclass-self-named-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-self-named-pydantic-2	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_self_named_pydantic_2.py
-pydantic-dataclass-self-named-pydantic-2	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
-pydantic-dataclass-subclass	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_subclass.py
-pydantic-dataclass-subclass	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-other	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other].py
+base-model-other	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-other-before-inherited-taken-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-inherited-taken-no-future-imports].py
+base-model-other-before-inherited-taken-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-inherited-taken-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-other-before-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-no-future-imports].py
+base-model-other-before-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-other-before-taken-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-taken-no-future-imports].py
+base-model-other-before-taken-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-taken-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-other-before-taken-rename-type-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-taken-rename-type-no-future-imports].py
+base-model-other-before-taken-rename-type-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-before-taken-rename-type-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-other-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-py314].py
+base-model-other-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+base-model-other-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-rename-type].py
+base-model-other-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other-rename-type].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec].py
+msgspec	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-defaults-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-defaults-no-future-imports].py
+msgspec-defaults-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-defaults-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-defaults-py311-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-defaults-py311-no-future-imports].py
+msgspec-defaults-py311-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-defaults-py311-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-inherited-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-inherited-no-future-imports].py
+msgspec-inherited-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-inherited-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-later-default-factory	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-default-factory].py
+msgspec-later-default-factory	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-default-factory].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-later-default-factory-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-default-factory-no-future-imports].py
+msgspec-later-default-factory-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-default-factory-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-later-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-no-future-imports].py
+msgspec-later-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-later-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-py314].py
+msgspec-later-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-later-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-no-future-imports].py
+msgspec-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-other-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-other-no-future-imports].py
+msgspec-other-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-other-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-py314].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec].py
+msgspec-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-rename-type].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec].py
+msgspec-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-rename-type].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-rename-type-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-rename-type-py314].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec].py
+msgspec-rename-type-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-rename-type-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-required	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required].py
+msgspec-required	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-required-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required-no-future-imports].py
+msgspec-required-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-required-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required-py314].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required].py
+msgspec-required-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+msgspec-required-py314-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required-py314-no-future-imports].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required-no-future-imports].py
+msgspec-required-py314-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[msgspec-required-py314-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass].py
+pydantic-dataclass	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-described	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-described].py
+pydantic-dataclass-described	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-described].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-described-annotated	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-described-annotated].py
+pydantic-dataclass-described-annotated	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-described-annotated].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-forward-annotated	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-forward-annotated].py
+pydantic-dataclass-forward-annotated	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-forward-annotated].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-forward-annotated-pydantic-2	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-forward-annotated-pydantic-2].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-forward-annotated].py
+pydantic-dataclass-forward-annotated-pydantic-2	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-forward-annotated-pydantic-2].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-forward-annotated-pydantic-2-slots	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-forward-annotated-pydantic-2-slots].py
+pydantic-dataclass-forward-annotated-pydantic-2-slots	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-forward-annotated-pydantic-2-slots].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-inherited	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-inherited].py
+pydantic-dataclass-inherited	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-inherited].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-nullable-strip-default-none	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-nullable-strip-default-none].py
+pydantic-dataclass-nullable-strip-default-none	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-nullable-strip-default-none].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-other	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other].py
+pydantic-dataclass-other	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-other-before-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-before-no-future-imports].py
+pydantic-dataclass-other-before-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-before-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-other-before-taken-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-before-taken-no-future-imports].py
+pydantic-dataclass-other-before-taken-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-before-taken-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-other-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-no-future-imports].py
+pydantic-dataclass-other-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-other-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-py314].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-no-future-imports].py
+pydantic-dataclass-other-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-other-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-py314].py
+pydantic-dataclass-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-rename-type].py
+pydantic-dataclass-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-rename-type].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-required	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required].py
+pydantic-dataclass-required	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-required-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-no-future-imports].py
+pydantic-dataclass-required-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-required-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-py314].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-no-future-imports].py
+pydantic-dataclass-required-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-required-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-rename-type].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required].py
+pydantic-dataclass-required-rename-type	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-rename-type].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-required-slots	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-slots].py
+pydantic-dataclass-required-slots	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-slots].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-required-slots-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-slots-no-future-imports].py
+pydantic-dataclass-required-slots-no-future-imports	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-slots-no-future-imports].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-required-slots-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-slots-py314].py	= main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-slots-no-future-imports].py
+pydantic-dataclass-required-slots-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-required-slots-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-self-named	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-self-named].py
+pydantic-dataclass-self-named	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-self-named].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-self-named-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-self-named-py314].py
+pydantic-dataclass-self-named-py314	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-self-named-py314].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-self-named-pydantic-2	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-self-named-pydantic-2].py
+pydantic-dataclass-self-named-pydantic-2	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-self-named-pydantic-2].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+pydantic-dataclass-subclass	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-subclass].py
+pydantic-dataclass-subclass	main/jsonschema/main_jsonschema/field_type_collision_runtime[pydantic-dataclass-subclass].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_main_jsonschema_forwarded_class_beside_loaded_submodule]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
 dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass]/
@@ -7107,9 +7116,9 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loa
 collapse-root-models	main/jsonschema/main_jsonschema/hyphenated_directory_reference[collapse-root-models]/
 default	main/jsonschema/main_jsonschema/hyphenated_directory_reference[default]/
 [test_main_jsonschema_id]
-	main/jsonschema/id.py
+	main/jsonschema/main_jsonschema/id.py
 [test_main_jsonschema_id_as_stdin]
-	main/jsonschema/id_stdin.py
+	main/jsonschema/main_jsonschema/id_as_stdin.py
 [test_main_jsonschema_ids]
 	main/jsonschema/ids//*.py
 [test_main_jsonschema_ignore_ref_siblings_by_schema_version]
@@ -7191,10 +7200,10 @@ typed_dict-kept	main/jsonschema/main_jsonschema/keep_reference_null_on_merged_mo
 [test_main_jsonschema_keyword_only_msgspec_with_extra_data]
 	main/jsonschema/discriminator_literals_msgspec_keyword_only_omit_defaults.py
 [test_main_jsonschema_leaf_schema_traversal_cli]
-anchor-reference	main/jsonschema/anchor_ref.py
-children-conditional-reference	main/jsonschema/schema_validators.py
-children-dynamic-anchor	main/jsonschema/dynamic_ref_pydantic_v2.py
-primitive-leaf	main/jsonschema/simple_string.py
+anchor-reference	main/jsonschema/main_jsonschema/leaf_schema_traversal_cli[anchor-reference].py	= main/jsonschema/main_jsonschema/anchor_ref.py
+children-conditional-reference	main/jsonschema/main_jsonschema/leaf_schema_traversal_cli[children-conditional-reference].py	= main/jsonschema/schema_validators.py
+children-dynamic-anchor	main/jsonschema/main_jsonschema/leaf_schema_traversal_cli[children-dynamic-anchor].py	= main/jsonschema/dynamic_ref_pydantic_v2.py
+primitive-leaf	main/jsonschema/main_jsonschema/leaf_schema_traversal_cli[primitive-leaf].py	= main/jsonschema/simple_string.py
 [test_main_jsonschema_legacy_pydantic_extra_custom_template]
 scalar-future	main/jsonschema/additional_properties_schema_with_properties_legacy_custom_template.py
 scalar-future-old-style	main/jsonschema/additional_properties_schema_with_properties_legacy_custom_template.py
@@ -7309,7 +7318,7 @@ typed-dict	main/jsonschema/output_model_types/msgspec_unset_fastpath_typing_Type
 	main/jsonschema/nested_deep/empty_parent/nested/deep.py
 	main/jsonschema/nested_deep/nested/deep.py
 [test_main_jsonschema_nested_defs_namespace_ref]
-	main/jsonschema/nested_defs_namespace_ref.py
+	main/jsonschema/main_jsonschema/nested_defs_namespace_ref.py
 [test_main_jsonschema_nested_id_ref_with_query]
 	main/jsonschema/main_jsonschema/nested_id_ref_with_query.py
 [test_main_jsonschema_nested_skip]
@@ -7341,8 +7350,8 @@ collapse-root-models	main/jsonschema/main_jsonschema/non_identifier_directory_re
 default	main/jsonschema/main_jsonschema/non_identifier_directory_reference[default]/
 no-treat-dot-as-module	main/jsonschema/main_jsonschema/non_identifier_directory_reference[no-treat-dot-as-module]/	= main/jsonschema/main_jsonschema/non_identifier_directory_reference[default]/
 [test_main_jsonschema_nullable_map_value_reuse_model]
-collapse-reuse-models	main/jsonschema/nullable_map_value_reuse_collapse_reuse_models.py
-reuse-model	main/jsonschema/nullable_map_value_reuse.py
+collapse-reuse-models	main/jsonschema/main_jsonschema/nullable_map_value_reuse_model[collapse-reuse-models].py
+reuse-model	main/jsonschema/main_jsonschema/nullable_map_value_reuse_model[reuse-model].py
 [test_main_jsonschema_nullable_map_value_reuse_tree]
 	main/jsonschema/nullable_map_value_reuse_tree//*.py
 [test_main_jsonschema_nullable_object]
@@ -7582,7 +7591,7 @@ use-annotated	main/jsonschema/main_jsonschema/property_names_root_model_keys[use
 [test_main_jsonschema_property_names_type_non_string_additional_properties_schema_with_properties]
 	main/jsonschema/property_names_type_non_string_additional_properties_schema_with_properties.py
 [test_main_jsonschema_pydantic_v2_valid_field_names_fast_path]
-	main/jsonschema/valid_field_names.py
+	main/jsonschema/main_jsonschema/pydantic_v2_valid_field_names_fast_path.py
 [test_main_jsonschema_read_as_const_marker_in_document]
 	main/jsonschema/main_jsonschema/read_as_const_marker_in_document.py
 	main/jsonschema/main_jsonschema/read_as_const_marker_in_document.warnings.txt
@@ -7651,7 +7660,7 @@ target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].t
 [test_main_jsonschema_reference_to_schema_without_model]
 	main/jsonschema/main_jsonschema/reference_to_schema_without_model.py
 [test_main_jsonschema_remote_relative_ref_without_fragment]
-	main/jsonschema/remote_relative_ref_nested.py
+	main/jsonschema/main_jsonschema/remote_relative_ref_without_fragment.py
 [test_main_jsonschema_remove_special_prefix_preserves_underscore_alias]
 	main/jsonschema/underscore_property.py
 [test_main_jsonschema_rename_preserves_source_alias]
@@ -7670,9 +7679,9 @@ pydantic_v2.BaseModel-reserved_field_name_schema_pydantic.py	main/jsonschema/res
 pydantic_v2.dataclass-reserved_field_name_schema_pydantic_dataclass.py	main/jsonschema/reserved_field_name_schema_pydantic_dataclass.py
 typing.TypedDict-reserved_field_name_schema_typed_dict.py	main/jsonschema/reserved_field_name_schema_typed_dict.py
 [test_main_jsonschema_reserved_field_names]
-	main/jsonschema/reserved_property.py
+	main/jsonschema/main_jsonschema/reserved_field_names.py
 [test_main_jsonschema_reserved_field_names_are_output_owned]
-	main/jsonschema/reserved_property_dataclass.py
+	main/jsonschema/main_jsonschema/reserved_field_names_are_output_owned.py
 [test_main_jsonschema_reserved_target_of_a_rewritten_document]
 	main/jsonschema/main_jsonschema/reserved_target_of_a_rewritten_document/
 [test_main_jsonschema_reuse_model_merged_bases_mro]
@@ -7749,19 +7758,19 @@ extra_args1-jsonschema_root_model_ordering_keep_model_order.py	main/jsonschema/j
 [test_main_jsonschema_root_model_sequence_interface_type_alias]
 	main/jsonschema/root_model_sequence_interface_type_alias.py
 [test_main_jsonschema_root_ref_self_with_keywords]
-	main/jsonschema/root_ref_self_with_keywords.py
+	main/jsonschema/main_jsonschema/root_ref_self_with_keywords.py
 [test_main_jsonschema_runtime_root_merges_generic_base_config]
 	main/jsonschema/schema_validators_runtime_root_cross_module/a.py
 	main/jsonschema/schema_validators_runtime_root_cross_module/z.py
 [test_main_jsonschema_same_name_objects]
 	main/jsonschema/same_name_objects.py
 [test_main_jsonschema_same_name_reference_fields]
-	main/jsonschema/same_name_reference_fields.py
+	main/jsonschema/main_jsonschema/same_name_reference_fields.py
 [test_main_jsonschema_same_name_reference_literals]
-	main/jsonschema/same_name_reference_literals.py
+	main/jsonschema/main_jsonschema/same_name_reference_literals.py
 [test_main_jsonschema_same_name_reference_models]
-collapse-reuse-models	main/jsonschema/same_name_reference_models_collapse_reuse_models.py
-default	main/jsonschema/same_name_reference_models.py
+collapse-reuse-models	main/jsonschema/main_jsonschema/same_name_reference_models[collapse-reuse-models].py
+default	main/jsonschema/main_jsonschema/same_name_reference_models[default].py
 [test_main_jsonschema_schema_id]
 	main/jsonschema/schema_id.py
 [test_main_jsonschema_schema_validator_type_pydantic_v2]
@@ -7843,9 +7852,9 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/single_value_enum_as_const
 [test_main_jsonschema_standard_schema_metadata]
 	main/jsonschema/schema_metadata_v2.py
 [test_main_jsonschema_stdin_oneof_ref]
-	main/jsonschema/stdin_oneof_ref.py
+	main/jsonschema/main_jsonschema/stdin_oneof_ref.py
 [test_main_jsonschema_stdin_root_id_refs]
-	main/jsonschema/stdin_root_id_refs.py
+	main/jsonschema/main_jsonschema/stdin_root_id_refs.py
 [test_main_jsonschema_subclass_enum]
 	main/jsonschema/subclass_enum.py
 [test_main_jsonschema_submodule_hidden_by_package]
@@ -8148,17 +8157,17 @@ without_read-schema_with_applicator	main/jsonschema/main_jsonschema/unevaluated_
 [test_main_jsonschema_unique_items_schema_validators_with_the_builtin_template_directory]
 	main/jsonschema/jsonschema_unique_items_schema_validators_with_the_builtin_template_directory.py	= main/jsonschema/unique_items_schema_validators.py
 [test_main_jsonschema_use_missing_sentinel]
-	main/jsonschema/missing_sentinel.py
+	main/jsonschema/main_jsonschema/use_missing_sentinel.py
 [test_main_jsonschema_use_missing_sentinel_explicit_pydantic_v2_12]
-	main/jsonschema/missing_sentinel.py
+	main/jsonschema/main_jsonschema/use_missing_sentinel_explicit_pydantic_v2_12.py	= main/jsonschema/main_jsonschema/use_missing_sentinel.py
 [test_main_jsonschema_use_missing_sentinel_no_union_operator]
-	main/jsonschema/missing_sentinel_no_union_operator.py
+	main/jsonschema/main_jsonschema/use_missing_sentinel_no_union_operator.py
 [test_main_jsonschema_use_missing_sentinel_pydantic_dataclass]
-alias-allof	main/jsonschema/missing_sentinel_dataclass.py
-annotated	main/jsonschema/missing_sentinel_dataclass_annotated.py
-frozen-keyword-only	main/jsonschema/missing_sentinel_dataclass_frozen.py
+alias-allof	main/jsonschema/main_jsonschema/use_missing_sentinel_pydantic_dataclass[alias-allof].py
+annotated	main/jsonschema/main_jsonschema/use_missing_sentinel_pydantic_dataclass[annotated].py
+frozen-keyword-only	main/jsonschema/main_jsonschema/use_missing_sentinel_pydantic_dataclass[frozen-keyword-only].py
 [test_main_jsonschema_use_missing_sentinel_target_pydantic_214]
-	main/jsonschema/missing_sentinel_target_2_14.py
+	main/jsonschema/main_jsonschema/use_missing_sentinel_target_pydantic_214.py
 [test_main_jsonschema_use_serialization_alias_alias_generator]
 to_camel-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
 to_camel-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/to_camel_multiple_aliases.py
@@ -8194,7 +8203,7 @@ subclass-no-specialized	main/jsonschema/integer_enum_null/subclass_no_specialize
 [test_main_jsonschema_with_custom_formatters]
 	main/jsonschema/custom_formatters.py
 [test_main_jsonschema_with_local_anchor]
-	main/jsonschema/with_anchor.py
+	main/jsonschema/main_jsonschema/with_local_anchor.py
 [test_main_jsonschema_x_python_import_pointer_targets]
 default-x_python_import_pointer_targets.json	main/jsonschema/main_jsonschema/x_python_import_pointer_targets[default-x_python_import_pointer_targets.json].py
 default-x_python_import_pointer_targets_external/main.json	main/jsonschema/main_jsonschema/x_python_import_pointer_targets[default-x_python_import_pointer_targets_external_main.json].py
@@ -8205,20 +8214,20 @@ reuse_model-x_python_import_pointer_targets_external/main.json	main/jsonschema/m
 [test_main_keep_model_order_field_references]
 	main/jsonschema/keep_model_order_field_references.py
 [test_main_keep_model_order_matrix_keep_model_order_field_references]
-3.10-False-False	main/jsonschema/keep_model_order_field_references_default.py
-3.10-False-True	main/jsonschema/keep_model_order_field_references.py
-3.10-True-False	main/jsonschema/keep_model_order_field_references_deferred.py
-3.10-True-True	main/jsonschema/keep_model_order_field_references.py
-3.11-True-False	main/jsonschema/keep_model_order_field_references_deferred.py
-3.11-True-True	main/jsonschema/keep_model_order_field_references.py
-3.12-True-False	main/jsonschema/keep_model_order_field_references_deferred.py
-3.12-True-True	main/jsonschema/keep_model_order_field_references.py
-3.13-True-False	main/jsonschema/keep_model_order_field_references_deferred.py
-3.13-True-True	main/jsonschema/keep_model_order_field_references.py
-3.14-True-False	main/jsonschema/keep_model_order_field_references_native_deferred.py
-3.14-True-True	main/jsonschema/keep_model_order_field_references_native_deferred.py
+3.10-False-False	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.10-False-False].py
+3.10-False-True	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.10-False-True].py	= main/jsonschema/keep_model_order_field_references.py
+3.10-True-False	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.10-True-False].py
+3.10-True-True	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.10-True-True].py	= main/jsonschema/keep_model_order_field_references.py
+3.11-True-False	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.11-True-False].py	= main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.10-True-False].py
+3.11-True-True	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.11-True-True].py	= main/jsonschema/keep_model_order_field_references.py
+3.12-True-False	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.12-True-False].py	= main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.10-True-False].py
+3.12-True-True	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.12-True-True].py	= main/jsonschema/keep_model_order_field_references.py
+3.13-True-False	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.13-True-False].py	= main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.10-True-False].py
+3.13-True-True	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.13-True-True].py	= main/jsonschema/keep_model_order_field_references.py
+3.14-True-False	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.14-True-False].py
+3.14-True-True	main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.14-True-True].py	= main/jsonschema/main_jsonschema/main_keep_model_order_matrix_keep_model_order_field_references[3.14-True-False].py
 [test_main_leading_underscore_class_name_default_unchanged]
-	main/jsonschema/leading_underscore_class_name_default_unchanged.py
+	main/jsonschema/main_jsonschema/main_leading_underscore_class_name_default_unchanged.py
 [test_main_literal_constraints]
 dataclass	main/jsonschema/literal_constraints.py
 dataclass	main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
@@ -8395,18 +8404,18 @@ subclass-capitalise-alias	main/jsonschema/msgspec_nullable_enum/subclass_capital
 	main/jsonschema/msgspec_payload_runtime_compatibility.py
 	main/jsonschema/msgspec_payload_runtime_compatibility_warnings.txt
 [test_main_msgspec_python_314_forward_reference]
-False-msgspec_forward_reference.py	main/jsonschema/msgspec_forward_reference.py
-True-msgspec_forward_reference_disable_future_imports.py	main/jsonschema/msgspec_forward_reference_disable_future_imports.py
+False-msgspec_forward_reference.py	main/jsonschema/main_jsonschema/main_msgspec_python_314_forward_reference[False-msgspec_forward_reference.py].py
+True-msgspec_forward_reference_disable_future_imports.py	main/jsonschema/main_jsonschema/main_msgspec_python_314_forward_reference[True-msgspec_forward_reference_disable_future_imports.py].py
 [test_main_msgspec_python_314_without_forward_reference]
-	main/jsonschema/msgspec_reserved_field_name_python_314.py
+	main/jsonschema/main_jsonschema/main_msgspec_python_314_without_forward_reference.py
 [test_main_msgspec_required_alias_field_sorts_first]
 	main/jsonschema/msgspec_required_alias_field.py
 [test_main_msgspec_required_nullable_field_stays_required]
 	main/jsonschema/msgspec_required_nullable_field.py
 [test_main_msgspec_reserved_field_name]
-	main/jsonschema/msgspec_reserved_field_name.py
+	main/jsonschema/main_jsonschema/main_msgspec_reserved_field_name.py
 [test_main_msgspec_structured_imports]
-	main/jsonschema/msgspec_structured_imports.py
+	main/jsonschema/main_jsonschema/main_msgspec_structured_imports.py
 [test_main_msgspec_union_member_constraints]
 collapse_root_models	main/jsonschema/msgspec_union_member_constraints/collapse_root_models.py
 collapse_root_models	main/jsonschema/msgspec_union_member_constraints/collapse_root_models_decoded.txt	= main/jsonschema/msgspec_union_member_constraints/msgspec_decoded.txt
@@ -8492,7 +8501,7 @@ msgspec.Struct-generated_msgspec_non_finite_container_defaults-msgspec_non_finit
 [test_main_null]
 	main/jsonschema/null.py
 [test_main_null_and_array]
-	main/jsonschema/null_and_array_v2.py
+	main/jsonschema/main_jsonschema/main_null_and_array.py
 [test_main_nullable_any_of]
 	main/jsonschema/nullable_any_of.py
 [test_main_nullable_any_of_use_union_operator]
@@ -8942,8 +8951,8 @@ pydantic_v2.BaseModel-require_referenced_field_pydantic_v2	main/jsonschema/requi
 [test_main_reuse_model_collapse_nested]
 	main/jsonschema/reuse_model_collapse_nested.py
 [test_main_reuse_model_collapse_root_models_preserves_constraints]
-collapse_reuse_model_args0	main/jsonschema/reuse_model_collapse_root_models_constraints.py
-collapse_reuse_model_args1	main/jsonschema/reuse_model_collapse_root_models_constraints.py
+collapse_reuse_model_args0	main/jsonschema/main_jsonschema/main_reuse_model_collapse_root_models_preserves_constraints[collapse_reuse_model_args0].py
+collapse_reuse_model_args1	main/jsonschema/main_jsonschema/main_reuse_model_collapse_root_models_preserves_constraints[collapse_reuse_model_args1].py	= main/jsonschema/main_jsonschema/main_reuse_model_collapse_root_models_preserves_constraints[collapse_reuse_model_args0].py
 [test_main_reuse_model_collapse_with_root]
 	main/jsonschema/reuse_model_collapse_with_root.py
 [test_main_reuse_model_discriminator_literal]
@@ -8951,21 +8960,21 @@ collapse_reuse_model_args1	main/jsonschema/reuse_model_collapse_root_models_cons
 [test_main_reuse_model_masks_references_named_beyond_ascii]
 	main/jsonschema/reuse_reference_identifier_starts.py
 [test_main_reuse_model_preserves_list_root]
-	main/jsonschema/root_model_sequence_interface.py
+	main/jsonschema/main_jsonschema/main_reuse_model_preserves_list_root.py	= main/jsonschema/root_model_sequence_interface.py
 [test_main_reuse_model_root_type_override_preserves_root_processing]
-	main/jsonschema/reuse_model_collapse_with_root_type_override.py
+	main/jsonschema/main_jsonschema/main_reuse_model_root_type_override_preserves_root_processing.py
 [test_main_root_id_jsonschema_self_refs_with_local_file]
-	main/jsonschema/root_id.py
+	main/jsonschema/main_jsonschema/main_root_id_jsonschema_self_refs_with_local_file.py
 [test_main_root_id_jsonschema_self_refs_with_remote_file]
-	main/jsonschema/root_id.py
+	main/jsonschema/main_jsonschema/main_root_id_jsonschema_self_refs_with_remote_file.py	= main/jsonschema/main_jsonschema/main_root_id_jsonschema_self_refs_with_local_file.py
 [test_main_root_id_jsonschema_with_absolute_local_file]
-	main/jsonschema/root_id_absolute_url.py
+	main/jsonschema/main_jsonschema/main_root_id_jsonschema_with_absolute_local_file.py
 [test_main_root_id_jsonschema_with_absolute_remote_file]
-	main/jsonschema/root_id_absolute_url.py
+	main/jsonschema/main_jsonschema/main_root_id_jsonschema_with_absolute_remote_file.py	= main/jsonschema/main_jsonschema/main_root_id_jsonschema_with_absolute_local_file.py
 [test_main_root_id_jsonschema_with_local_file]
-	main/jsonschema/root_id.py
+	main/jsonschema/main_jsonschema/main_root_id_jsonschema_with_local_file.py	= main/jsonschema/main_jsonschema/main_root_id_jsonschema_self_refs_with_local_file.py
 [test_main_root_id_jsonschema_with_remote_file]
-	main/jsonschema/root_id.py
+	main/jsonschema/main_jsonschema/main_root_id_jsonschema_with_remote_file.py	= main/jsonschema/main_jsonschema/main_root_id_jsonschema_self_refs_with_local_file.py
 [test_main_root_model_config_frozen]
 	main/jsonschema/root_model_config_frozen.py
 [test_main_root_model_config_populate_by_name]
@@ -8987,7 +8996,7 @@ collapse_reuse_model_args1	main/jsonschema/reuse_model_collapse_root_models_cons
 [test_main_root_one_of]
 	main/jsonschema/root_one_of//*.py
 [test_main_root_ref]
-	main/jsonschema/root_ref.py
+	main/jsonschema/main_jsonschema/main_root_ref.py
 [test_main_root_sequence_final_types]
 any-api-builtin-template	main/jsonschema/root_sequence_final/any.py
 any-api-builtin-template	main/jsonschema/root_sequence_final/any.runtime.txt
@@ -9198,9 +9207,9 @@ released-reuse	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonsch
 [test_main_similar_nested_array]
 	main/jsonschema/similar_nested_array.py
 [test_main_simple_pydantic_v2_fields]
-	main/jsonschema/simple_pydantic_v2_fields.py
+	main/jsonschema/main_jsonschema/main_simple_pydantic_v2_fields.py
 [test_main_simple_pydantic_v2_fields_with_custom_template]
-	main/jsonschema/simple_pydantic_v2_fields.py
+	main/jsonschema/main_jsonschema/main_simple_pydantic_v2_fields_with_custom_template.py	= main/jsonschema/main_jsonschema/main_simple_pydantic_v2_fields.py
 [test_main_site_models_for_constrained_refs]
 default	main/jsonschema/site_models_for_constrained_refs.py
 msgspec_option	main/jsonschema/site_models_for_constrained_refs.py	= main/jsonschema/site_models_for_constrained_refs~main_site_models_for_constrained_refs[msgspec_option].py
@@ -9265,7 +9274,7 @@ use_annotated	main/jsonschema/main_jsonschema/main_string_constraints_on_emitted
 use_annotated	main/jsonschema/main_jsonschema/main_string_constraints_on_emitted_types[use_annotated].warnings.txt
 use_annotated	main/jsonschema/string_constraints_on_emitted_types.py	= main/jsonschema/string_constraints_on_emitted_types~main_string_constraints_on_emitted_types[use_annotated].py
 [test_main_string_min_max_items_compat]
-	main/jsonschema/string_min_max_items_compat.py
+	main/jsonschema/main_jsonschema/main_string_min_max_items_compat.py
 [test_main_string_time_number_constraints]
 decimal_multiple_of.py-extra_args4	main/jsonschema/string_time_number_constraints/decimal_multiple_of.py	= main/jsonschema/string_time_number_constraints/default.py
 default.py-extra_args0	main/jsonschema/string_time_number_constraints/default.py
@@ -9529,25 +9538,25 @@ sets	main/jsonschema/unique_items_as_set_union_items_sets.py	= main/jsonschema/u
 [test_main_url_with_relative_root_id_resolves_relative_refs]
 	main/jsonschema/url_relative_root_id_resolves_relative_refs//*.py
 [test_main_use_annotated_forward_reference]
-no-generator-target-2	main/jsonschema/annotated_forward_reference/no_generator_2.py
-no-generator-target-2	main/jsonschema/annotated_forward_reference/round_trip.txt
-no-generator-target-2.12	main/jsonschema/annotated_forward_reference/no_generator_2.12.py
-no-generator-target-2.12	main/jsonschema/annotated_forward_reference/round_trip.txt
-no-generator-target-unset	main/jsonschema/annotated_forward_reference/no_generator_unset.py	= main/jsonschema/annotated_forward_reference/no_generator_2.12.py
-no-generator-target-unset	main/jsonschema/annotated_forward_reference/round_trip.txt
-to_camel-target-2	main/jsonschema/annotated_forward_reference/round_trip.txt
-to_camel-target-2	main/jsonschema/annotated_forward_reference/to_camel_2.py
-to_camel-target-2.12	main/jsonschema/annotated_forward_reference/round_trip.txt
-to_camel-target-2.12	main/jsonschema/annotated_forward_reference/to_camel_2.12.py
-to_camel-target-unset	main/jsonschema/annotated_forward_reference/round_trip.txt
-to_camel-target-unset	main/jsonschema/annotated_forward_reference/to_camel_unset.py
+no-generator-target-2	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2].annotated_forward_reference.txt
+no-generator-target-2	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2].py
+no-generator-target-2.12	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2.12].annotated_forward_reference.txt	= main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2].annotated_forward_reference.txt
+no-generator-target-2.12	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2.12].py
+no-generator-target-unset	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-unset].annotated_forward_reference.txt	= main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2].annotated_forward_reference.txt
+no-generator-target-unset	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-unset].py	= main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2.12].py
+to_camel-target-2	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[to_camel-target-2].annotated_forward_reference.txt	= main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2].annotated_forward_reference.txt
+to_camel-target-2	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[to_camel-target-2].py
+to_camel-target-2.12	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[to_camel-target-2.12].annotated_forward_reference.txt	= main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2].annotated_forward_reference.txt
+to_camel-target-2.12	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[to_camel-target-2.12].py
+to_camel-target-unset	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[to_camel-target-unset].annotated_forward_reference.txt	= main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[no-generator-target-2].annotated_forward_reference.txt
+to_camel-target-unset	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference[to_camel-target-unset].py
 [test_main_use_annotated_forward_reference_dataclass]
-2	main/jsonschema/annotated_forward_reference/dataclass_2.py
-unset	main/jsonschema/annotated_forward_reference/dataclass_unset.py
+2	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference_dataclass[2].py
+unset	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference_dataclass[unset].py
 [test_main_use_annotated_forward_reference_dataclass_required_order]
-	main/jsonschema/annotated_forward_reference/dataclass_required_order_2.py
+	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference_dataclass_required_order.py
 [test_main_use_annotated_forward_reference_eager]
-	main/jsonschema/annotated_forward_reference/no_generator_2_eager.py
+	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference_eager.py
 [test_main_use_default_factory_for_optional_nested_models]
 dataclasses.dataclass-default_factory_nested_model_dataclass.py	main/jsonschema/default_factory_nested_model_dataclass.py
 msgspec.Struct-default_factory_nested_model_msgspec.py	main/jsonschema/default_factory_nested_model_msgspec.py
@@ -15542,7 +15551,7 @@ external-cli-True-True-unknown_keyword	main/jsonschema/unknown_pattern_annotatio
 [test_use_default_msgspec_field_ordering]
 	main/jsonschema/use_default_msgspec_field_ordering.py
 [test_use_default_pydantic_v2_with_json_schema_const]
-	main/jsonschema/use_default_with_const.py
+	main/jsonschema/main_jsonschema/use_default_pydantic_v2_with_json_schema_const.py
 [test_use_default_required_null_default]
 	main/jsonschema/use_default_required_null_default.py
 [test_use_default_strict_nullable_required]
