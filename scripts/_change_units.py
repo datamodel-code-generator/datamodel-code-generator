@@ -397,11 +397,11 @@ class Moves:
     def corresponds(self, base_module: str, head_module: str, name: str) -> bool:
         """Whether a name read in a base module and in a head module resolves to corresponding bindings."""
         before, after = self._definitions("base", base_module, name), self._definitions("head", head_module, name)
-        return all(any(self._matches(item, other) for other in after) for item in before) and all(
-            any(self._matches(item, other) for item in before) for other in after
+        return all(any(self._pairs_with(item, other) for other in after) for item in before) and all(
+            any(self._pairs_with(item, other) for item in before) for other in after
         )
 
-    def _matches(self, before: tuple[str, ...], after: tuple[str, ...]) -> bool:
+    def _pairs_with(self, before: tuple[str, ...], after: tuple[str, ...]) -> bool:
         """Whether a base and a head definition correspond: the same name in paired modules, or moved together."""
         if before[0] != after[0] or before[0] in {"unreadable", "cycle"}:
             return False
@@ -721,6 +721,11 @@ class Mapper:
         return [(owner, probe, "run at import only" if names else "")]
 
 
+def _run_time(reference: Reference) -> bool:
+    """Whether a read runs: not one of a name in a string, a postponed or a never evaluated annotation."""
+    return reference.annotation in {"", "evaluated"}
+
+
 class Readers:
     """The instructions that read a module or class binding, across the modules of one side (`Probe.readers`)."""
 
@@ -748,7 +753,7 @@ class Readers:
         found = []
         for binding in model.bindings(name, scope):
             for use in model.uses(binding):
-                found += self._reader(path, use.reference.node, None)
+                found += self._reader(path, use.reference.node, None) if _run_time(use.reference) else []
         word = re.compile(rf"\b{re.escape(name)}\b")
         for other in self.paths:
             if not word.search(self.texts[other]):
@@ -758,7 +763,7 @@ class Readers:
                 if item.target == dotted and item.bound and item.kind == "from":
                     for binding in other_model.bindings(item.bound, other_model.module_scope):
                         for use in other_model.uses(binding):
-                            found += self._reader(other, use.reference.node, None)
+                            found += self._reader(other, use.reference.node, None) if _run_time(use.reference) else []
             names = {id(reference.node): reference for reference in other_model.references}
             for node in ast.walk(other_model.tree):
                 if isinstance(node, ast.Attribute) and node.attr == name and isinstance(node.ctx, ast.Load):

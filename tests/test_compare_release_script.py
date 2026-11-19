@@ -716,6 +716,18 @@ def run(spec):
         return "".join(Statement().imports())
     return spec["value"]
 """
+ALIASED = """Alias = str
+
+
+def convert(value: "Alias") -> str:
+    return value
+
+
+def run(spec):
+    if spec.get("reach"):
+        return Alias(spec["value"])
+    return convert(spec["value"])
+"""
 READS_RESOURCE = """import json
 from pathlib import Path
 
@@ -988,6 +1000,7 @@ ORACLES: dict[str, Oracle] = {
         NO_UNIT,
     ),
     "q1_class_attribute_no_compared_cell_reads": _changed(CLASS_ATTRIBUTE, ('("a", "b")', 'tuple("ab")')),
+    "q1_binding_read_in_a_string_annotation_too": _changed(ALIASED, ("Alias = str", 'Alias = type("")')),
     "q3_json_resource": Oracle(
         {"resources/table.json": '{"a": 1}\n', "_case.py": READS_RESOURCE},
         {"resources/table.json": '{"a": 1, "b": 2}\n'},
