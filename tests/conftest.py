@@ -2456,7 +2456,7 @@ def assert_runtime_result_model(output_dir: Path) -> None:
     sys.path.insert(0, str(output_dir.parent))
     importlib.invalidate_caches()
     try:
-        Result = importlib.import_module("model._internal").Result
+        from model._internal import Result  # ty: ignore[import-not-found]
 
         result = Result.model_validate({"event": {"id": "abc"}})
         assert result.event is not None
