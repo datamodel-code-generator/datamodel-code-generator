@@ -7,6 +7,15 @@ allowlist-subscript-writes	check_ratchets_script/check_ratchets_against_base[all
 allowlist-unreadable	check_ratchets_script/check_ratchets_against_base[allowlist-unreadable].txt
 any-uses	check_ratchets_script/check_ratchets_against_base[any-uses].txt
 any-values	check_ratchets_script/check_ratchets_against_base[any-values].txt
+approval-stale	check_ratchets_script/check_ratchets_against_base[approval-stale].txt
+approvals-malformed	check_ratchets_script/check_ratchets_against_base[approvals-malformed].txt
+approvals-not-a-list	check_ratchets_script/check_ratchets_against_base[approvals-not-a-list].txt
+approvals-not-toml	check_ratchets_script/check_ratchets_against_base[approvals-not-toml].txt
+approved-rise	check_ratchets_script/check_ratchets_against_base[approved-rise].txt
+approved-rise-exceeded	check_ratchets_script/check_ratchets_against_base[approved-rise-exceeded].txt
+approved-rise-local-run	check_ratchets_script/check_ratchets_against_base[approved-rise-local-run].txt
+approved-rise-merged	check_ratchets_script/check_ratchets_against_base[approved-rise-merged].txt
+approved-rise-other-pull-request	check_ratchets_script/check_ratchets_against_base[approved-rise-other-pull-request].txt
 block-style-args	check_ratchets_script/check_ratchets_against_base[block-style-args].txt
 coverage-omit-widened	check_ratchets_script/check_ratchets_against_base[coverage-omit-widened].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
@@ -23,11 +32,17 @@ host-baseline-shrinks	check_ratchets_script/check_ratchets_against_base[host-bas
 host-baseline-unreadable	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 host-baseline-unreadable-shape	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-shape].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
 host-baseline-unreadable-value	check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable-value].txt	= check_ratchets_script/check_ratchets_against_base[host-baseline-unreadable].txt
+import-cycles	check_ratchets_script/check_ratchets_against_base[import-cycles].txt
+import-cycles-ignored-files	check_ratchets_script/check_ratchets_against_base[import-cycles-ignored-files].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 moved-line	check_ratchets_script/check_ratchets_against_base[moved-line].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
 nested-ruff-config	check_ratchets_script/check_ratchets_against_base[nested-ruff-config].txt
 other-kinds	check_ratchets_script/check_ratchets_against_base[other-kinds].txt
 quoted-hook-id	check_ratchets_script/check_ratchets_against_base[quoted-hook-id].txt
 scope-walk	check_ratchets_script/check_ratchets_against_base[scope-walk].txt
+stored-lists-environments	check_ratchets_script/check_ratchets_against_base[stored-lists-environments].txt
+stored-lists-grow	check_ratchets_script/check_ratchets_against_base[stored-lists-grow].txt
+stored-lists-new-test	check_ratchets_script/check_ratchets_against_base[stored-lists-new-test].txt
+stored-lists-shrink	check_ratchets_script/check_ratchets_against_base[stored-lists-shrink].txt
 top-level-extended-ignores	check_ratchets_script/check_ratchets_against_base[top-level-extended-ignores].txt	= check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 unchanged	check_ratchets_script/check_ratchets_against_base[unchanged].txt
 unreadable-arguments	check_ratchets_script/check_ratchets_against_base[unreadable-arguments].txt

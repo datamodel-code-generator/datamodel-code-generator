@@ -1,0 +1,85 @@
+== references
+14:3 TYPE_CHECKING load in <module> -> local <module> @12; origin typing.TYPE_CHECKING
+17:4 Table store in <module> -> local <module> @15,17
+17:11 TypeAlias load (deferred annotation) in <module> -> local <module> @12; origin typing.TypeAlias
+17:23 Any load in <module> -> local <module> @12; origin typing.Any
+19:0 Config store in <module> -> local <module> @19
+19:8 TypeAlias load (deferred annotation) in <module> -> local <module> @12; origin typing.TypeAlias
+19:20 Any load in <module> -> local <module> @12; origin typing.Any
+20:0 Plain store in <module> -> local <module> @20
+20:8 Any load in <module> -> local <module> @12; origin typing.Any
+21:0 Payload store in <module> -> local <module> @21
+21:9 TypeAlias load (deferred annotation) in <module> -> local <module> @12; origin typing.TypeAlias
+21:21 dict load in <module> -> builtin; origin builtins.dict
+21:26 str load in <module> -> builtin; origin builtins.str
+21:31 Any load in <module> -> local <module> @12; origin typing.Any
+25:11 typing load (deferred annotation) in <module> -> local <module> @10; origin typing
+27:11 list load (deferred annotation) in <module> -> builtin; origin builtins.list
+27:16 typing load (deferred annotation) in <module> -> local <module> @10; origin typing
+28:12 Config load (deferred annotation) in <module> -> local <module> @19; origin typing.Any
+29:11 Plain load (deferred annotation) in <module> -> local <module> @20; origin typing.Any
+30:11 Table load (deferred annotation) in <module> -> local <module> @15,17
+  may be collections.abc.Mapping [type-checking:body@14]
+31:13 Payload load (deferred annotation) in <module> -> local <module> @21; origin forms.references.type_expressions_and_any_aliases.Payload
+32:12 Annotated load (deferred annotation) in <module> -> local <module> @12; origin typing.Annotated
+32:22 int load (deferred annotation) in <module> -> builtin; origin builtins.int
+32:27 typing load (deferred annotation) in <module> -> local <module> @10; origin typing
+33:11 Literal load (deferred annotation) in <module> -> local <module> @12; origin typing.Literal
+34:5 typing load (deferred annotation) in <module> -> local <module> @10; origin typing
+34:20 str load (deferred annotation) in <module> -> builtin; origin builtins.str
+34:25 t load (deferred annotation) in <module> -> local <module> @11; origin typing
+35:4 held store in read -> local read @35
+35:10 Config load (never annotation) in read -> global <module> @19; origin typing.Any
+35:19 cast load in read -> global <module> @12; origin typing.cast
+35:33 first load in read -> local read @25
+36:11 cast load in read -> global <module> @12; origin typing.cast
+36:16 typing load in read -> global <module> @10; origin typing
+36:29 held load in read -> local read @35
+36:35 second load in read -> local read @26
+36:43 third load in read -> local read @27
+36:50 fourth load in read -> local read @28
+36:58 fifth load in read -> local read @29
+36:65 sixth load in read -> local read @30
+36:72 seventh load in read -> local read @31
+36:81 eighth load in read -> local read @32
+36:89 ninth load in read -> local read @33
+26:12 t load (string annotation) in <module> -> local <module> @11; origin typing
+35:24 t load (string annotation) in read -> global <module> @11; origin typing
+uses of <module>:typing@10: read@25, read@27, read@32, read@34, read@36
+uses of <module>:t@11: read@34, read@26, read@35
+uses of <module>:TYPE_CHECKING@12: read@14
+uses of <module>:Annotated@12: read@32
+uses of <module>:Any@12: read@17, read@19, read@20, read@21
+uses of <module>:Literal@12: read@33
+uses of <module>:TypeAlias@12: read@17, read@19, read@21
+uses of <module>:cast@12: call@35, call@36
+uses of <module>:Table@15: read@30
+uses of <module>:Table@17: read@30
+uses of <module>:Config@19: read@28, read@35
+uses of <module>:Plain@20: read@29
+uses of <module>:Payload@21: read@31
+uses of read:first@25: argument@35
+uses of read:second@26: read@36
+uses of read:third@27: read@36
+uses of read:fourth@28: read@36
+uses of read:fifth@29: read@36
+uses of read:sixth@30: read@36
+uses of read:seventh@31: read@36
+uses of read:eighth@32: read@36
+uses of read:ninth@33: read@36
+uses of read:held@35: read@36
+type positions @19: TypeAlias
+type positions @21: TypeAlias
+type positions @34: typing, str, t; chains typing.Mapping = typing.Mapping, t.Any = typing.Any
+type positions @17: TypeAlias
+type positions @35: Config
+type positions @25: typing; chains typing.Any = typing.Any
+type positions @26: t; chains t.Any = typing.Any
+type positions @27: list, typing; chains typing.Any = typing.Any
+type positions @28: Config
+type positions @29: Plain
+type positions @30: Table
+type positions @31: Payload
+type positions @32: Annotated, int
+type positions @33: Literal
+== code objects: one per scope that compiles on this Python

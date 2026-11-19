@@ -301,9 +301,8 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/main/test_option_stage_order.py::test_cli_option_relation_rows*", "*", Owner.LISTING),
     ("tests/main/test_agent_skill.py::*", "*", Owner.LISTING),
     ("tests/skills/*", "*", Owner.LISTING),
-    ("tests/test_build_preset_docs_script.py::*", "*", Owner.LISTING),
-    ("tests/test_build_schema_docs_script.py::*", "*", Owner.LISTING),
-    ("tests/test_build_docs_examples_script.py::*", "*", Owner.LISTING),
+    ("tests/test_build_*_script.py::*", "*", Owner.LISTING),
+    ("tests/test_generate_changelog_script.py::*", "*", Owner.LISTING),
     ("tests/test_docs_formatting.py::*", "*", Owner.LISTING),
     ("tests/test_recommender_calibrate_script.py::*", "*", Owner.LISTING),
     ("tests/test_prompt.py::*", "*", Owner.LISTING),
@@ -319,6 +318,17 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/checks/*", "*", Owner.INTERNAL),
     ("tests/test_architecture_boundaries.py::*", "*", Owner.INTERNAL),
     ("tests/test_source_rules.py::*", "*", Owner.INTERNAL),
+    ("tests/test_source_model.py::*", "*", Owner.INTERNAL),
+    ("tests/test_*_script.py::*", "*", Owner.INTERNAL),
+    ("tests/cli_doc/test_cli_options_sync.py::*", "*", Owner.INTERNAL),
+    ("tests/test_assert_helper_usage.py::*", "*", Owner.INTERNAL),
+    ("tests/test_change_records.py::*", "*", Owner.INTERNAL),
+    ("tests/test_ci_workflow.py::*", "*", Owner.INTERNAL),
+    ("tests/test_conftest_helpers.py::*", "*", Owner.INTERNAL),
+    ("tests/test_docs_python_blocks.py::*", "*", Owner.INTERNAL),
+    ("tests/test_legacy_rows.py::*", "*", Owner.INTERNAL),
+    ("tests/test_release_draft_workflow.py::*", "*", Owner.INTERNAL),
+    ("tests/test_repository_transfer.py::*", "*", Owner.INTERNAL),
     ("*", "payloads/*", Owner.MODELS),
     ("*", "*native*error*", Owner.MODELS),
     ("*", "*generated*error*", Owner.MODELS),
@@ -329,9 +339,12 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
 """The stored outputs that are not model output, as (nodeid glob, label glob, kind) rows; the first match decides.
 
 Warnings, standard error and error messages are notices; help, listings, documentation, prompts and recommender
-output are listings; traces and reports of internals, and the checks that read the repository's source, are internal.
-Every other stored output is model output. This table and `RULES` judge the records, so a change to either is a change
-of the check.
+output are listings, and so are the outputs of the tests of the scripts that build documentation
+(`tests/test_build_*_script.py`, the changelog's); traces and reports of internals, and the checks and tools of the
+repository, are internal: the tests of every other repository script (`tests/test_*_script.py`), of the source model
+and the checks that read the repository's source, of the CI and release workflows and of the test harness. Every other
+stored output, the tests of the package's own modules included, is model output. This table and `RULES` judge the
+records, so a change to either is a change of the check.
 
 Notices are told from model output by their labels for now: a text output named for a warning, a refusal or an error
 is a notice, except payload outputs and the runtime errors of generated models against the native types, which are

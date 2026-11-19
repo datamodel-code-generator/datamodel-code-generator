@@ -17,6 +17,10 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
+- ``import-cycle:<measure>@<area>``: the modules on import cycles of the package (``src``) and of ``scripts``, read by
+  `scripts/_import_cycles.py` from the model's import graph: ``module-level`` counts the cycles of the imports that run
+  when their module is imported, ``lazy`` those of every import (function-local and ``TYPE_CHECKING`` ones too) and
+  ``largest-lazy`` the largest of those; each module counts once, at its first import into its cycle.
 - ``private-scope-walk``, in ``scripts`` and ``tests``: a check that reads bindings, scopes, imports or comments with
   ``ast``, ``symtable`` or ``tokenize`` itself instead of through ``scripts/_source_model.py`` (`scope_walk_sites`),
   read by origin with the model; the model and its test are not counted.
@@ -24,6 +28,16 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   and the direct-assert exemption list, the generation store allowlist, the host baseline
   (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
   architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
+- ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
+  of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
+  records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
+  counts each line under its item, its text and its environment's predicate, split by tabs. Each environment of an
+  item reads its override or else the default, and compares with the record it reads in the base: it rises with a
+  line that record did not hold, while a new item, and an environment whose base record is a blind line (its checks
+  did not run), starts at the lines it stores. ``blind`` counts the lines of ``BLIND_LINES``, which say that the item
+  checked nothing (a seed the model rejects): it rises with a blind line the base record does not hold, in a new item
+  too, once the base stores the test. These keys rise by their lines, not their totals, so a fix that drops one line
+  does not pay for a regression that adds another, nor one environment's fix for another's regression.
 - ``unreadable:<what>`` and ``allowlist:<NAME>:unreadable``: a hook setting (no value or a block scalar, a ``--select``
   or ``--config`` argument) or an allowlist or host baseline this script cannot read. Such a key always fails under
   ``--enforce``, because what it hides cannot be counted.
@@ -35,6 +49,11 @@ so a key may stay or fall. When the base has its own copy of this script, that c
 cannot weaken the counter that judges it. For each key that rose, the report names the files whose count rose, their
 sites and how to fix it. The exit status is 0 unless ``--enforce`` is given and a key rose.
 
+``scripts/ratchet_approvals.toml`` lists the rises the owner approved, each for one pull request; it is read from the
+base revision, so a change cannot approve itself. A run of that pull request on GitHub Actions accepts the key up to the
+approved count; every other run fails as before. An entry that the tree already reaches accepts no rise and is stale,
+and a stale or malformed entry fails under ``--enforce`` (`_judged_pull_requests`, `_approval_problems`).
+
 ``--count <dir>`` prints the counts of one tree as JSON, ``{key: {file: count}}``; a later copy of this script reads it
 from the base revision's copy, so its form stays.
 """
@@ -43,8 +62,10 @@ from __future__ import annotations
 
 import argparse
 import ast
+import datetime as dt
 import io
 import json
+import os
 import re
 import subprocess
 import sys
@@ -54,15 +75,35 @@ import tokenize
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._import_cycles import import_cycles
 from scripts._source_model import SourceModule
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 SCRIPT = "scripts/check_ratchets.py"
 STORE_ALLOWLIST = "scripts/generation_store_allowlist.toml"
 HOST_BASELINE = "scripts/host_private_access_baseline.toml"
+EXPECTED_ROOT = "tests/data/expected"
+STORED_LIST = "stored-list"
+STORED_LISTS = (
+    ("tests/main/test_payload_validation.refs", "test_generated_models_decide_value_neighbours_like_the_schema"),
+)
+"""The ``.refs`` files and tests whose stored outputs are lists of known gaps that may only shrink."""
+NO_SEED_LINE = "no source-valid seed"
+REJECTED_SEED_LINE = "seed: valid, model rejects"
+BLIND_LINES = frozenset({NO_SEED_LINE, REJECTED_SEED_LINE})
+"""The lines that say a stored item checked nothing, so that no new one passes as a shorter list."""
+APPROVALS = "scripts/ratchet_approvals.toml"
+APPROVAL_FIELDS = ("key", "head", "pr", "decision", "reason")
+PUBLIC_REFERENCE = re.compile(r"#[1-9]\d*")
+PULL_REQUEST_REF = re.compile(r"refs/pull/([1-9]\d*)/merge")
+SQUASH_SUBJECT = re.compile(r"\(#([1-9]\d*)\)$")
 AREAS = frozenset({"src", "tests", "scripts"})
 FIX_FLAGS = frozenset({"--fix", "--fix-only", "--unsafe-fixes", "--exit-non-zero-on-fix", "--show-fixes"})
 IGNORE_FLAGS = frozenset({"--ignore", "--extend-ignore"})
@@ -164,7 +205,15 @@ ADVICE = {
     "any": "Name the type (a Protocol, a TypeVar, object or a union) instead of Any.",
     "no-type-check": "Fix the annotations instead of switching the type checker off for the function.",
     "getattr-private": "A private name read through getattr() hides it from SLF001: give its owner a method instead.",
-    "dynamic-import": "importlib and __import__ hide an import from the lint and the cycle checks: import it by name.",
+    "dynamic-import": (
+        "importlib and __import__ hide an import from the lint, and a computed module name hides it from the "
+        "import-cycle keys: import it by name."
+    ),
+    "import-cycle": (
+        "The lines are each module's first import into its cycle. Move what the modules of the cycle share into a "
+        "module that imports none of them; importing back inside a function or under TYPE_CHECKING still counts for "
+        "the lazy keys, and only the module-level key ignores it."
+    ),
     "filterwarnings-ignore": "Fix the warning's cause, or assert it with pytest.warns, instead of ignoring it.",
     "abnormal-path": "Reach the path end to end through the public entry points instead of marking it abnormal.",
     "private-scope-walk": (
@@ -178,6 +227,11 @@ ADVICE = {
         "Route the write through the generation store's mutation APIs (AGENTS.md) instead of listing it."
     ),
     "allowlist": "Allowlist entries only shrink: fix the violation instead of listing it.",
+    STORED_LIST: (
+        "A stored list of known gaps only shrinks: the new line is a regression of the generated output (or, for a "
+        "blind line, an item whose checks no longer run). Fix the change or file the defect; never store the line "
+        "with the fix command the test prints."
+    ),
     "allowlist:host-private-access": (
         "Host baseline entries only shrink: declare the member on the Host Protocol the function takes, "
         "or move the code into the class."
@@ -185,6 +239,10 @@ ADVICE = {
     "unreadable": (
         "Write the ruff hook's `args:` and `exclude:` as inline values or a block list, without --select or --config "
         "(put those in pyproject.toml), so that the counter can read them."
+    ),
+    "unreadable-stored-list": (
+        "Store the list as a JSON list of strings at the storage its `.refs` line names (pytest writes both), so "
+        "that the counter can read it."
     ),
     "unreadable-allowlist": (
         "Write the allowlist or baseline in the plain form its checker reads (literal entries, tables of integer "
@@ -221,6 +279,39 @@ class Hook:
     exclude: str = ""
     args: tuple[str, ...] = ()
     unreadable: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class Approval:
+    """An entry of the approvals table: ``key`` may rise up to ``head`` in pull request ``pr``."""
+
+    key: str
+    head: int
+    pr: int
+    decision: tuple[str, ...]
+    reason: str
+
+
+@dataclass(frozen=True)
+class Approvals:
+    """The approvals of the base revision's table and the pull requests that the head being judged is."""
+
+    entries: tuple[Approval, ...] = ()
+    pull_requests: frozenset[int] = frozenset()
+
+    def covering(self, key: str, total: int) -> Approval | None:
+        """Return the approval that lets ``key`` reach ``total`` in a judged pull request, or None."""
+        return next(
+            (
+                entry
+                for entry in self.entries
+                if entry.key == key and entry.pr in self.pull_requests and total <= entry.head
+            ),
+            None,
+        )
+
+
+NO_APPROVALS = Approvals()
 
 
 def _area(path: str) -> str:
@@ -340,10 +431,12 @@ def _ruff_json(ruff: list[str], root: Path, flags: list[str], files: list[str]) 
 
 
 def _toml(value: object) -> str:
-    """Write a value read from a TOML file back as TOML: JSON scalars and lists, inline tables for dicts."""
+    """Write a value read from a TOML file back as TOML: JSON scalars and lists, inline tables, ISO dates and times."""
     if isinstance(value, dict):
         return "{" + ", ".join(f"{json.dumps(key)} = {_toml(item)}" for key, item in value.items()) + "}"
-    return "[" + ", ".join(map(_toml, value)) + "]" if isinstance(value, list) else json.dumps(value)
+    if isinstance(value, list):
+        return "[" + ", ".join(map(_toml, value)) + "]"
+    return value.isoformat() if isinstance(value, (dt.date, dt.time)) else json.dumps(value)
 
 
 def _without_extended_ignores(config: dict, root: Path) -> dict:
@@ -698,6 +791,51 @@ def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
                     tally.add(f"allowlist:{listed}:unreadable", path, statement.lineno)
 
 
+def _stored_lines(path: Path) -> list[str] | None:
+    """Return a stored list of strings, or None where the file is missing or holds anything else."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return value if isinstance(value, list) and all(isinstance(line, str) for line in value) else None
+
+
+def _stored_list_tally(tally: Tally, root: Path) -> None:
+    """Count the items and lines of the stored lists, reading each record's storage through its ``.refs`` file.
+
+    Only the records of the test's own list count: the other outputs it stores for an item, such as the warnings of
+    its generation, are no list of gaps.
+    """
+    for sidecar, test in STORED_LISTS:
+        path = root / sidecar
+        section = ""
+        for raw in path.read_text(encoding="utf-8").splitlines() if path.is_file() else []:
+            if raw.startswith("["):
+                section = raw[1:-1]
+            if section != test or raw.startswith(("[", "#")):
+                continue
+            item, label, *flags = raw.split("\t")
+            if not label.rpartition("/")[2].startswith(f"{test.removeprefix('test_')}["):
+                continue
+            storage = next((flag.removeprefix("= ") for flag in flags if flag.startswith("= ")), label)
+            environment = next((flag for flag in flags if flag.startswith("@")), "")
+            tally.add(f"{STORED_LIST}:{test}:items", "\t".join(filter(None, (item, environment))))
+            if (lines := _stored_lines(root / EXPECTED_ROOT / storage)) is None:
+                tally.add(f"{STORED_LIST}:{test}:unreadable", f"{EXPECTED_ROOT}/{storage}")
+            for line in lines or []:
+                tally.add(
+                    f"{STORED_LIST}:{test}:{'blind' if line in BLIND_LINES else 'lines'}",
+                    "\t".join(filter(None, (item, line, environment))),
+                )
+
+
+def _import_cycle_tally(tally: Tally, root: Path, files: list[str]) -> None:
+    """Count the modules on the import cycles of the package and of ``scripts`` among the tree's files."""
+    for key, found in import_cycles(root, files=files).items():
+        for path, line in (site for cycle in found for site in cycle):
+            tally.add(key, path, line)
+
+
 def count_tree(root: Path, ruff: list[str]) -> Tally:
     """Count every escape hatch of the tree at ``root``."""
     path = root / "pyproject.toml"
@@ -708,6 +846,8 @@ def count_tree(root: Path, ruff: list[str]) -> Tally:
     _ruff_files(tally, root, files)
     _source_tally(tally, root, files)
     _config_tally(tally, root, pyproject)
+    _stored_list_tally(tally, root)
+    _import_cycle_tally(tally, root, files)
     return tally
 
 
@@ -715,13 +855,74 @@ def _totals(counts: dict[str, dict[str, int]]) -> dict[str, int]:
     return {key: sum(files.values()) for key, files in counts.items()}
 
 
-def _rises(base: dict[str, dict[str, int]], head: dict[str, dict[str, int]]) -> list[str]:
+def _rises(base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals) -> list[str]:
     base_totals, head_totals = _totals(base), _totals(head)
     return [
         key
         for key, total in sorted(head_totals.items())
-        if total > base_totals.get(key, 0) and _kind(key) != "unreadable"
+        if _kind(key) != "unreadable"
+        and (bool(_risen(key, base, head)) if _kind(key) == STORED_LIST else total > base_totals.get(key, 0))
+        and not approvals.covering(key, total)
     ]
+
+
+def _risen(key: str, base: dict[str, dict[str, int]], head: dict[str, dict[str, int]]) -> list[tuple[str, int, int]]:
+    """Return the files (for a stored list, the lines) of a key whose count rose, with both counts."""
+    if _kind(key) != STORED_LIST:
+        return _file_rises(base.get(key, {}), head[key])
+    test, _, part = key.rpartition(":")
+    if part not in {"lines", "blind"}:
+        return []
+    base_lists, head_lists = _environment_lists(base, test), _environment_lists(head, test)
+    new: list[tuple[str, int, int]] = []
+    for item, head_records in sorted(head_lists.items()):
+        if (base_records := base_lists.get(item)) is None:
+            if part == "blind" and base_lists:
+                new.extend((path, 0, 1) for path in _stored_paths(item, head_records, part))
+            continue
+        for environment in sorted(head_records.keys() | base_records.keys()):
+            now, was = _record(head_records, environment), _record(base_records, environment)
+            if part == "lines" and was["blind"]:
+                continue
+            new.extend((_stored_path(item, line, environment), 0, 1) for line in sorted(now[part] - was[part]))
+    return new
+
+
+_StoredRecord = dict[str, set[str]]
+"""The ``lines`` and ``blind`` lines one record of a stored list holds."""
+
+
+def _environment_lists(counts: dict[str, dict[str, int]], test: str) -> dict[str, dict[str, _StoredRecord]]:
+    """Return the records of a stored list's items by environment: ``""`` for the default, ``@<predicate>`` otherwise.
+
+    An environment's override is its own record, so a line that one environment's record gains is new even where
+    another environment's record holds it.
+    """
+    lists: dict[str, dict[str, _StoredRecord]] = {}
+    for path in counts.get(f"{test}:items", {}):
+        item, _, environment = path.partition("\t")
+        lists.setdefault(item, {})[environment] = {"lines": set(), "blind": set()}
+    for part in ("lines", "blind"):
+        for path in counts.get(f"{test}:{part}", {}):
+            item, line, *environment = path.split("\t")
+            records = lists.setdefault(item, {})
+            records.setdefault("".join(environment), {"lines": set(), "blind": set()})[part].add(line)
+    return lists
+
+
+def _record(records: dict[str, _StoredRecord], environment: str) -> _StoredRecord:
+    """Return the record an environment reads: its override, or the item's default record."""
+    return records.get(environment) or records.get("") or {"lines": set(), "blind": set()}
+
+
+def _stored_path(item: str, line: str, environment: str) -> str:
+    return "\t".join(filter(None, (item, line, environment)))
+
+
+def _stored_paths(item: str, records: dict[str, _StoredRecord], part: str) -> list[str]:
+    return sorted(
+        _stored_path(item, line, environment) for environment, record in records.items() for line in record[part]
+    )
 
 
 def _file_rises(base: dict[str, int], head: dict[str, int]) -> list[tuple[str, int, int]]:
@@ -752,16 +953,19 @@ def _rise_lines(
 ) -> list[str]:
     """Describe one key that rose: its totals, how to fix it, and each file whose count rose with its sites."""
     before, after = sum(base.get(key, {}).values()), sum(head[key].values())
-    lines = ["", f"{key} rose by {after - before} ({before} -> {after}). {ADVICE.get(key, ADVICE.get(_kind(key), ''))}"]
-    for path, was, now in _file_rises(base.get(key, {}), head[key]):
+    risen = _risen(key, base, head)
+    added = f"{len(risen)} new {'line' if len(risen) == 1 else 'lines'}"
+    change = f"has {added}" if _kind(key) == STORED_LIST else f"rose by {after - before}"
+    lines = ["", f"{key} {change} ({before} -> {after}). {ADVICE.get(key, ADVICE.get(_kind(key), ''))}"]
+    for path, was, now in risen:
         at = ", ".join(map(str, sorted(line for line in sites.get(path, []) if line)))
         lines.append(f"  {path}: {was} -> {now}" + (f" (lines {at})" if at else ""))
     return lines
 
 
-def _report_rises(base: Tally, head: Tally) -> list[str]:
+def _report_rises(base: Tally, head: Tally, approvals: Approvals) -> list[str]:
     base_counts, head_counts = base.counts(), head.counts()
-    rises = _rises(base_counts, head_counts)
+    rises = _rises(base_counts, head_counts, approvals)
     return [line for key in rises for line in _rise_lines(key, base_counts, head_counts, head.sites[key])]
 
 
@@ -779,15 +983,20 @@ def _copy_counts(copy: Path, root: Path, ruff_args: list[str], what: str, base: 
     return json.loads(output.stdout)
 
 
-def _report_copy(base_root: Path, head_root: Path, ruff_args: list[str], seen: set[str], base_commit: str) -> list[str]:
-    """Count both trees with the base revision's copy of this script and report the rises only it sees."""
+def _report_copy(
+    base_root: Path, head_root: Path, ruff_args: list[str], settled: Callable[[str, int], bool], base_commit: str
+) -> list[str]:
+    """Count both trees with the base revision's copy of this script and report the rises only it sees.
+
+    ``settled`` tells the keys this copy already judged, and the approved rises, from a key and its total.
+    """
     copy = base_root / SCRIPT
     if not copy.is_file():
         return []
     base = _copy_counts(copy, base_root, ruff_args, "the base revision", base_commit)
     head = _copy_counts(copy, head_root, ruff_args, "the working tree", base_commit)
-    unseen = [key for key in _rises(base, head) if key not in seen]
-    hidden = {key: files for key, files in head.items() if key not in seen}
+    unseen = [key for key in _rises(base, head, NO_APPROVALS) if not settled(key, sum(head[key].values()))]
+    hidden = {key: files for key, files in head.items() if not settled(key, sum(files.values()))}
     header = [
         "",
         f"The base revision's {SCRIPT} also counts these rises, which this copy does not: the change weakens the",
@@ -808,10 +1017,138 @@ def _unreadable_lines(counts: dict[str, dict[str, int]]) -> list[str]:
             "",
             (
                 f"{key} in {', '.join(files)}: the counter cannot read it. "
-                f"{ADVICE['unreadable-allowlist' if key.startswith('allowlist:') else 'unreadable']}"
+                f"{ADVICE.get('unreadable-' + key.partition(':')[0], ADVICE['unreadable'])}"
             ),
         )
     ]
+
+
+APPROVAL_RULES = {
+    "key": "`key` is an escape-hatch key such as allowlist:JUSTIFIED_VIOLATIONS (an unreadable key cannot be approved)",
+    "head": "`head` is the approved count of the key, a positive integer",
+    "pr": "`pr` is the number of the pull request the rise is approved for, a positive integer",
+    "decision": '`decision` lists the public references of the owner decision, such as ["#7172"]',
+    "reason": "`reason` says why the rise is needed",
+}
+
+
+def _approval_field_ok(name: str, value: object) -> bool:
+    if name == "key":
+        return isinstance(value, str) and _kind(value) not in {"", "unreadable"}
+    if name in {"head", "pr"}:
+        return type(value) is int and value > 0
+    if name == "decision":
+        return (
+            isinstance(value, list)
+            and bool(value)
+            and all(isinstance(item, str) and PUBLIC_REFERENCE.fullmatch(item) for item in value)
+        )
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _approval_problems(entry: object) -> list[str]:
+    """Return what makes one entry of the approvals table unusable, as readable messages."""
+    if not isinstance(entry, dict):
+        return ["it is not a table: write it as an `[[approved]]` entry"]
+    problems = [f"`{name}` is missing ({APPROVAL_RULES[name]})" for name in APPROVAL_FIELDS if name not in entry]
+    problems += [f"`{name}` is not a field of an approval" for name in sorted(set(entry) - set(APPROVAL_FIELDS))]
+    problems += [
+        f"{APPROVAL_RULES[name]}, not {_toml(entry[name])}"
+        for name in APPROVAL_FIELDS
+        if name in entry and not _approval_field_ok(name, entry[name])
+    ]
+    return problems
+
+
+def _read_approvals(root: Path) -> tuple[tuple[Approval, ...], list[str]]:
+    """Read the approvals table of a tree: its usable entries, and a readable message for each problem."""
+    path = root / APPROVALS
+    if not path.is_file():
+        return (), []
+    try:
+        table = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as error:
+        return (), [f"{APPROVALS} is not valid TOML: {error}."]
+    problems = [
+        f"{APPROVALS}: `{name}` is not part of the table; write each approval as an `[[approved]]` entry."
+        for name in sorted(set(table) - {"approved"})
+    ]
+    entries = table.get("approved", [])
+    if not isinstance(entries, list):
+        problems.append(f"{APPROVALS}: `approved` is not a list of tables; write each as an `[[approved]]` entry.")
+        entries = []
+    approvals: list[Approval] = []
+    for index, entry in enumerate(entries, 1):
+        if found := _approval_problems(entry):
+            problems.append(f"{APPROVALS} entry {index}: {'; '.join(found)}.")
+            continue
+        approval = Approval(entry["key"], entry["head"], entry["pr"], tuple(entry["decision"]), entry["reason"])
+        if any((known.key, known.pr) == (approval.key, approval.pr) for known in approvals):
+            problems.append(f"{APPROVALS} entry {index}: a second approval of {approval.key} for #{approval.pr}.")
+        approvals.append(approval)
+    return tuple(approvals), problems
+
+
+def _judged_pull_requests(head_root: Path, fork: str) -> frozenset[int]:
+    """Return the pull requests that the head being judged is, read from the GitHub Actions run; none outside one.
+
+    A ``pull_request`` run judges the event's pull request (``GITHUB_REF`` is ``refs/pull/<n>/merge``). A ``push``
+    run, which the workflow starts only for ``main``, judges the pull requests merged since the base: the ``(#<n>)``
+    that ends the subject of each squash commit after it. Every other run, a local one included, judges none, so no
+    approval applies there and a rise fails as without the table.
+    """
+    event = os.environ.get("GITHUB_EVENT_NAME", "")
+    if event == "pull_request":
+        found = PULL_REQUEST_REF.fullmatch(os.environ.get("GITHUB_REF", ""))
+        return frozenset({int(found[1])}) if found else frozenset()
+    if event != "push":
+        return frozenset()
+    subjects = _git(head_root, "log", "--format=%s", f"{fork}..HEAD").stdout.decode().splitlines()
+    return frozenset(int(found[1]) for subject in subjects if (found := SQUASH_SUBJECT.search(subject)))
+
+
+def _approval_lines(
+    base: dict[str, dict[str, int]], head: dict[str, dict[str, int]], approvals: Approvals, head_root: Path
+) -> tuple[list[str], list[str]]:
+    """Describe the rises an approval covers or names, and the problems of the head's table (stale or malformed).
+
+    The head's table is judged because it becomes the base: an entry whose key the head already counts at its approved
+    count accepts no rise afterwards, so the pull request that reaches the count removes it.
+    """
+    base_totals, head_totals = _totals(base), _totals(head)
+    judged = ", ".join(f"#{number}" for number in sorted(approvals.pull_requests)) or "no pull request"
+    notes: list[str] = []
+    for key in _rises(base, head, NO_APPROVALS):
+        before, after = base_totals.get(key, 0), head_totals[key]
+        if covering := approvals.covering(key, after):
+            notes += [
+                "",
+                (
+                    f"{key} rose by {after - before} ({before} -> {after}), approved up to {covering.head} for "
+                    f"#{covering.pr} in {APPROVALS} (decision {', '.join(covering.decision)}): {covering.reason}"
+                ),
+            ]
+        notes += [
+            line
+            for entry in approvals.entries
+            if entry.key == key and not covering
+            for line in (
+                "",
+                (
+                    f"{key}: {APPROVALS} approves up to {entry.head} for #{entry.pr} only; this run judges {judged} "
+                    f"and counts {after}."
+                ),
+            )
+        ]
+    entries, problems = _read_approvals(head_root)
+    problems += [
+        f"{APPROVALS}: the approval of {entry.key} up to {entry.head} for #{entry.pr} is stale: this tree already "
+        f"counts {head_totals.get(entry.key, 0)}, so it accepts no rise. Remove it (in #{entry.pr} itself when that "
+        "pull request reaches the count), so that the table holds only pending approvals."
+        for entry in entries
+        if head_totals.get(entry.key, 0) >= entry.head
+    ]
+    return notes, [line for problem in problems for line in ("", problem)]
 
 
 def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[str]) -> tuple[list[str], bool]:
@@ -824,21 +1161,32 @@ def _compare(base_ref: str, head_root: Path, ruff: list[str], ruff_args: list[st
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(base_root, filter="data")
         base, head = count_tree(base_root, ruff), count_tree(head_root, ruff)
-        head_rises = set(_rises(base.counts(), head.counts()))
+        approvals = Approvals(_read_approvals(base_root)[0], _judged_pull_requests(head_root, fork))
+        head_rises = set(_rises(base.counts(), head.counts(), approvals))
         lines = [f"Escape hatches: {base_ref} (merge-base {fork}) -> working tree", ""]
         lines += _change_table(_totals(base.counts()), _totals(head.counts()))
-        lines += _report_rises(base, head)
+        lines += _report_rises(base, head, approvals)
+        notes, table_problems = _approval_lines(base.counts(), head.counts(), approvals, head_root)
         unreadable = _unreadable_lines(head.counts())
-        lines += unreadable
+        lines += [*notes, *unreadable, *table_problems]
         seen = head_rises | {key for key in head.counts() if _kind(key) == "unreadable"}
-        copy_lines = _report_copy(base_root, head_root, ruff_args, seen, fork)
+        copy_lines = _report_copy(
+            base_root,
+            head_root,
+            ruff_args,
+            lambda key, total: key in seen or approvals.covering(key, total) is not None,
+            fork,
+        )
     rose = bool(head_rises or copy_lines or unreadable)
     verdict = (
         "Some keys rose: the budget is the base. Exit status 0 unless --enforce is given. "
         f"Re-run with `python {SCRIPT} --base {base_ref}`."
     )
-    lines += [*copy_lines, "", verdict if rose else "No key rose."]
-    return lines, rose
+    passed = f"No key rose{' beyond its approval' if notes else ''}."
+    if table_problems and not rose:
+        passed = f"No key rose, but {APPROVALS} needs the changes above. Exit status 0 unless --enforce is given."
+    lines += [*copy_lines, "", verdict if rose else passed]
+    return lines, rose or bool(table_problems)
 
 
 def _pin_note(root: Path, ruff: list[str]) -> str:

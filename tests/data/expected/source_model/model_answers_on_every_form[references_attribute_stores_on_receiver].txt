@@ -7,6 +7,7 @@ scope class Parser#0 'Parser': code yes; first line 7
   parse: def@10 [always]
   _factory: def@21 [always]
   members: _Parser__private, _factory, cursor, extra, first, handle, kind, parse, rest, results, second, store, typed
+  members as spelled: __private, _factory, cursor, extra, first, handle, kind, parse, rest, results, second, store, typed
 scope function Parser.parse#0 'parse': code yes; first line 10
   opened by a node evaluated in Parser#0
   self: param@10 [function:body@10]

@@ -1,0 +1,12 @@
+[
+  "/allOfDefinition enum \"a\": invalid, model accepts",
+  "/besideNull enum \"a\": invalid, model accepts",
+  "/branch const 1.0: valid, model rejects",
+  "/branch enum \"b\": invalid, model accepts",
+  "/branch enum 1.0: valid, model rejects",
+  "/definition enum \"a\": invalid, model accepts",
+  "/definition enum \"c\": invalid, model accepts",
+  "/property enum \"b\": invalid, model accepts",
+  "/refSibling enum \"off\": invalid, model accepts",
+  "/words/0 enum \"a\": invalid, model accepts"
+]

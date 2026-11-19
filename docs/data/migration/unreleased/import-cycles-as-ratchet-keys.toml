@@ -1,0 +1,36 @@
+[[change]]
+id = "import-cycles-as-ratchet-keys"
+category = "internal"
+title = "The source model's answers and the import-cycle keys of the ratchet and boundary checks"
+refs = ["#7167", "#7168"]
+covers = [
+    "architecture_boundaries/import_cycles_count_the_imports_that_close_them.txt",
+    "check_ratchets_script/check_ratchets_against_base[import-cycles-ignored-files].txt",
+    "check_ratchets_script/check_ratchets_against_base[import-cycles].txt",
+    "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
+    "source_model/every_rule_states_its_verdicts[import-cycle].txt",
+    "source_model/model_answers_on_every_form[bindings_binding_of_a_node].txt",
+    "source_model/model_answers_on_every_form[bindings_comprehension_in_annotation_lambda].txt",
+    "source_model/model_answers_on_every_form[bindings_comprehension_in_local_annotation].txt",
+    "source_model/model_answers_on_every_form[bindings_name_mangling].txt",
+    "source_model/model_answers_on_every_form[extents_nested_first_iterables].txt",
+    "source_model/model_answers_on_every_form[references_aliased_library_names].txt",
+    "source_model/model_answers_on_every_form[references_allowlist_entries_by_statement].txt",
+    "source_model/model_answers_on_every_form[references_attribute_stores_on_receiver].txt",
+    "source_model/model_answers_on_every_form[references_call_arguments_by_parameter].txt",
+    "source_model/model_answers_on_every_form[references_class_body_comprehension].txt",
+    "source_model/model_answers_on_every_form[references_class_scope_skipped].txt",
+    "source_model/model_answers_on_every_form[references_comprehension_in_method_default].txt",
+    "source_model/model_answers_on_every_form[references_comprehension_shadows_parameter].txt",
+    "source_model/model_answers_on_every_form[references_consumers_of_expressions].txt",
+    "source_model/model_answers_on_every_form[references_header_parts_evaluated_outside].txt",
+    "source_model/model_answers_on_every_form[references_keyword_separator].txt",
+    "source_model/model_answers_on_every_form[references_lambda_closure_in_comprehension].txt",
+    "source_model/model_answers_on_every_form[references_lazy_table_module_getattr].txt",
+    "source_model/model_answers_on_every_form[references_literal_constants_and_late_writes].txt",
+    "source_model/model_answers_on_every_form[references_private_names_by_string_argument].txt",
+    "source_model/model_answers_on_every_form[references_syntax_read_by_origin].txt",
+    "source_model/model_answers_on_every_form[references_template_strings].txt",
+    "source_model/model_answers_on_every_form[references_type_expressions_and_any_aliases].txt",
+    "source_model/model_answers_on_every_form[references_typevar_string_bound_and_cast].txt",
+]

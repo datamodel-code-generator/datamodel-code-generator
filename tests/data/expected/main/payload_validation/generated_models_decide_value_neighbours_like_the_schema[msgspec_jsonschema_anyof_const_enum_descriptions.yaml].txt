@@ -1,0 +1,4 @@
+[
+  "/mode const 0.0: valid, model rejects",
+  "/mode const 1.0: valid, model rejects"
+]

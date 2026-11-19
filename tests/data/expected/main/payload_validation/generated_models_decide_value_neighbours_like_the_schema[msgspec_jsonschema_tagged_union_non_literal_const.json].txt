@@ -1,0 +1,4 @@
+[
+  "/kind const \"square\": invalid, model accepts",
+  "/ratio const 2.5: invalid, model accepts"
+]

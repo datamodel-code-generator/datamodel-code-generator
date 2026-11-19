@@ -13,9 +13,9 @@
 9:23 v store in C.<genexpr> -> local C.<genexpr> @9
 9:13 v load in C.<genexpr> -> local C.<genexpr> @9
 9:17 n load in C.<genexpr> -> global <module> @3; origin forms.references.class_body_comprehension.n
-uses of <module>:n@3: read@8, read@8, read@9
-uses of C:n@7: read@8
-uses of C:xs@8: read@9
+uses of <module>:n@3: argument@8, read@8, read@9
+uses of C:n@7: argument@8
+uses of C:xs@8: iterate@9
 uses of C.<listcomp>:i@8: read@8
 uses of C.<genexpr>:v@9: read@9
 == code objects: one per scope that compiles on this Python

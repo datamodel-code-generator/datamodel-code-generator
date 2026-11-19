@@ -1,0 +1,10 @@
+[
+  "/kind enum null: invalid, model accepts",
+  "/level enum \"1\": invalid, model accepts",
+  "/level enum \"2\": invalid, model accepts",
+  "/level enum null: invalid, model accepts",
+  "/priority enum \"1\": invalid, model accepts",
+  "/priority enum \"2\": invalid, model accepts",
+  "/priority enum \"3\": invalid, model accepts",
+  "/size enum null: invalid, model accepts"
+]

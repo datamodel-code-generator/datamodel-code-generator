@@ -2,6 +2,6 @@
 5:31 xs load in f -> local f @4
 5:26 x store in f.<locals>.<listcomp> -> local f.<locals>.<listcomp> @5
 5:20 x load in f.<locals>.<lambda> -> enclosing f.<locals>.<listcomp> @5
-uses of f:xs@4: read@5
+uses of f:xs@4: iterate@5
 uses of f.<locals>.<listcomp>:x@5: read@5
 == code objects: one per scope that compiles on this Python

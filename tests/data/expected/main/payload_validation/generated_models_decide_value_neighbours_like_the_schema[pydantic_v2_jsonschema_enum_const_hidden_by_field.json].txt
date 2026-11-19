@@ -1,0 +1,4 @@
+[
+  "/Counts const null: invalid, model accepts",
+  "/Counts enum null: invalid, model accepts"
+]

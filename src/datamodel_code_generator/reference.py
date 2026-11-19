@@ -181,7 +181,6 @@ class ReferenceChild(Protocol):
     @property
     def reference(self) -> Reference | None:
         """Return the reference associated with this object."""
-        ...
 
 
 if TYPE_CHECKING:

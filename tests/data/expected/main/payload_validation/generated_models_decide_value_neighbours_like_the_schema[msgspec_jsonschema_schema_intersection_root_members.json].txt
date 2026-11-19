@@ -1,0 +1,6 @@
+[
+  "/wb enum \"a\": invalid, model accepts",
+  "/wb_items/0 enum \"a\": invalid, model accepts",
+  "/wb_prop enum \"a\": invalid, model accepts",
+  "/wd_items/0 maximum 11: invalid, model accepts"
+]

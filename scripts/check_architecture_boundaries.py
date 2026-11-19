@@ -1,4 +1,4 @@
-"""Reject cross-layer dependencies that bypass declared architecture capabilities."""
+"""Reject cross-layer dependencies that bypass declared architecture capabilities, and module-level import cycles."""
 
 from __future__ import annotations
 
@@ -17,9 +17,17 @@ import tomllib
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts._import_cycles import import_cycles
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "src" / "datamodel_code_generator"
 HOST_BASELINE_PATH = ROOT / "scripts" / "host_private_access_baseline.toml"
+_IMPORT_CYCLE_KEY: Final = "import-cycle:module-level@src"
+_IMPORT_CYCLE_MESSAGE: Final = (
+    "an import here runs when the module is imported and closes this import cycle; move what its modules share into "
+    "a module that imports none of them"
+)
 
 Layer: TypeAlias = Literal[
     "entrypoint",
@@ -1923,6 +1931,21 @@ def check_paths(
     return check_files([(path, _classify_source_path(path)) for path in files], allowlist=allowlist)
 
 
+def import_cycle_violations(root: Path = ROOT) -> list[Violation]:
+    """Reject every import cycle of the package whose imports all run when their modules are imported.
+
+    One violation per module of each cycle, at its first import of another module of the cycle;
+    `scripts/_import_cycles.py` says which imports run then.
+    """
+    return [
+        Violation(
+            path, line, 0, "<module>", "import-cycle", ", ".join(other for other, _ in cycle), _IMPORT_CYCLE_MESSAGE
+        )
+        for cycle in import_cycles(root, {"src"}).get(_IMPORT_CYCLE_KEY, [])
+        for path, line in cycle
+    ]
+
+
 def format_report(violations: list[Violation]) -> str:
     """Return a stable human- and LLM-readable report."""
     if not violations:
@@ -1943,7 +1966,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.write_host_baseline:
         HOST_BASELINE_PATH.write_text(format_host_baseline(check_paths([SOURCE_ROOT], allowlist={})), encoding="utf-8")
-    violations = check_paths(args.paths)
+    violations = [*check_paths(args.paths), *import_cycle_violations()]
     if violations:
         print(format_report(violations), end="", file=sys.stderr)
         return 1

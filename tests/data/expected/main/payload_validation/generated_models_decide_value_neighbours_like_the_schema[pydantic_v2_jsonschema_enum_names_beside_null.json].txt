@@ -1,0 +1,15 @@
+[
+  "/described_beside_null enum null: invalid, model accepts",
+  "/item_names enum null: invalid, model accepts",
+  "/member_names enum null: invalid, model accepts",
+  "/null_last enum null: invalid, model accepts",
+  "/null_member enum true: invalid, model accepts",
+  "/nullable_numbers enum \"1\": invalid, model accepts",
+  "/nullable_numbers enum \"2\": invalid, model accepts",
+  "/nullable_numbers enum null: invalid, model accepts",
+  "/nullable_numbers enum true: invalid, model accepts",
+  "/repeated_names enum true: invalid, model accepts",
+  "/repeated_names_beside_null enum null: invalid, model accepts",
+  "/undescribed_beside_null enum null: invalid, model accepts",
+  "/untyped enum true: invalid, model accepts"
+]

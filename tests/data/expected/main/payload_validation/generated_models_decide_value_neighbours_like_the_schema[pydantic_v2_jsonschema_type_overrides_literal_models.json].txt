@@ -1,0 +1,3 @@
+[
+  "/capped maximum 10: invalid, model accepts"
+]

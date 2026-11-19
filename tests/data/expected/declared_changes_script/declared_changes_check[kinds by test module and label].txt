@@ -1,17 +1,24 @@
 exit 1
 declared changes: HEAD against base, release since 0.1.0
-5 stored outputs this change moves are not declared:
+10 stored outputs this change moves are not declared:
+  changed  migration_docs/hub.txt  tests/test_build_migration_docs_script.py::test_hub
+  changed  check_ratchets_script/keys.txt  tests/test_check_ratchets_script.py::test_keys
+  changed  ci_coverage/lanes.txt  tests/test_ci_workflow.py::test_lanes
+  changed  changelog/entry.txt  tests/test_generate_changelog_script.py::test_entry
   changed  help/help.txt  tests/test_help.py::test_show_help
   changed  kinds/a_refused.txt  tests/test_kinds.py::test_kinds[a]
   changed  payloads/b_errors.txt  tests/test_kinds.py::test_kinds[b]
   changed  models/b.py  tests/test_models.py::test_model[b]
+  changed  source_model/forms.txt  tests/test_source_model.py::test_forms
   changed  source_rules/counts.txt  tests/test_source_rules.py::test_counts
 Declare them:
-  python scripts/declared_changes.py declare fix-the-thing --category '<category>' --refs '#42' --refs '#41' --labels help/help.txt payloads/b_errors.txt models/b.py --base base
-    <category>: one of experimental, crash-fix, output-text, default-fix, decided-change
-  python scripts/declared_changes.py declare fix-the-thing-2 --category '<category>' --refs '#42' --refs '#41' --labels kinds/a_refused.txt --base base
-    <category>: one of experimental, crash-fix, decided-change, notice
-  python scripts/declared_changes.py declare fix-the-thing-3 --category '<category>' --refs '#42' --refs '#41' --labels source_rules/counts.txt --base base
+  python scripts/declared_changes.py declare fix-the-thing --category '<category>' --refs '#42' --refs '#41' --labels migration_docs/hub.txt changelog/entry.txt --base base
+    <category>: one of new-surface, experimental, decided-change, api, docs-text
+  python scripts/declared_changes.py declare fix-the-thing-2 --category '<category>' --refs '#42' --refs '#41' --labels check_ratchets_script/keys.txt ci_coverage/lanes.txt source_model/forms.txt source_rules/counts.txt --base base
     <category>: one of experimental, decided-change, internal
+  python scripts/declared_changes.py declare fix-the-thing-3 --category '<category>' --refs '#42' --refs '#41' --labels help/help.txt payloads/b_errors.txt models/b.py --base base
+    <category>: one of experimental, crash-fix, output-text, default-fix, decided-change
+  python scripts/declared_changes.py declare fix-the-thing-4 --category '<category>' --refs '#42' --refs '#41' --labels kinds/a_refused.txt --base base
+    <category>: one of experimental, crash-fix, decided-change, notice
 Categories: docs/development-contributing.md#declared-changes
 failed

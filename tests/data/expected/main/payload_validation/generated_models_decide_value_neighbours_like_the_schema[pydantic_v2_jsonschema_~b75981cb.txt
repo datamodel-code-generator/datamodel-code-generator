@@ -1,0 +1,4 @@
+[
+  "/number_choice enum \"2\": invalid, model accepts",
+  "/number_choice enum \"3\": invalid, model accepts"
+]

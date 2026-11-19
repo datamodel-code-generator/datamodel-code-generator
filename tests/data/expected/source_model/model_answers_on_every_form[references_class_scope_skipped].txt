@@ -14,7 +14,7 @@
 11:21 y load in C.<lambda> -> global <module> @3; origin forms.references.class_scope_skipped.y
 14:15 y load in C.m -> global <module> @3; origin forms.references.class_scope_skipped.y
 uses of <module>:y@3: read@9, read@11, read@14
-uses of C:items@8: read@9, read@10
+uses of C:items@8: iterate@9, iterate@10
 uses of C.<listcomp>:v@10: read@10
 type positions @3: -
 type positions @7: -

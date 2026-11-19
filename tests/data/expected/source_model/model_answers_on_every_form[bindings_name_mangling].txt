@@ -11,6 +11,7 @@ scope class Parser#0 'Parser': code yes; first line 6
   __read (as _Parser__read): def@14 [always]
   __Inner (as _Parser__Inner): class@17 [always]
   members: _Parser__Inner, _Parser__context, _Parser__limit, _Parser__read, __init__, __slots__
+  members as spelled: __Inner, __context, __init__, __limit, __read, __slots__
 scope function Parser.__init__#0 '__init__': code yes; first line 10
   opened by a node evaluated in Parser#0
   self: param@10 [function:body@10]
@@ -24,6 +25,7 @@ scope class Parser.__Inner#0 '__Inner': code yes; first line 17
   opened by a node evaluated in Parser#0
   __depth (as _Inner__depth): assign@18 [always]; value 1
   members: _Inner__depth
+  members as spelled: __depth
 scope class ___#0 '___': code yes; first line 21
   opened by a node evaluated in <module>#0
   __kept: assign@22 [always]; value 1

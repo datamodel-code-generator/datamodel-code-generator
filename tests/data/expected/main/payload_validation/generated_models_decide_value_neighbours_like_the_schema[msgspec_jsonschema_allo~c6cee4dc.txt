@@ -1,0 +1,5 @@
+[
+  "/large minimum 9007199254740994.0: valid, model rejects",
+  "/number_choice enum 2.0: valid, model rejects",
+  "/number_choice enum 3.0: valid, model rejects"
+]

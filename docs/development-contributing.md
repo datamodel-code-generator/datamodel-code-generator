@@ -383,6 +383,28 @@ Host Protocols declare are counted as `host-friend-names` by
 packages copy, import only the standard library, the third-party packages
 generated code depends on, and each other relatively.
 
+The guard also rejects an import cycle of the package whose imports all run
+when their modules are imported: at module or class level and outside
+`if TYPE_CHECKING:`, under a version, platform or `ImportError` guard too.
+`scripts/check_ratchets.py` counts the modules on the import cycles of the
+package (`src`) and of `scripts/` as `import-cycle:<measure>@<area>` keys
+(`scripts/_import_cycles.py`): `module-level` for those cycles, `lazy` for the
+cycles of every import, function-local and `TYPE_CHECKING` ones included, and
+`largest-lazy` for the largest of them. Instead of importing back, inside a
+function or not, move what the modules share into a module that imports none
+of them.
+
+A key of `scripts/check_ratchets.py` rises only with an owner decision, through
+an `[[approved]]` entry of `scripts/ratchet_approvals.toml`: the key, the count
+it may reach (`head`), the pull request it is for (`pr`), the public references
+of the decision (`decision = ["#1234"]`) and a reason. The checker reads the
+table from the base revision, so the entry lands in its own pull request first,
+and the approved pull request then needs a base that holds it (rebase it onto
+`main`; a re-run alone keeps its old base). Only the CI runs of that pull
+request, and the push of its squash commit to `main`, accept the rise; a local
+run does not. An entry that its tree already reaches is stale and fails, so the
+approved pull request removes its own entry.
+
 Tests for the checker use source fixtures and expected reports under
 `tests/data/architecture_boundaries/` and
 `tests/data/expected/architecture_boundaries/`. Keep diagnostics specific enough

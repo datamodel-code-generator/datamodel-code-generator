@@ -12,9 +12,9 @@
 18:8 ref load in cut -> local cut @9
 18:20 options load in cut -> local cut @9
 uses of <module>:warnings@6: call:filterwarnings@10, call:filterwarnings@11
-uses of cut:ref@9: call:split@13, call:rsplit@14, read@15, call:split@16, call:split@17, call:split@18
-uses of cut:args@9: read@17
-uses of cut:options@9: read@18
+uses of cut:ref@9: call:split@13, call:rsplit@14, argument@15, call:split@16, call:split@17, call:split@18
+uses of cut:args@9: unpack@17
+uses of cut:options@9: unpack@18
 call @10 warnings.filterwarnings: 0=None 1=None 2=None sep=None action="ignore"
 call @11 warnings.filterwarnings: 0="default" 1=None 2=None sep=None action=None
 call @13 ref.split: 0=None 1=None 2=None sep="#" action=None

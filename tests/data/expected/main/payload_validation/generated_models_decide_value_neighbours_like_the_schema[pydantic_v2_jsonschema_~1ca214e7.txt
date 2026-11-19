@@ -1,0 +1,4 @@
+[
+  "/quantity maximum 11: invalid, model accepts",
+  "/sizes/0 enum \"s\": invalid, model accepts"
+]

@@ -1,0 +1,14 @@
+[
+  "/code const null: invalid, model accepts",
+  "/const_model const null: invalid, model accepts",
+  "/direct const null: invalid, model accepts",
+  "/level enum null: invalid, model accepts",
+  "/model enum null: invalid, model accepts",
+  "/number const 5.0: valid, model rejects",
+  "/number const null: invalid, model accepts",
+  "/ratios/0 const \"1.5\": invalid, model accepts",
+  "/ratios/0 const true: invalid, model accepts",
+  "/ratios/0 minimum 1: invalid, model accepts",
+  "/ratios/0 minimum 1.1: invalid, model accepts",
+  "/ratios/0 minimum 2: invalid, model accepts"
+]

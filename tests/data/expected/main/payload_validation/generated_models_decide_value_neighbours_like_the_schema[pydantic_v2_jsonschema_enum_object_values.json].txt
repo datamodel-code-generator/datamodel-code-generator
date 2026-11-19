@@ -1,0 +1,7 @@
+[
+  "/country_duplicate_title enum null: invalid, model accepts",
+  "/country_no_identifier enum null: invalid, model accepts",
+  "/country_with_const enum null: invalid, model accepts",
+  "/country_with_name enum null: invalid, model accepts",
+  "/country_with_title enum null: invalid, model accepts"
+]
