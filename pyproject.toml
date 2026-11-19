@@ -300,6 +300,7 @@ skip = ".git,*.lock,tests,docs/cli-reference,CHANGELOG.md,docs/changelog.md,docs
 src.include = [ "src" ]
 environment.python-version = "3.11"
 rules.deprecated = "warn"
+rules.possibly-unresolved-reference = "error"
 
 [[tool.ty.overrides]]
 include = [
