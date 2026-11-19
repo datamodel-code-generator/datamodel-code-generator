@@ -94,4 +94,3 @@ class Verifier(Protocol[K]):
         limits: ResolvedWebhookOptions,
     ) -> VerifiedSignature:
         """Return signature facts only after verifying the complete received bytes."""
-        ...

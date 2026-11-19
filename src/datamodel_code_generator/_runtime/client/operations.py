@@ -47,7 +47,6 @@ if TYPE_CHECKING:
 
         def encode(self, value: object, sent: str) -> tuple[object, str | None]:
             """Return a form-data body and the media type it is sent in."""
-            ...
 
 
 T = TypeVar("T")
@@ -67,28 +66,22 @@ class OutboundModelCodec(Protocol):
 
     def encode(self, value: Any) -> bytes:
         """Return the JSON bytes of a value."""
-        ...
 
     def dump(self, value: Any) -> object:
         """Return the JSON value of a value."""
-        ...
 
     def assemble(self, fields: Mapping[str, object]) -> object:
         """Return the model the fields a call gives by wire name construct."""
-        ...
 
     def decode(self, content: bytes) -> object:
         """Return the value the JSON bytes of a saved value restore."""
-        ...
 
     def convert(self, value: Any) -> object:
         """Return the model value of a value its model type stands for, built as the model builds it."""
-        ...
 
     @property
     def errors(self) -> tuple[type[Exception], ...]:
         """Return the failures of the codec's backend."""
-        ...
 
 
 class InboundModelCodec(Protocol[T_co]):
@@ -96,20 +89,16 @@ class InboundModelCodec(Protocol[T_co]):
 
     def decode(self, content: bytes) -> T_co:
         """Return the value of received JSON bytes."""
-        ...
 
     def text(self, value: object) -> T_co:
         """Return the value of parsed text, such as a header's, a form's, or a text part's."""
-        ...
 
     @property
     def errors(self) -> tuple[type[Exception], ...]:
         """Return the failures of the codec's backend."""
-        ...
 
     def malformed(self, error: Exception) -> bool:
         """Return whether a failure of the codec's backend is received bytes that are not JSON."""
-        ...
 
 
 def codec_condition(codec: InboundModelCodec[object], error: Exception) -> CodecCondition:

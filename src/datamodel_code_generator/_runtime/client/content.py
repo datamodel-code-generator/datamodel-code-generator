@@ -49,7 +49,6 @@ if TYPE_CHECKING:
         @property
         def replayable(self) -> bool:
             """Return whether the input can be sent again."""
-            ...
 
         @abstractmethod
         def open(self) -> SyncContent:

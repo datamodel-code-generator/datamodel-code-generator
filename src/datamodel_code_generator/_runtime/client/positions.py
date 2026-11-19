@@ -28,12 +28,10 @@ if TYPE_CHECKING:
         @property
         def location(self) -> str | None:
             """Return `header`, `query`, or `cookie`, or None."""
-            ...
 
         @property
         def wire_name(self) -> str:
             """Return the header, query, or cookie name."""
-            ...
 
     class PlacedPosition(Protocol):
         """Where a usable scheme of a security requirement places its credential."""
@@ -41,12 +39,10 @@ if TYPE_CHECKING:
         @property
         def location(self) -> str:
             """Return `header`, `query`, or `cookie`."""
-            ...
 
         @property
         def wire_name(self) -> str:
             """Return the header, query, or cookie name."""
-            ...
 
     class Requirement(Protocol):
         """One usable scheme of an AND alternative."""
@@ -54,7 +50,6 @@ if TYPE_CHECKING:
         @property
         def scheme(self) -> PlacedPosition:
             """Return the scheme."""
-            ...
 
     RequirementT = TypeVar("RequirementT", bound=Requirement)
     Placement: TypeAlias = tuple[CredentialPosition, object]
@@ -68,11 +63,9 @@ if TYPE_CHECKING:
         @property
         def values(self) -> Mapping[str, object]:
             """Return the credentials given, by scheme name."""
-            ...
 
         def selected(self, binding: Any, given: Collection[tuple[str, str]] = ()) -> tuple[Placement, ...] | None:
             """Return the placements of an operation's first alternative the credentials satisfy, or None."""
-            ...
 
         def auth(  # noqa: PLR0913
             self,
@@ -85,7 +78,6 @@ if TYPE_CHECKING:
             async_send: AsyncSend | None = None,
         ) -> httpx2.Auth:
             """Return the HTTPX2 Auth that places a call's credentials on its requests."""
-            ...
 
     class SecurityAlternatives(Protocol):
         """An operation's declared security: its OR alternatives of AND requirements."""
@@ -93,7 +85,6 @@ if TYPE_CHECKING:
         @property
         def alternatives(self) -> tuple[tuple[Requirement, ...], ...]:
             """Return the alternatives in their order; an empty one is anonymous."""
-            ...
 
 
 CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})

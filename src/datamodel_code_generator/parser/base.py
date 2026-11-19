@@ -720,7 +720,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Returns:
             Schema features instance with version-specific flags.
         """
-        ...
 
     _generation_store_factory = staticmethod(GenerationStore.create_with_results)
     _model_resolver_factory = staticmethod(ModelResolver)
