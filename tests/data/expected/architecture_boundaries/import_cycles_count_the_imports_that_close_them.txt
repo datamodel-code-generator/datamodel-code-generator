@@ -24,6 +24,19 @@ import-cycle:lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_g
 import-cycle:largest-lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:7
 No architecture boundary violations.
 
+== genexpr_body
+import-cycle:lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6
+import-cycle:largest-lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6
+No architecture boundary violations.
+
+== genexpr_first_iterable
+import-cycle:module-level@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6
+import-cycle:lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6
+import-cycle:largest-lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:6
+Architecture boundary violations found:
+src/datamodel_code_generator/a.py:3:0: [import-cycle] src/datamodel_code_generator/a.py, src/datamodel_code_generator/b.py: an import here runs when the module is imported and closes this import cycle; move what its modules share into a module that imports none of them (in <module>)
+src/datamodel_code_generator/b.py:6:0: [import-cycle] src/datamodel_code_generator/a.py, src/datamodel_code_generator/b.py: an import here runs when the module is imported and closes this import cycle; move what its modules share into a module that imports none of them (in <module>)
+
 == module_level
 import-cycle:module-level@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:3
 import-cycle:lazy@src: src/datamodel_code_generator/a.py:3, src/datamodel_code_generator/b.py:3

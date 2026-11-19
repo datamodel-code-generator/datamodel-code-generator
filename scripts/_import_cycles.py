@@ -41,7 +41,8 @@ def runs_at_import(edge: Edge) -> bool:
 
     An import under a version, platform or ``ImportError`` guard, or under any other test, runs on some interpreter,
     so it counts; one in a function, or in a class defined in a function, runs only when the function is called, and
-    one under ``TYPE_CHECKING`` never. A comprehension runs where it stands (`Scope.runs_in` gives the edge's level).
+    one under ``TYPE_CHECKING`` never. A list, set or dict comprehension runs where it stands, a generator expression
+    only its first iterable (`Scope.runs_in` gives the edge's level).
     """
     return edge.level != "function" and not any(
         condition.kind == "type-checking" and condition.branch == "body" for condition in edge.guard

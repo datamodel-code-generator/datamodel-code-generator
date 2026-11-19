@@ -501,13 +501,15 @@ class Scope:
     def runs_in(self) -> str:
         """Where the scope's code runs: ``module`` or ``class`` as the module is imported, else ``function``.
 
-        A comprehension and a type-parameter scope run where they stand; a ``def``, a ``lambda`` and a ``type`` alias
-        or bound run when they are called or read, and so does everything inside them, a class body included.
+        A list, set or dict comprehension and a type-parameter scope run where they stand; a ``def``, a ``lambda``, a
+        ``type`` alias or bound and a generator expression's own scope (its element, conditions and later ``for``
+        clauses; its first iterable is evaluated in the enclosing scope) run when they are called, read or iterated,
+        and so does everything inside them, a class body included.
         """
         level = ""
         probe: Scope | None = self
         while probe is not None:
-            if probe.kind in _DEFERRED_SCOPES:
+            if probe.kind in _DEFERRED_SCOPES or isinstance(probe.node, ast.GeneratorExp):
                 return "function"
             level = level or (probe.kind if probe.kind in {"module", "class"} else "")
             probe = probe.parent
