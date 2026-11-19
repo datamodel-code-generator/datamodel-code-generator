@@ -129,11 +129,10 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--input-file-type",
             "asyncapi",
             "--output-model-type",
-            "pydantic_v2.BaseModel",
+            "msgspec.Struct",
             "--formatters",
             "builtin",
             "--disable-timestamp",
-            "--disable-warnings",
         ),
         option="--infer-union-discriminators",
     ),
@@ -237,11 +236,15 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=KEEP,
         witness=(
             "--input",
-            "tests/data/avro/root_string.avsc",
-            "--target-python-version",
-            "3.14",
+            "tests/data/openapi/legacy_witnesses_request_response_all_of_ref.yaml",
+            "--input-file-type",
+            "openapi",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--use-annotated",
         ),
     ),
     LegacyRow(
@@ -783,11 +786,13 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=5120,
         witness=(
             "--input",
-            "tests/data/avro/root_string.avsc",
-            "--target-python-version",
-            "3.14",
+            "tests/data/openapi/legacy_witnesses_nullable_root.yaml",
+            "--input-file-type",
+            "openapi",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
+            "--strict-nullable",
         ),
     ),
     LegacyRow(
@@ -820,11 +825,12 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=5426,
         witness=(
             "--input",
-            "tests/data/avro/root_string.avsc",
-            "--target-python-version",
-            "3.14",
+            "tests/data/openapi/legacy_witnesses_nullable_root.yaml",
+            "--input-file-type",
+            "openapi",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
         ),
     ),
     LegacyRow(
@@ -833,11 +839,12 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=KEEP,
         witness=(
             "--input",
-            "tests/data/avro/root_string.avsc",
-            "--target-python-version",
-            "3.14",
+            "tests/data/jsonschema/legacy_witnesses/null_target.json",
+            "--input-file-type",
+            "jsonschema",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
         ),
     ),
     LegacyRow(
@@ -1260,11 +1267,15 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         fix=7198,
         witness=(
             "--input",
-            "tests/data/avro/root_string.avsc",
-            "--target-python-version",
-            "3.14",
+            "tests/data/jsonschema/legacy_witnesses/anyurl_keywords.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
+            "--field-constraints",
         ),
     ),
     LegacyRow(
@@ -3560,17 +3571,22 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "`represent_python_value` writes a `str` subclass that keeps the `repr()` of `str` (a `$ref` value that "
             "`--field-include-all-keys` writes into `json_schema_extra`) by the running interpreter's `repr()`, which "
             "escapes the characters its Unicode version does not print, where `stable_repr` writes them as the newest "
-            "target prints them: on Python 3.14 a `$ref` to a definition whose name holds U+A7CE, a letter of Unicode "
-            "17, is written with the escape `\\ua7ce` beside the definition's key, which prints the letter"
+            "target prints them: on a host Python older than 3.15 (Unicode below 17; the target version does not select "
+            "the interpreter) a `$ref` to a definition whose name holds U+A7CE, a letter of Unicode 17, is written "
+            "with the escape `\\ua7ce` beside the definition's key, which prints the letter"
         ),
         fix=6906,
         witness=(
             "--input",
-            "tests/data/avro/root_string.avsc",
-            "--target-python-version",
-            "3.14",
+            "tests/data/jsonschema/legacy_witnesses/host_repr_reference.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
+            "--field-include-all-keys",
         ),
     ),
     LegacyRow(
