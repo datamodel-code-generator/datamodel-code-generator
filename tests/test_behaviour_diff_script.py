@@ -1877,6 +1877,65 @@ def test_identity_compares_the_output_of_runs_that_fail_alike(tmp_path: Path) ->
     assert_output("\n".join(_gate_lines(argv, tmp_path / "cells.jsonl")).replace(commits[0][:9], "<sha>") + "\n")
 
 
+FAKE_DEPRECATION = FAKE_FIRST.replace(
+    'warnings.warn(spec["deprecated"], DeprecationWarning', 'warnings.warn(str(spec["deprecated"]), DeprecationWarning'
+)
+"""The candidate of the identity oracle: the deprecation branch reads its message through `str`, as before."""
+GATE_ORACLES = {
+    "no_input_matches_the_selection": ("tests/data/jsonschema/no_such_input*", "incomplete"),
+    "changed_branch_no_cell_takes": ("tests/data/jsonschema/plain.json", "incomplete"),
+    "changed_branch_a_cell_takes": ("tests/data/jsonschema/deprecated.json", "complete"),
+}
+"""The selection of each identity oracle run and the verdict it must give."""
+
+
+def _identity_argv(tmp_path: Path, selection: str) -> tuple[list[str], str]:
+    """Return the identity gate of the working tree that reads deprecations through `str` against its commit."""
+    repo = tmp_path / "repo"
+    commits = _fake_generator(repo, ["first"], None)
+    (repo / "src" / "datamodel_code_generator" / "__main__.py").write_text(FAKE_DEPRECATION, encoding="utf-8")
+    argv = ["gate", commits[0], str(repo), "--types", "pydantic_v2.BaseModel", "--candidate-python", sys.executable]
+    argv += ["--cache-dir", str(tmp_path / "cache"), "--select", selection, "--identity", "-j", "1"]
+    return [*argv, "--json", str(tmp_path / "cells.jsonl")], commits[0]
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="Python 3.11 has no sys.monitoring: nothing can be measured")
+@pytest.mark.parametrize("case", sorted(GATE_ORACLES))
+def test_identity_evidence_oracle(case: str, tmp_path: Path) -> None:
+    """Identity against a revision is complete only where a compared cell ran every changed code object.
+
+    A selection that matches no input compared nothing; a changed branch no selected cell takes was not run.
+    """
+    selection, wanted = GATE_ORACLES[case]
+    argv, commit = _identity_argv(tmp_path, selection)
+    stdout = StringIO()
+    with redirect_stdout(stdout), redirect_stderr(StringIO()):
+        code = behaviour_diff.main(argv)
+    lines = [line for line in stdout.getvalue().splitlines() if line.startswith(("summary:", "cells:", "evidence:"))]
+    complete = code == 0 and "evidence: complete" in lines
+    incomplete = code == 1 and any(line.startswith("evidence: incomplete") for line in lines)
+    verdict = "complete" if complete else "incomplete" if incomplete else f"exit={code}"
+    assert verdict == wanted, stdout.getvalue()
+    assert_output("\n".join([f"exit={code}", *lines]).replace(commit[:9], "<sha>") + "\n")
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+def test_identity_refuses_a_shard(tmp_path: Path) -> None:
+    """A shard of an identity run cannot judge what the whole run compared: `--identity --shard 1/2` is refused."""
+    argv, _ = _identity_argv(tmp_path, "tests/data/jsonschema/plain.json")
+    with pytest.raises(SystemExit) as refused, redirect_stderr(stderr := StringIO()):
+        behaviour_diff.main([*argv, "--shard", "1/2"])
+    assert refused.value.code == 2, stderr.getvalue()
+    assert_output(stderr.getvalue().partition("error: ")[2])
+
+
 @needs("posix")
 def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     """A BASE or CANDIDATE that names no release, directory or revision stops the gate.
