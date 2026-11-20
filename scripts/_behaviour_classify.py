@@ -45,7 +45,7 @@ from scripts._change_records import ASPECTS, RULES, Category, CellKind
 from scripts._source_model import SourceModelError, SourceModule
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Mapping, Sequence
+    from collections.abc import Collection, Iterable, Sequence
     from pathlib import Path
 
     from scripts._change_records import CellSelector, Record
@@ -892,68 +892,67 @@ def _config_values(scope: Scope) -> list[tuple[str, ast.AST]]:
     return found
 
 
-def _statement_name(statement: ast.stmt) -> str:
-    """Return what a statement binds (a definition's name, an assignment's targets), else the statement's node type."""
-    match statement:
-        case ast.FunctionDef() | ast.AsyncFunctionDef() | ast.ClassDef():
-            return statement.name
-        case ast.Assign():
-            return ", ".join(map(ast.unparse, statement.targets))
-        case ast.AnnAssign() | ast.AugAssign():
-            return ast.unparse(statement.target)
-    return type(statement).__name__
+def _unions(node: ast.AST) -> Iterable[tuple[ast.AST, list[ast.expr]]]:
+    """Yield each union below a node with its members (a union nested in a union is part of the outer one)."""
+    if (members := _union_members(node)) is not None:
+        yield node, members
+        for member in members:
+            yield from _unions(member)
+    else:
+        for child in ast.iter_child_nodes(node):
+            yield from _unions(child)
 
 
-def _executable(nodes: Iterable[ast.AST]) -> Iterable[str]:
-    """Yield, in order, each outermost union (its members in order), lambda and definition below the nodes, as text."""
-    for node in nodes:
-        if (members := _union_members(node)) is not None:
-            yield f"union {' | '.join(map(ast.unparse, members))}"
-        elif isinstance(node, (ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            yield ast.dump(node)
-        else:
-            yield from _executable(ast.iter_child_nodes(node))
+def _where(scope: Scope) -> str:
+    """Return where a scope is: its qualified name and its ordinal, as the source model pairs scopes across texts."""
+    return f"{scope.qualname}#{scope.ordinal}"
 
 
-def _statement_parts(body: Iterable[ast.stmt], prefix: str, classes: Mapping[int, Scope]) -> Iterable[str]:
-    """Yield what a signature does not see in the statements of a module or class body, each with where it is.
+def _union_parts(model: SourceModule) -> Iterable[str]:
+    """Yield the members of each union in their order, each with where it is.
 
-    A statement is where it is by its scope and what it binds (`Model.b#0`, the first statement binding `b` in
-    `Model`), so the parts of two fields never trade places unseen, and moving a class or a field keeps its parts.
+    A union is where the statement that holds it is: its scope and the names the statement binds there (a field's
+    name, a function's), and its index among the unions of statements that bind the same names in that scope.
     """
+    bound: dict[tuple[int, int], list[str]] = {}
+    for binding in model.bindings():
+        if (statement := model.statement_at(binding.line)) is not None:
+            bound.setdefault((id(binding.scope), id(statement)), []).append(binding.name)
     seen: Counter[str] = Counter()
-    for statement in body:
-        name = _statement_name(statement)
-        at = f"{prefix}{name}#{seen[name]}"
-        seen[name] += 1
-        header: list[ast.AST] = [statement]
-        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            yield from (f"decorator {at} {ast.dump(item)}" for item in statement.decorator_list)
-        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            yield f"body {at} {ast.dump(ast.Module(body=statement.body, type_ignores=[]))}"
-            header = [statement.args, *([statement.returns] if statement.returns else [])]
-        elif isinstance(statement, ast.ClassDef):
-            header = [*statement.bases, *statement.keywords]
-            yield from (
-                f"config {at} {key} {ast.dump(value)}"
-                for key, value in _config_values(classes[id(statement)])
-                if key not in SIGNATURE_CONFIG_KEYS
-            )
-            yield from _statement_parts(statement.body, f"{at}.", classes)
-        yield from (f"{text} at {at} {index}" for index, text in enumerate(_executable(header)))
+    for node, members in _unions(model.tree):
+        scope = model.scope_of(node)
+        statement = model.statement_at(getattr(node, "lineno", 0))
+        at = f"{_where(scope)} {','.join(sorted(bound.get((id(scope), id(statement)), [])))}"
+        yield f"union {at} {seen[at]} {' | '.join(map(ast.unparse, members))}"
+        seen[at] += 1
 
 
 def _unlisted_parts(model: SourceModule) -> Counter[str]:
-    """Return what a signature does not see, as a multiset of dumps, each with where it is (`_statement_parts`).
+    """Return what a signature does not see, as a multiset of dumps, each with where it is.
 
     They are function bodies, lambdas, decorators, configuration keys and the members of each union in their order
-    (a signature sorts them, and validation tries them in order); a definition below another statement than a
-    definition (a function in an `if` block) counts as a whole.
+    (a signature sorts them, and validation tries them in order). Each is where its scope is (`_where`: a field's
+    lambda by its index among the class's lambdas, a method by its index among the methods of its name), or a union
+    where its statement is (`_union_parts`), so two fields or methods never trade them unseen, and moving a class
+    keeps them.
 
     A configuration key counts unless the signature lists it (`_behaviour_signature`'s pydantic and msgspec keys).
     """
-    classes = {id(scope.node): scope for scope in model.scopes if scope.kind == "class"}
-    return Counter(_statement_parts(model.tree.body, "", classes))
+    parts: Counter[str] = Counter(_union_parts(model))
+    for scope in model.scopes:
+        node, at = scope.node, _where(scope)
+        if scope.kind == "function":
+            parts[f"body {at} {ast.dump(ast.Module(body=getattr(node, 'body', []), type_ignores=[]))}"] += 1
+        if scope.kind == "lambda":
+            parts[f"lambda {at} {ast.dump(node)}"] += 1
+        parts.update(f"decorator {at} {ast.dump(item)}" for item in getattr(node, "decorator_list", []))
+        if scope.kind == "class":
+            parts.update(
+                f"config {at} {key} {ast.dump(value)}"
+                for key, value in _config_values(scope)
+                if key not in SIGNATURE_CONFIG_KEYS
+            )
+    return parts
 
 
 def rule_b(old: str, new: str, *, signature_equal: bool) -> bool:

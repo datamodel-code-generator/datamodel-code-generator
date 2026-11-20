@@ -3213,6 +3213,9 @@ class Other:
 """
 SWAP_IMPORTS = "from dataclasses import dataclass, field\nfrom typing import Union\n"
 SWAP_TEXT = SWAP_IMPORTS + SWAP_MODEL + SWAP_OTHER
+ALIAS_X = "X = Union[int, str]\n"
+ALIAS_Y = "Y = Union[\n    str,\n    int,\n]\n"
+ALIAS_TEXT = "from typing import Union\n" + ALIAS_X + ALIAS_Y
 RULE_B_OLD = {
     "the members of a root model's union in another order": ROOT_UNION_TEXT,
     "the members of a field's union in another order": ROOT_UNION_TEXT,
@@ -3224,6 +3227,8 @@ RULE_B_OLD = {
     "two fields' default factories traded": SWAP_TEXT,
     "two fields' union orders traded": SWAP_TEXT,
     "two classes in another order": SWAP_TEXT,
+    "two aliases' union orders traded": ALIAS_TEXT,
+    "two aliases in another order": ALIAS_TEXT,
     "a getter's and a setter's bodies traded": SWAP_TEXT,
 }
 RULE_B_CASES: dict[str, tuple[str, bool]] = {
@@ -3258,6 +3263,11 @@ RULE_B_CASES: dict[str, tuple[str, bool]] = {
         True,
     ),
     "two classes in another order": (SWAP_IMPORTS + SWAP_OTHER + SWAP_MODEL, True),
+    "two aliases' union orders traded": (
+        ALIAS_TEXT.replace("Union[int, str]", "Union[str, int]").replace("str,\n    int,", "int,\n    str,"),
+        True,
+    ),
+    "two aliases in another order": ("from typing import Union\n" + ALIAS_Y + ALIAS_X, True),
     "a getter's and a setter's bodies traded": (
         SWAP_TEXT
         .replace("        return 1\n", "        pass0\n")

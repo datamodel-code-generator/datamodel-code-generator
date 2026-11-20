@@ -309,6 +309,8 @@ text that does not parse	behaviour_diff_script/rule_b[text that does not parse].
 the members of a field's union in another order	behaviour_diff_script/rule_b[the members of a field's union in another order].txt	= behaviour_diff_script/covers[an option set in another order].txt
 the members of a root model's union in another order	behaviour_diff_script/rule_b[the members of a root model's union in another order].txt	= behaviour_diff_script/covers[an option set in another order].txt
 the order of the imports	behaviour_diff_script/rule_b[the order of the imports].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+two aliases in another order	behaviour_diff_script/rule_b[two aliases in another order].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+two aliases' union orders traded	behaviour_diff_script/rule_b[two aliases' union orders traded].txt	= behaviour_diff_script/covers[an option set in another order].txt
 two classes in another order	behaviour_diff_script/rule_b[two classes in another order].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 two fields' default factories traded	behaviour_diff_script/rule_b[two fields' default factories traded].txt	= behaviour_diff_script/covers[an option set in another order].txt
 two fields' union orders traded	behaviour_diff_script/rule_b[two fields' union orders traded].txt	= behaviour_diff_script/covers[an option set in another order].txt
