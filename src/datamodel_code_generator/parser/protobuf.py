@@ -412,12 +412,15 @@ class _ProtoInputPreparer:
         self.temp_dir.cleanup()
 
     def without_temp_dir(self, text: str) -> str:
-        """Return `text` without the run's temporary directory in its paths (`protoc` names files by disk path)."""
+        """Return `text` without the run's temporary directory in its paths (`protoc` names files by disk path).
+
+        Each spelling of the directory (as given and resolved) is also taken in its POSIX form: on Windows ``protoc``
+        writes it with forward slashes (``C:/Users/RUNNER~1/...``).
+        """
         assert self.temp_dir is not None
         root = Path(self.temp_dir.name)
-        prefixes = {
-            form + separator for form in (str(root), os.path.realpath(root)) for separator in (os.sep, "/", "\\")
-        }
+        forms = {form for path in (root, Path(os.path.realpath(root))) for form in (str(path), path.as_posix())}
+        prefixes = {form + separator for form in forms for separator in (os.sep, "/", "\\")}
         pattern = "|".join(re.escape(prefix) for prefix in sorted(prefixes, key=len, reverse=True))
         return re.sub(pattern, "", text, flags=re.IGNORECASE if sys.platform == "win32" else 0)
 
