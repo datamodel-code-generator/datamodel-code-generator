@@ -13854,7 +13854,6 @@ def test_main_openapi_collapse_root_models_name_strategy_as_direct_reference(
     run_main_and_assert(
         input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / "derived_split.yaml",
         output_path=tmp_path / "collapsed",
-        expected_directory=direct_output,
         extra_args=args,
     )
 
@@ -13867,31 +13866,25 @@ def test_main_openapi_collapse_root_models_name_strategy_as_direct_reference(
     ],
 )
 @pytest.mark.parametrize(
-    ("input_file", "reuse_args", "expected_name"),
+    ("input_file", "reuse_args"),
     [
-        pytest.param(
-            "nullable_map_value_layout.yaml", ["--collapse-reuse-models"], "layout_collapse", id="layout-collapse"
-        ),
+        pytest.param("nullable_map_value_layout.yaml", ["--collapse-reuse-models"], id="layout-collapse"),
         pytest.param(
             "reuse_model_cross_module_users.yaml",
             ["--collapse-reuse-models"],
-            "modules_collapse",
             id="modules-collapse",
         ),
-        pytest.param("reuse_model_cross_module_users.yaml", [], "modules", id="modules"),
+        pytest.param("reuse_model_cross_module_users.yaml", [], id="modules"),
     ],
 )
 def test_main_openapi_reuse_model_cross_module_users(
-    input_file: str, reuse_args: list[str], expected_name: str, output_model_type: str, output_dir: Path
+    input_file: str, reuse_args: list[str], output_model_type: str, output_dir: Path
 ) -> None:
     """Point users in other modules, written before or after, at the kept model when reuse removes a duplicate."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / input_file,
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH
-        / "reuse_model_cross_module_users"
-        / f"{expected_name}_{output_model_type.partition('.')[0]}",
         extra_args=[
             "--output-model-type",
             output_model_type,
@@ -14069,7 +14062,6 @@ def test_main_openapi_dot_notation_deep_inheritance(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "dot_notation_deep_inheritance.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "dot_notation_deep_inheritance",
         input_file_type="openapi",
     )
 
@@ -14083,7 +14075,6 @@ def test_main_openapi_dot_notation_root_package_inheritance(output_dir: Path) ->
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "dot_notation_root_package_inheritance.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "dot_notation_root_package_inheritance",
         input_file_type="openapi",
         extra_args=["--disable-timestamp"],
         force_exec_validation=True,
@@ -14103,7 +14094,6 @@ def test_main_openapi_exact_imports_ancestor_package(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "exact_imports_ancestor_package.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "exact_imports_ancestor_package",
         input_file_type="openapi",
         extra_args=[
             "--output-model-type",
@@ -14169,7 +14159,6 @@ def test_main_openapi_circular_imports_stripe_like(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_stripe_like.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_stripe_like",
             input_file_type="openapi",
         )
 
@@ -14180,7 +14169,6 @@ def test_main_openapi_circular_imports_acyclic(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_acyclic.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_acyclic",
             input_file_type="openapi",
         )
 
@@ -14191,7 +14179,6 @@ def test_main_openapi_circular_imports_class_conflict(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_class_conflict.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_class_conflict",
             input_file_type="openapi",
         )
 
@@ -14226,7 +14213,6 @@ def test_main_openapi_circular_imports_pattern_properties_ref(output_dir: Path) 
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "circular_imports_pattern_properties_ref.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_pattern_properties_ref",
         input_file_type="openapi",
         extra_args=[
             "--generate-schema-validators",
@@ -14249,7 +14235,6 @@ def test_main_openapi_circular_imports_with_inheritance(output_dir: Path) -> Non
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_with_inheritance.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_with_inheritance",
             input_file_type="openapi",
         )
 
@@ -14260,7 +14245,6 @@ def test_main_openapi_circular_imports_small_cycle(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_small_cycle.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_small_cycle",
             input_file_type="openapi",
         )
 
@@ -14271,7 +14255,6 @@ def test_main_openapi_circular_imports_different_prefixes(output_dir: Path) -> N
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_different_prefixes.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_different_prefixes",
             input_file_type="openapi",
         )
 
@@ -14282,7 +14265,6 @@ def test_main_openapi_circular_imports_mixed_prefixes(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_mixed_prefixes.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_mixed_prefixes",
             input_file_type="openapi",
         )
 
@@ -14337,7 +14319,6 @@ def test_main_openapi_module_class_name_collision_pydantic_v2(output_dir: Path) 
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14354,7 +14335,6 @@ def test_main_openapi_module_class_name_collision_deep_pydantic_v2(output_dir: P
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision_deep" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision_deep",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14371,7 +14351,6 @@ def test_main_openapi_module_class_name_collision_exact_imports_pydantic_v2(outp
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision_exact_imports",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14390,7 +14369,6 @@ def test_main_openapi_module_class_name_collision_deep_exact_imports_pydantic_v2
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision_deep" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision_deep_exact_imports",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14410,7 +14388,6 @@ def test_main_nested_package_enum_default(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "nested_package_enum_default.json",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "nested_package_enum_default",
             extra_args=[
                 "--output-model-type",
                 "dataclasses.dataclass",
@@ -16113,24 +16090,21 @@ def test_main_openapi_api_scope_parameter_type_aliases(
 
 
 @pytest.mark.parametrize(
-    ("expected_directory", "extra_args"),
+    "extra_args",
     [
-        ("default", []),
-        ("reuse_tree", ["--reuse-model", "--reuse-scope", "tree"]),
-        ("collapse_reuse_tree", ["--reuse-model", "--reuse-scope", "tree", "--collapse-reuse-models"]),
-        ("collapse", ["--collapse-root-models"]),
-        ("frozen_reuse", ["--reuse-model", "--enable-faux-immutability"]),
+        [],
+        ["--reuse-model", "--reuse-scope", "tree"],
+        ["--reuse-model", "--reuse-scope", "tree", "--collapse-reuse-models"],
+        ["--collapse-root-models"],
+        ["--reuse-model", "--enable-faux-immutability"],
     ],
 )
-def test_main_openapi_api_scope_parameter_type_aliases_modules(
-    output_dir: Path, expected_directory: str, extra_args: list[str]
-) -> None:
+def test_main_openapi_api_scope_parameter_type_aliases_modules(output_dir: Path, extra_args: list[str]) -> None:
     """Keep component root models while parameter schemas and their users follow the type alias form."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "api_scope_parameter_type_aliases_mixed.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "api_scope_parameter_type_aliases_mixed" / expected_directory,
         extra_args=[
             "--openapi-scopes",
             "api",
