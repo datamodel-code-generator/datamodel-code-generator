@@ -43,6 +43,7 @@ references/class_scope_skipped: class_scope_skipped.py:10: first with a value
 references/class_scope_skipped: class_scope_skipped.py:11: f with a value
 references/comprehension_in_method_default: comprehension_in_method_default.py:5: size with a value
 references/consumers_of_expressions: consumers_of_expressions.py:29: entries with a value
+references/legacy_row_reading_lines: rows.py:14: row with a value
 references/output_policy_by_origin: output_policy_by_origin.py:10: output_type with a value
 references/output_policy_by_origin: output_policy_by_origin.py:11: literal_type with a value
 references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:16: __runner with a value

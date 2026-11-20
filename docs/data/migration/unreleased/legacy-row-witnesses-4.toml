@@ -1,0 +1,6 @@
+[[change]]
+id = "legacy-row-witnesses-4"
+extends = "legacy-rows-typed-table"
+covers = [
+    "where_script/where_grammar[legacy-row-without-an-option].txt",
+]

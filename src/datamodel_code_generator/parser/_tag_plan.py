@@ -995,6 +995,8 @@ class _VariantTagFacts:
     def mapped_tags(self) -> list[DiscriminatorValue]:
         """Return the tags of the mapping keys naming the variant or its bases (``mapping_key_tag``).
 
+        Row ``legacy-mapped-tags-only``: without ``--use-unmapped-variant-tag-values`` they are its only tags.
+
         Each key is read as a value of the type of the tag field the variant declares, else of the nearest one it
         inherits from a schema (``_declared_tag_field``): of its Enum, else of the ``Literal`` it is or names through a
         root model or a type alias (``_admitted_tag_values``), else of its scalar. A field still typed by its Enum under
@@ -1049,7 +1051,10 @@ class _VariantTagFacts:
         return self.model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
 
     def enum_member_tag_field(self) -> bool:
-        """Return whether Enum members are written as tags and the declared tag field is typed by or holds them."""
+        """Return whether Enum members are written as tags and the declared tag field is typed by or holds them.
+
+        Row ``legacy-nested-enum-members-untagged``: such a variant of a nested union takes no tag.
+        """
         return (
             self.reading.enum_member_tags
             and (tag_field := self._declared_tag_field()) is not None
@@ -1536,7 +1541,8 @@ def tag_msgspec_unions(
 
     msgspec refuses a tag field that a base or derived struct keeps as an instance field, so unions are left out
     until the remaining ones agree. A struct that two tag fields claim keeps the first one. While other modules
-    remain (``defers_related``), the unions left out for such a struct wait, as a union of a later module may tag it.
+    remain (``defers_related``), the unions left out for such a struct wait, as a union of a later module may tag it
+    (row ``legacy-decide-in-union-module``).
     """
     related: dict[int, list[str]] = {}
     while True:
@@ -2146,8 +2152,9 @@ def possible_tag_names(
 
     It tags the variants that the unions of ``sites`` list, however nested or aliased, or that their mappings name,
     by the property name or the field name it resolves to in the model's class or in any class. A struct inheriting
-    from a tagged struct takes its tag field as a tag too. The mapped paths are indexed once by every key a model path
-    can match them by (row ``legacy-any-key``).
+    from a tagged struct takes its tag field as a tag too, so the names are a superset of the tag fields that step
+    writes (row ``legacy-predicted-tag-names``). The mapped paths are indexed once by every key a model path can match
+    them by (row ``legacy-any-key``).
     """
     listed: defaultdict[int, set[str]] = defaultdict(set)
     mapped: defaultdict[tuple[str, str], set[str]] = defaultdict(set)

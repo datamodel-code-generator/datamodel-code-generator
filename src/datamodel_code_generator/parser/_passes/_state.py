@@ -167,6 +167,7 @@ class _ModuleNames(dict[str, str]):  # noqa: FURB189
         """Drop the entries by key of models that moved to another path, whose entries by path name them no more.
 
         The models that import cycles merge into an internal module move there after their module names were given.
+        Row ``legacy-module-follows-path``: their entries by path stay behind.
         """
         for model in models:
             self.by_key.pop(model_key_of(model.reference), None)

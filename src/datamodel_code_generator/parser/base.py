@@ -642,7 +642,8 @@ class _ModelShapeSource:
         The type alias of an item-count site (``ITEM_COUNTS_SITE_KEY``), an array that was inline up to 0.89.0, is
         compared only with other such aliases, so deduplication and reuse group the models those releases wrote as
         they did: none of them becomes a duplicate of such an alias, which a root model naming it would then reach.
-        The uniqueItems positions of the fields are added where they hold any (``unique_items``).
+        The uniqueItems positions of the fields are added where they hold any (``unique_items``); without it, none are
+        (row ``legacy-dedup-keys-without-unique-items``).
         """
         site = (("item-counts-site",),) if is_item_counts_site(model.reference) else ()
         return (*site, ("unique-items", unique_items_positions(model))) if self.unique_items else site
