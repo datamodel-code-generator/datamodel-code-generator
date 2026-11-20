@@ -22,14 +22,7 @@ from warnings import warn
 from pydantic import Field, StrictBool, ValidationError, WrapValidator, field_validator
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import (
-    Error,
-    InputFileType,
-    OpenAPIScope,
-    SchemaParseError,
-    is_swagger_2,
-    snooper_to_methods,
-)
+from datamodel_code_generator import snooper_to_methods
 from datamodel_code_generator._document_reader import as_mapping as _as_mapping
 from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
 from datamodel_code_generator._json_pointer import document_part
@@ -47,10 +40,18 @@ from datamodel_code_generator._openapi_paths import (
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
-from datamodel_code_generator._source import YamlValue
+from datamodel_code_generator._shared_types import Error, SchemaParseError
+from datamodel_code_generator._source import YamlValue, is_swagger_2
 from datamodel_code_generator._user_keys import ClassScope, class_key
 from datamodel_code_generator.deprecations import warn_deprecated
-from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode, _openapi_scopes_or_default
+from datamodel_code_generator.enums import (
+    InputFileType,
+    OpenAPIAsDefinitions,
+    OpenAPIScope,
+    OpenAPIVersion,
+    VersionMode,
+    _openapi_scopes_or_default,
+)
 from datamodel_code_generator.parser import _schema_documents, _schema_refs, _union_tags
 from datamodel_code_generator.parser._api_reference import pointer_fragment as _pointer_fragment
 from datamodel_code_generator.parser._naming import composed_name

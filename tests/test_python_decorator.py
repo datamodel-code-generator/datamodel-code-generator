@@ -114,15 +114,22 @@ def test_is_named_python_decorator_handles_deep_parenthesized_target() -> None:
 def test_is_named_python_decorator_handles_runtime_tokenizer_syntax_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Reject runtime-specific tokenizer SyntaxError at the external boundary."""
+    """Reject runtime-specific tokenizer SyntaxError at the external boundary.
+
+    Coverage tokenizes the source of a module when the first branch of it runs in a process, with the same
+    ``tokenize.generate_tokens`` this test replaces. The probe runs once before the patch, so that first branch never
+    runs under it (a worker that ran this test first failed inside coverage with an IndexError).
+    """
 
     def raise_syntax_error(_readline: object) -> None:
         raise SyntaxError
 
+    probe = "@deprecated(syntax_error_probe"
+    assert is_named_python_decorator(probe, "deprecated") is False
     is_named_python_decorator.cache_clear()
     monkeypatch.setattr(tokenize, "generate_tokens", raise_syntax_error)
 
-    assert is_named_python_decorator("@deprecated(syntax_error_probe", "deprecated") is False
+    assert is_named_python_decorator(probe, "deprecated") is False
 
 
 @pytest.mark.allow_direct_assert

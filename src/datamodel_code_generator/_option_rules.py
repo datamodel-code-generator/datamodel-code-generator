@@ -43,6 +43,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.enums import (
     _PYDANTIC_MODEL_TYPES,
     AllExportsScope,
@@ -263,8 +264,6 @@ def _check_relation(row: OptionRelation, config: Any, record: Any) -> bool:
         case "value-error":
             raise ValueError(text)
         case "error":
-            from datamodel_code_generator import Error  # noqa: PLC0415
-
             raise Error(text)
     print(text, file=sys.stderr)  # noqa: T201
     return row.action == "refuse"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NewType, Protocol, TypeVar
 
 if TYPE_CHECKING:
-    from datamodel_code_generator import _ParserSource
+    from datamodel_code_generator._shared_types import ParserSource as _ParserSource
     from datamodel_code_generator.config import AsyncAPIParserConfig, OpenAPIParserConfig
     from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.parser.base import Result

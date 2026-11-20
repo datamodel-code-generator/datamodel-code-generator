@@ -33,7 +33,7 @@ from datamodel_code_generator._option_rules import (
     implied_option_sources,
     implied_options,
 )
-from datamodel_code_generator._shared_types import LiteralType  # noqa: TC001 - used at runtime by Pydantic
+from datamodel_code_generator._shared_types import Error, LiteralType
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     AliasGenerator,
@@ -87,7 +87,6 @@ def _import_paths(field: str, paths: Iterable[object], target: PythonVersion, *,
     Each path is read by ``validators._validate_python_import_path``: names of the target Python joined by dots, after
     the dots of a relative import with ``relative``.
     """
-    from datamodel_code_generator import Error  # noqa: PLC0415
     from datamodel_code_generator.validators import _validate_python_import_path  # noqa: PLC0415
 
     try:
@@ -142,8 +141,6 @@ OPEN_ENUM_BASE_CLASS_KEYS: Final = ("Enum", "StrEnum", "IntEnum")
 def _open_enum_base_paths(base_map: Mapping[str, str]) -> list[str]:
     """Return the paths of the ``--open-enum-base-class-map`` entries, refusing a key no enum class is written on."""
     if unknown := [key for key in base_map if key not in OPEN_ENUM_BASE_CLASS_KEYS]:
-        from datamodel_code_generator import Error  # noqa: PLC0415
-
         msg = (
             f"open_enum_base_class_map keys must be {', '.join(OPEN_ENUM_BASE_CLASS_KEYS)}, "
             f"not {', '.join(map(repr, unknown))}"
@@ -204,7 +201,6 @@ def validate_untyped_value_type(value: str | None) -> str | None:
     """Refuse a value of --untyped-value-type other than ``Any``, ``object`` or a dotted import path of Python names."""
     if value is None or value in {"Any", "object"}:
         return value
-    from datamodel_code_generator import Error  # noqa: PLC0415
     from datamodel_code_generator.python_literal import message_repr  # noqa: PLC0415
     from datamodel_code_generator.validators import _validate_dotted_python_identifier_path  # noqa: PLC0415
 

@@ -1,0 +1,5 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs a harness record covers are refused, as src/ changes:
+  models/b.py: [type] B: int -> float
+failed

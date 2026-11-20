@@ -9,7 +9,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator import LeftoverFilesWarning
+from datamodel_code_generator._shared_types import LeftoverFilesWarning
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet

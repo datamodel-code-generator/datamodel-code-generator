@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 from pydantic import VERSION, ConfigDict, Field, TypeAdapter
 
-from datamodel_code_generator import _StructuredOutputUnavailableError
 from datamodel_code_generator._json_output import OUTPUT_HEAD, dump_json, schema_document
 from datamodel_code_generator._recommend_vocabulary import (  # noqa: TC001 - pydantic evaluates the payload annotations.
     DisagreementKind,
@@ -14,6 +13,7 @@ from datamodel_code_generator._recommend_vocabulary import (  # noqa: TC001 - py
     OptionValue,
     RecommendMode,
 )
+from datamodel_code_generator._shared_types import _StructuredOutputUnavailableError
 from datamodel_code_generator.prompt import PromptPayload, _Envelope, _Payload
 
 try:

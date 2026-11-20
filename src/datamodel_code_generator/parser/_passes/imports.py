@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, WIDENED_VALUES_KEY, int_beyond_values
 from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS, SLOT_CLASSES
 from datamodel_code_generator._graph import reach
@@ -41,10 +40,11 @@ from datamodel_code_generator._python_syntax import holds_lone_surrogate
 from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import pydantic_floor
+from datamodel_code_generator._shared_types import DefaultValueTypeWarning, Error
 from datamodel_code_generator._target_unicode import is_importable_part
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator._user_keys import closest_type_override_key
-from datamodel_code_generator.enums import DefaultValueType
+from datamodel_code_generator.enums import DefaultValueType, ReuseScope
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
     IMPORT_LITERAL,

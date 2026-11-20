@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
-from datamodel_code_generator import DocumentationAnnotationWarning, Error
+from datamodel_code_generator._shared_types import DocumentationAnnotationWarning, Error
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

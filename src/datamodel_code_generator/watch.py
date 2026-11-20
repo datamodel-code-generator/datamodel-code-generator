@@ -14,7 +14,8 @@ from datamodel_code_generator._message_text import install_command
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-    from datamodel_code_generator.__main__ import Config, Exit
+    from datamodel_code_generator._cli_config import Config
+    from datamodel_code_generator._shared_types import Exit
     from datamodel_code_generator.watch_dependencies import WatchDependencies
 
 _PENDING_CHANGE_SAMPLE_LIMIT = 32
@@ -45,7 +46,7 @@ def _force_polling() -> bool:
 
 
 def _regenerate(regenerate: Callable[[], Exit]) -> None:
-    from datamodel_code_generator.__main__ import Exit  # noqa: PLC0415
+    from datamodel_code_generator._shared_types import Exit  # noqa: PLC0415
     from datamodel_code_generator.model.base import _clear_custom_template_caches  # noqa: PLC0415
 
     _clear_custom_template_caches()
@@ -265,7 +266,7 @@ def watch_and_regenerate(
     watch_delay: float | None = None,
 ) -> Exit:
     """Watch every local generation dependency and fully regenerate on changes."""
-    from datamodel_code_generator.__main__ import Exit  # noqa: PLC0415
+    from datamodel_code_generator._shared_types import Exit  # noqa: PLC0415
     from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
 
     watchfiles = _get_watchfiles()

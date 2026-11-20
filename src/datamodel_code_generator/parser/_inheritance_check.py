@@ -14,8 +14,9 @@ from typing import TYPE_CHECKING, Final
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import Error, cached_path_exists
+from datamodel_code_generator._caches import cached_path_exists
 from datamodel_code_generator._mro import c3_merge
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.imports import _override_module
 

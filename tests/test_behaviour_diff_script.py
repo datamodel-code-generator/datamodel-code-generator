@@ -20,6 +20,7 @@ from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 import pytest
+import tomllib
 
 from scripts import behaviour_diff, declared_changes
 from scripts._behaviour_classify import (
@@ -2575,8 +2576,10 @@ class CellsCase:
     The release is tagged; `base` is main's next commit, `layer` a lower stack layer on it (the PR's base), `head` the
     PR; `main` is a commit main takes after the PR forked. `against` names the gate's base: the PR's `base` (the
     layer's tip), main's tip, the release tag, a commit no history has (`unknown`) or one of another history
-    (`orphan`). `records` also runs `declared_changes.py check` on the PR, which fails the harness labels the
-    gate refuses. `shape` names, in words, the rule the case pins or the passing shape it keeps.
+    (`orphan`). `records` also runs `declared_changes.py check` on the PR with the gate's verdicts (`--verdicts`),
+    which must give the gate's verdict: it fails the harness labels the gate refuses. `shards` runs the gate as that
+    many shards, one after another, with the same `--verdicts` file. `shape` names, in words, the rule the case pins or
+    the passing shape it keeps.
     """
 
     verdict: str
@@ -2589,6 +2592,7 @@ class CellsCase:
     against: str = "base"
     tier: str = "pr"
     records: bool = False
+    shards: int = 1
 
 
 COMMENT_PLAIN = _cells_src(("plain", None, "comment"))
@@ -2599,6 +2603,37 @@ CHECKED = _cells_input("checked", type="int", validator=True)
 MEMORY = _cells_input("memory", type="int", memory=True)
 FAILS = _cells_input("fails", type="int", fail="boom")
 PLAIN_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/plain.py"
+FAST_PATH_LIST = "main/cli_fast_paths/fast_paths_load_these_modules[help].txt"
+FAST_PATH_REFUSAL = "main/cli_fast_paths/parsed_fast_paths_refuse_the_options_of_the_skill_installer.result.txt"
+FAST_PATH_RELEASE = {
+    "tests/main/test_cli_fast_paths.refs": _cells_refs({
+        "test_fast_paths_load_these_modules": [f"help\t{FAST_PATH_LIST}"],
+        "test_parsed_fast_paths_refuse_the_options_of_the_skill_installer": [f"\t{FAST_PATH_REFUSAL}"],
+    }),
+    f"{CELLS_EXPECTED}/{FAST_PATH_LIST}": '{"package": ["pkg", "pkg.arguments"]}\n',
+    f"{CELLS_EXPECTED}/{FAST_PATH_REFUSAL}": '{"code": 2, "stderr": "Error: --skill-scope requires --install-skill"}\n',
+}
+"""The stored module list of a CLI fast path (an internal trace, #7155) and one of its refusals (a notice)."""
+SECOND_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/second.py"
+SECOND_REFS = "tests/main/test_second.refs"
+SECOND_OWN = {
+    SECOND_REFS: _cells_refs({"test_second": ["\tmain/jsonschema/second.py"]}),
+    SECOND_MODULE: CELLS_MODULE.format("int  # note"),
+}
+"""A second stored module of its own, its output the plain module with a comment."""
+SECOND_SHARED = {SECOND_REFS: _cells_refs({"test_second": ["\tmain/jsonschema/second.py\t= main/jsonschema/plain.py"]})}
+"""The same label, its output now the stored file of the plain module."""
+SECOND_FLOAT = {SECOND_REFS: SECOND_OWN[SECOND_REFS], SECOND_MODULE: CELLS_MODULE.format("float")}
+"""The second module with the other type, a file of its own."""
+SECOND_VARIANTS = {
+    SECOND_REFS: _cells_refs({
+        "test_second": [
+            "\tmain/jsonschema/second.py\t@python=3.14",
+            "\tmain/jsonschema/second.py\t@python=3.15\t= main/jsonschema/plain.py",
+        ]
+    })
+}
+"""The same label under two storages: its own file under one Python, the plain module's under another."""
 BASE_GATE_PROBE = """import os
 import sys
 from pathlib import Path
@@ -2607,6 +2642,11 @@ checkout = Path(os.environ.get("BEHAVIOUR_DIFF_REPOSITORY", "/nonexistent"))
 sys.exit(0 if (checkout / "docs" / "notes.md").exists() else 1)
 """
 """A base's gate that passes only when it runs for the PR's checkout, which has `docs/notes.md`."""
+BASE_GATE_VERDICTS = """import sys
+
+sys.exit(any(arg.startswith("--verd") for arg in sys.argv))
+"""
+"""A base's gate from before `--verdicts`: it refuses the option."""
 CELLS_CASES: dict[str, CellsCase] = {
     "pass: no src change": CellsCase("pass", "no src change, the shortcut", {"docs/notes.md": "notes\n"}),
     "pass: a refactor, every cell equal": CellsCase(
@@ -2737,6 +2777,12 @@ CELLS_CASES: dict[str, CellsCase] = {
         | OUTPUT_TEXT_OTHER
         | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match=r"str -> float")),
     ),
+    "pass: the base's gate gets no --verdicts": CellsCase(
+        "pass",
+        "oracle files, the base's gate refuses --verdicts",
+        {"scripts/behaviour_diff.py": BASE_GATE_VERDICTS + "# changed\n"},
+        release={"scripts/behaviour_diff.py": BASE_GATE_VERDICTS},
+    ),
     "pass: an oracle-file change runs the base's gate, which passes": CellsCase(
         "pass",
         "oracle files, the base's gate passes",
@@ -2763,6 +2809,41 @@ CELLS_CASES: dict[str, CellsCase] = {
         CELLS_REFACTOR
         | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
         | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        records=True,
+    ),
+    "pass: harness covers a modified module the proof holds for, in two shards": CellsCase(
+        "pass",
+        "harness, modified module the proof holds for, the gate run as two shards with one verdicts file",
+        CELLS_REFACTOR
+        | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
+        | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        records=True,
+        shards=2,
+    ),
+    "pass: harness covers a changed module list of a CLI fast path": CellsCase(
+        "pass",
+        "harness, the modules a CLI fast path imports (#7155)",
+        CELLS_REFACTOR
+        | {f"{CELLS_EXPECTED}/{FAST_PATH_LIST}": '{"package": ["pkg"]}\n'}
+        | _record("fast-path-test", "harness", covers=(FAST_PATH_LIST,)),
+        release=FAST_PATH_RELEASE,
+        records=True,
+    ),
+    "pass: harness covers a label that becomes shared and keeps its behaviour": CellsCase(
+        "pass",
+        "harness, a label that becomes shared, the proof holds",
+        CELLS_REFACTOR
+        | SECOND_SHARED
+        | {SECOND_MODULE: None}
+        | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_OWN,
+        records=True,
+    ),
+    "pass: harness covers a label that leaves a shared file and keeps its behaviour": CellsCase(
+        "pass",
+        "harness, a label that splits from a shared file, the proof holds",
+        CELLS_REFACTOR | SECOND_OWN | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_SHARED,
         records=True,
     ),
     "pass: harness covers an added label": CellsCase(
@@ -2947,6 +3028,39 @@ CELLS_CASES: dict[str, CellsCase] = {
         | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
         records=True,
     ),
+    "fail: harness covers a label that becomes shared and changes its behaviour": CellsCase(
+        "fail",
+        "harness, a label that becomes shared, the proof fails",
+        CELLS_REFACTOR
+        | SECOND_SHARED
+        | {SECOND_MODULE: None}
+        | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_FLOAT,
+        records=True,
+    ),
+    "fail: harness covers a label that leaves a shared file and changes its behaviour": CellsCase(
+        "fail",
+        "harness, a label that splits from a shared file with new content, the proof fails",
+        CELLS_REFACTOR | SECOND_FLOAT | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_SHARED,
+        records=True,
+    ),
+    "fail: harness covers a label that compares several stored files": CellsCase(
+        "fail",
+        "harness, a label with several stored outputs, the proof cannot read them",
+        CELLS_REFACTOR | SECOND_VARIANTS | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_OWN,
+        records=True,
+    ),
+    "fail: harness covers a changed refusal of a CLI fast path": CellsCase(
+        "fail",
+        "harness, a CLI fast path's refusal changed",
+        CELLS_REFACTOR
+        | {f"{CELLS_EXPECTED}/{FAST_PATH_REFUSAL}": '{"code": 0, "stderr": ""}\n'}
+        | _record("fast-path-refusal", "harness", covers=(FAST_PATH_REFUSAL,)),
+        release=FAST_PATH_RELEASE,
+        records=True,
+    ),
     "fail: harness covers a modified listing": CellsCase(
         "fail",
         "harness, modified listing",
@@ -3044,7 +3158,10 @@ def _cells_exit(run: Callable[[], int], log: StringIO) -> int:
 
 
 def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
-    """Run the gate (and, for `records`, the records check) as CI runs it and return the verdict and the log."""
+    """Run the gate (and, for `records`, the records check) as CI runs it and return the verdict and the log.
+
+    The verdict is `split` where the records check and the gate disagree.
+    """
     repo = tmp_path / "repo"
     against = _cells_project(case, repo)[case.against]
     projects = tmp_path / "projects.json"
@@ -3053,13 +3170,46 @@ def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
     allowlist.write_text(f'base = "{CELLS_TAG}"\n', encoding="utf-8")
     argv = ["gate", against, str(repo), "--tier", case.tier, "--check", "--candidate-python", sys.executable]
     argv += ["--cache-dir", str(tmp_path / "cache"), "--projects", str(projects), "--allowlist", str(allowlist)]
+    argv += ["--verdicts", str(verdicts := tmp_path / "verdicts.json")]
     log = StringIO()
-    codes = {"gate": _cells_exit(lambda: behaviour_diff.main([*argv, "-j", "2"]), log)}
+    shards = [
+        _cells_exit(
+            lambda index=index: behaviour_diff.main([*argv, "-j", "2", "--shard", f"{index}/{case.shards}"]), log
+        )
+        for index in range(1, case.shards + 1)
+    ]
+    codes = {"gate": max(shards)}
     if case.records:
-        check = ["check", "--base", against, "--head", "HEAD", "--tag", CELLS_TAG]
+        check = ["check", "--base", against, "--head", "HEAD", "--tag", CELLS_TAG, "--verdicts", str(verdicts)]
         codes["records"] = _cells_exit(lambda: declared_changes.main(check, repo=repo), log)
-    verdict = "pass" if set(codes.values()) == {0} else "fail"
+    verdicts_given = {"pass" if code == 0 else "fail" for code in codes.values()}
+    verdict = verdicts_given.pop() if len(verdicts_given) == 1 else "split"
     return verdict, f"{codes}\n{log.getvalue()}"
+
+
+@needs("posix")
+def test_guide_runs_the_gate_of_the_release(tmp_path: Path) -> None:
+    """Without `--cells`, `guide` runs the gate of the release against the previous one and writes its page."""
+    repo = tmp_path / "repo"
+    _cells_project(CellsCase("pass", "release run", base=COMMENT_OTHER | OUTPUT_TEXT_OTHER), repo)
+    release = _git("rev-parse", CELLS_TAG, cwd=repo)
+    projects = tmp_path / "projects.json"
+    projects.write_text('{"projects": []}', encoding="utf-8")
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text(f'base = "{CELLS_TAG}"\n', encoding="utf-8")
+    argv = ["guide", release, "0.2.0", "--candidate", str(repo), "-j", "2"]
+    argv += ["--candidate-python", sys.executable, "--cache-dir", str(tmp_path / "cache")]
+    argv += ["--projects", str(projects), "--allowlist", str(allowlist)]
+    with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+        code = behaviour_diff.main([*argv, "--docs", str(page := tmp_path / "page.json")])
+    assert_output(f"exit={code}\n{page.read_text(encoding='utf-8').replace(release, 'RELEASE')}")
+
+
+@pytest.mark.allow_direct_assert("the shipped table's keys are the oracle, never a stored output a fix run accepts")
+def test_shipped_allowlist_accepts_nothing() -> None:
+    """Change records judge every differing cell: the shipped table keeps its `base` and `[[base_skip]]` only."""
+    table = tomllib.loads(behaviour_diff.DEFAULT_ALLOWLIST.read_text(encoding="utf-8"))
+    assert set(table) <= {"base", "base_skip"}, sorted(table)
 
 
 @pytest.mark.allow_direct_assert(

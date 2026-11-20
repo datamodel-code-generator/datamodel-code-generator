@@ -39,6 +39,7 @@ from datamodel_code_generator._paths import (
     resolved,
 )
 from datamodel_code_generator._python_syntax import normalize_newlines
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_config import (
     _diagnostic,
     config_error,
@@ -51,11 +52,11 @@ if TYPE_CHECKING:
     import re
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator import _GenerationInput
     from datamodel_code_generator._api_types import ArtifactKind, TargetKind
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
     from datamodel_code_generator._publication import PublicationAnchor, StagedFile
+    from datamodel_code_generator._shared_types import GenerationInput as _GenerationInput
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -215,12 +216,7 @@ def prepare_target(
     setting given a value the target cannot use is an `Error` that names the option. The checks after it read the
     resolved settings.
     """
-    from datamodel_code_generator import (  # noqa: PLC0415
-        Error,
-        _check_facade_outputs,
-        _resolve_run_options,
-        _warn_facade_dependencies,
-    )
+    from datamodel_code_generator import _check_facade_outputs, _resolve_run_options, _warn_facade_dependencies  # noqa: PLC0415
     from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
@@ -392,8 +388,6 @@ def _remote_lock(
         config, lockfile, lock = _prepare_atomic_generation_remote_lock(input_, config, cwd)
         package = lexical(target.output, cwd)
         if any(overlaps(lockfile, root) for root in (package, package.resolve())):
-            from datamodel_code_generator import Error  # noqa: PLC0415
-
             label = (target._option_prefix or "target").capitalize()  # noqa: SLF001
             msg = f"{label} output and Remote lock paths must not overlap: {package}"
             raise Error(msg)

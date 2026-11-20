@@ -101,12 +101,11 @@ if TYPE_CHECKING:
 
     from typing_extensions import Unpack
 
-    from datamodel_code_generator import AllOfMergeMode, ReuseScope
     from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._user_keys import ClassScope
-    from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
+    from datamodel_code_generator.enums import AllOfMergeMode, DefaultValueType, ReuseScope, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts

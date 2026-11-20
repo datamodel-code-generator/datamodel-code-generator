@@ -27,9 +27,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Iterable, Mapping, Sequence
     from pathlib import Path
 
-    from datamodel_code_generator import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator._requirements import PydanticFloor
     from datamodel_code_generator._warning_control import ShownWarning
+    from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.imports import Import, Imports
     from datamodel_code_generator.model._decisions.collapse_eligibility import LaterHolderFacts

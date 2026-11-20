@@ -16,10 +16,11 @@ from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._parse_memo import MemoTable
+from datamodel_code_generator._shared_types import Error
+from datamodel_code_generator.enums import AllExportsScope, ModuleSplitMode
 from datamodel_code_generator.model.base import (
     DataModel,
     forget_model_memos,

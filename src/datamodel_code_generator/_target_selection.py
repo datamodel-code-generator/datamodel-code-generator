@@ -9,22 +9,23 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_documents import document_identity
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from datamodel_code_generator import GeneratedModules, _GenerationInput
     from datamodel_code_generator._api_generation import TargetGenerator
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.target import ClientTarget
     from datamodel_code_generator._fastapi.config import FastAPIConfig
     from datamodel_code_generator._fastapi.target import FastAPITarget
+    from datamodel_code_generator._shared_types import GeneratedModules
+    from datamodel_code_generator._shared_types import GenerationInput as _GenerationInput
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.json_config import JsonConfigFieldName

@@ -29,8 +29,8 @@ from warnings import warn
 from pydantic import ConfigDict, Field
 from typing_extensions import Self, Sentinel, deprecated, final, override
 
-from datamodel_code_generator import Error, _mro, cached_path_exists
-from datamodel_code_generator._caches import BoundedLru
+from datamodel_code_generator import _mro
+from datamodel_code_generator._caches import BoundedLru, cached_path_exists
 from datamodel_code_generator._constraint_applicability import (
     UNION_SIBLING_CONSTRAINTS_KEY,
     VALUES_AS_WRITTEN_KEY,
@@ -70,6 +70,7 @@ from datamodel_code_generator._python_syntax import comment_safe as comment_safe
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import REQUIREMENTS, backport_path, python_target_meets
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_unicode import host_identifiers as host_identifiers
 from datamodel_code_generator._target_unicode import host_parsable as host_parsable
 from datamodel_code_generator._target_unicode import (
