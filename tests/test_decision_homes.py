@@ -211,9 +211,16 @@ SEEDED = (
         adapters="`types.py:DataType`",
         sites=(Home("types.py", "DataType.admits_none"),),
     ),
+    DecisionHome(
+        "seeded: a whole-module site the cell qualifies",
+        homes=(Home("types.py", "DataType"),),
+        core="`types.py:DataType`",
+        adapters="`parser/avro.py` (`NULL_SCHEMA`), `_json_schema.py`",
+        sites=(Home("parser/avro.py"), Home("_json_schema.py")),
+    ),
     DecisionHome("seeded: no home", homes=(), core="", adapters="", sites=()),
 )
-"""Records whose homes or sites src/ does not define, or that their cells do not name."""
+"""Records whose homes or sites src/ does not define, or that their cells do not name or qualify."""
 
 
 @pytest.mark.allow_direct_assert("the problems of seeded records are the check's verdict, not a stored output")
@@ -228,6 +235,8 @@ def test_decision_home_check_fails_on_seeded_records() -> None:
         "seeded: a home the core cell does not name...: the core cell does not name types.py:DataType.admits_none",
         "seeded: a home the core cell does not name...: the core cell does not name _json_schema.py",
         "seeded: a home the core cell does not name...: the adapters cell does not name types.py:DataType.admits_none",
+        "seeded: a whole-module site the cell qualifies...: the adapters cell names `NULL_SCHEMA` after parser/avro.py, "
+        "no whole-module site",
         "seeded: no home...: no home",
     ]
 
