@@ -1549,8 +1549,7 @@ def _uses_pydantic_v2_schema_validator(config: GenerateConfig) -> bool:
                 return True
             msg = "schema_validator_type='pydantic-v2' is only supported for pydantic_v2.BaseModel"
             raise Error(msg)
-        case _:
-            assert_never(schema_validator_type)
+    assert_never(schema_validator_type)
 
 
 def _prepare_parser_common_options(

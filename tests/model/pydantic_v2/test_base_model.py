@@ -8,7 +8,6 @@ import textwrap
 from collections import defaultdict
 from itertools import product
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -512,7 +511,7 @@ def test_constraints_validation_keeps_an_instance() -> None:
 
 def test_get_data_model_types_refuses_a_value_that_is_no_model_type() -> None:
     """``get_data_model_types`` takes the enum member, not its string value."""
-    not_a_member: Any = "pydantic_v2.BaseModel"
+    not_a_member: object = "pydantic_v2.BaseModel"
     with pytest.raises(ValueError, match=r"pydantic_v2\.BaseModel is unsupported data model type"):
         get_data_model_types(not_a_member)
 

@@ -1260,7 +1260,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             case "empty-union":
                 self.import_ = self.import_ or IMPORT_ANY
                 return
-            case _:
+            case _:  # pragma: no cover - the match covers every write
                 assert_never(write)
         self.is_optional = True
         if null == "reference":

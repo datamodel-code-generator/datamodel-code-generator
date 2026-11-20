@@ -92,8 +92,7 @@ def _get_output_model_family(data_model_type: DataModelType | None) -> _OutputMo
             return _OutputModelFamily.TYPEDDICT
         case DataModelType.MsgspecStruct:
             return _OutputModelFamily.MSGSPEC
-        case _:
-            assert_never(data_model_type)
+    assert_never(data_model_type)
 
 
 class ReuseScope(Enum):
