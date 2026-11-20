@@ -1,25 +1,9 @@
-# Owner-accepted default-output behaviour changes against one base release, read by scripts/behaviour_diff.py.
-# Shrink-only within a release cycle: `behaviour_diff.py gate --check` fails on an entry that accepts no change
-# (stale), on an entry whose `decision` is not the public PR or issue references of the owner decision (#1234, #1235)
-# and on a table whose base is not the gate's base.
-# A table whose base is a release before the gate's base accepts nothing and is no error, as that release contains
-# its changes; replace the whole table when the next accepted change of the new cycle is added.
-# Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
-# decision, migration (the id of the change record, docs/data/migration/unreleased/<id>.toml, whose title the
-# release notes and the release page use). The aspect `generation` accepts a generation the owner decided to refuse;
-# its change line is `[generation] : now fails: <the error>`.
+# The base release of scripts/behaviour_diff.py's table and the inputs releases are known to hang on.
+# Change records judge every differing cell (`[[change.cells]]` in docs/data/migration/unreleased/<id>.toml), so the
+# table keeps `base` and `[[base_skip]]` only, and holds no `[[accepted]]` entry (a test keeps it so).
 # `[[base_skip]]` names an input that releases are known to hang on, so they do not run for it (the cell is
 # `base-skipped` once the candidate generated and imported). Keys: input (glob), bases (releases, `["0.88.0"]`, or a
 # maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
 # in a run of the whole tier, on an entry that covers no cell; an entry that names no release of the gate's base is
 # no error and does nothing. Remove the entry once the input stops mattering for the gate's base.
 base = "0.97.0"
-
-[[accepted]]
-input = [ "tests/data/openapi/recursive_ref_discriminator.yaml", "tests/data/openapi/variant_tag_values", "tests/data/openapi/variant_tag_values/*.yaml" ]
-backends = [ "pydantic_v2.BaseModel" ]
-aspects = [ "type" ]
-match = "^\\[type\\] [\\w:]+: Literal\\['\\w+'\\] -> Literal\\[.+\\]$"
-reason = "a variant of a discriminated union whose tag property admits several values, and that no mapping key names, was tagged by its schema name (Literal['Cat']), which refused every document of the variant the schema accepts and accepted the one it rejects; it is tagged by the values no other variant admits (Literal['cat', 'kitty']), so schema-valid documents that were refused now decode (names and structure stay)"
-decision = "#7089"
-migration = "variant-tag-values-of-their-field"
