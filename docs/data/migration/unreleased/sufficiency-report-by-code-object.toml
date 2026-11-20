@@ -1,0 +1,20 @@
+[[change]]
+id = "sufficiency-report-by-code-object"
+category = "harness"
+title = "The comparator reports what its runs compared, by code object"
+summary = "Only the comparison scripts print new evidence lines (input groups, changed code objects and the probes no compared run ran); the package writes the same output."
+covers = [
+    "behaviour_diff_script/gate.txt",
+    "behaviour_diff_script/gate_against_a_git_revision[identity_keeps_a_moved_warning_and_error].txt",
+    "behaviour_diff_script/gate_memory_cap_fails_the_run_and_is_not_cached.txt",
+    "compare_release/directory.txt",
+    "compare_release/fail_both.txt",
+    "compare_release/identical.txt",
+    "compare_release/import_fails_both.txt",
+    "compare_release/path_option.txt",
+    "compare_release/referenced_files.txt",
+    "compare_release_script/compare_release_resolves_the_base.txt",
+    "source_model/every_rule_states_its_verdicts[coverage-exclusions].txt",
+    "source_model/every_rule_states_its_verdicts[generated-import-closure].txt",
+    "source_model/every_rule_states_its_verdicts[source-rules].txt",
+]

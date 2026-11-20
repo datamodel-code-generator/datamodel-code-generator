@@ -55,7 +55,7 @@ OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
     r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases"
-    r"|nested-names|assignments|annotations)"
+    r"|nested-names|assignments|annotations|segments)"
     r": *(.*)$",
     re.MULTILINE,
 )
@@ -348,7 +348,25 @@ def _suppressions(model: source_model.SourceModule, directives: dict[str, str]) 
     return out
 
 
-def _extents(model: source_model.SourceModule) -> list[str]:
+def _segments(model: source_model.SourceModule) -> list[str]:
+    """Render, per code token, its segment, the header that holds it, its innermost node and its typing-only form."""
+    out = []
+    for item in model.tokens():
+        line, column = item.token.start
+        segment = model.segment(line, column)
+        spans = ",".join(f"{start[0]}:{start[1]}-{end[0]}:{end[1]}" for start, end in segment.spans)
+        header = model.header_of(line, column)
+        node = model.nodes_at(line, column)[0]
+        start, end = model.span(node)
+        out.append(
+            f"token {line}:{column} {item.token.string!r}: {segment.kind} {spans}; header "
+            f"{_name(header) if header is not None else '-'}; node {type(node).__name__} {start[0]}:{start[1]}-"
+            f"{end[0]}:{end[1]}; typing-only {model.typing_only(line, column) or '-'}"
+        )
+    return out
+
+
+def _extents(model: source_model.SourceModule, directives: dict[str, str]) -> list[str]:
     out = []
     statements = sorted(
         (node for node in ast.walk(model.tree) if isinstance(node, ast.stmt)),
@@ -371,7 +389,7 @@ def _extents(model: source_model.SourceModule) -> list[str]:
         out.append(f"line {line}: {held}; owner {_name(model.owner(line, column))}; tokens {', '.join(roles) or '-'}")
     out += [f"header {scope.qualname}: {_lines(model.header(scope))}" for scope in model.scopes if model.header(scope)]
     out += [f"source @{node.lineno}: {model.source(node)}" for node in statements if not model.clauses(node)]
-    return out
+    return out + (_segments(model) if directives.get("segments") else [])
 
 
 def _render_module(model: source_model.SourceModule, questions: set[str], directives: dict[str, str]) -> list[str]:
@@ -380,7 +398,7 @@ def _render_module(model: source_model.SourceModule, questions: set[str], direct
         "references": lambda: _references(model, directives),
         "imports": lambda: _imports(model),
         "suppressions": lambda: _suppressions(model, directives),
-        "extents": lambda: _extents(model),
+        "extents": lambda: _extents(model, directives),
     }
     return [
         line
@@ -1005,6 +1023,24 @@ def _defined_tests(form: Path) -> list[Finding]:
     ]
 
 
+def _typing_only_parts(form: Path) -> list[Finding]:
+    """Return the code tokens of a form that `scripts/_change_units.py` gives no unit: those only type checkers read.
+
+    Every token counts as added, as in a new module; a header token is named with the scope whose header holds it.
+    """
+    found = []
+    for name, text in _form_files(form):
+        model = source_model.SourceModule(text, name, "forms.form", verify=False)
+        for item in model.tokens():
+            line, column = item.token.start
+            model.segment(line, column)
+            header = model.header_of(line, column)
+            if form_of := model.typing_only(line, column):
+                where = f" (header of {header.qualname})" if header is not None else ""
+                found.append(Finding(form_of, _site(form, name, line), f"{name}:{line}:{column}: {form_of}{where}"))
+    return found
+
+
 def _legacy_row_reads(form: Path) -> list[Finding]:
     """Return the lines that read each row a form names, with their kinds, the form standing as a package.
 
@@ -1073,6 +1109,9 @@ RULES: dict[str, RuleRun] = {
     "ci-test-targets": RuleRun("tests.test_ci_workflow", frozenset({"bindings", "references"}), _defined_tests),
     "expected-access": RuleRun(
         "tests.expected_access", frozenset({"bindings", "references", "imports"}), _expected_reads
+    ),
+    "change-units-typing-only": RuleRun(
+        "scripts._change_units", frozenset({"references", "extents"}), _typing_only_parts
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""

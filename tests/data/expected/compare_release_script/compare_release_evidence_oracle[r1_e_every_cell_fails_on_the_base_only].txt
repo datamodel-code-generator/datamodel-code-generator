@@ -1,0 +1,7 @@
+plain.json: exit=1
+fail-base-only: plain.json | pydantic_v2.BaseModel | default: ValueError: ab
+summary: identical=0, differ=0, fail-both=0, fail-base-only=1, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | default: 0 compared, 0 failed on both sides, 1 failed on one side: compared nothing
+evidence: changed code objects: 2, not measured: no compared run reported which ran
+evidence: incomplete: input groups that compared nothing: 1, changed code objects not measured: 2

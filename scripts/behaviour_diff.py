@@ -16,8 +16,15 @@ allowlist applies to a release base only.
 exit status or refused single-file attempt is a violation, and so is every option or option value one side has and
 the other lacks and every cell that uses one the candidate has and the base lacks. A cell the same on both sides is
 `same`, or `both-fail` where both sides failed alike; such a cell is not compared where the timeout or the memory cap
-stopped both sides or where every cell of its input fails on both sides. Refactoring steps use it against their base
-commit.
+stopped both sides or where every cell of its input fails on both sides. Identity also fails where its evidence
+compared too little (`compare_release.Evidence`): no input group, an input group (the inputs' directory, files or
+directories, output model type and option set; a cli-doc example, payload case or project job by its kind) none of
+whose cells compared (generated on both sides with all output in the run's directory), and, against a git revision, a
+changed code object (`scripts/_change_units.py`: what the candidate adds on its side, what it removes on the base's)
+that no compared cell ran on its side (on lines a test ran, by `--test-coverage`, or not run), that is
+unmeasurable, or that the Python (before 3.12) cannot measure. A sharded identity run is refused: a shard cannot judge
+the whole run. Every gate prints these input groups and the cells the candidate refuses and the base generated (the
+single output file included). Refactoring steps use it against their base commit.
 
 A cell is one input x output model type x option set. Tiers:
   pr       inputs changed since BASE, inputs named by the allowlist and a fixed sample of 300 fixtures,
@@ -59,6 +66,7 @@ from __future__ import annotations
 import argparse
 import ast
 import contextlib
+import datetime as dt
 import fnmatch
 import hashlib
 import json
@@ -71,7 +79,7 @@ import threading
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -320,6 +328,7 @@ class Gate:
     draw_locks: dict[str, threading.Lock] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
     identity: bool = False
+    evidence: compare_release.Evidence = field(default_factory=lambda: compare_release.Evidence(None))
 
 
 def latest_tag() -> str:
@@ -696,6 +705,7 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             base = gate.base.generate(args, tmp)
             gate.cache.put(cell.input, args, base, import_check=False)
         candidate = gate.candidate.generate(args, tmp)
+        gate.evidence.add(input_group(cell), f"{cell.label} | {cell.backend} | {cell.option_label}", base, candidate)
         if gate.identity:
             return Result(cell, identity_verdict(base, candidate))
         same = base.ok and candidate.ok and base.tree == candidate.tree
@@ -743,11 +753,21 @@ def not_compared(results: list[Result]) -> list[Result]:
     cells = Counter(result.cell.label for result in results)
     failed = Counter(result.cell.label for result in results if result.verdict.cls == "both-fail")
     return [
-        Result(result.cell, Verdict("both-fail", (*result.verdict.notes, NOT_COMPARED_INPUT)))
+        replace(result, verdict=Verdict("both-fail", (*result.verdict.notes, NOT_COMPARED_INPUT)))
         if failed[result.cell.label] == cells[result.cell.label]
         else result
         for result in results
     ]
+
+
+def input_group(cell: Cell) -> str:
+    """Return the input group of a cell (`compare_release.Evidence`).
+
+    A cli-doc example, payload case or project job brings its own options, so its group is named by its kind.
+    """
+    directory = cell.kind if cell.kind == "payload" else Path(cell.label).parent.as_posix()
+    options = cell.kind if cell.kind in {"cli-doc", "payload", "project"} else cell.option_label
+    return compare_release.Evidence.group(cell.input, directory, cell.backend, options)
 
 
 def option_changes(base: dict[str, list[str] | None], candidate: dict[str, list[str] | None]) -> list[str]:
@@ -850,6 +870,7 @@ def _gate_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--base-python", type=Path, help="interpreter with the release already installed")
     parser.add_argument("--candidate-python", type=Path, help="interpreter for the candidate")
+    compare_release.add_evidence_args(parser)
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -865,7 +886,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--identity",
         action="store_true",
         help="no allowlist: any difference in output, warnings, handled exceptions, messages, exit status or "
-        "options is a violation; implies --check",
+        "options is a violation, and so is evidence that compared too little; implies --check",
     )
     record = commands.add_parser("record", help="write the behaviour record of one release")
     record.add_argument("version", help="release version, or the version a checkout is recorded as")
@@ -906,6 +927,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
             parser.error(f"--shard {ns.shard}: I and N must be integers, e.g. 2/8")
         if not 1 <= ns.shard_index <= ns.shard_total:
             parser.error(f"--shard {ns.shard}: I must be between 1 and N")
+        if ns.command == "gate" and ns.identity and ns.shard_total > 1:
+            parser.error(
+                f"--identity --shard {ns.shard}: identity judges the evidence of the whole run, run it unsharded"
+            )
     return ns
 
 
@@ -983,7 +1008,14 @@ def build_gate(ns: argparse.Namespace) -> Gate:
     )
     listed = not ns.identity and base.revision is None and ns.allowlist.exists()
     allowlist = Allowlist.load(ns.allowlist) if listed else Allowlist()
-    return Gate(
+    units = (
+        compare_release.changed_units(
+            candidate.python, candidate.repo, base, candidate.revision, candidate.root / "src"
+        )
+        if ns.identity
+        else None
+    )
+    gate = Gate(
         base=compare_release.Runner(
             compare_release.Side("base", base.python, base.package),
             base.env(),
@@ -998,7 +1030,9 @@ def build_gate(ns: argparse.Namespace) -> Gate:
             timeout=ns.timeout,
             memory_mb=ns.memory_mb,
         ),
-        cache=compare_release.OutputCache(cache_dir / "outputs" / base.cache_name),
+        cache=compare_release.OutputCache(
+            cache_dir / "outputs" / base.cache_name, compare_release.measured_key(units, base.python)
+        ),
         candidate_python=candidate.python,
         allowlist=allowlist if allowlist.base == ns.base else Allowlist(allowlist.base, [], allowlist.base_skips),
         loaded_allowlist=allowlist,
@@ -1008,7 +1042,11 @@ def build_gate(ns: argparse.Namespace) -> Gate:
         candidate_info=candidate,
         base_version=ns.base,
         identity=ns.identity,
+        evidence=compare_release.Evidence(units),
     )
+    if units is not None:
+        gate.base.probes, gate.candidate.probes = units.probes["base"], units.probes["head"]
+    return gate
 
 
 def gate_main(ns: argparse.Namespace) -> int:
@@ -1051,6 +1089,11 @@ def gate_main(ns: argparse.Namespace) -> int:
         unseen = sum(any(note.startswith("not compared") for note in result.verdict.notes) for result in results)
         failed = sum(result.verdict.cls == "both-fail" for result in results)
         print(f"not compared: {unseen} of the {failed} cells that fail on both sides")
+    tests = compare_release.tested_lines(ns.test_coverage) if ns.test_coverage else None
+    if gate.evidence.report(tests) and gate.identity:
+        code = 1
+    if ns.evidence:
+        gate.evidence.write(ns.evidence)
     print(f"elapsed: {time.monotonic() - started:.1f}s", file=sys.stderr)
     return code
 
@@ -1081,7 +1124,6 @@ def era_python(version: str, cache_dir: Path) -> Path:
     The newest Python of ERA_PYTHONS the release imports on is used. The signature step imports msgspec, which no
     release requires, so it is installed like black and isort, as is email-validator (`format: email` output).
     """
-    import datetime as dt  # ruff: ignore[import-outside-top-level]
     import fcntl  # ruff: ignore[import-outside-top-level] - POSIX only, like compare_release
 
     root = cache_dir / "era" / f"{version}-{ERA_EXTRAS.replace(',', '-')}-{'-'.join(ERA_PACKAGES)}"

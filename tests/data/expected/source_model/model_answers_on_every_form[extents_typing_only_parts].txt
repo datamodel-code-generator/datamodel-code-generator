@@ -1,0 +1,209 @@
+== extents
+Expr@1 lines 1-4
+ImportFrom@6 lines 6
+Import@8 lines 8
+ImportFrom@9 lines 9
+Import@11 lines 11
+If@13 lines 13-14: if 13/14
+ImportFrom@14 lines 14
+If@15 lines 15-16: if 15/16
+Assign@16 lines 16
+If@17 lines 17-20: if 17/18; else 19/20
+Assign@18 lines 18
+Assign@20 lines 20
+FunctionDef@24 lines 23-24: function 23-24/24
+Expr@24 lines 24
+FunctionDef@26 lines 25-26: function 25-26/26
+Expr@26 lines 26
+FunctionDef@27 lines 27-29: function 27/28-29
+AnnAssign@28 lines 28
+Return@29 lines 29
+ClassDef@32 lines 32-39: class 32/33-39
+AnnAssign@33 lines 33
+FunctionDef@38 lines 35-39: function 35-38/39
+Return@39 lines 39
+code lines: 1-4,6,8-9,11,13-20,23-29,32-33,35-39
+line 1: Expr@1; owner <module>#0; tokens <module>#0:body
+line 2: Expr@1; owner <module>#0; tokens -
+line 3: Expr@1; owner <module>#0; tokens -
+line 4: Expr@1; owner <module>#0; tokens -
+line 5: -; owner <module>#0; tokens -
+line 6: ImportFrom@6; owner <module>#0; tokens <module>#0:body
+line 7: -; owner <module>#0; tokens -
+line 8: Import@8; owner <module>#0; tokens <module>#0:body
+line 9: ImportFrom@9; owner <module>#0; tokens <module>#0:body
+line 10: -; owner <module>#0; tokens -
+line 11: Import@11; owner <module>#0; tokens <module>#0:body
+line 12: -; owner <module>#0; tokens -
+line 13: If@13; owner <module>#0; tokens <module>#0:body
+line 14: ImportFrom@14; owner <module>#0; tokens <module>#0:body
+line 15: If@15; owner <module>#0; tokens <module>#0:body
+line 16: Assign@16; owner <module>#0; tokens <module>#0:body
+line 17: If@17; owner <module>#0; tokens <module>#0:body
+line 18: Assign@18; owner <module>#0; tokens <module>#0:body
+line 19: If@17; owner <module>#0; tokens <module>#0:body
+line 20: Assign@20; owner <module>#0; tokens <module>#0:body
+line 21: -; owner <module>#0; tokens -
+line 22: -; owner <module>#0; tokens -
+line 23: FunctionDef@24; owner convert#0; tokens convert#0:header
+line 24: Expr@24; owner convert#0; tokens convert#0:body, convert#0:header
+line 25: FunctionDef@26; owner convert#1; tokens convert#1:header
+line 26: Expr@26; owner convert#1; tokens convert#1:body, convert#1:header
+line 27: FunctionDef@27; owner convert#2; tokens convert#2:header
+line 28: AnnAssign@28; owner convert#2; tokens convert#2:body
+line 29: Return@29; owner convert#2; tokens convert#2:body
+line 30: -; owner <module>#0; tokens -
+line 31: -; owner <module>#0; tokens -
+line 32: ClassDef@32; owner Base#0; tokens Base#0:header
+line 33: AnnAssign@33; owner Base#0; tokens Base#0:body
+line 34: -; owner Base#0; tokens -
+line 35: FunctionDef@38; owner Base.label#0; tokens Base.label#0:header
+line 36: FunctionDef@38; owner Base.label#0; tokens Base.label#0:header
+line 37: FunctionDef@38; owner Base.label#0; tokens Base.label#0:header
+line 38: FunctionDef@38; owner Base.label#0; tokens Base.label#0:header
+line 39: Return@39; owner Base.label#0; tokens Base.label#0:body
+header convert: 23-24
+header convert: 25-26
+header convert: 27
+header Base: 32
+header Base.label: 35-38
+source @1: """C3 (scripts/_change_units.py): the parts of a module only type checkers read, by origin.
+
+segments: yes
+"""
+source @6: from __future__ import annotations
+source @8: import typing
+source @9: from typing import TYPE_CHECKING, final, overload
+source @11: import typing_extensions
+source @14: from os import PathLike
+source @16: LIMIT = 1
+source @18: LIMIT = 2
+source @20: LIMIT = 3
+source @24: ...
+source @26: ...
+source @28: local: int = 1
+source @29: return value, local
+source @33: size: int = 1
+source @39: return value
+token 1:0 '"""C3 (scripts/_change_units.py): the parts of a module only type checkers read, by origin.\n\nsegments: yes\n"""': statement 1:0-4:3; header -; node Constant 1:0-4:3; typing-only -
+token 6:0 'from': statement 6:0-6:34; header -; node ImportFrom 6:0-6:34; typing-only -
+token 6:5 '__future__': statement 6:0-6:34; header -; node ImportFrom 6:0-6:34; typing-only -
+token 6:16 'import': statement 6:0-6:34; header -; node ImportFrom 6:0-6:34; typing-only -
+token 6:23 'annotations': statement 6:0-6:34; header -; node ImportFrom 6:0-6:34; typing-only -
+token 8:0 'import': statement 8:0-8:13; header -; node Import 8:0-8:13; typing-only -
+token 8:7 'typing': statement 8:0-8:13; header -; node Import 8:0-8:13; typing-only -
+token 9:0 'from': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 9:5 'typing': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 9:12 'import': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 9:19 'TYPE_CHECKING': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 9:32 ',': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 9:34 'final': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 9:39 ',': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 9:41 'overload': statement 9:0-9:49; header -; node ImportFrom 9:0-9:49; typing-only -
+token 11:0 'import': statement 11:0-11:24; header -; node Import 11:0-11:24; typing-only -
+token 11:7 'typing_extensions': statement 11:0-11:24; header -; node Import 11:0-11:24; typing-only -
+token 13:0 'if': statement 13:0-14:27; header -; node If 13:0-14:27; typing-only -
+token 13:3 'TYPE_CHECKING': statement 13:0-14:27; header -; node Name 13:3-13:16; typing-only -
+token 13:16 ':': statement 13:0-14:27; header -; node If 13:0-14:27; typing-only -
+token 14:4 'from': statement 14:4-14:27; header -; node ImportFrom 14:4-14:27; typing-only type-checking
+token 14:9 'os': statement 14:4-14:27; header -; node ImportFrom 14:4-14:27; typing-only type-checking
+token 14:12 'import': statement 14:4-14:27; header -; node ImportFrom 14:4-14:27; typing-only type-checking
+token 14:19 'PathLike': statement 14:4-14:27; header -; node ImportFrom 14:4-14:27; typing-only type-checking
+token 15:0 'if': statement 15:0-16:13; header -; node If 15:0-16:13; typing-only -
+token 15:3 'typing': statement 15:0-16:13; header -; node Name 15:3-15:9; typing-only -
+token 15:9 '.': statement 15:0-16:13; header -; node Attribute 15:3-15:23; typing-only -
+token 15:10 'TYPE_CHECKING': statement 15:0-16:13; header -; node Attribute 15:3-15:23; typing-only -
+token 15:24 'and': statement 15:0-16:13; header -; node BoolOp 15:3-15:36; typing-only -
+token 15:28 'PathLike': operand 15:28-15:36; header -; node Name 15:28-15:36; typing-only -
+token 15:36 ':': statement 15:0-16:13; header -; node If 15:0-16:13; typing-only -
+token 16:4 'LIMIT': statement 16:4-16:13; header -; node Name 16:4-16:9; typing-only type-checking
+token 16:10 '=': statement 16:4-16:13; header -; node Assign 16:4-16:13; typing-only type-checking
+token 16:12 '1': statement 16:4-16:13; header -; node Constant 16:12-16:13; typing-only type-checking
+token 17:0 'if': statement 17:0-20:13; header -; node If 17:0-20:13; typing-only -
+token 17:3 'not': statement 17:0-20:13; header -; node UnaryOp 17:3-17:20; typing-only -
+token 17:7 'TYPE_CHECKING': statement 17:0-20:13; header -; node Name 17:7-17:20; typing-only -
+token 17:20 ':': statement 17:0-20:13; header -; node If 17:0-20:13; typing-only -
+token 18:4 'LIMIT': statement 18:4-18:13; header -; node Name 18:4-18:9; typing-only -
+token 18:10 '=': statement 18:4-18:13; header -; node Assign 18:4-18:13; typing-only -
+token 18:12 '2': statement 18:4-18:13; header -; node Constant 18:12-18:13; typing-only -
+token 19:0 'else': statement 17:0-20:13; header -; node If 17:0-20:13; typing-only -
+token 19:4 ':': statement 17:0-20:13; header -; node If 17:0-20:13; typing-only -
+token 20:4 'LIMIT': statement 20:4-20:13; header -; node Name 20:4-20:9; typing-only type-checking
+token 20:10 '=': statement 20:4-20:13; header -; node Assign 20:4-20:13; typing-only type-checking
+token 20:12 '3': statement 20:4-20:13; header -; node Constant 20:12-20:13; typing-only type-checking
+token 23:0 '@': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 23:1 'overload': statement 23:0-24:35; header convert#0; node Name 23:1-23:9; typing-only overload
+token 24:0 'def': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:4 'convert': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:11 '(': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:12 'value': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:17 ':': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:19 'int': statement 23:0-24:35; header convert#0; node Name 24:19-24:22; typing-only overload
+token 24:22 ')': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:24 '->': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:27 'int': statement 23:0-24:35; header convert#0; node Name 24:27-24:30; typing-only overload
+token 24:30 ':': statement 23:0-24:35; header convert#0; node FunctionDef 23:0-24:35; typing-only overload
+token 24:32 '...': statement 24:32-24:35; header -; node Constant 24:32-24:35; typing-only overload
+token 25:0 '@': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 25:1 'typing_extensions': statement 25:0-26:35; header convert#1; node Name 25:1-25:18; typing-only overload
+token 25:18 '.': statement 25:0-26:35; header convert#1; node Attribute 25:1-25:27; typing-only overload
+token 25:19 'overload': statement 25:0-26:35; header convert#1; node Attribute 25:1-25:27; typing-only overload
+token 26:0 'def': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:4 'convert': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:11 '(': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:12 'value': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:17 ':': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:19 'str': statement 25:0-26:35; header convert#1; node Name 26:19-26:22; typing-only overload
+token 26:22 ')': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:24 '->': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:27 'str': statement 25:0-26:35; header convert#1; node Name 26:27-26:30; typing-only overload
+token 26:30 ':': statement 25:0-26:35; header convert#1; node FunctionDef 25:0-26:35; typing-only overload
+token 26:32 '...': statement 26:32-26:35; header -; node Constant 26:32-26:35; typing-only overload
+token 27:0 'def': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 27:4 'convert': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 27:11 '(': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 27:12 'value': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 27:17 ':': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 27:19 'object': statement 27:0-29:23; header convert#2; node Name 27:19-27:25; typing-only deferred-annotation
+token 27:25 ')': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 27:27 '->': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 27:30 'object': statement 27:0-29:23; header convert#2; node Name 27:30-27:36; typing-only deferred-annotation
+token 27:36 ':': statement 27:0-29:23; header convert#2; node FunctionDef 27:0-29:23; typing-only -
+token 28:4 'local': statement 28:4-28:18; header -; node Name 28:4-28:9; typing-only -
+token 28:9 ':': statement 28:4-28:18; header -; node AnnAssign 28:4-28:18; typing-only -
+token 28:11 'int': statement 28:4-28:18; header -; node Name 28:11-28:14; typing-only local-annotation
+token 28:15 '=': statement 28:4-28:18; header -; node AnnAssign 28:4-28:18; typing-only -
+token 28:17 '1': statement 28:4-28:18; header -; node Constant 28:17-28:18; typing-only -
+token 29:4 'return': statement 29:4-29:23; header -; node Return 29:4-29:23; typing-only -
+token 29:11 'value': statement 29:4-29:23; header -; node Name 29:11-29:16; typing-only -
+token 29:16 ',': statement 29:4-29:23; header -; node Tuple 29:11-29:23; typing-only -
+token 29:18 'local': statement 29:4-29:23; header -; node Name 29:18-29:23; typing-only -
+token 32:0 'class': statement 32:0-39:20; header Base#0; node ClassDef 32:0-39:20; typing-only -
+token 32:6 'Base': statement 32:0-39:20; header Base#0; node ClassDef 32:0-39:20; typing-only -
+token 32:10 ':': statement 32:0-39:20; header Base#0; node ClassDef 32:0-39:20; typing-only -
+token 33:4 'size': statement 33:4-33:17; header -; node Name 33:4-33:8; typing-only -
+token 33:8 ':': statement 33:4-33:17; header -; node AnnAssign 33:4-33:17; typing-only -
+token 33:10 'int': statement 33:4-33:17; header -; node Name 33:10-33:13; typing-only -
+token 33:14 '=': statement 33:4-33:17; header -; node AnnAssign 33:4-33:17; typing-only -
+token 33:16 '1': statement 33:4-33:17; header -; node Constant 33:16-33:17; typing-only -
+token 35:4 '@': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only typing-decorator
+token 35:5 'typing_extensions': statement 35:4-39:20; header Base.label#0; node Name 35:5-35:22; typing-only typing-decorator
+token 35:22 '.': statement 35:4-39:20; header Base.label#0; node Attribute 35:5-35:31; typing-only typing-decorator
+token 35:23 'override': statement 35:4-39:20; header Base.label#0; node Attribute 35:5-35:31; typing-only typing-decorator
+token 36:4 '@': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only typing-decorator
+token 36:5 'final': statement 35:4-39:20; header Base.label#0; node Name 36:5-36:10; typing-only typing-decorator
+token 37:4 '@': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 37:5 'staticmethod': statement 35:4-39:20; header Base.label#0; node Name 37:5-37:17; typing-only -
+token 38:4 'def': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 38:8 'label': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 38:13 '(': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 38:14 'value': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 38:19 ':': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 38:21 'str': statement 35:4-39:20; header Base.label#0; node Name 38:21-38:24; typing-only deferred-annotation
+token 38:24 ')': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 38:26 '->': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 38:29 'str': statement 35:4-39:20; header Base.label#0; node Name 38:29-38:32; typing-only deferred-annotation
+token 38:32 ':': statement 35:4-39:20; header Base.label#0; node FunctionDef 35:4-39:20; typing-only -
+token 39:8 'return': statement 39:8-39:20; header -; node Return 39:8-39:20; typing-only -
+token 39:15 'value': statement 39:8-39:20; header -; node Name 39:15-39:20; typing-only -
+== code objects: one per scope that compiles on this Python
