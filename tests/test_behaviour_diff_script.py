@@ -603,7 +603,7 @@ def test_report_stale_entries_by_tier(case: str) -> None:
     result = SimpleNamespace(
         cell=cell, verdict=SimpleNamespace(cls="same", accepted_by=set(), notes=[]), base_skip=None
     )
-    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0))
+    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0), plan=None)
     index, _, total = shard.partition("/")
     ns = SimpleNamespace(
         base="0.86.0",
@@ -706,7 +706,7 @@ def test_report_base_skipped_cells_and_stale_entries(case: str) -> None:
     cell = SimpleNamespace(label="tests/data/a.json", backend="pydantic_v2.BaseModel", option_label="default")
     verdict = SimpleNamespace(cls="base-skipped" if used else "same", accepted_by=set(), notes=[])
     result = SimpleNamespace(cell=cell, verdict=verdict, base_skip=0 if used else None)
-    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0))
+    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0), plan=None)
     ns = SimpleNamespace(
         base=base,
         tier=tier,
@@ -741,7 +741,7 @@ def test_report_stale_entries_of_a_shard(case: str) -> None:
     verdict = SimpleNamespace(cls="same", accepted_by=set(), notes=[])
     result = SimpleNamespace(cell=cell, verdict=verdict, base_skip=allowlist.skip_for(label, "0.86.0"))
     run = behaviour_diff.place([(name, cell.backend) for name in run_labels], allowlist, "0.86.0")
-    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0))
+    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0), plan=None)
     index, _, total = shard.partition("/")
     ns = SimpleNamespace(
         base="0.86.0",
@@ -2341,6 +2341,14 @@ def main(argv):
         (out.parent / "notes.txt").write_text("notes\\n", encoding="utf-8")
     return 0
 '''
+CELLS_VERSION = """def get_version():
+    try:
+        from datamodel_code_generator._version import __version__
+    except ImportError:
+        return "0.0.0"
+    return __version__
+"""
+"""The stand-in's version lookup, as the package's: the version file a revision's tree gets, else `0.0.0`."""
 CELLS_HARNESS = {
     "tests/__init__.py": "",
     "tests/main/__init__.py": "",
@@ -2465,7 +2473,7 @@ def _cells_input(name: str, **spec: object) -> dict[str, str]:
 CELLS_REFACTOR = _cells_src(helper="HELPER = 1\n")
 """A source change that changes no output."""
 CELLS_RELEASE = {
-    f"{CELLS_PACKAGE}/__init__.py": "",
+    f"{CELLS_PACKAGE}/__init__.py": CELLS_VERSION,
     f"{CELLS_PACKAGE}/arguments.py": CELLS_ARGUMENTS,
     f"{CELLS_PACKAGE}/__main__.py": CELLS_MAIN,
     **_cells_src(),
@@ -2908,47 +2916,6 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
 }
 """Every fail-closed rule of the cell gate and every passing shape it must keep, with the verdict it must give."""
-ALLOWLIST_ONLY = "fails: a behaviour change needs an allowlist entry; a revision base reads none"
-REPLAYED = "passes: the records check sends harness labels to its replay list, which it never fails"
-CELLS_NOT_BUILT: dict[str, str] = {
-    "fail: a base without a merge base": "passes: it compares the given revision, whatever its history",
-    "fail: a fragment of the tag covers nothing": "passes: records are not read",
-    "fail: a fragment that does not parse": "passes: records are not read",
-    "fail: a kind no covering record admits": "passes: warnings are not compared, and the comment is no behaviour",
-    "fail: a nondeterministic head": "passes: it does not run the head twice",
-    "fail: a selector naming an unreleased option": "passes: records are not read",
-    "fail: a selector naming an unreleased preset": "passes: records are not read",
-    "fail: a selector that matches equal cells only": "passes: records are not read",
-    "fail: a selector that matches no input": "passes: records are not read",
-    "fail: an empty input list": "passes: records are not read",
-    "fail: an oracle-file change runs the base's gate, which fails": "passes: it does not run the base's gate",
-    "fail: an unknown backend": "passes: records are not read",
-    "fail: an unknown key in cells": "passes: records are not read",
-    "fail: cells in a harness record": "passes: records are not read",
-    "fail: cells without a src change": "passes: records are not read",
-    "fail: crash-fix on a cell that was no crash": "passes: records are not read; the comment is no behaviour",
-    "fail: experimental whose companion differs": "passes: the PR tier runs neither option",
-    "fail: harness covers a modified listing": REPLAYED,
-    "fail: harness covers a modified module the proof fails for": REPLAYED,
-    "fail: malformed options": "passes: records are not read",
-    "fail: notice outside its match": "passes: warnings are not compared",
-    "fail: output-text against rule (b)": "passes: the signatures are equal; rule (b) does not exist yet",
-    "fail: output-text whose covered module fails the proof": "passes: records are not read",
-    "fail: output-text whose covered payload companion changed": "passes: records are not read",
-    "fail: output-text whose payload verdicts change": "passes: a fixture cell runs no payload cells",
-    "fail: output-text with a differing non-model file": "passes: the differing file holds no behaviour",
-    "fail: output-text without cells": "passes: records are not read",
-    "fail: selectors added to a record of the base": "passes: records are not read",
-    "fail: the release run's stale selector": "passes: records are not read",
-    "pass: a decision record beside an output-text record": ALLOWLIST_ONLY,
-    "pass: a lagging branch is judged from its merge base": "fails: it compares main's tip, not the merge base",
-    "pass: decided-change inside aspects and match": ALLOWLIST_ONLY,
-}
-"""The cases the gate does not judge yet as the cell gate must, with what it does instead.
-
-They are not collected: the change that builds a case's check moves it out of this table. The collected cases give
-the cell gate's verdict on the gate as it is, many only because it reads no records yet.
-"""
 
 
 def _cells_write(repo: Path, files: dict[str, str | None]) -> None:
@@ -3017,11 +2984,40 @@ def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
 @needs("posix")
-@pytest.mark.parametrize("case", sorted(CELLS_CASES.keys() - CELLS_NOT_BUILT.keys()))
+@pytest.mark.parametrize("case", sorted(CELLS_CASES))
 def test_cells_oracle(case: str, tmp_path: Path) -> None:
     """The gate gives each oracle case the verdict of the cell gate: a case that fails, fails on that verdict."""
     verdict, log = cells_verdict(CELLS_CASES[case], tmp_path)
     assert verdict == CELLS_CASES[case].verdict, log
+
+
+REPORT_LINES = (
+    "violation:",
+    "    ",
+    "records:",
+    "covered:",
+    "uncovered",
+    "[[change.cells]]",
+    "input",
+    "back",
+    "options",
+    "# ",
+)
+
+
+@needs("posix")
+@pytest.mark.parametrize(
+    "case",
+    ["fail: an uncovered differing cell", "pass: decided-change inside aspects and match"],
+)
+def test_cells_report(case: str, tmp_path: Path) -> None:
+    """The gate reports each violation, the records that covered cells and a block for the cells none covers.
+
+    The block is a starting `[[change.cells]]` table per input, with the aspects and a `match` of the change lines.
+    """
+    _, log = cells_verdict(CELLS_CASES[case], tmp_path)
+    lines = [line for line in log.splitlines() if line.startswith(REPORT_LINES)]
+    assert_output("\n".join(sorted(set(lines), key=lines.index)) + "\n")
 
 
 FACTS_BASE = (0, (("model.py", "a1"),), "w1", "o1")

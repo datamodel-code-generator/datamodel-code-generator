@@ -912,6 +912,49 @@ def _import_file(path: Path) -> types.ModuleType:
     return module
 
 
+def _import_module(name: str) -> types.ModuleType:
+    """Import one module of a generated package by its dotted name."""
+    return importlib.import_module(name)
+
+
+def model_types(path: Path) -> dict[str, type]:
+    """Return the public classes a stored module file or package directory defines, by `<module>:<name>`.
+
+    The modules of a package are imported as the signature imports them, with the package's parent on the path.
+    """
+    path = path.resolve()
+    sys.path.insert(0, str(path.parent))
+    if path.is_dir():
+        files = [file for file in sorted(path.rglob("*.py")) if "__pycache__" not in file.parts]
+        names = [
+            ".".join([
+                path.name,
+                *(part for part in file.relative_to(path).with_suffix("").parts if part != "__init__"),
+            ])
+            for file in files
+        ]
+        modules = [_import_module(name) for name in names]
+    else:
+        modules = [_import_file(path)]
+    return {
+        f"{module.__name__}:{name}": value
+        for module in modules
+        for name, value in vars(module).items()
+        if isinstance(value, type) and value.__module__ == module.__name__ and not name.startswith("_")
+    }
+
+
+def model_verdicts(target: type, output_model_type: str, values: list[object]) -> list[list[str | None]]:
+    """Return the verdict of each value against one model and the fingerprint digest of each accepted one."""
+    validate, rejection = _validator(target, output_model_type)
+    found: list[list[str | None]] = []
+    for value in values:
+        verdict, parsed = _verdict(validate, rejection, value)
+        digest = hashlib.sha256(json.dumps(fingerprint(parsed), sort_keys=True).encode()).hexdigest()[:16]
+        found.append([verdict, digest if verdict == "accept" else None])
+    return found
+
+
 PRELOADED = ("pydantic", "msgspec", "typing_extensions")
 FIRST_IMPORT_CODE = """
 import contextlib, importlib, json, sys
@@ -983,7 +1026,7 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
             package[key] = {"import_error": f"imported first: {first[name]}"}
             continue
         try:
-            module = importlib.import_module(name)
+            module = _import_module(name)
         except Exception as exc:  # ruff: ignore[blind-except] - a failed import is the result
             package[key] = {"import_error": _short_error(exc, 200)}
             continue

@@ -35,6 +35,9 @@ valid	behaviour_diff_script/base_skip_problems[valid].txt	= main/generation_plat
 versions	behaviour_diff_script/base_skip_problems[versions].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 [test_candidate_payload_path_does_not_import_the_guide_builder]
 	behaviour_diff_script/candidate_payload_path_does_not_import_the_guide_builder.txt
+[test_cells_report]
+fail: an uncovered differing cell	behaviour_diff_script/cells_report[fail_ an uncovered differing cell].txt
+pass: decided-change inside aspects and match	behaviour_diff_script/cells_report[pass_ decided-change inside aspects and match].txt
 [test_change_lines]
 a message line added	behaviour_diff_script/change_lines[a message line added].txt
 a message line printed once more	behaviour_diff_script/change_lines[a message line printed once more].txt

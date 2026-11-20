@@ -1,0 +1,8 @@
+[[change]]
+id = "gate-reads-record-cells"
+category = "internal"
+title = "The behaviour gate judges differing cells by the change records"
+refs = ["#1"]
+covers = [
+    "behaviour_diff_script/gate_against_a_git_revision[gate_against_a_revision].txt",
+]

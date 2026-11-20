@@ -21,8 +21,8 @@
 The change records judge a cell whose facts differ (`kinds`): `covers` finds the records' `[[change.cells]]` selectors
 that name it, and `judge` decides whether the records that cover it admit every kind of its difference with the
 evidence of their categories (`CellEvidence`, its change lines from `change_lines`, `rule_b` for `output-text`).
-`scripts/behaviour_diff.py` does not call them yet: until it does, `classify_cell` with the allowlist decides the
-gate's cells.
+`scripts/behaviour_diff.py` judges every differing cell of a gate run this way; `classify_cell` gives the class its
+evidence reads and the class each cell's row reports.
 
 Pure functions only: no file system access apart from `Allowlist.load`.
 """
@@ -551,7 +551,7 @@ FACTS_LENGTH = 4
 
 
 def kinds(base: Facts, head: Facts) -> frozenset[CellKind]:
-    """Return the kinds of the difference between two sides' facts of a cell (`compare_release._facts`).
+    """Return the kinds of the difference between two sides' facts of a cell (`compare_release.cell_facts`).
 
     The files' hashes (and the file set, which holds the outputs written outside the run's directory under the
     prefix `compare_release.OUTSIDE_PREFIX`) are its output, the exit status its exit, the warnings' hash its warnings
@@ -699,9 +699,10 @@ def evidence_problem(
     `output-text`: a no-behaviour model output; `crash-fix`: the classifier's crash-fix (an exit difference from a
     failure to 0); a decision: every change line inside a covering selector's aspects and match; `experimental`: a
     feature of the record in the cell and an equal companion cell; `notice`: equal output and exit, every warning and
-    message line matching; `api`: a removed option the record names. Other categories cover no cell. A decision and
-    a notice prove nothing where a signature could not be taken, or where an exit, warning or message difference shows
-    in no change line (the exit, warning and message lines, `change_lines`): the cell is unproved for them.
+    message line matching; `api`: a removed option the record names, which the head refuses. Other categories cover no
+    cell. A decision and a notice prove nothing where a signature could not be taken, or where an exit, warning or
+    message difference shows in no change line (the exit, warning and message lines, `change_lines`): the cell is
+    unproved for them.
     """
     problems: tuple[tuple[bool, str], ...] = ((True, f"category {record.category} covers no cell"),)
     unshown = _unshown(found, evidence.lines)
@@ -749,7 +750,10 @@ def evidence_problem(
             )
         case Category.API:
             named = set(dict(record.affects).get("options", ()))
-            problems = ((not evidence.removed & named, "the cell sets no removed option the record names"),)
+            problems = (
+                (not evidence.removed & named, "the cell sets no removed option the record names"),
+                (evidence.exits[1] == 0, "the head still generates the cell"),
+            )
     return next((problem for failed, problem in problems if failed), None)
 
 

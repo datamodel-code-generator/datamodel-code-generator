@@ -1762,13 +1762,14 @@ def _digest(text: str) -> str:
 
 
 OUTSIDE_PREFIX = "<outside>/"
-"""The prefix of the name an output written outside the run's directory has among a cell's files (`_facts`)."""
+"""The prefix of the name an output written outside the run's directory has among a cell's files (`cell_facts`)."""
 
 Facts = tuple[int, tuple[tuple[str, str], ...], str, str]
-"""What one side of a run proved (`_facts`): exit status, each output file's hash, its warnings' and others' hash."""
+"""What one side of a run proved (`cell_facts`): exit status, each output file's hash, its warnings' and others'
+hash."""
 
 
-def _facts(outcome: Outcome) -> Facts:
+def cell_facts(outcome: Outcome) -> Facts:
     """Return what a cell's run proved: its exit status, each file's hash, its warnings' hash, its other facts' hash.
 
     The files are the run's output files and, under `OUTSIDE_PREFIX`, the outputs its arguments wrote elsewhere
@@ -1819,7 +1820,7 @@ class Evidence:
     An input group is the directory of its inputs, whether they are files or directories (modular inputs), the output
     model type and the option set. A run is compared where both sides generated and wrote all their output in the
     run's directory (`Outcome.outside`): a run that failed on one side or both, or wrote elsewhere, compared nothing,
-    and the probes its sides ran do not count. Per run it keeps what the run proved (`_facts`: exit status and
+    and the probes its sides ran do not count. Per run it keeps what the run proved (`cell_facts`: exit status and
     hashes), so its size grows with neither the outputs nor the change; per side the probes compared runs ran.
     """
 
@@ -1852,7 +1853,7 @@ class Evidence:
                 "failed on both sides" if not base.ok and not candidate.ok else "failed on one side"
             )
         refused = refused_on_head(base, candidate)
-        before, after = _facts(base), _facts(candidate)
+        before, after = cell_facts(base), cell_facts(candidate)
         with self.lock:
             self.groups.setdefault(group, [0] * len(GROUP_COUNTS))[kind] += 1
             self.cells[name] = (group, not kind, before, before if after == before else after)
