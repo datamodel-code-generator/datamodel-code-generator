@@ -32,9 +32,10 @@ from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._process import ProcessResult
     from collections.abc import Generator, Iterable, Sequence
     from types import CodeType
+
+    from datamodel_code_generator._process import ProcessResult
 
 DEFAULT_FORMATTERS = _format_types.DEFAULT_FORMATTERS
 EXTERNAL_FORMATTERS = _format_types.EXTERNAL_FORMATTERS
