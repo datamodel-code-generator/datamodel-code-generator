@@ -8,10 +8,3 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
-
-[[approved]]
-key = "allowlist:UNLISTED_CALLERS"
-head = 1178
-pr = 7256
-decision = ["#7253"]
-reason = "the run-time callers of decision homes outside their homes and listed sites today, recorded as the baseline the guard of #7253 lets only shrink"
