@@ -909,11 +909,9 @@ def _generate_recorded(job: Record, main: Callable[[list[str]], object]) -> int:
         warnings.filters.insert(0, ("always", None, Warning, recorder, 0))
         warnings.showwarning = recorder.show
         with _memory_cap(job.get("memory_mb", 0)) as over_cap:
-            if over_cap:
-                sys.stderr.write("MemoryError\n")
-                code = OUT_OF_MEMORY
-            else:
-                code = _exit_code(main, job["args"])
+            code = OUT_OF_MEMORY if over_cap else _exit_code(main, job["args"])
+        if over_cap:
+            sys.stderr.write("MemoryError\n")  # what a run out of memory prints last
         for tracer in (*_TRACER, *_RECORDER):
             tracer.end()
         handled = [f"{type(exception).__module__}.{type(exception).__qualname__}" for exception in caught]
@@ -942,24 +940,21 @@ def _memory_cap(limit_mb: int) -> Generator[bool, None, None]:
     import resource  # ruff: ignore[import-outside-top-level] - POSIX only, like the fork of an import check
 
     limits = resource.getrlimit(resource.RLIMIT_DATA)
-    held = True
-    try:
+    data_kb = _data_kb()  # read before the cap: under it, even reading a file can run out of memory
+    with contextlib.suppress(ValueError, OSError):
         resource.setrlimit(resource.RLIMIT_DATA, (limit_mb << 20, limits[1]))
-    except (ValueError, OSError):
-        held = False
+    held = resource.getrlimit(resource.RLIMIT_DATA)[0] == limit_mb << 20
     try:
-        yield held and (data_kb := _data_kb()) is not None and data_kb > limit_mb << 10
+        yield held and data_kb > limit_mb << 10
     finally:
         resource.setrlimit(resource.RLIMIT_DATA, limits)
 
 
-def _data_kb() -> int | None:
-    """Return the data memory this process holds in kB, as `VmData` shows it (None where there is no `/proc`)."""
-    try:
-        text = Path("/proc/self/status").read_text(encoding="ascii")
-    except OSError:
-        return None
-    return next((int(line.split()[1]) for line in text.splitlines() if line.startswith("VmData:")), None)
+def _data_kb() -> int:
+    """Return the data memory this process holds in kB, as `VmData` shows it (0 where there is no `/proc`)."""
+    status = Path("/proc/self/status")
+    text = status.read_text(encoding="ascii") if status.exists() else ""
+    return next((int(line.split()[1]) for line in text.splitlines() if line.startswith("VmData:")), 0)
 
 
 @contextlib.contextmanager
