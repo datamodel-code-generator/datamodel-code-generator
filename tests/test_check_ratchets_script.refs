@@ -3,6 +3,7 @@
 [test_check_ratchets_against_base]
 added-hatch	check_ratchets_script/check_ratchets_against_base[added-hatch].txt
 ahead-base	check_ratchets_script/check_ratchets_against_base[ahead-base].txt
+allowlist-dict-of-constants	check_ratchets_script/check_ratchets_against_base[allowlist-dict-of-constants].txt
 allowlist-dict-value-not-written-out	check_ratchets_script/check_ratchets_against_base[allowlist-dict-value-not-written-out].txt
 allowlist-subscript-writes	check_ratchets_script/check_ratchets_against_base[allowlist-subscript-writes].txt
 allowlist-unreadable	check_ratchets_script/check_ratchets_against_base[allowlist-unreadable].txt

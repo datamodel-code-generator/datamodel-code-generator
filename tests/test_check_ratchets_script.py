@@ -113,7 +113,7 @@ from pathlib import Path
 JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {"group": ("rule:tests/test_d.py",)}
 FROZEN_EXEMPT_FILES = frozenset({Path("test_d.py")})
 """,
-    "scripts/check_architecture_boundaries.py": 'DEFAULT_ALLOWLIST = {("a", "b"): "reason"}\n',
+    "scripts/check_architecture_boundaries.py": 'DEFAULT_ALLOWLIST = {("a", "b"): Entry("reason")}\n',
 }
 HOST_BASELINE = """["src/pkg/a.py"."run"]
 "host._cache" = 1
@@ -687,6 +687,11 @@ def show(flag: bool) -> None:
     "allowlist-dict-value-not-written-out": {
         "base": {"tests/assert_helper_allowlists.py": 'JUSTIFIED_VIOLATIONS = {"g": ("x",)}\n'},
         "head": {"tests/assert_helper_allowlists.py": 'JUSTIFIED_VIOLATIONS = {"g": tuple(["x", "y", "z"])}\n'},
+        "args": ["--enforce"],
+    },
+    "allowlist-dict-of-constants": {
+        "base": {"tests/assert_helper_allowlists.py": 'JUSTIFIED_VIOLATIONS = {"g": ("x",)}\n'},
+        "head": {"tests/assert_helper_allowlists.py": 'JUSTIFIED_VIOLATIONS = {"g": "x", "h": "y"}\n'},
         "args": ["--enforce"],
     },
     "any-uses": {"head": {"src/pkg/c.py": ANY_USES}, "args": ["--enforce"]},

@@ -878,9 +878,10 @@ def _ruff_files(tally: Tally, root: Path, files: list[str]) -> None:
 
 def _is_one_entry(value: ast.expr) -> bool:
     """Return whether a dict value is a constant or a record built by a class (``Entry(...)``): one entry, not many."""
-    return isinstance(value, ast.Constant) or (
-        isinstance(value, ast.Call) and isinstance(value.func, ast.Name) and value.func.id[:1].isupper()
-    )
+    if isinstance(value, ast.Call):
+        callee = ast.unparse(value.func)
+        return callee.isidentifier() and callee[:1].isupper()
+    return isinstance(value, ast.Constant)
 
 
 def _entries(node: ast.expr) -> list[ast.expr] | None:
