@@ -24,6 +24,7 @@ imports/redundant_local_imports: src/redundant_local_imports/loader.py:49: redun
 imports/redundant_local_imports: src/redundant_local_imports/loader.py:62: redundant-local-import: datamodel_code_generator.redundant_local_imports.leaf
 imports/redundant_local_imports: src/redundant_local_imports/loader.py:69: redundant-local-import: datamodel_code_generator.redundant_local_imports.leaf
 imports/try_import_error_by_origin: src/try_import_error_by_origin.py:18: ellipsis-statement: ...
+references/a6_lazy_exports: src/a6_lazy_exports/table.py:28: redundant-local-import: datamodel_code_generator.a6_lazy_exports._values
 references/builtin_shadowed_and_spelled: scripts/builtin_shadowed_and_spelled.py:3: globals-registry: TABLE = tuple(globals ().items())
 references/builtin_shadowed_and_spelled: src/builtin_shadowed_and_spelled.py:3: globals-registry: TABLE = tuple(globals ().items())
 references/call_arguments_by_parameter: src/call_arguments_by_parameter.py:13: hash-split: ref.split(sep='#', maxsplit=1)

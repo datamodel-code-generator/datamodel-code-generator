@@ -1,0 +1,3 @@
+package:6: a dynamic namespace write (globals) the record cannot read
+package:3: an __all__ that is no literal list or tuple of strings
+package:4: loop leads to package.loop, bound by for

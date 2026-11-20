@@ -29,6 +29,7 @@ legacy-row-reads	source_model/every_rule_states_its_verdicts[legacy-row-reads].t
 pass-pipeline	source_model/every_rule_states_its_verdicts[pass-pipeline].txt
 pre-commit-hook-runs	source_model/every_rule_states_its_verdicts[pre-commit-hook-runs].txt
 private-scope-walk	source_model/every_rule_states_its_verdicts[private-scope-walk].txt
+public-api-record	source_model/every_rule_states_its_verdicts[public-api-record].txt
 source-model-compiler-check	source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 source-rules	source_model/every_rule_states_its_verdicts[source-rules].txt
 template-assignments	source_model/every_rule_states_its_verdicts[template-assignments].txt
@@ -119,6 +120,7 @@ imports/type_checking_in_boolean_tests	source_model/model_answers_on_every_form[
 imports/type_checking_spellings	source_model/model_answers_on_every_form[imports_type_checking_spellings].txt
 imports/version_branches	source_model/model_answers_on_every_form[imports_version_branches].txt
 references/a6_late_module_writes	source_model/model_answers_on_every_form[references_a6_late_module_writes].txt
+references/a6_lazy_exports	source_model/model_answers_on_every_form[references_a6_lazy_exports].txt
 references/aliased_library_names	source_model/model_answers_on_every_form[references_aliased_library_names].txt
 references/aliases_of_names_bound_twice	source_model/model_answers_on_every_form[references_aliases_of_names_bound_twice].txt
 references/all_augmented	source_model/model_answers_on_every_form[references_all_augmented].txt
