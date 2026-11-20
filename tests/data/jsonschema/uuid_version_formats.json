@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Event",
+  "type": "object",
+  "properties": {
+    "id4": {"type": "string", "format": "uuid4"},
+    "legacy": {"type": "string", "format": "uuid"},
+    "id6": {"type": "string", "format": "uuid6"},
+    "id7": {"type": "string", "format": "uuid7"},
+    "id8": {"type": "string", "format": "uuid8"},
+    "limited": {"type": "string", "format": "uuid7", "maxLength": 36},
+    "history": {"type": "array", "items": {"type": "string", "format": "uuid7"}},
+    "ref": {"anyOf": [{"type": "string", "format": "uuid6"}, {"type": "integer"}]},
+    "byKey": {"type": "object", "additionalProperties": {"type": "string", "format": "uuid8"}},
+    "parent": {"type": ["string", "null"], "format": "uuid7", "default": "01890a5d-ac96-774b-bcce-b302099a8057"}
+  },
+  "required": ["id4", "id6", "id7", "id8"]
+}

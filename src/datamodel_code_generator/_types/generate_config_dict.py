@@ -145,6 +145,7 @@ class BaseGenerateConfig(TypedDict):
     use_single_value_enum_as_const: NotRequired[bool]
     read_const_beside_enum: NotRequired[bool]
     read_format_as_annotation: NotRequired[bool]
+    read_uuid6_uuid7_uuid8_formats: NotRequired[bool]
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
     intersect_combined_schema_keywords: NotRequired[bool]

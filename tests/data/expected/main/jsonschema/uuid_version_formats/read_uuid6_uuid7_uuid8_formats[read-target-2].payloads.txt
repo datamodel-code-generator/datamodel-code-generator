@@ -1,0 +1,8 @@
+warning: Pydantic v2 with --use-annotated is recommended for correct type annotations. In a future version, --use-annotated will be enabled by default for Pydantic v2. The current default (use_annotated=False) generates constrained types like 'conint(ge=1, le=365)' which are discouraged in Pydantic v2.
+valid: id4=UUID, id6=UUID, id7=UUID, id8=UUID, limited=UUID, history=list, ref=UUID, byKey=dict, parent=UUID
+invalid id7="6f1c2a7e-0c3d-4a59-9a8e-2f7d1b9c0e11": accepted
+invalid id6="01890a5d-ac96-774b-bcce-b302099a8057": accepted
+invalid history=["320c3d4d-cc00-875b-8ec9-32d5f69181c0"]: accepted
+invalid ref="6f1c2a7e-0c3d-4a59-9a8e-2f7d1b9c0e11": accepted
+invalid byKey={"a": "01890a5d-ac96-774b-bcce-b302099a8057"}: accepted
+invalid id8="not a uuid": rejected

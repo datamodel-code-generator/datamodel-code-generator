@@ -184,6 +184,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-schema-version-per-document": "Read each document by the schema version it declares.",
     "--read-single-allof-refs-in-their-documents": "Read the target of an allOf of one `$ref` in the document that ...",
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",
+    "--read-uuid6-uuid7-uuid8-formats": "Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they n...",
     "--read-yaml-1-1-numbers-as-text": "Read the unquoted YAML values that only YAML 1.1 reads as numbers as their ...",
     "--recommend-options": "Recommend options for the input schema on top of the latest dated preset (experimental).",
     "--remove-special-field-name-prefix": "Remove the special prefix from field names.",

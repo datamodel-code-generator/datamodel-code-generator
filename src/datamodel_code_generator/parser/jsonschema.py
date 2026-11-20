@@ -1001,6 +1001,11 @@ def _validate_external_ref(ref: str) -> None:
 
 
 json_schema_data_formats: dict[str, dict[str, Types]] = get_data_formats(is_openapi=True)
+_UUID_VERSION_DATA_FORMATS: dict[str, dict[str, Types]] = {
+    **json_schema_data_formats,
+    "string": {**json_schema_data_formats["string"], "uuid6": Types.uuid6, "uuid7": Types.uuid7, "uuid8": Types.uuid8},
+}
+"""The data formats under --read-uuid6-uuid7-uuid8-formats: also the string formats of the UUID versions 6 to 8."""
 
 
 def _get_type(
@@ -1285,9 +1290,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Get data format mappings for this parser type.
 
         Returns all formats for backward compatibility.
-        OpenAPI-specific formats will be separated in Strict mode (future).
+        OpenAPI-specific formats will be separated in Strict mode (future). The string formats ``uuid6``, ``uuid7``
+        and ``uuid8`` are known only under --read-uuid6-uuid7-uuid8-formats.
         """
-        return json_schema_data_formats
+        return _UUID_VERSION_DATA_FORMATS if self.read_uuid6_uuid7_uuid8_formats else json_schema_data_formats
 
     def _get_type_with_mappings(self, type_: str, format_: str | None = None) -> Types:
         """Get the Types enum for a given type and format, applying custom type mappings.

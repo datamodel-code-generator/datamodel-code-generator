@@ -323,7 +323,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 304>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 305>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -492,6 +492,7 @@ class BaseGenerateConfig(BaseModel)
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
     read_format_as_annotation: bool = False
+    read_uuid6_uuid7_uuid8_formats: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
     intersect_combined_schema_keywords: bool = False
@@ -717,7 +718,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 304>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 305>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -998,6 +999,7 @@ class ParserConfig(BaseModel)
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
     read_format_as_annotation: bool = False
+    read_uuid6_uuid7_uuid8_formats: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
     intersect_combined_schema_keywords: bool = False
@@ -2718,6 +2720,9 @@ IMPORT_UUID1 = Import.from_full_path('pydantic.UUID1')
 IMPORT_UUID3 = Import.from_full_path('pydantic.UUID3')
 IMPORT_UUID4 = Import.from_full_path('pydantic.UUID4')
 IMPORT_UUID5 = Import.from_full_path('pydantic.UUID5')
+IMPORT_UUID6 = Import.from_full_path('pydantic.UUID6')
+IMPORT_UUID7 = Import.from_full_path('pydantic.UUID7')
+IMPORT_UUID8 = Import.from_full_path('pydantic.UUID8')
 IMPORT_VALIDATION_INFO = Import.from_full_path('pydantic.ValidationInfo')
 IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER = Import.from_full_path('pydantic.ValidatorFunctionWrapHandler')
 
@@ -3398,6 +3403,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT])
     self.read_yaml_1_1_numbers_as_text
     self.use_single_value_enum_as_const
     self.read_format_as_annotation
+    self.read_uuid6_uuid7_uuid8_formats
     self.read_const_beside_enum
     self.known_third_party
     self.custom_formatter
@@ -3452,7 +3458,7 @@ class PydanticFloors
     def of(self, parser: object) -> PydanticFloor | None
     def refused_bytes_patterns_of(self, parser: object) -> tuple[str, ...]
 REQUIREMENTS: Final[Mapping[Construct, Requirement]] = MappingProxyType({row.construct: row for row in _ROWS})
-    uses _ROWS: Final[tuple[Requirement, ...]] = <tuple of 43>
+    uses _ROWS: Final[tuple[Requirement, ...]] = <tuple of 44>
 ReferenceMapSet = dict[str, set[str]]
 class Result(BaseModel)
     model_config = ConfigDict(defer_build=True)
@@ -4986,7 +4992,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 304>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 305>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5008,7 +5014,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 300>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 301>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5420,6 +5426,7 @@ class DataTypeManager(ABC)
     type_map: dict[Types, DataType]
     def __init__(self, python_version: PythonVersion=PythonVersionMin, use_standard_collections: bool=False, use_generic_container_types: bool=False, strict_types: Sequence[StrictTypes] | None=None, use_non_positive_negative_number_constrained_types: bool=False, use_decimal_for_multiple_of: bool=False, use_union_operator: bool=False, use_pendulum: bool=False, use_standard_primitive_types: bool=False, use_object_type: bool=False, target_datetime_class: DatetimeClassType | None=None, target_date_class: DateClassType | None=None, treat_dot_as_module: bool | None=None, use_serialize_as_any: bool=False) -> None
     def use_untyped_value_type(self, untyped_value_type: str | None) -> None
+    def use_target_pydantic_version(self, target_pydantic_version: TargetPydanticVersion | None) -> None
     @abstractmethod
     def get_data_type(self, types: Types, **kwargs: Any) -> DataType
     def get_map_key_str_type(self, **kwargs: Any) -> DataType
@@ -5570,6 +5577,9 @@ class Types(Enum)
     null = auto()
     array = auto()
     any = auto()
+    uuid6 = auto()
+    uuid7 = auto()
+    uuid8 = auto()
 UNION = 'Union'
 UNION_DELIMITER = ', '
 UNION_OPERATOR_DELIMITER = ' | '
@@ -6031,6 +6041,7 @@ class ParserConfigDict(TypedDict)
     use_single_value_enum_as_const: NotRequired[bool]
     read_const_beside_enum: NotRequired[bool]
     read_format_as_annotation: NotRequired[bool]
+    read_uuid6_uuid7_uuid8_formats: NotRequired[bool]
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
     intersect_combined_schema_keywords: NotRequired[bool]
@@ -6317,6 +6328,7 @@ class BaseGenerateConfig(TypedDict)
     use_single_value_enum_as_const: NotRequired[bool]
     read_const_beside_enum: NotRequired[bool]
     read_format_as_annotation: NotRequired[bool]
+    read_uuid6_uuid7_uuid8_formats: NotRequired[bool]
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
     intersect_combined_schema_keywords: NotRequired[bool]

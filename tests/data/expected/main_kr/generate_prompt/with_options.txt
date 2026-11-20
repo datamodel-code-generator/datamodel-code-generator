@@ -73,6 +73,7 @@ What other options should I use?
 - `--no-read-inherited-property-schemas-in-mro-order`
 - `--no-read-kubernetes-extensions`
 - `--no-read-unevaluated-properties`
+- `--no-read-uuid6-uuid7-uuid8-formats`
 - `--no-type-overrides-replace-whole-type`
 - `--no-use-annotated`
 - `--no-use-bytes-for-content-media-type`
@@ -106,6 +107,7 @@ What other options should I use?
 - `--read-inherited-property-schemas-in-mro-order`: Give a required inherited property the schema its allOf pare...
 - `--read-kubernetes-extensions`: Read the Kubernetes schema extensions as the keywords they stand for.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
+- `--read-uuid6-uuid7-uuid8-formats`: Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they n...
 - `--strict-types`: Enable strict type validation for specified Python types.
 - `--type-mappings`: Override default type mappings for schema formats.
 - `--type-overrides`: Replace schema model types with custom Python types via JSON mapping.
@@ -958,6 +960,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         additionalProperties where no applicator evaluates the
                         object in place, so it types the extra keys of a model
                         and makes an object without properties a map
+  --read-uuid6-uuid7-uuid8-formats, --no-read-uuid6-uuid7-uuid8-formats
+                        Read the string formats uuid6, uuid7 and uuid8 (RFC
+                        9562) as the UUID versions they name, as format uuid4
+                        is read: Pydantic output types them as UUID6, UUID7
+                        and UUID8 (uuid.UUID for a --target-pydantic-version
+                        before 2.11, which lacks them), and the other outputs
+                        as uuid.UUID under --use-standard-primitive-types,
+                        else str; without it each is an unknown format, which
+                        gives a warning and str, as in 0.99.0
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Final
 
 from typing_extensions import override
 
@@ -80,6 +80,9 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_UUID3,
     IMPORT_UUID4,
     IMPORT_UUID5,
+    IMPORT_UUID6,
+    IMPORT_UUID7,
+    IMPORT_UUID8,
 )
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_SECRET_STR as IMPORT_SECRET_STR
 from datamodel_code_generator.model.types import standard_primitive_type_map_factory
@@ -111,6 +114,13 @@ if TYPE_CHECKING:
 
 
 # --- Shared Pydantic type helpers ---
+
+_UUID_VERSION_IMPORTS: Final[Mapping[Types, Import]] = MappingProxyType({
+    Types.uuid6: IMPORT_UUID6,
+    Types.uuid7: IMPORT_UUID7,
+    Types.uuid8: IMPORT_UUID8,
+})
+"""The Pydantic types of the UUID versions that ``pydantic.uuid_version_types`` needs, by the type of their format."""
 
 
 def type_map_factory(
@@ -144,6 +154,7 @@ def type_map_factory(
         Types.uuid3: _valid_import_type(data_type, IMPORT_UUID3),
         Types.uuid4: _valid_import_type(data_type, IMPORT_UUID4),
         Types.uuid5: _valid_import_type(data_type, IMPORT_UUID5),
+        **{types: _valid_import_type(data_type, import_) for types, import_ in _UUID_VERSION_IMPORTS.items()},
         Types.ulid: _valid_import_type(data_type, IMPORT_ULID),
         Types.uri: _valid_import_type(data_type, IMPORT_ANYURL),
         Types.hostname: _valid_import_type(
@@ -225,6 +236,10 @@ class DataTypeManager(_DataTypeManagerBase):
     TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = (
         _applicability.PYDANTIC_OUTPUT.target_number_keywords
     )
+    _TARGET_TYPE_FALLBACKS: ClassVar[Mapping[Types, tuple[PydanticConstruct, Import]]] = MappingProxyType(
+        dict.fromkeys(_UUID_VERSION_IMPORTS, ("pydantic.uuid_version_types", IMPORT_UUID))
+    )
+    """``uuid.UUID``, the type of format ``uuid2`` too, for the UUID versions 6 to 8 before Pydantic 2.11."""
     _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.PYDANTIC_OUTPUT.writes_constrained_types
     REGEX_ENGINES: ClassVar[frozenset[str]] = _applicability.PYDANTIC_OUTPUT.regex_engines
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({

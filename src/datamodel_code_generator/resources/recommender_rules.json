@@ -1143,6 +1143,10 @@
         "versions.read-per-document"
       ]
     },
+    "read_uuid6_uuid7_uuid8_formats": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Types uuid6, uuid7 and uuid8 strings as UUID values that check their version, which changes the values a model holds and the payloads it accepts."
+    },
     "recommend_options": {
       "not_recommended": "command",
       "reason": "Prints these recommendations and exits."

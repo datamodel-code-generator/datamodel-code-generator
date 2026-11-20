@@ -1,0 +1,52 @@
+[[change]]
+id = "uuid-version-formats"
+category = "new-surface"
+title = "Read the string formats uuid6, uuid7 and uuid8 under an option"
+summary = "--read-uuid6-uuid7-uuid8-formats reads format uuid6, uuid7 and uuid8 as the UUID versions they name: Pydantic output types them as UUID6, UUID7 and UUID8 (uuid.UUID for a target Pydantic version before 2.11), the other outputs as uuid.UUID under --use-standard-primitive-types, else str; without it each stays an unknown format, a warning and str."
+refs = ["#1"]
+surface = ["--read-uuid6-uuid7-uuid8-formats"]
+covers = [
+    "builtin_formatter/parser_config_contract.txt",
+    "input_model/config_class.txt",
+    "main/help/color.txt",
+    "main/help/no_color.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-annotated].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-annotated].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-as-annotation].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-as-annotation].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-dataclass].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-dataclass].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-mapped].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-mapped].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-msgspec-standard].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-msgspec-standard].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-msgspec].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-msgspec].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-pydantic-dataclass].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-pydantic-dataclass].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-standard].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-standard].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-strict-str].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-strict-str].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-target-2.11].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-target-2.11].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-target-2].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-target-2].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-typeddict].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read-typeddict].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[read].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[released-standard].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[released-standard].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[released].payloads.txt",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[released].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats_openapi[read].py",
+    "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats_openapi[released].py",
+    "main_kr/generate_prompt/basic.txt",
+    "main_kr/generate_prompt/json_output.txt",
+    "main_kr/generate_prompt/with_list_options.txt",
+    "main_kr/generate_prompt/with_options.txt",
+    "main_kr/generate_prompt/with_question.txt",
+    "main_kr/help_shows_new_options.txt",
+    "prompt/default_parser_text.txt",
+]

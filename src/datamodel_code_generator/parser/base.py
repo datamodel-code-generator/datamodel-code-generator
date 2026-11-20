@@ -1119,6 +1119,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             use_serialize_as_any=config.use_serialize_as_any,
         )
         self.data_type_manager.use_untyped_value_type(config.untyped_value_type)
+        self.data_type_manager.use_target_pydantic_version(config.target_pydantic_version)
         self.data_type_manager.omit_redundant_constraints = config.omit_redundant_constraints
         self.data_type_manager.read_length_keywords_by_type = config.read_length_keywords_by_type
         self.data_type_manager.read_msgspec_union_bounds_exactly = config.read_msgspec_union_bounds_exactly
@@ -1448,6 +1449,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.read_yaml_1_1_numbers_as_text = config.read_yaml_1_1_numbers_as_text
         self.use_single_value_enum_as_const = config.use_single_value_enum_as_const
         self.read_format_as_annotation = config.read_format_as_annotation
+        self.read_uuid6_uuid7_uuid8_formats = config.read_uuid6_uuid7_uuid8_formats
         self.read_const_beside_enum = config.read_const_beside_enum
         self.known_third_party = config.known_third_party
         self.custom_formatter = config.custom_formatters

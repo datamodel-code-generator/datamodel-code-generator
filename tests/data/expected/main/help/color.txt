@@ -514,6 +514,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         additionalProperties where no applicator evaluates the
                         object in place, so it types the extra keys of a model
                         and makes an object without properties a map
+  --read-uuid6-uuid7-uuid8-formats, --no-read-uuid6-uuid7-uuid8-formats
+                        Read the string formats uuid6, uuid7 and uuid8 (RFC
+                        9562) as the UUID versions they name, as format uuid4
+                        is read: Pydantic output types them as UUID6, UUID7
+                        and UUID8 (uuid.UUID for a --target-pydantic-version
+                        before 2.11, which lacks them), and the other outputs
+                        as uuid.UUID under --use-standard-primitive-types,
+                        else str; without it each is an unknown format, which
+                        gives a warning and str, as in 0.99.0
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.

@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 23 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 62 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 63 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 42 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 73 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 41 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 42 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -349,6 +349,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document)
 - [`--read-single-allof-refs-in-their-documents`](base-options.md#read-single-allof-refs-in-their-documents)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)
+- [`--read-uuid6-uuid7-uuid8-formats`](typing-customization.md#read-uuid6-uuid7-uuid8-formats)
 - [`--read-yaml-1-1-numbers-as-text`](base-options.md#read-yaml-1-1-numbers-as-text)
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
