@@ -16,5 +16,12 @@ datamodel_code_generator.util	main/public_api_signature_baseline/lazy_public_nam
 	main/public_api_signature_baseline/public_api_record_matches_runtime_namespaces.txt
 [test_public_api_record_matches_stored_output]
 	main/public_api_signature_baseline/public_api_record_matches_stored_output.txt
+[test_public_api_record_moves_with_an_edit_of_a_hook]
+a-constant-the-hook-reads-gains-a-name	main/public_api_signature_baseline/public_api_record_moves_with_an_edit_of_a_hook[a-constant-the-hook-reads-gains-a-name].txt
+a-module-gains-a-hook	main/public_api_signature_baseline/public_api_record_moves_with_an_edit_of_a_hook[a-module-gains-a-hook].txt
+the-hook-serves-another-class	main/public_api_signature_baseline/public_api_record_moves_with_an_edit_of_a_hook[the-hook-serves-another-class].txt
+the-pair-entry-names-another-attribute	main/public_api_signature_baseline/public_api_record_moves_with_an_edit_of_a_hook[the-pair-entry-names-another-attribute].txt
 [test_public_api_record_refuses_what_it_cannot_read]
 	main/public_api_signature_baseline/public_api_record_refuses_what_it_cannot_read.txt
+[test_public_api_record_writes_the_hooks_a_module_defines]
+	main/public_api_signature_baseline/public_api_record_writes_the_hooks_a_module_defines.txt

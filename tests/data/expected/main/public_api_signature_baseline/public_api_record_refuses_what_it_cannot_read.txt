@@ -1,3 +1,4 @@
 package:6: a dynamic namespace write (globals) the record cannot read
 package:3: an __all__ that is no literal list or tuple of strings
 package:4: loop leads to package.loop, bound by for
+package.hooked:5: __getattr__ is bound by assign, not by def or module_hooks

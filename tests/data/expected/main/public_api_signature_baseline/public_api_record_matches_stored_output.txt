@@ -742,6 +742,20 @@ def is_manual_doc(option: str) -> bool
 
 [datamodel_code_generator.config]
 __all__ = computed by __getattr__
+def __getattr__(name: str) -> type[ParserConfig] | list[str]
+    | if name == '__all__':
+    |     return [member for member in __dir__() if not member.startswith('_')]
+    | if name not in _FORMAT_PARSER_CONFIGS:
+    |     msg = f"module {__name__!r} has no attribute {name!r}"
+    |     raise AttributeError(msg)
+    | with _CONFIG_REBUILD_LOCK:
+    |     return globals().get(name) or _define_format_parser_configs(name)
+    uses _FORMAT_PARSER_CONFIGS = frozenset({'AsyncAPIParserConfig', 'AvroParserConfig', 'GraphQLParserConfig', 'OpenAPIParserConfig', 'ProtobufParserConfig', 'XMLSchemaParserConfig'})
+    uses _CONFIG_REBUILD_LOCK = RLock()
+def __dir__() -> list[str]
+    | hooks = {'__dir__', '__getattr__', '_FORMAT_PARSER_CONFIGS', '_define_format_parser_configs'}
+    | return sorted(globals().keys() - hooks | _FORMAT_PARSER_CONFIGS)
+    uses _FORMAT_PARSER_CONFIGS = frozenset({'AsyncAPIParserConfig', 'AvroParserConfig', 'GraphQLParserConfig', 'OpenAPIParserConfig', 'ProtobufParserConfig', 'XMLSchemaParserConfig'})
 class AsyncAPIParserConfig(JSONSchemaParserConfig)  [built by _define_format_parser_configs()]
     openapi_scopes: list[OpenAPIScope] | None = None
     include_path_parameters: bool = False
@@ -1347,6 +1361,14 @@ def render_experimental_features_table() -> str
 def render_release_note_experimental_features(version: str) -> str
 
 [datamodel_code_generator.format]
+def __getattr__(name: str) -> Any
+    | if name not in _BUILTIN_FORMATTER_REEXPORTS:
+    |     msg = f"module {__name__!r} has no attribute {name!r}"
+    |     raise AttributeError(msg)
+    | value = _builtin_formatter_attr(name)
+    | globals()[name] = value
+    | return value
+    uses _BUILTIN_FORMATTER_REEXPORTS: tuple[str, ...] = ('_AliasSortCategory', '_ImportCategory', '_is_valid_builtin_line_length', '_line_indent', '_find_pyproject_toml', '_get_builtin_line_length', '_get_builtin_known_first_party', '_get_builtin_string_normalization', '_format_alias', '_alias_imported_name', '_alias_sort_key', '_format_from_import', '_import_category', '_has_inline_comment', '_format_import_node_without_reordering', '_import_node_category', '_from_import_key', '_modules_with_aliased_imports', '_iter_aliased_from_import_lines', '_import_line_sort_key', '_build_builtin_import_block', '_is_name_or_attr', '_LineReplacement', '_collect_builtin_replacements', '_module_docstring_node', '_docstring_node', '_iter_module_import_nodes', '_apply_line_replacements', '_previous_non_empty_line_index', '_normalize_top_level_blank_lines', '_normalize_string_quotes', '_finalize_builtin_code')
 class CodeFormatter
     def __init__(self, python_version: PythonVersion, settings_path: Path | None=None, wrap_string_literal: bool | None=None, skip_string_normalization: bool=True, known_third_party: list[str] | None=None, custom_formatters: list[str] | None=None, custom_formatters_kwargs: dict[str, Any] | None=None, encoding: str='utf-8', formatters: list[Formatter] | None=None, builtin_format_line_length: int | None=None, use_type_checking_imports: bool=True, defer_formatting: bool=False, formatter_cwd: Path | None=None) -> None
     def format_code(self, code: str) -> str
@@ -5024,6 +5046,16 @@ def stable_repr(value: object) -> str
 
 [datamodel_code_generator.reference]
 __all__ = computed by __getattr__
+def __getattr__(name: str) -> Any
+    | if name != '__all__':
+    |     return _lazy_getattr(name)
+    | public_names = (public_name for public_name in globals() if not public_name.startswith('_'))
+    | value = (*(public_name for public_name in public_names if public_name not in _LAZY_EXPORTS), *_LAZY_EXPORTS)
+    | globals()[name] = value
+    | return value
+    uses _lazy_getattr = _module_hooks(__name__, _LAZY_EXPORTS, cache=True)
+    uses _LAZY_EXPORTS = {'PydanticFieldNameResolver': lambda: _default_field_name_resolver_class(ModelType.PYDANTIC), 'MsgspecFieldNameResolver': lambda: _default_field_name_resolver_class(ModelType.MSGSPEC), 'DEFAULT_FIELD_NAME_RESOLVERS': lambda: { model_type: _default_field_name_resolver_class(model_type) for model_type in _FIELD_NAME_RESOLVER_MODEL_TYPES }}
+    uses _FIELD_NAME_RESOLVER_MODEL_TYPES = (ModelType.ENUM, ModelType.PYDANTIC, ModelType.CLASS, ModelType.MSGSPEC)
 BINARY_CONTENT_KEY: Final = '_binary_content'
 class ClassName(NamedTuple)
     name: str

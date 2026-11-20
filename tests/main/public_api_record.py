@@ -18,21 +18,31 @@ guard of the branches it sits in (``[if <test>]``, ``[else of <test>]``, ``[try]
 checkers run is left out. Decorators, bases, signatures and annotations are written as source. Values are written in
 full, except a module-level value or a class attribute that is not a field (a ``TypeAlias`` aside), whose lists,
 tuples, sets and dicts of more than `ITEMS` items are written as their size; a constant that a written value reads and
-no public name reaches is written under it (``uses``). A lazy entry writes its expression, or its loader's body.
+no public name reaches is written under it (``uses``). A lazy entry writes its expression, or its loader's body; a
+``(module path, attribute)`` pair is followed to the attribute. A module's own ``def __getattr__`` and
+``def __dir__`` are written under its header like a loader: the signature, the statements one level deep and the
+constants they read in full.
 A base class no public name reaches is written in a last section, under the first public subclass that reaches it.
 
 The record is a function of the source text alone: nothing of the package is imported, so no installed library,
 platform or import order reaches it, and it has the same bytes on every Python (expressions are written by
 `ast.unparse`, f-strings and lambdas by their folded source, the two forms it writes differently by version).
 What the record cannot read in a public module (a public name bound by a loop, a dynamic namespace write at module
-level, a lazy table or an ``__all__`` that is no literal, a name nothing binds) is a `Refusal` with its module and line.
+level, a lazy table or an ``__all__`` that is no literal, a name nothing binds, a hook bound by anything but ``def`` or
+``module_hooks``) is a `Refusal` with its module and line.
+
+Known limits, where the record stays silent although the behaviour can change:
+
+- what a private decorator or helper does is not read: a change inside ``_records.record`` that flips a default of
+  the classes it decorates does not move the record, only a change to its call (``@record(eq=False)``) does;
+- a function a hook or a loader calls is read by its call only (one level deep), not by its body;
+- a module-level ``setattr(Class, "x", value)`` is not read, while ``Class.x = value`` is.
 """
 
 from __future__ import annotations
 
 import ast
 import copy
-import functools
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
@@ -56,6 +66,8 @@ _UNPACK = frozenset({"typing.Unpack", "typing_extensions.Unpack"})
 _MUTATORS = ("append", "extend", "insert", "remove", "pop", "clear", "sort", "reverse", "update", "add", "discard")
 _ALL_WRITES = frozenset({"subscript-store", "subscript-del", *(f"call:{method}" for method in _MUTATORS)})
 _VALUE_WRITES = _ALL_WRITES | {"attribute-store", "attribute-del", "call:setdefault", "call:popitem"}
+_PAIR = 2
+_HOOKS = frozenset({"__getattr__", "__dir__"})
 _EXCEPT = {"body": "try", "else": "try else", "finally": "finally"}
 
 Key = tuple[str, str, int]
@@ -192,32 +204,6 @@ class _Writer(ast.NodeTransformer):
         return self._sized(node, len(node.keys), "dict")
 
 
-def _text(model: source_model.SourceModule, node: ast.AST, *, collapse: bool = False) -> str:
-    """Write a node of a module's tree as `ast.unparse` does, with the forms of `_Writer` replaced."""
-    copies: dict[int, ast.AST] = {}
-    copied = copy.deepcopy(node, copies)
-    lambdas = {id(copies[key]) for key in _lambdas(model) if key in copies}
-    return ast.unparse(_Writer(model, lambdas, collapse=collapse).visit(copied))
-
-
-@functools.cache
-def _lambdas(model: source_model.SourceModule) -> frozenset[int]:
-    """Return the nodes of a module's lambdas: the scopes of kind ``lambda``."""
-    return frozenset(id(scope.node) for scope in model.scopes if scope.kind == "lambda")
-
-
-@functools.cache
-def _loads(model: source_model.SourceModule) -> dict[int, source_model.Reference]:
-    """Return the name loads of a module by node."""
-    return {id(reference.node): reference for reference in model.references if reference.context == "load"}
-
-
-@functools.cache
-def _annotations(model: source_model.SourceModule) -> dict[int, ast.expr]:
-    """Return the annotation of each annotated target of a module, by the node of the target."""
-    return {id(annotation.target): annotation.node for annotation in model.annotations if annotation.target}
-
-
 def _literal_names(node: ast.expr | None) -> list[str] | None:
     """Return the strings of a literal list or tuple of strings, else None."""
     items = node.elts if isinstance(node, (ast.List, ast.Tuple)) else None
@@ -235,6 +221,9 @@ class PublicApi:
         self.package = package
         self.tree = source_model.SourceTree(root, [package])
         self.refusals: list[Refusal] = []
+        self._lambda_nodes: dict[str, frozenset[int]] = {}
+        self._load_nodes: dict[str, dict[int, source_model.Reference]] = {}
+        self._annotation_nodes: dict[str, dict[int, ast.expr]] = {}
         self._tables: dict[str, dict[str, ast.expr]] = {}
         self.public = sorted(name for name in self.tree.paths if is_public_module(name))
         self.facts = {module: self._facts(module) for module in self.public}
@@ -274,6 +263,38 @@ class PublicApi:
     def place(self, module: str) -> str:
         """Return the path of a module's file relative to the package directory."""
         return self.tree.paths[module].relative_to(self.root / self.package).as_posix()
+
+    # ---- what is read of each module once, per record: a record keeps no tree alive after it ----------------------
+    def _text(self, model: source_model.SourceModule, node: ast.AST, *, collapse: bool = False) -> str:
+        """Write a node of a module's tree as `ast.unparse` does, with the forms of `_Writer` replaced."""
+        copies: dict[int, ast.AST] = {}
+        copied = copy.deepcopy(node, copies)
+        lambdas = {id(copies[key]) for key in self._lambdas(model) if key in copies}
+        return ast.unparse(_Writer(model, lambdas, collapse=collapse).visit(copied))
+
+    def _lambdas(self, model: source_model.SourceModule) -> frozenset[int]:
+        """Return the nodes of a module's lambdas: the scopes of kind ``lambda``."""
+        if model.module not in self._lambda_nodes:
+            self._lambda_nodes[model.module] = frozenset(
+                id(scope.node) for scope in model.scopes if scope.kind == "lambda"
+            )
+        return self._lambda_nodes[model.module]
+
+    def _loads(self, model: source_model.SourceModule) -> dict[int, source_model.Reference]:
+        """Return the name loads of a module by node."""
+        if model.module not in self._load_nodes:
+            self._load_nodes[model.module] = {
+                id(reference.node): reference for reference in model.references if reference.context == "load"
+            }
+        return self._load_nodes[model.module]
+
+    def _annotations(self, model: source_model.SourceModule) -> dict[int, ast.expr]:
+        """Return the annotation of each annotated target of a module, by the node of the target."""
+        if model.module not in self._annotation_nodes:
+            self._annotation_nodes[model.module] = {
+                id(annotation.target): annotation.node for annotation in model.annotations if annotation.target
+            }
+        return self._annotation_nodes[model.module]
 
     # ---- what each module binds ----------------------------------------------------------------------------------
     def _refuse(self, module: str, line: int, reason: str) -> None:
@@ -347,16 +368,22 @@ class PublicApi:
             }
         return self._tables[module]
 
-    def _lazy_table(self, module: str, binding: source_model.Binding) -> dict[str, ast.expr]:
-        """Return the table a module-level ``module_hooks`` call that a binding takes serves: a literal dict."""
-        model = self.tree.module(module)
+    def _hooks_call(self, model: source_model.SourceModule, binding: source_model.Binding) -> ast.Call | None:
+        """Return the ``_lazy_exports.module_hooks`` call a binding takes its value from, else None."""
         assignment = model.assignment(binding.node)
         call = assignment.value if assignment is not None else None
         hooks = model.origin(call.func) if isinstance(call, ast.Call) else None
         helper, _, function = (hooks or "").rpartition(".")
-        if helper not in self.tree.paths or helper.rpartition(".")[2] != "_lazy_exports" or function != "module_hooks":
-            return {}
-        if not isinstance(call, ast.Call) or binding.name != "__dir__":
+        known = (
+            helper in self.tree.paths and helper.rpartition(".")[2] == "_lazy_exports" and function == "module_hooks"
+        )
+        return call if known and isinstance(call, ast.Call) else None
+
+    def _lazy_table(self, module: str, binding: source_model.Binding) -> dict[str, ast.expr]:
+        """Return the table a module-level ``module_hooks`` call that a binding takes serves: a literal dict."""
+        model = self.tree.module(module)
+        call = self._hooks_call(model, binding)
+        if call is None or binding.name != "__dir__":
             return {}
         table = source_model.argument(call, 1, "table")
         reached = self._reach(origin) if table is not None and (origin := model.origin(table)) is not None else []
@@ -413,16 +440,18 @@ class PublicApi:
             if condition.kind == "function":
                 written.append(f"built by {getattr(node, 'name', '')}()")
             elif isinstance(node, ast.match_case):
-                case = f" if {_text(model, node.guard)}" if node.guard else ""
-                written.append(f"case {_text(model, node.pattern)}{case}")
+                case = f" if {self._text(model, node.guard)}" if node.guard else ""
+                written.append(f"case {self._text(model, node.pattern)}{case}")
             elif condition.branch == "except":
                 handled = getattr(node, "type", None)
-                written.append(f"except {_text(model, handled)}" if handled is not None else "except")
+                written.append(f"except {self._text(model, handled)}" if handled is not None else "except")
             elif isinstance(node, (ast.Try, ast.TryStar)):
                 written.append(_EXCEPT[condition.branch])
             elif (test := getattr(node, "test", None)) is not None:
                 written.append(
-                    f"if {_text(model, test)}" if condition.branch == "body" else f"else of {_text(model, test)}"
+                    f"if {self._text(model, test)}"
+                    if condition.branch == "body"
+                    else f"else of {self._text(model, test)}"
                 )
             else:
                 written.append(f"{condition.kind} {condition.branch}")
@@ -481,14 +510,23 @@ class PublicApi:
                 self._refuse(module, line, f"{name} leads to {dotted}, bound by {kind}")
         return found
 
+    @staticmethod
+    def _lazy_dotted(entry: ast.expr, name: str) -> str | None:
+        """Return the dotted name a module path or a ``(module path, attribute)`` pair entry names, else None."""
+        if isinstance(entry, ast.Constant) and isinstance(entry.value, str):
+            return f"{entry.value}.{name}"
+        items = entry.elts if isinstance(entry, ast.Tuple) else []
+        pair = [item.value for item in items if isinstance(item, ast.Constant) and isinstance(item.value, str)]
+        return ".".join(pair) if len(items) == len(pair) == _PAIR else None
+
     def _lazy_targets(self, module: str, name: str, entry: ast.expr, prefix: tuple[str, ...] = ()) -> list[_Target]:
-        """Follow a lazy entry: a module path, a loader (one that imports and returns: to its import), a lambda."""
+        """Follow a lazy entry: a module path, a ``(module path, attribute)`` pair, a loader, a name or a lambda."""
         prefix = (*prefix, "lazy")
         line = entry.lineno
-        if isinstance(entry, ast.Constant) and isinstance(entry.value, str):
-            return self._convert(module, name, self._reach(f"{entry.value}.{name}"), prefix)
+        if (dotted := self._lazy_dotted(entry, name)) is not None:
+            return self._convert(module, name, self._reach(dotted), prefix)
         model = self.tree.module(module)
-        if id(entry) in _lambdas(model):
+        if id(entry) in self._lambdas(model):
             return [_Target("lazy", prefix, module=module, node=getattr(entry, "body", None))]
         reached = self._reach(origin) if (origin := model.origin(entry)) is not None else []
         definitions = reached if isinstance(reached, list) else []
@@ -559,7 +597,7 @@ class PublicApi:
 
     def _module_named(self, model: source_model.SourceModule, value: ast.expr) -> str:
         """Return the module a ``__module__`` store names: ``__name__``, a string, or a name bound once to a string."""
-        load = _loads(model).get(id(value))
+        load = self._loads(model).get(id(value))
         if load is not None and load.name == "__name__" and not model.resolve(load.node).bindings:
             return model.module
         if isinstance(value, ast.Constant) and isinstance(value.value, str):
@@ -571,13 +609,12 @@ class PublicApi:
         ]
         if len(named) == 1 and isinstance(named[0], str):
             return named[0]
-        self._refuse(model.module, value.lineno, f"a __module__ the record cannot read: {_text(model, value)}")
+        self._refuse(model.module, value.lineno, f"a __module__ the record cannot read: {self._text(model, value)}")
         return model.module
 
-    @staticmethod
-    def _receivers(model: source_model.SourceModule, node: ast.expr) -> list[str]:
+    def _receivers(self, model: source_model.SourceModule, node: ast.expr) -> list[str]:
         """Return what a receiver names: its origin, or each item of the tuple a ``for`` over names gives it."""
-        resolution = model.resolve(_loads(model)[id(node)].node)
+        resolution = model.resolve(self._loads(model)[id(node)].node)
         loops = [binding for binding in resolution.bindings if binding.kind == "for"]
         if not loops:
             return [origin] if (origin := model.origin(node)) is not None else []
@@ -620,6 +657,31 @@ class PublicApi:
             lines += ["__all__ = [", *(f"    {name!r}," for name in facts.all_names), "]"]
         elif facts.computed_all:
             lines.append("__all__ = computed by __getattr__")
+        return lines + self._hooks(module)
+
+    def _hooks(self, module: str) -> list[str]:
+        """Write the ``__getattr__`` and ``__dir__`` a public module defines itself, as loader bodies are written.
+
+        Each is its signature, its statements one level deep and the constants they read (``uses``); one that is
+        bound by anything but ``def`` or a `module_hooks` call is refused.
+        """
+        model = self.tree.module(module)
+        lines = []
+        for binding in self._bindings(model, model.module_scope):
+            if binding.name not in _HOOKS:
+                continue
+            if binding.kind != "def":
+                if self._hooks_call(model, binding) is None:
+                    reason = f"{binding.name} is bound by {binding.kind}, not by def or module_hooks"
+                    self._refuse(module, binding.line, reason)
+                continue
+            label = f"{module}.{binding.name}"
+            body = [statement for statement in binding.node.body if not isinstance(statement, ast.Expr)]
+            lines += self._function(
+                model, binding.node, binding.name, "", _suffix(self._guard(model, binding.guard)), label
+            )
+            lines += self._loader_body(model, binding.node, label)
+            lines += self._uses(model, body, "    ", collapse=False)
         return lines
 
     def _entry(self, module: str, name: str) -> Entry:
@@ -633,7 +695,7 @@ class PublicApi:
             elif target.kind == "lazy":
                 model = self.tree.module(target.module)
                 assert isinstance(target.node, ast.expr)
-                lines.append(f"{name} = lazy {_text(model, target.node)}{suffix}")
+                lines.append(f"{name} = lazy {self._text(model, target.node)}{suffix}")
                 lines += self._uses(model, [target.node], "    ")
             elif target.kind == "loader":
                 model = self.tree.module(target.module)
@@ -657,7 +719,7 @@ class PublicApi:
             elif binding is not None:
                 lines += self._function(model, statement, binding.name, "    | ", "", label)
             elif not isinstance(statement, ast.Expr):
-                lines += [f"    | {line}" for line in _text(model, statement).splitlines()]
+                lines += [f"    | {line}" for line in self._text(model, statement).splitlines()]
         return lines
 
     def _binding(self, definition: source_model.Definition) -> source_model.Binding:
@@ -694,7 +756,7 @@ class PublicApi:
         else:
             lines = self._value(model, binding, name, "", suffix, collapse=True)
             lines += [
-                f"    then {_text(model, statement)}"
+                f"    then {self._text(model, statement)}"
                 for use in model.uses(binding)
                 if use.kind in _VALUE_WRITES and use.reference.scope.runs_in == "module"
                 for statement in [model.statement_at(use.reference.line)]
@@ -702,7 +764,7 @@ class PublicApi:
             ]
         for write in self.late.get((definition.module, definition.name, definition.line), []):
             if write.attribute != "__module__":
-                written = _text(self.tree.module(write.module), write.value)
+                written = self._text(self.tree.module(write.module), write.value)
                 lines.append(f"    {write.attribute} = {written}  [set in {write.module}]")
         return lines
 
@@ -715,10 +777,10 @@ class PublicApi:
         suffix: str,
         label: str,
     ) -> list[str]:
-        lines = [f"{indent}@{_text(model, decorator)}" for decorator in node.decorator_list]
+        lines = [f"{indent}@{self._text(model, decorator)}" for decorator in node.decorator_list]
         keyword = "async def" if isinstance(node, ast.stmt) and model.clauses(node)[0].keyword == "async def" else "def"
-        returns = f" -> {_text(model, node.returns)}" if node.returns is not None else ""
-        lines.append(f"{indent}{keyword} {name}({_text(model, node.args)}){returns}{suffix}")
+        returns = f" -> {self._text(model, node.returns)}" if node.returns is not None else ""
+        lines.append(f"{indent}{keyword} {name}({self._text(model, node.args)}){returns}{suffix}")
         defaults = [*node.args.defaults, *(default for default in node.args.kw_defaults if default is not None)]
         kwargs = node.args.kwarg.annotation if node.args.kwarg is not None else None
         unpacked = kwargs.slice if isinstance(kwargs, ast.Subscript) and model.origin(kwargs.value) in _UNPACK else None
@@ -738,8 +800,8 @@ class PublicApi:
     ) -> list[str]:
         node = binding.node
         scope = model.scope_defined_by(node)
-        lines = [f"{indent}@{_text(model, decorator)}" for decorator in node.decorator_list]
-        bases = ", ".join(_text(model, item) for item in [*node.bases, *node.keywords])
+        lines = [f"{indent}@{self._text(model, decorator)}" for decorator in node.decorator_list]
+        bases = ", ".join(self._text(model, item) for item in [*node.bases, *node.keywords])
         lines.append(f"{indent}class {name}{f'({bases})' if bases else ''}{suffix}")
         inner = f"{indent}    "
         for member in self._bindings(model, scope):
@@ -769,10 +831,9 @@ class PublicApi:
     def _stored_by_init(model: source_model.SourceModule, nodes: list[ast.AST]) -> bool:
         return any(isinstance(node, ast.Attribute) and model.scope_of(node).code_name == "__init__" for node in nodes)
 
-    @staticmethod
-    def _field(model: source_model.SourceModule, binding: source_model.Binding) -> bool:
+    def _field(self, model: source_model.SourceModule, binding: source_model.Binding) -> bool:
         """Whether a class member is a field: annotated, and not as a ``ClassVar``."""
-        annotation = _annotations(model).get(id(binding.node))
+        annotation = self._annotations(model).get(id(binding.node))
         if annotation is None:
             return False
         head = annotation.value if isinstance(annotation, ast.Subscript) else annotation
@@ -789,8 +850,8 @@ class PublicApi:
         collapse: bool,
     ) -> list[str]:
         statement = model.statement_at(binding.line)
-        annotation = _annotations(model).get(id(binding.node))
-        written = f": {_text(model, annotation)}" if annotation is not None else ""
+        annotation = self._annotations(model).get(id(binding.node))
+        written = f": {self._text(model, annotation)}" if annotation is not None else ""
         alias = annotation is not None and model.origin(annotation) in _TYPE_ALIASES
         assignment = model.assignment(binding.node)
         augmented = binding.kind == "augassign"
@@ -799,24 +860,29 @@ class PublicApi:
         if binding.kind == "annotation-only":
             return [f"{indent}{name}{written}{suffix}"]
         if binding.kind == "type-alias":
-            parameters = ", ".join(_text(model, item) for item in getattr(statement, "type_params", ()))
-            alias_value = _text(model, getattr(statement, "value", binding.node))
+            parameters = ", ".join(self._text(model, item) for item in getattr(statement, "type_params", ()))
+            alias_value = self._text(model, getattr(statement, "value", binding.node))
             return [f"{indent}type {name}{f'[{parameters}]' if parameters else ''} = {alias_value}{suffix}"]
         if binding.kind == "match" or value is None:
             return [f"{indent}{name}{written} = <{binding.kind} target>{suffix}"]
         operator = " += " if augmented else " = "
-        text = _text(model, value, collapse=collapse and not alias)
+        text = self._text(model, value, collapse=collapse and not alias)
         return [f"{indent}{name}{written}{operator}{text}{suffix}", *self._uses(model, [value], f"{indent}    ")]
 
-    def _uses(self, model: source_model.SourceModule, values: list[ast.expr], indent: str) -> list[str]:
-        """Write the constants the values read that no public name reaches, once each, the ones they read after them."""
+    def _uses(
+        self, model: source_model.SourceModule, values: list[ast.expr], indent: str, *, collapse: bool = True
+    ) -> list[str]:
+        """Write the constants the values read that no public name reaches, once each, the ones they read after them.
+
+        Large containers are written as their size unless ``collapse`` is false.
+        """
         lines: list[str] = []
         seen: set[Key] = set()
         pending = [(model, value) for value in values]
         while pending:
             current, value = pending.pop(0)
             for node in ast.walk(value):
-                origin = current.origin(node) if id(node) in _loads(current) else None
+                origin = current.origin(node) if id(node) in self._loads(current) else None
                 reached = self._reach(origin) if origin is not None and "." in origin else []
                 for definition in reached if isinstance(reached, list) else []:
                     key = (definition.module, definition.name, definition.line)
@@ -825,7 +891,7 @@ class PublicApi:
                     seen.add(key)
                     used = self.tree.module(definition.module)
                     binding = self._binding(definition)
-                    lines += self._value(used, binding, f"uses {definition.name}", indent, "", collapse=True)[:1]
+                    lines += self._value(used, binding, f"uses {definition.name}", indent, "", collapse=collapse)[:1]
                     pending += [(used, binding.value)] if binding.value is not None else []
         return lines
 
@@ -833,7 +899,7 @@ class PublicApi:
         origins = {origin for origin, guard in model.origins(base) if not _typing_only(guard)}
         origins = origins or ({origin} if (origin := model.origin(base)) is not None else set())
         if len(origins) != 1:
-            self._refuse(model.module, base.lineno, f"a base the record cannot follow: {_text(model, base)}")
+            self._refuse(model.module, base.lineno, f"a base the record cannot follow: {self._text(model, base)}")
             return
         for origin in origins:
             self._queue(origin, "a base of", label)

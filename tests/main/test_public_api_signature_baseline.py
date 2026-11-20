@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import difflib
 import functools
 import importlib
 import inspect
@@ -382,7 +383,7 @@ def _baseline_generate_runtime_signature(
 
 
 def _baseline_parser_parse_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     with_import: bool | None = True,
     format_: bool | None = True,
     settings_path: Path | None = None,
@@ -396,7 +397,7 @@ def _baseline_parser_parse_runtime_signature(
 
 
 def _baseline_process_single_module_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     module_: ModulePath,
     models: list[DataModel],
     results: dict[ModulePath, Result],
@@ -410,7 +411,7 @@ def _baseline_process_single_module_runtime_signature(
 
 
 def _baseline_openapi_parser_parse_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     *args: Any,
     **kwargs: Any,
 ) -> str | dict[tuple[str, ...], Result]:
@@ -756,7 +757,7 @@ def test_normalize_union_str_equivalence(type_a: str, type_b: str) -> None:
     assert _normalize_union_str(type_a) == _normalize_union_str(type_b)
 
 
-def _normalize_type(tp: Any) -> str:  # noqa: PLR0911  # pragma: no cover
+def _normalize_type(tp: Any) -> str:  # ruff: ignore[too-many-return-statements]  # pragma: no cover
     """Normalize type for comparison between Config and TypedDict."""
     if tp is None or tp is type(None):
         return "None"
@@ -826,10 +827,76 @@ def test_public_api_record_refuses_what_it_cannot_read(tmp_path: Path) -> None:
         "globals()['dynamic'] = import_module('json')\n",
         encoding="utf-8",
     )
+    (package / "hooked.py").write_text(
+        "def _serve(name):\n    return name\n\n\n__getattr__ = _serve\n", encoding="utf-8"
+    )
     with pytest.raises(public_api_record.RecordError) as refused:
         public_api_record.read(tmp_path, "package").text()
 
     assert_output(f"{refused.value}\n")
+
+
+_HOOK_PACKAGE = {
+    "_lazy_exports.py": (
+        "def module_hooks(module_name, table):\n    return (lambda name: table[name]), (lambda: sorted(table))\n"
+    ),
+    "_table.py": "class Served:\n    pass\n\n\nclass Other:\n    pass\n",
+    "__init__.py": (
+        "from ._lazy_exports import module_hooks\n"
+        "from ._table import Other, Served\n\n"
+        '_SERVED = frozenset({"Legacy"})\n'
+        '_LAZY = {"Pair": ("package._table", "Served")}\n'
+        "_lazy_getattr, __dir__ = module_hooks(__name__, _LAZY)\n\n\n"
+        "def __getattr__(name: str) -> object:\n"
+        "    if name in _SERVED:\n"
+        "        return Served\n"
+        "    return _lazy_getattr(name)\n"
+    ),
+    "plain/__init__.py": "VALUE = 1\n",
+}
+_HOOK_EDITS = {
+    "the-hook-serves-another-class": ("__init__.py", "        return Served\n", "        return Other\n"),
+    "a-constant-the-hook-reads-gains-a-name": ("__init__.py", '{"Legacy"}', '{"Legacy", "Older"}'),
+    "the-pair-entry-names-another-attribute": (
+        "__init__.py",
+        '"package._table", "Served"',
+        '"package._table", "Other"',
+    ),
+    "a-module-gains-a-hook": (
+        "plain/__init__.py",
+        "VALUE = 1\n",
+        (
+            "VALUE = 1\n\n\ndef __getattr__(name: str) -> object:\n"
+            '    if name == "Legacy":\n        return VALUE\n'
+            "    raise AttributeError(name)\n"
+        ),
+    ),
+}
+
+
+def _hook_record(tmp_path: Path, edit: tuple[str, str, str] | None = None) -> str:
+    """Write the hook package under ``tmp_path``, with an optional edit (file, old, new), and read its record."""
+    package = tmp_path / "package"
+    for name, text in _HOOK_PACKAGE.items():
+        (package / name).parent.mkdir(parents=True, exist_ok=True)
+        (package / name).write_text(
+            text if edit is None or edit[0] != name else text.replace(*edit[1:]), encoding="utf-8"
+        )
+    return public_api_record.read(tmp_path, "package").text()
+
+
+def test_public_api_record_writes_the_hooks_a_module_defines(tmp_path: Path) -> None:
+    """Write a module's own ``__getattr__`` with the constants it reads, and a lazy ``(module, attribute)`` entry."""
+    assert_output(_hook_record(tmp_path))
+
+
+@pytest.mark.parametrize("edit", [pytest.param(edit, id=name) for name, edit in _HOOK_EDITS.items()])
+def test_public_api_record_moves_with_an_edit_of_a_hook(tmp_path: Path, edit: tuple[str, str, str]) -> None:
+    """Change the record when a hook, a constant it reads, a pair entry or the hooks a module defines change."""
+    before = _hook_record(tmp_path / "before")
+    after = _hook_record(tmp_path / "after", edit)
+    changed = difflib.unified_diff(before.splitlines(), after.splitlines(), lineterm="", n=0)
+    assert_output("\n".join(line for line in changed if not line.startswith(("---", "+++", "@@"))) + "\n")
 
 
 def _runtime_names(module: types.ModuleType, facts: public_api_record.ModuleFacts) -> set[str]:
