@@ -14426,7 +14426,6 @@ def test_main_jsonschema_duplicate_name(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "duplicate_name",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "duplicate_name",
         input_file_type="jsonschema",
     )
 
@@ -14964,7 +14963,6 @@ def test_main_jsonschema_single_value_enum_as_const_mixed_drafts(extra_args: lis
         input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "mixed_drafts",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "single_value_enum_as_const" / "mixed_drafts",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
     )
 
@@ -17777,7 +17775,6 @@ def test_main_all_of_any_of(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "all_of_any_of",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "all_of_any_of",
         input_file_type="jsonschema",
     )
 
@@ -17814,7 +17811,6 @@ def test_main_all_of_one_of(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "all_of_one_of",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "all_of_one_of",
         input_file_type="jsonschema",
     )
 
@@ -17824,7 +17820,6 @@ def test_main_top_level_allof_oneof(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "top_level_allof_oneof",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "top_level_allof_oneof",
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -19159,23 +19154,19 @@ def test_main_jsonschema_external_discriminator(output_model: str, min_version: 
 
 
 @pytest.mark.parametrize(
-    ("output_model", "expected_output"),
+    "output_model",
     [
         pytest.param(
             "msgspec.Struct",
-            "discriminator_with_external_references_folder_msgspec",
             marks=MSGSPEC_LEGACY_BLACK_SKIP,
         ),
     ],
 )
-def test_main_jsonschema_external_discriminator_folder(
-    output_model: str, expected_output: str, min_version: str, output_dir: Path
-) -> None:
+def test_main_jsonschema_external_discriminator_folder(output_model: str, min_version: str, output_dir: Path) -> None:
     """Test external discriminator in folder structure."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_with_external_reference",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_output,
         extra_args=[
             "--output-model-type",
             output_model,
@@ -19190,7 +19181,6 @@ def test_main_duplicate_field_constraints(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "duplicate_field_constraints",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "duplicate_field_constraints",
         input_file_type="jsonschema",
         extra_args=[
             "--collapse-root-models",
@@ -19205,7 +19195,6 @@ def test_main_duplicate_field_constraints_msgspec(min_version: str, output_dir: 
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "duplicate_field_constraints",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "duplicate_field_constraints_msgspec",
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -19358,7 +19347,6 @@ def test_main_root_one_of(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "root_one_of",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "root_one_of",
         input_file_type="jsonschema",
     )
 
@@ -19399,7 +19387,6 @@ def test_main_imports_correct(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "imports_correct",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "imports_correct",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -19822,7 +19809,6 @@ def test_main_invalid_import_name(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "invalid_import_name",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "invalid_import_name",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -19835,7 +19821,6 @@ def test_main_alias_import_alias(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "alias_import_alias",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "alias_import_alias",
     )
 
 
@@ -20346,7 +20331,6 @@ def test_main_use_generic_base_class_module_split(output_dir: Path) -> None:
             "--module-split-mode",
             "single",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "use_generic_base_class_module_split",
     )
 
 
@@ -20365,7 +20349,6 @@ def test_main_use_generic_base_class_deep_inheritance(output_dir: Path) -> None:
             "--module-split-mode",
             "single",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "use_generic_base_class_deep_inheritance",
     )
 
 
@@ -20384,7 +20367,6 @@ def test_main_use_generic_base_class_multi_root(output_dir: Path) -> None:
             "--module-split-mode",
             "single",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "use_generic_base_class_multi_root",
     )
 
 
@@ -20403,7 +20385,6 @@ def test_main_use_generic_base_class_circular(output_dir: Path) -> None:
             "--module-split-mode",
             "single",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "use_generic_base_class_circular",
     )
 
 
@@ -20454,7 +20435,6 @@ def test_main_jsonschema_forwarding_reference_collapse_root(output_dir: Path) ->
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "forwarding_reference",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "forwarding_reference",
         input_file_type="jsonschema",
         extra_args=["--collapse-root-models"],
     )
@@ -20876,7 +20856,6 @@ def test_main_jsonschema_type_alias_type_recursive_exports(output_dir: Path) -> 
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_type_module",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "type_alias_type_module",
         extra_args=[
             "--use-type-alias-type",
             "--target-python-version",
@@ -21881,7 +21860,7 @@ def test_reuse_tree_single_first_root_validation(
 The `--reuse-scope` flag configures the code generation behavior.""",
     input_schema="jsonschema/reuse_scope_tree",
     cli_args=["--reuse-model", "--reuse-scope", "tree"],
-    golden_output="jsonschema/reuse_scope_tree",
+    golden_output="jsonschema/main_jsonschema/reuse_scope_tree",
 )
 def test_main_jsonschema_reuse_scope_tree(output_dir: Path) -> None:
     """Scope for model reuse detection (root or tree).
@@ -21891,7 +21870,6 @@ def test_main_jsonschema_reuse_scope_tree(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree"],
     )
@@ -21902,7 +21880,6 @@ def test_main_jsonschema_reuse_scope_tree_exact_imports(output_dir: Path) -> Non
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_exact_imports",
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -21917,24 +21894,20 @@ def test_main_jsonschema_reuse_scope_tree_exact_imports(output_dir: Path) -> Non
 
 
 @pytest.mark.parametrize(
-    ("expected_name", "extra_args"),
+    "extra_args",
     [
-        pytest.param("reuse_scope_tree_shared_module_name", ["--shared-module-name", "common"], id="named"),
+        pytest.param(["--shared-module-name", "common"], id="named"),
         pytest.param(
-            "reuse_scope_tree_shared_module_name_dotted",
             ["--shared-module-name", "shared.types", "--treat-dot-as-module"],
             id="dotted",
         ),
     ],
 )
-def test_main_jsonschema_reuse_scope_tree_shared_module_name(
-    expected_name: str, extra_args: list[str], output_dir: Path
-) -> None:
+def test_main_jsonschema_reuse_scope_tree_shared_module_name(extra_args: list[str], output_dir: Path) -> None:
     """Name the module that tree-scope reuse moves shared models to, as a module or a dotted package path."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
