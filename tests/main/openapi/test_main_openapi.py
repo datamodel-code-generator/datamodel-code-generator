@@ -4849,6 +4849,8 @@ def test_main_openapi_enum_models_as_literal_all(min_version: str, output_file: 
         input_path=OPEN_API_DATA_PATH / "enum_models.yaml",
         output_path=output_file,
         input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="enum_models/all.py",
         extra_args=["--enum-field-as-literal", "all", "--target-python-version", min_version],
     )
 
@@ -4860,6 +4862,8 @@ def test_main_openapi_enum_models_as_literal(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "enum_models.yaml",
         output_path=output_file,
         input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "enum_models" / "as_literal.py",
         extra_args=["--enum-field-as-literal", "all", "--target-python-version", f"3.{MIN_VERSION}"],
     )
 

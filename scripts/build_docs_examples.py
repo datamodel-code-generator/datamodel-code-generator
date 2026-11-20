@@ -647,7 +647,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "openapi.quick-start.output",
             "openapi.md",
             language="python",
-            path=EXPECTED_OPENAPI / "general.py",
+            path=EXPECTED_OPENAPI / "main_openapi/validation.py",
             strip_python_header=True,
         ),
         _file_example(
