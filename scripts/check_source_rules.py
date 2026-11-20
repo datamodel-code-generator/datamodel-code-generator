@@ -762,7 +762,7 @@ def raw_skip(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     """
     for module in _test_modules(tree):
         model = module.model
-        loads = [reference.node for reference in model.references if reference.context == "load"]
+        loads: list[ast.expr] = [reference.node for reference in model.references if reference.context == "load"]
         loads += [node for node in module.nodes if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load)]
         for node in loads:
             if (origin := model.origin(node)) in SKIP_ORIGINS:
