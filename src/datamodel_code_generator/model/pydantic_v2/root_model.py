@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._container_kinds import ITEM_CONTAINERS, SETS
 from datamodel_code_generator._python_syntax import subscript_text
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.pydantic_v2.base_model import (

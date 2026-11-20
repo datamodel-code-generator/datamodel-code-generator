@@ -11,7 +11,6 @@ from functools import partial
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
-from datamodel_code_generator import SchemaParseError, is_swagger_2
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORDS,
     NUMBER_BOUND_KEYWORDS,
@@ -43,6 +42,8 @@ from datamodel_code_generator._openapi_paths import (
     path_key_row,
     path_selected,
 )
+from datamodel_code_generator._shared_types import SchemaParseError
+from datamodel_code_generator._source import is_swagger_2
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence

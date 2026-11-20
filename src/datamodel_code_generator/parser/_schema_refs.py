@@ -34,13 +34,14 @@ from urllib.parse import unquote, urljoin
 
 from typing_extensions import Protocol, final
 
-from datamodel_code_generator import Error, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import document_part, join_pointer
 from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, subschema_entries
 from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.enums import ReadOnlyWriteOnlyModelType
 from datamodel_code_generator.parser._intersection import concatenating_row
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite
 from datamodel_code_generator.parser._schema_documents import (

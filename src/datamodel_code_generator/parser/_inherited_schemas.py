@@ -21,7 +21,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol, Sentinel, final
 
-from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator._constraint_applicability import (
     ITEM_COUNT_KEYWORDS,
     NUMBER_KEYWORDS,
@@ -43,6 +42,7 @@ from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator._warning_control import quiet
+from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
 from datamodel_code_generator.parser import _rw_split, _schema_refs, _value_keywords

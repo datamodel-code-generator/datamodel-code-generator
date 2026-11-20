@@ -23,8 +23,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import AllOfMergeMode, Error, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator._graph_links import drop_tree
+from datamodel_code_generator._shared_types import Error
+from datamodel_code_generator.enums import AllOfMergeMode, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation

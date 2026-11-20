@@ -31,13 +31,30 @@ from typing import (
 )
 from urllib.parse import ParseResult
 
+from datamodel_code_generator._caches import cached_path_exists as cached_path_exists
 from datamodel_code_generator._generation_timestamp import current_timestamp as current_timestamp
 from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK as PROCESS_STATE_LOCK
+from datamodel_code_generator._shared_types import DanglingRefWarning as DanglingRefWarning
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
     _CollapseRootModelsRecursionError,
+)
+from datamodel_code_generator._shared_types import DefaultValueTypeWarning as DefaultValueTypeWarning
+from datamodel_code_generator._shared_types import DocumentationAnnotationWarning as DocumentationAnnotationWarning
+from datamodel_code_generator._shared_types import Error as Error
+from datamodel_code_generator._shared_types import GeneratedModules as GeneratedModules
+from datamodel_code_generator._shared_types import InvalidClassNameError as InvalidClassNameError
+from datamodel_code_generator._shared_types import InvalidFileFormatError as InvalidFileFormatError
+from datamodel_code_generator._shared_types import LeftoverFilesWarning as LeftoverFilesWarning
+from datamodel_code_generator._shared_types import NamingHintWarning as NamingHintWarning
+from datamodel_code_generator._shared_types import SchemaFetchError as SchemaFetchError
+from datamodel_code_generator._shared_types import SchemaParseError as SchemaParseError
+from datamodel_code_generator._shared_types import SchemaResourceRefWarning as SchemaResourceRefWarning
+from datamodel_code_generator._shared_types import _InvalidConfigTomlError as _InvalidConfigTomlError
+from datamodel_code_generator._shared_types import (
+    _StructuredOutputUnavailableError as _StructuredOutputUnavailableError,
 )
 from datamodel_code_generator._source import DecodedInput as _DecodedInput
 from datamodel_code_generator._source import (
@@ -66,6 +83,9 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._source import decoding_from as _decoding_from
 from datamodel_code_generator._source import input_text as _input_text
+from datamodel_code_generator._source import is_asyncapi as is_asyncapi
+from datamodel_code_generator._source import is_openapi as is_openapi
+from datamodel_code_generator._source import is_swagger_2 as is_swagger_2
 from datamodel_code_generator._source import load_data as load_data
 from datamodel_code_generator._source import load_data_from_path as load_data_from_path
 from datamodel_code_generator._source import load_text_data as load_text_data
@@ -151,6 +171,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._run_record import RunOptions
+    from datamodel_code_generator._shared_types import GenerationInput as _GenerationInput
+    from datamodel_code_generator._shared_types import ParserSource as _ParserSource
     from datamodel_code_generator._types import ParserConfigDict
     from datamodel_code_generator._types.generate_config_dict import GenerateConfigDict
     from datamodel_code_generator._user_keys import ModelNameKeys, ModelNameRecord
@@ -220,6 +242,9 @@ def _tuned_gc() -> Generator[None]:
 
 for _public_source_export in (
     enable_parsed_source_cache,
+    is_asyncapi,
+    is_openapi,
+    is_swagger_2,
     load_data,
     load_data_from_path,
     load_yaml,
@@ -230,10 +255,8 @@ for _public_source_export in (
 del _public_source_export
 
 if TYPE_CHECKING:
-    _GenerationInput: TypeAlias = Path | str | ParseResult | Mapping[str, Any] | list[Any]
     _OptionStage: TypeAlias = Literal["preset", "implied-target", "sentinel", "implied-model"]
     _ParserResults: TypeAlias = str | dict[tuple[str, ...], Result]
-    _ParserSource: TypeAlias = str | Path | list[Path] | ParseResult | dict[str, Any]
     _PythonTypeExpressions: TypeAlias = Mapping[str, PythonTypeExpr]
 
     class _SharedParserConfigDict(ParserConfigDict, closed=True):
@@ -251,27 +274,7 @@ if TYPE_CHECKING:
     _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, tuple[str, ...], str]
 
 
-GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
-"""Type alias for multiple generated modules.
-
-Maps module path tuples (e.g., ("models", "user.py")) to generated code strings.
-Returned by generate() when output=None and multiple modules are generated, or a server or client package.
-"""
-
-
 DEFAULT_BASE_CLASS: str = "pydantic.BaseModel"
-
-
-@_lru_cache(maxsize=256)
-def cached_path_exists(path: Path) -> bool:
-    """Check if a path exists with LRU caching.
-
-    Caches the result of Path.exists() to reduce filesystem I/O
-    when checking the same path multiple times (e.g., custom template directories).
-
-    Note: This cache is safe for CLI usage where files don't change during execution.
-    """
-    return path.exists()
 
 
 def get_version() -> str:
@@ -420,21 +423,6 @@ def _uses_legacy_process_state(config: GenerateConfig) -> bool:
     )
 
 
-def is_openapi(data: Mapping[str, Any]) -> bool:
-    """Check if the data dict is an OpenAPI specification."""
-    return "openapi" in data
-
-
-def is_swagger_2(data: Mapping[str, Any]) -> bool:
-    """Check if the data dict is a Swagger 2.0 document: its root has a `swagger` key and no `openapi` key."""
-    return "swagger" in data and not is_openapi(data)
-
-
-def is_asyncapi(data: Mapping[str, Any]) -> bool:
-    """Check if the data dict is an AsyncAPI specification."""
-    return "asyncapi" in data
-
-
 JSON_SCHEMA_URLS: tuple[str, ...] = (
     "http://json-schema.org/",
     "https://json-schema.org/",
@@ -529,26 +517,6 @@ _INPUT_TYPES: Final[dict[InputFileType, _InputTypeRow]] = {
 }
 
 RAW_DATA_TYPES: list[InputFileType] = [kind for kind, row in _INPUT_TYPES.items() if row.genson or row.graphql]
-
-
-class Error(Exception):
-    """Base exception for datamodel-code-generator errors."""
-
-    def __init__(self, message: str) -> None:
-        """Initialize with message."""
-        self.message: str = message
-
-    def __str__(self) -> str:
-        """Return string representation."""
-        return self.message
-
-
-class _StructuredOutputUnavailableError(Error):
-    """Raised when the installed Pydantic is too old for the payload models of the JSON output of the CLI."""
-
-
-class _InvalidConfigTomlError(Error, ValueError):
-    """Raised for a configuration file that is not valid TOML: a configuration error, and the ``ValueError`` it was."""
 
 
 def _written_paths(
@@ -650,42 +618,6 @@ def _refuse_written_path_conflicts(
     """
     _validate_generation_path_conflicts(input_, output, model_metadata, lockfile)
     _refuse_uncreatable_paths(output, model_metadata, lockfile, caller_cwd)
-
-
-class DanglingRefWarning(UserWarning):
-    """Warn that a local JSON pointer target was not found."""
-
-
-class SchemaResourceRefWarning(UserWarning):
-    """Warn that a reference keeps, for compatibility, a target other than the one JSON Schema resolves."""
-
-
-class DefaultValueTypeWarning(UserWarning):
-    """Warn that a generated default is still serialized instead of its runtime type."""
-
-
-class DocumentationAnnotationWarning(UserWarning):
-    """Warn that a served document leaves out an annotation that has no JSON form."""
-
-
-class LeftoverFilesWarning(UserWarning):
-    """Warn that a generated package holds Python files that the generation left in place and does not generate."""
-
-
-class NamingHintWarning(UserWarning):
-    """Point a command line run whose class names are mostly numbered collisions to ``--recommend-options``."""
-
-
-class InvalidClassNameError(Error):
-    """Raised when a schema title cannot be converted to a valid Python class name."""
-
-    def __init__(self, class_name: str) -> None:
-        """Initialize with class name."""
-        self.class_name = class_name
-        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
-
-        message = f"title={stable_repr(class_name)} is invalid class name."
-        super().__init__(message=message)
 
 
 def _validate_output_datetime_class(
@@ -934,56 +866,6 @@ def _resolve_run_options(
         else dict.fromkeys(config.model_fields_set)
     )
     return _run_option_stages(config, RunOptions(fields_set=fields_set), stages, checks)[0]
-
-
-class InvalidFileFormatError(Error):
-    """Raised when the input file format is invalid or cannot be parsed."""
-
-    def __init__(
-        self,
-        original_error: Exception,
-        input_file_type: InputFileType | None = None,
-        *,
-        source: str | Path | None = None,
-    ) -> None:
-        """Initialize with original error, input file type, and source context."""
-        self.original_error = original_error
-        self.input_file_type = input_file_type
-        self.source = source
-        error_detail = f"{type(original_error).__name__}: {original_error}"
-        source_detail = f" at {redact_url(str(source))}" if source is not None else ""
-        if input_file_type is not None:
-            message = f"Invalid file format for {input_file_type.value}{source_detail}: {error_detail}"
-        else:
-            message = f"Invalid file format{source_detail}: {error_detail}"
-        super().__init__(message=message)
-
-
-class SchemaParseError(Error):
-    """Raised when an error occurs during schema parsing with path context."""
-
-    def __init__(
-        self,
-        message: str,
-        path: list[str] | None = None,
-        original_error: Exception | None = None,
-    ) -> None:
-        """Initialize with message, schema path, and optional original error."""
-        self.path = path or []
-        self.original_error = original_error
-        full_message = self._format_message(message)
-        super().__init__(message=full_message)
-
-    def _format_message(self, message: str) -> str:
-        """Format message with schema path context."""
-        if self.path:
-            path_str = redact_path(self.path)
-            return f"Error at schema path '{path_str}': {message}"
-        return message
-
-
-class SchemaFetchError(Error):
-    """Raised when fetching a remote schema fails (HTTP error, unexpected content type)."""
 
 
 _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT = 4096

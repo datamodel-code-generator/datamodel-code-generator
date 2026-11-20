@@ -14,10 +14,13 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from datamodel_code_generator import Error, _resolve_preset, is_swagger_2
+from datamodel_code_generator import _resolve_preset
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
 from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
+from datamodel_code_generator._shared_types import Error
+from datamodel_code_generator._source import is_swagger_2
+from datamodel_code_generator.enums import InputFileType
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -28,7 +31,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._recommend._trial import CandidateOutcome, TrialCandidate, TrialInput
     from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
     from datamodel_code_generator._source import DecodedInput
-    from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.parser.schema_version import SchemaKind
 
 _ANALYSED_TYPES: dict[str, SchemaKind] = {"openapi": "openapi", "jsonschema": "jsonschema", "asyncapi": "asyncapi"}
@@ -197,7 +199,7 @@ def _read_input(request: RecommendRequest) -> tuple[str | None, InputSource, str
 
 def _input_file_type(config: Any, text: str | None) -> tuple[str | None, DecodedInput | None]:
     """Return the configured input file type, or the detected one for auto with the document as detection decoded it."""
-    from datamodel_code_generator import InputFileType, _infer_input  # noqa: PLC0415
+    from datamodel_code_generator import _infer_input  # noqa: PLC0415
 
     if config.input_file_type != InputFileType.Auto:
         return config.input_file_type.value, None
@@ -567,7 +569,6 @@ def _trial_candidates(
     ``preset`` holds the config updates ``--preset`` makes for the recommended preset, including the target and forced
     field constraints, and nothing for a configured preset, which the configuration already has.
     """
-    from datamodel_code_generator import InputFileType  # noqa: PLC0415
     from datamodel_code_generator._recommend._trial import TrialCandidate  # noqa: PLC0415
 
     config = request.config
@@ -595,8 +596,6 @@ def _trial_candidates(
 
 def _known_type(analysed: _Input) -> InputFileType | None:
     """Return the input type the analysis knows: the configured or detected one, JSON Schema for --input-model."""
-    from datamodel_code_generator import InputFileType  # noqa: PLC0415
-
     known = analysed.file_type or ("jsonschema" if analysed.source == "input-model" else None)
     return None if known is None else InputFileType(known)
 

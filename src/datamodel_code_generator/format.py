@@ -183,7 +183,7 @@ def _fresh_watch_module(module: ModuleType) -> ModuleType:
         return module
     replacement, code = prepared
 
-    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
+    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
         exec(code, replacement.__dict__)  # noqa: S102
@@ -229,7 +229,7 @@ def _fresh_watch_package(module: ModuleType) -> ModuleType:
         return module
     replacement, code = prepared
 
-    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
+    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
         loaded_modules = sys.modules.copy()
@@ -276,7 +276,7 @@ def _load_watch_formatter_module(module_name: str, watch_dependencies: Any) -> M
     _record_watch_module_candidates(module_name, watch_dependencies)
     generation = watch_dependencies.collector_identity()
 
-    from datamodel_code_generator import PROCESS_STATE_LOCK  # noqa: PLC0415
+    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     with PROCESS_STATE_LOCK:
         module = sys.modules.get(module_name)
@@ -598,7 +598,7 @@ class CodeFormatter:
 
         if use_black:
             if (black_target_version := _get_black_python_version_map().get(python_version)) is None:
-                from datamodel_code_generator import Error  # noqa: PLC0415
+                from datamodel_code_generator._shared_types import Error  # noqa: PLC0415
 
                 raise Error(unsupported_black_message(python_version))
             root = black_find_project_root((settings_path,))
@@ -676,7 +676,7 @@ class CodeFormatter:
             else:
                 import_ = import_module(custom_formatter_import)
         except ImportError as e:
-            from datamodel_code_generator import Error  # noqa: PLC0415
+            from datamodel_code_generator._shared_types import Error  # noqa: PLC0415
 
             msg = f"Unable to import custom formatter {stable_repr(custom_formatter_import)}: {e}"
             raise Error(msg) from e

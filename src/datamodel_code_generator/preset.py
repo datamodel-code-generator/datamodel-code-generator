@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Unpack
 
-    from datamodel_code_generator.__main__ import TomlValue
+    from datamodel_code_generator._option_names import TomlValue
     from datamodel_code_generator._types.generate_config_dict import BaseGenerateConfig as BaseGenerateConfigDict
 
 PresetFormat = Literal["json", "markdown"]
@@ -1830,7 +1830,7 @@ def render_presets_markdown() -> str:
 
 def _render_copyable_config(info: PresetInfo) -> _PresetCopyableConfigDict:
     """Render a copyable expanded config through the existing CLI/config exporters."""
-    from datamodel_code_generator.__main__ import generate_cli_command, generate_pyproject_config  # noqa: PLC0415
+    from datamodel_code_generator._config_export import generate_cli_command, generate_pyproject_config  # noqa: PLC0415
 
     config_data = _copyable_config_data(info)
     return _PresetCopyableConfigDict(

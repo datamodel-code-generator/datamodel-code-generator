@@ -16,9 +16,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import ReuseScope
 from datamodel_code_generator._naming_hint import collecting_class_names
-from datamodel_code_generator.enums import DefaultValueType
+from datamodel_code_generator.enums import DefaultValueType, ReuseScope
 from datamodel_code_generator.model.base import DataModel, _refresh_custom_template_paths
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser import _type_overrides

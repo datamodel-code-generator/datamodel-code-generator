@@ -60,7 +60,7 @@ def _load_config_toml(path: Path) -> dict[str, Any]:
     try:
         return load_toml(path)
     except ValueError as exc:
-        from datamodel_code_generator import _InvalidConfigTomlError  # noqa: PLC0415
+        from datamodel_code_generator._shared_types import _InvalidConfigTomlError  # noqa: PLC0415
 
         msg = f"Invalid TOML in {path}: {exc}"
         raise _InvalidConfigTomlError(msg) from exc

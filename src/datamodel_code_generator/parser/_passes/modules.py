@@ -21,7 +21,6 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, get_args
 
 from typing_extensions import Protocol, Unpack
 
-from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy
 from datamodel_code_generator._constraint_applicability import (
     ITEM_COUNT_KEYWORDS,
     STRING_KEYWORDS,
@@ -55,6 +54,7 @@ from datamodel_code_generator._reference_graph import (
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
 from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override, record_written_as
+from datamodel_code_generator.enums import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
     CollapseSiteFacts,

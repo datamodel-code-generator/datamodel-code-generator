@@ -3,7 +3,31 @@
 
 from __future__ import annotations
 
+import os
 import sys
+import warnings
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from contextlib import nullcontext, redirect_stdout, suppress
+from functools import partial
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
+
+from datamodel_code_generator._generation_timestamp import current_timestamp
+from datamodel_code_generator._shared_types import (
+    Error,
+    InvalidClassNameError,
+    NamingHintWarning,
+    _StructuredOutputUnavailableError,
+)
+from datamodel_code_generator._shared_types import Exit as Exit
+from datamodel_code_generator._url_redaction import is_url, redact_url
+from datamodel_code_generator._warning_control import quiet
+from datamodel_code_generator.enums import (
+    _PYDANTIC_MODEL_TYPES,
+    DataModelType,  # noqa: F401  # Preserve the established __main__ export.
+    InputFileType,
+    _ExitCode,
+)
 
 
 def _json_schema_path(name: str) -> str | None:
@@ -23,9 +47,7 @@ def _skill_options_given(namespace: Namespace) -> bool:
 
 def _print_json_schema(name: str) -> int:
     """Print a JSON Schema on a fast path and return the exit code, an error if Pydantic lacks JSON output support."""
-    from datamodel_code_generator import _StructuredOutputUnavailableError  # noqa: PLC0415
     from datamodel_code_generator._json_output import json_schema_text  # noqa: PLC0415
-    from datamodel_code_generator.enums import _ExitCode  # noqa: PLC0415
 
     try:
         sys.stdout.write(f"{json_schema_text(name)}\n")
@@ -88,27 +110,13 @@ if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
         sys.stdout.write(f"{prompt_output}\n")
         sys.exit(0)
 
-import difflib
 import json
-import os
 import shlex
 import shutil
 import signal
 import tempfile
-import warnings
-from collections.abc import Iterable, Iterator, Mapping, Sequence
-from contextlib import nullcontext, redirect_stdout, suppress
-from enum import IntEnum
-from functools import partial
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator import (
-    DataModelType,  # noqa: F401  # Preserve the established __main__ export.
-    Error,
-    InputFileType,
-    InvalidClassNameError,
-    NamingHintWarning,
     _lazy_exports,
     _run_option_stages,
     _validate_generation_path_conflicts,
@@ -122,9 +130,17 @@ from datamodel_code_generator._cli_config import (
     _RawConfigValue,
     _template_data,
 )
+from datamodel_code_generator._cli_messages import (
+    _first_conflict,
+    _invalid_class_name_message,
+    _recommend_options_conflict,
+)
+from datamodel_code_generator._config_export import EXCLUDED_CONFIG_OPTIONS as EXCLUDED_CONFIG_OPTIONS
+from datamodel_code_generator._config_export import _cli_config_values, _format_pyproject_config, _pyproject_config_data
+from datamodel_code_generator._config_export import generate_cli_command as generate_cli_command
+from datamodel_code_generator._config_export import generate_pyproject_config as generate_pyproject_config
 from datamodel_code_generator._config_fields import JSON_FIELDS, TARGET_SELECTORS, names_file
 from datamodel_code_generator._format_types import Formatter, PythonVersion
-from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._json_output import OUTPUT_HEAD, json_schema_text, write_streamed_json
 from datamodel_code_generator._lock_plan import remote_lock_plan as _remote_lock_plan
 from datamodel_code_generator._option_names import (
@@ -132,20 +148,25 @@ from datamodel_code_generator._option_names import (
     GENERATE_FIELD_NAMES,
     SENSITIVE_FIELDS,
     TomlValue,
-    compact_json,
     config_table,
     field_name,
     hyphenated,
-    mapping_argument,
     option_arguments,  # noqa: F401  # Preserve the established __main__ export.
     option_flag,
     shell_command,
-    toml_table,
-    toml_text,
     values_arguments,  # noqa: F401  # Preserve the established __main__ export.
 )
 from datamodel_code_generator._option_names import json_ready as _json_ready
-from datamodel_code_generator._option_table import COMMAND_DESTS
+from datamodel_code_generator._output_comparison import ComparisonDifference as ComparisonDifference
+from datamodel_code_generator._output_comparison import DirectoryChangedFile as DirectoryChangedFile
+from datamodel_code_generator._output_comparison import OutputComparison as OutputComparison
+from datamodel_code_generator._output_comparison import OutputComparisonOptions as OutputComparisonOptions
+from datamodel_code_generator._output_comparison import OutputComparisonPolicy as OutputComparisonPolicy
+from datamodel_code_generator._output_comparison import (
+    _compare_generated_outputs,
+    _OutputDecodeError,
+    _write_comparison_output,
+)
 from datamodel_code_generator._paths import (
     layout_refusal,
     names_directory,
@@ -165,13 +186,9 @@ from datamodel_code_generator._project_config import (
     names_profile,
     profile_table_keys,
 )
-from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._run_record import RunOptions
-from datamodel_code_generator._url_redaction import is_url, redact_url
-from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
-from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, _ExitCode
 
 _LAZY_EXPORTS = {"Config": _get_config_class}
 __getattr__, __dir__ = _lazy_exports.module_hooks(__name__, _LAZY_EXPORTS)
@@ -183,6 +200,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from urllib.parse import ParseResult
 
+    from datamodel_code_generator._cli_config import Config
     from datamodel_code_generator._lock_plan import RemoteLockPlan as _RemoteLockPlan
     from datamodel_code_generator._naming_hint import NamingHint
     from datamodel_code_generator._publication import (
@@ -200,25 +218,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._structured_output import (
         CommandOutputKind,
         GeneratedFilePayload,
-        TargetPayload,
     )
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.validators import ModelValidators
     from datamodel_code_generator.watch_dependencies import WatchDependencies
 
-    Config: TypeAlias = Any
-
-EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {
-    "check",
-    "diff_against",
-    "debug",
-    "disable_warnings",
-    "list_deprecations",
-    "list_experimental",
-    "watch",
-    "watch_delay",
-}
-"""The options ``--generate-pyproject-config`` leaves out: those of a command and the config fields of a run mode."""
 
 SENSITIVE_COMMAND_OPTIONS: frozenset[str] = frozenset(map(option_flag, SENSITIVE_FIELDS))
 REDACTED_COMMAND_ARGUMENT = "<redacted>"
@@ -226,15 +230,6 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
 _NAMING_FIELDS: frozenset[str] = frozenset({"model_name_map", "naming_strategy", "parent_scoped_naming"})
-
-
-class Exit(IntEnum):
-    """Exit reasons."""
-
-    OK = _ExitCode.OK
-    DIFF = _ExitCode.DIFF
-    ERROR = _ExitCode.ERROR
-    KeyboardInterrupt = _ExitCode.INTERRUPTED
 
 
 def sig_int_handler(_: int, __: Any) -> None:
@@ -960,315 +955,6 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
     return BatchPlan(tuple(plans), watch, watch_delay, pyproject_path)
 
 
-def _pyproject_toml_value(key: str, value: object) -> TomlValue:
-    from datamodel_code_generator.json_config import JsonConfigSpecs  # noqa: PLC0415
-
-    if key not in JsonConfigSpecs.by_field_name or not isinstance(value, Mapping):
-        return cast("TomlValue", value)
-    return compact_json(value)
-
-
-def _cli_config_values(args: Namespace) -> dict[str, TomlValue]:
-    """Return the configuration values of CLI arguments, keyed by field name."""
-    return {
-        key: _pyproject_toml_value(key, value)
-        for key, value in sorted(vars(args).items())
-        if value is not None and key not in EXCLUDED_CONFIG_OPTIONS
-    }
-
-
-def _pyproject_config_data(args: Namespace) -> dict[str, TomlValue]:
-    """Return pyproject.toml configuration data from CLI arguments."""
-    return hyphenated(_cli_config_values(args))
-
-
-def _format_pyproject_config(config_data: Mapping[str, TomlValue], table: tuple[str, ...] = CONFIG_TABLE) -> str:
-    lines: list[str] = [toml_table(table)]
-    for key, value in config_data.items():
-        lines.append(f"{key} = {toml_text(value)}")
-    return "\n".join(lines) + "\n"
-
-
-def generate_pyproject_config(args: Namespace) -> str:
-    """Generate pyproject.toml [tool.datamodel-codegen] section from CLI arguments."""
-    return _format_pyproject_config(_pyproject_config_data(args))
-
-
-class _OutputDecodeError(UnicodeError):
-    """An existing output file that the configured encoding cannot decode."""
-
-    def __init__(self, path: Path, error: UnicodeError) -> None:
-        super().__init__(str(error))
-        self.path = path
-
-
-def _read_existing_output(path: Path, encoding: str) -> str:
-    """Read an existing output file with LF line endings, naming it when the encoding cannot decode it."""
-    try:
-        return normalize_newlines(path.read_text(encoding=encoding))
-    except UnicodeError as e:
-        raise _OutputDecodeError(path, e) from e
-
-
-class OutputComparisonOptions(NamedTuple):
-    """Formatting context for a generated-output comparison."""
-
-    is_directory_output: bool
-    input_diff: bool = False
-    single_file_display_path: str | None = None
-    directory_display_path: str | None = None
-
-    def directory_file_path(self, path: Path) -> str:
-        """Qualify a directory entry when comparing several output roots; a single-module output keeps its own name."""
-        if not path.parts and self.single_file_display_path is not None:
-            return self.single_file_display_path
-        return (path if self.directory_display_path is None else Path(self.directory_display_path) / path).as_posix()
-
-    @property
-    def fromfile_suffix(self) -> str:
-        """Return the unified-diff label suffix for the baseline output."""
-        return " (baseline input)" if self.input_diff else ""
-
-    @property
-    def tofile_suffix(self) -> str:
-        """Return the unified-diff label suffix for the current output."""
-        return " (current input)" if self.input_diff else " (expected)"
-
-
-OutputComparisonPolicy: TypeAlias = tuple[
-    Literal["added", "missing"],
-    str,
-    str,
-    Literal["extra", "removed"],
-    str,
-]
-
-
-def _output_comparison_policy(*, input_diff: bool) -> OutputComparisonPolicy:
-    """Return shared missing and extra reporting values for one comparison."""
-    if input_diff:
-        missing_message_suffix = "generated only from current input"
-        return (
-            "added",
-            missing_message_suffix,
-            missing_message_suffix,
-            "removed",
-            "generated only from baseline input",
-        )
-    return (
-        "missing",
-        "should be generated",
-        "file does not exist but should be generated",
-        "extra",
-        "no longer generated",
-    )
-
-
-def _compare_single_file(
-    generated_path: Path,
-    actual_path: Path,
-    encoding: str,
-    comparison: OutputComparisonOptions,
-) -> tuple[bool, list[str]]:
-    """Compare generated file content with existing file.
-
-    Returns:
-        Tuple of (has_differences, diff_lines)
-        - has_differences: True if files differ
-        - diff_lines: List of diff lines for output
-    """
-    generated_content = normalize_newlines(generated_path.read_text(encoding=encoding))
-
-    display_path = comparison.single_file_display_path or actual_path.as_posix()
-    actual_content = _read_existing_output(actual_path, encoding)
-
-    if generated_content == actual_content:
-        return False, []
-    return True, _unified_diff(comparison, display_path, actual_content, generated_content)
-
-
-def _unified_diff(comparison: OutputComparisonOptions, display_path: str, actual: str, generated: str) -> list[str]:
-    """Return the diff lines from an existing output to the generated one, labelled for the comparison."""
-    return list(
-        difflib.unified_diff(
-            actual.splitlines(keepends=True),
-            generated.splitlines(keepends=True),
-            fromfile=f"{display_path}{comparison.fromfile_suffix}",
-            tofile=f"{display_path}{comparison.tofile_suffix}",
-        )
-    )
-
-
-class DirectoryChangedFile(NamedTuple):
-    """One changed file found while comparing generated and existing directories."""
-
-    path: str
-    diff_lines: list[str]
-
-
-def _compare_directories(
-    generated_dir: Path,
-    actual_dir: Path,
-    encoding: str,
-    comparison: OutputComparisonOptions,
-) -> tuple[list[DirectoryChangedFile], list[str], list[str]]:
-    """Compare generated directory with existing directory.
-
-    Two inputs can generate a single-module file at the directory path: it is compared as the file at that path.
-    """
-    from datamodel_code_generator._leftover_files import python_files  # noqa: PLC0415
-
-    changed_files: list[DirectoryChangedFile] = []
-
-    generated_files = {path.relative_to(generated_dir) for path in generated_dir.rglob("*.py")}
-
-    actual_files = python_files(actual_dir)
-
-    if comparison.input_diff:
-        for files, output in ((generated_files, generated_dir), (actual_files, actual_dir)):
-            if output_layout(output) == "module":
-                files.add(Path())
-
-    missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
-    extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
-
-    for rel_path in sorted(generated_files & actual_files):
-        generated_content = normalize_newlines((generated_dir / rel_path).read_text(encoding=encoding))
-        actual_content = _read_existing_output(actual_dir / rel_path, encoding)
-        if generated_content != actual_content:
-            display_path = comparison.directory_file_path(rel_path)
-            changed_files.append(
-                DirectoryChangedFile(
-                    display_path, _unified_diff(comparison, display_path, actual_content, generated_content)
-                )
-            )
-
-    return changed_files, missing_files, extra_files
-
-
-class ComparisonDifference(NamedTuple):
-    """One generated-output difference, which becomes a payload model only when JSON is printed."""
-
-    kind: Literal["changed", "missing", "extra", "added", "removed"]
-    path: str
-    message: str | None = None
-    diff: str | None = None
-
-
-class OutputComparison(NamedTuple):
-    """Generated-file differences shared by --check and --diff-against."""
-
-    differences: list[ComparisonDifference]
-    content: str
-
-
-def _compare_generated_single_file(
-    generated_output: Path,
-    actual_output: Path,
-    encoding: str,
-    comparison: OutputComparisonOptions,
-) -> OutputComparison:
-    """Build one single-file comparison report."""
-    path = comparison.single_file_display_path or actual_output.as_posix()
-    if (actual_exists := actual_output.exists()) != generated_output.exists():
-        missing_kind, _, single_file_missing_message_suffix, extra_kind, extra_message_suffix = (
-            _output_comparison_policy(input_diff=comparison.input_diff)
-        )
-        kind, message_suffix = (
-            (extra_kind, extra_message_suffix) if actual_exists else (missing_kind, single_file_missing_message_suffix)
-        )
-        message = f"{kind.upper()}: {path} ({message_suffix})"
-        return OutputComparison(
-            differences=[ComparisonDifference(kind=kind, path=path, message=message)],
-            content=f"{message}\n",
-        )
-
-    diff_found, diff_lines = (
-        _compare_single_file(generated_output, actual_output, encoding, comparison) if actual_exists else (False, [])
-    )
-    if not diff_found:
-        return OutputComparison(differences=[], content="")
-
-    diff_text = "".join(diff_lines)
-    return OutputComparison(
-        differences=[ComparisonDifference(kind="changed", path=path, diff=diff_text)], content=diff_text
-    )
-
-
-def _compare_generated_directories(
-    generated_output: Path,
-    actual_output: Path,
-    encoding: str,
-    comparison: OutputComparisonOptions,
-) -> OutputComparison:
-    """Build one directory manifest comparison report."""
-    differences: list[ComparisonDifference] = []
-    content_parts: list[str] = []
-    changed_files, missing_files, extra_files = _compare_directories(
-        generated_output,
-        actual_output,
-        encoding,
-        comparison,
-    )
-    missing_kind, missing_message_suffix, _, extra_kind, extra_message_suffix = _output_comparison_policy(
-        input_diff=comparison.input_diff
-    )
-    for changed_file in changed_files:
-        diff_text = "".join(changed_file.diff_lines)
-        differences.append(ComparisonDifference(kind="changed", path=changed_file.path, diff=diff_text))
-        content_parts.append(diff_text)
-    for kind, message_suffix, paths in (
-        (missing_kind, missing_message_suffix, missing_files),
-        (extra_kind, extra_message_suffix, extra_files),
-    ):
-        for path in paths:
-            message = f"{kind.upper()}: {path} ({message_suffix})"
-            differences.append(ComparisonDifference(kind=kind, path=path, message=message))
-            content_parts.append(f"{message}\n")
-    return OutputComparison(differences=differences, content="".join(content_parts))
-
-
-def _compare_generated_outputs(
-    generated_output: Path,
-    actual_output: Path,
-    encoding: str,
-    comparison: OutputComparisonOptions,
-) -> OutputComparison:
-    """Compare formatted generated output without retaining full file manifests in memory."""
-    if comparison.is_directory_output:
-        return _compare_generated_directories(generated_output, actual_output, encoding, comparison)
-    return _compare_generated_single_file(generated_output, actual_output, encoding, comparison)
-
-
-def _format_cli_value(value: str | list[str]) -> str:
-    """Format a value for CLI argument."""
-    if isinstance(value, list):
-        return " ".join(f'"{v}"' if " " in v else v for v in value)
-    return f'"{value}"' if " " in value else value
-
-
-def generate_cli_command(config: dict[str, TomlValue]) -> str:
-    """Generate CLI command from pyproject.toml configuration."""
-    from datamodel_code_generator.cli_options import _option_arguments  # noqa: PLC0415
-
-    parts: list[str] = ["datamodel-codegen"]
-
-    for key, value in sorted(config.items()):
-        if key in EXCLUDED_CONFIG_OPTIONS:
-            continue
-        if isinstance(value, Mapping):
-            if argument := mapping_argument(key, value):
-                parts.extend((option_flag(key), argument))
-            continue
-        match _option_arguments(key, value):
-            case [option, *items] if items and isinstance(value, list | tuple):
-                parts.extend((option, _format_cli_value(items)))
-            case [option, *items]:
-                parts.extend((option, *(_format_cli_value(str(item)) for item in items)))
-
-    return " ".join(parts)
-
-
 def _hyphenated_config_data(config: Mapping[str, Any]) -> dict[str, Any]:
     return {key: _json_ready(value) for key, value in hyphenated(config, ordered=True).items()}
 
@@ -1302,85 +988,6 @@ def _generation_output_json(files: list[GeneratedFilePayload], output: Path | st
     from datamodel_code_generator._structured_output import generation_output_json  # noqa: PLC0415
 
     return generation_output_json(files, output=output.as_posix() if isinstance(output, Path) else output)
-
-
-def _check_output_json(
-    *,
-    success: bool,
-    content: str,
-    differences: list[ComparisonDifference],
-    kind: Literal["check", "input-diff"] = "check",
-    target: TargetPayload | None = None,
-) -> str:
-    from datamodel_code_generator._structured_output import (  # ruff: ignore[import-outside-top-level]
-        CheckDifferencePayload,
-        check_output_json,
-    )
-
-    return check_output_json(
-        success=success,
-        content=content,
-        differences=[CheckDifferencePayload(**difference._asdict()) for difference in differences],
-        kind=kind,
-        target=target,
-    )
-
-
-def _write_comparison_output(
-    comparison: OutputComparison,
-    output_format: str | None,
-    *,
-    kind: Literal["check", "input-diff"] = "check",
-    target: TargetPayload | None = None,
-) -> None:
-    """Write a common comparison report in text or structured JSON, with the target of a server or client run."""
-    if output_format == "json":
-        sys.stdout.write(
-            _check_output_json(
-                success=not comparison.differences,
-                content=comparison.content,
-                differences=comparison.differences,
-                kind=kind,
-                target=target,
-            )
-            + "\n"
-        )
-        return
-    sys.stdout.write(comparison.content)
-
-
-def _recommend_options_conflict(args: Namespace) -> str | None:
-    """Return the first option that cannot be combined with --recommend-options."""
-    conflicts = (
-        (args.check, "--check"),
-        (args.watch, "--watch"),
-        (args.diff_against is not None and args.recommend_options == "quick", "--diff-against in quick mode"),
-        (args.all_jobs, "--all-jobs"),
-        (len(args.job or ()) > 1, "more than one --job"),
-        (args.generate_pyproject_config, "--generate-pyproject-config"),
-        (args.generate_cli_command, "--generate-cli-command"),
-        (args.install_skill is not None, "--install-skill"),
-        (args.list_deprecations is not None, "--list-deprecations"),
-        (args.list_experimental is not None, "--list-experimental"),
-    )
-    return _first_conflict(conflicts)
-
-
-def _invalid_class_name_message(error: InvalidClassNameError, args: Namespace, class_name: str | None) -> str:
-    """Return the CLI message of an invalid class name with a hint at its fix.
-
-    A name that --class-name sets is fixed there, as the recommender keeps it; a name from the schema gets the
-    --recommend-options hint where the command takes that option.
-    """
-    message = f"{error} You have to set `--class-name` option"
-    if error.class_name == class_name:
-        return f"{message}\nHint: --class-name sets this name; change it to a valid Python class name or remove it."
-    if _recommend_options_conflict(args) is not None:
-        return message
-    return (
-        f"{message}\nHint: add --recommend-options to this command to get a class name and naming options for this "
-        "schema (experimental)."
-    )
 
 
 def _cli_arguments(config: Mapping[str, TomlValue]) -> list[str]:
@@ -1801,7 +1408,20 @@ def _run_target(  # noqa: PLR0913, PLR0917
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
     hint = _collect_naming_hint(config, namespace)
-    result = Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job, announce=announce))
+    result = Exit(
+        run_target(
+            args,
+            namespace,
+            config,
+            pyproject_path,
+            batch,
+            lock,
+            job,
+            announce=announce,
+            settings=_target_settings,
+            publish=_publish_target,
+        )
+    )
     if result is Exit.OK:
         _warn_naming_hint(hint)
     return result
@@ -2169,6 +1789,15 @@ def _run_jobs_json(
         return Exit.ERROR
 
 
+def _publish_target(
+    config: Config, pyproject_path: Path | None, planned: tuple[str, object, str | None]
+) -> Exit | None:
+    """Publish the target a single run planned, with its notice, as a batch of one through the batch journal."""
+    (staged,) = _stage_job_plans((_single_job_plan(config, pyproject_path),))
+    cast("list[Any]", staged.targets).append(planned)
+    return _publish_or_error((staged,))
+
+
 def _single_job_plan(config: Config, pyproject_path: Path | None) -> JobPlan:
     """Adapt one command config to the existing staged-publication machinery."""
     from datamodel_code_generator._publication import artifact_roots  # noqa: PLC0415
@@ -2313,11 +1942,6 @@ def _diff_against_validation_error(config: Config, namespace: Namespace) -> str 
 
 _WATCH_CHECK_CONFLICT = "--watch and --check cannot be used together"
 _WATCH_JSON_CONFLICT = "--output-format json cannot be used with --watch"
-
-
-def _first_conflict(conflicts: Iterable[tuple[object, str]]) -> str | None:
-    """Return the message of the first conflict that applies."""
-    return next((message for applies, message in conflicts if applies), None)
 
 
 def _generation_option_errors(config: Config, namespace: Namespace) -> list[str]:
@@ -2915,7 +2539,6 @@ def main(args: Sequence[str] | None = None) -> Exit:
     the run with its traceback, as in a generation. A run that reads ``sys.argv``, the command line, first raises the
     soft limit on open files to the hard limit (``raise_open_file_limit``).
     """
-    from datamodel_code_generator import _StructuredOutputUnavailableError  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator._naming_hint import naming_hint_scope  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.deprecations import (  # ruff: ignore[import-outside-top-level]
         cli_migration_warning_scope,

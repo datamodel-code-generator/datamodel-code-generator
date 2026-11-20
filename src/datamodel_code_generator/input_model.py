@@ -73,7 +73,7 @@ if TYPE_CHECKING:
 
     from pydantic.json_schema import GenerateJsonSchema
 
-    from datamodel_code_generator import DataModelType
+    from datamodel_code_generator.enums import DataModelType
     from datamodel_code_generator.input_model_result import LoadedInputModelSchema
 
 
@@ -1657,7 +1657,7 @@ def _load_config_input_model(config: Any) -> LoadedInputModelSchema:
 
     An error loading it is a ``datamodel_code_generator.Error``.
     """
-    from datamodel_code_generator import Error as GenerationError  # noqa: PLC0415
+    from datamodel_code_generator._shared_types import Error as GenerationError  # noqa: PLC0415
 
     try:
         return _load_model_schema_with_python_type_expressions(

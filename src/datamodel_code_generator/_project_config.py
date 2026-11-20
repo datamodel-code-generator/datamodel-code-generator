@@ -6,7 +6,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeGuard, cast
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._config_fields import (
     PYPROJECT_API_PATH_FIELDS,
     PYPROJECT_PATH_FIELDS,
@@ -16,6 +15,7 @@ from datamodel_code_generator._config_fields import (
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._paths import resolved
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.util import _load_config_toml
 
 if TYPE_CHECKING:

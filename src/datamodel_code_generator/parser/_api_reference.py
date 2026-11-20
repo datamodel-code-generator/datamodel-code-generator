@@ -10,7 +10,6 @@ from urllib.parse import quote
 
 from typing_extensions import override
 
-from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator._json_pointer import (
     decode_token,
     document_part,
@@ -20,6 +19,7 @@ from datamodel_code_generator._json_pointer import (
     pointer_opening,
     reference_tokens,
 )
+from datamodel_code_generator._shared_types import SchemaParseError
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser._schema_reading import split_json_pointer

@@ -20,7 +20,6 @@ from warnings import warn
 from pydantic import Field, ValidationError, field_validator, model_validator
 from typing_extensions import override
 
-from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._alias_generators import generate_alias as _generate_alias
 from datamodel_code_generator._container_kinds import CONTAINERS, UNHASHABLE_CONTAINERS
@@ -40,6 +39,7 @@ from datamodel_code_generator._regex_syntax import (
     selects_python_engine,
 )
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS, form_path
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.enums import AliasGenerator, DataModelType
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,

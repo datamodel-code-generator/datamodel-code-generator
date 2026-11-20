@@ -14,10 +14,10 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol, TypeVar
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._document_reader import nesting_limit
 from datamodel_code_generator._message_text import counted
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator.model.base import DataModel, sort_data_models_for_mro
 from datamodel_code_generator.parser._graph_ids import keyed_models
@@ -46,13 +46,13 @@ from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORT
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
-    from datamodel_code_generator import (
+    from datamodel_code_generator._user_keys import ConstructionKeys
+    from datamodel_code_generator.enums import (
         AllExportsCollisionStrategy,
         AllExportsScope,
         ModuleSplitMode,
         ReadOnlyWriteOnlyModelType,
     )
-    from datamodel_code_generator._user_keys import ConstructionKeys
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._passes._state import ConfigT, SettleRun, SortedDataModels, _ConstNarrowing
     from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore

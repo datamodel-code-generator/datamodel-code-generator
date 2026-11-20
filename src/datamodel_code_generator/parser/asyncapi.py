@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import Error, InputFileType, snooper_to_methods
+from datamodel_code_generator import snooper_to_methods
 from datamodel_code_generator._document_reader import (
     CHANNEL_OPERATIONS,
     as_mapping,
@@ -31,8 +31,10 @@ from datamodel_code_generator._name_words import (
 )
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._records import record
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
+from datamodel_code_generator.enums import InputFileType
 from datamodel_code_generator.parser import _schema_documents, _schema_refs
 from datamodel_code_generator.parser._schema_reading import _get_model_by_decoded_path, ref_fragment_tokens
 from datamodel_code_generator.parser._schema_refs import _ref_path_parts

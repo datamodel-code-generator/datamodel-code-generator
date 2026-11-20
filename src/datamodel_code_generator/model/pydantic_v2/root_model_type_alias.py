@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
-from datamodel_code_generator import cached_path_exists
+from datamodel_code_generator._caches import cached_path_exists
 from datamodel_code_generator.model.base import _root_constraint_keywords, overrides_builtin_templates
 from datamodel_code_generator.model.pydantic_v2.base_model import _needs_model_regex_engine
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_ROOT_MODEL

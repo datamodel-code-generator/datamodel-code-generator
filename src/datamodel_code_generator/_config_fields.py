@@ -16,6 +16,7 @@ from typing import Final, Literal, TypeAlias
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._records import record
+from datamodel_code_generator._shared_types import Error
 
 WatchedAs: TypeAlias = Literal["input", "file", "directory", "output", "file-output", "directory-output"]
 """What ``--watch`` watches a path field as: the input as the file or directory it is, a file, a directory, the model
@@ -122,8 +123,6 @@ def option_path(name: str, value: str | Path) -> Path:
     try:
         return Path(value).expanduser()
     except RuntimeError as exc:
-        from datamodel_code_generator import Error  # noqa: PLC0415
-
         msg = f"Invalid path for {option_flag(name)}: {value}: the user after '~' has no home directory"
         raise Error(msg) from exc
 

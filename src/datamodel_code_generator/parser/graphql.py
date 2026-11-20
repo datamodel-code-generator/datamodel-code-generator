@@ -16,17 +16,15 @@ from typing import (
 
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import (
-    InputFileType,
-    InvalidFileFormatError,
-    snooper_to_methods,
-)
+from datamodel_code_generator import snooper_to_methods
 from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._requirements import python_target_meets
+from datamodel_code_generator._shared_types import InvalidFileFormatError
 from datamodel_code_generator._user_keys import ClassScope
 from datamodel_code_generator._user_keys import class_scope as _class_scope_of
+from datamodel_code_generator.enums import InputFileType
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
 from datamodel_code_generator.model.base import TYPENAME_PROPERTY_KEY, _find_base_classes, get_inherited_fields

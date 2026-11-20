@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
 
 from typing_extensions import Unpack
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._avro_detection import COMPLEX_TYPES as _COMPLEX_TYPES
 from datamodel_code_generator._avro_detection import JSON_SCHEMA_MARKER_KEYS as _JSON_SCHEMA_MARKER_KEYS
 from datamodel_code_generator._avro_detection import NAMED_TYPES, PRIMITIVE_TYPES
@@ -22,6 +21,7 @@ from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._name_words import first_upper
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
 from datamodel_code_generator.imports import Import

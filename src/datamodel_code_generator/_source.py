@@ -18,8 +18,9 @@ from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._module_paths import is_package_init
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator, Mapping
     from contextlib import AbstractContextManager
+    from typing import Any
 
 # Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
 if sys.version_info >= (3, 14):
@@ -264,6 +265,21 @@ def _load_yaml_dict_from_path_cached(
     """Load a YAML mapping from a path after cache-key normalization."""
     with path.open(encoding=encoding) as stream:
         return load_yaml_dict(stream)
+
+
+def is_openapi(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is an OpenAPI specification."""
+    return "openapi" in data
+
+
+def is_swagger_2(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is a Swagger 2.0 document: its root has a `swagger` key and no `openapi` key."""
+    return "swagger" in data and not is_openapi(data)
+
+
+def is_asyncapi(data: Mapping[str, Any]) -> bool:
+    """Check if the data dict is an AsyncAPI specification."""
+    return "asyncapi" in data
 
 
 def _first_significant_text_char(text: str) -> str | None:

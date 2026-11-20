@@ -57,7 +57,7 @@ GRAMMAR = {
     "undocumented-option": ["--treat-dot-as-module"],
     "users-through-a-package": ["ConstraintsBase"],
     "users-through-a-reexport": ["--kind", "symbol", "DEFAULT_FORMATTERS"],
-    "definition-in-a-conditional-block": ["--kind", "symbol", "_GenerationInput"],
+    "definition-in-a-conditional-block": ["--kind", "symbol", "_ParserResults"],
     "path-with-no-rows": ["scripts/where.py"],
     "line-in-a-comprehension": ['scripts/related_tests.py::_git(root, "show", f"{left}:{name}") for name'],
 }
