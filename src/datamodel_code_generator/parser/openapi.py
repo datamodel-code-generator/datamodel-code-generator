@@ -1188,6 +1188,8 @@ class OpenAPIParser(JsonSchemaParser):
 
     def _parameter_key(self, parameter: Any) -> tuple[str, str] | None:
         """Return the name and location a parameter declares, its reference resolved, or None without both."""
+        if not isinstance(parameter, dict):
+            return None
         if isinstance(ref := parameter.get("$ref"), str):
             parameter = self.get_ref_model(ref, "parameter")
         if not isinstance(name := parameter.get("name"), str) or not isinstance(location := parameter.get("in"), str):

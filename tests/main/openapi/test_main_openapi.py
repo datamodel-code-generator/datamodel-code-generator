@@ -18976,3 +18976,37 @@ components:
         extra_args=["--disable-timestamp", "--formatters", "builtin"],
         expected_output=expected,
     )
+
+
+def test_main_openapi_path_level_parameters_that_are_not_objects(
+    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Report path-level parameters that are not objects as a validation error, not an attribute error."""
+    input_path = tmp_path / "bad_parameters.yaml"
+    input_path.write_text(
+        """\
+openapi: "3.0.3"
+info: {title: T, version: "1"}
+paths:
+  /pets:
+    parameters:
+      - foo
+      - null
+    get:
+      parameters:
+        - {name: limit, in: query, schema: {type: integer}}
+      responses:
+        "200": {description: ok}
+""",
+        encoding="utf-8",
+    )
+
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", "paths", "parameters", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="[type=model_type, input_value='foo', input_type=str]",
+    )
