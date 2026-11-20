@@ -3,7 +3,7 @@ id = "legacy-row-witnesses"
 category = "internal"
 title = "The legacy row witnesses are checked against the lines that read each row"
 summary = "A source-model rule finds the lines of the package that read each legacy row, and a source form shows each way a module names a row; no generated output changes."
-refs = []
+refs = ["#7219"]
 covers = [
     "source_model/every_rule_states_its_verdicts[ci-test-targets].txt",
     "source_model/every_rule_states_its_verdicts[legacy-row-reads].txt",

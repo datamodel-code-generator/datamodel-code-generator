@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -20,6 +19,7 @@ from scripts.legacy_row_reads import (
     write_reading_lines,
 )
 from scripts.legacy_rows import KEEP, LEGACY_ROWS, UNTESTED, LegacyRow
+from tests.capabilities import needs
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -143,7 +143,7 @@ def _witness_problems(rows: Sequence[LegacyRow], directory: Path, lines: Path) -
     return problems
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="sys.monitoring records the lines a run executes from 3.12")
+@needs("sys-monitoring")
 @pytest.mark.parametrize(
     "witness", WITNESSES, ids=[next(row.name for row in LEGACY_ROWS if row.witness == w) for w in WITNESSES]
 )
@@ -198,7 +198,7 @@ SEEDED_ROWS = (
 an option that changes nothing on the witness."""
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="sys.monitoring records the lines a run executes from 3.12")
+@needs("sys-monitoring")
 @pytest.mark.allow_direct_assert("the problems of seeded records are the check's verdict, not a stored output")
 def test_legacy_row_witness_check_fails_on_seeded_records(tmp_path: Path, reading_lines_file: Path) -> None:
     """A witness that runs no line of its row, or an option that changes nothing on the witness, is a problem."""
