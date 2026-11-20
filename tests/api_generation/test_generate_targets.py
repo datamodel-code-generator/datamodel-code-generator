@@ -160,8 +160,6 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
     run_generate_file_and_assert(
         input_path=_server(tmp_path),
         output_path=tmp_path / "models.py",
-        assert_func=assert_file_content,
-        expected_file=SERVER_PACKAGE / "models.py",
         **MODELS,
         server_output=Path("server"),
         server_layout="single",
@@ -615,7 +613,6 @@ def test_generate_server_lock(output: str | None, tmp_path: Path, monkeypatch: p
     generate(_server(tmp_path), **MODELS, **SERVER, output=output, server_output=Path("server"), update_lock=True)
     assert_output(
         (tmp_path / "datamodel-codegen.lock").read_text(encoding="utf-8"),
-        DATA / "expected" / "http" / "remote_lock_empty.txt",
     )
     assert_output(
         f"written: {sorted(path.name for path in tmp_path.iterdir())}\n",

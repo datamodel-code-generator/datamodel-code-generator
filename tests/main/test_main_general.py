@@ -2048,6 +2048,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_validate_default_for_root_model_type_aliases",
         "use_plain_alias_for_recursive_models",
         "read_format_as_annotation",
+        "read_uuid6_uuid7_uuid8_formats",
         "type_overrides_replace_whole_type",
         "use_x_python_type_as_written",
         "use_x_python_import_for_every_ref",

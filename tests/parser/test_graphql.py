@@ -39,8 +39,6 @@ def test_graphql_field_enum(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "field-default-enum.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="field-default-enum.py",
         extra_args=["--set-default-enum-member"],
     )
 
@@ -51,8 +49,6 @@ def test_graphql_union_aliased_bug(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "union-aliased-bug.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="union-aliased-bug.py",
     )
 
 
@@ -62,8 +58,6 @@ def test_graphql_union_commented(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "union-commented.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="union-commented.py",
     )
 
 
@@ -73,8 +67,6 @@ def test_graphql_union_with_prefix(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "union.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="union_with_prefix.py",
         extra_args=["--class-name-prefix", "Foo"],
     )
 
@@ -197,8 +189,6 @@ def test_graphql_no_typename(output_file: Path) -> None:
         input_path=GRAPHQL_DATA_PATH / "no-typename.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        assert_func=assert_file_content,
-        expected_file="no_typename.py",
         extra_args=["--graphql-no-typename"],
     )
 

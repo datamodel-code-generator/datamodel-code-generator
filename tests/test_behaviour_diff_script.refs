@@ -179,6 +179,8 @@ identity_keeps_a_moved_warning_and_error	behaviour_diff_script/gate_against_a_gi
 	behaviour_diff_script/gate_skips_the_release_on_a_listed_input.txt
 [test_guide_names_accepted_changes_by_the_records]
 	behaviour_diff_script/guide_names_accepted_changes_by_the_records.txt
+[test_guide_runs_the_gate_of_the_release]
+	behaviour_diff_script/guide_runs_the_gate_of_the_release.txt
 [test_guide_writes_the_page_of_gate_cells]
 	behaviour_diff_script/guide_writes_the_page_of_gate_cells.txt
 [test_identity_compares_the_output_of_runs_that_fail_alike]
@@ -190,6 +192,7 @@ no_input_matches_the_selection	behaviour_diff_script/identity_evidence_oracle[no
 [test_identity_refuses_a_shard]
 	behaviour_diff_script/identity_refuses_a_shard.txt
 [test_judge]
+a decision and a notice, a warning line only the notice selects	behaviour_diff_script/judge[a decision and a notice, a warning line only the notice selects].txt
 a decision beside a failing output-text record	behaviour_diff_script/judge[a decision beside a failing output-text record].txt
 a decision for an exit status that shows in no line	behaviour_diff_script/judge[a decision for an exit status that shows in no line].txt
 a decision for messages that show in no line	behaviour_diff_script/judge[a decision for messages that show in no line].txt
@@ -203,7 +206,7 @@ a notice for warnings that show in no line	behaviour_diff_script/judge[a notice 
 a notice matching only the last of the message lines added	behaviour_diff_script/judge[a notice matching only the last of the message lines added].txt
 a notice when a signature could not be taken	behaviour_diff_script/judge[a notice when a signature could not be taken].txt
 a record without a category	behaviour_diff_script/judge[a record without a category].txt	= behaviour_diff_script/judge[a harness record].txt
-api for a removed option it does not name	behaviour_diff_script/judge[api for a removed option it does not name].txt
+api for a removed option it does not name	behaviour_diff_script/judge[api for a removed option it does not name].txt	= behaviour_diff_script/judge[notice on an exit difference too].txt
 api for a removed option it names	behaviour_diff_script/judge[api for a removed option it names].txt
 crash-fix holds	behaviour_diff_script/judge[crash-fix holds].txt
 crash-fix on a cell that now fails	behaviour_diff_script/judge[crash-fix on a cell that now fails].txt
@@ -224,13 +227,21 @@ notice inside its match	behaviour_diff_script/judge[notice inside its match].txt
 notice on an exit difference too	behaviour_diff_script/judge[notice on an exit difference too].txt
 notice outside its match	behaviour_diff_script/judge[notice outside its match].txt
 output-text against rule (b)	behaviour_diff_script/judge[output-text against rule (b)].txt
+output-text and notice on a behaviour change with a warning	behaviour_diff_script/judge[output-text and notice on a behaviour change with a warning].txt	= behaviour_diff_script/judge[a failing output-text record beside a notice that admits nothing of the cell].txt
+output-text and notice on a text change with a message	behaviour_diff_script/judge[output-text and notice on a text change with a message].txt	= behaviour_diff_script/judge[output-text and notice on a text change with a warning].txt
 output-text and notice on a text change with a warning	behaviour_diff_script/judge[output-text and notice on a text change with a warning].txt
+output-text and notice on a text change with a warning and an exit difference	behaviour_diff_script/judge[output-text and notice on a text change with a warning and an exit difference].txt
+output-text and notice on a text change with a warning outside the notice's match	behaviour_diff_script/judge[output-text and notice on a text change with a warning outside the notice's match].txt	= behaviour_diff_script/judge[notice outside its match].txt
 output-text holds	behaviour_diff_script/judge[output-text holds].txt
 output-text on a behaviour change	behaviour_diff_script/judge[output-text on a behaviour change].txt	= behaviour_diff_script/judge[a failing output-text record beside a notice that admits nothing of the cell].txt
 output-text on a non-model file	behaviour_diff_script/judge[output-text on a non-model file].txt
 output-text on a warning too	behaviour_diff_script/judge[output-text on a warning too].txt
 output-text with differing payload cells	behaviour_diff_script/judge[output-text with differing payload cells].txt
 output-text without a signature	behaviour_diff_script/judge[output-text without a signature].txt
+two decisions and a line neither selects	behaviour_diff_script/judge[two decisions and a line neither selects].txt
+two decisions of one category, each line selected by one	behaviour_diff_script/judge[two decisions of one category, each line selected by one].txt
+two decisions, a line selected only by a selector of another cell	behaviour_diff_script/judge[two decisions, a line selected only by a selector of another cell].txt	= behaviour_diff_script/judge[decided-change with a line outside its match].txt
+two decisions, each line selected by one	behaviour_diff_script/judge[two decisions, each line selected by one].txt
 [test_kinds]
 a file's hash	behaviour_diff_script/kinds[a file's hash].txt
 equal	behaviour_diff_script/kinds[equal].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt

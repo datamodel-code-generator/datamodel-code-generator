@@ -1,0 +1,5 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs a harness record covers are refused, as src/ changes:
+  models/b.py: the gate judges src/ only, so it can never give a verdict for a change of uv.lock alone: cover this changed label with a category other than harness
+failed

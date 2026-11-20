@@ -1,0 +1,52 @@
+exit=0
+{
+ "accepted": [],
+ "classes": [
+  "same",
+  "no-behaviour"
+ ],
+ "counts": {
+  "dataclasses.dataclass": {
+   "no-behaviour": 6,
+   "same": 7
+  },
+  "msgspec.Struct": {
+   "no-behaviour": 6,
+   "same": 7
+  },
+  "pydantic_v2.BaseModel": {
+   "no-behaviour": 6,
+   "same": 7
+  },
+  "pydantic_v2.dataclass": {
+   "no-behaviour": 6,
+   "same": 7
+  },
+  "typing.TypedDict": {
+   "no-behaviour": 6,
+   "same": 7
+  }
+ },
+ "crash_fixes": [],
+ "kinds": {
+  "default": 10,
+  "option-set": 15,
+  "payload": 5,
+  "preset": 10,
+  "selector": 25
+ },
+ "numbered_names": [],
+ "opt_in": [],
+ "previous": "RELEASE",
+ "schema_version": 1,
+ "tier": "release",
+ "types": [
+  "dataclasses.dataclass",
+  "msgspec.Struct",
+  "pydantic_v2.BaseModel",
+  "pydantic_v2.dataclass",
+  "typing.TypedDict"
+ ],
+ "version": "0.2.0",
+ "violations": []
+}

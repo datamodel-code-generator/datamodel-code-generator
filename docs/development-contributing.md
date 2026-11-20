@@ -333,12 +333,135 @@ change brings back to the latest tag needs no record, and a record that still co
 prints one `declare` command per kind of stored output (model output, notices, listings, internals), with `--base`
 when the base is not the merge base with `origin/main`, `--extends` for an output a lower layer's record covers, and
 the id of the record the change adds when it has one. `new-surface` covers model output only where the latest release
-has none, and a `harness` record of a change that touches `src/` is listed as needing the replay. The check also lists
+has none. In a change that touches `src/`, a changed label a `harness` record covers, other than internal output,
+needs the gate's verdict (`python scripts/behaviour_diff.py gate <base> --tier pr --verdicts FILE`, passed to the check
+with `--verdicts FILE`): a label the gate refused, or has no verdict for at these contents, fails. The check also lists
 the outputs that moved since the latest tag with no unreleased record, judged by the same rule for each change since
 the tag as main takes them (an output a test-only change added needs none later either; one it renamed keeps the need
 of the output it renamed, and `declare` takes its new label), and a tag that `releases.toml` does not list yet. A stack
 layer's base counts as one change from its merge base with `origin/main`; the check needs the history since the tag
 and stops on a shallow clone. It reports only, for now; `--report-only` keeps its exit status 0 once it fails CI.
+
+### Naming the cells a change moves
+
+The behaviour gate (`python scripts/behaviour_diff.py gate <base> --tier pr --check`) generates cells, each one input
+x output model type x option set, with the base and with the head, and judges every cell whose output files, exit
+status, warnings or messages differ by the records of the change. There is no allowlist of accepted changes: a record
+names the cells it moves with `[[change.cells]]` selectors, one table per selector.
+
+```toml
+[[change.cells]]
+input = ["tests/data/jsonschema/annotated_union_members", "tests/data/jsonschema/annotated_union_members/*"]
+backends = "*"
+options = "*"
+# input_file_type = "openapi"
+# aspects = ["type"]
+# match = "^\\[type\\] "
+```
+
+- `input` (required): a non-empty list of path globs over the head tree (`*` within a path part, `**` across parts);
+  they name files and directories, and a directory names its own cell only, so list the files below it too.
+- `backends` (required): `"*"` or a list of output model types (`pydantic_v2.BaseModel`, `msgspec.Struct`, ...).
+- `options` (required): `"*"` or a list of option sets, each a list of strings (`[["--use-annotated"], []]`; `[]` is
+  the default options). `"*"` is every option set the run has for the matched inputs: the default options, the
+  presets of the latest release tag and the `OPTION_SETS` of the nightly run.
+- `input_file_type` (optional): the input type the cells run with. Without it a selector covers the cells whose type
+  is their folder's below `tests/data/`; a cell with another type (a `cli_doc` example) needs the type named.
+- `aspects` and `match` (optional): every change line of a covered cell must have one of the aspects and match the
+  regular expression (searched) in at least one selector that covers the cell (not in every one), counting the selectors
+  of every `default-fix` and `decided-change` record that covers it; a `notice` record applies this to the `[warning]`
+  and `[message]` lines. A change line is `[aspect] ...` from the behaviour signature diff, plus `[exit] <base> ->
+  <head>`, `[warning] added|removed <text>` and `[message] added|removed <line>`. A decision category needs one of the
+  two in every selector, a `notice` needs `match`.
+
+The gate prints a starting block for the uncovered cells: one selector per input, `options = "*"` where the cells span
+several option sets, and the first change line as a commented `match`. Write the selector narrow: one selector may name
+at most 1500 cells (about a whole PR-tier run), and every selector must match a differing cell of the run, so a
+selector that matches no cell, or only equal ones, fails (a stale one, in a run of the whole nightly or release tier; `--select` judges no
+selector).
+A selector may not name unreleased surface: an option, option value, `--preset` date or input type the latest release
+lacks is judged by the stored outputs, so its cells never run. The schema is checked before anything generates:
+unknown keys, an empty `input`, an unknown backend, malformed `options`, an unknown aspect or a `match` that does not
+compile stop the gate. `--stamp` drops `cells` when it moves a record to a release.
+
+A PR judges the records whose `id` the merge base lacks (the merge base of the PR's base and its head, so a lagging
+branch is judged only by what it changes). A record that exists at the merge base and gains selectors fails: add a
+record with `extends = "<id>"`, which has the category of its target and its own selectors. A PR that changes nothing
+under `src/` passes without generating, and fails if one of its records names cells, because no cell can differ. A PR
+that changes a file the gate runs also runs the base's gate. A release run judges the records the latest tag lacks,
+adds their selectors' cells to the tier, and judges stale selectors. Release-time records need no backfill: only the
+records a PR adds must name cells.
+
+### Categories and cells
+
+| category | cells | differences it covers | evidence on each covered differing cell |
+|---|---|---|---|
+| `output-text` | required | output | exit, warnings and messages equal unless another covering record admits them; every differing file is a model module; class `no-behaviour`; rule (b); payload cells give equal verdicts and parsed values |
+| `crash-fix` | required | output, exit, messages | class `crash-fix`; where the exit status differs, it goes from a failure to 0 |
+| `default-fix`, `decided-change` | optional; `aspects` or `match` in every selector | any | every change line inside the `aspects` and `match` of a selector of a covering `default-fix` or `decided-change` record |
+| `experimental` | optional | any | a feature of `affects.experimental` is in the cell (its option is set, or its input type is the feature's); the companion cell without the feature's options is equal |
+| `notice` | required; `match` in every selector | warnings, messages | output and exit equal unless another covering record admits them; every `[warning]` and `[message]` line matches |
+| `api` | optional | output, exit, messages | the cell sets an option `affects.options` names and the head no longer has; the head refuses the cell |
+| `new-surface`, `docs-text`, `internal`, `harness` | forbidden | none | none |
+
+"Required" applies to the records a PR adds. Several records may cover one cell: it must be admitted in every kind it
+differs by, the kinds are the union of the covering categories, and where a covering `default-fix`, `decided-change`,
+`experimental` or `crash-fix` record holds its evidence, the kinds it admits need no `output-text` evidence. A kind a
+category does not admit must be equal only where no other covering record admits it: an `output-text` and a `notice`
+record together cover a no-behaviour text change with a new warning, each proving its own kinds. The covering
+`default-fix` and `decided-change` records are judged together, line by line: every change line must be selected by a
+selector of one of them, so two changes of one release that each declare their own lines pass. A change line no covering
+decision selector selects, or a kind no covering record admits, still fails. A decision or notice record proves nothing
+where a signature could not be taken or where an exit, warning or message difference shows in no change line: the cell
+is unproved. A head that stops at the timeout or the memory cap where the base finished fails whatever the records say,
+and so does a head that gives other facts on a second run.
+
+An `output-text` record also proves the stored Python modules in its `covers` that changed between the merge base and
+the head: signatures with no behaviour change, rule (b) (the syntax trees are equal apart from docstrings, comments and
+the order of imports, or else the signatures are equal and no function body, lambda, decorator, union or
+configuration key the signature does not list differs, compared by where each sits), and values drawn from each side's
+model schemas that get equal verdicts and parsed values on both sides. A model whose schema cannot be drawn from is
+reported as "no payloads" (signatures and rule (b) only). A changed payload companion (`*.payloads.txt`, or a text
+listing of `valid:` and `invalid ...: rejected (...)` lines) fails; one an added case brings follows the rule for added
+outputs.
+
+An `experimental` record of a feature whose option a cell has needs the companion cell to be equal, which the gate
+runs; a model change that shows without the feature needs its own record. A feature of an input format
+(`input-format.*`) has no option to remove, so it has no companion cell: the cell passes on its file type alone, the
+record needs the owner `decision`, and a shared model change also shows on the cells of the other input formats, which
+need their own records.
+
+A `harness` record in a PR that changes `src/` says the package writes the same output. The gate judges its changed
+labels: an internal output (listings of a script, a check or a CLI fast path's module trace) is admitted, a modified
+Python module is admitted when the stored-module proof above holds, and any other modified output of the package fails
+("move the test change to its own PR, or declare the change with its category"). Added and removed labels follow the
+rule for added and removed outputs. `--verdicts FILE` writes the verdicts by the base and head contents of each label,
+and `declared_changes.py check --verdicts FILE` reads them; a label with no verdict for these contents fails. A change
+of `uv.lock` alone has no verdict, so cover its changed labels with another category than `harness`.
+
+### Failures and what to do
+
+The gate prints each failing cell (`violation: <input> | <type> | <options>`) with its reasons, then the problems of
+the records, and exits 1 under `--check`.
+
+| message | what to do |
+|---|---|
+| `no record's [[change.cells]] covers the cell` | add the printed block to the record that declares the change, or add a record; widen `options` or `backends` if only some of its cells match |
+| `<id> (<category>): <reason>` | the category's evidence does not hold on the cell (the table above): fix the code, or declare the change with the category it is (an `output-text` change that alters a type expression is a `decided-change`) |
+| `no covering record admits the cell's <kind> difference` | the category cannot cover that kind of difference (an `output-text` record covers no warning): add a record of a category that does |
+| `the cell without the feature's options differs too: it needs a record` | the change is not limited to the experimental feature: add a record for the companion cell |
+| `entry <id>: cells <n> matches no cell of the run` or `only equal cells` | the selector names no differing cell: correct or widen it to the cell the change is on, or drop it if it is obsolete (a stale selector in a release run: edit the record) |
+| `entry <id>: cells <n> names <N> cells, more than the 1500 a run may take` | narrow its `input`, `backends` or `options` |
+| `entry <id>: cells <n> name <item>, which <tag> lacks` | unreleased surface is judged by the stored outputs, not by cells: drop the selector |
+| `entry <id>: a record of the base gains [[change.cells]]; add a record with extends instead` | move the new selectors to an `extends` record |
+| `entry <id>: src/ is unchanged since <base>, so its cells cannot differ` | drop `cells` from the record, or cover the change with a category without cells |
+| `nondeterministic: the head's second run gives other facts` | the output depends on something other than the input: fix that first |
+| `<label>: a harness record covers a changed ... output in a src PR` | see the `harness` rule above |
+
+`python scripts/behaviour_diff.py gate` also reports the cells it judged (`records: ... accepted=, violation=`), each
+record that covered cells with its decision references (`covered: <id> (<category>): <n> differing cells`), the
+inputs it could only judge by signature (no payload case), and the payload cases both sides refused alike (no payload
+evidence). Its `--identity` mode, used by refactoring steps, ignores records and fails on any difference.
 
 ## Review checklist
 

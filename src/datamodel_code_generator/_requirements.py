@@ -114,6 +114,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.protected_namespaces",
     "pydantic.type_alias_module_namespace",
     "pydantic.annotated_forward_ref",
+    "pydantic.uuid_version_types",
     "pydantic.validate_by_name",
     "pydantic.validate_by_alias",
     "pydantic.serialize_by_alias",
@@ -254,6 +255,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     Requirement("pydantic.protected_namespaces", "pydantic", "2.10"),
     Requirement("pydantic.type_alias_module_namespace", "pydantic", "2.10"),
     Requirement("pydantic.annotated_forward_ref", "pydantic", "2.11"),
+    Requirement("pydantic.uuid_version_types", "pydantic", "2.11", label="UUID6, UUID7 and UUID8"),
     Requirement(
         "pydantic.validate_by_name",
         "pydantic",

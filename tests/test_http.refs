@@ -19,7 +19,7 @@
 [test_cli_check_update_lock_keeps_the_existing_output_and_discards_the_staged_lock]
 	main/person.py
 [test_cli_diff_locks_old_and_new_remote_closures_without_committing_on_difference]
-	http/remote_lock_diff_changed.txt
+	http/cli_diff_locks_old_and_new_remote_closures_without_committing_on_difference.txt
 	http/remote_lock_diff_union.txt
 [test_cli_does_not_fall_back_to_a_subdirectory_lock_when_project_lock_is_absent]
 	http/backend.py

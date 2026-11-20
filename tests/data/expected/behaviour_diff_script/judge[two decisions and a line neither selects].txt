@@ -1,0 +1,8 @@
+{
+ "cls": "violation",
+ "notes": [
+  "decided-change (decided-change): a change line is outside its aspects and match: [\"[enum] Model:c: 'x' -> 'y'\"]",
+  "default-fix (default-fix): a change line is outside its aspects and match: [\"[enum] Model:c: 'x' -> 'y'\"]"
+ ],
+ "accepted_by": []
+}

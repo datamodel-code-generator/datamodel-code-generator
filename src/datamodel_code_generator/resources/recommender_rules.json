@@ -1143,6 +1143,10 @@
         "versions.read-per-document"
       ]
     },
+    "read_uuid6_uuid7_uuid8_formats": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261120 presets; the recommendation starts from a preset."
+    },
     "recommend_options": {
       "not_recommended": "command",
       "reason": "Prints these recommendations and exits."

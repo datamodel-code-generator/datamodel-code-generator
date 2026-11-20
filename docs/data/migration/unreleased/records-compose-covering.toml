@@ -1,0 +1,10 @@
+[[change]]
+id = "records-compose-covering"
+category = "harness"
+title = "Judge the records covering one cell together"
+summary = "The behaviour gate judges the records that cover one cell by the union of their kinds and their decision selectors; only its judge oracle outputs move."
+refs = ["#7254"]
+covers = [
+    "behaviour_diff_script/judge[notice on an exit difference too].txt",
+    "behaviour_diff_script/judge[output-text and notice on a text change with a warning].txt",
+]

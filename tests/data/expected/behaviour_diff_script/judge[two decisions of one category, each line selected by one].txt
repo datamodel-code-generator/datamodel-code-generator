@@ -1,0 +1,11 @@
+{
+ "cls": "accepted",
+ "notes": [
+  "covered by decided-change",
+  "covered by other-decided-change"
+ ],
+ "accepted_by": [
+  "decided-change",
+  "other-decided-change"
+ ]
+}

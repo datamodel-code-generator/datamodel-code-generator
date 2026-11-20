@@ -268,6 +268,19 @@ class PresetName(str, Enum):
     PracticalPy31420261118 = "practical-py314-20261118"
     PracticalPy31520261118 = "practical-py315-20261118"
 
+    StandardPy31020261120 = "standard-py310-20261120"
+    StandardPy31120261120 = "standard-py311-20261120"
+    StandardPy31220261120 = "standard-py312-20261120"
+    StandardPy31320261120 = "standard-py313-20261120"
+    StandardPy31420261120 = "standard-py314-20261120"
+    StandardPy31520261120 = "standard-py315-20261120"
+    PracticalPy31020261120 = "practical-py310-20261120"
+    PracticalPy31120261120 = "practical-py311-20261120"
+    PracticalPy31220261120 = "practical-py312-20261120"
+    PracticalPy31320261120 = "practical-py313-20261120"
+    PracticalPy31420261120 = "practical-py314-20261120"
+    PracticalPy31520261120 = "practical-py315-20261120"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -651,6 +664,7 @@ _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]]
     "20261112": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
     "20261113": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
     "20261118": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
+    "20261120": _PRACTICAL_20261113_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1419,6 +1433,20 @@ _STANDARD_20261118_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The 20261113 groups and the opt-in options added after them."""
 
+_STANDARD_20261120_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261118_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="UUID versions 6 to 8",
+        config=PresetConfig(read_uuid6_uuid7_uuid8_formats=True),
+        description=(
+            "Read the formats uuid6, uuid7 and uuid8 of a string, as the formats uuid1 to uuid5 are read: Pydantic "
+            "output types the field as that UUID version (a plain UUID before Pydantic 2.11), and the other output "
+            "types as uuid.UUID under --use-standard-primitive-types, else as str, instead of an unknown format."
+        ),
+    ),
+)
+"""The 20261118 groups and the opt-in options added after them."""
+
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
     "20260826": _STANDARD_20260826_OPTION_GROUPS,
@@ -1432,6 +1460,7 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261112": _STANDARD_20261112_OPTION_GROUPS,
     "20261113": _STANDARD_20261113_OPTION_GROUPS,
     "20261118": _STANDARD_20261118_OPTION_GROUPS,
+    "20261120": _STANDARD_20261120_OPTION_GROUPS,
 }
 
 

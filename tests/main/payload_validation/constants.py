@@ -167,6 +167,10 @@ EXCLUDED_FILES: dict[str, str] = {
         "which hypothesis-jsonschema cannot satisfy for generic payload validation"
     ),
     "jsonschema/unknown_format.json": "unknown format fixture intentionally emits a generator warning",
+    "jsonschema/uuid_version_formats.json": (
+        "option-only e2e fixture of --read-uuid6-uuid7-uuid8-formats; payload validation intentionally uses default "
+        "generation, which types the formats as str; test_read_uuid6_uuid7_uuid8_formats validates its payloads"
+    ),
     "openapi/complex_reference.json": "intentionally invalid JSON fixture",
     "openapi/list.json": "input is JSON data, not an OpenAPI document",
     "openapi/not.json": "intentionally invalid JSON fixture",
@@ -174,6 +178,10 @@ EXCLUDED_FILES: dict[str, str] = {
     **dict.fromkeys(
         (f"openapi/yaml_1_1_numbers/{name}.yaml" for name in ("names", "pattern", "positions")),
         _YAML_1_1_NUMBERS_EXCLUSION_REASON,
+    ),
+    "openapi/uuid_version_formats.json": (
+        "option-only e2e fixture of --read-uuid6-uuid7-uuid8-formats; payload validation intentionally uses default "
+        "generation, which types the formats as str; test_read_uuid6_uuid7_uuid8_formats validates its payloads"
     ),
     "openapi/yaml_1_1_numbers/ratio.yaml": (
         "the string enum [16:9, 4:3], which the sweep reads as the YAML 1.1 numbers 969 and 243, admits no payload"

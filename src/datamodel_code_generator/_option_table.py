@@ -1483,6 +1483,15 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "entry names for the schema's type keeps that mapping, and format: binary stays bytes. Without it each known "
         "format selects a type (EmailStr, AwareDatetime, UUID, Decimal, SecretStr, Base64Str, ...), as in 0.96.0",
     ),
+    toggle(
+        (Section.TYPING, _G.TYPE_MAPPING),
+        "--read-uuid6-uuid7-uuid8-formats",
+        help="Read the string formats uuid6, uuid7 and uuid8 (RFC 9562) as the UUID versions they name, as format "
+        "uuid4 is read: Pydantic output types them as UUID6, UUID7 and UUID8 (uuid.UUID for a "
+        "--target-pydantic-version before 2.11, which lacks them), and the other outputs as uuid.UUID under "
+        "--use-standard-primitive-types, else "
+        "str; without it each is an unknown format, which gives a warning and str, as in 0.99.0",
+    ),
     value(
         (Section.TYPING, _G.TYPE_MAPPING),
         "--type-overrides",
