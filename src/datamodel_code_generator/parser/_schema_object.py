@@ -695,6 +695,11 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
                 return self.type == "array"
         return has_items and "array" in self.type
 
+    @cached_property
+    def ref_object_name(self) -> str:
+        """Extract the object name from the reference path."""
+        return (self.ref or "").rsplit("/", 1)[-1]
+
     @field_validator("items", mode="before")
     @classmethod
     def validate_items(cls, values: Any) -> Any:

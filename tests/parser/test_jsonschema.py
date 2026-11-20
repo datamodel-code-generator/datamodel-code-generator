@@ -3447,6 +3447,12 @@ def test_parse_object_and_parse_enum_warn_that_unique_is_ignored() -> None:
         parser.parse_enum("Color", JsonSchemaObject.model_validate({"enum": ["red"]}), ["Color"], unique=False)
 
 
+def test_json_schema_object_ref_object_name_is_the_last_segment_of_the_reference() -> None:
+    """``ref_object_name`` names the last segment of ``$ref``, and is empty without one."""
+    assert JsonSchemaObject.model_validate({"$ref": "#/definitions/Pet"}).ref_object_name == "Pet"
+    assert not JsonSchemaObject.model_validate({"type": "string"}).ref_object_name
+
+
 def test_parse_enum_preserves_explicit_null_member() -> None:
     """Keep a native JSON null member distinct from an unset field default."""
     from datamodel_code_generator.model.enum import NULL_ENUM_MEMBER_VALUE, Enum
