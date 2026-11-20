@@ -23,31 +23,31 @@ scope comprehension <listcomp>#0 '<listcomp>': code 3.11 only; first line 15
   item: comprehension@15 [loop:body@15]
   _: comprehension@15 [loop:body@15]
 first, (second, *rest) @6:0 takes (assign) 1, (2, 3) of 1, (2, 3)
-first @6:0 takes (assign) 1 of 1, (2, 3)
-(second, *rest) @6:7 takes (assign) (2, 3) of 1, (2, 3)
-second @6:8 takes (assign) 2 of 1, (2, 3)
-*rest @6:16 takes (assign) 3 of 1, (2, 3)
-rest @6:17 takes (assign) 3 of 1, (2, 3)
+first @6:0 takes (assign) 1 of 1, (2, 3) at (0,)
+(second, *rest) @6:7 takes (assign) (2, 3) of 1, (2, 3) at (1,)
+second @6:8 takes (assign) 2 of 1, (2, 3) at (1, 0)
+*rest @6:16 takes (assign) 3 of 1, (2, 3) at (1, 1)
+rest @6:17 takes (assign) 3 of 1, (2, 3) at (1, 1)
 left @7:0 takes (assign) make() of make()
 right @7:7 takes (assign) make() of make()
 ok, bad @8:0 takes (assign) values of values
-ok @8:0 takes (assign) values of values
-bad @8:4 takes (assign) values of values
+ok @8:0 takes (assign) values of values at (0,)
+bad @8:4 takes (assign) values of values at (1,)
 key, value @9:4 takes (for) {"a": 1}.items() of {"a": 1}.items()
-key @9:4 takes (for) {"a": 1}.items() of {"a": 1}.items()
-value @9:9 takes (for) {"a": 1}.items() of {"a": 1}.items()
+key @9:4 takes (for) {"a": 1}.items() of {"a": 1}.items() at (0,)
+value @9:9 takes (for) {"a": 1}.items() of {"a": 1}.items() at (1,)
 one, two @11:4 takes (for) [(1, 2)] of [(1, 2)]
-one @11:4 takes (for) [(1, 2)] of [(1, 2)]
-two @11:9 takes (for) [(1, 2)] of [(1, 2)]
+one @11:4 takes (for) [(1, 2)] of [(1, 2)] at (0,)
+two @11:9 takes (for) [(1, 2)] of [(1, 2)] at (1,)
 (handle, other) @13:18 takes (with) open("f") of open("f")
-handle @13:19 takes (with) open("f") of open("f")
-other @13:27 takes (with) open("f") of open("f")
+handle @13:19 takes (with) open("f") of open("f") at (0,)
+other @13:27 takes (with) open("f") of open("f") at (1,)
 item, _ @15:10 takes (comprehension) pairs of pairs
-item @15:10 takes (comprehension) pairs of pairs
-_ @15:16 takes (comprehension) pairs of pairs
+item @15:10 takes (comprehension) pairs of pairs at (0,)
+_ @15:16 takes (comprehension) pairs of pairs at (1,)
 holder.attribute, holder["key"] @16:0 takes (assign) 1, 2 of 1, 2
-holder.attribute @16:0 takes (assign) 1 of 1, 2
-holder["key"] @16:18 takes (assign) 2 of 1, 2
+holder.attribute @16:0 takes (assign) 1 of 1, 2 at (0,)
+holder["key"] @16:18 takes (assign) 2 of 1, 2 at (1,)
 total @17:0 takes (annassign) 1 of 1
 found @21:4 takes (walrus) make() of make()
 == code objects: one per scope that compiles on this Python

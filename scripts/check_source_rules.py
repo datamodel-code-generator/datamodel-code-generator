@@ -28,27 +28,29 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._ci_lanes import WORKFLOW, Lane, read_lanes
-from scripts._source_model import SourceModelError, SourceModule, Unreadable
+from scripts._source_model import UNKNOWN, SourceModelError, SourceModule, Unreadable, argument, bases, name_reads
 from tests.units import condition_holds, condition_problem
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
-    from scripts._source_model import Binding, Import, Scope
+    from scripts._source_model import Binding, Condition, Guard, Import, Reference, Scope
 
 PACKAGE = "src/datamodel_code_generator"
 PACKAGE_NAME = "datamodel_code_generator"
 GENERATED = "_compiled_templates"
+_T = TypeVar("_T")
 ARCHITECTURE_DOCS = "docs/architecture.md"
 REFERENCE_HOME = f"{PACKAGE}/_json_pointer.py"
 CLONE_MIN_NODES = 11
@@ -80,6 +82,22 @@ SKIP_ORIGINS = frozenset({
     "unittest.skipUnless",
 })
 """The skip markers, calls and exceptions, by the origin the source model gives a name or attribute chain."""
+POSIX_ONLY_CALLS = frozenset({"os.fork", "os.mkfifo", "signal.SIGKILL"})
+"""The names that exist on POSIX only, by the origin the source model gives a name or attribute chain."""
+POSIX_ONLY_MODULES = frozenset({"resource", "fcntl"})
+"""The modules that exist on POSIX only: an import of one is the use."""
+PORTABLE_ROOTS = ("scripts", TESTS)
+"""The folders whose file names every checkout (Windows, macOS) must be able to hold."""
+WINDOWS_REFUSED = re.compile(r'[<>:"|?*\\\x00-\x1f]')
+"""The characters Windows refuses in a file name (a backslash is its separator)."""
+WINDOWS_DEVICE = re.compile(r"(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\..*)?", re.IGNORECASE)
+"""The names Windows reserves for devices, with or without an extension."""
+PATH_METHODS = frozenset({"joinpath", "with_name", "with_stem", "with_suffix"})
+PATH_ORIGINS = frozenset({"pathlib.Path", "pathlib.PurePath", "os.path.join", "builtins.open"})
+_FIXTURE_ORIGIN = "pytest.fixture"
+_DRIVE = re.compile(r"[A-Za-z]:")
+_PLATFORM_ALTERNATIVE = re.compile(r"platform(?:==|!=)\w+")
+_REQUIRES_PYTHON = re.compile(r">=\s*(\d+)\.(\d+)")
 _FILE_CITATION = re.compile(r"`([A-Za-z_][\w/]*\.py):([A-Za-z_][\w.]*)")
 _CLASS_CITATION = re.compile(r"`([A-Z][A-Za-z0-9_]*)\.([A-Za-z_]\w*)")
 _WORD = re.compile(r"\w+")
@@ -208,6 +226,17 @@ class Tree:
     def tests(self) -> list[Module]:
         """Return the Python files of ``tests`` (stored expected output aside)."""
         return [Module(self.root, rel) for rel in self._python_files(TESTS) if not rel.startswith(TESTS_STORED)]
+
+    @cached_property
+    def paths(self) -> list[str]:
+        """Return every file below ``scripts`` and ``tests`` as a path relative to the root, sorted."""
+        found = (
+            path.relative_to(self.root).as_posix()
+            for top in PORTABLE_ROOTS
+            for path in sorted((self.root / top).rglob("*"))
+            if path.is_file()
+        )
+        return [rel for rel in found if self.files is None or rel in self.files]
 
     @cached_property
     def words(self) -> dict[str, frozenset[str]]:
@@ -930,15 +959,8 @@ def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
         model = module.model
         owners: dict[ast.AST, list[list[str]]] = {}
         for scope in model.scopes:
-            if scope.kind != "function" or not scope.code_name.startswith("test"):
+            if (names := _test_marks(model, scope)) is None:
                 continue
-            chain, parent = [scope], scope.parent
-            while parent is not None and parent.kind in {"class", "module"}:
-                chain.append(parent)
-                parent = parent.parent
-            if parent is not None:
-                continue  # a function inside another function is no test pytest collects
-            names = [name for item in reversed(chain) for name in _marks_of(model, item)]
             for decorator in getattr(scope.node, "decorator_list", []):
                 for node in _with_referenced_values(model, decorator):
                     owners.setdefault(node, []).append(names)
@@ -956,6 +978,855 @@ def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
                     names = ", ".join(dict.fromkeys([*consumer, *added]))
                     yield Finding(module.rel, node.lineno, "never-run", f"pytest.param needs {names}")
                     break
+
+
+@cache
+def _checkout_table() -> dict[str, tuple[tuple[str, ...], str]]:
+    """Return the capability table of the checkout this script belongs to, empty where it has none or cannot read it."""
+    return _own_table(Tree(Path(__file__).resolve().parents[1]))
+
+
+def _table_of(tree: Tree) -> dict[str, tuple[tuple[str, ...], str]]:
+    """Return the capability table of a tree, else that of this checkout; empty where the table is unreadable."""
+    return _own_table(tree) if (tree.root / CAPABILITY_HOME).is_file() else _checkout_table()
+
+
+def _own_table(tree: Tree) -> dict[str, tuple[tuple[str, ...], str]]:
+    """Return the capability table a tree holds itself, empty where it has none or the table is unreadable."""
+    if not (tree.root / CAPABILITY_HOME).is_file():
+        return {}
+    value = tree.module(CAPABILITY_HOME).model.constant(CAPABILITY_TABLE)
+    if isinstance(value, Unreadable) or not isinstance(value, dict) or _table_shape(value) is not None:
+        return {}
+    return value
+
+
+def _excludes_windows(table: dict[str, tuple[tuple[str, ...], str]], names: Iterable[str]) -> bool:
+    """Return whether the capabilities a test needs together hold on no Windows environment.
+
+    One of their clauses is made of platform alternatives only (``platform!=win32``, ``platform==linux``) and Windows
+    fails it. A capability the table lacks excludes nothing.
+    """
+    return any(
+        all(_PLATFORM_ALTERNATIVE.fullmatch(alternative) for alternative in clause.split("|"))
+        and not condition_holds(clause, {"platform": "win32"})
+        for name in names
+        for clause in table.get(name, ((), ""))[0]
+    )
+
+
+def _test_marks(model: SourceModule, scope: Scope) -> list[str] | None:
+    """Return the capabilities the marks of a collected test name (its module's, classes' and own), None for no test.
+
+    A function whose name starts with ``test`` inside another function, or a fixture, is no test pytest collects.
+    """
+    if scope.kind != "function" or not scope.code_name.startswith("test") or _fixture_options(model, scope) is not None:
+        return None
+    chain, parent = [scope], scope.parent
+    while parent is not None and parent.kind in {"class", "module"}:
+        chain.append(parent)
+        parent = parent.parent
+    if parent is not None:
+        return None
+    return [name for item in reversed(chain) for name in _marks_of(model, item)]
+
+
+def _decided_by_platform(guard: Guard) -> bool:
+    """Return whether a platform test or an ``ImportError`` handler decides that code runs, so it breaks no import."""
+    return any(condition.kind in {"platform", "import-error"} for condition in guard)
+
+
+@dataclass(frozen=True)
+class _PosixUse:
+    """One use of a name or module that exists on POSIX only: the scope it runs in, its line and what it is."""
+
+    scope: Scope
+    line: int
+    what: str
+
+
+def _heads(module: Module) -> dict[ast.AST, Reference]:
+    """Return the references of run-time reads by their name node (annotations aside)."""
+    return {reference.node: reference for reference in module.model.references if not reference.annotation}
+
+
+def _chains(module: Module, heads: dict[ast.AST, Reference]) -> Iterator[tuple[ast.expr, Reference]]:
+    """Yield every name read and attribute chain read of the module with the reference of its head name."""
+    for node in module.nodes:
+        if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load):
+            head = node.value
+            while isinstance(head, ast.Attribute):
+                head = head.value
+            if (reference := heads.get(head)) is not None:
+                yield node, reference
+    for reference in heads.values():
+        if reference.context == "load":
+            yield reference.node, reference
+
+
+def _presence_reads(expression: ast.expr, heads: dict[ast.AST, Reference]) -> Iterator[Reference]:
+    """Yield the name reads an expression only tests for: ``x``, ``not x``, ``x is None``, ``and``/``or`` of these."""
+    if (reference := heads.get(expression)) is not None:
+        yield reference
+    elif isinstance(expression, ast.UnaryOp) and isinstance(expression.op, ast.Not):
+        yield from _presence_reads(expression.operand, heads)
+    elif isinstance(expression, ast.BoolOp):
+        for value in expression.values:
+            yield from _presence_reads(value, heads)
+    elif (
+        isinstance(expression, ast.Compare)
+        and len(expression.ops) == 1
+        and isinstance(expression.ops[0], (ast.Is, ast.IsNot, ast.Eq, ast.NotEq))
+    ):
+        sides = [expression.left, *expression.comparators]
+        if any(isinstance(side, ast.Constant) and side.value is None for side in sides):
+            yield from (reference for side in sides if (reference := heads.get(side)) is not None)
+
+
+def _tested(condition: Condition) -> ast.expr | None:
+    """Return the expression a condition tests: the test of an ``if`` or a conditional expression, or an operand."""
+    node = condition.node
+    if isinstance(node, (ast.If, ast.IfExp)):
+        return node.test
+    return node if isinstance(node, ast.expr) else None
+
+
+def _presence_tests(module: Module, heads: dict[ast.AST, Reference]) -> set[ast.AST]:
+    """Return the name reads the module's tests only check for presence (``if fcntl is None``, ``fcntl and ...``)."""
+    tests: list[ast.expr] = []
+    for node in module.nodes:
+        if isinstance(node, (ast.If, ast.IfExp, ast.Assert)):
+            tests.append(node.test)
+        elif isinstance(node, ast.BoolOp):
+            tests += node.values[:-1]
+    return {reference.node for test in tests for reference in _presence_reads(test, heads)}
+
+
+def _decided_by_name(reference: Reference, heads: dict[ast.AST, Reference]) -> bool:
+    """Return whether a test of the name's presence (``if fcntl is not None:``) stands between a read and the module."""
+    return any(
+        (tested := _tested(condition)) is not None
+        and any(read.name == reference.name for read in _presence_reads(tested, heads))
+        for condition in reference.guard
+    )
+
+
+def _is_posix_only(origin: str) -> bool:
+    """Return whether a dotted path is a closed-list name or a name of a closed-list module."""
+    return origin in POSIX_ONLY_CALLS or origin.split(".", maxsplit=1)[0] in POSIX_ONLY_MODULES
+
+
+def _posix_origin(model: SourceModule, node: ast.expr, head: Reference, loaded: dict[ast.AST, str]) -> str | None:
+    """Return the origin of a read (``head`` is its head name's) that is a closed-list name or module's name, else None.
+
+    Every binding of the name counts (`SourceModule.origins`): ``try: import fcntl`` / ``except ImportError:
+    fcntl = None`` leaves ``fcntl`` bound twice, and its reads are still reads of the module. So does a name assigned
+    a value that holds a literal import of such a module (``loaded``, by call node): ``fcntl =
+    importlib.import_module("fcntl") if sys.platform != "win32" else None``.
+    """
+    parts, part = [], node
+    while isinstance(part, ast.Attribute):
+        part, parts = part.value, [part.attr, *parts]
+    imported = [
+        ".".join([loaded[part], *parts])
+        for binding in model.resolve(head.node).bindings
+        if binding.kind in {"assign", "annassign"} and binding.value is not None
+        for part in ast.walk(binding.value)
+        if part in loaded
+    ]
+    return next(filter(_is_posix_only, [*(origin for origin, _ in model.origins(node)), *imported]), None)
+
+
+def _posix_uses(module: Module) -> list[_PosixUse]:
+    """Return the uses of `POSIX_ONLY_CALLS` and `POSIX_ONLY_MODULES` that no platform test or handler decides.
+
+    A name or an attribute chain counts by the origin the model gives it (``from os import fork`` and
+    ``import os as o; o.fork`` are ``os.fork``); a string that spells it does not. An import of one of the modules is
+    its use, a literal ``importlib.import_module("fcntl")`` too, unless a platform test or an ``ImportError`` handler
+    decides it. That guard decides the import and not its readers: a read of the module's name (``resource.getrusage``)
+    is a use wherever it stands, unless a platform test decides it or a test of the same name does
+    (``if fcntl is not None:``), and a bare test of the name (``fcntl is None``) is no use.
+    """
+    model = module.model
+    found = [
+        _PosixUse(item.scope, item.node.lineno, f"import {item.target if item.kind == 'from' else item.source}")
+        for item in model.imports
+        if isinstance(item.source, str)
+        and isinstance(item.target, str)
+        and (item.source.split(".")[0] in POSIX_ONLY_MODULES or item.target in POSIX_ONLY_CALLS)
+        and not item.typing_only
+        and not _decided_by_platform(item.guard)
+    ]
+    loaded: dict[ast.AST, str] = {
+        item.node: item.source
+        for item in model.imports
+        if item.kind == "dynamic" and isinstance(item.source, str) and _is_posix_only(item.source)
+    }
+    heads = _heads(module)
+    presence = _presence_tests(module, heads)
+    longest: dict[ast.AST, tuple[str, int, Scope]] = {}
+    for node, reference in _chains(module, heads):
+        if (
+            (origin := _posix_origin(model, node, reference, loaded)) is None
+            or _decided_by_platform(reference.guard)
+            or _decided_by_name(reference, heads)
+            or node in presence
+        ):
+            continue
+        if reference.node not in longest or len(origin) > len(longest[reference.node][0]):
+            longest[reference.node] = (origin, node.lineno, reference.scope)
+    found += [_PosixUse(scope, line, origin) for origin, line, scope in longest.values()]
+    return found
+
+
+def _unit_of(module: Module, scope: Scope) -> str | None:
+    """Return the top-level name (``module.name``) whose code runs a scope, None for module-level code."""
+    while scope.parent is not None and scope.parent.kind != "module":
+        scope = scope.parent
+    return None if scope.kind == "module" else f"{module.name}.{scope.code_name}"
+
+
+class _PosixIndex:
+    """Where scripts and tests use what exists on POSIX only, and which top-level names reach such a use.
+
+    A top-level function or class reaches a use that runs in its code, or one that a top-level name it reads reaches
+    (a call, or a reference passed on), by the origin the model gives the name. A method or an attribute of an object
+    whose class the model cannot follow is not followed.
+    """
+
+    def __init__(self, modules: list[Module]) -> None:
+        self.uses = {module.rel: _posix_uses(module) for module in modules}
+        self.units = {
+            f"{module.name}.{binding.name}"
+            for module in modules
+            for binding in module.model.bindings(scope=module.model.module_scope)
+            if binding.kind in {"def", "class"} and not binding.guard
+        }
+        self.reaches: dict[str, str] = {}
+        self.edges: dict[str, set[str]] = defaultdict(set)
+        for module in modules:
+            for use in self.uses[module.rel]:
+                if (unit := _unit_of(module, use.scope)) is not None and use.scope.runs_in == "function":
+                    self.reaches.setdefault(unit, f"{use.what} in {module.rel}")
+            for scope, target in self.reads(module):
+                if (unit := _unit_of(module, scope)) is not None and scope.runs_in == "function":
+                    self.edges[unit].add(target)
+        changed = True
+        while changed:
+            changed = False
+            for unit, targets in self.edges.items():
+                if unit not in self.reaches and (hit := next((t for t in sorted(targets) if t in self.reaches), None)):
+                    self.reaches[unit] = f"{hit} -> {self.reaches[hit]}"
+                    changed = True
+
+    def _target(self, origin: str | None) -> str | None:
+        """Return the top-level name an origin leads to (``scripts.x.Cls.method`` leads to ``scripts.x.Cls``)."""
+        parts = (origin or "").split(".")
+        return next((key for size in range(len(parts), 1, -1) if (key := ".".join(parts[:size])) in self.units), None)
+
+    def reads(self, module: Module) -> list[tuple[Scope, str]]:
+        """Return the scope and the top-level name of each read of a module that leads to one (`_posix_uses` guards)."""
+        return [
+            (reference.scope, target)
+            for node, reference in _chains(module, _heads(module))
+            if not _decided_by_platform(reference.guard)
+            and (target := self._target(module.model.origin(node))) is not None
+        ]
+
+
+def _descendants(scope: Scope) -> Iterator[Scope]:
+    """Yield a scope and every scope inside it."""
+    yield scope
+    for child in scope.children:
+        yield from _descendants(child)
+
+
+@dataclass(frozen=True)
+class _Fixture:
+    """A pytest fixture: the module and scope that define it, the name tests ask for it by, and if it is autouse."""
+
+    module: Module
+    scope: Scope
+    name: str
+    autouse: bool
+
+
+def _fixture_options(model: SourceModule, scope: Scope) -> dict[str | None, ast.expr] | None:
+    """Return the keywords of a scope's ``pytest.fixture`` decorator (empty when it is not called), None for none."""
+    for decorator in getattr(scope.node, "decorator_list", []):
+        call = decorator if isinstance(decorator, ast.Call) else None
+        if model.origin(call.func if call is not None else decorator) == _FIXTURE_ORIGIN:
+            return {keyword.arg: keyword.value for keyword in call.keywords} if call is not None else {}
+    return None
+
+
+def _fixtures(module: Module) -> list[_Fixture]:
+    """Return the fixtures a module defines at module level or in a class, by the origin of the decorator.
+
+    The name is the ``name=`` of the decorator, else the function's; ``autouse=True`` makes it apply to every test
+    of its module (a class's, of the class) and, in a ``conftest.py``, of its folder.
+    """
+    model = module.model
+    found = []
+    for scope in model.scopes:
+        if scope.kind != "function" or scope.parent is None or scope.parent.kind not in {"module", "class"}:
+            continue
+        if (options := _fixture_options(model, scope)) is None:
+            continue
+        name, autouse = options.get("name"), options.get("autouse")
+        found.append(
+            _Fixture(
+                module,
+                scope,
+                name.value if isinstance(name, ast.Constant) and isinstance(name.value, str) else scope.code_name,
+                isinstance(autouse, ast.Constant) and autouse.value is True,
+            )
+        )
+    return found
+
+
+def _usefixtures(model: SourceModule, scope: Scope) -> list[str]:
+    """Return the fixture names ``pytest.mark.usefixtures`` gives a scope, by decorator and by ``pytestmark``."""
+    carriers = list(getattr(scope.node, "decorator_list", []))
+    if scope.kind in {"module", "class"}:
+        carriers += [binding.value for binding in model.bindings("pytestmark", scope) if binding.value is not None]
+    return [
+        argument.value
+        for carrier in carriers
+        for call in ast.walk(carrier)
+        if isinstance(call, ast.Call) and model.origin(call.func) == "pytest.mark.usefixtures"
+        for argument in call.args
+        if isinstance(argument, ast.Constant) and isinstance(argument.value, str)
+    ]
+
+
+def _class_chain(module: Module, scope: Scope, seen: frozenset[Scope] = frozenset()) -> Iterator[Scope]:
+    """Yield a class scope and the classes of the same module its bases name, each once."""
+    if scope in seen:
+        return
+    yield scope
+    heads = _heads(module)
+    for base in bases(scope):
+        if (reference := heads.get(base)) is not None:
+            for binding in module.model.resolve(reference.node).bindings:
+                if binding.kind == "class":
+                    yield from _class_chain(module, module.model.scope_defined_by(binding.node), seen | {scope})
+
+
+def _self_calls(module: Module, scope: Scope) -> Iterator[Scope]:
+    """Yield the methods of the scope's class (and of the classes of the module it inherits from) read on ``self``."""
+    model = module.model
+    receiver = model.receiver(scope)
+    if receiver is None or scope.parent is None:
+        return
+    members: dict[str, list[ast.AST]] = {}
+    for owner in _class_chain(module, scope.parent):
+        for name, nodes in model.class_members(owner, spelled=True).items():
+            members.setdefault(name, nodes)
+    receivers = {use.reference.node for use in model.uses(receiver)}
+    for node in ast.walk(scope.node):
+        if isinstance(node, ast.Attribute) and node.value in receivers:
+            for target in members.get(node.attr, []):
+                if (method := model.binding_at(target)) is not None and method.kind == "def":
+                    yield model.scope_defined_by(target)
+
+
+class _TestReach:
+    """What a collected test reaches that exists on POSIX only: its own code and everything pytest runs for it.
+
+    That is the use in its body and nested scopes, the top-level names it reads (`_PosixIndex`), the methods it calls
+    on ``self`` (those of its class and of the classes of its module it inherits from), and the fixtures it gets:
+    by parameter, ``usefixtures`` (decorator, class or module ``pytestmark``) and ``autouse``, from its classes, its
+    module and the ``conftest.py`` files of its folders (the nearest definition of a name wins), and the fixtures
+    those ask for, in turn.
+    """
+
+    def __init__(self, tree: Tree, index: _PosixIndex) -> None:
+        self.index = index
+        self.modules = {module.rel: module for module in _test_modules(tree)}
+        self.reads = {module.rel: index.reads(module) for module in self.modules.values()}
+        self.fixtures = {rel: _fixtures(module) for rel, module in self.modules.items()}
+
+    def layers(self, module: Module, scope: Scope) -> list[_Fixture]:
+        """Return the fixtures a test of ``scope`` sees, far to near: conftest files, the module, its classes."""
+        folders = list(Path(module.rel).parents)[::-1]
+        conftests = [rel for folder in folders if (rel := (folder / "conftest.py").as_posix()) in self.modules]
+        chain = []
+        probe = scope.parent
+        while probe is not None and probe.kind == "class":
+            chain.insert(0, probe)
+            probe = probe.parent
+        found = [
+            fixture
+            for rel in [*conftests, module.rel]
+            for fixture in self.fixtures[rel]
+            if fixture.scope.parent is not None and fixture.scope.parent.kind == "module"
+        ]
+        return found + [f for owner in chain for f in self.fixtures[module.rel] if f.scope.parent is owner]
+
+    def reach(self, module: Module, scope: Scope, visible: dict[str, _Fixture], seen: set[Scope]) -> str | None:
+        """Return the first POSIX-only use the code of ``scope`` reaches and the way there, None if it reaches none."""
+        if scope in seen:
+            return None
+        seen.add(scope)
+        owned = set(_descendants(scope))
+        for use in self.index.uses[module.rel]:
+            if use.scope in owned:
+                return f"{use.what} in {module.rel}"
+        for owner, target in self.reads[module.rel]:
+            if owner in owned and target in self.index.reaches:
+                return f"{target} -> {self.index.reaches[target]}"
+        for method in _self_calls(module, scope):
+            if (inner := self.reach(module, method, visible, seen)) is not None:
+                return f"self.{method.code_name} -> {inner}"
+        asked = [binding.name for binding in module.model.bindings(scope=scope) if binding.kind == "param"]
+        return next(
+            filter(None, (self.through(visible[name], visible, seen) for name in asked if name in visible)), None
+        )
+
+    def through(self, fixture: _Fixture, visible: dict[str, _Fixture], seen: set[Scope]) -> str | None:
+        """Return the way a fixture reaches a POSIX-only use as ``fixture <name> -> <way>``, None if it reaches none."""
+        inner = self.reach(fixture.module, fixture.scope, visible, seen)
+        return None if inner is None else f"fixture {fixture.name} -> {inner}"
+
+    def test_reach(self, module: Module, scope: Scope) -> str | None:
+        """Return what a collected test reaches (see the class): its own code, then the fixtures it is given."""
+        layers = self.layers(module, scope)
+        visible = {fixture.name: fixture for fixture in layers}
+        seen: set[Scope] = set()
+        if (found := self.reach(module, scope, visible, seen)) is not None:
+            return found
+        chain, probe = [scope], scope.parent
+        while probe is not None:
+            chain.append(probe)
+            probe = probe.parent
+        asked = [name for item in chain for name in _usefixtures(module.model, item)]
+        given = [visible[name] for name in asked if name in visible]
+        given += [visible[name] for name in dict.fromkeys(fixture.name for fixture in layers if fixture.autouse)]
+        return next(filter(None, (self.through(fixture, visible, seen) for fixture in given)), None)
+
+
+def posix_only_call(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a use of what exists on POSIX only that Windows meets: at import, or in a test without a POSIX capability.
+
+    The closed list is `POSIX_ONLY_CALLS` (``os.fork``, ``os.mkfifo``, ``signal.SIGKILL``) and `POSIX_ONLY_MODULES`
+    (``resource``, ``fcntl``), read by origin. A use at module or class level, in a script or a test, breaks the import
+    on Windows whatever the marks say. In a function it makes the function POSIX-only, and so every top-level function
+    or class that reads its name (`_PosixIndex`); a collected test that reaches such a use (`_TestReach`: its code,
+    the methods it calls on ``self``, its fixtures, ``conftest.py`` ones included) must need a capability of
+    ``tests/capabilities.py`` that Windows lacks (``posix``, ``linux``). A use that a platform test or an
+    ``ImportError`` handler decides is no site (`_posix_uses`). A mark on a single ``pytest.param`` is not read.
+
+    Review class: a failure only a Windows lane shows (#7056 round 2: a test of a script that forks its workers).
+    """
+    table = _table_of(tree)
+    modules = [*tree.scripts, *_test_modules(tree)]
+    index = _PosixIndex(modules)
+    for module in modules:
+        for use in index.uses[module.rel]:
+            if use.scope.runs_in != "function":
+                yield Finding(module.rel, use.line, "posix-only-call", f"{use.what} runs when the module is imported")
+    reach = _TestReach(tree, index)
+    for module in reach.modules.values():
+        model = module.model
+        for scope in model.scopes:
+            if (names := _test_marks(model, scope)) is None or _excludes_windows(table, names):
+                continue
+            if (reached := reach.test_reach(module, scope)) is not None:
+                yield Finding(module.rel, scope.line, "posix-only-call", f"{scope.qualname} reaches {reached}")
+
+
+def _requires_python(root: Path) -> tuple[int, int] | None:
+    """Return the oldest Python of the ``requires-python`` of ``root``'s ``pyproject.toml``, None where it has none."""
+    path = root / "pyproject.toml"
+    requires = (
+        tomllib.loads(path.read_text(encoding="utf-8")).get("project", {}).get("requires-python", "")
+        if path.is_file()
+        else ""
+    )
+    return (int(match[1]), int(match[2])) if (match := _REQUIRES_PYTHON.search(requires)) else None
+
+
+def _floor(tree: Tree) -> tuple[int, int] | None:
+    """Return the oldest Python the tree supports: its ``requires-python``, else that of this checkout, else None."""
+    return next(filter(None, map(_requires_python, (tree.root, Path(__file__).resolve().parents[1]))), None)
+
+
+def floor_syntax(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a Python file of ``tests`` that parses on this Python and not with the oldest supported grammar.
+
+    Every ``.py`` file under ``tests`` except stored output counts, test data included: a file the oldest Python
+    cannot parse breaks collection (a test module) or the run that reads it. The grammar is that of ``ast.parse(...,
+    feature_version=<requires-python>)``: it refuses syntax that is newer (type statements and parameters, ``except``
+    without parentheses, template strings) and not library features, and it does not know every newer form (PEP 701
+    f-strings, PEP 810 ``lazy import``). A file this Python cannot parse at all holds no finding; the oldest Python,
+    which reads less, finds the same files or fewer, so a count never rises for another Python. A tree that states no
+    ``requires-python``, in a checkout that states none either (a copy run outside a checkout), has no floor to break.
+
+    Review class: a failure only the oldest Python's lane shows (#7030: a fixture with type parameters kept as ``.py``).
+    """
+    if (floor := _floor(tree)) is None:
+        return
+    for module in tree.tests:
+        text = (tree.root / module.rel).read_text(encoding="utf-8")
+        try:
+            ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        try:
+            ast.parse(text, feature_version=floor)
+        except SyntaxError as error:
+            yield Finding(
+                module.rel, error.lineno or 1, "floor-syntax", f"{error.msg} (oldest supported: {floor[0]}.{floor[1]})"
+            )
+
+
+def unportable_name(part: str, *, whole: bool = True) -> str | None:
+    """Return why Windows refuses a file name or the fragment of one, None where it takes it.
+
+    ``whole`` is a complete name (a trailing dot or space and the device names apply); a fragment of an f-string
+    (``f"{name}.toml"``) is checked for the characters only.
+    """
+    if (found := WINDOWS_REFUSED.search(part)) is not None:
+        return f"Windows refuses {found.group()!r} in a file name"
+    if whole and part.endswith((".", " ")):
+        return "Windows drops a trailing dot or space of a file name"
+    if whole and WINDOWS_DEVICE.fullmatch(part):
+        return "Windows reserves the name for a device"
+    return None
+
+
+def unportable_paths(paths: Iterable[str]) -> list[tuple[str, str]]:
+    """Return each ``(path, reason)`` a Windows or macOS checkout cannot hold: a refused name or one that folds.
+
+    A name folds onto another path when both have the same components after Unicode normalization and case folding
+    (both file systems are case-insensitive by default and macOS also normalizes), so a checkout merges them. The
+    first path in order keeps the spelling; every later spelling of a folded folder or file is a finding.
+    """
+    found: list[tuple[str, str]] = []
+    spelled: dict[tuple[str, ...], str] = {}
+    for path in sorted(paths):
+        parts = path.split("/")
+        if reason := next(filter(None, map(unportable_name, parts)), None):
+            found.append((path, reason))
+            continue
+        for size in range(1, len(parts) + 1):
+            key = tuple(unicodedata.normalize("NFC", part).casefold() for part in parts[:size])
+            holder = spelled.setdefault(key, "/".join(parts[:size]))
+            if holder != "/".join(parts[:size]):
+                found.append((path, f"folds onto {holder} where file names are case-insensitive"))
+                break
+    return found
+
+
+def _path_operands(module: Module) -> Iterator[tuple[int, ast.expr]]:
+    """Yield ``(line, operand)`` for each expression a path is built from.
+
+    The positions are the right operand of ``/``, the arguments of ``Path``/``PurePath``/``os.path.join``, the file
+    of ``open`` (by origin; first argument or ``file=``) and the arguments of ``.joinpath``/``.with_name``/
+    ``.with_stem``/``.with_suffix``.
+    """
+    model = module.model
+    for node in module.nodes:
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            operands = [node.right]
+        elif isinstance(node, ast.Call) and (
+            (origin := model.origin(node.func)) in PATH_ORIGINS
+            or (isinstance(node.func, ast.Attribute) and node.func.attr in PATH_METHODS)
+        ):
+            opened = argument(node, 0, "file") if origin == "builtins.open" else None
+            operands = node.args if origin != "builtins.open" else [opened] if opened not in {None, UNKNOWN} else []
+        else:
+            continue
+        yield from ((node.lineno, operand) for operand in operands)
+
+
+class _Names:
+    """The one resolver of the names a path is built from: what a name may hold, read from the module's bindings.
+
+    A name holds the value of each assignment to it (the paired item of an unpacking), the values of the
+    ``parametrize`` that gives a test its parameter (the matching element of each ``pytest.param`` or tuple), and the
+    item a ``for`` loop or a comprehension takes from
+    a literal list, tuple, set or dict (``items()``, ``keys()`` and ``values()`` too) at the name's position in the
+    target (`Assignment.position`). Names bound to names are followed, each once. What a call, a subscript or an
+    argument makes is not known.
+    """
+
+    def __init__(self, module: Module) -> None:
+        self.model = module.model
+        self.heads = _heads(module)
+        self._active: set[ast.AST] = set()
+
+    def _loaded(self, node: ast.expr) -> Reference | None:
+        """Return the reference of a name read, None for any other expression."""
+        reference = self.heads.get(node)
+        return reference if reference is not None and reference.context == "load" else None
+
+    def _follow(self, name: ast.expr, step: Callable[[ast.expr], list[_T]]) -> list[_T]:
+        """Return what ``step`` makes of each expression a name read may hold, none for a name being followed.
+
+        Every walk from a name to what it holds goes through here, so this is the one place that stops a cycle: a
+        name read that is being followed holds nothing meanwhile (``for names in names``, ``for d in d.items()``,
+        ``a = [b]`` with ``b = [a]``).
+        """
+        if self._loaded(name) is None or name in self._active:
+            return []
+        self._active.add(name)
+        try:
+            return [found for value in self.expressions(name) for found in step(value)]
+        finally:
+            self._active.discard(name)
+
+    def expressions(self, name: ast.expr) -> list[ast.expr]:
+        """Return the expressions a name may hold, one step: its assigned values, parameter values and loop items."""
+        if (reference := self._loaded(name)) is None:
+            return []
+        found: list[ast.expr] = []
+        for binding in self.model.resolve(reference.node).bindings:
+            assigned = self.model.assignment(binding.node)
+            if binding.kind in {"assign", "annassign"} and binding.value is not None:
+                found.append(binding.value)
+            elif binding.kind in {"assign", "annassign"} and assigned is not None:
+                found += [element] if (element := _element(assigned.value, assigned.position)) is not None else []
+            elif binding.kind == "param":
+                found += self._parametrized(binding)
+            elif binding.kind in {"for", "comprehension"} and assigned is not None:
+                found += [
+                    element
+                    for item in self.items(assigned.value)
+                    if (element := _element(item, assigned.position)) is not None
+                ]
+        return found
+
+    def items(self, iterable: ast.expr) -> list[ast.expr]:
+        """Return the item expressions a literal collection (or a name bound to one) yields when iterated."""
+        if isinstance(iterable, (ast.List, ast.Tuple, ast.Set)):
+            return list(iterable.elts)
+        if isinstance(iterable, ast.Dict):
+            return [key for key in iterable.keys if key is not None]
+        if self._loaded(iterable) is not None:
+            return self._follow(iterable, self.items)
+        if (
+            isinstance(iterable, ast.Call)
+            and isinstance(iterable.func, ast.Attribute)
+            and iterable.func.attr in {"items", "keys", "values"}
+            and not iterable.args
+        ):
+            found: list[ast.expr] = []
+            for mapping in self.mappings(iterable.func.value):
+                pairs = [(key, value) for key, value in zip(mapping.keys, mapping.values, strict=True) if key]
+                found += {
+                    "items": [ast.Tuple([key, value], ast.Load()) for key, value in pairs],
+                    "keys": [key for key, _ in pairs],
+                    "values": [value for _, value in pairs],
+                }[iterable.func.attr]
+            return found
+        return []
+
+    def mappings(self, node: ast.expr) -> list[ast.Dict]:
+        """Return the dict displays an expression may be: itself, or those its name may hold."""
+        if isinstance(node, ast.Dict):
+            return [node]
+        if self._loaded(node) is not None:
+            return self._follow(node, self.mappings)
+        return []
+
+    def _parametrized(self, binding: Binding) -> list[ast.expr]:
+        """Return the values ``pytest.mark.parametrize`` gives the test parameter a binding is."""
+        found: list[ast.expr] = []
+        for decorator in getattr(binding.scope.node, "decorator_list", []):
+            if not (isinstance(decorator, ast.Call) and self.model.origin(decorator.func) == "pytest.mark.parametrize"):
+                continue
+            empty = ast.Tuple([], ast.Load())
+            arguments = {"argnames": empty, "argvalues": empty}
+            arguments.update(zip(arguments, decorator.args, strict=False))
+            arguments.update((keyword.arg, keyword.value) for keyword in decorator.keywords if keyword.arg in arguments)
+            names = _argnames(arguments["argnames"])
+            if binding.name not in names:
+                continue
+            position = (names.index(binding.name),)
+            whole = len(names) == 1 and isinstance(arguments["argnames"], ast.Constant)
+            for item in self.items(arguments["argvalues"]):
+                if isinstance(item, ast.Call) and self.model.origin(item.func) == "pytest.param":
+                    element = _element(ast.Tuple(list(item.args), ast.Load()), position)
+                else:
+                    element = item if whole else _element(item, position)
+                if element is not None:
+                    found.append(element)
+        return found
+
+    def strings(self, node: ast.expr) -> list[str]:
+        """Return the string constants an expression may take: itself, or what its name or conditional may hold."""
+        if isinstance(node, ast.Constant):
+            return [node.value] if isinstance(node.value, str) else []
+        if isinstance(node, ast.IfExp):
+            return [*self.strings(node.body), *self.strings(node.orelse)]
+        if self._loaded(node) is not None:
+            return self._follow(node, self.strings)
+        return []
+
+
+def _argnames(node: ast.expr) -> list[str]:
+    """Return the parameter names a ``parametrize`` call lists: ``"a, b"``, or a list or tuple of strings."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return [part.strip() for part in node.value.split(",")]
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [item.value for item in node.elts if isinstance(item, ast.Constant) and isinstance(item.value, str)]
+    return []
+
+
+def _element(item: ast.expr, position: tuple[int, ...]) -> ast.expr | None:
+    """Return the part of an item that a position leads to, None where the item is no tuple or list there.
+
+    A negative index counts from the end, as for a target after a starred one (`Assignment.position`).
+    """
+    for index in position:
+        if not isinstance(item, (ast.Tuple, ast.List)) or not -len(item.elts) <= index < len(item.elts):
+            return None
+        item = item.elts[index]
+    return item
+
+
+def _path_literals(module: Module) -> Iterator[tuple[int, str, bool]]:
+    """Yield ``(line, text, whole)`` for each string in a path position (`_path_operands`).
+
+    A string a name or an expression may take (`_Names.strings`: the literal itself, a variable, a module constant, a
+    ``parametrize`` value, a loop item) is ``whole`` (each of its ``/`` parts is a complete name, a leading drive
+    letter aside); the constant parts of an f-string are fragments of names.
+    """
+    names = _Names(module)
+    for line, operand in _path_operands(module):
+        if isinstance(operand, ast.JoinedStr):
+            yield from (
+                (line, part, False)
+                for piece in operand.values
+                if isinstance(piece, ast.Constant)
+                for part in str(piece.value).split("/")
+            )
+        for text in dict.fromkeys(names.strings(operand)):
+            parts = [part for part in text.split("/") if part not in {"", ".", ".."}]
+            yield from (
+                (line, part, True) for index, part in enumerate(parts) if not (index == 0 and _DRIVE.fullmatch(part))
+            )
+
+
+def _file_name_writers(module: Module) -> dict[str, set[tuple[int | None, str | None]]]:
+    """Return the top-level functions that write files named by the entries of a mapping or list they take.
+
+    A ``for`` loop over a parameter (or its ``items()``, ``keys()`` or ``values()``) whose loop variable is read in a
+    path position (`_path_operands`), as in ``for name, text in files.items(): (root / f"{name}.toml").write_text()``.
+    Each maps to the parameters it names files by, as ``(position, keyword)`` (`_parameter_slot`).
+    """
+    model = module.model
+    positioned = [name for _, operand in _path_operands(module) for name in name_reads(operand)]
+    heads = {reference.node: reference for reference in model.references}
+    found: dict[str, set[tuple[int | None, str | None]]] = defaultdict(set)
+    for binding in model.bindings():
+        if (
+            binding.kind != "for"
+            or binding.scope.kind != "function"
+            or (assigned := model.assignment(binding.node)) is None
+        ):
+            continue
+        iterated = assigned.value
+        if (
+            isinstance(iterated, ast.Call)
+            and isinstance(iterated.func, ast.Attribute)
+            and iterated.func.attr in ENUMERATING_METHODS
+        ):
+            iterated = iterated.func.value
+        if (reference := heads.get(iterated)) is None:
+            continue
+        sources = model.resolve(reference.node).bindings
+        if (
+            sources
+            and all(source.kind == "param" for source in sources)
+            and any(
+                name.id == binding.name and any(found is binding for found in model.resolve(name).bindings)
+                for name in positioned
+            )
+        ):
+            found[_unit_of(module, binding.scope) or ""] |= {_parameter_slot(model, source) for source in sources}
+    return found
+
+
+def _parameter_slot(model: SourceModule, parameter: Binding) -> tuple[int | None, str | None]:
+    """Return how a call passes a top-level function's parameter: ``(position, keyword)``, or ``(None, None)``.
+
+    The position is the parameter's place among the function's parameters as written; a call gives a keyword-only
+    one by its keyword. A parameter of a method or a nested function is ``(None, None)``: every argument may be it.
+    """
+    if parameter.scope.parent is None or parameter.scope.parent.kind != "module":
+        return None, None
+    names = [binding.name for binding in model.bindings(scope=parameter.scope) if binding.kind == "param"]
+    return names.index(parameter.name), parameter.name
+
+
+def _writer_arguments(call: ast.Call, slots: set[tuple[int | None, str | None]]) -> list[ast.expr]:
+    """Return the arguments of a call that pass the parameters files are named by; every one where that is unknown."""
+    every = [*call.args, *(keyword.value for keyword in call.keywords)]
+    found: list[ast.expr] = []
+    for position, keyword in slots:
+        passed = argument(call, position, keyword) if position is not None or keyword is not None else UNKNOWN
+        if passed is UNKNOWN:
+            return every
+        found += [passed] if passed is not None else []
+    return found
+
+
+def _file_name_keys(module: Module) -> Iterator[tuple[int, str]]:
+    """Yield ``(line, key)`` for the string keys of the mappings a module passes to a function that names files by them.
+
+    A mapping is the argument a call to such a function (`_file_name_writers`, of the same module) passes for the
+    parameter it names files by (every argument where ``*args`` or ``**kwargs`` may pass it), or the value a
+    name in an argument may hold (`_Names`), each displayed ``{...}`` at any depth (``f(root, *CASES[case])`` reaches
+    every mapping of ``CASES``). A key is a string the resolver reads (a literal, a constant); the key is the file name.
+    """
+    writers = _file_name_writers(module)
+    model = module.model
+    if not writers:
+        return
+    names = _Names(module)
+    pending: list[ast.AST] = [
+        passed
+        for node in module.nodes
+        if isinstance(node, ast.Call) and (slots := writers.get(model.origin(node.func) or "")) is not None
+        for passed in _writer_arguments(node, slots)
+    ]
+    seen: set[int] = set()
+    while pending:
+        node = pending.pop()
+        for part in ast.walk(node):
+            if id(part) in seen:
+                continue
+            seen.add(id(part))
+            if isinstance(part, ast.Dict):
+                yield from ((key.lineno, text) for key in part.keys if key is not None for text in names.strings(key))
+            elif isinstance(part, ast.expr):
+                pending += names.expressions(part)
+
+
+def portable_names(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
+    """Report a path Windows refuses or that another path folds onto, in the file names and the names the code builds.
+
+    A file of ``scripts`` or ``tests`` whose name has a character Windows refuses (``<>:"|?*``, a backslash, a control
+    character), ends in a dot or space, is a device name (``con``, ``aux.txt``) or folds onto another path (same
+    components after case folding and Unicode normalization). In Python, a string in a path position (`_path_operands`)
+    that holds such a name, and a string key of a mapping passed to a function that writes files named by the entries
+    of a mapping (`_file_name_keys`: the key is the file name). A name that only a running test builds, from data the
+    source does not spell, is not seen, and a backslash in a relative path is a file name on Linux.
+
+    Review class: a failure only a Windows lane shows (#7046: a fixture named ``option:--new-flag``, written as a file).
+    """
+    for rel, reason in unportable_paths(tree.paths):
+        yield Finding(rel, 1, "portable-names", reason)
+    for module in (*tree.scripts, *_test_modules(tree)):
+        for line, part, whole in _path_literals(module):
+            if reason := unportable_name(part, whole=whole):
+                yield Finding(module.rel, line, "portable-names", f"{part!r}: {reason}")
+        for line, key in _file_name_keys(module):
+            for reason in filter(None, map(unportable_name, key.split("/"))):
+                yield Finding(module.rel, line, "portable-names", f"key {key!r} names a file: {reason}")
 
 
 RULES: tuple[Rule, ...] = (
@@ -1032,6 +1903,26 @@ RULES: tuple[Rule, ...] = (
         never_run,
         "delete the test, or the capability that excludes every lane; a test no lane of .github/workflows/test.yaml "
         "runs checks nothing",
+        absolute=True,
+    ),
+    Rule(
+        "posix-only-call",
+        posix_only_call,
+        'mark the test `@needs("posix")` (or `linux`), or move the POSIX-only use out of module level and behind a '
+        "platform test; a script that forks keeps its tests behind the capability",
+    ),
+    Rule(
+        "floor-syntax",
+        floor_syntax,
+        "store the file as `<name>.py.txt` and copy it where a test reads it on a Python that parses it, or write it "
+        "in the oldest supported grammar",
+        absolute=True,
+    ),
+    Rule(
+        "portable-names",
+        portable_names,
+        'rename the file or the name (no `<>:"|?*`, no trailing dot or space, no device name, no two paths that '
+        "differ only in case)",
         absolute=True,
     ),
 )

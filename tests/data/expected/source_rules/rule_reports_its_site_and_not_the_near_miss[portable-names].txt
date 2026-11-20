@@ -1,0 +1,34 @@
+exit: 1
+scripts/names.py:7: portable-names: 'has:colon.txt': Windows refuses ':' in a file name
+scripts/names.py:8: portable-names: 'con.txt': Windows reserves the name for a device
+scripts/names.py:9: portable-names: 'b?.json': Windows refuses '?' in a file name
+scripts/names.py:10: portable-names: 'trail.': Windows drops a trailing dot or space of a file name
+scripts/names.py:11: portable-names: 'AUX': Windows reserves the name for a device
+scripts/names.py:12: portable-names: ':x.toml': Windows refuses ':' in a file name
+scripts/names.py:15: portable-names: 'name|pipe': Windows refuses '|' in a file name
+tests/test_names.py:5: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
+tests/test_names.py:5: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
+tests/test_names.py:21: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
+tests/test_names.py:32: portable-names: 'local:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:33: portable-names: 'const:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:35: portable-names: 'list:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:36: portable-names: key 'item:bad.json' names a file: Windows refuses ':' in a file name
+tests/test_names.py:38: portable-names: 'item:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:39: portable-names: key 'var:key' names a file: Windows refuses ':' in a file name
+tests/test_names.py:45: portable-names: 'param:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:45: portable-names: 'nul.json': Windows reserves the name for a device
+tests/test_names.py:50: portable-names: 'pair:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:65: portable-names: 'list:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:75: portable-names: 'cond:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:78: portable-names: 'key:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:80: portable-names: 'key:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:99: portable-names: key 'slot:bad.json' names a file: Windows refuses ':' in a file name
+tests/test_names.py:102: portable-names: 'file:bad.txt': Windows refuses ':' in a file name
+tests/test_names.py:107: portable-names: 'pair:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:121: portable-names: 'star:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:122: portable-names: 'COM¹.txt': Windows reserves the name for a device
+tests/test_names.py:127: portable-names: 'single:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:132: portable-names: 'listed:bad.json': Windows refuses ':' in a file name
+
+rule counts:
+  portable-names: 30 (absolute); fix: rename the file or the name (no `<>:"|?*`, no trailing dot or space, no device name, no two paths that differ only in case)

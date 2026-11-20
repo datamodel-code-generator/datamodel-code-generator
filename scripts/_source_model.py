@@ -558,7 +558,10 @@ class _Test:
 
 @dataclass(frozen=True, eq=False, slots=True)
 class Condition:
-    """One condition on the way to a statement: its kind, the branch taken, and the statement that holds it.
+    """One condition on the way to a statement: its kind, the branch taken, and the node that holds it.
+
+    The node is the ``if``, ``try`` or loop statement, a conditional expression, or (``and``/``or``) the operand
+    that decides whether the next ones run.
 
     Kinds: ``type-checking``, ``version``, ``platform``, ``if`` (any other test; ``operands`` lists the kinds of the
     operands of a mixed ``and``/``or``), ``import-error``, ``try``, ``loop``, ``case``, ``function``. Tests are
@@ -806,13 +809,17 @@ class Assignment:
     ``value`` is the expression the statement evaluates for it: the assigned value, the iterable, the context
     expression. ``element`` is the part of it the target takes: where the target and the value are tuples or lists of
     one length, each item takes the item at its position (at every level of unpacking, a starred item too), else the
-    whole value. ``kind`` is ``assign``, ``annassign``, ``for``, ``comprehension``, ``with`` or ``walrus``. An
+    whole value. ``position`` is where the target sits in the unpacking target it belongs to: the index at each level
+    (``c`` of ``a, (b, c)`` is ``(1, 1)``, a starred item its own index, an item after it its index from the end:
+    ``c`` of ``a, *b, c`` is ``(-1,)``), empty for the whole target. ``kind`` is
+    ``assign``, ``annassign``, ``for``, ``comprehension``, ``with`` or ``walrus``. An
     augmented assignment, a deletion and an annotation without a value assign nothing.
     """
 
     kind: str
     value: ast.expr = field(repr=False)
     element: ast.expr = field(repr=False)
+    position: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, eq=False, slots=True)
@@ -2194,11 +2201,37 @@ class SourceModule(_TypingForms):
             self._comprehension(node, scope, guard, annotation)
         elif isinstance(node, ast.NamedExpr):
             self._walrus(node, scope, guard, annotation)
+        elif isinstance(node, ast.IfExp):
+            self._if_expression(node, scope, guard, annotation)
+        elif isinstance(node, ast.BoolOp):
+            self._short_circuit(node, scope, guard, annotation)
         else:
             if isinstance(node, ast.Call) and _NOT_RUN.isdisjoint({annotation, scope.annotation}):
                 self._calls.append((node, scope, guard))
             for child in ast.iter_child_nodes(node):
                 self._expr(child, scope, guard, annotation)
+
+    def _if_expression(self, node: ast.IfExp, scope: Scope, guard: Guard, annotation: str) -> None:
+        """Read ``body if test else orelse``: each branch runs under the test, like the branches of an ``if``."""
+        test = _Test()
+        self._tests.append((test, node.test))
+        self._expr(node.test, scope, guard, annotation)
+        self._expr(node.body, scope, (*guard, Condition(test, "body", node, node.lineno)), annotation)
+        self._expr(node.orelse, scope, (*guard, Condition(test, "else", node, node.lineno)), annotation)
+
+    def _short_circuit(self, node: ast.BoolOp, scope: Scope, guard: Guard, annotation: str) -> None:
+        """Read ``a and b`` / ``a or b``: each operand after the first runs under the test of the one before it.
+
+        The condition holds the operand it tests (the ``and`` branch is ``body``, the ``or`` branch ``else``).
+        """
+        branch = "body" if isinstance(node.op, ast.And) else "else"
+        *operands, last = node.values
+        for value in operands:
+            self._expr(value, scope, guard, annotation)
+            test = _Test()
+            self._tests.append((test, value))
+            guard = (*guard, Condition(test, branch, value, value.lineno))
+        self._expr(last, scope, guard, annotation)
 
     def _lambda(self, node: ast.Lambda, scope: Scope, guard: Guard, annotation: str) -> None:
         self._defaults(node.args, scope, guard, annotation)
@@ -2512,13 +2545,23 @@ def _assigned(node: ast.AST) -> list[tuple[str, ast.expr, ast.expr]]:
 
 def _pair(found: dict[ast.AST, Assignment], kind: str, target: ast.expr, value: ast.expr, element: ast.expr) -> None:
     """Record what a target takes, and pair the items of an unpacking target with the items of a value as long."""
-    found[target] = Assignment(kind, value, element)
+    _record(found, target, Assignment(kind, value, element))
+
+
+def _record(found: dict[ast.AST, Assignment], target: ast.expr, assignment: Assignment) -> None:
+    found[target] = assignment
     if isinstance(target, ast.Starred):
-        _pair(found, kind, target.value, value, element)
+        _record(found, target.value, assignment)
     elif isinstance(target, (ast.Tuple, ast.List)):
+        element = assignment.element
         same = isinstance(element, (ast.Tuple, ast.List)) and len(element.elts) == len(target.elts)
-        for item, part in zip(target.elts, element.elts if same else [element] * len(target.elts), strict=True):
-            _pair(found, kind, item, value, part)
+        parts = element.elts if same else [element] * len(target.elts)
+        star = next(
+            (index for index, item in enumerate(target.elts) if isinstance(item, ast.Starred)), len(target.elts)
+        )
+        for index, (item, part) in enumerate(zip(target.elts, parts, strict=True)):
+            at = index - len(target.elts) if index > star else index
+            _record(found, item, replace(assignment, element=part, position=(*assignment.position, at)))
 
 
 def string_type(node: ast.Constant) -> ast.expr | None:

@@ -1,0 +1,6 @@
+scripts/con.py: Windows reserves the name for a device
+scripts/has:colon.py: Windows refuses ':' in a file name
+tests/a/File.txt: folds onto tests/A where file names are case-insensitive
+tests/a/file.txt: folds onto tests/A where file names are case-insensitive
+tests/b/café.txt: folds onto tests/b/café.txt where file names are case-insensitive
+tests/c/ünï.txt: folds onto tests/c/Ünï.txt where file names are case-insensitive

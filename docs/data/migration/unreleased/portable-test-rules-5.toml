@@ -1,0 +1,6 @@
+[[change]]
+id = "portable-test-rules-5"
+extends = "portable-test-rules"
+covers = [
+    "source_model/model_answers_on_every_form[bindings_assignment_targets_take].txt",
+]

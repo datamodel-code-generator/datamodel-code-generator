@@ -1,0 +1,30 @@
+== references
+11:10 value load in match_it -> local match_it @10
+13:19 first load in match_it -> local match_it @12
+13:26 rest load in match_it -> local match_it @12
+15:19 item load in match_it -> local match_it @14
+17:19 other load in match_it -> local match_it @10
+23:12 ValueError load in group -> builtin; origin builtins.ValueError
+25:10 contextlib load in group -> global <module> @7; origin contextlib
+25:38 one store in group -> local group @25
+25:43 contextlib load in group -> global <module> @7; origin contextlib
+25:71 two store in group -> local group @25
+26:15 one load in group -> local group @25
+26:20 two load in group -> local group @25
+30:17 len load in walrus -> builtin; origin builtins.len
+30:21 items load in walrus -> local walrus @29
+30:8 found store in walrus -> local walrus @30
+31:15 found load in walrus -> local walrus @30
+32:11 items load in walrus -> local walrus @29
+32:18 items load in walrus -> local walrus @29
+uses of <module>:contextlib@7: call:nullcontext@25, call:nullcontext@25
+uses of match_it:value@10: read@11
+uses of match_it:other@10: read@17
+uses of match_it:first@12: read@13
+uses of match_it:rest@12: read@13
+uses of match_it:item@14: read@15
+uses of group:one@25: read@26
+uses of group:two@25: read@26
+uses of walrus:items@29: argument@30, read@32, unpack@32
+uses of walrus:found@30: read@31
+== code objects: one per scope that compiles on this Python

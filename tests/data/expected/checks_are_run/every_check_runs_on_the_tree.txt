@@ -19,3 +19,6 @@ scripts/check_source_rules.py::flaky-test-workarounds: ratchet
 scripts/check_source_rules.py::raw-skip: ratchet
 scripts/check_source_rules.py::dead-capability: ratchet
 scripts/check_source_rules.py::never-run: ratchet
+scripts/check_source_rules.py::posix-only-call: ratchet
+scripts/check_source_rules.py::floor-syntax: ratchet
+scripts/check_source_rules.py::portable-names: ratchet
