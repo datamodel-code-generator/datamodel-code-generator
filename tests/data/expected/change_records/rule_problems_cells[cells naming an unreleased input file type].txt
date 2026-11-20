@@ -1,0 +1,3 @@
+[
+ "entry x: cells 1 name --input-file-type newtype, which the latest release lacks; unreleased surface is judged by the stored outputs only"
+]

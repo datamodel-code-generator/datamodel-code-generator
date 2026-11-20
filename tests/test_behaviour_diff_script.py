@@ -3042,6 +3042,19 @@ def test_kinds(case: str) -> None:
     assert_output(json.dumps(sorted(kinds(FACTS_BASE, KINDS_CASES[case]))) + "\n")
 
 
+@pytest.mark.parametrize(
+    "facts",
+    ['[0, [["model.py", "a1"]], "w1", "o1", "outside"]', '[0, [["model.py", "a1"]], "w1"]'],
+    ids=["a fifth element", "a missing element"],
+)
+def test_kinds_refuses_facts_of_another_length(facts: str) -> None:
+    """Facts of another length are refused: an element no kind reads would never show as a difference."""
+    base = json.loads(facts)
+    with pytest.raises(ValueError, match="4 elements") as raised:
+        kinds(base, base)
+    assert_output(f"{raised.value}\n")
+
+
 TYPE_CHANGE = Change("__init__", "Model", "type", "int -> float", "a")
 WARNING = ["DeprecationWarning", "mind the gap", "datamodel_code_generator.parser"]
 OTHER_WARNING = ["UserWarning", "other", "datamodel_code_generator"]
@@ -3121,6 +3134,15 @@ COVERS_CASES: dict[str, tuple[CellSelector, behaviour_diff.Cell]] = {
     "every option set": (_selector("tests/data/**"), _cell(options=("--preset", "standard-py314-20260101"))),
     "the input file type": (replace(_selector("tests/data/**"), input_file_type="jsonschema"), _cell()),
     "another input file type": (replace(_selector("tests/data/**"), input_file_type="openapi"), _cell()),
+    "no input file type, a cell of another type than its folder": (
+        _selector("tests/data/**"),
+        _cell("tests/data/jsonschema/plain.json", file_type="openapi"),
+    ),
+    "the input file type named, a cell of another type than its folder": (
+        replace(_selector("tests/data/**"), input_file_type="openapi"),
+        _cell("tests/data/jsonschema/plain.json", file_type="openapi"),
+    ),
+    "no input file type, a cell outside tests/data": (_selector("docs/**"), _cell("docs/plain.json")),
 }
 
 
@@ -3149,7 +3171,51 @@ class Model(BaseModel):
     def check(cls, value: int) -> int:
         return value
 '''
+ROOT_UNION_TEXT = """from __future__ import annotations
+
+from typing import Optional, Union
+
+from pydantic import BaseModel, RootModel
+
+
+class Model(RootModel[Union[int, float, str]]):
+    root: Union[int, float, str]
+
+
+class Holder(BaseModel):
+    a: Union[int, str]
+    b: Optional[int] = None
+    c: list[int | str | None] = []
+"""
+RULE_B_OLD = {
+    "the members of a root model's union in another order": ROOT_UNION_TEXT,
+    "the members of a field's union in another order": ROOT_UNION_TEXT,
+    "a nested union flattened": ROOT_UNION_TEXT,
+    "a union spelled otherwise with the same members": ROOT_UNION_TEXT,
+    "an import moved past a statement it shadows": (
+        "from pydantic import BaseModel\nField = 1\nfrom pydantic import Field\n"
+    ),
+}
 RULE_B_CASES: dict[str, tuple[str, bool]] = {
+    "the members of a root model's union in another order": (
+        ROOT_UNION_TEXT.replace("Union[int, float, str]", "Union[str, float, int]"),
+        True,
+    ),
+    "the members of a field's union in another order": (
+        ROOT_UNION_TEXT.replace("a: Union[int, str]", "a: Union[str, int]"),
+        True,
+    ),
+    "a nested union flattened": (ROOT_UNION_TEXT.replace("a: Union[int, str]", "a: Union[int, Union[str]]"), True),
+    "a union spelled otherwise with the same members": (
+        ROOT_UNION_TEXT.replace("b: Optional[int]", "b: int | None").replace(
+            "c: list[int | str | None]", "c: list[Union[int, str, None]]"
+        ),
+        True,
+    ),
+    "an import moved past a statement it shadows": (
+        "from pydantic import BaseModel\nfrom pydantic import Field\nField = 1\n",
+        False,
+    ),
     "same text": (MODEL_TEXT, False),
     "docstrings and comments": (
         MODEL_TEXT
@@ -3207,7 +3273,7 @@ def test_rule_b(case: str) -> None:
     lambdas, decorators and configuration keys the signature does not list.
     """
     new, signature_equal = RULE_B_CASES[case]
-    assert_output(json.dumps(rule_b(MODEL_TEXT, new, signature_equal=signature_equal)) + "\n")
+    assert_output(json.dumps(rule_b(RULE_B_OLD.get(case, MODEL_TEXT), new, signature_equal=signature_equal)) + "\n")
 
 
 EVERY_CELL = _selector("tests/data/**")
@@ -3375,6 +3441,55 @@ JUDGE_CASES: dict[str, tuple[list[Record], set[CellKind], CellEvidence, behaviou
         {EXIT, MESSAGES},
         CellEvidence("violation", exits=(0, 2), removed=frozenset({"--old-flag"})),
         _cell(options=("--old-flag",)),
+    ),
+    "no differing kind": ([_judged("output-text")], set(), NO_BEHAVIOUR, _cell()),
+    "a notice for messages that show in no line": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {MESSAGES},
+        CellEvidence("same"),
+        _cell(),
+    ),
+    "a notice for warnings that show in no line": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {WARNINGS},
+        CellEvidence("same"),
+        _cell(),
+    ),
+    "a notice for a message line it matches": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {MESSAGES},
+        CellEvidence("same", lines=("[message] mind the gap",)),
+        _cell(),
+    ),
+    "a notice when a signature could not be taken": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {WARNINGS},
+        CellEvidence("same", lines=("[warning] added UserWarning: gap",), signature_failed=True),
+        _cell(),
+    ),
+    "a decision for messages that show in no line": (
+        [DECIDED],
+        {OUTPUT, MESSAGES},
+        CellEvidence("violation", lines=(TYPE_LINE,)),
+        _cell(),
+    ),
+    "a decision for an exit status that shows in no line": (
+        [_judged("default-fix", _lines("tests/data/**", aspects=("type", "exit")))],
+        {OUTPUT, EXIT},
+        CellEvidence("violation", lines=(TYPE_LINE,), exits=(0, 1)),
+        _cell(),
+    ),
+    "a decision for the exit line it names": (
+        [_judged("default-fix", _lines("tests/data/**", aspects=("type", "exit")))],
+        {OUTPUT, EXIT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[exit] 0 -> 1"), exits=(0, 1)),
+        _cell(),
+    ),
+    "a decision when both signatures failed": (
+        [_judged("default-fix", _lines("tests/data/**", match="int -> float"))],
+        {OUTPUT},
+        CellEvidence("both-fail", signature_failed=True),
+        _cell(),
     ),
     "a record without a category": ([_judged(None)], {OUTPUT}, NO_BEHAVIOUR, _cell()),
     "a harness record": ([_judged("harness")], {OUTPUT}, NO_BEHAVIOUR, _cell()),

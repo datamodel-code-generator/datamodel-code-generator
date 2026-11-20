@@ -217,8 +217,8 @@ class CellSelector:
     `input`: globs over the head tree's paths (`*` within a path part, `**` across parts), each naming input files or
     directories; `backends`: output model types, None for every one (`"*"`); `options`: option sets, None for every
     option set the run has for the inputs (`"*"`); `input_file_type`: the input type the cells run with, None for the
-    folder under `tests/data/`; `aspects` and `match`: what every change line of a covered cell must have, the aspect
-    and a regular expression it holds (searched).
+    folder under `tests/data/` (a cell that runs its input with another type needs it named); `aspects` and `match`:
+    what every change line of a covered cell must have, the aspect and a regular expression it holds (searched).
     """
 
     input: tuple[str, ...]
@@ -308,7 +308,7 @@ class CellRule:
     """The cells of a category's records.
 
     `need`: whether a record names cells; `kinds`: the kinds of a cell's difference it admits; `selector_needs`: the
-    keys each of its selectors needs one of (`aspects` or `match` for a decision, `match` for a notice).
+    keys each of its selectors needs one of, non-empty (`aspects` or `match` for a decision, `match` for a notice).
     """
 
     need: Need
@@ -769,17 +769,17 @@ def _cells_problems(record: Record, rule: CellRule, *, added: bool) -> list[str]
     return [
         f"{where}: cells {index} of category {record.category} needs {needs}"
         for index, selector in enumerate(record.cells, 1)
-        if rule.selector_needs and all(getattr(selector, key) is None for key in rule.selector_needs)
+        if rule.selector_needs and not any(getattr(selector, key) for key in rule.selector_needs)
     ]
 
 
 def selector_surface(selector: CellSelector) -> list[str]:
-    """Return the surface items a selector's option sets name: each option, each option value and each preset date.
+    """Return the surface items a selector names: its input file type, each option, option value and preset date.
 
-    An option is `--name`, a value `--name value` (written as the next item or as `--name=value`), and a `--preset`
-    value also names its date as `preset:<date>`.
+    The input file type is the value of `--input-file-type`. An option is `--name`, a value `--name value` (written
+    as the next item or as `--name=value`), and a `--preset` value also names its date as `preset:<date>`.
     """
-    items: list[str] = []
+    items = [f"--input-file-type {selector.input_file_type}"] if selector.input_file_type else []
     for option_set in selector.options or ():
         for index, item in enumerate(option_set):
             if not item.startswith("--"):

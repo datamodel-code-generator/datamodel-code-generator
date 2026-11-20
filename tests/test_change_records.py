@@ -117,7 +117,14 @@ def test_parse_entry_cells(case: str) -> None:
     assert_output(json.dumps({"cells": cells, "problems": problems}, indent=1) + "\n")
 
 
-FACTS = Facts(new_surface=frozenset({"--new-flag", "--output-model-type new.Type", "preset:20260301"}))
+FACTS = Facts(
+    new_surface=frozenset({
+        "--new-flag",
+        "--output-model-type new.Type",
+        "preset:20260301",
+        "--input-file-type newtype",
+    })
+)
 RULE_CASES: dict[str, tuple[dict[str, object], str]] = {
     "output-text without cells, added": (_entry("output-text"), "added"),
     "output-text without cells, older": (_entry("output-text"), ""),
@@ -141,6 +148,15 @@ RULE_CASES: dict[str, tuple[dict[str, object], str]] = {
     ),
     "notice selector with aspects only": (_entry("notice", SELECTOR | {"aspects": ["warning"]}), ""),
     "notice selector with match": (_entry("notice", SELECTOR | {"match": "gap"}), ""),
+    "notice selector with an empty match": (_entry("notice", SELECTOR | {"match": ""}), ""),
+    "decided-change selector with an empty match": (
+        _entry("decided-change", SELECTOR | {"match": ""}, decision=["#1"], keep={"note": "n"}),
+        "",
+    ),
+    "decided-change selector with aspects and an empty match": (
+        _entry("decided-change", SELECTOR | {"aspects": ["type"], "match": ""}, decision=["#1"], keep={"note": "n"}),
+        "",
+    ),
     "api selector": (_entry("api", SELECTOR, decision=["#1"]), ""),
     "experimental selector": (
         _entry("experimental", SELECTOR, decision=["#1"], affects={"experimental": ["input-format.avro"]}),
@@ -169,6 +185,14 @@ RULE_CASES: dict[str, tuple[dict[str, object], str]] = {
                 ]
             },
         ),
+        "facts",
+    ),
+    "cells naming an unreleased input file type": (
+        _entry("output-text", SELECTOR | {"input_file_type": "newtype"}),
+        "facts",
+    ),
+    "cells naming a released input file type": (
+        _entry("output-text", SELECTOR | {"input_file_type": "openapi"}),
         "facts",
     ),
     "cells naming released surface": (
@@ -215,20 +239,25 @@ def test_without_cells(case: str) -> None:
     assert_output(output)
 
 
-SURFACE_CASES = {
-    "every option set": None,
-    "flags": (("--use-annotated", "--keyword-only"),),
-    "a value as the next item": (("--output-model-type", "msgspec.Struct", "--use-annotated"),),
-    "a value after =": (("--output-model-type=msgspec.Struct",),),
-    "a preset": (("--preset", "standard-py314-20260201"), ("--preset=practical-py310-20260101",)),
-    "default options": ((),),
+SURFACE_CASES: dict[str, CellSelector] = {
+    "every option set": CellSelector(("a.json",)),
+    "flags": CellSelector(("a.json",), options=(("--use-annotated", "--keyword-only"),)),
+    "a value as the next item": CellSelector(
+        ("a.json",), options=(("--output-model-type", "msgspec.Struct", "--use-annotated"),)
+    ),
+    "a value after =": CellSelector(("a.json",), options=(("--output-model-type=msgspec.Struct",),)),
+    "a preset": CellSelector(
+        ("a.json",), options=(("--preset", "standard-py314-20260201"), ("--preset=practical-py310-20260101",))
+    ),
+    "default options": CellSelector(("a.json",), options=((),)),
+    "an input file type": CellSelector(("a.json",), options=(("--use-annotated",),), input_file_type="openapi"),
 }
 
 
 @pytest.mark.parametrize("case", sorted(SURFACE_CASES))
 def test_selector_surface(case: str) -> None:
     """A selector's option sets name each option, each value and each preset's date as surface items."""
-    assert_output(json.dumps(selector_surface(CellSelector(("a.json",), options=SURFACE_CASES[case]))) + "\n")
+    assert_output(json.dumps(selector_surface(SURFACE_CASES[case])) + "\n")
 
 
 READ_CASES = {

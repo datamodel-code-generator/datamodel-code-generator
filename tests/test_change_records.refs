@@ -29,9 +29,13 @@ a table that holds no record	change_records/read_records[a table that holds no r
 released and unreleased records	change_records/read_records[released and unreleased records].txt
 [test_rule_problems_cells]
 api selector	change_records/rule_problems_cells[api selector].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+cells naming a released input file type	change_records/rule_problems_cells[cells naming a released input file type].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+cells naming an unreleased input file type	change_records/rule_problems_cells[cells naming an unreleased input file type].txt
 cells naming released surface	change_records/rule_problems_cells[cells naming released surface].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 cells naming unreleased surface	change_records/rule_problems_cells[cells naming unreleased surface].txt
 crash-fix without cells, added	change_records/rule_problems_cells[crash-fix without cells, added].txt
+decided-change selector with an empty match	change_records/rule_problems_cells[decided-change selector with an empty match].txt	= change_records/rule_problems_cells[decided-change selector without aspects or match].txt
+decided-change selector with aspects and an empty match	change_records/rule_problems_cells[decided-change selector with aspects and an empty match].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 decided-change selector without aspects or match	change_records/rule_problems_cells[decided-change selector without aspects or match].txt
 decided-change without cells, added	change_records/rule_problems_cells[decided-change without cells, added].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 default-fix selector with aspects only	change_records/rule_problems_cells[default-fix selector with aspects only].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
@@ -44,6 +48,7 @@ extending record without facts	change_records/rule_problems_cells[extending reco
 harness with cells	change_records/rule_problems_cells[harness with cells].txt
 internal with cells	change_records/rule_problems_cells[internal with cells].txt
 new-surface with cells	change_records/rule_problems_cells[new-surface with cells].txt
+notice selector with an empty match	change_records/rule_problems_cells[notice selector with an empty match].txt	= change_records/rule_problems_cells[notice selector with aspects only].txt
 notice selector with aspects only	change_records/rule_problems_cells[notice selector with aspects only].txt
 notice selector with match	change_records/rule_problems_cells[notice selector with match].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 notice without cells, added	change_records/rule_problems_cells[notice without cells, added].txt
@@ -55,6 +60,7 @@ released guide entry with cells	change_records/rule_problems_cells[released guid
 a preset	change_records/selector_surface[a preset].txt
 a value after =	change_records/selector_surface[a value after =].txt
 a value as the next item	change_records/selector_surface[a value as the next item].txt
+an input file type	change_records/selector_surface[an input file type].txt
 default options	change_records/selector_surface[default options].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 every option set	change_records/selector_surface[every option set].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 flags	change_records/selector_surface[flags].txt

@@ -544,12 +544,19 @@ class RunCell(Protocol):
         """The option set."""
 
 
+FACTS_LENGTH = 4
+"""The elements of a side's facts: exit status, file hashes, warnings' hash, other facts' hash."""
+
+
 def kinds(base: Facts, head: Facts) -> frozenset[CellKind]:
     """Return the kinds of the difference between two sides' facts of a cell (`compare_release._facts`).
 
     The files' hashes (and the file set) are its output, the exit status its exit, the warnings' hash its warnings and
-    the other facts' hash its messages.
+    the other facts' hash its messages. Facts of another length are refused: an element no kind reads would never show.
     """
+    if len(base) != FACTS_LENGTH or len(head) != FACTS_LENGTH:
+        message = f"a cell's facts have {FACTS_LENGTH} elements, not {len(base)} and {len(head)}"
+        raise ValueError(message)
     pairs = (
         (CellKind.EXIT, base[0], head[0]),
         (CellKind.OUTPUT, base[1], head[1]),
@@ -609,14 +616,18 @@ def covers(selector: CellSelector, cell: RunCell) -> bool:
 
     Its input path matches one of the selector's globs as the glob expands over the head tree (`*` within a path
     part, `**` across parts), its backend and its option set are listed (or every one is, `"*"`), and its input file
-    type is the selector's where the selector names one.
+    type is the selector's; a selector that names none covers the cells whose type is their folder's below
+    `tests/data/` (a cell that runs its input with another type, such as a cli_doc example, needs a selector that
+    names it).
     """
     parts = cell.label.split("/")
+    below = parts[2:] if parts[:2] == ["tests", "data"] else []
+    folder = below[0] if below else None
     return (
         any(_glob_matches(glob.split("/"), parts) for glob in selector.input)
         and (selector.backends is None or cell.backend in selector.backends)
         and (selector.options is None or cell.options in selector.options)
-        and (selector.input_file_type is None or cell.file_type == selector.input_file_type)
+        and cell.file_type == (folder if selector.input_file_type is None else selector.input_file_type)
     )
 
 
@@ -646,6 +657,8 @@ class CellEvidence:
 DECISIVE = frozenset({Category.DEFAULT_FIX, Category.DECIDED_CHANGE, Category.EXPERIMENTAL, Category.CRASH_FIX})
 """The categories whose evidence, where it holds on a cell, covers the kinds they admit without `output-text`'s."""
 LINE_ASPECT = re.compile(r"^\[([a-z_-]+)\]")
+KIND_ASPECTS = {CellKind.EXIT: "exit", CellKind.WARNINGS: "warning", CellKind.MESSAGES: "message"}
+"""The aspect of the change lines that show a difference of each kind that has lines."""
 
 
 def _line_matches(line: str, selector: CellSelector) -> bool:
@@ -653,6 +666,13 @@ def _line_matches(line: str, selector: CellSelector) -> bool:
     return (selector.aspects is None or aspect in selector.aspects) and (
         selector.match is None or re.search(selector.match, line) is not None
     )
+
+
+def _unshown(found: frozenset[CellKind], lines: Sequence[str]) -> str | None:
+    """Return the kinds of a difference no change line shows, or None: line-based evidence checks nothing for them."""
+    shown = {match[1] for line in lines if (match := LINE_ASPECT.match(line))}
+    unshown = [kind for kind, aspect in KIND_ASPECTS.items() if kind in found and aspect not in shown]
+    return f"the {', '.join(unshown)} difference shows in no change line" if unshown else None
 
 
 def _feature_applies(feature: str, cell: RunCell) -> bool:
@@ -675,9 +695,12 @@ def evidence_problem(
     `output-text`: a no-behaviour model output; `crash-fix`: the classifier's crash-fix (an exit difference from a
     failure to 0); a decision: every change line inside a covering selector's aspects and match; `experimental`: a
     feature of the record in the cell and an equal companion cell; `notice`: equal output and exit, every warning and
-    message line matching; `api`: a removed option the record names. Other categories cover no cell.
+    message line matching; `api`: a removed option the record names. Other categories cover no cell. A decision and
+    a notice prove nothing where a signature could not be taken, or where an exit, warning or message difference shows
+    in no change line (the exit, warning and message lines, `change_lines`): the cell is unproved for them.
     """
     problems: tuple[tuple[bool, str], ...] = ((True, f"category {record.category} covers no cell"),)
+    unshown = _unshown(found, evidence.lines)
     match record.category:
         case Category.OUTPUT_TEXT:
             problems = (
@@ -698,7 +721,11 @@ def evidence_problem(
             )
         case Category.DEFAULT_FIX | Category.DECIDED_CHANGE:
             outside = [line for line in evidence.lines if not any(_line_matches(line, item) for item in selectors)]
-            problems = ((bool(outside), f"a change line is outside its aspects and match: {outside[:1]}"),)
+            problems = (
+                (evidence.signature_failed, "a signature could not be taken, so the change lines are unknown"),
+                (bool(outside), f"a change line is outside its aspects and match: {outside[:1]}"),
+                (unshown is not None, unshown or ""),
+            )
         case Category.EXPERIMENTAL:
             problems = (
                 (
@@ -712,7 +739,9 @@ def evidence_problem(
             outside = [line for line in notices if not any(_line_matches(line, item) for item in selectors)]
             problems = (
                 (bool(found & {CellKind.OUTPUT, CellKind.EXIT}), "the output or the exit status differs"),
+                (evidence.signature_failed, "a signature could not be taken, so the change lines are unknown"),
                 (bool(outside), f"a warning or message line is outside its match: {outside[:1]}"),
+                (unshown is not None, unshown or ""),
             )
         case Category.API:
             named = set(dict(record.affects).get("options", ()))
@@ -735,6 +764,8 @@ def judge(cell: RunCell, found: frozenset[CellKind], records: Sequence[Record], 
     every other covering record that admits a kind left over must hold its evidence. Else the cell is a `violation`
     with the reasons.
     """
+    if not found:
+        return Verdict("violation", ("the cell has no differing kind to judge",))
     covering = {
         index: selectors
         for index, record in enumerate(records)
@@ -785,18 +816,63 @@ def _read(text: str) -> SourceModule:
     return model
 
 
-def _text_free(model: SourceModule) -> tuple[list[tuple[str, ...]], list[str]]:
-    """Return a module's top-level imports, sorted, and its other top-level statements in order, as dumps."""
-    statements = {id(node) for node in model.tree.body}
-    imports = [item for item in model.imports if id(item.node) in statements]
-    imported = {id(item.node) for item in imports}
-    return (
-        sorted(
-            (item.kind, str(item.level), str(getattr(item.node, "module", "")), ast.dump(item.alias or item.node))
-            for item in imports
-        ),
-        [ast.dump(node) for node in model.tree.body if id(node) not in imported],
-    )
+def _text_free(model: SourceModule) -> list[tuple[str, str | tuple[tuple[str, ...], ...]]]:
+    """Return a module's top-level statements in order as dumps; each run of consecutive imports is sorted.
+
+    An import never moves past another statement: the statement may bind a name the import rebinds, or the reverse.
+    """
+    top = {id(node) for node in model.tree.body}
+    items: dict[int, list[tuple[str, ...]]] = {}
+    for item in model.imports:
+        if id(item.node) in top:
+            items.setdefault(id(item.node), []).append((
+                item.kind,
+                str(item.level),
+                str(getattr(item.node, "module", "")),
+                ast.dump(item.alias or item.node),
+            ))
+    found: list[tuple[str, str | tuple[tuple[str, ...], ...]]] = []
+    run: list[tuple[str, ...]] = []
+    for node in model.tree.body:
+        if id(node) in items:
+            run += items[id(node)]
+            continue
+        if run:
+            found.append(("imports", tuple(sorted(run))))
+            run = []
+        found.append(("statement", ast.dump(node)))
+    if run:
+        found.append(("imports", tuple(sorted(run))))
+    return found
+
+
+def _union_members(node: ast.AST) -> list[ast.expr] | None:
+    """Return the flattened members of a union (`Union[...]`, `Optional[...]`, a `|` chain) in order, else None."""
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+        return [*_flat(node.left), *_flat(node.right)]
+    if isinstance(node, ast.Subscript):
+        name = node.value.attr if isinstance(node.value, ast.Attribute) else getattr(node.value, "id", "")
+        if name == "Union":
+            arguments = node.slice.elts if isinstance(node.slice, ast.Tuple) else [node.slice]
+            return [member for argument in arguments for member in _flat(argument)]
+        if name == "Optional":
+            return [*_flat(node.slice), ast.Constant(value=None)]
+    return None
+
+
+def _flat(node: ast.expr) -> list[ast.expr]:
+    return _union_members(node) or [node]
+
+
+def _unions(node: ast.AST) -> Iterable[list[ast.expr]]:
+    """Yield the members of each union below a node (a union nested in a union is part of the outer one)."""
+    if (members := _union_members(node)) is not None:
+        yield members
+        for member in members:
+            yield from _unions(member)
+    else:
+        for child in ast.iter_child_nodes(node):
+            yield from _unions(child)
 
 
 def _keyword_values(keywords: Iterable[ast.keyword]) -> list[tuple[str, ast.AST]]:
@@ -826,11 +902,14 @@ def _config_values(scope: Scope) -> list[tuple[str, ast.AST]]:
 
 
 def _unlisted_parts(model: SourceModule) -> Counter[str]:
-    """Return what a signature does not see, as a multiset of dumps: function bodies, lambdas, decorators, config keys.
+    """Return what a signature does not see, as a multiset of dumps.
+
+    They are function bodies, lambdas, decorators, configuration keys and the members of each union in their order
+    (a signature sorts them, and validation tries them in order).
 
     A configuration key counts unless the signature lists it (`_behaviour_signature`'s pydantic and msgspec keys).
     """
-    parts: Counter[str] = Counter()
+    parts: Counter[str] = Counter(f"union {' | '.join(map(ast.unparse, members))}" for members in _unions(model.tree))
     for scope in model.scopes:
         node = scope.node
         if scope.kind == "function":
@@ -850,9 +929,10 @@ def _unlisted_parts(model: SourceModule) -> Counter[str]:
 def rule_b(old: str, new: str, *, signature_equal: bool) -> bool:
     """Return whether two texts of a model module behave the same by rule (b) (owner, 2026-11-17).
 
-    Their syntax trees are equal apart from docstrings, comments and the order of the top-level imports; or else the
-    signatures are equal (`signature_equal`) and no function body, lambda, decorator or configuration key the
-    signature does not list differs, compared as multisets of their dumps. A text that does not parse holds nothing.
+    Their syntax trees are equal apart from docstrings, comments and the order of the top-level imports within a run of
+    consecutive imports; or else the signatures are equal (`signature_equal`) and no function body, lambda, decorator
+    or configuration key the signature does not list differs, nor the order of the members of a union, compared as
+    multisets of their dumps. A text that does not parse holds nothing.
     """
     try:
         old_model, new_model = _read(old), _read(new)

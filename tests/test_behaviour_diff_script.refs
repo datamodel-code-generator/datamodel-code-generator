@@ -123,11 +123,14 @@ an unlisted backend	behaviour_diff_script/covers[an unlisted backend].txt	= beha
 another input file	behaviour_diff_script/covers[another input file].txt	= behaviour_diff_script/covers[an option set in another order].txt
 another input file type	behaviour_diff_script/covers[another input file type].txt	= behaviour_diff_script/covers[an option set in another order].txt
 every option set	behaviour_diff_script/covers[every option set].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+no input file type, a cell of another type than its folder	behaviour_diff_script/covers[no input file type, a cell of another type than its folder].txt	= behaviour_diff_script/covers[an option set in another order].txt
+no input file type, a cell outside tests/data	behaviour_diff_script/covers[no input file type, a cell outside tests_data].txt	= behaviour_diff_script/covers[an option set in another order].txt
 not a file below a folder by *	behaviour_diff_script/covers[not a file below a folder by _].txt	= behaviour_diff_script/covers[an option set in another order].txt
 the default option set	behaviour_diff_script/covers[the default option set].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 the folder itself by **	behaviour_diff_script/covers[the folder itself by __].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 the input file	behaviour_diff_script/covers[the input file].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 the input file type	behaviour_diff_script/covers[the input file type].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+the input file type named, a cell of another type than its folder	behaviour_diff_script/covers[the input file type named, a cell of another type than its folder].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 [test_example_value]
 all_of_merged	behaviour_diff_script/example_value[all_of_merged].txt
 any	behaviour_diff_script/example_value[any].txt
@@ -182,8 +185,16 @@ no_input_matches_the_selection	behaviour_diff_script/identity_evidence_oracle[no
 	behaviour_diff_script/identity_refuses_a_shard.txt
 [test_judge]
 a decision beside a failing output-text record	behaviour_diff_script/judge[a decision beside a failing output-text record].txt
+a decision for an exit status that shows in no line	behaviour_diff_script/judge[a decision for an exit status that shows in no line].txt
+a decision for messages that show in no line	behaviour_diff_script/judge[a decision for messages that show in no line].txt
+a decision for the exit line it names	behaviour_diff_script/judge[a decision for the exit line it names].txt
+a decision when both signatures failed	behaviour_diff_script/judge[a decision when both signatures failed].txt
 a failing output-text record beside a notice that admits nothing of the cell	behaviour_diff_script/judge[a failing output-text record beside a notice that admits nothing of the cell].txt
 a harness record	behaviour_diff_script/judge[a harness record].txt
+a notice for a message line it matches	behaviour_diff_script/judge[a notice for a message line it matches].txt	= behaviour_diff_script/judge[notice inside its match].txt
+a notice for messages that show in no line	behaviour_diff_script/judge[a notice for messages that show in no line].txt
+a notice for warnings that show in no line	behaviour_diff_script/judge[a notice for warnings that show in no line].txt
+a notice when a signature could not be taken	behaviour_diff_script/judge[a notice when a signature could not be taken].txt
 a record without a category	behaviour_diff_script/judge[a record without a category].txt	= behaviour_diff_script/judge[a harness record].txt
 api for a removed option it does not name	behaviour_diff_script/judge[api for a removed option it does not name].txt
 api for a removed option it names	behaviour_diff_script/judge[api for a removed option it names].txt
@@ -199,6 +210,7 @@ experimental by its input type	behaviour_diff_script/judge[experimental by its i
 experimental by its option, an equal companion	behaviour_diff_script/judge[experimental by its option, an equal companion].txt	= behaviour_diff_script/judge[experimental by its input type].txt
 experimental whose companion differs	behaviour_diff_script/judge[experimental whose companion differs].txt
 experimental without its feature in the cell	behaviour_diff_script/judge[experimental without its feature in the cell].txt
+no differing kind	behaviour_diff_script/judge[no differing kind].txt
 no record	behaviour_diff_script/judge[no record].txt
 no selector covers the cell	behaviour_diff_script/judge[no selector covers the cell].txt	= behaviour_diff_script/judge[no record].txt
 notice inside its match	behaviour_diff_script/judge[notice inside its match].txt
@@ -220,6 +232,9 @@ the exit status	behaviour_diff_script/kinds[the exit status].txt
 the file set	behaviour_diff_script/kinds[the file set].txt	= behaviour_diff_script/kinds[a file's hash].txt
 the other facts	behaviour_diff_script/kinds[the other facts].txt
 the warnings	behaviour_diff_script/kinds[the warnings].txt
+[test_kinds_refuses_facts_of_another_length]
+a fifth element	behaviour_diff_script/kinds_refuses_facts_of_another_length[a fifth element].txt
+a missing element	behaviour_diff_script/kinds_refuses_facts_of_another_length[a missing element].txt
 [test_meta_items_drop_memory_addresses]
 builtin	behaviour_diff_script/meta_items_drop_memory_addresses[builtin].txt
 dataclass-address-dropped	behaviour_diff_script/meta_items_drop_memory_addresses[dataclass-address-dropped].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
@@ -281,10 +296,15 @@ a decorator, the signatures equal	behaviour_diff_script/rule_b[a decorator, the 
 a default factory's body, the signatures equal	behaviour_diff_script/rule_b[a default factory's body, the signatures equal].txt	= behaviour_diff_script/covers[an option set in another order].txt
 a field default spelled otherwise, the signatures equal	behaviour_diff_script/rule_b[a field default spelled otherwise, the signatures equal].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 a field type, the signatures differ	behaviour_diff_script/rule_b[a field type, the signatures differ].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a nested union flattened	behaviour_diff_script/rule_b[a nested union flattened].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+a union spelled otherwise with the same members	behaviour_diff_script/rule_b[a union spelled otherwise with the same members].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 a validator's body, the signatures equal	behaviour_diff_script/rule_b[a validator's body, the signatures equal].txt	= behaviour_diff_script/covers[an option set in another order].txt
+an import moved past a statement it shadows	behaviour_diff_script/rule_b[an import moved past a statement it shadows].txt	= behaviour_diff_script/covers[an option set in another order].txt
 docstrings and comments	behaviour_diff_script/rule_b[docstrings and comments].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 same text	behaviour_diff_script/rule_b[same text].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 text that does not parse	behaviour_diff_script/rule_b[text that does not parse].txt	= behaviour_diff_script/covers[an option set in another order].txt
+the members of a field's union in another order	behaviour_diff_script/rule_b[the members of a field's union in another order].txt	= behaviour_diff_script/covers[an option set in another order].txt
+the members of a root model's union in another order	behaviour_diff_script/rule_b[the members of a root model's union in another order].txt	= behaviour_diff_script/covers[an option set in another order].txt
 the order of the imports	behaviour_diff_script/rule_b[the order of the imports].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 [test_shard_argument_and_shard_part_records]
 	behaviour_diff_script/shard_argument_and_shard_part_records.txt

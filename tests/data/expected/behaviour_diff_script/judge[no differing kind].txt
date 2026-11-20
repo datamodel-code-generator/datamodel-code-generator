@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "the cell has no differing kind to judge"
+ ],
+ "accepted_by": []
+}
