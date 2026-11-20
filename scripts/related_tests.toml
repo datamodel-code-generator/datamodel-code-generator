@@ -350,6 +350,14 @@ pattern = "(base_python|python-version|tox_env|py3[0-9]+)"
 envs = ["dispatch"]
 
 [[rule]]
+id = "docs-examples-stored-outputs"
+prs = [7222, 7223]
+incident = "renaming stored outputs under main/ broke the docs examples that read them by name, which no selected test built"
+paths = ["tests/data/expected/main/*"]
+exclude = ["tests/data/expected/main/generation_platform/*"]
+tests = ["tests/test_build_docs_examples_script.py"]
+
+[[rule]]
 id = "where-reads-scripts"
 prs = [7221]
 incident = "a new module under scripts/ changed what `python -m scripts.where` prints; the stored answers failed only on hosted CI"
