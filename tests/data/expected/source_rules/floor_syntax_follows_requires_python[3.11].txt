@@ -1,0 +1,5 @@
+exit: 1
+tests/data/newer.py:1: floor-syntax: Type statement is only supported in Python 3.12 and greater (oldest supported: 3.11)
+
+rule counts:
+  floor-syntax: 1 (absolute); fix: store the file as `<name>.py.txt` and copy it where a test reads it on a Python that parses it, or write it in the oldest supported grammar

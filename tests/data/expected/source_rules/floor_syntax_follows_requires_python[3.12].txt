@@ -1,0 +1,4 @@
+exit: 0
+
+rule counts:
+  floor-syntax: 0 (absolute); fix: store the file as `<name>.py.txt` and copy it where a test reads it on a Python that parses it, or write it in the oldest supported grammar

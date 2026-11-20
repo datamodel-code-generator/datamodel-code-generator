@@ -13,12 +13,23 @@ not-a-dict	source_rules/a_table_that_cannot_be_read_holds_no_capability[not-a-di
 not-a-literal	source_rules/a_table_that_cannot_be_read_holds_no_capability[not-a-literal].txt
 [test_a_tree_without_the_architecture_page_cites_nothing]
 	source_rules/a_tree_without_the_architecture_page_cites_nothing.txt
+[test_an_unreadable_capability_table_excludes_nothing]
+	source_rules/an_unreadable_capability_table_excludes_nothing.txt
 [test_counts_are_printed_as_ratchet_keys]
 	source_rules/counts_are_printed_as_ratchet_keys.txt
+[test_floor_syntax_follows_requires_python]
+3.11	source_rules/floor_syntax_follows_requires_python[3.11].txt
+3.12	source_rules/floor_syntax_follows_requires_python[3.12].txt
+3.14	source_rules/floor_syntax_follows_requires_python[3.14].txt	= source_rules/floor_syntax_follows_requires_python[3.12].txt
+[test_floor_syntax_without_requires_python_uses_this_checkouts]
+no-pyproject	source_rules/floor_syntax_without_requires_python_uses_this_checkouts[no-pyproject].txt	= source_rules/floor_syntax_follows_requires_python[3.11].txt
+no-requires-python	source_rules/floor_syntax_without_requires_python_uses_this_checkouts[no-requires-python].txt	= source_rules/floor_syntax_follows_requires_python[3.11].txt
 [test_lanes_are_read_from_the_matrix_and_tox]
 	source_rules/lanes_are_read_from_the_matrix_and_tox.txt
 [test_lost_last_caller_compares_with_the_base]
 	source_rules/lost_last_caller_compares_with_the_base.txt
+[test_paths_that_fold_onto_each_other]
+	source_rules/paths_that_fold_onto_each_other.txt
 [test_rule_reports_its_site_and_not_the_near_miss]
 clone-bodies	source_rules/rule_reports_its_site_and_not_the_near_miss[clone-bodies].txt
 dead-capability	source_rules/rule_reports_its_site_and_not_the_near_miss[dead-capability].txt
@@ -28,9 +39,43 @@ flaky-test-workarounds	source_rules/rule_reports_its_site_and_not_the_near_miss[
 globals-registry	source_rules/rule_reports_its_site_and_not_the_near_miss[globals-registry].txt
 hash-split	source_rules/rule_reports_its_site_and_not_the_near_miss[hash-split].txt
 never-run	source_rules/rule_reports_its_site_and_not_the_near_miss[never-run].txt
+portable-names	source_rules/rule_reports_its_site_and_not_the_near_miss[portable-names].txt
+posix-only-call	source_rules/rule_reports_its_site_and_not_the_near_miss[posix-only-call].txt
 private-reexport	source_rules/rule_reports_its_site_and_not_the_near_miss[private-reexport].txt
 raw-skip	source_rules/rule_reports_its_site_and_not_the_near_miss[raw-skip].txt
 redundant-local-import	source_rules/rule_reports_its_site_and_not_the_near_miss[redundant-local-import].txt
 unused-private-global	source_rules/rule_reports_its_site_and_not_the_near_miss[unused-private-global].txt
+[test_the_file_names_of_a_tree_are_checked]
+	source_rules/the_file_names_of_a_tree_are_checked.txt
 [test_the_line_reader_reads_the_matrix_a_yaml_parser_reads]
 	source_rules/the_line_reader_reads_the_matrix_a_yaml_parser_reads.txt
+[test_unportable_fragment]
+colon	source_rules/unportable_fragment[colon].txt
+device	source_rules/unportable_fragment[device].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+empty	source_rules/unportable_fragment[empty].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+extension	source_rules/unportable_fragment[extension].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+question	source_rules/unportable_fragment[question].txt
+trailing-dot	source_rules/unportable_fragment[trailing-dot].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+[test_unportable_name]
+backslash	source_rules/unportable_name[backslash].txt
+brackets	source_rules/unportable_name[brackets].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+colon	source_rules/unportable_name[colon].txt	= source_rules/unportable_fragment[colon].txt
+control	source_rules/unportable_name[control].txt	= source_rules/unportable_name[backslash].txt
+device	source_rules/unportable_name[device].txt
+device-com1	source_rules/unportable_name[device-com1].txt	= source_rules/unportable_name[device].txt
+device-dot	source_rules/unportable_name[device-dot].txt
+device-double-extension	source_rules/unportable_name[device-double-extension].txt	= source_rules/unportable_name[device].txt
+device-extension	source_rules/unportable_name[device-extension].txt	= source_rules/unportable_name[device].txt
+device-lpt9	source_rules/unportable_name[device-lpt9].txt	= source_rules/unportable_name[device].txt
+less	source_rules/unportable_name[less].txt
+not-a-device-com0	source_rules/unportable_name[not-a-device-com0].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+not-a-device-console	source_rules/unportable_name[not-a-device-console].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+not-a-device-suffix	source_rules/unportable_name[not-a-device-suffix].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+pipe	source_rules/unportable_name[pipe].txt
+plain	source_rules/unportable_name[plain].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+question	source_rules/unportable_name[question].txt	= source_rules/unportable_fragment[question].txt
+quote	source_rules/unportable_name[quote].txt
+space	source_rules/unportable_name[space].txt	= behaviour_diff_script/opt_in_reason[flag_before_option].txt
+star	source_rules/unportable_name[star].txt
+trailing-dot	source_rules/unportable_name[trailing-dot].txt	= source_rules/unportable_name[device-dot].txt
+trailing-space	source_rules/unportable_name[trailing-space].txt	= source_rules/unportable_name[device-dot].txt

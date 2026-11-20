@@ -11,10 +11,6 @@ after = "code: int | Annotated[str, Field(pattern=r'^[0-9]+$')]"
 refs = ["#7109"]
 source = "release-note"
 covers = [
-    "main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2.py",
-    "main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2_dataclass.py",
-    "main/jsonschema/additional_properties_value_constraints_annotated_pydantic_v2_py312.py",
-    "main/jsonschema/additional_properties_value_constraints_annotated_schema_validators.py",
     "main/jsonschema/annotated_union_members/annotated_scalar_type_list_member.py",
     "main/jsonschema/annotated_union_members/annotated_union_member_bytes.py",
     "main/jsonschema/annotated_union_members/annotated_union_member_kinds[base-model].py",
@@ -25,6 +21,10 @@ covers = [
     "main/jsonschema/annotated_union_members/annotated_union_member_kinds[field-constraints].txt",
     "main/jsonschema/annotated_union_members/annotated_union_member_kinds[type-alias].py",
     "main/jsonschema/annotated_union_members/annotated_union_member_kinds[type-alias].txt",
+    "main/jsonschema/main_jsonschema/additional_properties_value_constraints_annotated[pydantic-v2-dataclass].py",
+    "main/jsonschema/main_jsonschema/additional_properties_value_constraints_annotated[pydantic-v2].py",
+    "main/jsonschema/main_jsonschema/additional_properties_value_constraints_annotated_py312.py",
+    "main/jsonschema/main_jsonschema/additional_properties_value_constraints_schema_validators.py",
     "main/jsonschema/main_jsonschema/main_number_constraints_on_non_numbers[extra_args2].py",
     "main/jsonschema/string_constraints_on_other_types/use_annotated.py",
     "main/jsonschema/type_union_constraints/both_root_annotated.py",

@@ -1,0 +1,6 @@
+[[change]]
+id = "portable-test-rules-4"
+extends = "skips-as-capabilities"
+covers = [
+    "source_rules/counts_are_printed_as_ratchet_keys.txt",
+]

@@ -1,0 +1,7 @@
+[[change]]
+id = "decision-homes-as-data"
+extends = "envs-for-related-tests"
+covers = [
+    "where_script/where_grammar[line-in-a-comprehension].txt",
+    "where_script/where_grammar[line-in-a-script].txt",
+]

@@ -11,6 +11,7 @@ import yaml
 
 from scripts import check_source_rules
 from scripts._ci_lanes import FORMATTER_ENV, WORKFLOW, matrix_entries, read_lanes
+from tests.capabilities import needs
 from tests.conftest import TEST_DEFAULT_FORMATTER_ENV, assert_output
 
 PACKAGE = "src/datamodel_code_generator"
@@ -882,6 +883,538 @@ TREES: dict[str, dict[str, str]] = {
                     pass
         """,
     },
+    "posix-only-call": {
+        "tests/capabilities.py": """
+            CAPABILITIES = {
+                "posix": (("platform!=win32",), "the test forks"),
+                "linux": (("platform==linux",), "the test needs a Linux facility"),
+                "formatter": (("formatter==builtin|platform!=win32",), "builtin, or any POSIX"),
+                "python-3.12": (("python>=3.12",), "type statements"),
+            }
+        """,
+        "scripts/worker.py": """
+            import os
+            import sys
+            from signal import SIGKILL
+
+            if sys.platform != "win32":
+                import resource
+
+            try:
+                import fcntl
+            except ImportError:
+                fcntl = None
+
+
+            def spawn():
+                return os.fork()
+
+
+            def run(argv):
+                return spawn() if argv else 0
+
+
+            def main(argv):
+                return run(argv)
+
+
+            def portable(argv):
+                return len(argv)
+
+
+            def stop(pid):
+                os.kill(pid, SIGKILL)
+        """,
+        "scripts/eager.py": """
+            import fcntl
+            import os as operating_system
+
+            LOCK = fcntl.LOCK_EX
+            PIPE = operating_system.mkfifo
+
+
+            class Holder:
+                limit = __import__("resource")
+        """,
+        "tests/test_worker.py": """
+            import os
+
+            import pytest
+
+            from scripts import worker
+            from scripts.worker import main as entry
+            from tests.capabilities import needs
+
+
+            def test_main_forks():
+                worker.main(["x"])
+
+
+            def test_entry_forks():
+                entry(["x"])
+
+
+            @pytest.fixture
+            def pipe(tmp_path):
+                os.mkfifo(tmp_path / "pipe")
+
+
+            def test_fixture(pipe):
+                pass
+
+
+            def test_kill_signal():
+                worker.stop(1)
+
+
+            def test_portable():
+                worker.portable(["x"])
+
+
+            @needs("posix")
+            def test_marked():
+                worker.main(["x"])
+
+
+            @needs("formatter", "linux")
+            def test_linux_only():
+                worker.main(["x"])
+
+
+            @needs("formatter")
+            def test_formatter_is_no_platform():
+                worker.main(["x"])
+
+
+            @needs("python-3.12")
+            def test_python_is_no_platform():
+                os.fork()
+
+
+            class TestMarks:
+                pytestmark = needs("posix")
+
+                def test_inherits(self):
+                    os.fork()
+
+
+            class TestPlain:
+                def test_forks(self):
+                    os.fork()
+        """,
+        "scripts/limits.py": """
+            import importlib
+            import sys
+
+            if sys.platform != "win32":
+                import resource
+
+            try:
+                import fcntl
+            except ImportError:
+                fcntl = None
+
+            memory = None if sys.platform == "win32" else importlib.import_module("resource")
+            lock_module = sys.platform != "win32" and importlib.import_module("fcntl")
+            later = importlib.import_module("fcntl") if sys.argv else None
+
+
+            def peak():
+                return resource.getrusage(resource.RUSAGE_SELF)
+
+
+            def lock(handle):
+                fcntl.flock(handle, fcntl.LOCK_EX)
+
+
+            def lock_if_present(handle):
+                if fcntl is not None:
+                    fcntl.flock(handle, fcntl.LOCK_EX)
+        """,
+        "tests/conftest.py": """
+            import os
+
+            import pytest
+
+
+            @pytest.fixture
+            def fifo(tmp_path):
+                os.mkfifo(tmp_path / "fifo")
+
+
+            @pytest.fixture
+            def through(fifo):
+                pass
+        """,
+        "tests/sub/conftest.py": """
+            import os
+
+            import pytest
+
+
+            @pytest.fixture(autouse=True)
+            def everywhere(tmp_path):
+                os.mkfifo(tmp_path / "everywhere")
+        """,
+        "tests/sub/test_everywhere.py": """
+            from tests.capabilities import needs
+
+
+            def test_autouse_of_the_folder():
+                pass
+
+
+            @needs("posix")
+            def test_marked():
+                pass
+        """,
+        "tests/test_reach.py": """
+            import os
+            from unittest import TestCase
+
+            import pytest
+
+            from scripts import limits
+            from tests.capabilities import needs
+
+
+            def test_guarded_import_is_no_guard_of_its_readers():
+                limits.peak()
+
+
+            def test_handler_is_no_guard_of_its_readers(tmp_path):
+                limits.lock(tmp_path)
+
+
+            def test_read_under_a_test_of_the_name(tmp_path):
+                limits.lock_if_present(tmp_path)
+
+
+            def test_conftest_fixture(fifo):
+                pass
+
+
+            def test_conftest_fixture_through_another(through):
+                pass
+
+
+            @pytest.mark.usefixtures("fifo")
+            def test_usefixtures():
+                pass
+
+
+            @needs("posix")
+            @pytest.mark.usefixtures("fifo")
+            def test_usefixtures_marked():
+                pass
+
+
+            @pytest.fixture
+            def local_fifo(tmp_path):
+                os.mkfifo(tmp_path / "local")
+
+
+            @pytest.mark.usefixtures("local_fifo")
+            def test_usefixtures_of_the_module():
+                pass
+
+
+            class TestSelf:
+                def _spawn(self):
+                    return os.fork()
+
+                def _portable(self):
+                    return 1
+
+                def test_self_method(self):
+                    self._spawn()
+
+                def test_portable_self_method(self):
+                    self._portable()
+
+
+            class TestAutouse:
+                @pytest.fixture(autouse=True)
+                def _pipe(self, tmp_path):
+                    os.mkfifo(tmp_path / "pipe")
+
+                def test_after_the_autouse_fixture(self):
+                    pass
+
+
+            class TestShadow(TestSelf):
+                pass
+
+
+            class TestShadow(TestShadow):
+                def test_inherited_spawn_through_a_rebound_name(self):
+                    self._spawn()
+
+
+            class TestUnittest(TestCase):
+                def test_base_of_another_module(self):
+                    self.assertTrue(True)
+
+
+            @pytest.fixture
+            def base():
+                return 1
+
+
+            @pytest.fixture
+            def left(base):
+                return base
+
+
+            @pytest.fixture
+            def right(base):
+                return base
+
+
+            def test_two_fixtures_share_a_portable_one(left, right):
+                pass
+        """,
+        "scripts/optional.py": """
+            import importlib
+            import sys
+
+            fcntl = importlib.import_module("fcntl") if sys.platform != "win32" else None
+            other = None
+
+
+            def lock(handle):
+                fcntl.flock(handle, fcntl.LOCK_EX)
+
+
+            def free():
+                return other
+        """,
+        "tests/test_round_two.py": """
+            import os
+            import sys
+            from typing import TYPE_CHECKING
+
+            import pytest
+
+            from scripts import optional, worker
+
+            if TYPE_CHECKING:
+                import fcntl
+
+
+            def test_typing_only_import(handle: "fcntl.X"):
+                optional.free()
+
+
+            def test_guarded_helper_call():
+                if sys.platform != "win32":
+                    worker.spawn()
+
+
+            def test_optional_module_read(handle):
+                optional.lock(handle)
+
+
+            @pytest.fixture
+            def test_provider():
+                return os.fork()
+        """,
+        "tests/override/conftest.py": """
+            import pytest
+
+
+            @pytest.fixture(autouse=True)
+            def setup_env():
+                yield
+        """,
+        "tests/override/test_override.py": """
+            import os
+
+            import pytest
+
+
+            @pytest.fixture
+            def setup_env():
+                os.fork()
+
+
+            def test_overridden_autouse_fixture_runs():
+                pass
+        """,
+    },
+    "portable-names": {
+        "scripts/names.py": """
+            import os.path
+            from pathlib import Path
+
+
+            def build(root, name):
+                fine = root / "ok.txt"
+                colon = root / "has:colon.txt"
+                device = root / "con.txt"
+                question = Path("a", "b?.json")
+                trailing = os.path.join("x", "trail.")
+                reserved = root.joinpath("sub", "AUX")
+                fragment = root / f"{name}:x.toml"
+                template = root / f"{name}.toml"
+                drive = Path("C:/windows/x")
+                pipe = open("name|pipe")
+                pattern = root.glob("*.py")
+                beside = "has:colon.txt"
+        """,
+        "tests/test_names.py": """
+            from pathlib import Path
+
+            import pytest
+
+            CASES = {"ok": {"fine": "x", "bad:name": "y"}, "other": {"quote\\"": "z"}}
+            UNUSED = {"not:passed": 1}
+
+
+            def write(root, files):
+                for name, text in files.items():
+                    (root / f"{name}.toml").write_text(text)
+
+
+            def count(files):
+                for key in files:
+                    print(key)
+
+
+            def test_run(tmp_path: Path):
+                write(tmp_path, CASES["ok"])
+                write(tmp_path, files={"also:bad": "x", "fine": "y"})
+                count({"not:a:file": 1})
+
+
+            KEY = "var:key"
+            FILES = [("list:bad.json", "{}"), ("fine.json", "{}")]
+            NAME = "const:bad.json"
+
+
+            def test_names_through_variables(tmp_path: Path):
+                local = "local:bad.json"
+                (tmp_path / local).write_text("{}")
+                (tmp_path / NAME).write_text("{}")
+                for entry, text in FILES:
+                    (tmp_path / entry).write_text(text)
+                mapping = {"item:bad.json": "{}", "fine.json": "{}"}
+                for key, text in mapping.items():
+                    (tmp_path / key).write_text(text)
+                write(tmp_path, {KEY: "x"})
+                write(tmp_path, mapping)
+
+
+            @pytest.mark.parametrize("name", ["param:bad.json", "nul.json", "fine.json"])
+            def test_parametrized_name(tmp_path: Path, name: str):
+                (tmp_path / name).write_text("{}")
+
+
+            @pytest.mark.parametrize(("name", "text"), [pytest.param("pair:bad.json", "x"), ("fine.json", "y")])
+            def test_parametrized_pairs(tmp_path: Path, name: str, text: str):
+                (tmp_path / name).write_text(text)
+
+
+            def test_unknown_name(tmp_path: Path, anything: str):
+                (tmp_path / anything).write_text("{}")
+
+
+            CASE = ("tuple:bad.json", "x")
+            ARGNAMES = ("name", "text")
+
+
+            @pytest.mark.slow
+            @pytest.mark.timeout(5)
+            @pytest.mark.parametrize(["name", "text"], [CASE, ("list:bad.json", "y")])
+            def test_decorators_and_a_name_as_the_item(tmp_path: Path, name: str, text: str, other: str):
+                (tmp_path / name).write_text(text)
+                (tmp_path / other).write_text(text)
+
+
+            @pytest.mark.parametrize(ARGNAMES, [("named:bad.json", "z")])
+            def test_names_of_a_name(tmp_path: Path, name: str, text: str):
+                (tmp_path / name).write_text(text)
+
+
+            def test_other_ways_to_name_a_file(tmp_path: Path, flag: bool):
+                (tmp_path / ("cond:bad.json" if flag else "fine.json")).write_text("{}")
+                mapping = {"key:bad.json": "{}"}
+                for key in mapping:
+                    (tmp_path / key).write_text("{}")
+                for key in sorted(mapping):
+                    (tmp_path / key).write_text("{}")
+                with open(tmp_path / "log.txt", "w") as handle:
+                    (tmp_path / handle.name).write_text("{}")
+                    (tmp_path / handle).write_text("{}")
+                for first, second, third in [("one:bad.json", "ok.json")]:
+                    (tmp_path / third).write_text("{}")
+                for left, right in ["lonely:bad.json"]:
+                    (tmp_path / right).write_text("{}")
+                for name, text in fetch().items():
+                    (tmp_path / name).write_text(text)
+
+
+            def write_with(root, files, /, options, *, mode="w"):
+                for name, text in files.items():
+                    (root / name).write_text(text)
+                return options, mode
+
+
+            def test_the_argument_that_names_files(tmp_path: Path, rows: list):
+                write_with(tmp_path, {"slot:bad.json": "{}"}, {"option:fine": 1})
+                write_with(tmp_path, {"fine.json": "{}"}, options={"keyword:fine": 1}, mode="a")
+                write_with(*rows)
+                with open(file=tmp_path / "file:bad.txt", mode="w"):
+                    pass
+                with open(*rows):
+                    pass
+                name, text = ("pair:bad.json", "{}")
+                (tmp_path / name).write_text(text)
+                whole, = fetch()
+                (tmp_path / whole).write_text("{}")
+                names = ["rebound.json"]
+                for names in names:
+                    (tmp_path / names).write_text("{}")
+                pairs = {"cycle:fine": "{}"}
+                for pairs in pairs.items():
+                    (tmp_path / pairs).write_text("{}")
+                left = [right]
+                right = [left]
+                for left in right:
+                    (tmp_path / left).write_text("{}")
+                for *_, last in [("ok", "skip:fine", "star:bad.json")]:
+                    (tmp_path / last).write_text("{}")
+                (tmp_path / "COM\u00b9.txt").write_text("{}")
+
+
+            @pytest.mark.parametrize("name", [pytest.param("single:bad.json", id="one"), "fine.json"])
+            def test_one_name_in_a_param(tmp_path: Path, name: str):
+                (tmp_path / name).write_text("{}")
+
+
+            @pytest.mark.parametrize(["name"], [("listed:bad.json",)])
+            def test_one_name_in_a_list(tmp_path: Path, name: str):
+                (tmp_path / name).write_text("{}")
+        """,
+        "tests/test_writers.py": """
+            class Writer:
+                def write(self, files):
+                    for name in files:
+                        (self.root / name).write_text("")
+
+
+            def nested(root):
+                def inner(files):
+                    for name in files:
+                        (root / name).write_text("")
+
+                return inner
+
+
+            def test_method_writers(tmp_path):
+                Writer().write({"method:fine": 1})
+        """,
+    },
 }
 LOST_BASE = {
     f"{PACKAGE}/__init__.py": "",
@@ -1145,3 +1678,151 @@ def test_a_table_that_cannot_be_read_holds_no_capability(
         (tmp_path / "tests/capabilities.py").write_text(table, encoding="utf-8")
 
     assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "dead-capability", "--rule", "never-run"))
+
+
+FLOOR_TREE = {
+    "pyproject.toml": """
+        [project]
+        requires-python = ">=3.11"
+    """,
+    "tests/test_ok.py": """
+        def test_old_grammar(value):
+            match value:
+                case [first, *rest]:
+                    return first, rest
+            try:
+                pass
+            except* ValueError:
+                pass
+    """,
+    "tests/data/newer.py": """
+        type Alias = int
+
+
+        def generic[T](value: T) -> T:
+            return value
+    """,
+    "tests/data/garbage.py": "def broken(:\n",
+    "tests/data/expected/stored.py": "type Alias = int\n",
+}
+
+
+@pytest.mark.parametrize("requires", ['">=3.11"', '">=3.12"', '">=3.14"'], ids=["3.11", "3.12", "3.14"])
+@needs("type-statements")
+def test_floor_syntax_follows_requires_python(
+    requires: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``floor-syntax`` parses with the oldest Python of ``requires-python``: newer syntax is a site, older is not.
+
+    A stored ``.py`` file and one this Python cannot parse hold no finding (so a file of the newest syntax is a site
+    only on a Python that reads it: `floor_syntax_newest_forms` of the source forms states that one).
+    """
+    _write(tmp_path, {**FLOOR_TREE, "pyproject.toml": f"[project]\nrequires-python = {requires}\n"})
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "floor-syntax"))
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("plain.txt", id="plain"),
+        pytest.param("has space.txt", id="space"),
+        pytest.param("has:colon.txt", id="colon"),
+        pytest.param('quote".txt', id="quote"),
+        pytest.param("star*.txt", id="star"),
+        pytest.param("what?.txt", id="question"),
+        pytest.param("pipe|.txt", id="pipe"),
+        pytest.param("less<.txt", id="less"),
+        pytest.param("back\\\\slash.txt", id="backslash"),
+        pytest.param("control\\x01.txt", id="control"),
+        pytest.param("trailing.", id="trailing-dot"),
+        pytest.param("trailing ", id="trailing-space"),
+        pytest.param("con", id="device"),
+        pytest.param("CON.txt", id="device-extension"),
+        pytest.param("nul.tar.gz", id="device-double-extension"),
+        pytest.param("aux.", id="device-dot"),
+        pytest.param("com1.py", id="device-com1"),
+        pytest.param("lpt9", id="device-lpt9"),
+        pytest.param("com0.py", id="not-a-device-com0"),
+        pytest.param("console.py", id="not-a-device-console"),
+        pytest.param("a.con", id="not-a-device-suffix"),
+        pytest.param("[param-id].txt", id="brackets"),
+    ],
+)
+def test_unportable_name(name: str) -> None:
+    """Windows refuses these characters, a trailing dot or space and the names of devices, with or without extension."""
+    assert_output(f"{check_source_rules.unportable_name(name)}\n")
+
+
+@pytest.mark.parametrize(
+    "fragment",
+    [
+        pytest.param("", id="empty"),
+        pytest.param(".toml", id="extension"),
+        pytest.param(":x", id="colon"),
+        pytest.param("con", id="device"),
+        pytest.param("trailing.", id="trailing-dot"),
+        pytest.param("a?b", id="question"),
+    ],
+)
+def test_unportable_fragment(fragment: str) -> None:
+    """A fragment of an f-string is checked for characters only: its neighbours may complete the name."""
+    assert_output(f"{check_source_rules.unportable_name(fragment, whole=False)}\n")
+
+
+def test_paths_that_fold_onto_each_other() -> None:
+    """Two paths that differ in case or in Unicode composition fold onto the first; a folder counts like a file."""
+    paths = [
+        "tests/a/File.txt",
+        "tests/a/file.txt",
+        "tests/A/other.txt",
+        "tests/b/café.txt",
+        "tests/b/café.txt",
+        "tests/c/Ünï.txt",
+        "tests/c/ünï.txt",
+        "tests/d/same.txt",
+        "scripts/has:colon.py",
+        "scripts/con.py",
+        "scripts/fine.py",
+    ]
+    assert_output("\n".join(f"{path}: {reason}" for path, reason in check_source_rules.unportable_paths(paths)) + "\n")
+
+
+@needs("linux")
+def test_the_file_names_of_a_tree_are_checked(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """``portable-names`` reads every file below ``scripts`` and ``tests``, stored output and data included.
+
+    A tree like this one cannot be written where the names are refused, or where case folds (Windows, macOS): it is
+    written on Linux only.
+    """
+    files = ["tests/data/expected/has:colon.txt", "tests/data/Same.txt", "tests/data/same.txt", "scripts/aux.py"]
+    _write(tmp_path, dict.fromkeys(["tests/data/expected/fine.txt", "scripts/fine.py", *files], ""))
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "portable-names"))
+
+
+@needs("type-statements")
+@pytest.mark.parametrize("pyproject", [None, "[project]\nname = 'x'\n"], ids=["no-pyproject", "no-requires-python"])
+def test_floor_syntax_without_requires_python_uses_this_checkouts(
+    pyproject: str | None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A tree that names no oldest Python is read with the one of the checkout the script belongs to (3.11)."""
+    files = {**FLOOR_TREE, **({"pyproject.toml": pyproject} if pyproject else {})}
+    _write(tmp_path, {name: text for name, text in files.items() if pyproject or name != "pyproject.toml"})
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "floor-syntax"))
+
+
+def test_an_unreadable_capability_table_excludes_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """``posix-only-call`` counts a test whose capability the table cannot state: nothing is known to exclude it."""
+    _write(
+        tmp_path,
+        {
+            "tests/capabilities.py": 'CAPABILITIES = ["posix"]\n',
+            "tests/test_fork.py": (
+                "import os\n\nfrom tests.capabilities import needs\n\n\n"
+                '@needs("posix")\ndef test_fork():\n    os.fork()\n'
+            ),
+        },
+    )
+
+    assert_output(_run(capsys, "--root", str(tmp_path), "--rule", "posix-only-call"))

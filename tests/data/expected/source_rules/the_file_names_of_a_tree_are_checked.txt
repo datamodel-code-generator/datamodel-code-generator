@@ -1,0 +1,7 @@
+exit: 1
+scripts/aux.py:1: portable-names: Windows reserves the name for a device
+tests/data/expected/has:colon.txt:1: portable-names: Windows refuses ':' in a file name
+tests/data/same.txt:1: portable-names: folds onto tests/data/Same.txt where file names are case-insensitive
+
+rule counts:
+  portable-names: 3 (absolute); fix: rename the file or the name (no `<>:"|?*`, no trailing dot or space, no device name, no two paths that differ only in case)

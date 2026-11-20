@@ -647,7 +647,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "openapi.quick-start.output",
             "openapi.md",
             language="python",
-            path=EXPECTED_OPENAPI / "general.py",
+            path=EXPECTED_OPENAPI / "main_openapi/validation.py",
             strip_python_header=True,
         ),
         _file_example(
@@ -1142,7 +1142,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 MarkdownCodeBlock(
                     "Output",
                     "python",
-                    path=EXPECTED_JSON_SCHEMA / "typed_dict_closed.py",
+                    path=EXPECTED_JSON_SCHEMA / "main_jsonschema/main_typed_dict_closed.py",
                     strip_python_header=True,
                 ),
             ),

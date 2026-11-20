@@ -1,0 +1,25 @@
+== references
+17:3 sys load in <module> -> local <module> @13; origin sys
+22:7 ImportError load in <module> -> builtin; origin builtins.ImportError
+23:4 limits store in <module> -> local <module> @21,23
+25:0 PIPE store in <module> -> local <module> @25
+25:7 operating_system load in <module> -> local <module> @12; origin os
+26:0 OTHER store in <module> -> local <module> @26
+26:8 make_pipe load in <module> -> local <module> @14; origin os.mkfifo
+27:0 TEXT store in <module> -> local <module> @27
+28:0 LATE store in <module> -> local <module> @28
+28:7 importlib load in <module> -> local <module> @11; origin importlib
+32:4 signal store in Holder -> local Holder @32, else unbound
+32:13 KILL load in Holder -> global <module> @15; origin signal.SIGKILL
+35:15 KILL load in Holder.method -> global <module> @15; origin signal.SIGKILL
+41:11 late load in lazy -> local lazy @39; origin fcntl
+45:11 os load in shadowed -> local shadowed @44
+uses of <module>:importlib@11: call:import_module@28
+uses of <module>:operating_system@12: read@25
+uses of <module>:sys@13: read@17
+uses of <module>:make_pipe@14: read@26
+uses of <module>:KILL@15: read@32, read@35
+uses of lazy:late@39: read@41
+uses of shadowed:os@44: call:fork@45
+type positions @27: os; chains os.fork = None
+== code objects: one per scope that compiles on this Python

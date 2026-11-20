@@ -11,6 +11,7 @@ symbol _matches
   users (1):
     scripts/related_tests.py: _fired
   rows: none name it; the page lists no home for it (docs/architecture.md "One home per decision")
-  tests (2):
+  tests (3):
     mirror: tests/test_related_tests_script.py
+    row where-reads-scripts: tests/test_where_script.py
     other rows (by changed lines): source-model-importers
