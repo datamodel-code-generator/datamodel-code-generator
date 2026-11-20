@@ -14,6 +14,8 @@ type_field	input_model/callable_types[type_field].txt	= input_model/callable_typ
 variadic	input_model/callable_types[variadic].txt	= input_model/callable_types[basic].txt
 [test_input_model_caller_override_extension_without_option]
 	input_model/caller_override_extension_without_option.py
+[test_input_model_collection_classes_beside_the_preserved_ones]
+	input_model/collection_classes_beside_the_preserved_ones.txt
 [test_input_model_config_class]
 	input_model/config_class.txt
 [test_input_model_config_string_coercion]

@@ -3,6 +3,7 @@ id = "no-cover-sites-decided"
 extends = "fast-path-lazy-exports"
 refs = []
 covers = [
+    "input_model/collection_classes_beside_the_preserved_ones.txt",
     "main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt",
     "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generate-prompt].txt",
     "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generation].txt",

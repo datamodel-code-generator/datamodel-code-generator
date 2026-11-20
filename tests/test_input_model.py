@@ -1138,7 +1138,6 @@ def test_input_model_abstract_containers_as_written(
     )
 
 
-@pytest.mark.allow_direct_assert("reads the two fields of the output of an input-model run")
 def test_input_model_collection_classes_beside_the_preserved_ones(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1155,23 +1154,11 @@ def test_input_model_collection_classes_beside_the_preserved_ones(
         "    queue: Deque\n",
         encoding="utf-8",
     )
-    output_path = tmp_path / "output.py"
-    with freeze_time(TIMESTAMP):
-        run_main_with_args(
-            _input_model_args(
-                "collection_classes:Owner",
-                output_path=output_path,
-                extra_args=["--disable-timestamp", "--formatters", "builtin"],
-            ),
-            use_parsed_source_cache=False,
-            use_builtin_default_formatter=False,
-            isolate_model_template_cache=True,
-        )
-
-    output = output_path.read_text(encoding="utf-8")
-    assert "from collections import UserDict, deque" in output
-    assert "nicknames: UserDict[str, int] = Field(..., title='Nicknames')" in output
-    assert "queue: deque = Field(..., title='Queue')" in output
+    run_input_model_and_assert(
+        input_model="collection_classes:Owner",
+        output_path=tmp_path / "output.py",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+    )
 
 
 @pytest.mark.parametrize(
