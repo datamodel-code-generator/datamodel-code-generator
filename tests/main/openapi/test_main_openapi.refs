@@ -2312,9 +2312,9 @@ extra_args5	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_m
 [test_main_use_default_kwarg]
 	main/openapi/use_default_kwarg.py
 [test_main_use_generic_container_types]
-	main/openapi/use_generic_container_types//*.py
+	main/openapi/main_openapi/main_use_generic_container_types/
 [test_main_use_generic_container_types_standard_collections]
-	main/openapi/use_generic_container_types_standard_collections//*.py	= main/openapi/use_generic_container_types//*.py
+	main/openapi/main_openapi/main_use_generic_container_types_standard_collections/	= main/openapi/main_openapi/main_use_generic_container_types/
 [test_main_use_standard_collections]
 	main/openapi/main_openapi/main_use_standard_collections/	= main/openapi/modular//*.py
 [test_main_with_aliases]
