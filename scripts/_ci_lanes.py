@@ -123,7 +123,7 @@ class ToxConfig:
     def __init__(self, text: str) -> None:
         """Parse the file and index the environment sections by the names they expand to."""
         self.parser = configparser.RawConfigParser(delimiters=("=",), strict=False, interpolation=None)
-        self.parser.optionxform = str  # tox keeps the case of keys
+        self.parser.optionxform = lambda optionstr: optionstr  # tox keeps the case of keys
         self.parser.read_string(text)
         self.sections = {
             name: section
