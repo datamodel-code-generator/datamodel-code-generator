@@ -412,8 +412,8 @@ Cells: an `output-text` record admits an output difference, a `crash-fix` one al
 `notice` warnings and messages, an `api` one an exit difference and messages (a removed option), and a decision
 (`default-fix`, `decided-change`) or `experimental` record any difference. An added `output-text`, `crash-fix` or
 `notice` record must name the cells it covers (`rule_problems` with `added`, for the records a change adds, so released
-records need none); the others may. `new-surface` names none, as no comparator run judges surface the latest release lacks, nor do the
-categories without output (`docs-text`, `internal`, `harness`).
+records need none); the others may. `new-surface` names none, as no comparator run judges surface the latest release
+lacks, nor do the categories without output (`docs-text`, `internal`, `harness`).
 """
 
 
