@@ -553,8 +553,10 @@ FACTS_LENGTH = 4
 def kinds(base: Facts, head: Facts) -> frozenset[CellKind]:
     """Return the kinds of the difference between two sides' facts of a cell (`compare_release._facts`).
 
-    The files' hashes (and the file set) are its output, the exit status its exit, the warnings' hash its warnings and
-    the other facts' hash its messages. Facts of another length are refused: an element no kind reads would never show.
+    The files' hashes (and the file set, which holds the outputs written outside the run's directory under the
+    prefix `compare_release.OUTSIDE_PREFIX`) are its output, the exit status its exit, the warnings' hash its warnings
+    and the other facts' hash its messages. Facts of another length are refused: an element no kind reads would never
+    show.
     """
     if len(base) != FACTS_LENGTH or len(head) != FACTS_LENGTH:
         message = f"a cell's facts have {FACTS_LENGTH} elements, not {len(base)} and {len(head)}"
