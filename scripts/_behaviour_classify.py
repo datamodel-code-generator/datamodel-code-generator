@@ -43,7 +43,7 @@ from scripts._change_records import ASPECTS, RULES, Category, CellKind
 from scripts._source_model import SourceModelError, SourceModule
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Sequence
+    from collections.abc import Collection, Iterable, Mapping, Sequence
     from pathlib import Path
 
     from scripts._change_records import CellSelector, Record
@@ -864,17 +864,6 @@ def _flat(node: ast.expr) -> list[ast.expr]:
     return _union_members(node) or [node]
 
 
-def _unions(node: ast.AST) -> Iterable[list[ast.expr]]:
-    """Yield the members of each union below a node (a union nested in a union is part of the outer one)."""
-    if (members := _union_members(node)) is not None:
-        yield members
-        for member in members:
-            yield from _unions(member)
-    else:
-        for child in ast.iter_child_nodes(node):
-            yield from _unions(child)
-
-
 def _keyword_values(keywords: Iterable[ast.keyword]) -> list[tuple[str, ast.AST]]:
     return [(keyword.arg or "**", keyword.value) for keyword in keywords]
 
@@ -901,29 +890,68 @@ def _config_values(scope: Scope) -> list[tuple[str, ast.AST]]:
     return found
 
 
+def _statement_name(statement: ast.stmt) -> str:
+    """Return what a statement binds (a definition's name, an assignment's targets), else the statement's node type."""
+    match statement:
+        case ast.FunctionDef() | ast.AsyncFunctionDef() | ast.ClassDef():
+            return statement.name
+        case ast.Assign():
+            return ", ".join(map(ast.unparse, statement.targets))
+        case ast.AnnAssign() | ast.AugAssign():
+            return ast.unparse(statement.target)
+    return type(statement).__name__
+
+
+def _executable(nodes: Iterable[ast.AST]) -> Iterable[str]:
+    """Yield, in order, each outermost union (its members in order), lambda and definition below the nodes, as text."""
+    for node in nodes:
+        if (members := _union_members(node)) is not None:
+            yield f"union {' | '.join(map(ast.unparse, members))}"
+        elif isinstance(node, (ast.Lambda, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            yield ast.dump(node)
+        else:
+            yield from _executable(ast.iter_child_nodes(node))
+
+
+def _statement_parts(body: Iterable[ast.stmt], prefix: str, classes: Mapping[int, Scope]) -> Iterable[str]:
+    """Yield what a signature does not see in the statements of a module or class body, each with where it is.
+
+    A statement is where it is by its scope and what it binds (`Model.b#0`, the first statement binding `b` in
+    `Model`), so the parts of two fields never trade places unseen, and moving a class or a field keeps its parts.
+    """
+    seen: Counter[str] = Counter()
+    for statement in body:
+        name = _statement_name(statement)
+        at = f"{prefix}{name}#{seen[name]}"
+        seen[name] += 1
+        header: list[ast.AST] = [statement]
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            yield from (f"decorator {at} {ast.dump(item)}" for item in statement.decorator_list)
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            yield f"body {at} {ast.dump(ast.Module(body=statement.body, type_ignores=[]))}"
+            header = [statement.args, *([statement.returns] if statement.returns else [])]
+        elif isinstance(statement, ast.ClassDef):
+            header = [*statement.bases, *statement.keywords]
+            yield from (
+                f"config {at} {key} {ast.dump(value)}"
+                for key, value in _config_values(classes[id(statement)])
+                if key not in SIGNATURE_CONFIG_KEYS
+            )
+            yield from _statement_parts(statement.body, f"{at}.", classes)
+        yield from (f"{text} at {at} {index}" for index, text in enumerate(_executable(header)))
+
+
 def _unlisted_parts(model: SourceModule) -> Counter[str]:
-    """Return what a signature does not see, as a multiset of dumps.
+    """Return what a signature does not see, as a multiset of dumps, each with where it is (`_statement_parts`).
 
     They are function bodies, lambdas, decorators, configuration keys and the members of each union in their order
-    (a signature sorts them, and validation tries them in order).
+    (a signature sorts them, and validation tries them in order); a definition below another statement than a
+    definition (a function in an `if` block) counts as a whole.
 
     A configuration key counts unless the signature lists it (`_behaviour_signature`'s pydantic and msgspec keys).
     """
-    parts: Counter[str] = Counter(f"union {' | '.join(map(ast.unparse, members))}" for members in _unions(model.tree))
-    for scope in model.scopes:
-        node = scope.node
-        if scope.kind == "function":
-            parts[f"body {scope.qualname} {ast.dump(ast.Module(body=getattr(node, 'body', []), type_ignores=[]))}"] += 1
-        if scope.kind == "lambda":
-            parts[f"lambda {ast.dump(node)}"] += 1
-        parts.update(f"decorator {scope.qualname} {ast.dump(item)}" for item in getattr(node, "decorator_list", []))
-        if scope.kind == "class":
-            parts.update(
-                f"config {scope.qualname} {key} {ast.dump(value)}"
-                for key, value in _config_values(scope)
-                if key not in SIGNATURE_CONFIG_KEYS
-            )
-    return parts
+    classes = {id(scope.node): scope for scope in model.scopes if scope.kind == "class"}
+    return Counter(_statement_parts(model.tree.body, "", classes))
 
 
 def rule_b(old: str, new: str, *, signature_equal: bool) -> bool:
@@ -931,8 +959,9 @@ def rule_b(old: str, new: str, *, signature_equal: bool) -> bool:
 
     Their syntax trees are equal apart from docstrings, comments and the order of the top-level imports within a run of
     consecutive imports; or else the signatures are equal (`signature_equal`) and no function body, lambda, decorator
-    or configuration key the signature does not list differs, nor the order of the members of a union, compared as
-    multisets of their dumps. A text that does not parse holds nothing.
+    or configuration key the signature does not list differs, nor the order of the members of a union, nor where one of
+    them is (the statement that holds it), compared as multisets of their dumps. A text that does not parse holds
+    nothing.
     """
     try:
         old_model, new_model = _read(old), _read(new)
