@@ -1439,8 +1439,9 @@ _STANDARD_20261120_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         title="UUID versions 6 to 8",
         config=PresetConfig(read_uuid6_uuid7_uuid8_formats=True),
         description=(
-            "Read the formats uuid6, uuid7 and uuid8 of a string, as the formats uuid1 to uuid5 are read, so the field "
-            "is a UUID of that version (a plain UUID before Pydantic 2.11) instead of a str."
+            "Read the formats uuid6, uuid7 and uuid8 of a string, as the formats uuid1 to uuid5 are read: Pydantic "
+            "output types the field as that UUID version (a plain UUID before Pydantic 2.11), and the other output "
+            "types as uuid.UUID under --use-standard-primitive-types, else as str, instead of an unknown format."
         ),
     ),
 )
