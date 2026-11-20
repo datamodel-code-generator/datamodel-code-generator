@@ -235,7 +235,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_all_of_values.py`: `merge_all_of_root_schema`, `all_of_root_value_schema`; "
             "`parser/_object_maps.py:object_map_admits_null`; `parser/graphql.py:GraphQLParser.parse_field` "
             "(`GraphQLParser._null_mode`); the converters `parser/avro.py` (`NULL_SCHEMA`), `parser/protobuf.py` "
-            "(`WELL_KNOWN_SCHEMAS`) and `parser/xmlschema.py` (`nillable`)"
+            "(`WELL_KNOWN_SCHEMAS`) and `parser/xmlschema.py:_XMLSchemaConverter._apply_common_element_metadata` "
+            "(`nillable`)"
         ),
         sites=(
             Home("parser/_intersection.py", "inherited_override_row"),
@@ -279,9 +280,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/_object_maps.py", "object_map_admits_null"),
             Home("parser/graphql.py", "GraphQLParser.parse_field"),
             Home("parser/graphql.py", "GraphQLParser._null_mode"),
-            Home("parser/avro.py"),
-            Home("parser/protobuf.py"),
-            Home("parser/xmlschema.py"),
+            Home("parser/xmlschema.py", "_XMLSchemaConverter._apply_common_element_metadata"),
         ),
     ),
     DecisionHome(
@@ -1817,14 +1816,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_lock_plan.py`: `default_lock_parent`, `remote_lock_plan`, `owns_lock_update`, `models_lockfile`",
         adapters=(
-            "`__main__.py`: `_remote_lock_plan`; `_target_cli.py`: `_run`; `__init__.py`: "
+            "`__main__.py`: `_watch_remote_lock_setup`, `_recommend_lock_observer`, `_run_jobs`, `_run_watched_jobs`, "
+            "`_run_config` (each calls `_remote_lock_plan`); `_target_cli.py`: `_run`; `__init__.py`: "
             "`_resolve_generation_remote_lock`, `_prepare_atomic_generation_remote_lock`"
         ),
         sites=(
+            Home("__main__.py", "_watch_remote_lock_setup"),
+            Home("__main__.py", "_recommend_lock_observer"),
+            Home("__main__.py", "_run_jobs"),
+            Home("__main__.py", "_run_watched_jobs"),
+            Home("__main__.py", "_run_config"),
             Home("_target_cli.py", "_run"),
             Home("__init__.py", "_resolve_generation_remote_lock"),
             Home("__init__.py", "_prepare_atomic_generation_remote_lock"),
-            Home("__main__.py"),
         ),
     ),
     DecisionHome(
@@ -2921,7 +2925,6 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         sites=(
             Home("enums.py", "_pydantic_version_key"),
             Home("_requirements.py"),
-            Home("model/__init__.py"),
             Home("_target_unicode.py"),
         ),
     ),
@@ -3660,7 +3663,6 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/_passes/imports.py", "_loaded_modules"),
             Home("parser/_passes/_import_edges.py", "_failing_import_cycles"),
             Home("parser/_passes/structure.py", "_module_merges"),
-            Home("__init__.py"),
             Home("parser/base.py"),
         ),
     ),
@@ -5334,7 +5336,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`watch_dependencies.py`: `WatchDependencies._add_config`, `_configured_path`; `__main__.py`: "
             "`_record_raw_job_config_dependencies`, `_target_usage_errors`; `base_config.py:_selected_target`; the "
             "defaults: `_option_table.py` (the `--encoding` and `--watch-delay` help), `arguments.py` "
-            "(`DEFAULT_ENCODING`), `json_config.py` (`DEFAULT_ENCODING`, `json_file`), "
+            "(`DEFAULT_ENCODING`), `json_config.py:document_base` and `_read_json_or_inline` (`DEFAULT_ENCODING`, "
+            "`json_file`), "
             "`base_config.py:BaseGenerateConfig.encoding`, `config.py:ParserConfig.encoding`, "
             "`_parser_context.py:ParserSourceContext.encoding`, `_cli_config.py:Config.watch_delay`, "
             "`__main__.py:_batch_outer_settings` (the `Config` field defaults); left out: the `encoding` parameter "
@@ -5359,8 +5362,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("format.py", "CodeFormatter"),
             Home("__init__.py", "_prepare_atomic_generation_remote_lock"),
             Home("_option_table.py"),
-            Home("arguments.py"),
-            Home("json_config.py"),
+            Home("json_config.py", "document_base"),
+            Home("json_config.py", "_read_json_or_inline"),
             Home("parser/protobuf.py"),
             Home("parser/xmlschema.py"),
             Home("_target_selection.py"),
@@ -6606,7 +6609,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`REF_PRE_PASS_POSITIONS`"
         ),
         adapters=(
-            "the walkers of `parser/jsonschema.py` (`_walk_schema_objects`, `_iter_referencing_schemas`), "
+            "the walkers of `parser/jsonschema.py` (`_walk_schema_objects`, `_version_checked_subschemas`), "
             "`parser/_schema_refs.py:walk_ref_cycle` and `parser/_schema_documents.py` "
             "(`iter_schema_resource_children`, and `_searched` of row `legacy-external-anchor-search`, through "
             "`subschema_entries`), `parser/_schema_graph.py:walk_schema_resources` (the schemas it passes over, "
@@ -6631,7 +6634,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/_schema_object.py", "_locate_dump"),
             Home("_fastapi/source_document.py", "SourceDocument.schema_member"),
             Home("__init__.py", "is_schema"),
-            Home("parser/jsonschema.py"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._walk_schema_objects"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._version_checked_subschemas"),
             Home("_input_model_transport.py"),
             Home("input_model_result.py"),
             Home("parser/_intersection.py"),
@@ -6770,7 +6774,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`_message_text.py:extra_requirement`, `_message_text.py:install_command`",
         adapters=(
             "the missing-extra errors and warnings (`__init__.py:enable_debug_message`, `http.py:_get_http_stack`, "
-            "`watch.py:_get_watchfiles`, `format.py:CodeFormatter._find_ruff_path`, `parser/openapi.py` "
+            "`watch.py:_get_watchfiles`, `format.py:CodeFormatter._find_ruff_path`, `parser/openapi.py:OpenAPIParser.parse_raw` "
             "(`--validation`), `parser/protobuf.py`, `parser/graphql.py`), the help of `--url`, `--formatters` and "
             "`--debug` (`_option_table.py`), the `extra.httpx2` entry of `experimental.py`"
         ),
@@ -6779,7 +6783,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("http.py", "_get_http_stack"),
             Home("watch.py", "_get_watchfiles"),
             Home("format.py", "CodeFormatter._find_ruff_path"),
-            Home("parser/openapi.py"),
+            Home("parser/openapi.py", "OpenAPIParser.parse_raw"),
             Home("parser/protobuf.py"),
             Home("parser/graphql.py"),
             Home("_option_table.py"),

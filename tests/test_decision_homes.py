@@ -67,7 +67,21 @@ def _problems(records: Iterable[DecisionHome]) -> list[str]:
                     problems.append(f"{key}: {missing}")
                 elif not _named(home, cell):
                     problems.append(f"{key}: the {kind} cell does not name {':'.join(filter(None, home))}")
+                elif kind == "adapters" and not home.name and (named := _named_after(home, cell)):
+                    problems.append(f"{key}: the adapters cell names `{named}` after {home.path}, no whole-module site")
     return problems
+
+
+def _named_after(home: Home, cell: str) -> str:
+    """Return the name a cell gives right after the file of a whole-module site (`` `f.py`: `x` ``, `` `f.py` (`x` ``).
+
+    A cell states a whole module by citing its file with no name after it; a name it gives there that no scope
+    carries (a constant, a parameter, an alias) must not widen the site to the module.
+    """
+    for match in re.finditer(r"`([^`:]+\.py)`(?::| \()\s*`([^`]+)`", cell):
+        if home.path == match[1] or home.path.endswith(f"/{match[1]}"):
+            return match[2]
+    return ""
 
 
 class Caller(NamedTuple):

@@ -684,6 +684,11 @@ def show(flag: bool) -> None:
         },
         "args": ["--enforce"],
     },
+    "allowlist-dict-value-not-written-out": {
+        "base": {"tests/assert_helper_allowlists.py": 'JUSTIFIED_VIOLATIONS = {"g": ("x",)}\n'},
+        "head": {"tests/assert_helper_allowlists.py": 'JUSTIFIED_VIOLATIONS = {"g": tuple(["x", "y", "z"])}\n'},
+        "args": ["--enforce"],
+    },
     "any-uses": {"head": {"src/pkg/c.py": ANY_USES}, "args": ["--enforce"]},
     "any-values": {"head": {"src/pkg/c.py": ANY_VALUES}, "args": ["--enforce"]},
     "dodges": {"head": {"src/pkg/c.py": DODGES}, "args": ["--enforce"]},

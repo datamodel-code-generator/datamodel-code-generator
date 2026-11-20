@@ -1076,6 +1076,10 @@ UNLISTED_CALLERS: Final[dict[str, tuple[str, ...]]] = {
         "parser/_schema_reading.py:_dump_enum_entries_skip_null",
         "parser/_schema_reading.py:_dump_parts_admit_null",
     ),
+    "parser/_null_facts.py:null_schema": (
+        "parser/avro.py:<module>",
+        "parser/protobuf.py:<module>",
+    ),
     "parser/_null_facts.py:resolve_null_facts": (
         "parser/_inherited_schemas.py:_dump_drops_inherited_null",
         "parser/_schema_documents.py:_single_value_enum_as_const",
@@ -1084,6 +1088,7 @@ UNLISTED_CALLERS: Final[dict[str, tuple[str, ...]]] = {
         "parser/_schema_reading.py:_enum_entries_skip_null",
         "parser/jsonschema.py:_type_excludes_member_null",
     ),
+    "parser/_null_facts.py:with_null": ("parser/protobuf.py:<module>",),
     "parser/_passes/_import_edges.py:_written_package": (
         "parser/_passes/imports.py:_alias_builtin_shadowing_module_imports",
         "parser/_passes/imports.py:_alias_imports_hidden_by_loaded_submodules",
