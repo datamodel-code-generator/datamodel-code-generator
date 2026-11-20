@@ -845,17 +845,26 @@ _HOOK_PACKAGE = {
         "from ._lazy_exports import module_hooks\n"
         "from ._table import Other, Served\n\n"
         '_SERVED = frozenset({"Legacy"})\n'
-        '_LAZY = {"Pair": ("package._table", "Served")}\n'
+        "_REGISTERED = {}\n\n\n"
+        "def _load_loaded() -> object:\n"
+        '    _REGISTERED.setdefault("Loaded", Served)\n'
+        "    from ._table import Served as Loaded\n\n"
+        "    return Loaded\n\n\n"
+        '_LAZY = {"Pair": ("package._table", "Served"), "Loaded": _load_loaded}\n'
         "_lazy_getattr, __dir__ = module_hooks(__name__, _LAZY)\n\n\n"
         "def __getattr__(name: str) -> object:\n"
+        "    _REGISTERED.setdefault(name, Served)\n"
         "    if name in _SERVED:\n"
         "        return Served\n"
         "    return _lazy_getattr(name)\n"
     ),
     "plain/__init__.py": "VALUE = 1\n",
+    "cyclic/__init__.py": "_a = lambda: _b\n_b = lambda: _a\n\n\ndef public(factory=_a):\n    pass\n",
 }
 _HOOK_EDITS = {
     "the-hook-serves-another-class": ("__init__.py", "        return Served\n", "        return Other\n"),
+    "the-hook-registers-another-class": ("__init__.py", "setdefault(name, Served)", "setdefault(name, Other)"),
+    "the-loader-registers-another-class": ("__init__.py", '("Loaded", Served)', '("Loaded", Other)'),
     "a-constant-the-hook-reads-gains-a-name": ("__init__.py", '{"Legacy"}', '{"Legacy", "Older"}'),
     "the-pair-entry-names-another-attribute": (
         "__init__.py",

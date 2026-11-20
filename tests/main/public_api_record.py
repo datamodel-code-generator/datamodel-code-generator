@@ -169,6 +169,15 @@ def _raises(condition: source_model.Condition) -> bool:
     return isinstance(body[-1], ast.Raise)
 
 
+def _executable(body: Iterable[ast.stmt]) -> list[ast.stmt]:
+    """Return a body's statements but its docstring and bare constants (``...``); a call statement stays."""
+    return [
+        statement
+        for statement in body
+        if not (isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant))
+    ]
+
+
 def _suffix(guard: Iterable[str]) -> str:
     listed = "; ".join(guard)
     return f"  [{listed}]" if listed else ""
@@ -553,7 +562,7 @@ class PublicApi:
     @staticmethod
     def _returned_import(model: source_model.SourceModule, node: ast.AST) -> str | None:
         """Return what a loader imports and returns (``from m import x as y; return y``), else None."""
-        body = [statement for statement in getattr(node, "body", []) if not isinstance(statement, ast.Expr)]
+        body = _executable(getattr(node, "body", []))
         bound = model.bindings(scope=model.scope_defined_by(node))
         if len(body) != 2 or len(bound) != 1 or bound[0].kind != "import-from" or bound[0].line != body[0].lineno:
             return None
@@ -676,7 +685,7 @@ class PublicApi:
                     self._refuse(module, binding.line, reason)
                 continue
             label = f"{module}.{binding.name}"
-            body = [statement for statement in binding.node.body if not isinstance(statement, ast.Expr)]
+            body = _executable(binding.node.body)
             lines += self._function(
                 model, binding.node, binding.name, "", _suffix(self._guard(model, binding.guard)), label
             )
@@ -712,13 +721,14 @@ class PublicApi:
         bound = model.bindings(scope=model.scope_defined_by(node))
         defined = {id(binding.node): binding for binding in bound if binding.kind in {"def", "class"}}
         lines = []
+        executable = _executable(getattr(node, "body", []))
         for statement in getattr(node, "body", []):
             binding = defined.get(id(statement))
             if binding is not None and binding.kind == "class":
                 lines += self._class(model, binding, binding.name, "    | ", "", label)
             elif binding is not None:
                 lines += self._function(model, statement, binding.name, "    | ", "", label)
-            elif not isinstance(statement, ast.Expr):
+            elif statement in executable:
                 lines += [f"    | {line}" for line in self._text(model, statement).splitlines()]
         return lines
 
@@ -848,7 +858,9 @@ class PublicApi:
         suffix: str,
         *,
         collapse: bool,
+        expand: bool = True,
     ) -> list[str]:
+        """Write a value binding; with ``expand`` false only its own line, the constants it reads left to `_uses`."""
         statement = model.statement_at(binding.line)
         annotation = self._annotations(model).get(id(binding.node))
         written = f": {self._text(model, annotation)}" if annotation is not None else ""
@@ -867,7 +879,8 @@ class PublicApi:
             return [f"{indent}{name}{written} = <{binding.kind} target>{suffix}"]
         operator = " += " if augmented else " = "
         text = self._text(model, value, collapse=collapse and not alias)
-        return [f"{indent}{name}{written}{operator}{text}{suffix}", *self._uses(model, [value], f"{indent}    ")]
+        lines = [f"{indent}{name}{written}{operator}{text}{suffix}"]
+        return lines + (self._uses(model, [value], f"{indent}    ") if expand else [])
 
     def _uses(
         self, model: source_model.SourceModule, values: list[ast.expr], indent: str, *, collapse: bool = True
@@ -891,7 +904,9 @@ class PublicApi:
                     seen.add(key)
                     used = self.tree.module(definition.module)
                     binding = self._binding(definition)
-                    lines += self._value(used, binding, f"uses {definition.name}", indent, "", collapse=collapse)[:1]
+                    lines += self._value(
+                        used, binding, f"uses {definition.name}", indent, "", collapse=collapse, expand=False
+                    )
                     pending += [(used, binding.value)] if binding.value is not None else []
         return lines
 
