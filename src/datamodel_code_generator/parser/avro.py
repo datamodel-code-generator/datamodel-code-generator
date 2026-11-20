@@ -534,7 +534,12 @@ class _AvroSchemaConverter:
     def _convert_default_type(
         self, value: Any, schema: Any, namespace: str | None, type_override: Import | None = None
     ) -> Any:
-        """Resolve named defaults in their record scope and decode bytes leaves."""
+        """Resolve named defaults in their record scope and decode bytes leaves.
+
+        A key of a record default that the record does not declare has no schema: its value is kept as written.
+        """
+        if not isinstance(schema, str):
+            return value
         if schema not in {"bytes", "fixed"}:
             fullname = self._resolve_fullname(schema, namespace)
             if (named_schema := self.named_schemas.get(fullname)) is None:
