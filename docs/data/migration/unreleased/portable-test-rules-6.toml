@@ -1,6 +1,0 @@
-[[change]]
-id = "portable-test-rules-6"
-extends = "portable-test-rules"
-covers = [
-    "checks_are_run/every_check_runs_on_the_tree.txt",
-]

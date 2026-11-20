@@ -2347,8 +2347,8 @@
   "load_pyproject_config"
  ],
  "recommender_rules": {
-  "digest": "fef467d9a9767b20",
-  "revision": "2026-10-19"
+  "digest": "0435ddbfa36cf166",
+  "revision": "2026-11-19"
  },
  "templates": [
   "Enum.jinja2",
