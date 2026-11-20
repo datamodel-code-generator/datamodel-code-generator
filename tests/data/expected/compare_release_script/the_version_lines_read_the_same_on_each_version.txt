@@ -1,0 +1,6 @@
+[]
+{'model.py': '#   version:   <version>\nLITERAL = "1.0.0"\n'}
+'datamodel-codegen <version>\n' 'datamodel-codegen <version>\n'
+['output']
+{'model.py': '#   version:   <version>\nLITERAL = "1.0.0"\n#   version:   1.0.0-dev\n'}
+'datamodel-codegen <version>\n' 'datamodel-codegen <version>\n'

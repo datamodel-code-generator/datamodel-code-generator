@@ -4,6 +4,8 @@
 	compare_release_script/a_run_out_of_memory_closes_its_worker.txt
 [test_a_worker_runs_each_job_as_a_fresh_process]
 	compare_release_script/a_worker_runs_each_job_as_a_fresh_process.txt
+[test_an_output_outside_the_directory_is_a_difference_of_output]
+	compare_release_script/an_output_outside_the_directory_is_a_difference_of_output.txt
 [test_compare_release]
 directory-args1	compare_release/directory.txt
 fail_both-args3	compare_release/fail_both.txt
@@ -102,3 +104,5 @@ v2_reindented_block	compare_release_script/compare_release_evidence_oracle[v2_re
 	compare_release_script/the_environment_keeps_what_windows_needs.txt
 [test_the_record_is_published_by_a_replace]
 	compare_release_script/the_record_is_published_by_a_replace.txt
+[test_the_version_lines_read_the_same_on_each_version]
+	compare_release_script/the_version_lines_read_the_same_on_each_version.txt

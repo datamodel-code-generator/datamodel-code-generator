@@ -20,6 +20,7 @@ import datamodel_code_generator
 import datamodel_code_generator.__main__  # noqa: F401
 from scripts import _change_units as change_units
 from scripts import compare_release
+from scripts._behaviour_classify import kinds
 from tests.capabilities import needs
 from tests.conftest import assert_output
 
@@ -321,6 +322,72 @@ def test_a_run_out_of_memory_closes_its_worker(tmp_path: Path) -> None:
     """The worker of a run that ran out of its memory cap is replaced: the next run starts in a fresh one."""
     runner = _fake_runner(tmp_path, 1, import_check=False)
     assert_output(_worker_runs(runner, tmp_path, [({}, "memory", ()), ({"memory_mb": 0}, "plain", ())]))
+
+
+STAND_IN_ARGUMENTS = """import argparse
+
+arg_parser = argparse.ArgumentParser()
+arg_parser.add_argument("--elsewhere")
+"""
+
+STAND_IN_MAIN = """from pathlib import Path
+
+import datamodel_code_generator._config_fields
+from datamodel_code_generator import get_version
+from datamodel_code_generator.arguments import arg_parser
+
+
+def main(argv):
+    arg_parser.parse_known_args(argv)
+    version = get_version()
+    lines = [f"#   version:   {version}", 'LITERAL = "1.0.0"']
+    if "--dev" in argv:
+        lines.append(f"#   version:   {version}-dev")
+    Path(argv[argv.index("--output") + 1]).write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+    print(f"datamodel-codegen {version}")
+    return 0
+"""
+
+
+def _stand_in_outcome(tmp_path: Path, version: str, *args: str, elsewhere: str = "a.txt") -> compare_release.Outcome:
+    """Run a stand-in generator of `version`: it writes version lines and its `--elsewhere` is an output path."""
+    package = tmp_path / version / "datamodel_code_generator"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text(f"def get_version():\n    return {version!r}\n", encoding="utf-8")
+    (package / "_config_fields.py").write_text('OUTPUT_PATH_FIELDS = ("elsewhere",)\n', encoding="utf-8")
+    (package / "arguments.py").write_text(STAND_IN_ARGUMENTS, encoding="utf-8")
+    (package / "__main__.py").write_text(STAND_IN_MAIN, encoding="utf-8")
+    side = compare_release.Side(version, Path(sys.executable), package.parent)
+    env = compare_release.run_environment(package.parent)
+    runner = compare_release.Runner(side, env, import_check=False, timeout=60)
+    (tmp := tmp_path / f"run-{version}").mkdir()
+    try:
+        return runner.generate([*args, "--elsewhere", str(tmp / "elsewhere" / elsewhere)], tmp)
+    finally:
+        runner.close()
+
+
+def _difference(tmp_path: Path, *args: str) -> str:
+    """Return the kinds in which two stand-in versions' runs differ, the first one's tree and both messages."""
+    base, head = (_stand_in_outcome(tmp_path, version, *args) for version in ("1.0.0", "1.0.1"))
+    differing = sorted(kind.value for kind in kinds(compare_release._facts(base), compare_release._facts(head)))
+    return f"{differing}\n{base.tree}\n{base.messages!r} {head.messages!r}\n"
+
+
+def test_the_version_lines_read_the_same_on_each_version(tmp_path: Path) -> None:
+    """Only the version lines the package writes are normalised: a schema literal and a longer version stay."""
+    assert_output(_difference(tmp_path / "plain") + _difference(tmp_path / "dev", "--dev"))
+
+
+def test_an_output_outside_the_directory_is_a_difference_of_output(tmp_path: Path) -> None:
+    """The outputs a run's arguments wrote elsewhere are among its files, so another one is a difference of output."""
+    base = compare_release._facts(_stand_in_outcome(tmp_path / "base", "1.0.0"))
+    lines = []
+    for name, elsewhere in (("same", "a.txt"), ("other", "b.txt")):
+        head = compare_release._facts(_stand_in_outcome(tmp_path / name, "1.0.0", elsewhere=elsewhere))
+        differing = sorted(kind.value for kind in kinds(base, head))
+        lines.append(f"{differing} {[name for name, _ in head[1]]}")
+    assert_output("\n".join(lines) + "\n")
 
 
 ORACLE_MAIN = """import json

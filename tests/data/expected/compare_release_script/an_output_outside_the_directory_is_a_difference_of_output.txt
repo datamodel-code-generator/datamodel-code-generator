@@ -1,0 +1,2 @@
+[] ['<outside>/<tmp>/elsewhere/a.txt', 'model.py']
+['output'] ['<outside>/<tmp>/elsewhere/b.txt', 'model.py']
