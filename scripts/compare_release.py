@@ -95,7 +95,7 @@ PROCESS_STATE_OPTIONS = frozenset({"--debug"})
 worker of such a run is closed after it, as after running out of memory, so later runs do not inherit it."""
 RECYCLE = 200
 """Jobs a worker runs before a new one takes its place, which bounds the memory and the state a worker gathers."""
-CACHE_FORMAT = 5
+CACHE_FORMAT = 7
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "datamodel_code_generator"
 RELEASE = re.compile(r"\d+(?:\.\d+)+")

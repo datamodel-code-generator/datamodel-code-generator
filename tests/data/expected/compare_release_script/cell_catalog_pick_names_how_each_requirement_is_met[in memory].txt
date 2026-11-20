@@ -1,0 +1,8 @@
+pick: catalog rrrrrrrrrrrr, requirements 6: by cells 2, at startup 1, no catalog cell 2, unmeasurable 1; cells picked 2
+pick: cell default a | pydantic_v2.BaseModel | default
+pick: cell default b | pydantic_v2.BaseModel | default
+pick: no catalog cell: head new.py g: start 
+pick: no catalog cell: head resources/x.json : read 
+pick: unmeasurable: head m.py f: unmeasurable 
+failed cells: [2]
+picked: [0, 1]

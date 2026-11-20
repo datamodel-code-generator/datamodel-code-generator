@@ -1,8 +1,11 @@
 """The cells a change has to run: a catalog of the gate's cells with what each ran, and the pick of a change's cells.
 
 The comparator's evidence (`scripts/compare_release.py`, `Evidence`) judges whether the compared cells ran each code
-object a change touches (`scripts/_change_units.py`). This module chooses those cells; it never judges: a cell it
-misses leaves the evidence incomplete, it never lets a change pass.
+object a change touches (`scripts/_change_units.py`). This module chooses those cells; it never judges. The evidence
+counts coverage, not equality: a cell the pick leaves out may run the changed line and differ, and a comparison of the
+picked cells alone passes. So a pick only adds cells to the tier the gate runs (a replay's sweep, the PR sample); it
+never stands in for them, and a run of the picked cells alone is not the gate's verdict. A cell it misses leaves the
+evidence incomplete where no other compared cell ran the code.
 
 - **The catalog** (`Catalog`) holds cells (the gate's `behaviour_diff.Cell`: kind, input, input file type, output
   model type, options) and what each ran at one revision of the package, the catalog's: every line (`line` keys,
@@ -424,13 +427,17 @@ def pick_change(
 ) -> Pick:
     """Return the pick of a change's units (`compare_release.changed_units`) of the base and candidate revisions.
 
-    `sides` are the base revision and the candidate's, None for the working tree of `repo`.
+    `sides` are the base revision and the candidate's, None for the working tree of `repo`. A release base has no
+    change units (`units` is None): there is nothing to pick, the tier runs.
     """
+    if units is None:
+        msg = "pick: a release base has no change units: run the tier"
+        raise SystemExit(msg)
     maps = {
         side: file_maps(repo, catalog.revision, revision)
         for side, revision in zip(("base", "head"), sides, strict=True)
     }
-    return pick(catalog, units.units if units else [], maps, redundancy)
+    return pick(catalog, units.units, maps, redundancy)
 
 
 def record(runner: compare_release.Runner, cells: list[behaviour_diff.Cell], revision: str, jobs: int) -> Catalog:

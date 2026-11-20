@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 import datamodel_code_generator
-import datamodel_code_generator.__main__  # noqa: F401
+import datamodel_code_generator.__main__  # ruff: ignore[unused-import]
 from scripts import _change_units as change_units
 from scripts import compare_release
 from tests.capabilities import needs
@@ -1486,10 +1486,53 @@ CATALOG_ARGUMENTS = ORACLE_ARGUMENTS + 'arg_parser.add_argument("--input-file-ty
 """The stand-in's parser with the input file type a gate cell names (`behaviour_diff.Cell.args`)."""
 SHIFTED = "\n\nSHIFT = 1\n"
 """A commit between the catalog and the base: it moves every line of `_case.py` below its top."""
+REDUNDANCY = 2
+"""The cells per requirement a pick asks of a catalog (the default of `_cell_catalog.pick`)."""
+PLAIN_CELLS = ("plain.json", *(f"plain{number}.json" for number in range(2, REDUNDANCY + 2)))
+"""The catalog's cells that run only the plain path: one more than `REDUNDANCY`, so a pick can leave one out."""
+CATALOG_INPUTS = {
+    **dict.fromkeys(PLAIN_CELLS, (ORACLE_INPUTS["plain.json"], "default")),
+    "reached.json": (ORACLE_INPUTS["reached.json"], "payload"),
+}
+"""A catalog's inputs with their spec and kind: the plain cells are the cheap defaults, the reaching one a payload."""
+SUB_LINE = frozenset({
+    "f3_comprehension_filter",
+    "f3_one_line_if_body",
+    "f3_or_operand",
+    "f3_ternary_arm",
+    "r2_p1_function_level_lambda",
+    "r2_p1_genexpr",
+    "r2_p1_one_line_def",
+    "r2_p2_tuple_in_lambda",
+    "r4_lambdas_on_one_line",
+    "r4_receiver_of_another_call",
+    "v2_else_arm_deleted",
+    "v2_reindented_block",
+})
+"""The shapes whose changed part is less than a line: a line key cannot tell its arms apart (step 1b of the design).
+
+Every catalog cell that runs the line holds the key, the plain cells too, so a pick of `REDUNDANCY` of them (the
+cheapest) leaves the reaching cell out and the picked comparison is incomplete: a known miss, never a pass.
+"""
 
 
-def _catalog_pick(tmp_path: Path, oracle: Oracle, *, shift: bool = False) -> tuple[Path, list[str], list[str]]:
-    """Record the catalog of the plain and the reaching input on the oracle's base commit and pick its change's cells.
+SHARED = frozenset({
+    "f2_global_declaration_removed",
+    "f6_imported_runtime_module",
+    "r2_p3_else_deleted",
+    "r4_moved_function_reads_another_module_s_binding",
+})
+"""The shapes with a changed line the plain path runs as well (a binding at import, the arm the plain input takes)."""
+
+
+def _catalog_pick(
+    tmp_path: Path,
+    oracle: Oracle,
+    *,
+    shift: bool = False,
+    inputs: dict[str, tuple[dict[str, object], str]] = CATALOG_INPUTS,
+) -> tuple[Path, list[str], list[str]]:
+    """Record a catalog of `inputs` on the oracle's base commit and pick its change's cells.
 
     With `shift`, a commit that moves the lines of `_case.py` comes between the catalog and the base of the change.
     Return the repository, the comparison command of `_oracle_project` and the labels of the picked cells.
@@ -1498,6 +1541,8 @@ def _catalog_pick(tmp_path: Path, oracle: Oracle, *, shift: bool = False) -> tup
     from scripts.behaviour_diff import Cell
 
     repo, command = _oracle_project(tmp_path, Oracle({"arguments.py": CATALOG_ARGUMENTS, **oracle.base}, oracle.head))
+    for name, (spec, _) in inputs.items():
+        (repo / "inputs" / name).write_text(json.dumps(spec), encoding="utf-8")
     catalog_commit = compare_release.git(repo, "rev-parse", "HEAD").stdout.strip()
     python = Path(sys.executable)
     cache = tmp_path / "cache"
@@ -1508,7 +1553,10 @@ def _catalog_pick(tmp_path: Path, oracle: Oracle, *, shift: bool = False) -> tup
         import_check=False,
         timeout=60,
     )
-    cells = [Cell(repo / "inputs" / name, name, "jsonschema", "pydantic_v2.BaseModel") for name in (*PLAIN, *REACHED)]
+    cells = [
+        Cell(repo / "inputs" / name, name, "jsonschema", "pydantic_v2.BaseModel", (), kind)
+        for name, (_, kind) in inputs.items()
+    ]
     catalog = cell_catalog.record(runner, cells, catalog_commit, 1)
     catalog.write(tmp_path / "catalog.json.gz")
     base = catalog_side
@@ -1524,39 +1572,91 @@ def _catalog_pick(tmp_path: Path, oracle: Oracle, *, shift: bool = False) -> tup
         command[command.index("--base") + 1] = shifted
     units = compare_release.changed_units(python, repo, base, None, repo / "src")
     chosen = cell_catalog.pick_change(
-        cell_catalog.Catalog.read(tmp_path / "catalog.json.gz"), repo, units, (base.revision or "", None)
+        cell_catalog.Catalog.read(tmp_path / "catalog.json.gz"), repo, units, (base.revision or "", None), REDUNDANCY
     )
     return repo, command, [cell["label"] for cell in chosen.data()["cells"]]
 
 
+def _compare(repo: Path, command: list[str], names: list[str]) -> str:
+    """Return the verdict of comparing the working tree with the base on the inputs `names`."""
+    run = subprocess.run([*command, *names], cwd=repo / "inputs", capture_output=True, text=True, check=False)
+    return _verdict(run.returncode, run.stdout)
+
+
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
 @needs("sys-monitoring")
-@pytest.mark.parametrize("case", sorted(PICKED))
+@pytest.mark.parametrize("case", sorted(set(PICKED) - SUB_LINE))
 def test_cell_catalog_picks_the_cells_the_evidence_asks_for(case: str, tmp_path: Path) -> None:
-    """The cells a catalog picks for a change run what the comparison's evidence asks for.
+    """The cells a catalog picks for a change are the one that runs it, and they run what the evidence asks for.
 
-    For each oracle shape only the reaching input runs, a catalog of the plain and the reaching input on the base picks
-    the reaching one, and comparing the picked cells gives the verdict comparing that input gives.
+    The catalog holds more plain cells than the pick asks for: the picked cells are the reaching one alone (a cell
+    that runs no changed line is left out; where the plain path runs a changed line too, some plain cells come with
+    it and one is still left out), and comparing them gives the verdict comparing that input gives.
     """
     repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
     assert "reached.json" in picked, picked
-    run = subprocess.run([*command, *picked], cwd=repo / "inputs", capture_output=True, text=True, check=False)
-    assert _verdict(run.returncode, run.stdout) == PICKED[case], f"picked {picked}\n{run.stdout}"
+    if case in SHARED:
+        assert set(picked) < set(CATALOG_INPUTS), picked
+    else:
+        assert picked == ["reached.json"], picked
+    assert _compare(repo, command, picked) == PICKED[case]
 
 
 @pytest.mark.allow_direct_assert(
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
 @needs("sys-monitoring")
-@pytest.mark.parametrize("case", ["f3_ternary_arm", "r2_p3_else_deleted", "r2_p1_function_level_lambda"])
+@pytest.mark.parametrize("case", sorted(SUB_LINE))
+def test_cell_catalog_misses_a_change_inside_a_line(case: str, tmp_path: Path) -> None:
+    """A change of less than a line is a known miss: every cell that runs the line holds its key (step 1b).
+
+    The pick takes the cheapest cells that run the line, the plain ones, so the picked comparison is incomplete (the
+    gate then says which code objects no compared cell ran). The step that keys a line's arms apart flips these.
+    """
+    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
+    assert len(picked) == REDUNDANCY, picked
+    assert set(picked) <= set(PLAIN_CELLS), picked
+    assert _compare(repo, command, picked) == "incomplete"
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", ["r2_p3_elif_deleted", "r2_p4_override_deleted", "r2_c4_override_body_changed"])
 def test_cell_catalog_reads_lines_of_an_older_revision(case: str, tmp_path: Path) -> None:
     """A catalog older than the change's base finds the change's lines where the commits between moved them."""
     repo, command, picked = _catalog_pick(tmp_path, ORACLES[case], shift=True)
-    assert "reached.json" in picked, picked
-    run = subprocess.run([*command, *picked], cwd=repo / "inputs", capture_output=True, text=True, check=False)
-    assert _verdict(run.returncode, run.stdout) == "complete", f"picked {picked}\n{run.stdout}"
+    assert picked == ["reached.json"], picked
+    assert _compare(repo, command, picked) == "complete"
+
+
+DROPPED_BASE = "def run(spec):\n    value = spec['value']\n    return value[:2]\n"
+DROPPED_INPUTS = {
+    **{f"p{number}.json": ({"value": "ab"}, "default") for number in range(6)},
+    "w.json": ({"value": "abcd"}, "payload"),
+}
+"""Seven inputs run the changed line; only `w.json` (the costliest) gives another output after it."""
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("sys-monitoring")
+def test_cell_catalog_pick_is_not_the_verdict(tmp_path: Path) -> None:
+    """The picked cells run the changed line and compare equal while a cell the pick drops differs.
+
+    The evidence counts coverage, not equality. So the pick only adds cells to the tier the gate runs; the comparison
+    of the picked cells alone is no verdict: all the inputs that run the line differ where the picked ones do not.
+    """
+    oracle = Oracle({"_case.py": DROPPED_BASE}, {"_case.py": DROPPED_BASE.replace("[:2]", "[:3]")})
+    repo, command, picked = _catalog_pick(tmp_path, oracle, inputs=DROPPED_INPUTS)
+    assert len(picked) == REDUNDANCY
+    assert "w.json" not in picked
+    assert _compare(repo, command, picked) == "complete"
+    assert _compare(repo, command, list(DROPPED_INPUTS)) == "differ"
 
 
 FILE_MAP_CASES = {
@@ -1598,3 +1698,83 @@ def test_cell_sets_are_stored_by_the_shorter_side(case: str) -> None:
     cells, total = CELL_SET_CASES[case]
     encoded = encode(cells, total)
     assert_output(f"{json.dumps(encoded)} -> {sorted(decode(encoded, total))}\n")
+
+
+def _requirement_unit(side: str, path: str, qualname: str, probe: dict[str, object]) -> dict[str, object]:
+    """Return a unit of `_change_units`'s reply with one probe, as a pick reads it."""
+    return {"side": side, "path": path, "qualname": qualname, "probes": [{"where": "", **probe}]}
+
+
+@pytest.mark.parametrize("round_trip", [False, True], ids=["in memory", "written and read"])
+def test_cell_catalog_pick_names_how_each_requirement_is_met(round_trip: bool, tmp_path: Path) -> None:
+    """A requirement is met by cells, at startup, by no catalog cell or by none that can run; failed cells stay out.
+
+    Cell 2 failed on the catalog's revision: it holds no key, so no pick takes it. The pick reads the same from the
+    catalog written to a file and read back.
+    """
+    from scripts._cell_catalog import Catalog, CatalogCell, pick
+
+    cells = [CatalogCell("default", name, "jsonschema", "pydantic_v2.BaseModel") for name in ("a", "b", "failed")]
+    shared = {("line", "m.py", 3), ("code", "m.py", "f")}
+    catalog = Catalog.of("r" * 40, cells, [shared, {("line", "m.py", 3)}, None], {("line", "boot.py", 1)})
+    if round_trip:
+        catalog.write(tmp_path / "catalog.json.gz")
+        catalog = Catalog.read(tmp_path / "catalog.json.gz")
+    units = [
+        _requirement_unit("base", "m.py", "f", {"kind": "instr", "code": ["m.py", "f"], "where": "3:0-3:9"}),
+        _requirement_unit("base", "m.py", "f", {"kind": "start", "code": ["m.py", "f"]}),
+        _requirement_unit("head", "boot.py", "h", {"kind": "instr", "code": ["boot.py", "h"], "where": "1:0-1:5"}),
+        _requirement_unit("head", "new.py", "g", {"kind": "start", "code": ["new.py", "g"]}),
+        _requirement_unit("head", "resources/x.json", "", {"kind": "read", "file": "resources/x.json"}),
+        _requirement_unit("head", "m.py", "f", {"kind": "unmeasurable"}),
+    ]
+    chosen = pick(catalog, units, {"base": {}, "head": {}})
+    assert_output("\n".join([*chosen.lines(), f"failed cells: {catalog.failed}", f"picked: {chosen.picked}"]) + "\n")
+
+
+def test_cell_catalog_pick_refuses_a_release_base(tmp_path: Path) -> None:
+    """A release base has no change units: `pick` says to run the tier instead of reporting an empty pick."""
+    from scripts._cell_catalog import Catalog, CatalogCell, pick_change
+
+    catalog = Catalog.of("r" * 40, [CatalogCell("default", "a", "jsonschema", "pydantic_v2.BaseModel")], [set()], set())
+    with pytest.raises(SystemExit) as refused:
+        pick_change(catalog, tmp_path, None, ("0.98.0", None))
+    assert_output(f"{refused.value}\n")
+
+
+def test_cell_catalog_files_follow_renames_and_hunks(tmp_path: Path) -> None:
+    """`file_maps` maps each package file that differs from the catalog's revision to its catalog path and hunks."""
+    from scripts._cell_catalog import file_maps
+
+    package = tmp_path / "src" / "datamodel_code_generator"
+    package.mkdir(parents=True)
+
+    def body(name: str) -> str:
+        return "".join(f"{name}_{number} = {number}\n" for number in range(1, 11))
+
+    for name in ("renamed", "moved_and_edited", "edited", "removed", "untouched"):
+        (package / f"{name}.py").write_text(body(name), encoding="utf-8")
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+    git("init", "-q")
+    git("add", "-A", ".")
+    git("commit", "-qm", "catalog")
+    catalog = git("rev-parse", "HEAD")
+    git("mv", "src/datamodel_code_generator/renamed.py", "src/datamodel_code_generator/now.py")
+    git("mv", "src/datamodel_code_generator/moved_and_edited.py", "src/datamodel_code_generator/then.py")
+    (package / "then.py").write_text(body("moved_and_edited").replace("_4 = 4", "_4 = 40"), encoding="utf-8")
+    (package / "edited.py").write_text(body("edited").replace("edited_7 = 7\n", ""), encoding="utf-8")
+    (package / "removed.py").unlink()
+    (package / "added.py").write_text(body("added"), encoding="utf-8")
+    git("add", "-A", ".")
+    git("commit", "-qm", "side")
+    maps = file_maps(tmp_path, catalog, git("rev-parse", "HEAD"))
+    assert_output("".join(f"{name}: {maps[name]}\n" for name in sorted(maps)))
