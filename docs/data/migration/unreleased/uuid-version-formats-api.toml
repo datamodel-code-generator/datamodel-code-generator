@@ -3,8 +3,8 @@ id = "uuid-version-formats-api"
 category = "api"
 title = "Public names for the uuid6, uuid7 and uuid8 formats"
 summary = "The option adds its config fields, the Types members uuid6, uuid7 and uuid8, the Pydantic imports IMPORT_UUID6, IMPORT_UUID7 and IMPORT_UUID8, DataTypeManager.use_target_pydantic_version (called after construction, as use_untyped_value_type is) the requirement row of UUID6, UUID7 and UUID8 (Pydantic 2.11), and the PresetName members and preset_names entries of the 20261120 presets; nothing is removed or changed."
-refs = ["#7245"]
-decision = ["#7245"]
+refs = ["#7246"]
+decision = ["#7246"]
 kind = "python-api"
 action = "review"
 affects = { python_api = ["datamodel_code_generator.types.Types", "datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }

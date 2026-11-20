@@ -3,7 +3,7 @@ id = "uuid-version-formats"
 category = "new-surface"
 title = "Read the string formats uuid6, uuid7 and uuid8 under an option"
 summary = "--read-uuid6-uuid7-uuid8-formats reads format uuid6, uuid7 and uuid8 as the UUID versions they name: Pydantic output types them as UUID6, UUID7 and UUID8 (uuid.UUID for a target Pydantic version before 2.11), the other outputs as uuid.UUID under --use-standard-primitive-types, else str; without it each stays an unknown format, a warning and str."
-refs = ["#7245"]
+refs = ["#7246"]
 surface = ["--read-uuid6-uuid7-uuid8-formats"]
 covers = [
     "builtin_formatter/parser_config_contract.txt",

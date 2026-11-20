@@ -3,7 +3,7 @@ id = "preset-20261120"
 category = "new-surface"
 title = "Dated presets 20261120"
 summary = "The standard and practical 20261120 presets add --read-uuid6-uuid7-uuid8-formats to the 20261118 presets, for every output model type."
-refs = ["#7245"]
+refs = ["#7246"]
 surface = ["preset:20261120"]
 covers = [
     "main/main_recommend_options/recommend_options.stdout.txt",
