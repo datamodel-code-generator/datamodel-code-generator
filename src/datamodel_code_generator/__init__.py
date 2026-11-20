@@ -1043,6 +1043,8 @@ def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, P
     The bounded fast path recognizes only physical blank and comment lines. It
     must stay target-syntax agnostic; all statement-shaped input belongs to the
     conservative tokenizer path below.
+
+    Python 3.11 tokenizes a backslash-continued blank line as NEWLINE with no statement before it; the scan skips it.
     """
     header_size = len(header)
     if header_size <= _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT:
@@ -1115,7 +1117,9 @@ def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, P
                         statement_end_line = token.end[0]
                     case tokenize.NEWLINE | tokenize.ENDMARKER:
                         if statement_start_line is None:
-                            return len(header)
+                            if token.type == tokenize.ENDMARKER:
+                                return len(header)
+                            continue
                         if has_docstring and not parenthesis_depth:
                             statement_end_line = max(statement_end_line, token.start[0])
                             # This is the header boundary. Do not request another token:
