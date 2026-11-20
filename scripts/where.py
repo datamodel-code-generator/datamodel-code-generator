@@ -521,7 +521,7 @@ class Repo:
         }
 
     def attribute_users(self, leaf: str, owners: Iterable[Found]) -> dict[str, int]:
-        """Return the files that read ``.leaf`` as an attribute, with the count: the defining modules and those naming the class.
+        """Return the files that read ``.leaf`` as an attribute with the count: the defining and naming modules.
 
         Only attribute accesses of the code count; a name spelled in a string, a docstring or a comment (the records
         of a decision table cite its homes that way) is the page's row, which the answer lists apart.
