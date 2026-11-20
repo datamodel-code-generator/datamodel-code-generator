@@ -1329,7 +1329,9 @@ class _TestReach:
         found: dict[str, _Fixture] = {}
         for rel in [*conftests, module.rel]:
             found.update(
-                (fixture.name, fixture) for fixture in self.fixtures[rel] if fixture.scope.parent.kind == "module"
+                (fixture.name, fixture)
+                for fixture in self.fixtures[rel]
+                if fixture.scope.parent is not None and fixture.scope.parent.kind == "module"
             )
         for owner in chain:
             found.update((f.name, f) for f in self.fixtures[module.rel] if f.scope.parent is owner)
@@ -1720,7 +1722,7 @@ def _file_name_keys(module: Module) -> Iterator[tuple[int, str]]:
             seen.add(id(part))
             if isinstance(part, ast.Dict):
                 yield from ((key.lineno, text) for key in part.keys if key is not None for text in names.strings(key))
-            else:
+            elif isinstance(part, ast.expr):
                 pending += names.expressions(part)
 
 
