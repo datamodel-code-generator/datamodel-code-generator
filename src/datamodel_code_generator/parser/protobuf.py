@@ -178,7 +178,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
 def _load_descriptor_pb2() -> Any:
     try:
         from google.protobuf import descriptor_pb2  # noqa: PLC0415
-    except ImportError as exc:  # pragma: no cover
+    except ImportError as exc:  # pragma: no cover - the protobuf extra is not installed
         msg = f"protobuf input requires google.protobuf. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return descriptor_pb2
@@ -423,7 +423,7 @@ class _ProtoInputPreparer:
         record_watch_dependency(source_path)
         if source_path.is_relative_to(root):
             target = temp_path / source_path.relative_to(root)
-        else:  # pragma: no cover
+        else:  # pragma: no cover - not proven unreachable: a source outside the import root
             target = temp_path / source_path.name
         target.parent.mkdir(parents=True, exist_ok=True)
         encoding = self.parser.encoding
@@ -660,7 +660,7 @@ class _ProtobufDescriptorConverter:
             if type_name in WELL_KNOWN_SCHEMAS:
                 return deepcopy(WELL_KNOWN_SCHEMAS[type_name])
             return self._reference_schema(type_name)
-        return {}  # pragma: no cover
+        return {}  # pragma: no cover - not proven unreachable
 
     def _map_field_schema(self, field: Any) -> dict[str, Any] | None:
         if field.type != TYPE_MESSAGE:
@@ -669,14 +669,14 @@ class _ProtobufDescriptorConverter:
         if entry is None:
             return None
         key_field = next((item for item in entry.field if item.name == "key"), None)
-        if key_field is None:  # pragma: no cover
+        if key_field is None:  # pragma: no cover - not proven unreachable
             return None
         map_key_python_type = MAP_KEY_PYTHON_TYPES.get(key_field.type)
-        if map_key_python_type is None:  # pragma: no cover
+        if map_key_python_type is None:  # pragma: no cover - not proven unreachable
             msg = f"Protocol Buffers map field {stable_repr(field.name)} uses unsupported key type"
             raise SchemaParseError(msg)
         value_field = next((item for item in entry.field if item.name == "value"), None)
-        if value_field is None:  # pragma: no cover
+        if value_field is None:  # pragma: no cover - not proven unreachable
             return None
         return {
             "type": "object",

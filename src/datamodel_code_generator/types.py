@@ -268,7 +268,7 @@ class UnionIntFloat:
         """Initialize with an int or float value."""
         self.value: int | float = value
 
-    def __int__(self) -> int:  # pragma: no cover
+    def __int__(self) -> int:
         """Convert value to int."""
         return int(self.value)
 
@@ -299,9 +299,9 @@ class UnionIntFloat:
     @classmethod
     def validate(cls, v: Any) -> UnionIntFloat:
         """Validate and convert value to UnionIntFloat."""
-        if isinstance(v, UnionIntFloat):  # pragma: no cover
+        if isinstance(v, UnionIntFloat):
             return v
-        if not isinstance(v, (int, float)):  # pragma: no cover
+        if not isinstance(v, (int, float)):
             try:
                 int(v)
                 return cls(v)
@@ -544,7 +544,7 @@ def _remove_none_from_union(type_: str, *, use_union_operator: bool) -> str:  # 
     part = current_part.strip()
     if current_part and part != NONE:
         # only UNION_PREFIX might be nested but not union_operator
-        if not use_union_operator and part.startswith(UNION_PREFIX):  # pragma: no cover
+        if not use_union_operator and part.startswith(UNION_PREFIX):  # pragma: no cover - not proven unreachable
             part = _remove_none_from_union(part, use_union_operator=False)
         parts.append(part)
 
@@ -822,7 +822,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def replace_reference(self, reference: Reference | None) -> None:
         """Replace this DataType's reference with a new one."""
-        if not self.reference:  # pragma: no cover
+        if not self.reference:
             msg = f"`{self.__class__.__name__}.replace_reference()` can't be called when `reference` field is empty."
             raise Exception(msg)  # noqa: TRY002
         drop_child(self.reference, self)
@@ -853,11 +853,11 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         parent = self.parent
         self.parent = None
-        if parent is not None:  # pragma: no cover
+        if parent is not None:
             new_data_type.parent = parent
             if is_data_model_field(parent):
                 parent.data_type = new_data_type
-            elif isinstance(parent, DataType):  # pragma: no cover
+            elif isinstance(parent, DataType):  # pragma: no cover - not proven unreachable
                 parent.data_types = [new_data_type if d is self else d for d in parent.data_types]
 
     @property
@@ -1019,7 +1019,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     def __init__(self, **values: Any) -> None:
         """Initialize DataType with validation and reference setup."""
-        if not TYPE_CHECKING:  # pragma: no cover
+        if not TYPE_CHECKING:  # pragma: no branch
             super().__init__(**values)
         _link_parts(self)
 
@@ -1260,7 +1260,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             case "empty-union":
                 self.import_ = self.import_ or IMPORT_ANY
                 return
-            case _:  # pragma: no cover
+            case _:  # pragma: no cover - the match covers every write
                 assert_never(write)
         self.is_optional = True
         if null == "reference":

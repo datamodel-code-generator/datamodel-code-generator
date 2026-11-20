@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import black
 import pytest
@@ -16,6 +18,7 @@ from datamodel_code_generator.preset import (
     PresetConfig,
     PresetConfigItem,
     PresetContext,
+    PresetError,
     PresetOptionGroup,
     get_latest_preset_name,
     get_preset_infos,
@@ -24,6 +27,9 @@ from datamodel_code_generator.preset import (
 )
 from scripts import build_preset_docs
 from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_preset_docs.py"
 EXPECTED_PRESET_DOCS_PATH = Path(__file__).resolve().parent / "data" / "expected" / "preset_docs"
@@ -127,6 +133,75 @@ def test_preset_config_supports_enum_backed_string_and_sequence_options() -> Non
     ))
 
     assert_output(output, EXPECTED_PRESET_DOCS_PATH / "preset_config_enum_values.txt")
+
+
+def test_preset_api_refuses_an_unknown_format_and_an_unknown_field() -> None:
+    """The preset API names the format or the config field it does not know."""
+    unknown_format: object = "xml"
+    unknown_field: dict[str, object] = {"no_such_field": True}
+    with pytest.raises(PresetError, match="Unsupported preset docs format: 'xml'"):
+        render_presets(unknown_format)
+    with pytest.raises(PresetError, match="Preset field 'no_such_field' is not a BaseGenerateConfig field"):
+        PresetConfig(**unknown_field)
+
+
+@pytest.mark.parametrize(
+    ("build", "message"),
+    [
+        pytest.param(
+            lambda: PresetConfig(extra_fields="bogus"),
+            "Unsupported extra_fields preset value: 'bogus'",
+            id="extra-fields-value",
+        ),
+        pytest.param(
+            lambda: PresetConfig(wrap_string_literal=None),
+            "Preset field 'wrap_string_literal' cannot be rendered as a preset CLI option",
+            id="value-without-a-rendering",
+        ),
+        pytest.param(
+            lambda: PresetOptionGroup(title="order", config=PresetConfig(keep_model_order=True), description=""),
+            "has no --no- form to turn it off",
+            id="enabled-option-without-a-negative",
+        ),
+        pytest.param(
+            lambda: (
+                PresetOptionGroup(title="dot", config=PresetConfig(treat_dot_as_module=True), description="").options
+            ),
+            "Preset field 'treat_dot_as_module' does not map to a documented CLI option",
+            id="field-without-an-option",
+        ),
+        pytest.param(
+            lambda: (
+                PresetOptionGroup(title="order", config=PresetConfig(keep_model_order=False), description="").options
+            ),
+            "Preset field 'keep_model_order' does not map to a documented negative CLI option",
+            id="disabled-option-without-a-negative",
+        ),
+    ],
+)
+def test_preset_config_refuses_what_the_command_line_cannot_write(build: Callable[[], object], message: str) -> None:
+    """A config or option group that no CLI option spells is refused, naming the field."""
+    with pytest.raises(PresetError, match=re.escape(message)):
+        build()
+
+
+@pytest.mark.allow_direct_assert("states which contexts a preset option group applies to, which writes no output")
+def test_preset_option_group_applies_to_its_input_file_types() -> None:
+    """A group that names input file types applies to those only."""
+    group = PresetOptionGroup(
+        title="openapi only",
+        config=PresetConfig(),
+        description="",
+        input_file_types=frozenset({InputFileType.OpenAPI}),
+    )
+    context = PresetContext(
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        target_python_version=PythonVersion.PY_310,
+    )
+
+    assert group.applies_to(context) is False
+    assert group.applies_to(PresetContext(InputFileType.OpenAPI, context.output_model_type, PythonVersion.PY_310))
 
 
 def test_dated_presets_keep_default_deserialization_immutable() -> None:

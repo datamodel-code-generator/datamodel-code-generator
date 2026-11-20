@@ -379,7 +379,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
         shapes = parser._model_shapes(COLLAPSE_REUSE)
         while True:
             iteration += 1
-            if iteration > max_iterations:  # pragma: no cover
+            if iteration > max_iterations:  # pragma: no cover - guards the collapse fixpoint against an endless loop
                 msg = f"Deduplication exceeded max iterations ({max_iterations})"
                 raise RuntimeError(msg)
 
@@ -606,7 +606,8 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
         return [*shared_models, *(model for _, listed in module_models for model in listed)]
 
     for duplicate_module, duplicate_model, _, canonical_model in duplicates:
-        if duplicate_model not in module_models_sets.get(duplicate_module, ()):  # pragma: no cover
+        listed_models = module_models_sets.get(duplicate_module, ())
+        if duplicate_model not in listed_models:  # pragma: no cover - invariant: a duplicate is listed in its module
             msg = f"Duplicate model {duplicate_model.name} not found in module {duplicate_module}"
             raise RuntimeError(msg)
 
@@ -626,7 +627,7 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
             if canonical in models_set:
                 models_to_remove[module].add(canonical)
                 break
-        else:  # pragma: no cover
+        else:  # pragma: no cover - invariant: a canonical model is listed in a module
             msg = f"Canonical model {canonical.name} not found in any module"
             raise RuntimeError(msg)
 

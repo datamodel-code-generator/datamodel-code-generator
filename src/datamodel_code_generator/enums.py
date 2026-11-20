@@ -9,7 +9,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Final
 
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict, assert_never
 
 
 class DataclassArguments(TypedDict, total=False):
@@ -83,17 +83,16 @@ class _OutputModelFamily(str, Enum):
 
 def _get_output_model_family(data_model_type: DataModelType | None) -> _OutputModelFamily:
     """Resolve the reference-compatible family for an output model selection."""
-    if data_model_type is None or data_model_type in _PYDANTIC_MODEL_TYPES:
-        return _OutputModelFamily.PYDANTIC
     match data_model_type:
+        case None | DataModelType.PydanticV2BaseModel | DataModelType.PydanticV2Dataclass:
+            return _OutputModelFamily.PYDANTIC
         case DataModelType.DataclassesDataclass:
             return _OutputModelFamily.DATACLASS
         case DataModelType.TypingTypedDict:
             return _OutputModelFamily.TYPEDDICT
         case DataModelType.MsgspecStruct:
             return _OutputModelFamily.MSGSPEC
-    msg = f"{data_model_type} is unsupported data model type"  # pragma: no cover
-    raise ValueError(msg)  # pragma: no cover
+    assert_never(data_model_type)
 
 
 class ReuseScope(Enum):

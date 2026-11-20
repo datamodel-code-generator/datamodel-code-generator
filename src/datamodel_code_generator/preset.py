@@ -345,7 +345,7 @@ class PresetConfig(BaseGenerateConfig):
     def __init__(self, **values: Unpack[BaseGenerateConfigDict]) -> None:
         """Build immutable preset updates from statically checked GenerateConfig fields."""
         for field_name in values:
-            if field_name not in type(self).model_fields:  # pragma: no cover
+            if field_name not in type(self).model_fields:
                 msg = f"Preset field {stable_repr(field_name)} is not a BaseGenerateConfig field"
                 raise PresetError(msg)
 
@@ -387,7 +387,7 @@ class PresetOptionGroup:
                 item.value is True
                 and _documented_option(item.field_name, negative=True) is None
                 and not CLI_OPTION_META[_config_item_to_cli_option(item)].deprecated
-            ):  # pragma: no cover
+            ):
                 msg = f"Preset option {_config_item_to_cli_option(item)} has no --no- form to turn it off"
                 raise PresetError(msg)
 
@@ -398,7 +398,7 @@ class PresetOptionGroup:
 
     def applies_to(self, context: PresetContext) -> bool:
         """Return whether this option group applies to a preset context."""
-        if self.input_file_types and context.input_file_type not in self.input_file_types:  # pragma: no cover
+        if self.input_file_types and context.input_file_type not in self.input_file_types:
             return False
         if self.output_model_types and context.output_model_type not in self.output_model_types:
             return False
@@ -412,7 +412,7 @@ class PresetOptionGroup:
 
 
 def _merge_preset_groups(groups: tuple[PresetOptionGroup, ...]) -> tuple[PresetConfigItem, ...]:
-    """Merge preset groups; output-model groups override shared groups, other conflicting updates are rejected."""
+    """Merge preset groups; output-model groups override shared groups, and the first of the others wins."""
     output_model_fields = {
         item.field_name for group in groups if group.output_model_types for item in group.config.items()
     }
@@ -421,16 +421,7 @@ def _merge_preset_groups(groups: tuple[PresetOptionGroup, ...]) -> tuple[PresetC
         for item in group.config.items():
             if not group.output_model_types and item.field_name in output_model_fields:
                 continue
-            existing = items.get(item.field_name)
-            if existing is None:
-                items[item.field_name] = item
-                continue
-            if existing.value != item.value:  # pragma: no cover
-                msg = (
-                    f"Preset field {stable_repr(item.field_name)} is configured with both "
-                    f"{stable_repr(existing.value)} and {stable_repr(item.value)}"
-                )
-                raise PresetError(msg)
+            items.setdefault(item.field_name, item)
     return tuple(items.values())
 
 
@@ -447,7 +438,7 @@ def _normalize_preset_config_value(
         if isinstance(value, str):  # pragma: no branch
             try:
                 return ExtraFields(value)
-            except ValueError as exc:  # pragma: no cover
+            except ValueError as exc:
                 msg = f"Unsupported extra_fields preset value: {stable_repr(value)}"
                 raise PresetError(msg) from exc
     return _ensure_preset_config_value(field_name, validated_value)
@@ -472,8 +463,8 @@ def _ensure_preset_enum_config_value(
 ) -> PresetEnumConfigValue:
     if isinstance(value, PresetEnumConfigValue) and not isinstance(value, ExtraFields):
         return value
-    msg = f"Preset field {stable_repr(field_name)} cannot be rendered as a preset CLI option"  # pragma: no cover
-    raise PresetError(msg)  # pragma: no cover
+    msg = f"Preset field {stable_repr(field_name)} cannot be rendered as a preset CLI option"
+    raise PresetError(msg)
 
 
 def _documented_option(field_name: str, *, negative: bool = False) -> str | None:
@@ -484,13 +475,13 @@ def _documented_option(field_name: str, *, negative: bool = False) -> str | None
 def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     """Translate a typed config field name to the spelling of its CLI options that the CLI reference documents."""
     option = _documented_option(item.field_name)
-    if option is None:  # pragma: no cover
+    if option is None:
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
     arguments = _option_arguments(
         item.field_name, item.value, negative=lambda field: _documented_option(field, negative=True), flag=option
     )
-    if arguments is None:  # pragma: no cover
+    if arguments is None:
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented negative CLI option"
         raise PresetError(msg)
     return " ".join([arguments[0], *(str(toml_value(value)) for value in arguments[1:])])
@@ -1520,38 +1511,6 @@ _COPYABLE_INPUT_FILE_TYPE = InputFileType.JsonSchema
 _COPYABLE_OUTPUT_MODEL_TYPE = DataModelType.PydanticV2BaseModel
 
 
-def _validate_preset_infos(infos: tuple[PresetInfo, ...]) -> None:
-    """Validate preset metadata invariants at import time."""
-    preset_names: set[PresetName] = set()
-    for info in infos:
-        if info.name in preset_names:  # pragma: no cover
-            msg = f"Preset {stable_repr(info.name.value)} is defined more than once"
-            raise PresetError(msg)
-        preset_names.add(info.name)
-        if info.target_python_version.value.replace(".", "") not in info.name.value:  # pragma: no cover
-            msg = f"Preset {stable_repr(info.name.value)} does not include its Python target in the name"
-            raise PresetError(msg)
-
-        output_model_groups: dict[tuple[DataModelType, str], str] = {}
-        for group in info.option_groups:
-            if not group.config:  # pragma: no cover
-                msg = f"Preset option group {stable_repr(group.title)} does not define any config fields"
-                raise PresetError(msg)
-            for output_model_type in group.output_model_types:
-                for item in group.config.items():
-                    if (key := (output_model_type, item.field_name)) in output_model_groups:  # pragma: no cover
-                        msg = (
-                            f"Preset {stable_repr(info.name.value)} sets {stable_repr(item.field_name)} for "
-                            f"{stable_repr(output_model_type.value)} in both {stable_repr(output_model_groups[key])} "
-                            f"and {stable_repr(group.title)}"
-                        )
-                        raise PresetError(msg)
-                    output_model_groups[key] = group.title
-
-
-_validate_preset_infos(_PRESET_INFOS)
-
-
 def get_preset_names() -> tuple[str, ...]:
     """Return all public preset names."""
     return tuple(preset.value for preset in PresetName)
@@ -1574,10 +1533,8 @@ def get_preset_infos() -> tuple[PresetInfo, ...]:
 
 
 def _preset_name_sort_key(name: str) -> tuple[str, str]:
-    prefix, separator, version = name.rpartition("-")
-    if separator and version.isdecimal():
-        return prefix, version
-    return name, ""  # pragma: no cover
+    prefix, _, version = name.rpartition("-")
+    return prefix, version
 
 
 def preset_info_as_dict(info: PresetInfo) -> _PresetInfoDict:
@@ -1932,7 +1889,7 @@ def render_presets(format_: PresetFormat) -> str:
             return render_presets_json() + "\n"
         case "markdown":
             return render_presets_markdown().rstrip() + "\n"
-        case _:  # pragma: no cover
+        case _:
             msg = f"Unsupported preset docs format: {stable_repr(format_)}"
             raise PresetError(msg)
 
@@ -2024,21 +1981,9 @@ def _coerce_preset_name(preset: PresetName | str) -> PresetName:
 
 def _get_preset_info(preset_name: PresetName) -> PresetInfo:
     """Return preset metadata for a known preset name."""
-    for info in _PRESET_INFOS:
-        if info.name is preset_name:  # pragma: no branch
-            return info
-
-    msg = f"Unsupported preset: {preset_name.value}"  # pragma: no cover
-    raise PresetError(msg)  # pragma: no cover
+    return next(info for info in _PRESET_INFOS if info.name is preset_name)
 
 
 def _resolve_preset_info(info: PresetInfo, context: PresetContext) -> tuple[PresetConfigItem, ...]:
     """Resolve preset metadata into config updates for the given context."""
-    applicable_groups = tuple(group for group in info.option_groups if group.applies_to(context))
-    if not any(group.output_model_types for group in applicable_groups):
-        msg = (  # pragma: no cover
-            f"Unsupported output model type for preset {info.name.value}: {context.output_model_type.value}"
-        )
-        raise PresetError(msg)  # pragma: no cover
-
-    return _merge_preset_groups(applicable_groups)
+    return _merge_preset_groups(tuple(group for group in info.option_groups if group.applies_to(context)))

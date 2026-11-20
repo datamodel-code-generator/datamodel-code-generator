@@ -1138,6 +1138,29 @@ def test_input_model_abstract_containers_as_written(
     )
 
 
+def test_input_model_collection_classes_beside_the_preserved_ones(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write a ``collections`` class no preserved row names, and a bare ``deque``, as the model types them."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "collection_classes", raising=False)
+    (tmp_path / "collection_classes.py").write_text(
+        "from collections import UserDict\n"
+        "from typing import Deque\n\n"
+        "from pydantic import BaseModel, ConfigDict\n\n\n"
+        "class Owner(BaseModel):\n"
+        "    model_config = ConfigDict(arbitrary_types_allowed=True)\n\n"
+        "    nicknames: UserDict[str, int]\n"
+        "    queue: Deque\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="collection_classes:Owner",
+        output_path=tmp_path / "output.py",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

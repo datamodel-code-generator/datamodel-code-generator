@@ -173,7 +173,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
             resolved_type = graphql_resolver_kind(type_, None)
 
-            if resolved_type in self.support_graphql_types:  # pragma: no cover
+            if resolved_type in self.support_graphql_types:  # pragma: no cover - not proven unreachable
                 self.all_graphql_objects[type_.name] = type_
                 self.references[type_.name] = self.model_resolver._add_affixed(  # noqa: SLF001
                     f"{paths!s}/{resolved_type.value}/{type_.name}",
@@ -366,7 +366,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 new_data_type.parent = data_type
 
                 data_type = new_data_type
-            elif graphql.is_non_null_type(obj):  # pragma: no cover
+            elif graphql.is_non_null_type(obj):  # pragma: no cover - not proven unreachable
                 data_type.is_optional = False
 
             obj = graphql.assert_wrapping_type(obj)

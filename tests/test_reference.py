@@ -6,15 +6,18 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING
 
 import pytest
+from pydantic import ValidationError
 
 from datamodel_code_generator.http import join_url
 from datamodel_code_generator.reference import (
     ModelResolver,
+    Reference,
     get_relative_path,
     get_singular_name,
     is_url,
     snake_to_upper_camel,
 )
+from datamodel_code_generator.types import DataType
 from tests.capabilities import needs
 
 if TYPE_CHECKING:
@@ -63,6 +66,42 @@ def test_get_relative_path_windows(base_path: str, target_path: str, expected: s
     assert PureWindowsPath(
         get_relative_path(PureWindowsPath(base_path), PureWindowsPath(target_path))
     ) == PureWindowsPath(expected)
+
+
+def test_model_resolver_add_takes_the_singular_of_a_field_name() -> None:
+    """A reference added with ``singular_name`` and no ``class_name`` takes the singular of its name."""
+    assert ModelResolver().add(["#", "definitions", "pets"], "pets", singular_name=True).name == "pet"
+
+
+def test_reference_validation_refuses_a_value_that_is_no_mapping() -> None:
+    """``Reference`` leaves a value that is no mapping to Pydantic, which refuses it."""
+    with pytest.raises(ValidationError, match="Input should be a valid dictionary or instance of Reference"):
+        Reference.model_validate("Model")
+
+
+def test_reference_dict_leaves_out_the_children() -> None:
+    """Return the fields of a reference as ``dict()``, without the types that hold it."""
+    reference = Reference(path="Model", original_name="Model", name="Model")
+    DataType(reference=reference)
+
+    assert reference.dict() == {
+        "path": "Model",
+        "original_name": "Model",
+        "name": "Model",
+        "duplicate_name": None,
+        "loaded": True,
+        "source": None,
+    }
+    assert reference.dict(exclude={"path"}, exclude_none=True) == {
+        "original_name": "Model",
+        "name": "Model",
+        "loaded": True,
+    }
+
+
+def test_model_resolver_is_after_load_is_false_for_a_local_reference() -> None:
+    """A reference into the current document points to no file loaded after it."""
+    assert ModelResolver().is_after_load("#/definitions/Pet") is False
 
 
 def test_model_resolver_add_ref_with_hash() -> None:

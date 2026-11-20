@@ -487,7 +487,7 @@ class _XMLSchemaConverter:
 
     def convert(self, source: Source, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
         if source.raw_data is not None:
-            if not isinstance(source.raw_data, dict):  # pragma: no cover
+            if not isinstance(source.raw_data, dict):  # pragma: no cover - not proven unreachable
                 msg = f"Expected dict, got {type(source.raw_data).__name__}"
                 raise TypeError(msg)
             return source.raw_data
@@ -642,6 +642,10 @@ class _XMLSchemaConverter:
         return max_version is None or processor_version < max_version
 
     def _parse_schema(self, text: str, source_path: Path) -> ET.Element:
+        """Return the root element of a schema document, recording the namespaces in scope at each element.
+
+        ``iterparse`` yields only the events it is asked for, so an event that is no namespace event starts an element.
+        """
         try:
             root: ET.Element | None = None
             active_namespaces: dict[str, str] = {}
@@ -664,12 +668,12 @@ class _XMLSchemaConverter:
                         if root is None:
                             root = element
                         self._element_namespaces[id(element)] = active_namespaces.copy()
-                    case _:  # pragma: no cover
+                    case _:  # pragma: no cover - not proven unreachable
                         pass
         except ET.ParseError as exc:
             msg = f"Invalid XML Schema document {source_path}: {exc}"
             raise Error(msg) from exc
-        if root is None:  # pragma: no cover
+        if root is None:  # pragma: no cover - not proven unreachable
             msg = f"Invalid XML Schema document {source_path}: empty document"
             raise Error(msg)
         if root.tag != XML_SCHEMA_TAG:
@@ -779,7 +783,7 @@ class _XMLSchemaConverter:
     def _build_definition(self, key: DefinitionKey) -> JsonSchema:
         if key in self._built_definitions:
             return self._built_definitions[key]
-        if key in self._building_definitions:  # pragma: no cover
+        if key in self._building_definitions:  # pragma: no cover - not proven unreachable: a type that refers to itself
             return {"$ref": self._ref(key)}
         self._building_definitions.add(key)
         qname_key = key[1:]
@@ -1498,7 +1502,7 @@ class _XMLSchemaConverter:
         return self._ref(self._element_definition_key(key))
 
     def _namespaces_for(self, element: ET.Element | None) -> dict[str, str]:
-        if element is None:  # pragma: no cover
+        if element is None:  # pragma: no cover - not proven unreachable: namespaces asked for no element
             return self.namespaces
         return self._element_namespaces.get(id(element), self.namespaces)
 
@@ -1564,7 +1568,7 @@ class XMLSchemaParser(JsonSchemaParser):
                         yield self._source_from_xml_path(file_path)
                 else:
                     yield self._source_from_xml_path(path)
-            case list() as paths:  # pragma: no cover
+            case list() as paths:
                 for path in paths:
                     yield self._source_from_xml_path(path)
             case _:

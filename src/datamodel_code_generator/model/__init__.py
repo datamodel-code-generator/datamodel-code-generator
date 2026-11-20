@@ -150,8 +150,8 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
             return aliased_model_set(
                 msgspec.Struct, msgspec.DataModelField, msgspec.DataTypeManager, known_third_party=["msgspec"]
             )
-    msg = f"{data_model_type} is unsupported data model type"  # pragma: no cover
-    raise ValueError(msg)  # pragma: no cover
+    msg = f"{data_model_type} is unsupported data model type"
+    raise ValueError(msg)
 
 
 __all__ = [

@@ -121,7 +121,7 @@ def _intersect_constraint(parser: LightweightTypesHost, field: str, val1: Any, v
     if field == "multipleOf":
         with suppress(TypeError, ValueError, ZeroDivisionError):
             return intersect_multiple_of(val1, val2)
-        return val1  # pragma: no cover
+        return val1  # pragma: no cover - not proven unreachable: a multipleOf pair no intersection takes
     v1 = val1.value if isinstance(val1, UnionIntFloat) else val1
     v2 = val2.value if isinstance(val2, UnionIntFloat) else val2
     return val1 if intersect_constraint(field, v1, v2) is v1 else val2
@@ -235,7 +235,7 @@ def contains_false_schema(parser: LightweightTypesHost, items: Iterable[JsonSche
 
 def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType | None) -> bool:  # noqa: ARG001
     """Return True when data_type represents List[Any] (including nested lists)."""
-    if not data_type:  # pragma: no cover
+    if not data_type:  # pragma: no cover - not proven unreachable
         return False
 
     candidate = data_type

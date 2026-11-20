@@ -696,7 +696,7 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         return has_items and "array" in self.type
 
     @cached_property
-    def ref_object_name(self) -> str:  # pragma: no cover
+    def ref_object_name(self) -> str:
         """Extract the object name from the reference path."""
         return (self.ref or "").rsplit("/", 1)[-1]
 

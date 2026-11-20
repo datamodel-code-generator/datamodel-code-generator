@@ -1009,7 +1009,7 @@ def _get_type(
     data_formats: dict[str, dict[str, Types]] | None = None,
 ) -> Types:
     """Get the appropriate Types enum for a given JSON Schema type and format."""
-    if data_formats is None:  # pragma: no cover
+    if data_formats is None:  # pragma: no cover - not proven unreachable
         data_formats = json_schema_data_formats
     if type_ not in data_formats:
         return Types.any
@@ -3375,7 +3375,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 for ap_type in additional_props_types[1:]:  # pragma: no branch
                     is_better = best_type.type == ANY and ap_type.type != ANY
                     is_better = is_better or (ap_type.reference and not best_type.reference)
-                    if is_better:  # pragma: no cover
+                    if is_better:  # pragma: no cover - not proven unreachable: a later additionalProperties type wins
                         best_type = ap_type
                 return self.data_type(data_types=[best_type], is_dict=True)
 
@@ -3394,7 +3394,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         max_union_elements: int,
     ) -> DataType | None:
         if item_schema is False:
-            return None  # pragma: no cover
+            return None  # pragma: no cover - not proven unreachable
         if item_schema is True:
             return untyped_value_data_type(DataType, self.data_type_manager.untyped_value)
         if item_schema.ref:
@@ -3437,7 +3437,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             visited = frozenset()
 
         schema_id = id(schema)
-        if schema_id in visited:  # pragma: no cover
+        if schema_id in visited:  # pragma: no cover - not proven unreachable
             return None
         visited |= {schema_id}
 
@@ -3474,7 +3474,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if item is True:
                     data_types.append(untyped_value_data_type(DataType, self.data_type_manager.untyped_value))
                     continue
-                if not isinstance(item, JsonSchemaObject):  # pragma: no cover
+                if not isinstance(item, JsonSchemaObject):  # pragma: no cover - not proven unreachable
                     continue
                 if item.ref:
                     data_types.append(self.get_ref_data_type(item.ref))
@@ -4420,7 +4420,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         continue
                     if inherited_field is not None:
                         resolved_field = _rw_split.overlay_inherited_field(self, field, inherited_field, reserved_names)
-                        if resolved_field is None:  # pragma: no cover
+                        if resolved_field is None:  # pragma: no cover - not proven unreachable
                             continue
                         if self.model_resolver.default_value_overrides:
                             self._apply_inherited_field_default(
@@ -5694,7 +5694,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged_copy = _MERGED_REF_TARGET_KEY in obj.__dict__
             if self.generate_schema_validators:
                 obj = self._merge_conditional_properties(obj)
-            if not unique:  # pragma: no cover
+            if not unique:
                 warn(
                     f"{self.__class__.__name__}.parse_object() ignore `unique` argument."
                     f"An object name must be unique."
@@ -7170,7 +7170,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
                             )
                         )
-                    case _:  # pragma: no cover
+                    case _:  # pragma: no cover - not proven unreachable: the class form of an enum root
                         data_type = self.parse_enum(name, obj, path)
             case "typed-nullable-map":
                 typed_values = self._typed_nullable_map_value_schema(obj)
@@ -7679,7 +7679,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if literal_values:
             data_types.append(self.data_type(literals=literal_values))
         data_types.extend(self._get_data_type_from_json_value(i) for i in non_literal_values)
-        if not data_types:  # pragma: no cover
+        if not data_types:  # pragma: no cover - not proven unreachable
             data_types.append(self.data_type_manager.get_data_type(Types.null))
         return self._widened(build_union(self.data_type, data_types, nullable=has_null), non_literal_values)
 
@@ -7805,7 +7805,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         """Parse enum schema into an Enum class."""
         with self._model_frame() as frame:
-            if not unique:  # pragma: no cover
+            if not unique:
                 warn(
                     f"{self.__class__.__name__}.parse_enum() ignore `unique` argument."
                     f"An object name must be unique."

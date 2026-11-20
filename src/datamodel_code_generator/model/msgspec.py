@@ -1184,7 +1184,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         self.const = True
         const = self.extras["const"]
         _apply_literal_default(self, decide_literal_default("msgspec-const", const, required=self.required))
-        if self.data_type.type == "str" and isinstance(const, str):  # pragma: no cover
+        if self.data_type.type == "str" and isinstance(const, str):  # pragma: no cover - not proven unreachable
             self.replace_data_type(self.data_type.__class__(literals=[const]), clear_old_parent=False)
 
     def _unset_type_data_type(self) -> DataType:
@@ -2131,7 +2131,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         For ClassVar fields (discriminator tag_field), ClassVar is required
         regardless of use_annotated setting.
         """
-        if self.extras.get("is_classvar"):  # pragma: no cover
+        if self.extras.get("is_classvar"):  # pragma: no cover - the template renders ClassVar tag fields itself
             meta = self._get_meta_string()
             if self.use_annotated and meta:
                 return subscript_text("ClassVar", (subscript_text("Annotated", (self.type_hint, meta)),))

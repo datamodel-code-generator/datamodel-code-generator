@@ -64,7 +64,7 @@ escape_characters = SINGLE_QUOTED_ESCAPES
 
 
 def _is_valid_field_name(field: DataModelFieldBase) -> bool:
-    if (name := _field_source_name(field)) is None:  # pragma: no cover
+    if (name := _field_source_name(field)) is None:  # pragma: no cover - not proven unreachable
         return False
     return is_python_name(name, field.data_type.python_version)
 

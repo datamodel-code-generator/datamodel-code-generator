@@ -7443,6 +7443,44 @@ def test_generate_custom_comment_header_keeps_formatter_docstring_first(
     )
 
 
+def test_generate_custom_file_header_with_a_backslash_continued_blank_line(tmp_path: Path, output_file: Path) -> None:
+    """Place the future import before the import of a header whose blank line is continued by a backslash."""
+    header_path = tmp_path / "header.txt"
+    header_path.write_text("# Header\n\\\n\nimport os\n", encoding="utf-8")
+    input_path = tmp_path / "schema.json"
+    input_path.write_text(
+        '{"type": "object", "title": "A", "properties": {"a": {"type": "string"}}}',
+        encoding="utf-8",
+    )
+    expected = """\
+# Header
+\\
+from __future__ import annotations
+
+import os
+
+from pydantic import BaseModel
+
+
+class A(BaseModel):
+    a: str | None = None
+"""
+
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--custom-file-header-path",
+            str(header_path),
+        ],
+        expected_output=expected,
+    )
+
+
 @pytest.mark.allow_direct_assert
 @pytest.mark.parametrize(
     ("header", "expected"),

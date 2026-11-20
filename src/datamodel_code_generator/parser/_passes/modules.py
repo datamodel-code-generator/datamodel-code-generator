@@ -1777,10 +1777,10 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                         replacement_kind="nested",
                         holders=(shared_holders, kept_holders),
                     )
-                else:  # pragma: no cover
+                else:  # pragma: no cover - not proven unreachable
                     continue
 
-                if replacement_context is None:  # pragma: no cover
+                if replacement_context is None:  # pragma: no cover - not proven unreachable
                     continue
                 model_field.inherit_unconstrained_union_members(root_type_field)
                 model_field.inherit_untaken_constraints(
@@ -2379,12 +2379,12 @@ def get_collapsed_unions(
         return unions
     index = model.fields.index(field)
     for duplicate in duplicates:
-        if len(duplicate.fields) != len(model.fields):  # pragma: no cover
+        if len(duplicate.fields) != len(model.fields):  # pragma: no cover - not proven unreachable
             continue
         duplicate_field = duplicate.fields[index]
         if not isinstance(discriminator := duplicate_field.extras.get("discriminator"), dict) or len(
             data_types := duplicate_field.data_type.data_types
-        ) != len(field.data_type.data_types):  # pragma: no cover
+        ) != len(field.data_type.data_types):  # pragma: no cover - not proven unreachable
             continue
         unions.append((
             site_display_name(parser, duplicate, duplicate_field),

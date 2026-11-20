@@ -1275,7 +1275,7 @@ def _site_tag_keys(
     names the validity mode of ``site_reading`` gives (``ValidityMode``).
     """
     enum_member_tags = reading.enum_member_tags
-    if has_any_variant(data_types):  # pragma: no cover
+    if has_any_variant(data_types):
         return "dropped-any"
     property_name = site_reading.names.property_name
     declared = site_tag_values(

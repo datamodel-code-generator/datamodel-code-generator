@@ -497,10 +497,10 @@ def _custom_safe_loader(base: Any) -> type:
         }
 
         def construct_document(self, node: Any) -> Any:
-            if not hasattr(self, "state_generators"):  # pragma: no cover  # PyYAML internals changed
+            if not hasattr(self, "state_generators"):  # pragma: no cover - a PyYAML without state_generators
                 return super().construct_document(node)
             data = _fast_construct_document(self, node)
-            while self.state_generators:  # pragma: no cover  # normally empty; mirrors BaseConstructor
+            while self.state_generators:  # pragma: no cover - normally empty, mirrors BaseConstructor
                 generators = self.state_generators
                 self.state_generators = []
                 for generator in generators:

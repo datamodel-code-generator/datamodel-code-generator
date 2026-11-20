@@ -10,6 +10,7 @@ from itertools import product
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from datamodel_code_generator import DataModelType, Formatter, PythonVersion
 from datamodel_code_generator.config import JSONSchemaParserConfig
@@ -499,6 +500,19 @@ def test_parser_simple_field_preserves_parent_and_fresh_extras() -> None:
     assert second_type.parent is second
     assert first.extras == second.extras == {}
     assert first.extras is not second.extras
+
+
+def test_constraints_validation_refuses_a_value_that_is_no_mapping() -> None:
+    """``Constraints`` leaves a value that is no mapping to Pydantic, which refuses it."""
+    with pytest.raises(ValidationError, match="Input should be a valid dictionary or instance of Constraints"):
+        Constraints.model_validate(["minItems", 1])
+
+
+def test_get_data_model_types_refuses_a_value_that_is_no_model_type() -> None:
+    """``get_data_model_types`` takes the enum member, not its string value."""
+    not_a_member: object = "pydantic_v2.BaseModel"
+    with pytest.raises(ValueError, match=r"pydantic_v2\.BaseModel is unsupported data model type"):
+        get_data_model_types(not_a_member)
 
 
 @pytest.mark.allow_direct_assert

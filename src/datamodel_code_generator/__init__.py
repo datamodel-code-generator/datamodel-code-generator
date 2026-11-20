@@ -26,6 +26,7 @@ from typing import (
     NamedTuple,
     TypeAlias,
     TypeVar,
+    assert_never,
     cast,
 )
 from urllib.parse import ParseResult
@@ -769,7 +770,6 @@ def _missing_sentinel_updates(config: BaseGenerateConfig, _record: RunOptions) -
                 f"{stable_repr(target_version_value)}"
             )
             raise Error(msg)
-    raise AssertionError  # pragma: no cover
 
 
 def _implied_model_updates(config: BaseGenerateConfig, record: RunOptions) -> dict[str, Any]:
@@ -1043,6 +1043,8 @@ def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, P
     The bounded fast path recognizes only physical blank and comment lines. It
     must stay target-syntax agnostic; all statement-shaped input belongs to the
     conservative tokenizer path below.
+
+    Python 3.11 tokenizes a backslash-continued blank line as NEWLINE with no statement before it; the scan skips it.
     """
     header_size = len(header)
     if header_size <= _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT:
@@ -1117,7 +1119,7 @@ def _find_future_import_insertion_point(header: str) -> int:  # noqa: PLR0911, P
                         if statement_start_line is None:
                             if token.type == tokenize.ENDMARKER:
                                 return len(header)
-                            continue  # pragma: no cover  # Blank physical lines tokenize as NL.
+                            continue
                         if has_docstring and not parenthesis_depth:
                             statement_end_line = max(statement_end_line, token.start[0])
                             # This is the header boundary. Do not request another token:
@@ -1445,7 +1447,7 @@ def _normalize_raw_input(  # noqa: PLR0912
 
     _warn_genson_optional()
     try:
-        if isinstance(input_, Path) and input_.is_dir():  # pragma: no cover
+        if isinstance(input_, Path) and input_.is_dir():
             msg = f"Input must be a file for {input_file_type}"
             raise Error(msg)  # noqa: TRY301
         obj: Any
@@ -1485,7 +1487,7 @@ def _normalize_raw_input(  # noqa: PLR0912
                 import ast  # noqa: PLC0415
 
                 obj = ast.literal_eval(text)
-        else:  # pragma: no cover
+        else:  # pragma: no cover - not proven unreachable
             msg = f"Unsupported input file type: {input_file_type}"
             raise Error(msg)  # noqa: TRY301
 
@@ -1554,8 +1556,7 @@ def _uses_pydantic_v2_schema_validator(config: GenerateConfig) -> bool:
                 return True
             msg = "schema_validator_type='pydantic-v2' is only supported for pydantic_v2.BaseModel"
             raise Error(msg)
-    msg = f"Unsupported schema_validator_type: {schema_validator_type.value}"  # pragma: no cover
-    raise Error(msg)  # pragma: no cover
+    assert_never(schema_validator_type)
 
 
 def _prepare_parser_common_options(
@@ -2292,10 +2293,8 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         and input_file_type != InputFileType.MCPTools
         and (not input_ or any(not isinstance(item, Path) for item in input_))
     ):
-        msg = (  # pragma: no cover
-            "List input is only supported for file path lists or input_file_type=InputFileType.MCPTools."
-        )
-        raise Error(msg)  # pragma: no cover
+        msg = "List input is only supported for file path lists or input_file_type=InputFileType.MCPTools."
+        raise Error(msg)
 
     from datamodel_code_generator._paths import resolved  # noqa: PLC0415
 

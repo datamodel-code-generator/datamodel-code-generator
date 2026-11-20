@@ -293,8 +293,10 @@ def _get_model_by_decoded_path(
     if not keys:
         if isinstance(schema, dict):
             return schema
-        msg = f"Does not support json pointer to array. schema={schema}, key={keys}"  # pragma: no cover
-        raise NotImplementedError(msg)  # pragma: no cover
+        msg = (  # pragma: no cover - not proven unreachable
+            f"Does not support json pointer to array. schema={schema}, key={keys}"
+        )
+        raise NotImplementedError(msg)  # pragma: no cover - not proven unreachable
     current: YamlValue = schema
     for index, key in enumerate(keys):
         try:
@@ -313,7 +315,7 @@ def _get_model_by_decoded_path(
                 raise NotImplementedError(msg)
             return _MISSING_JSON_POINTER if or_missing else {}
         current = value
-    raise AssertionError  # pragma: no cover
+    raise AssertionError
 
 
 def unescaped_slash_pointer(document: object, tokens: Sequence[str | int]) -> str | None:
@@ -330,7 +332,7 @@ def unescaped_slash_pointer(document: object, tokens: Sequence[str | int]) -> st
             return fragment_pointer((*tokens[:index], key))
         if (node := node.get(str(token), _MISSING_JSON_POINTER)) is _MISSING_JSON_POINTER:
             return None
-    raise AssertionError  # pragma: no cover - the tokens of a dangling reference name no node
+    raise AssertionError
 
 
 SlashNames = Literal["joined", "uri"]

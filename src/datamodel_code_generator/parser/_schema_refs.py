@@ -724,7 +724,7 @@ def resolve_recursive_ref(parser: SchemaRefsHost, item: JsonSchemaObject, path: 
     For standalone JSON Schema files, this is the root "#".
     For OpenAPI, this is the component schema definition path.
     """
-    if item.recursiveRef != "#":  # pragma: no cover
+    if item.recursiveRef != "#":
         return None
     if (resource := enclosing_unanchored_resource_ref(parser)) is not None:
         return resource

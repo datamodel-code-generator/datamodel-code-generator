@@ -294,7 +294,7 @@ def _restore_inherited_field_names_for_unique_aliases(
         for colliding_field in fields:
             if colliding_field is field or colliding_field.name != inherited_name:
                 continue
-            if (  # pragma: no cover - each schema object owns one field per wire name
+            if (  # pragma: no cover - not proven unreachable
                 colliding_field.original_name == original_name or field.name is None
             ):
                 continue
@@ -650,7 +650,7 @@ def normalize_default_value_constraints(
             import_overrides, annotation_import, descriptor.constructor_import
         ):
             continue
-        if descriptor.recipe is not DefaultValueRecipe.Decimal:  # pragma: no cover - future backend recipe
+        if descriptor.recipe is not DefaultValueRecipe.Decimal:  # pragma: no cover - not proven unreachable
             continue
         kwargs = data_type.kwargs
         for key, value in kwargs.items():

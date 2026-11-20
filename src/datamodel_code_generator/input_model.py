@@ -802,7 +802,7 @@ def _add_python_type_for_unserializable(
         if model_name:  # pragma: no branch
             nested_models[model_name] = model
         for def_name, def_schema in schema["$defs"].items():
-            if def_name in visited_defs:  # pragma: no cover
+            if def_name in visited_defs:  # pragma: no cover - not proven unreachable
                 continue
             visited_defs.add(def_name)
             if def_name in nested_models:  # pragma: no branch
@@ -854,17 +854,17 @@ def _preserved_python_type_expr(tp: type, generic_names: dict[type, str] | None 
     if origin is Annotated:
         if args:
             return _preserved_python_type_expr(args[0], generic_names) or _imported_python_type_expr(args[0])
-        return None  # pragma: no cover
+        return None  # pragma: no cover - not proven unreachable
 
     type_name: str | None = None
     if origin is not None:
         type_name = _PRESERVED_TYPE_ORIGINS.get(origin)
-        if type_name is None and getattr(origin, "__module__", None) == "collections":  # pragma: no cover
+        if type_name is None and getattr(origin, "__module__", None) == "collections":
             type_name = _simple_type_name(origin)
     if type_name is not None:
         if arguments := _with_full_fallback(args, generic_names, optional=False):
             return PythonTypeSubscript(PythonTypeName(type_name), arguments)
-        return PythonTypeName(type_name)  # pragma: no cover
+        return PythonTypeName(type_name)
 
     if arguments := _with_full_fallback(args, generic_names):
         return PythonTypeSubscript(PythonTypeName(_simple_type_name(origin or tp)), arguments)
@@ -905,7 +905,7 @@ def _simple_type_name(tp: type) -> str:
         return str(tp).replace("typing.", "")
     if hasattr(tp, "__name__"):
         return tp.__name__
-    return str(tp).replace("typing.", "")  # pragma: no cover
+    return str(tp).replace("typing.", "")  # pragma: no cover - not proven unreachable
 
 
 def _full_type_name(tp: type) -> str:
@@ -940,7 +940,7 @@ def _get_type_hints_safe(obj: type) -> dict[str, Any]:
     """Safely get type hints from a class, handling forward references."""
     try:
         return get_type_hints(obj)
-    except Exception:  # noqa: BLE001  # pragma: no cover
+    except Exception:  # noqa: BLE001  # pragma: no cover - get_type_hints of a class whose hints do not resolve
         return getattr(obj, "__annotations__", {})
 
 
@@ -1839,7 +1839,8 @@ def _load_single_model_schema(
 
         if ref_strategy and nested_models is not None:
             model_name = getattr(obj, "__name__", None)
-            if model_name and model_name in cast("dict[str, object]", schema.get("$defs", {})):  # pragma: no cover
+            defs = cast("dict[str, object]", schema.get("$defs", {}))
+            if model_name and model_name in defs:  # pragma: no cover - not proven unreachable: the root model in $defs
                 nested_models[model_name] = model
             schema = _filter_defs_by_strategy(
                 schema, nested_models, output_family, ref_strategy, expression_collector, [model]

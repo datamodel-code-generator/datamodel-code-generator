@@ -1389,7 +1389,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.http_timeout: float | None = self._source_context.http_timeout
         self._remote_response_observer = self._source_context.remote_response_observer
         self.use_annotated: bool = config.use_annotated
-        if self.use_annotated and not self.field_constraints:  # pragma: no cover
+        if self.use_annotated and not self.field_constraints:
             msg = "`use_annotated=True` has to be used with `field_constraints=True`"
             raise Exception(msg)  # noqa: TRY002
         self._output_model_context = OutputModelContext.from_generation_types(
@@ -1511,7 +1511,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 return None, validation_aliases
             case single_alias:
                 return single_alias, None
-        raise AssertionError  # pragma: no cover
 
     def _effective_default_state(
         self,
@@ -1753,7 +1752,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Resolve base class(es) with priority: base_class_map (each name of a scope) > customBasePath > base_class."""
 
         def normalize(value: str | list[str] | None) -> str | list[str] | None:
-            if value is None:  # pragma: no cover
+            if value is None:  # pragma: no cover - not proven unreachable
                 return None
             if isinstance(value, list):
                 result = list(dict.fromkeys(v for v in value if isinstance(v, str) and v))
@@ -2723,7 +2722,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         shared_imports_str: str,
     ) -> None:
         """Generate exports for empty __init__.py files."""
-        if (scope := config.all_exports_scope) is None:  # pragma: no cover
+        if (scope := config.all_exports_scope) is None:  # pragma: no cover - not proven unreachable
             return
         processed_init_modules = {ctx.module for ctx in contexts if is_package_init(ctx.module[-1])}
         for init_module, init_result in list(results.items()):

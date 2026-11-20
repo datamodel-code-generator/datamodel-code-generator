@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from datamodel_code_generator import PythonVersion
 from datamodel_code_generator.deprecations import (
     DEPRECATIONS,
     Deprecation,
@@ -134,6 +135,12 @@ def test_warn_deprecated_uses_registered_message() -> None:
     """Warning helpers emit the registered message and category."""
     with pytest.warns(DeprecationWarning, match=deprecation_message("cli.parent-scoped-naming")):
         warn_deprecated("cli.parent-scoped-naming")
+
+
+def test_python_version_has_type_alias_warns_and_answers() -> None:
+    """The deprecated ``PythonVersion.has_type_alias`` warns with its registered message and still answers."""
+    with pytest.warns(DeprecationWarning, match=deprecation_message("python-api.python-version-has-type-alias")):
+        assert PythonVersion.PY_311.has_type_alias is True
 
 
 def _emit_deprecation_warning() -> None:

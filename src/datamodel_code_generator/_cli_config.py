@@ -109,11 +109,11 @@ def _validate_http_key_value_options(
     item_error_name: _HttpItemErrorName,
     value_error_name: _HttpValueErrorName,
 ) -> list[_HttpKeyValuePair] | None:
-    if value is None:  # pragma: no cover
+    if value is None:
         return None
 
     def validate_each_item(each_item: _HttpKeyValueInput) -> _HttpKeyValuePair:
-        if isinstance(each_item, str):  # pragma: no cover
+        if isinstance(each_item, str):
             try:
                 field_name, field_value = each_item.split(separator, maxsplit=1)
                 return field_name, field_value.lstrip()
@@ -122,7 +122,7 @@ def _validate_http_key_value_options(
 
                 msg = f"Invalid {item_error_name}: {stable_repr(each_item)}"
                 raise Error(msg) from exc
-        return each_item  # pragma: no cover
+        return each_item
 
     if isinstance(value, list):
         return [validate_each_item(cast("_HttpKeyValueInput", each_item)) for each_item in value]
@@ -160,11 +160,11 @@ def _get_config_class() -> type[Config]:
         # Where the values of the run came from and what its option stages gave: the copies of a config share it.
         _run_options: RunOptions = PrivateAttr(default_factory=RunOptions)
 
-        def get(self, item: str) -> Any:  # pragma: no cover
+        def get(self, item: str) -> Any:
             """Get attribute value by name."""
             return getattr(self, item)
 
-        def __getitem__(self, item: str) -> Any:  # pragma: no cover
+        def __getitem__(self, item: str) -> Any:
             """Get item by key."""
             return self.get(item)
 
@@ -207,7 +207,7 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_url(cls, value: Any) -> ParseResult | None:
             """Validate and parse URL."""
-            if value is None:  # pragma: no cover
+            if value is None:
                 return None
             if not isinstance(value, str) or not is_url(value):
                 msg = f"Unsupported URL scheme. Supported: http, https, file. --input={redact_url(str(value))}"
@@ -346,11 +346,11 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_class_name_affix_scope(cls, v: str | ClassNameAffixScope | None) -> ClassNameAffixScope:
             """Convert string to ClassNameAffixScope enum."""
-            if v is None:  # pragma: no cover
+            if v is None:
                 return ClassNameAffixScope.All
             if isinstance(v, str):
                 return ClassNameAffixScope(v)
-            return v  # pragma: no cover
+            return v
 
         @field_validator("schema_validator_base_class_name")
         @classmethod

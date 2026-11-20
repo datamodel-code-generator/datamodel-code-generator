@@ -24,7 +24,6 @@ from importlib.util import find_spec
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-import pydantic
 from pydantic import BaseModel
 
 from datamodel_code_generator import (
@@ -576,7 +575,7 @@ def _build_dynamic_module(  # noqa: PLR0913
     result, metadata, identities = generated or _generate_code(
         input_, config, collect_model_metadata=collect_model_metadata
     )
-    if result is None:  # pragma: no cover
+    if result is None:  # pragma: no cover - not proven unreachable
         msg = "generate() returned None"
         raise Error(msg)
     include_private_models = config.allow_leading_underscore_class_name
@@ -621,10 +620,6 @@ def _dynamic_generate_config(input_: Mapping[str, Any], config: GenerateConfig |
 
     Without ``config``, the defaults with Pydantic v2 models.
     """
-    if pydantic.VERSION < "2.0.0":  # pragma: no cover
-        msg = f"generate_dynamic_models requires Pydantic v2, found v{pydantic.VERSION}"
-        raise Error(msg)
-
     _rebuild_generate_config()
 
     if config is None:

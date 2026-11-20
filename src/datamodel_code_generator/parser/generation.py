@@ -435,11 +435,11 @@ class _GenerationModelList(list["DataModel"]):
         self._invalidate()
 
     @overload
-    def __setitem__(self, index: SupportsIndex, item: Any) -> None:  # pragma: no cover
+    def __setitem__(self, index: SupportsIndex, item: Any) -> None:  # pragma: no cover - overload stub
         pass
 
     @overload
-    def __setitem__(self, index: slice, item: Iterable[Any]) -> None:  # pragma: no cover
+    def __setitem__(self, index: slice, item: Iterable[Any]) -> None:  # pragma: no cover - overload stub
         pass
 
     @override
@@ -452,11 +452,11 @@ class _GenerationModelList(list["DataModel"]):
         self._invalidate()
 
     @overload
-    def __delitem__(self, index: SupportsIndex) -> None:  # pragma: no cover
+    def __delitem__(self, index: SupportsIndex) -> None:  # pragma: no cover - overload stub
         pass
 
     @overload
-    def __delitem__(self, index: slice) -> None:  # pragma: no cover
+    def __delitem__(self, index: slice) -> None:  # pragma: no cover - overload stub
         pass
 
     @override

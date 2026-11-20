@@ -62,7 +62,7 @@ class PythonVersion(Enum):
         return self._meets("python.union_operator")
 
     @property
-    def has_type_alias(self) -> bool:  # pragma: no cover
+    def has_type_alias(self) -> bool:
         """Check if Python version supports TypeAlias.
 
         .. deprecated::

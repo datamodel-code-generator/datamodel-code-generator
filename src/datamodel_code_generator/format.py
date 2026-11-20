@@ -370,11 +370,11 @@ def _get_black() -> Any:
 
 
 @lru_cache(maxsize=1)
-def _get_black_mode() -> Any:  # pragma: no cover
+def _get_black_mode() -> Any:
     black = _get_black()
     try:
         import black.mode  # noqa: PLC0415
-    except ImportError:
+    except ImportError:  # pragma: no cover - black before 20.8b0 has no black.mode (floor black>=19.10b0)
         return None
     else:
         return black.mode
@@ -459,7 +459,7 @@ def black_find_project_root(sources: Sequence[Path]) -> Path:
     if isinstance(project_root, tuple):
         # Black types the root as optional for sources without a common parent; one source always has one.
         return cast("Path", project_root[0])
-    return project_root  # pragma: no cover
+    return project_root  # pragma: no cover - black before 22.1 returns the root as a bare Path
 
 
 def resolve_use_type_checking_imports(
@@ -513,7 +513,7 @@ class CodeFormatter:
                     settings_path = parent
                     break
             else:
-                settings_path = Path.cwd()  # pragma: no cover
+                settings_path = Path.cwd()  # pragma: no cover - the parents of a missing path end at one that exists
 
         self.settings_path: str = str(settings_path)
         self.defer_formatting = defer_formatting
@@ -623,8 +623,8 @@ class CodeFormatter:
                     config.get("unstable", False) or "string_processing" in config.get("enable-unstable-feature", [])
                 )
 
-            if experimental_string_processing is not None:  # pragma: no cover
-                if black.__version__.startswith("19."):
+            if experimental_string_processing is not None:
+                if black.__version__.startswith("19."):  # pragma: no cover - black 19 is not in CI
                     warn(
                         f"black doesn't support `experimental-string-processing` option"
                         f" for wrapping string literal in {black.__version__}",
@@ -655,7 +655,7 @@ class CodeFormatter:
             if formatter_cwd is not None:
                 self.isort_config_kwargs["directory"] = str(formatter_cwd)
 
-            if isort.__version__.startswith("4."):  # pragma: no cover
+            if isort.__version__.startswith("4."):  # pragma: no cover - isort 4 (floor isort>=4.3.21) is not in CI
                 self.isort_config = None
             else:
                 self.isort_config = isort.Config(settings_path=self.settings_path, **self.isort_config_kwargs)
@@ -854,7 +854,7 @@ class CodeFormatter:
     def apply_isort(self, code: str) -> str:
         """Sort imports using isort."""
         isort = _get_isort()
-        if self.isort_config is None:  # pragma: no cover
+        if self.isort_config is None:  # pragma: no cover - isort 4 (floor isort>=4.3.21) is not in CI
             return isort.SortImports(
                 file_contents=code,
                 settings_path=self.settings_path,
