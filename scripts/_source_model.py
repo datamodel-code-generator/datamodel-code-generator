@@ -558,7 +558,10 @@ class _Test:
 
 @dataclass(frozen=True, eq=False, slots=True)
 class Condition:
-    """One condition on the way to a statement: its kind, the branch taken, and the statement that holds it.
+    """One condition on the way to a statement: its kind, the branch taken, and the node that holds it.
+
+    The node is the ``if``, ``try`` or loop statement, a conditional expression, or (``and``/``or``) the operand
+    that decides whether the next ones run.
 
     Kinds: ``type-checking``, ``version``, ``platform``, ``if`` (any other test; ``operands`` lists the kinds of the
     operands of a mixed ``and``/``or``), ``import-error``, ``try``, ``loop``, ``case``, ``function``. Tests are
@@ -2194,11 +2197,37 @@ class SourceModule(_TypingForms):
             self._comprehension(node, scope, guard, annotation)
         elif isinstance(node, ast.NamedExpr):
             self._walrus(node, scope, guard, annotation)
+        elif isinstance(node, ast.IfExp):
+            self._if_expression(node, scope, guard, annotation)
+        elif isinstance(node, ast.BoolOp):
+            self._short_circuit(node, scope, guard, annotation)
         else:
             if isinstance(node, ast.Call) and _NOT_RUN.isdisjoint({annotation, scope.annotation}):
                 self._calls.append((node, scope, guard))
             for child in ast.iter_child_nodes(node):
                 self._expr(child, scope, guard, annotation)
+
+    def _if_expression(self, node: ast.IfExp, scope: Scope, guard: Guard, annotation: str) -> None:
+        """Read ``body if test else orelse``: each branch runs under the test, like the branches of an ``if``."""
+        test = _Test()
+        self._tests.append((test, node.test))
+        self._expr(node.test, scope, guard, annotation)
+        self._expr(node.body, scope, (*guard, Condition(test, "body", node, node.lineno)), annotation)
+        self._expr(node.orelse, scope, (*guard, Condition(test, "else", node, node.lineno)), annotation)
+
+    def _short_circuit(self, node: ast.BoolOp, scope: Scope, guard: Guard, annotation: str) -> None:
+        """Read ``a and b`` / ``a or b``: each operand after the first runs under the test of the one before it.
+
+        The condition holds the operand it tests (the ``and`` branch is ``body``, the ``or`` branch ``else``).
+        """
+        branch = "body" if isinstance(node.op, ast.And) else "else"
+        *operands, last = node.values
+        for value in operands:
+            self._expr(value, scope, guard, annotation)
+            test = _Test()
+            self._tests.append((test, value))
+            guard = (*guard, Condition(test, branch, value, value.lineno))
+        self._expr(last, scope, guard, annotation)
 
     def _lambda(self, node: ast.Lambda, scope: Scope, guard: Guard, annotation: str) -> None:
         self._defaults(node.args, scope, guard, annotation)

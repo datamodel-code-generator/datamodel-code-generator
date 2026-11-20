@@ -6,9 +6,18 @@ scripts/names.py:10: portable-names: 'trail.': Windows drops a trailing dot or s
 scripts/names.py:11: portable-names: 'AUX': Windows reserves the name for a device
 scripts/names.py:12: portable-names: ':x.toml': Windows refuses ':' in a file name
 scripts/names.py:15: portable-names: 'name|pipe': Windows refuses '|' in a file name
-tests/test_names.py:3: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
-tests/test_names.py:3: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
-tests/test_names.py:19: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
+tests/test_names.py:5: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
+tests/test_names.py:5: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
+tests/test_names.py:21: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
+tests/test_names.py:32: portable-names: 'local:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:33: portable-names: 'const:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:35: portable-names: 'list:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:36: portable-names: key 'item:bad.json' names a file: Windows refuses ':' in a file name
+tests/test_names.py:38: portable-names: 'item:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:39: portable-names: key 'var:key' names a file: Windows refuses ':' in a file name
+tests/test_names.py:45: portable-names: 'param:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:45: portable-names: 'nul.json': Windows reserves the name for a device
+tests/test_names.py:50: portable-names: 'pair:bad.json': Windows refuses ':' in a file name
 
 rule counts:
-  portable-names: 10 (absolute); fix: rename the file or the name (no `<>:"|?*`, no trailing dot or space, no device name, no two paths that differ only in case)
+  portable-names: 19 (absolute); fix: rename the file or the name (no `<>:"|?*`, no trailing dot or space, no device name, no two paths that differ only in case)

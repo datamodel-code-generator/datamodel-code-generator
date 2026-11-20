@@ -1,7 +1,18 @@
 exit: 0
 scripts/eager.py:1: posix-only-call: import fcntl runs when the module is imported
+scripts/eager.py:4: posix-only-call: fcntl.LOCK_EX runs when the module is imported
 scripts/eager.py:5: posix-only-call: os.mkfifo runs when the module is imported
 scripts/eager.py:9: posix-only-call: import resource runs when the module is imported
+scripts/limits.py:14: posix-only-call: import fcntl runs when the module is imported
+tests/sub/test_everywhere.py:4: posix-only-call: test_autouse_of_the_folder reaches fixture everywhere -> os.mkfifo in tests/sub/conftest.py
+tests/test_reach.py:9: posix-only-call: test_guarded_import_is_no_guard_of_its_readers reaches scripts.limits.peak -> resource.getrusage in scripts/limits.py
+tests/test_reach.py:13: posix-only-call: test_handler_is_no_guard_of_its_readers reaches scripts.limits.lock -> fcntl.flock in scripts/limits.py
+tests/test_reach.py:21: posix-only-call: test_conftest_fixture reaches fixture fifo -> os.mkfifo in tests/conftest.py
+tests/test_reach.py:25: posix-only-call: test_conftest_fixture_through_another reaches fixture through -> fixture fifo -> os.mkfifo in tests/conftest.py
+tests/test_reach.py:30: posix-only-call: test_usefixtures reaches fixture fifo -> os.mkfifo in tests/conftest.py
+tests/test_reach.py:46: posix-only-call: test_usefixtures_of_the_module reaches fixture local_fifo -> os.mkfifo in tests/test_reach.py
+tests/test_reach.py:57: posix-only-call: TestSelf.test_self_method reaches self._spawn -> os.fork in tests/test_reach.py
+tests/test_reach.py:69: posix-only-call: TestAutouse.test_after_the_autouse_fixture reaches fixture _pipe -> os.mkfifo in tests/test_reach.py
 tests/test_worker.py:10: posix-only-call: test_main_forks reaches scripts.worker.main -> scripts.worker.run -> scripts.worker.spawn -> os.fork in scripts/worker.py
 tests/test_worker.py:14: posix-only-call: test_entry_forks reaches scripts.worker.main -> scripts.worker.run -> scripts.worker.spawn -> os.fork in scripts/worker.py
 tests/test_worker.py:23: posix-only-call: test_fixture reaches fixture pipe -> os.mkfifo in tests/test_worker.py
@@ -11,4 +22,4 @@ tests/test_worker.py:51: posix-only-call: test_python_is_no_platform reaches os.
 tests/test_worker.py:63: posix-only-call: TestPlain.test_forks reaches os.fork in tests/test_worker.py
 
 rule counts:
-  posix-only-call: 10 (ratchet); fix: mark the test `@needs("posix")` (or `linux`), or move the POSIX-only use out of module level and behind a platform test; a script that forks keeps its tests behind the capability
+  posix-only-call: 21 (ratchet); fix: mark the test `@needs("posix")` (or `linux`), or move the POSIX-only use out of module level and behind a platform test; a script that forks keeps its tests behind the capability

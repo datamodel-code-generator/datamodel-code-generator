@@ -442,15 +442,19 @@ each lane from the matrix, `tox.ini`, `pyproject.toml` and `uv.lock`), and
 `never-run` fails on a test whose capabilities together exclude every lane.
 Three rules count what only another lane shows. `posix-only-call` reads `os.fork`, `os.mkfifo`, `signal.SIGKILL`
 and the `resource` and `fcntl` modules by origin: a use at module or class level breaks the import on Windows, and a
-collected test that reaches one (through helpers, fixtures and scripts it calls) must need a capability that Windows
-lacks (`posix`, `linux`); a dispatching `main` reaches every subcommand, so a test of a portable subcommand is a site
-too. `floor-syntax` fails a `.py` file of `tests` (test data included, stored output aside) that this Python parses and
+collected test that reaches one (through helpers and scripts it calls, the methods it calls on `self`, and the
+fixtures pytest gives it: parameters, `usefixtures`, `autouse`, `conftest.py` ones included) must need a capability
+that Windows lacks (`posix`, `linux`); a dispatching `main` reaches every subcommand, so a test of a portable
+subcommand is a site too. A platform test or an `ImportError` handler decides the import it guards, not the code that
+reads the module's name afterwards: a read of `resource` or `fcntl` still counts unless a platform test (an `if`, a
+conditional expression, `and`/`or`) or a test of the name (`if fcntl is not None:`) stands over it. `floor-syntax` fails a `.py` file of `tests` (test data included, stored output aside) that this Python parses and
 that the grammar of the oldest supported Python (`requires-python`) refuses: store it as `<name>.py.txt` and copy it
 where a test reads it on a Python that parses it. It sees syntax, not library features. `portable-names` counts the
 file names below `scripts` and `tests` that Windows refuses (`<>:"|?*`, a trailing dot or space, `con`, `aux.txt`) or
 that fold onto another path (case, Unicode composition), the same names in the paths a test builds (right of `/`,
 `Path(...)`, `os.path.join`, `open`), and the keys of a mapping that is passed to a function that writes files named
-by its entries; a name a test builds from data the source does not spell is not seen.
+by its entries. One resolver reads the names: a variable, a module constant, a `parametrize` value and the item of a
+loop over a literal list, tuple or dict; a name a test builds from data the source does not spell is not seen.
 `tests/test_checks_are_run.py` names every `scripts/check_*.py` and every source
 rule that nothing runs on the repository tree: a workflow `run:` step or a hook
 `entry` that executes it, a `commands` line of a tox environment a workflow

@@ -1,0 +1,69 @@
+=== module posix_only_fixtures_by_pytest
+== references
+=== module posix_only_fixtures_by_pytest.cases
+== references
+7:11 pipe load in test_asks_for_the_fixture -> local test_asks_for_the_fixture @6
+11:11 pipe_user load in test_asks_for_a_fixture_that_asks -> local test_asks_for_a_fixture_that_asks @10
+14:1 pytest load in <module> -> local <module> @1; origin pytest
+19:1 needs load in <module> -> local <module> @3; origin tests.capabilities.needs
+21:11 pipe load in test_marked -> local test_marked @20
+25:11 portable load in test_portable_fixture -> local test_portable_fixture @24
+uses of <module>:pytest@1: read@14
+uses of <module>:needs@3: call@19
+uses of test_asks_for_the_fixture:pipe@6: read@7
+uses of test_asks_for_a_fixture_that_asks:pipe_user@10: read@11
+uses of test_marked:pipe@20: read@21
+uses of test_portable_fixture:portable@24: read@25
+definition posix_only_fixtures_by_pytest.cases:needs -> outside tests.capabilities.needs@3 via posix_only_fixtures_by_pytest.cases [always]
+definition posix_only_fixtures_by_pytest.cases:pytest -> outside pytest@1 via posix_only_fixtures_by_pytest.cases [always]
+definition posix_only_fixtures_by_pytest.cases:test_asks_for_a_fixture_that_asks -> def posix_only_fixtures_by_pytest.cases:test_asks_for_a_fixture_that_asks@10 via posix_only_fixtures_by_pytest.cases [always]
+definition posix_only_fixtures_by_pytest.cases:test_asks_for_the_fixture -> def posix_only_fixtures_by_pytest.cases:test_asks_for_the_fixture@6 via posix_only_fixtures_by_pytest.cases [always]
+definition posix_only_fixtures_by_pytest.cases:test_marked -> def posix_only_fixtures_by_pytest.cases:test_marked@20 via posix_only_fixtures_by_pytest.cases [always]
+definition posix_only_fixtures_by_pytest.cases:test_portable_fixture -> def posix_only_fixtures_by_pytest.cases:test_portable_fixture@24 via posix_only_fixtures_by_pytest.cases [always]
+definition posix_only_fixtures_by_pytest.cases:test_usefixtures -> def posix_only_fixtures_by_pytest.cases:test_usefixtures@15 via posix_only_fixtures_by_pytest.cases [always]
+definition posix_only_fixtures_by_pytest.cases:test_without_fixtures -> def posix_only_fixtures_by_pytest.cases:test_without_fixtures@28 via posix_only_fixtures_by_pytest.cases [always]
+=== module posix_only_fixtures_by_pytest.conftest
+== references
+6:1 pytest load in <module> -> local <module> @3; origin pytest
+8:4 os load in pipe -> global <module> @1; origin os
+8:14 tmp_path load in pipe -> local pipe @7
+9:11 tmp_path load in pipe -> local pipe @7
+12:1 pytest load in <module> -> local <module> @3; origin pytest
+14:11 pipe load in pipe_user -> local pipe_user @13
+17:1 pytest load in <module> -> local <module> @3; origin pytest
+19:11 tmp_path load in portable -> local portable @18
+22:1 pytest load in <module> -> local <module> @3; origin pytest
+24:4 os load in unused -> global <module> @1; origin os
+24:14 tmp_path load in unused -> local unused @23
+uses of <module>:os@1: call:mkfifo@8, call:mkfifo@24
+uses of <module>:pytest@3: read@6, read@12, read@17, read@22
+uses of pipe:tmp_path@7: read@8, read@9
+uses of pipe_user:pipe@13: read@14
+uses of portable:tmp_path@18: read@19
+uses of unused:tmp_path@23: read@24
+definition posix_only_fixtures_by_pytest.conftest:os -> outside os@1 via posix_only_fixtures_by_pytest.conftest [always]
+definition posix_only_fixtures_by_pytest.conftest:pipe -> def posix_only_fixtures_by_pytest.conftest:pipe@7 via posix_only_fixtures_by_pytest.conftest [always]
+definition posix_only_fixtures_by_pytest.conftest:pipe_user -> def posix_only_fixtures_by_pytest.conftest:pipe_user@13 via posix_only_fixtures_by_pytest.conftest [always]
+definition posix_only_fixtures_by_pytest.conftest:portable -> def posix_only_fixtures_by_pytest.conftest:portable@18 via posix_only_fixtures_by_pytest.conftest [always]
+definition posix_only_fixtures_by_pytest.conftest:pytest -> outside pytest@3 via posix_only_fixtures_by_pytest.conftest [always]
+definition posix_only_fixtures_by_pytest.conftest:unused -> def posix_only_fixtures_by_pytest.conftest:unused@23 via posix_only_fixtures_by_pytest.conftest [always]
+=== module posix_only_fixtures_by_pytest.quiet
+== references
+=== module posix_only_fixtures_by_pytest.quiet.cases
+== references
+8:1 needs load in <module> -> local <module> @1; origin tests.capabilities.needs
+uses of <module>:needs@1: call@8
+definition posix_only_fixtures_by_pytest.quiet.cases:needs -> outside tests.capabilities.needs@1 via posix_only_fixtures_by_pytest.quiet.cases [always]
+definition posix_only_fixtures_by_pytest.quiet.cases:test_autouse_of_the_folder -> def posix_only_fixtures_by_pytest.quiet.cases:test_autouse_of_the_folder@4 via posix_only_fixtures_by_pytest.quiet.cases [always]
+definition posix_only_fixtures_by_pytest.quiet.cases:test_marked -> def posix_only_fixtures_by_pytest.quiet.cases:test_marked@9 via posix_only_fixtures_by_pytest.quiet.cases [always]
+=== module posix_only_fixtures_by_pytest.quiet.conftest
+== references
+6:1 pytest load in <module> -> local <module> @3; origin pytest
+8:4 os load in pipe_everywhere -> global <module> @1; origin os
+8:14 tmp_path load in pipe_everywhere -> local pipe_everywhere @7
+uses of <module>:os@1: call:mkfifo@8
+uses of <module>:pytest@3: call:fixture@6
+uses of pipe_everywhere:tmp_path@7: read@8
+definition posix_only_fixtures_by_pytest.quiet.conftest:os -> outside os@1 via posix_only_fixtures_by_pytest.quiet.conftest [always]
+definition posix_only_fixtures_by_pytest.quiet.conftest:pipe_everywhere -> def posix_only_fixtures_by_pytest.quiet.conftest:pipe_everywhere@7 via posix_only_fixtures_by_pytest.quiet.conftest [always]
+definition posix_only_fixtures_by_pytest.quiet.conftest:pytest -> outside pytest@3 via posix_only_fixtures_by_pytest.quiet.conftest [always]

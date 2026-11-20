@@ -1002,6 +1002,144 @@ TREES: dict[str, dict[str, str]] = {
                 def test_forks(self):
                     os.fork()
         """,
+        "scripts/limits.py": """
+            import importlib
+            import sys
+
+            if sys.platform != "win32":
+                import resource
+
+            try:
+                import fcntl
+            except ImportError:
+                fcntl = None
+
+            memory = None if sys.platform == "win32" else importlib.import_module("resource")
+            lock_module = sys.platform != "win32" and importlib.import_module("fcntl")
+            later = importlib.import_module("fcntl") if sys.argv else None
+
+
+            def peak():
+                return resource.getrusage(resource.RUSAGE_SELF)
+
+
+            def lock(handle):
+                fcntl.flock(handle, fcntl.LOCK_EX)
+
+
+            def lock_if_present(handle):
+                if fcntl is not None:
+                    fcntl.flock(handle, fcntl.LOCK_EX)
+        """,
+        "tests/conftest.py": """
+            import os
+
+            import pytest
+
+
+            @pytest.fixture
+            def fifo(tmp_path):
+                os.mkfifo(tmp_path / "fifo")
+
+
+            @pytest.fixture
+            def through(fifo):
+                pass
+        """,
+        "tests/sub/conftest.py": """
+            import os
+
+            import pytest
+
+
+            @pytest.fixture(autouse=True)
+            def everywhere(tmp_path):
+                os.mkfifo(tmp_path / "everywhere")
+        """,
+        "tests/sub/test_everywhere.py": """
+            from tests.capabilities import needs
+
+
+            def test_autouse_of_the_folder():
+                pass
+
+
+            @needs("posix")
+            def test_marked():
+                pass
+        """,
+        "tests/test_reach.py": """
+            import os
+
+            import pytest
+
+            from scripts import limits
+            from tests.capabilities import needs
+
+
+            def test_guarded_import_is_no_guard_of_its_readers():
+                limits.peak()
+
+
+            def test_handler_is_no_guard_of_its_readers(tmp_path):
+                limits.lock(tmp_path)
+
+
+            def test_read_under_a_test_of_the_name(tmp_path):
+                limits.lock_if_present(tmp_path)
+
+
+            def test_conftest_fixture(fifo):
+                pass
+
+
+            def test_conftest_fixture_through_another(through):
+                pass
+
+
+            @pytest.mark.usefixtures("fifo")
+            def test_usefixtures():
+                pass
+
+
+            @needs("posix")
+            @pytest.mark.usefixtures("fifo")
+            def test_usefixtures_marked():
+                pass
+
+
+            @pytest.fixture
+            def local_fifo(tmp_path):
+                os.mkfifo(tmp_path / "local")
+
+
+            @pytest.mark.usefixtures("local_fifo")
+            def test_usefixtures_of_the_module():
+                pass
+
+
+            class TestSelf:
+                def _spawn(self):
+                    return os.fork()
+
+                def _portable(self):
+                    return 1
+
+                def test_self_method(self):
+                    self._spawn()
+
+                def test_portable_self_method(self):
+                    self._portable()
+
+
+            class TestAutouse:
+                @pytest.fixture(autouse=True)
+                def _pipe(self, tmp_path):
+                    os.mkfifo(tmp_path / "pipe")
+
+                def test_after_the_autouse_fixture(self):
+                    pass
+        """,
     },
     "portable-names": {
         "scripts/names.py": """
@@ -1026,6 +1164,8 @@ TREES: dict[str, dict[str, str]] = {
         "tests/test_names.py": """
             from pathlib import Path
 
+            import pytest
+
             CASES = {"ok": {"fine": "x", "bad:name": "y"}, "other": {"quote\\"": "z"}}
             UNUSED = {"not:passed": 1}
 
@@ -1044,6 +1184,38 @@ TREES: dict[str, dict[str, str]] = {
                 write(tmp_path, CASES["ok"])
                 write(tmp_path, files={"also:bad": "x", "fine": "y"})
                 count({"not:a:file": 1})
+
+
+            KEY = "var:key"
+            FILES = [("list:bad.json", "{}"), ("fine.json", "{}")]
+            NAME = "const:bad.json"
+
+
+            def test_names_through_variables(tmp_path: Path):
+                local = "local:bad.json"
+                (tmp_path / local).write_text("{}")
+                (tmp_path / NAME).write_text("{}")
+                for entry, text in FILES:
+                    (tmp_path / entry).write_text(text)
+                mapping = {"item:bad.json": "{}", "fine.json": "{}"}
+                for key, text in mapping.items():
+                    (tmp_path / key).write_text(text)
+                write(tmp_path, {KEY: "x"})
+                write(tmp_path, mapping)
+
+
+            @pytest.mark.parametrize("name", ["param:bad.json", "nul.json", "fine.json"])
+            def test_parametrized_name(tmp_path: Path, name: str):
+                (tmp_path / name).write_text("{}")
+
+
+            @pytest.mark.parametrize(("name", "text"), [pytest.param("pair:bad.json", "x"), ("fine.json", "y")])
+            def test_parametrized_pairs(tmp_path: Path, name: str, text: str):
+                (tmp_path / name).write_text(text)
+
+
+            def test_unknown_name(tmp_path: Path, anything: str):
+                (tmp_path / anything).write_text("{}")
         """,
     },
 }

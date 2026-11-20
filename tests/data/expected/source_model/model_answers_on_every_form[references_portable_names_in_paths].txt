@@ -1,60 +1,115 @@
 == references
-15:4 fine store in build -> local build @15
-15:11 root load in build -> local build @14
-16:4 colon store in build -> local build @16
-16:12 root load in build -> local build @14
-17:4 device store in build -> local build @17
-17:13 root load in build -> local build @14
-18:4 question store in build -> local build @18
-18:15 Path load in build -> global <module> @11; origin pathlib.Path
-19:4 trailing store in build -> local build @19
-19:15 os load in build -> global <module> @10; origin os
-20:4 reserved store in build -> local build @20
-20:15 root load in build -> local build @14
-21:4 fragment store in build -> local build @21
-21:15 root load in build -> local build @14
-21:25 name load in build -> local build @14
-22:4 template store in build -> local build @22
-22:15 root load in build -> local build @14
-22:25 name load in build -> local build @14
-23:4 drive store in build -> local build @23
-23:12 Path load in build -> global <module> @11; origin pathlib.Path
-24:4 pipe store in build -> local build @24
-24:11 open load in build -> builtin; origin builtins.open
-25:4 pattern store in build -> local build @25
-25:14 root load in build -> local build @14
-26:4 parent store in build -> local build @26
-26:13 root load in build -> local build @14
-27:4 beside store in build -> local build @27
-28:11 fine load in build -> local build @15
-28:17 colon load in build -> local build @16
-28:24 device load in build -> local build @17
-28:32 question load in build -> local build @18
-28:42 trailing load in build -> local build @19
-28:52 reserved load in build -> local build @20
-28:62 fragment load in build -> local build @21
-28:72 template load in build -> local build @22
-28:82 drive load in build -> local build @23
-28:89 pipe load in build -> local build @24
-28:95 pattern load in build -> local build @25
-28:104 parent load in build -> local build @26
-28:112 beside load in build -> local build @27
-uses of <module>:os@10: read@19
-uses of <module>:Path@11: call@18, call@23
-uses of build:root@14: read@15, read@16, read@17, call:joinpath@20, read@21, read@22, call:glob@25, read@26
-uses of build:name@14: read@21, read@22
-uses of build:fine@15: read@28
-uses of build:colon@16: read@28
-uses of build:device@17: read@28
-uses of build:question@18: read@28
-uses of build:trailing@19: read@28
-uses of build:reserved@20: read@28
-uses of build:fragment@21: read@28
-uses of build:template@22: read@28
-uses of build:drive@23: read@28
-uses of build:pipe@24: read@28
-uses of build:pattern@25: read@28
-uses of build:parent@26: read@28
-uses of build:beside@27: read@28
-type positions @27: -
+18:4 fine store in build -> local build @18
+18:11 root load in build -> local build @17
+19:4 colon store in build -> local build @19
+19:12 root load in build -> local build @17
+20:4 device store in build -> local build @20
+20:13 root load in build -> local build @17
+21:4 question store in build -> local build @21
+21:15 Path load in build -> global <module> @12; origin pathlib.Path
+22:4 trailing store in build -> local build @22
+22:15 os load in build -> global <module> @11; origin os
+23:4 reserved store in build -> local build @23
+23:15 root load in build -> local build @17
+24:4 fragment store in build -> local build @24
+24:15 root load in build -> local build @17
+24:25 name load in build -> local build @17
+25:4 template store in build -> local build @25
+25:15 root load in build -> local build @17
+25:25 name load in build -> local build @17
+26:4 drive store in build -> local build @26
+26:12 Path load in build -> global <module> @12; origin pathlib.Path
+27:4 pipe store in build -> local build @27
+27:11 open load in build -> builtin; origin builtins.open
+28:4 pattern store in build -> local build @28
+28:14 root load in build -> local build @17
+29:4 parent store in build -> local build @29
+29:13 root load in build -> local build @17
+30:4 beside store in build -> local build @30
+31:11 fine load in build -> local build @18
+31:17 colon load in build -> local build @19
+31:24 device load in build -> local build @20
+31:32 question load in build -> local build @21
+31:42 trailing load in build -> local build @22
+31:52 reserved load in build -> local build @23
+31:62 fragment load in build -> local build @24
+31:72 template load in build -> local build @25
+31:82 drive load in build -> local build @26
+31:89 pipe load in build -> local build @27
+31:95 pattern load in build -> local build @28
+31:104 parent load in build -> local build @29
+31:112 beside load in build -> local build @30
+34:0 FILES store in <module> -> local <module> @34
+35:0 NAME store in <module> -> local <module> @35
+36:0 RENAMED store in <module> -> local <module> @36
+36:10 NAME load in <module> -> local <module> @35; origin forms.references.portable_names_in_paths.NAME
+40:4 name store in from_variables -> local from_variables @40
+41:4 fine store in from_variables -> local from_variables @41
+42:4 root load in from_variables -> local from_variables @39
+42:11 name load in from_variables -> local from_variables @40
+43:4 root load in from_variables -> local from_variables @39
+43:11 NAME load in from_variables -> global <module> @35; origin forms.references.portable_names_in_paths.NAME
+44:4 root load in from_variables -> local from_variables @39
+44:11 RENAMED load in from_variables -> global <module> @36; origin forms.references.portable_names_in_paths.NAME
+45:4 root load in from_variables -> local from_variables @39
+45:11 fine load in from_variables -> local from_variables @41
+46:4 root load in from_variables -> local from_variables @39
+46:11 value load in from_variables -> local from_variables @39
+47:8 entry store in from_variables -> local from_variables @47
+47:15 text store in from_variables -> local from_variables @47,50
+47:23 FILES load in from_variables -> global <module> @34; origin forms.references.portable_names_in_paths.FILES
+48:8 root load in from_variables -> local from_variables @39
+48:15 entry load in from_variables -> local from_variables @47
+49:4 files store in from_variables -> local from_variables @49
+50:8 key store in from_variables -> local from_variables @50
+50:13 text store in from_variables -> local from_variables @47,50
+50:21 files load in from_variables -> local from_variables @49
+51:8 root load in from_variables -> local from_variables @39
+51:15 key load in from_variables -> local from_variables @50
+54:1 pytest load in <module> -> local <module> @14; origin pytest
+56:4 tmp_path load in test_parametrized -> local test_parametrized @55
+56:15 name load in test_parametrized -> local test_parametrized @55
+59:1 pytest load in <module> -> local <module> @14; origin pytest
+59:44 pytest load in <module> -> local <module> @14; origin pytest
+61:4 tmp_path load in test_parametrized_pairs -> local test_parametrized_pairs @60
+61:15 name load in test_parametrized_pairs -> local test_parametrized_pairs @60
+62:4 tmp_path load in test_parametrized_pairs -> local test_parametrized_pairs @60
+62:15 text load in test_parametrized_pairs -> local test_parametrized_pairs @60
+uses of <module>:os@11: read@22
+uses of <module>:Path@12: call@21, call@26
+uses of <module>:pytest@14: read@54, read@59, call:param@59
+uses of <module>:FILES@34: iterate@47
+uses of <module>:NAME@35: read@36, read@43
+uses of <module>:RENAMED@36: read@44
+uses of build:root@17: read@18, read@19, read@20, call:joinpath@23, read@24, read@25, call:glob@28, read@29
+uses of build:name@17: read@24, read@25
+uses of build:fine@18: read@31
+uses of build:colon@19: read@31
+uses of build:device@20: read@31
+uses of build:question@21: read@31
+uses of build:trailing@22: read@31
+uses of build:reserved@23: read@31
+uses of build:fragment@24: read@31
+uses of build:template@25: read@31
+uses of build:drive@26: read@31
+uses of build:pipe@27: read@31
+uses of build:pattern@28: read@31
+uses of build:parent@29: read@31
+uses of build:beside@30: read@31
+uses of from_variables:root@39: read@42, read@43, read@44, read@45, read@46, read@48, read@51
+uses of from_variables:value@39: read@46
+uses of from_variables:name@40: read@42
+uses of from_variables:fine@41: read@45
+uses of from_variables:entry@47: read@48
+uses of from_variables:files@49: call:items@50
+uses of from_variables:key@50: read@51
+uses of test_parametrized:tmp_path@55: read@56
+uses of test_parametrized:name@55: read@56
+uses of test_parametrized_pairs:tmp_path@60: read@61, read@62
+uses of test_parametrized_pairs:name@60: read@61
+uses of test_parametrized_pairs:text@60: read@62
+type positions @35: -
+type positions @30: -
+type positions @40: -
+type positions @41: fine; chains fine.json = None
 == code objects: one per scope that compiles on this Python

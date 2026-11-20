@@ -30,6 +30,10 @@ references/call_arguments_by_parameter: src/call_arguments_by_parameter.py:13: h
 references/call_arguments_by_parameter: src/call_arguments_by_parameter.py:14: hash-split: ref.rsplit('#', 1)
 references/call_arguments_by_parameter: src/call_arguments_by_parameter.py:15: hash-split: str.split(ref, '#')
 references/check_main_calls: src/check_main_calls.py:32: clone-bodies: inner = src/datamodel_code_generator/check_main_calls.py:27 helper
+references/conditional_expression_guards: scripts/conditional_expression_guards.py:19: posix-only-call: import fcntl runs when the module is imported
+references/conditional_expression_guards: scripts/conditional_expression_guards.py:20: posix-only-call: import resource runs when the module is imported
+references/conditional_expression_guards: tests/conditional_expression_guards.py:19: posix-only-call: import fcntl runs when the module is imported
+references/conditional_expression_guards: tests/conditional_expression_guards.py:20: posix-only-call: import resource runs when the module is imported
 references/consumers_of_expressions: scripts/consumers_of_expressions.py:9: globals-registry: for _name in globals():
 references/consumers_of_expressions: scripts/consumers_of_expressions.py:11: globals-registry: KEYS = [key for key in globals().keys()]
 references/consumers_of_expressions: scripts/consumers_of_expressions.py:12: globals-registry: COPY = dict(globals())
@@ -76,26 +80,44 @@ references/lazy_table_module_getattr: src/lazy_table_module_getattr.py:10: unuse
 references/legacy_row_reading_lines: src/legacy_row_reading_lines/reader.py:9: redundant-local-import: datamodel_code_generator.legacy_row_reading_lines.rows
 references/legacy_row_reading_lines: src/legacy_row_reading_lines/reader.py:15: redundant-local-import: datamodel_code_generator.legacy_row_reading_lines.rows
 references/parameter_shadows_global: src/parameter_shadows_global.py:3: unused-private-global: _CACHE
-references/portable_names_by_key: scripts/portable_names_by_key.py:10: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
-references/portable_names_by_key: scripts/portable_names_by_key.py:10: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
-references/portable_names_by_key: scripts/portable_names_by_key.py:26: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
-references/portable_names_by_key: tests/portable_names_by_key.py:10: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
-references/portable_names_by_key: tests/portable_names_by_key.py:10: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
-references/portable_names_by_key: tests/portable_names_by_key.py:26: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
-references/portable_names_in_paths: scripts/portable_names_in_paths.py:16: portable-names: 'has:colon.txt': Windows refuses ':' in a file name
-references/portable_names_in_paths: scripts/portable_names_in_paths.py:17: portable-names: 'con.txt': Windows reserves the name for a device
-references/portable_names_in_paths: scripts/portable_names_in_paths.py:18: portable-names: 'b?.json': Windows refuses '?' in a file name
-references/portable_names_in_paths: scripts/portable_names_in_paths.py:19: portable-names: 'trail.': Windows drops a trailing dot or space of a file name
-references/portable_names_in_paths: scripts/portable_names_in_paths.py:20: portable-names: 'AUX': Windows reserves the name for a device
-references/portable_names_in_paths: scripts/portable_names_in_paths.py:21: portable-names: ':x.toml': Windows refuses ':' in a file name
-references/portable_names_in_paths: scripts/portable_names_in_paths.py:24: portable-names: 'name|pipe': Windows refuses '|' in a file name
-references/portable_names_in_paths: tests/portable_names_in_paths.py:16: portable-names: 'has:colon.txt': Windows refuses ':' in a file name
-references/portable_names_in_paths: tests/portable_names_in_paths.py:17: portable-names: 'con.txt': Windows reserves the name for a device
-references/portable_names_in_paths: tests/portable_names_in_paths.py:18: portable-names: 'b?.json': Windows refuses '?' in a file name
-references/portable_names_in_paths: tests/portable_names_in_paths.py:19: portable-names: 'trail.': Windows drops a trailing dot or space of a file name
-references/portable_names_in_paths: tests/portable_names_in_paths.py:20: portable-names: 'AUX': Windows reserves the name for a device
-references/portable_names_in_paths: tests/portable_names_in_paths.py:21: portable-names: ':x.toml': Windows refuses ':' in a file name
-references/portable_names_in_paths: tests/portable_names_in_paths.py:24: portable-names: 'name|pipe': Windows refuses '|' in a file name
+references/portable_names_by_key: scripts/portable_names_by_key.py:11: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: scripts/portable_names_by_key.py:11: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
+references/portable_names_by_key: scripts/portable_names_by_key.py:28: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: scripts/portable_names_by_key.py:33: portable-names: key 'var:key' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: tests/portable_names_by_key.py:11: portable-names: key 'bad:name' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: tests/portable_names_by_key.py:11: portable-names: key 'quote"' names a file: Windows refuses '"' in a file name
+references/portable_names_by_key: tests/portable_names_by_key.py:28: portable-names: key 'also:bad' names a file: Windows refuses ':' in a file name
+references/portable_names_by_key: tests/portable_names_by_key.py:33: portable-names: key 'var:key' names a file: Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:19: portable-names: 'has:colon.txt': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:20: portable-names: 'con.txt': Windows reserves the name for a device
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:21: portable-names: 'b?.json': Windows refuses '?' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:22: portable-names: 'trail.': Windows drops a trailing dot or space of a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:23: portable-names: 'AUX': Windows reserves the name for a device
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:24: portable-names: ':x.toml': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:27: portable-names: 'name|pipe': Windows refuses '|' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:42: portable-names: 'e:f.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:43: portable-names: 'c:d.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:44: portable-names: 'c:d.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:48: portable-names: 'a:b.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:51: portable-names: 'i:j.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:56: portable-names: 'g:h.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:56: portable-names: 'nul.json': Windows reserves the name for a device
+references/portable_names_in_paths: scripts/portable_names_in_paths.py:61: portable-names: 'k:l.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:19: portable-names: 'has:colon.txt': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:20: portable-names: 'con.txt': Windows reserves the name for a device
+references/portable_names_in_paths: tests/portable_names_in_paths.py:21: portable-names: 'b?.json': Windows refuses '?' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:22: portable-names: 'trail.': Windows drops a trailing dot or space of a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:23: portable-names: 'AUX': Windows reserves the name for a device
+references/portable_names_in_paths: tests/portable_names_in_paths.py:24: portable-names: ':x.toml': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:27: portable-names: 'name|pipe': Windows refuses '|' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:42: portable-names: 'e:f.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:43: portable-names: 'c:d.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:44: portable-names: 'c:d.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:48: portable-names: 'a:b.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:51: portable-names: 'i:j.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:56: portable-names: 'g:h.json': Windows refuses ':' in a file name
+references/portable_names_in_paths: tests/portable_names_in_paths.py:56: portable-names: 'nul.json': Windows reserves the name for a device
+references/portable_names_in_paths: tests/portable_names_in_paths.py:61: portable-names: 'k:l.json': Windows refuses ':' in a file name
 references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:10: posix-only-call: test_through_the_module reaches scripts.posix_only_across_modules.script.main -> scripts.posix_only_across_modules.script.run -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
 references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:14: posix-only-call: test_through_a_from_import reaches scripts.posix_only_across_modules.script.main -> scripts.posix_only_across_modules.script.run -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
 references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:18: posix-only-call: test_through_a_class reaches scripts.posix_only_across_modules.script.Runner -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
@@ -110,13 +132,24 @@ references/posix_only_at_import: tests/posix_only_at_import.py:25: posix-only-ca
 references/posix_only_at_import: tests/posix_only_at_import.py:26: posix-only-call: os.mkfifo runs when the module is imported
 references/posix_only_at_import: tests/posix_only_at_import.py:28: posix-only-call: import resource runs when the module is imported
 references/posix_only_at_import: tests/posix_only_at_import.py:32: posix-only-call: signal.SIGKILL runs when the module is imported
-references/posix_only_in_tests: tests/posix_only_in_tests.py:31: posix-only-call: test_unmarked reaches tests.posix_only_in_tests.through_a_helper -> tests.posix_only_in_tests.make_pipe -> os.mkfifo in tests/posix_only_in_tests.py
-references/posix_only_in_tests: tests/posix_only_in_tests.py:51: posix-only-call: test_python_version_is_no_platform reaches os.mkfifo in tests/posix_only_in_tests.py
-references/posix_only_in_tests: tests/posix_only_in_tests.py:56: posix-only-call: test_unknown_capability reaches os.mkfifo in tests/posix_only_in_tests.py
-references/posix_only_in_tests: tests/posix_only_in_tests.py:60: posix-only-call: test_fixture reaches fixture pipe_dir -> os.mkfifo in tests/posix_only_in_tests.py
-references/posix_only_in_tests: tests/posix_only_in_tests.py:64: posix-only-call: test_from_import reaches os.fork in tests/posix_only_in_tests.py
-references/posix_only_in_tests: tests/posix_only_in_tests.py:70: posix-only-call: test_nested reaches os.fork in tests/posix_only_in_tests.py
-references/posix_only_in_tests: tests/posix_only_in_tests.py:102: posix-only-call: TestPlain.test_method reaches os.fork in tests/posix_only_in_tests.py
+references/posix_only_fixtures_by_pytest: tests/posix_only_fixtures_by_pytest/cases.py:6: posix-only-call: test_asks_for_the_fixture reaches fixture pipe -> os.mkfifo in tests/posix_only_fixtures_by_pytest/conftest.py
+references/posix_only_fixtures_by_pytest: tests/posix_only_fixtures_by_pytest/cases.py:10: posix-only-call: test_asks_for_a_fixture_that_asks reaches fixture pipe_user -> fixture pipe -> os.mkfifo in tests/posix_only_fixtures_by_pytest/conftest.py
+references/posix_only_fixtures_by_pytest: tests/posix_only_fixtures_by_pytest/cases.py:15: posix-only-call: test_usefixtures reaches fixture pipe -> os.mkfifo in tests/posix_only_fixtures_by_pytest/conftest.py
+references/posix_only_fixtures_by_pytest: tests/posix_only_fixtures_by_pytest/quiet/cases.py:4: posix-only-call: test_autouse_of_the_folder reaches fixture pipe_everywhere -> os.mkfifo in tests/posix_only_fixtures_by_pytest/quiet/conftest.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:37: posix-only-call: test_unmarked reaches tests.posix_only_in_tests.through_a_helper -> tests.posix_only_in_tests.make_pipe -> os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:57: posix-only-call: test_python_version_is_no_platform reaches os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:62: posix-only-call: test_unknown_capability reaches os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:66: posix-only-call: test_fixture reaches fixture pipe_dir -> os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:70: posix-only-call: test_from_import reaches os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:76: posix-only-call: test_nested reaches os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:108: posix-only-call: TestPlain.test_method reaches os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:134: posix-only-call: test_guarded_import_does_not_guard_its_readers reaches tests.posix_only_in_tests.peak -> resource.getrusage in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:142: posix-only-call: test_read_of_a_name_that_may_be_none reaches tests.posix_only_in_tests.lock -> fcntl.flock in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:153: posix-only-call: TestSelf.test_method_called_on_self reaches self._spawn -> os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:161: posix-only-call: TestInherits.test_inherited_method_called_on_self reaches self._spawn -> os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:166: posix-only-call: test_usefixtures_decorator reaches fixture pipe_dir -> os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:179: posix-only-call: TestUsefixturesMark.test_pytestmark reaches fixture pipe_dir -> os.mkfifo in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:188: posix-only-call: TestAutouse.test_runs_after_the_fixture reaches fixture _pipe -> os.mkfifo in tests/posix_only_in_tests.py
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:6: unused-private-global: _UNUSED
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:8: unused-private-global: _SHADOWED
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:9: unused-private-global: _COMPREHENSION
