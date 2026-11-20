@@ -50,7 +50,7 @@ twice, and the records that cover it must admit every kind of its difference wit
 (`_behaviour_classify.judge`: payload cells, rule (b), companion cells). Every selector must match a differing cell
 (in a release run, staleness in a run of the whole nightly or release tier); the stored modules an `output-text`
 record covers, and the changed labels a `harness` record covers in a src PR, are proved by signatures, rule (b) and
-values drawn from their models' schemas (`_stored-module`); `--verdicts OUT` writes the verdicts on those
+values drawn from their models' schemas (`_stored-module`); `--verdicts OUT` (shard 1) writes the verdicts on those
 `harness` labels by their base and head contents, which `declared_changes.py check --verdicts OUT` reads. The
 report lists the uncovered cells with a starting `[[change.cells]]` block.
 
@@ -1567,8 +1567,12 @@ def stored_problems(gate: Gate) -> list[str]:
 
 
 def write_verdicts(gate: Gate, ns: argparse.Namespace) -> None:
-    """Write the verdicts on the `harness` labels of a src PR to `--verdicts`, read by `declared_changes.py check`."""
-    if ns.verdicts:
+    """Write the verdicts on the `harness` labels of a src PR to `--verdicts`, read by `declared_changes.py check`.
+
+    Shard 1 judges the stored labels (`stored_problems`) and writes the file; the other shards leave it alone, so
+    the shards of one run may share it.
+    """
+    if ns.verdicts and ns.shard_index == 1:
         ns.verdicts.parent.mkdir(parents=True, exist_ok=True)
         ns.verdicts.write_text(json.dumps({"verdicts": gate.verdicts}, indent=1) + "\n", encoding="utf-8")
 
@@ -1750,7 +1754,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     gate.add_argument(
         VERDICTS_OPTION,
         type=Path,
-        help="write the verdicts on the harness labels of a src PR to this file (read by `declared_changes.py check`)",
+        help="write the verdicts on the harness labels of a src PR to this file (read by `declared_changes.py check`); "
+        "shard 1 writes it",
     )
     gate.add_argument(
         "--identity",
@@ -1782,7 +1787,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     guide.add_argument("version", help="the release the page describes")
     guide.add_argument("--candidate", help="checkout path or git revision of the release (default: this checkout)")
     _gate_args(guide)
-    guide.set_defaults(tier="release", identity=False)
+    guide.set_defaults(tier="release", identity=False, verdicts=None)
     guide.add_argument("--cells", type=Path, action="append", default=[], help="gate --json output (default: run)")
     guide.add_argument("--docs", type=Path, required=True, help="page data to write, docs/data/output-changes/V.json")
     guide.add_argument("--notes", type=Path, help="release-note fragment to write")

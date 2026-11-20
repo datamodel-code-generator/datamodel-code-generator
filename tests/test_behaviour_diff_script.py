@@ -2577,8 +2577,9 @@ class CellsCase:
     PR; `main` is a commit main takes after the PR forked. `against` names the gate's base: the PR's `base` (the
     layer's tip), main's tip, the release tag, a commit no history has (`unknown`) or one of another history
     (`orphan`). `records` also runs `declared_changes.py check` on the PR with the gate's verdicts (`--verdicts`),
-    which must give the gate's verdict: it fails the harness labels the gate refuses. `shape` names, in words, the rule
-    the case pins or the passing shape it keeps.
+    which must give the gate's verdict: it fails the harness labels the gate refuses. `shards` runs the gate as that
+    many shards, one after another, with the same `--verdicts` file. `shape` names, in words, the rule the case pins or
+    the passing shape it keeps.
     """
 
     verdict: str
@@ -2591,6 +2592,7 @@ class CellsCase:
     against: str = "base"
     tier: str = "pr"
     records: bool = False
+    shards: int = 1
 
 
 COMMENT_PLAIN = _cells_src(("plain", None, "comment"))
@@ -2808,6 +2810,15 @@ CELLS_CASES: dict[str, CellsCase] = {
         | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
         | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
         records=True,
+    ),
+    "pass: harness covers a modified module the proof holds for, in two shards": CellsCase(
+        "pass",
+        "harness, modified module the proof holds for, the gate run as two shards with one verdicts file",
+        CELLS_REFACTOR
+        | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
+        | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        records=True,
+        shards=2,
     ),
     "pass: harness covers a changed module list of a CLI fast path": CellsCase(
         "pass",
@@ -3161,13 +3172,37 @@ def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
     argv += ["--cache-dir", str(tmp_path / "cache"), "--projects", str(projects), "--allowlist", str(allowlist)]
     argv += ["--verdicts", str(verdicts := tmp_path / "verdicts.json")]
     log = StringIO()
-    codes = {"gate": _cells_exit(lambda: behaviour_diff.main([*argv, "-j", "2"]), log)}
+    shards = [
+        _cells_exit(
+            lambda index=index: behaviour_diff.main([*argv, "-j", "2", "--shard", f"{index}/{case.shards}"]), log
+        )
+        for index in range(1, case.shards + 1)
+    ]
+    codes = {"gate": max(shards)}
     if case.records:
         check = ["check", "--base", against, "--head", "HEAD", "--tag", CELLS_TAG, "--verdicts", str(verdicts)]
         codes["records"] = _cells_exit(lambda: declared_changes.main(check, repo=repo), log)
     verdicts_given = {"pass" if code == 0 else "fail" for code in codes.values()}
     verdict = verdicts_given.pop() if len(verdicts_given) == 1 else "split"
     return verdict, f"{codes}\n{log.getvalue()}"
+
+
+@needs("posix")
+def test_guide_runs_the_gate_of_the_release(tmp_path: Path) -> None:
+    """Without `--cells`, `guide` runs the gate of the release against the previous one and writes its page."""
+    repo = tmp_path / "repo"
+    _cells_project(CellsCase("pass", "release run", base=COMMENT_OTHER | OUTPUT_TEXT_OTHER), repo)
+    release = _git("rev-parse", CELLS_TAG, cwd=repo)
+    projects = tmp_path / "projects.json"
+    projects.write_text('{"projects": []}', encoding="utf-8")
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text(f'base = "{CELLS_TAG}"\n', encoding="utf-8")
+    argv = ["guide", release, "0.2.0", "--candidate", str(repo), "-j", "2"]
+    argv += ["--candidate-python", sys.executable, "--cache-dir", str(tmp_path / "cache")]
+    argv += ["--projects", str(projects), "--allowlist", str(allowlist)]
+    with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+        code = behaviour_diff.main([*argv, "--docs", str(page := tmp_path / "page.json")])
+    assert_output(f"exit={code}\n{page.read_text(encoding='utf-8').replace(release, 'RELEASE')}")
 
 
 @pytest.mark.allow_direct_assert("the shipped table's keys are the oracle, never a stored output a fix run accepts")
