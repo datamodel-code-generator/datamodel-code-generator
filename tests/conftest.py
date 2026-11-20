@@ -341,9 +341,17 @@ def _child_coverage_config(serialized: str) -> str:
     whatever module of that name the Python imports, such as the copies of the repository that tests run. So a relative
     pattern is anchored at this process's working directory as coverage anchors it here, only directory sources are
     kept, and the core is the one of `CHILD_COVERAGE_ENV`.
+
+    A test that puts the checkout's ``src`` on ``PYTHONPATH`` makes the Python import the package from there, not from
+    the installed copy the source names (the tox environments install one). ``paths.source`` declares both the same
+    files, so the directory of the same name under its first entry is measured too and combined into the same report.
     """
     config = CoverageConfig.deserialize(serialized)
-    config.source = [source for source in config.source or [] if Path(source).is_dir()]
+    sources = [source for source in config.source or [] if Path(source).is_dir()]
+    checkout = Path.cwd() / config.paths.get("source", ["src"])[0]
+    config.source = list(
+        dict.fromkeys([*sources, *(str(copy) for source in sources if (copy := checkout / Path(source).name).is_dir())])
+    )
     config.run_omit = [
         pattern if pattern.startswith(("*", "?")) else str(Path.cwd() / pattern) for pattern in config.run_omit
     ]
