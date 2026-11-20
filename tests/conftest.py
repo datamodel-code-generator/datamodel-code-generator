@@ -336,18 +336,19 @@ def pytest_sessionstart(session: pytest.Session) -> Generator[None, None, None]:
 def _child_coverage_config(serialized: str) -> str:
     """Resolve the coverage configuration `serialized` the way this process reads it, for a Python a test starts.
 
-    A started Python reads the configuration in its own working directory and on its own ``sys.path``: an omit pattern
-    relative to the project would no longer match, and a module source such as ``scripts._source_model`` would measure
-    whatever module of that name the Python imports, such as the copies of the repository that tests run. So a relative
-    pattern is anchored at this process's working directory as coverage anchors it here, only directory sources are
-    kept, and the core is the one of `CHILD_COVERAGE_ENV`.
+    A started Python reads the configuration in its own working directory and on its own ``sys.path``: a relative omit
+    pattern or source directory would no longer match, and a module source such as ``scripts._source_model`` would
+    measure whatever module of that name the Python imports, such as the copies of the repository that tests run. So
+    each source becomes the directories it names in this process (`_source_directories`), a relative pattern is
+    anchored at this process's working directory as coverage anchors it here, and the core is the one of
+    `CHILD_COVERAGE_ENV`.
 
     A test that puts the checkout's ``src`` on ``PYTHONPATH`` makes the Python import the package from there, not from
     the installed copy the source names (the tox environments install one). ``paths.source`` declares both the same
     files, so the directory of the same name under its first entry is measured too and combined into the same report.
     """
     config = CoverageConfig.deserialize(serialized)
-    sources = [source for source in config.source or [] if Path(source).is_dir()]
+    sources = [directory for source in config.source or [] for directory in _source_directories(source)]
     checkout = Path.cwd() / config.paths.get("source", ["src"])[0]
     config.source = list(
         dict.fromkeys([*sources, *(str(copy) for source in sources if (copy := checkout / Path(source).name).is_dir())])
@@ -357,6 +358,20 @@ def _child_coverage_config(serialized: str) -> str:
     ]
     config.core = CHILD_COVERAGE_ENV.get("COVERAGE_CORE", config.core)
     return config.serialize()
+
+
+def _source_directories(source: str) -> list[str]:
+    """Return the directories a coverage ``--source`` entry names in this process.
+
+    Coverage reads an entry that is a directory relative to the working directory as that directory, and any other
+    entry as a module name: the CI shards pass ``--cov datamodel_code_generator --cov tests``, the tox commands absolute
+    directories. A package resolves to the directories it is imported from here; a single module, which a started Python
+    could import from a copy of the repository, names none.
+    """
+    if (directory := Path.cwd() / source).is_dir():
+        return [str(directory)]
+    spec = find_spec(source)
+    return [] if spec is None else list(spec.submodule_search_locations or [])
 
 
 def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  # noqa: ARG001, PLR0912, PLR0914  # pragma: no cover
