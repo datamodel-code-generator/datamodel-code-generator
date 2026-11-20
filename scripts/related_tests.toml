@@ -348,3 +348,10 @@ incident = "moving a lane to another Python recorded its stored outputs under a 
 paths = ["tox.ini", ".github/workflows/test.yaml"]
 pattern = "(base_python|python-version|tox_env|py3[0-9]+)"
 envs = ["dispatch"]
+
+[[rule]]
+id = "where-reads-scripts"
+prs = [7221]
+incident = "a new module under scripts/ changed what `python -m scripts.where` prints; the stored answers failed only on hosted CI"
+paths = ["scripts/*.py"]
+tests = ["tests/test_where_script.py"]

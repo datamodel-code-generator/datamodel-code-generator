@@ -521,7 +521,11 @@ class Repo:
         }
 
     def attribute_users(self, leaf: str, owners: Iterable[Found]) -> dict[str, int]:
-        """Return the files that spell ``.leaf`` with the count: the defining modules and those naming the class."""
+        """Return the files that read ``.leaf`` as an attribute, with the count: the defining modules and those naming the class.
+
+        Only attribute accesses of the code count; a name spelled in a string, a docstring or a comment (the records
+        of a decision table cite its homes that way) is the page's row, which the answer lists apart.
+        """
         pattern = re.compile(rf"\.{re.escape(leaf)}\b")
         paths = {site.path for site in owners}
         names = {site.qualname.rpartition(".")[0].rpartition(".")[2] for site in owners} - {""}
@@ -529,7 +533,11 @@ class Repo:
         counts: dict[str, int] = {}
         for rel in self.names:
             text = self.text(rel)
-            if (count := len(pattern.findall(text))) and (rel in paths or any(word(n).search(text) for n in names)):
+            if not pattern.search(text) or not (rel in paths or any(word(n).search(text) for n in names)):
+                continue
+            if count := sum(
+                isinstance(node, ast.Attribute) and node.attr == leaf for node in ast.walk(self.model(rel).tree)
+            ):
                 counts[rel] = count
         return counts
 

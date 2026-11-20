@@ -4288,7 +4288,6 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_json_output.py", "schema_document"),
             Home("_json_output.py", "JSON_SCHEMA_DRAFT_2020_12"),
             Home("_json_output.py", "write_streamed_json"),
-            Home("model_metadata.py"),
         ),
         core=(
             "`_json_output.py`: `dump_json`, `schema_document` (`JSON_SCHEMA_DRAFT_2020_12`, re-exported by "
@@ -4597,7 +4596,6 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(
             Home("types.py", "type_expr_of"),
             Home("types.py", "render_type_expr"),
-            Home("_target_types.py"),
         ),
         core="`types.py`: `type_expr_of`, `render_type_expr`; planned: `freeze_type` in `_target_types.py`",
         adapters="`_target_module.py:TargetModule`, `_target_module.py:TypeComposer` (text of support compositions)",
