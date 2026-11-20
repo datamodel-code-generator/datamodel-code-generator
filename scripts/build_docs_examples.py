@@ -1142,7 +1142,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 MarkdownCodeBlock(
                     "Output",
                     "python",
-                    path=EXPECTED_JSON_SCHEMA / "typed_dict_closed.py",
+                    path=EXPECTED_JSON_SCHEMA / "main_jsonschema/main_typed_dict_closed.py",
                     strip_python_header=True,
                 ),
             ),
