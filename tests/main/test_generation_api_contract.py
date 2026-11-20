@@ -67,5 +67,4 @@ def test_api_public_surface_annotations() -> None:
             indent=2,
         )
         + "\n",
-        EXPECTED / "public-surface.txt",
     )
