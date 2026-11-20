@@ -1144,8 +1144,8 @@
       ]
     },
     "read_uuid6_uuid7_uuid8_formats": {
-      "not_recommended": "runtime-behaviour",
-      "reason": "Types uuid6, uuid7 and uuid8 strings as UUID values that check their version, which changes the values a model holds and the payloads it accepts."
+      "not_recommended": "preset",
+      "reason": "Set by the 20261120 presets; the recommendation starts from a preset."
     },
     "recommend_options": {
       "not_recommended": "command",

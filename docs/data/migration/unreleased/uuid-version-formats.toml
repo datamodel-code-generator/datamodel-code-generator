@@ -3,7 +3,7 @@ id = "uuid-version-formats"
 category = "new-surface"
 title = "Read the string formats uuid6, uuid7 and uuid8 under an option"
 summary = "--read-uuid6-uuid7-uuid8-formats reads format uuid6, uuid7 and uuid8 as the UUID versions they name: Pydantic output types them as UUID6, UUID7 and UUID8 (uuid.UUID for a target Pydantic version before 2.11), the other outputs as uuid.UUID under --use-standard-primitive-types, else str; without it each stays an unknown format, a warning and str."
-refs = ["#1"]
+refs = ["#7245"]
 surface = ["--read-uuid6-uuid7-uuid8-formats"]
 covers = [
     "builtin_formatter/parser_config_contract.txt",
@@ -42,6 +42,10 @@ covers = [
     "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats[released].py",
     "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats_openapi[read].py",
     "main/jsonschema/uuid_version_formats/read_uuid6_uuid7_uuid8_formats_openapi[released].py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].py",
+    "main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-pyproject].py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-uuid6-uuid7-uuid8-formats-practical].py",
+    "main/preset_opt_in_options/preset_sets_opt_in_option[read-uuid6-uuid7-uuid8-formats-standard].py",
     "main_kr/generate_prompt/basic.txt",
     "main_kr/generate_prompt/json_output.txt",
     "main_kr/generate_prompt/with_list_options.txt",
