@@ -1,7 +1,7 @@
 [[change]]
 id = "no-cover-sites-decided"
 extends = "fast-path-lazy-exports"
-refs = ["#7223"]
+refs = ["#7224"]
 covers = [
     "input_model/collection_classes_beside_the_preserved_ones.txt",
     "main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt",
