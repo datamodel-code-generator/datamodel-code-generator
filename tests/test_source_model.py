@@ -31,6 +31,7 @@ from scripts import (
     check_ratchets,
     check_source_rules,
     coverage_exclusions,
+    legacy_row_reads,
     where,
 )
 from tests import expected_access
@@ -1040,6 +1041,29 @@ def _typing_only_parts(form: Path) -> list[Finding]:
     return found
 
 
+def _legacy_row_reads(form: Path) -> list[Finding]:
+    """Return the lines that read each row a form names, with their kinds, the form standing as a package.
+
+    A module form stands inside one.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        package = Path(folder) / "form"
+        package.mkdir()
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            target = package / (path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        (package / "__init__.py").touch()
+        sites = legacy_row_reads.reading_sites_of(Path(folder), "form")
+        return [
+            Finding("reads", _site(form, place, line), f"{place}:{line}: {row} ({', '.join(kinds)})")
+            for row, lines in sorted(legacy_row_reads.reading_lines_of(Path(folder), "form").items())
+            for filename, line in sorted(lines)
+            for place in [Path(filename).relative_to(package).as_posix()]
+            for kinds in [sorted(kind for kind, held in sites[row].items() if (filename, line) in held)]
+        ]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -1065,6 +1089,11 @@ RULES: dict[str, RuleRun] = {
     "check-run-on-the-tree": RuleRun("tests.test_checks_are_run", frozenset({"bindings", "references"}), _check_runs),
     "pass-pipeline": RuleRun("scripts.check_pass_pipeline", frozenset({"bindings", "references"}), _pass_pipeline),
     "coverage-exclusions": RuleRun("scripts.coverage_exclusions", frozenset({"extents"}), _coverage_exclusions),
+    "legacy-row-reads": RuleRun(
+        "scripts.legacy_row_reads",
+        frozenset({"bindings", "references", "imports", "extents"}),
+        _legacy_row_reads,
+    ),
     "generation-store-usage": RuleRun(
         "scripts.check_generation_store_usage",
         frozenset({"bindings", "references", "imports"}),

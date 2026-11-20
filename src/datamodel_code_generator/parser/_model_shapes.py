@@ -312,7 +312,7 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         """Return the rendered model with the tags of its discriminated unions when the row compares them.
 
         The model renders under its own class name or as ``M``, as the row says, and the parse's memo keeps the key
-        (:data:`STALE_DEDUP_KEYS`).
+        (:data:`STALE_DEDUP_KEYS`, row ``legacy-stale-dedup-keys``).
         """
         slot: KeySlot = (self.source.own_class_name(model), False) if self.row.own_class_name else (None, True)
         if self.row.key_cache == "rendered":

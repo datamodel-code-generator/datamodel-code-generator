@@ -111,6 +111,7 @@ references/annotations_and_string_reads: annotations_and_string_reads.py:9:25: t
 references/annotations_and_string_reads: annotations_and_string_reads.py:9:32: type-checking
 references/annotations_and_string_reads: annotations_and_string_reads.py:24:15: local-annotation
 references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:18:20: local-annotation
+references/legacy_row_reading_lines: rows.py:35:12: local-annotation
 references/store_writes_through_bindings: store_writes_through_bindings.py:85:12: local-annotation
 references/store_writes_through_bindings: store_writes_through_bindings.py:118:11: local-annotation
 references/string_annotation_forward: string_annotation_forward.py:8:4: type-checking

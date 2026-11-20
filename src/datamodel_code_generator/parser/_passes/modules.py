@@ -1466,6 +1466,8 @@ def collapse_site_facts(
     """Return the facts ``keeps_root_model_named`` reads about a site of ``model_field`` that names ``root_model``.
 
     The walk over the root types and the containers of the holder's type are read only where a rule reads them.
+    Without ``--keep-enum-literal-aliases`` a type alias of an enum's ``Literal`` is inlined (row
+    ``legacy-collapse-enum-literal-aliases``).
     """
     if not root_model.fields:
         return CollapseSiteFacts()

@@ -1634,7 +1634,13 @@ names has one record in `scripts/legacy_rows.py`: what it keeps, what deletes it
 `keep` for output that stays the default for good), the option that writes the new form instead, if any, and the
 arguments of a generation that reaches it. `scripts/build_architecture_docs.py` writes this table from those records,
 and `tests/test_legacy_rows.py` fails for a row that `src/` names without a record and for a record of a row that
-`src/` does not name. A new exception to a home is a new named row, never an anonymous `if`.
+`src/` does not name. It runs each witness once (Python 3.12 and later) and fails for a row whose witness runs no line
+that reads it and for a row whose option changes nothing the witness writes or prints. The lines that read a row are
+those that test it: in a function, its name compared (`==`, `in`), matched by a `case` or handed to a call. Only a row
+that no line tests is read where a string of a function names it otherwise, where a function whose docstring names it
+starts, or where a module constant that names it is loaded; such rows are listed in `UNTESTED`, which may only shrink.
+A table or collection of rows, an annotation, and a class or module docstring read none
+(`scripts/legacy_row_reads.py`). A new exception to a home is a new named row, never an anonymous `if`.
 
 <!-- BEGIN AUTO-GENERATED LEGACY ROWS -->
 | Row | Keeps | Fix |

@@ -37,7 +37,7 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
     "fstring-nested-syntax": (("python>=3.12",), "a comment in an f-string's replacement field needs Python 3.12"),
     "sys-monitoring": (
         ("python>=3.12",),
-        "sys.monitoring, which the comparator measures code objects with, needs Python 3.12",
+        "sys.monitoring, which the comparator and the legacy-row witnesses measure runs with, needs Python 3.12",
     ),
     "no-sys-monitoring": (("python<3.12",), "Python 3.11 has no sys.monitoring: the comparator measures nothing there"),
     "typed-dict-validation": (("python>=3.12",), "Pydantic validates typing.TypedDict from Python 3.12 on"),
