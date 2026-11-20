@@ -20,6 +20,7 @@ from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 import pytest
+import tomllib
 
 from scripts import behaviour_diff, declared_changes
 from scripts._behaviour_classify import (
@@ -3094,6 +3095,13 @@ def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
     verdicts_given = {"pass" if code == 0 else "fail" for code in codes.values()}
     verdict = verdicts_given.pop() if len(verdicts_given) == 1 else "split"
     return verdict, f"{codes}\n{log.getvalue()}"
+
+
+@pytest.mark.allow_direct_assert("the shipped table's keys are the oracle, never a stored output a fix run accepts")
+def test_shipped_allowlist_accepts_nothing() -> None:
+    """Change records judge every differing cell: the shipped table keeps its `base` and `[[base_skip]]` only."""
+    table = tomllib.loads(behaviour_diff.DEFAULT_ALLOWLIST.read_text(encoding="utf-8"))
+    assert set(table) <= {"base", "base_skip"}, sorted(table)
 
 
 @pytest.mark.allow_direct_assert(
