@@ -916,8 +916,7 @@ def _union_parts(model: SourceModule) -> Iterable[str]:
     """
     bound: dict[tuple[int, int], list[str]] = {}
     for binding in model.bindings():
-        if (statement := model.statement_at(binding.line)) is not None:
-            bound.setdefault((id(binding.scope), id(statement)), []).append(binding.name)
+        bound.setdefault((id(binding.scope), id(model.statement_at(binding.line))), []).append(binding.name)
     seen: Counter[str] = Counter()
     for node, members in _unions(model.tree):
         scope = model.scope_of(node)
