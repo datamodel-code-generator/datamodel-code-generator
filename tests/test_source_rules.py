@@ -1174,6 +1174,73 @@ TREES: dict[str, dict[str, str]] = {
             def test_two_fixtures_share_a_portable_one(left, right):
                 pass
         """,
+        "scripts/optional.py": """
+            import importlib
+            import sys
+
+            fcntl = importlib.import_module("fcntl") if sys.platform != "win32" else None
+            other = None
+
+
+            def lock(handle):
+                fcntl.flock(handle, fcntl.LOCK_EX)
+
+
+            def free():
+                return other
+        """,
+        "tests/test_round_two.py": """
+            import os
+            import sys
+            from typing import TYPE_CHECKING
+
+            import pytest
+
+            from scripts import optional, worker
+
+            if TYPE_CHECKING:
+                import fcntl
+
+
+            def test_typing_only_import(handle: "fcntl.X"):
+                optional.free()
+
+
+            def test_guarded_helper_call():
+                if sys.platform != "win32":
+                    worker.spawn()
+
+
+            def test_optional_module_read(handle):
+                optional.lock(handle)
+
+
+            @pytest.fixture
+            def test_provider():
+                return os.fork()
+        """,
+        "tests/override/conftest.py": """
+            import pytest
+
+
+            @pytest.fixture(autouse=True)
+            def setup_env():
+                yield
+        """,
+        "tests/override/test_override.py": """
+            import os
+
+            import pytest
+
+
+            @pytest.fixture
+            def setup_env():
+                os.fork()
+
+
+            def test_overridden_autouse_fixture_runs():
+                pass
+        """,
     },
     "portable-names": {
         "scripts/names.py": """
@@ -1285,6 +1352,60 @@ TREES: dict[str, dict[str, str]] = {
                     (tmp_path / right).write_text("{}")
                 for name, text in fetch().items():
                     (tmp_path / name).write_text(text)
+
+
+            def write_with(root, files, /, options, *, mode="w"):
+                for name, text in files.items():
+                    (root / name).write_text(text)
+                return options, mode
+
+
+            def test_the_argument_that_names_files(tmp_path: Path, rows: list):
+                write_with(tmp_path, {"slot:bad.json": "{}"}, {"option:fine": 1})
+                write_with(tmp_path, {"fine.json": "{}"}, options={"keyword:fine": 1}, mode="a")
+                write_with(*rows)
+                with open(file=tmp_path / "file:bad.txt", mode="w"):
+                    pass
+                with open(*rows):
+                    pass
+                name, text = ("pair:bad.json", "{}")
+                (tmp_path / name).write_text(text)
+                whole, = fetch()
+                (tmp_path / whole).write_text("{}")
+                names = ["rebound.json"]
+                for names in names:
+                    (tmp_path / names).write_text("{}")
+                for *_, last in [("ok", "skip:fine", "star:bad.json")]:
+                    (tmp_path / last).write_text("{}")
+                (tmp_path / "COM\u00b9.txt").write_text("{}")
+
+
+            @pytest.mark.parametrize("name", [pytest.param("single:bad.json", id="one"), "fine.json"])
+            def test_one_name_in_a_param(tmp_path: Path, name: str):
+                (tmp_path / name).write_text("{}")
+
+
+            @pytest.mark.parametrize(["name"], [("listed:bad.json",)])
+            def test_one_name_in_a_list(tmp_path: Path, name: str):
+                (tmp_path / name).write_text("{}")
+        """,
+        "tests/test_writers.py": """
+            class Writer:
+                def write(self, files):
+                    for name in files:
+                        (self.root / name).write_text("")
+
+
+            def nested(root):
+                def inner(files):
+                    for name in files:
+                        (root / name).write_text("")
+
+                return inner
+
+
+            def test_method_writers(tmp_path):
+                Writer().write({"method:fine": 1})
         """,
     },
 }

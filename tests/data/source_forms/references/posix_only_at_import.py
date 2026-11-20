@@ -3,8 +3,8 @@
 The module (``fcntl``, ``resource``) or the name (``os.fork``, ``os.mkfifo``, ``signal.SIGKILL``) counts by the origin the
 model gives it, through an alias or a ``from`` import. A use at module or class level is a site, in a script and in a
 test; one inside a function is not (the function is POSIX-only, which the tests that reach it must say). A platform test
-or an ``ImportError`` handler decides whether the import runs, a parameter named ``os`` is not the module, and a string
-that spells a name is no use. A literal ``import_module`` of one of the modules is its import.
+or an ``ImportError`` handler decides whether the import runs, a parameter named ``os`` is not the module, a string
+is no use. A literal ``import_module`` of a module is its import, a ``from`` import of a name its use.
 """
 
 import fcntl

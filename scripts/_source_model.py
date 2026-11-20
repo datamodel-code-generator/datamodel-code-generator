@@ -810,7 +810,8 @@ class Assignment:
     expression. ``element`` is the part of it the target takes: where the target and the value are tuples or lists of
     one length, each item takes the item at its position (at every level of unpacking, a starred item too), else the
     whole value. ``position`` is where the target sits in the unpacking target it belongs to: the index at each level
-    (``c`` of ``a, (b, c)`` is ``(1, 1)``, a starred item its own index), empty for the whole target. ``kind`` is
+    (``c`` of ``a, (b, c)`` is ``(1, 1)``, a starred item its own index, an item after it its index from the end:
+    ``c`` of ``a, *b, c`` is ``(-1,)``), empty for the whole target. ``kind`` is
     ``assign``, ``annassign``, ``for``, ``comprehension``, ``with`` or ``walrus``. An
     augmented assignment, a deletion and an annotation without a value assign nothing.
     """
@@ -2555,8 +2556,12 @@ def _record(found: dict[ast.AST, Assignment], target: ast.expr, assignment: Assi
         element = assignment.element
         same = isinstance(element, (ast.Tuple, ast.List)) and len(element.elts) == len(target.elts)
         parts = element.elts if same else [element] * len(target.elts)
+        star = next(
+            (index for index, item in enumerate(target.elts) if isinstance(item, ast.Starred)), len(target.elts)
+        )
         for index, (item, part) in enumerate(zip(target.elts, parts, strict=True)):
-            _record(found, item, replace(assignment, element=part, position=(*assignment.position, index)))
+            at = index - len(target.elts) if index > star else index
+            _record(found, item, replace(assignment, element=part, position=(*assignment.position, at)))
 
 
 def string_type(node: ast.Constant) -> ast.expr | None:

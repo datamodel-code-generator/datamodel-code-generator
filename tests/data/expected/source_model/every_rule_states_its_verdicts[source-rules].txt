@@ -123,11 +123,15 @@ references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:1
 references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:18: posix-only-call: test_through_a_class reaches scripts.posix_only_across_modules.script.Runner -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
 references/posix_only_across_modules: tests/posix_only_across_modules/cases.py:22: posix-only-call: test_passed_on reaches scripts.posix_only_across_modules.script.run -> scripts.posix_only_across_modules.script.worker -> os.fork in scripts/posix_only_across_modules/script.py
 references/posix_only_at_import: scripts/posix_only_at_import.py:10: posix-only-call: import fcntl runs when the module is imported
+references/posix_only_at_import: scripts/posix_only_at_import.py:14: posix-only-call: import os.mkfifo runs when the module is imported
+references/posix_only_at_import: scripts/posix_only_at_import.py:15: posix-only-call: import signal.SIGKILL runs when the module is imported
 references/posix_only_at_import: scripts/posix_only_at_import.py:25: posix-only-call: os.mkfifo runs when the module is imported
 references/posix_only_at_import: scripts/posix_only_at_import.py:26: posix-only-call: os.mkfifo runs when the module is imported
 references/posix_only_at_import: scripts/posix_only_at_import.py:28: posix-only-call: import resource runs when the module is imported
 references/posix_only_at_import: scripts/posix_only_at_import.py:32: posix-only-call: signal.SIGKILL runs when the module is imported
 references/posix_only_at_import: tests/posix_only_at_import.py:10: posix-only-call: import fcntl runs when the module is imported
+references/posix_only_at_import: tests/posix_only_at_import.py:14: posix-only-call: import os.mkfifo runs when the module is imported
+references/posix_only_at_import: tests/posix_only_at_import.py:15: posix-only-call: import signal.SIGKILL runs when the module is imported
 references/posix_only_at_import: tests/posix_only_at_import.py:25: posix-only-call: os.mkfifo runs when the module is imported
 references/posix_only_at_import: tests/posix_only_at_import.py:26: posix-only-call: os.mkfifo runs when the module is imported
 references/posix_only_at_import: tests/posix_only_at_import.py:28: posix-only-call: import resource runs when the module is imported
@@ -140,7 +144,7 @@ references/posix_only_in_tests: tests/posix_only_in_tests.py:37: posix-only-call
 references/posix_only_in_tests: tests/posix_only_in_tests.py:57: posix-only-call: test_python_version_is_no_platform reaches os.mkfifo in tests/posix_only_in_tests.py
 references/posix_only_in_tests: tests/posix_only_in_tests.py:62: posix-only-call: test_unknown_capability reaches os.mkfifo in tests/posix_only_in_tests.py
 references/posix_only_in_tests: tests/posix_only_in_tests.py:66: posix-only-call: test_fixture reaches fixture pipe_dir -> os.mkfifo in tests/posix_only_in_tests.py
-references/posix_only_in_tests: tests/posix_only_in_tests.py:70: posix-only-call: test_from_import reaches os.fork in tests/posix_only_in_tests.py
+references/posix_only_in_tests: tests/posix_only_in_tests.py:70: posix-only-call: test_from_import reaches import os.fork in tests/posix_only_in_tests.py
 references/posix_only_in_tests: tests/posix_only_in_tests.py:76: posix-only-call: test_nested reaches os.fork in tests/posix_only_in_tests.py
 references/posix_only_in_tests: tests/posix_only_in_tests.py:108: posix-only-call: TestPlain.test_method reaches os.fork in tests/posix_only_in_tests.py
 references/posix_only_in_tests: tests/posix_only_in_tests.py:134: posix-only-call: test_guarded_import_does_not_guard_its_readers reaches tests.posix_only_in_tests.peak -> resource.getrusage in tests/posix_only_in_tests.py

@@ -39,7 +39,7 @@ import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._ci_lanes import WORKFLOW, Lane, read_lanes
-from scripts._source_model import SourceModelError, SourceModule, Unreadable, bases, name_reads
+from scripts._source_model import UNKNOWN, SourceModelError, SourceModule, Unreadable, argument, bases, name_reads
 from tests.units import condition_holds, condition_problem
 
 if TYPE_CHECKING:
@@ -89,7 +89,7 @@ PORTABLE_ROOTS = ("scripts", TESTS)
 """The folders whose file names every checkout (Windows, macOS) must be able to hold."""
 WINDOWS_REFUSED = re.compile(r'[<>:"|?*\\\x00-\x1f]')
 """The characters Windows refuses in a file name (a backslash is its separator)."""
-WINDOWS_DEVICE = re.compile(r"(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?", re.IGNORECASE)
+WINDOWS_DEVICE = re.compile(r"(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\..*)?", re.IGNORECASE)
 """The names Windows reserves for devices, with or without an extension."""
 PATH_METHODS = frozenset({"joinpath", "with_name", "with_stem", "with_suffix"})
 PATH_ORIGINS = frozenset({"pathlib.Path", "pathlib.PurePath", "os.path.join", "builtins.open"})
@@ -1017,9 +1017,9 @@ def _excludes_windows(table: dict[str, tuple[tuple[str, ...], str]], names: Iter
 def _test_marks(model: SourceModule, scope: Scope) -> list[str] | None:
     """Return the capabilities the marks of a collected test name (its module's, classes' and own), None for no test.
 
-    A function whose name starts with ``test`` inside another function is no test pytest collects.
+    A function whose name starts with ``test`` inside another function, or a fixture, is no test pytest collects.
     """
-    if scope.kind != "function" or not scope.code_name.startswith("test"):
+    if scope.kind != "function" or not scope.code_name.startswith("test") or _fixture_options(model, scope) is not None:
         return None
     chain, parent = [scope], scope.parent
     while parent is not None and parent.kind in {"class", "module"}:
@@ -1110,20 +1110,30 @@ def _decided_by_name(reference: Reference, heads: dict[ast.AST, Reference]) -> b
     )
 
 
-def _posix_origin(model: SourceModule, node: ast.expr) -> str | None:
-    """Return the origin of a read that is a closed-list name or a name of a closed-list module, else None.
+def _is_posix_only(origin: str) -> bool:
+    """Return whether a dotted path is a closed-list name or a name of a closed-list module."""
+    return origin in POSIX_ONLY_CALLS or origin.split(".", maxsplit=1)[0] in POSIX_ONLY_MODULES
+
+
+def _posix_origin(model: SourceModule, node: ast.expr, head: Reference, loaded: dict[ast.AST, str]) -> str | None:
+    """Return the origin of a read (``head`` is its head name's) that is a closed-list name or module's name, else None.
 
     Every binding of the name counts (`SourceModule.origins`): ``try: import fcntl`` / ``except ImportError:
-    fcntl = None`` leaves ``fcntl`` bound twice, and its reads are still reads of the module.
+    fcntl = None`` leaves ``fcntl`` bound twice, and its reads are still reads of the module. So does a name assigned
+    a value that holds a literal import of such a module (``loaded``, by call node): ``fcntl =
+    importlib.import_module("fcntl") if sys.platform != "win32" else None``.
     """
-    return next(
-        (
-            origin
-            for origin, _ in model.origins(node)
-            if origin in POSIX_ONLY_CALLS or origin.split(".")[0] in POSIX_ONLY_MODULES
-        ),
-        None,
-    )
+    parts, part = [], node
+    while isinstance(part, ast.Attribute):
+        part, parts = part.value, [part.attr, *parts]
+    imported = [
+        ".".join([loaded[part], *parts])
+        for binding in model.resolve(head.node).bindings
+        if binding.kind in {"assign", "annassign"} and binding.value is not None
+        for part in ast.walk(binding.value)
+        if part in loaded
+    ]
+    return next(filter(_is_posix_only, [*(origin for origin, _ in model.origins(node)), *imported]), None)
 
 
 def _posix_uses(module: Module) -> list[_PosixUse]:
@@ -1138,18 +1148,25 @@ def _posix_uses(module: Module) -> list[_PosixUse]:
     """
     model = module.model
     found = [
-        _PosixUse(item.scope, item.node.lineno, f"import {item.source}")
+        _PosixUse(item.scope, item.node.lineno, f"import {item.target if item.kind == 'from' else item.source}")
         for item in model.imports
         if isinstance(item.source, str)
-        and item.source.split(".")[0] in POSIX_ONLY_MODULES
+        and isinstance(item.target, str)
+        and (item.source.split(".")[0] in POSIX_ONLY_MODULES or item.target in POSIX_ONLY_CALLS)
+        and not item.typing_only
         and not _decided_by_platform(item.guard)
     ]
+    loaded: dict[ast.AST, str] = {
+        item.node: item.source
+        for item in model.imports
+        if item.kind == "dynamic" and isinstance(item.source, str) and _is_posix_only(item.source)
+    }
     heads = _heads(module)
     presence = _presence_tests(module, heads)
     longest: dict[ast.AST, tuple[str, int, Scope]] = {}
     for node, reference in _chains(module, heads):
         if (
-            (origin := _posix_origin(model, node)) is None
+            (origin := _posix_origin(model, node, reference, loaded)) is None
             or _decided_by_platform(reference.guard)
             or _decided_by_name(reference, heads)
             or node in presence
@@ -1207,11 +1224,12 @@ class _PosixIndex:
         return next((key for size in range(len(parts), 1, -1) if (key := ".".join(parts[:size])) in self.units), None)
 
     def reads(self, module: Module) -> list[tuple[Scope, str]]:
-        """Return the scope and the top-level name of each name and attribute chain of a module that leads to one."""
+        """Return the scope and the top-level name of each read of a module that leads to one (`_posix_uses` guards)."""
         return [
             (reference.scope, target)
             for node, reference in _chains(module, _heads(module))
-            if (target := self._target(module.model.origin(node))) is not None
+            if not _decided_by_platform(reference.guard)
+            and (target := self._target(module.model.origin(node))) is not None
         ]
 
 
@@ -1232,6 +1250,15 @@ class _Fixture:
     autouse: bool
 
 
+def _fixture_options(model: SourceModule, scope: Scope) -> dict[str | None, ast.expr] | None:
+    """Return the keywords of a scope's ``pytest.fixture`` decorator (empty when it is not called), None for none."""
+    for decorator in getattr(scope.node, "decorator_list", []):
+        call = decorator if isinstance(decorator, ast.Call) else None
+        if model.origin(call.func if call is not None else decorator) == _FIXTURE_ORIGIN:
+            return {keyword.arg: keyword.value for keyword in call.keywords} if call is not None else {}
+    return None
+
+
 def _fixtures(module: Module) -> list[_Fixture]:
     """Return the fixtures a module defines at module level or in a class, by the origin of the decorator.
 
@@ -1243,20 +1270,17 @@ def _fixtures(module: Module) -> list[_Fixture]:
     for scope in model.scopes:
         if scope.kind != "function" or scope.parent is None or scope.parent.kind not in {"module", "class"}:
             continue
-        for decorator in getattr(scope.node, "decorator_list", []):
-            call = decorator if isinstance(decorator, ast.Call) else None
-            if model.origin(call.func if call is not None else decorator) != _FIXTURE_ORIGIN:
-                continue
-            options = {keyword.arg: keyword.value for keyword in call.keywords} if call is not None else {}
-            name, autouse = options.get("name"), options.get("autouse")
-            found.append(
-                _Fixture(
-                    module,
-                    scope,
-                    name.value if isinstance(name, ast.Constant) and isinstance(name.value, str) else scope.code_name,
-                    isinstance(autouse, ast.Constant) and autouse.value is True,
-                )
+        if (options := _fixture_options(model, scope)) is None:
+            continue
+        name, autouse = options.get("name"), options.get("autouse")
+        found.append(
+            _Fixture(
+                module,
+                scope,
+                name.value if isinstance(name, ast.Constant) and isinstance(name.value, str) else scope.code_name,
+                isinstance(autouse, ast.Constant) and autouse.value is True,
             )
+        )
     return found
 
 
@@ -1322,8 +1346,8 @@ class _TestReach:
         self.reads = {module.rel: index.reads(module) for module in self.modules.values()}
         self.fixtures = {rel: _fixtures(module) for rel, module in self.modules.items()}
 
-    def visible(self, module: Module, scope: Scope) -> dict[str, _Fixture]:
-        """Return the fixtures a test of ``scope`` sees by name: conftest files far to near, the module, its classes."""
+    def layers(self, module: Module, scope: Scope) -> list[_Fixture]:
+        """Return the fixtures a test of ``scope`` sees, far to near: conftest files, the module, its classes."""
         folders = list(Path(module.rel).parents)[::-1]
         conftests = [rel for folder in folders if (rel := (folder / "conftest.py").as_posix()) in self.modules]
         chain = []
@@ -1331,16 +1355,13 @@ class _TestReach:
         while probe is not None and probe.kind == "class":
             chain.insert(0, probe)
             probe = probe.parent
-        found: dict[str, _Fixture] = {}
-        for rel in [*conftests, module.rel]:
-            found.update(
-                (fixture.name, fixture)
-                for fixture in self.fixtures[rel]
-                if fixture.scope.parent is not None and fixture.scope.parent.kind == "module"
-            )
-        for owner in chain:
-            found.update((f.name, f) for f in self.fixtures[module.rel] if f.scope.parent is owner)
-        return found
+        found = [
+            fixture
+            for rel in [*conftests, module.rel]
+            for fixture in self.fixtures[rel]
+            if fixture.scope.parent is not None and fixture.scope.parent.kind == "module"
+        ]
+        return found + [f for owner in chain for f in self.fixtures[module.rel] if f.scope.parent is owner]
 
     def reach(self, module: Module, scope: Scope, visible: dict[str, _Fixture], seen: set[Scope]) -> str | None:
         """Return the first POSIX-only use the code of ``scope`` reaches and the way there, None if it reaches none."""
@@ -1369,7 +1390,8 @@ class _TestReach:
 
     def test_reach(self, module: Module, scope: Scope) -> str | None:
         """Return what a collected test reaches (see the class): its own code, then the fixtures it is given."""
-        visible = self.visible(module, scope)
+        layers = self.layers(module, scope)
+        visible = {fixture.name: fixture for fixture in layers}
         seen: set[Scope] = set()
         if (found := self.reach(module, scope, visible, seen)) is not None:
             return found
@@ -1379,7 +1401,7 @@ class _TestReach:
             probe = probe.parent
         asked = [name for item in chain for name in _usefixtures(module.model, item)]
         given = [visible[name] for name in asked if name in visible]
-        given += [fixture for fixture in visible.values() if fixture.autouse]
+        given += [visible[name] for name in dict.fromkeys(fixture.name for fixture in layers if fixture.autouse)]
         return next(filter(None, (self.through(fixture, visible, seen) for fixture in given)), None)
 
 
@@ -1499,8 +1521,9 @@ def unportable_paths(paths: Iterable[str]) -> list[tuple[str, str]]:
 def _path_operands(module: Module) -> Iterator[tuple[int, ast.expr]]:
     """Yield ``(line, operand)`` for each expression a path is built from.
 
-    The positions are the right operand of ``/``, the arguments of ``Path``/``PurePath``/``os.path.join``, the first
-    argument of ``open`` (by origin) and the arguments of ``.joinpath``/``.with_name``/``.with_stem``/``.with_suffix``.
+    The positions are the right operand of ``/``, the arguments of ``Path``/``PurePath``/``os.path.join``, the file
+    of ``open`` (by origin; first argument or ``file=``) and the arguments of ``.joinpath``/``.with_name``/
+    ``.with_stem``/``.with_suffix``.
     """
     model = module.model
     for node in module.nodes:
@@ -1510,7 +1533,8 @@ def _path_operands(module: Module) -> Iterator[tuple[int, ast.expr]]:
             (origin := model.origin(node.func)) in PATH_ORIGINS
             or (isinstance(node.func, ast.Attribute) and node.func.attr in PATH_METHODS)
         ):
-            operands = node.args[:1] if origin == "builtins.open" else node.args
+            opened = argument(node, 0, "file") if origin == "builtins.open" else None
+            operands = node.args if origin != "builtins.open" else [opened] if opened not in {None, UNKNOWN} else []
         else:
             continue
         yield from ((node.lineno, operand) for operand in operands)
@@ -1519,8 +1543,9 @@ def _path_operands(module: Module) -> Iterator[tuple[int, ast.expr]]:
 class _Names:
     """The one resolver of the names a path is built from: what a name may hold, read from the module's bindings.
 
-    A name holds the value of each assignment to it, the values of the ``parametrize`` that gives a test its parameter
-    (the matching element of each ``pytest.param`` or tuple), and the item a ``for`` loop or a comprehension takes from
+    A name holds the value of each assignment to it (the paired item of an unpacking), the values of the
+    ``parametrize`` that gives a test its parameter (the matching element of each ``pytest.param`` or tuple), and the
+    item a ``for`` loop or a comprehension takes from
     a literal list, tuple, set or dict (``items()``, ``keys()`` and ``values()`` too) at the name's position in the
     target (`Assignment.position`). Names bound to names are followed, each once. What a call, a subscript or an
     argument makes is not known.
@@ -1535,8 +1560,12 @@ class _Names:
         reference = self.heads.get(node)
         return reference if reference is not None and reference.context == "load" else None
 
-    def expressions(self, name: ast.expr) -> list[ast.expr]:
-        """Return the expressions a name may hold, one step: its assigned values, parameter values and loop items."""
+    def expressions(self, name: ast.expr, seen: frozenset[ast.AST] = frozenset()) -> list[ast.expr]:
+        """Return the expressions a name may hold, one step: its assigned values, parameter values and loop items.
+
+        ``seen`` holds the names being resolved: a loop that rebinds the name it iterates (``for names in names``)
+        reads the iterable's other bindings only.
+        """
         if (reference := self._loaded(name)) is None:
             return []
         found: list[ast.expr] = []
@@ -1544,12 +1573,14 @@ class _Names:
             assigned = self.model.assignment(binding.node)
             if binding.kind in {"assign", "annassign"} and binding.value is not None:
                 found.append(binding.value)
+            elif binding.kind in {"assign", "annassign"} and assigned is not None:
+                found += [element] if (element := _element(assigned.value, assigned.position)) is not None else []
             elif binding.kind == "param":
                 found += self._parametrized(binding)
             elif binding.kind in {"for", "comprehension"} and assigned is not None:
                 found += [
                     element
-                    for item in self.items(assigned.value)
+                    for item in self.items(assigned.value, seen | {name})
                     if (element := _element(item, assigned.position)) is not None
                 ]
         return found
@@ -1561,7 +1592,8 @@ class _Names:
         if isinstance(iterable, ast.Dict):
             return [key for key in iterable.keys if key is not None]
         if self._loaded(iterable) is not None and iterable not in seen:
-            return [item for value in self.expressions(iterable) for item in self.items(value, seen | {iterable})]
+            inner = seen | {iterable}
+            return [item for value in self.expressions(iterable, inner) for item in self.items(value, inner)]
         if (
             isinstance(iterable, ast.Call)
             and isinstance(iterable.func, ast.Attribute)
@@ -1584,7 +1616,7 @@ class _Names:
         if isinstance(node, ast.Dict):
             return [node]
         if self._loaded(node) is not None and node not in seen:
-            return [m for value in self.expressions(node) for m in self.mappings(value, seen | {node})]
+            return [m for value in self.expressions(node, seen | {node}) for m in self.mappings(value, seen | {node})]
         return []
 
     def _parametrized(self, binding: Binding) -> list[ast.expr]:
@@ -1600,14 +1632,14 @@ class _Names:
             names = _argnames(arguments["argnames"])
             if binding.name not in names:
                 continue
-            position = names.index(binding.name)
+            position = (names.index(binding.name),)
+            whole = len(names) == 1 and isinstance(arguments["argnames"], ast.Constant)
             for item in self.items(arguments["argvalues"]):
-                values = (
-                    ast.Tuple(list(item.args), ast.Load())
-                    if isinstance(item, ast.Call) and self.model.origin(item.func) == "pytest.param"
-                    else item
-                )
-                if (element := _element(values, (position,) if len(names) > 1 else ())) is not None:
+                if isinstance(item, ast.Call) and self.model.origin(item.func) == "pytest.param":
+                    element = _element(ast.Tuple(list(item.args), ast.Load()), position)
+                else:
+                    element = item if whole else _element(item, position)
+                if element is not None:
                     found.append(element)
         return found
 
@@ -1618,7 +1650,8 @@ class _Names:
         if isinstance(node, ast.IfExp):
             return [*self.strings(node.body, seen), *self.strings(node.orelse, seen)]
         if self._loaded(node) is not None and node not in seen:
-            return [text for value in self.expressions(node) for text in self.strings(value, seen | {node})]
+            inner = seen | {node}
+            return [text for value in self.expressions(node, inner) for text in self.strings(value, inner)]
         return []
 
 
@@ -1632,9 +1665,12 @@ def _argnames(node: ast.expr) -> list[str]:
 
 
 def _element(item: ast.expr, position: tuple[int, ...]) -> ast.expr | None:
-    """Return the part of an item that a position leads to, None where the item is no tuple or list there."""
+    """Return the part of an item that a position leads to, None where the item is no tuple or list there.
+
+    A negative index counts from the end, as for a target after a starred one (`Assignment.position`).
+    """
     for index in position:
-        if not isinstance(item, (ast.Tuple, ast.List)) or index >= len(item.elts):
+        if not isinstance(item, (ast.Tuple, ast.List)) or not -len(item.elts) <= index < len(item.elts):
             return None
         item = item.elts[index]
     return item
@@ -1663,16 +1699,17 @@ def _path_literals(module: Module) -> Iterator[tuple[int, str, bool]]:
             )
 
 
-def _file_name_writers(module: Module) -> set[str]:
+def _file_name_writers(module: Module) -> dict[str, set[tuple[int | None, str | None]]]:
     """Return the top-level functions that write files named by the entries of a mapping or list they take.
 
     A ``for`` loop over a parameter (or its ``items()``, ``keys()`` or ``values()``) whose loop variable is read in a
     path position (`_path_operands`), as in ``for name, text in files.items(): (root / f"{name}.toml").write_text()``.
+    Each maps to the parameters it names files by, as ``(position, keyword)`` (`_parameter_slot`).
     """
     model = module.model
     positioned = [name for _, operand in _path_operands(module) for name in name_reads(operand)]
     heads = {reference.node: reference for reference in model.references}
-    found: set[str] = set()
+    found: dict[str, set[tuple[int | None, str | None]]] = defaultdict(set)
     for binding in model.bindings():
         if (
             binding.kind != "for"
@@ -1698,14 +1735,39 @@ def _file_name_writers(module: Module) -> set[str]:
                 for name in positioned
             )
         ):
-            found.add(_unit_of(module, binding.scope) or "")
+            found[_unit_of(module, binding.scope) or ""] |= {_parameter_slot(model, source) for source in sources}
+    return found
+
+
+def _parameter_slot(model: SourceModule, parameter: Binding) -> tuple[int | None, str | None]:
+    """Return how a call passes a top-level function's parameter: ``(position, keyword)``, or ``(None, None)``.
+
+    The position is the parameter's place among the function's parameters as written; a call gives a keyword-only
+    one by its keyword. A parameter of a method or a nested function is ``(None, None)``: every argument may be it.
+    """
+    if parameter.scope.parent is None or parameter.scope.parent.kind != "module":
+        return None, None
+    names = [binding.name for binding in model.bindings(scope=parameter.scope) if binding.kind == "param"]
+    return names.index(parameter.name), parameter.name
+
+
+def _writer_arguments(call: ast.Call, slots: set[tuple[int | None, str | None]]) -> list[ast.expr]:
+    """Return the arguments of a call that pass the parameters files are named by; every one where that is unknown."""
+    every = [*call.args, *(keyword.value for keyword in call.keywords)]
+    found: list[ast.expr] = []
+    for position, keyword in slots:
+        passed = argument(call, position, keyword) if position is not None or keyword is not None else UNKNOWN
+        if passed is UNKNOWN:
+            return every
+        found += [passed] if passed is not None else []
     return found
 
 
 def _file_name_keys(module: Module) -> Iterator[tuple[int, str]]:
     """Yield ``(line, key)`` for the string keys of the mappings a module passes to a function that names files by them.
 
-    A mapping is an argument of a call to such a function (`_file_name_writers`, of the same module), or the value a
+    A mapping is the argument a call to such a function (`_file_name_writers`, of the same module) passes for the
+    parameter it names files by (every argument where ``*args`` or ``**kwargs`` may pass it), or the value a
     name in an argument may hold (`_Names`), each displayed ``{...}`` at any depth (``f(root, *CASES[case])`` reaches
     every mapping of ``CASES``). A key is a string the resolver reads (a literal, a constant); the key is the file name.
     """
@@ -1715,10 +1777,10 @@ def _file_name_keys(module: Module) -> Iterator[tuple[int, str]]:
         return
     names = _Names(module)
     pending: list[ast.AST] = [
-        argument
+        passed
         for node in module.nodes
-        if isinstance(node, ast.Call) and model.origin(node.func) in writers
-        for argument in (*node.args, *(keyword.value for keyword in node.keywords))
+        if isinstance(node, ast.Call) and (slots := writers.get(model.origin(node.func) or "")) is not None
+        for passed in _writer_arguments(node, slots)
     ]
     seen: set[int] = set()
     while pending:

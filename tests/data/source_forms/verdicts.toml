@@ -944,7 +944,7 @@
 "references/portable_names_by_key" = "finding: portable-names scripts:11 scripts:11 scripts:28 scripts:33 tests:11 tests:11 tests:28 tests:33"
 "references/portable_names_in_paths" = "finding: portable-names scripts:19 scripts:20 scripts:21 scripts:22 scripts:23 scripts:24 scripts:27 scripts:42 scripts:43 scripts:44 scripts:48 scripts:51 scripts:56 scripts:56 scripts:61 tests:19 tests:20 tests:21 tests:22 tests:23 tests:24 tests:27 tests:42 tests:43 tests:44 tests:48 tests:51 tests:56 tests:56 tests:61"
 "references/posix_only_across_modules" = "finding: posix-only-call tests/cases.py:10 tests/cases.py:14 tests/cases.py:18 tests/cases.py:22"
-"references/posix_only_at_import" = "finding: posix-only-call scripts:10 scripts:25 scripts:26 scripts:28 scripts:32 tests:10 tests:25 tests:26 tests:28 tests:32"
+"references/posix_only_at_import" = "finding: posix-only-call scripts:10 scripts:14 scripts:15 scripts:25 scripts:26 scripts:28 scripts:32 tests:10 tests:14 tests:15 tests:25 tests:26 tests:28 tests:32"
 "references/posix_only_in_tests" = "finding: posix-only-call tests:37 tests:57 tests:62 tests:66 tests:70 tests:76 tests:108 tests:134 tests:142 tests:153 tests:161 tests:166 tests:179 tests:188"
 "references/posix_only_fixtures_by_pytest" = "finding: posix-only-call tests/cases.py:6 tests/cases.py:10 tests/cases.py:15 tests/quiet/cases.py:4"
 "references/posonly_receiver_members" = "no finding: the form holds none of the shapes a source rule reports"
