@@ -683,6 +683,8 @@ class CellEvidence:
 
 DECISIVE = frozenset({Category.DEFAULT_FIX, Category.DECIDED_CHANGE, Category.EXPERIMENTAL, Category.CRASH_FIX})
 """The categories whose evidence, where it holds on a cell, covers the kinds they admit without `output-text`'s."""
+DECISIONS = frozenset({Category.DEFAULT_FIX, Category.DECIDED_CHANGE})
+"""The categories whose evidence is that a covering selector selects each change line of a cell."""
 LINE_ASPECT = re.compile(r"^\[([a-z_-]+)\]")
 KIND_ASPECTS = {CellKind.EXIT: "exit", CellKind.WARNINGS: "warning", CellKind.MESSAGES: "message"}
 """The aspect of the change lines that show a difference of each kind that has lines."""
@@ -725,14 +727,14 @@ def evidence_problem(
     message line matching; `api`: a removed option the record names, which the head refuses. Other categories cover no
     cell. A decision and a notice prove nothing where a signature could not be taken, or where an exit, warning or
     message difference shows in no change line (the exit, warning and message lines, `change_lines`): the cell is
-    unproved for them.
+    unproved for them. That the kinds a category does not admit are equal is `judge`'s check over every covering
+    record, not a record's evidence.
     """
     problems: tuple[tuple[bool, str], ...] = ((True, f"category {record.category} covers no cell"),)
     unshown = _unshown(found, evidence.lines)
     match record.category:
         case Category.OUTPUT_TEXT:
             problems = (
-                (bool(found - {CellKind.OUTPUT}), "exit, warnings or messages differ"),
                 (not evidence.model_files, "a differing file is no model module"),
                 (evidence.signature_failed, "a signature could not be taken"),
                 (evidence.cls != "no-behaviour", f"the cell's class is {evidence.cls}, not no-behaviour"),
@@ -766,7 +768,6 @@ def evidence_problem(
             notices = [line for line in evidence.lines if line.startswith(("[warning]", "[message]"))]
             outside = [line for line in notices if not any(_line_matches(line, item) for item in selectors)]
             problems = (
-                (bool(found & {CellKind.OUTPUT, CellKind.EXIT}), "the output or the exit status differs"),
                 (evidence.signature_failed, "a signature could not be taken, so the change lines are unknown"),
                 (bool(outside), f"a warning or message line is outside its match: {outside[:1]}"),
                 (unshown is not None, unshown or ""),
@@ -788,12 +789,15 @@ def _admits(record: Record) -> frozenset[CellKind]:
 def judge(cell: RunCell, found: frozenset[CellKind], records: Sequence[Record], evidence: CellEvidence) -> Verdict:
     """Return whether the records cover a differing cell: `accepted`, by the indices of the records that cover it.
 
-    `records` are those whose selectors may cover the cell (an extending record passed as its target with its own id
-    and cells); a record covers it where one of its selectors does (`covers`). The covering records must admit every
-    kind of the difference (`found`), the union of their categories' kinds. Where a covering record of a decisive
-    category (`DECISIVE`) holds its evidence, the kinds it admits need no other evidence, `output-text`'s included;
-    every other covering record that admits a kind left over must hold its evidence. Else the cell is a `violation`
-    with the reasons.
+    `records` are those whose selectors may cover the cell (an extending record passed as its target with its own id and
+    cells); a record covers it where one of its selectors does (`covers`). The covering records must admit every kind of
+    the difference (`found`), the union of their categories' kinds, so a kind one record's category does not admit needs
+    to be equal only where no other covering record admits it (`output-text` beside `notice` covers a no-behaviour text
+    change with a new warning), and the covering decision records (`DECISIONS`) select the change lines together: each
+    line must be inside the aspects and match of a covering selector of one of them (two changes of one release each
+    select their own lines). Where a covering record of a decisive category (`DECISIVE`) holds its evidence, the kinds
+    it admits need no other evidence, `output-text`'s included; every other covering record that admits a kind left over
+    must hold its evidence. Else the cell is a `violation` with the reasons.
     """
     if not found:
         return Verdict("violation", ("the cell has no differing kind to judge",))
@@ -809,8 +813,15 @@ def judge(cell: RunCell, found: frozenset[CellKind], records: Sequence[Record], 
         return Verdict(
             "violation", tuple(f"no covering record admits the cell's {kind} difference" for kind in sorted(missing))
         )
+    decisions = [selector for index in covering if records[index].category in DECISIONS for selector in covering[index]]
     problems = {
-        index: evidence_problem(records[index], covering[index], cell, found, evidence)
+        index: evidence_problem(
+            records[index],
+            decisions if records[index].category in DECISIONS else covering[index],
+            cell,
+            found,
+            evidence,
+        )
         for index in admitted
         if admitted[index]
     }

@@ -1,0 +1,11 @@
+{
+ "cls": "accepted",
+ "notes": [
+  "covered by decided-change",
+  "covered by default-fix"
+ ],
+ "accepted_by": [
+  "decided-change",
+  "default-fix"
+ ]
+}

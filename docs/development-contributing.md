@@ -368,10 +368,11 @@ options = "*"
 - `input_file_type` (optional): the input type the cells run with. Without it a selector covers the cells whose type
   is their folder's below `tests/data/`; a cell with another type (a `cli_doc` example) needs the type named.
 - `aspects` and `match` (optional): every change line of a covered cell must have one of the aspects and match the
-  regular expression (searched) in at least one selector that covers the cell (not in every one); a `notice` record
-  applies this to the `[warning]` and `[message]` lines. A change line is `[aspect] ...` from the behaviour signature
-  diff, plus `[exit] <base> -> <head>`, `[warning] added|removed <text>` and `[message] added|removed <line>`. A decision
-  category needs one of the two in every selector, a `notice` needs `match`.
+  regular expression (searched) in at least one selector that covers the cell (not in every one), counting the selectors
+  of every `default-fix` and `decided-change` record that covers it; a `notice` record applies this to the `[warning]`
+  and `[message]` lines. A change line is `[aspect] ...` from the behaviour signature diff, plus `[exit] <base> ->
+  <head>`, `[warning] added|removed <text>` and `[message] added|removed <line>`. A decision category needs one of the
+  two in every selector, a `notice` needs `match`.
 
 The gate prints a starting block for the uncovered cells: one selector per input, `options = "*"` where the cells span
 several option sets, and the first change line as a commented `match`. Write the selector narrow: one selector may name
@@ -395,20 +396,25 @@ records a PR adds must name cells.
 
 | category | cells | differences it covers | evidence on each covered differing cell |
 |---|---|---|---|
-| `output-text` | required | output | exit, warnings and messages equal; every differing file is a model module; class `no-behaviour`; rule (b); payload cells give equal verdicts and parsed values |
+| `output-text` | required | output | exit, warnings and messages equal unless another covering record admits them; every differing file is a model module; class `no-behaviour`; rule (b); payload cells give equal verdicts and parsed values |
 | `crash-fix` | required | output, exit, messages | class `crash-fix`; where the exit status differs, it goes from a failure to 0 |
-| `default-fix`, `decided-change` | optional; `aspects` or `match` in every selector | any | every change line inside the selector's `aspects` and `match` |
+| `default-fix`, `decided-change` | optional; `aspects` or `match` in every selector | any | every change line inside the `aspects` and `match` of a selector of a covering `default-fix` or `decided-change` record |
 | `experimental` | optional | any | a feature of `affects.experimental` is in the cell (its option is set, or its input type is the feature's); the companion cell without the feature's options is equal |
-| `notice` | required; `match` in every selector | warnings, messages | output and exit equal; every `[warning]` and `[message]` line matches |
+| `notice` | required; `match` in every selector | warnings, messages | output and exit equal unless another covering record admits them; every `[warning]` and `[message]` line matches |
 | `api` | optional | output, exit, messages | the cell sets an option `affects.options` names and the head no longer has; the head refuses the cell |
 | `new-surface`, `docs-text`, `internal`, `harness` | forbidden | none | none |
 
 "Required" applies to the records a PR adds. Several records may cover one cell: it must be admitted in every kind it
 differs by, the kinds are the union of the covering categories, and where a covering `default-fix`, `decided-change`,
-`experimental` or `crash-fix` record holds its evidence, the kinds it admits need no `output-text` evidence. A decision
-or notice record proves nothing where a signature could not be taken or where an exit, warning or message difference
-shows in no change line: the cell is unproved. A head that stops at the timeout or the memory cap where the base
-finished fails whatever the records say, and so does a head that gives other facts on a second run.
+`experimental` or `crash-fix` record holds its evidence, the kinds it admits need no `output-text` evidence. A kind a
+category does not admit must be equal only where no other covering record admits it: an `output-text` and a `notice`
+record together cover a no-behaviour text change with a new warning, each proving its own kinds. The covering
+`default-fix` and `decided-change` records are judged together, line by line: every change line must be selected by a
+selector of one of them, so two changes of one release that each declare their own lines pass. A change line no covering
+decision selector selects, or a kind no covering record admits, still fails. A decision or notice record proves nothing
+where a signature could not be taken or where an exit, warning or message difference shows in no change line: the cell
+is unproved. A head that stops at the timeout or the memory cap where the base finished fails whatever the records say,
+and so does a head that gives other facts on a second run.
 
 An `output-text` record also proves the stored Python modules in its `covers` that changed between the merge base and
 the head: signatures with no behaviour change, rule (b) (the syntax trees are equal apart from docstrings, comments and

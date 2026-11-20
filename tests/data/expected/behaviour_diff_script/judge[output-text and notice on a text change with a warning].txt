@@ -1,8 +1,11 @@
 {
- "cls": "violation",
+ "cls": "accepted",
  "notes": [
-  "output-text (output-text): exit, warnings or messages differ",
-  "notice (notice): the output or the exit status differs"
+  "covered by output-text",
+  "covered by notice"
  ],
- "accepted_by": []
+ "accepted_by": [
+  "output-text",
+  "notice"
+ ]
 }

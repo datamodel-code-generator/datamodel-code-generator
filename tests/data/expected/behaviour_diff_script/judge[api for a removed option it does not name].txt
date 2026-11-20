@@ -1,7 +1,0 @@
-{
- "cls": "violation",
- "notes": [
-  "api (api): the cell sets no removed option the record names"
- ],
- "accepted_by": []
-}

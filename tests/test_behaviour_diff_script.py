@@ -3716,6 +3716,62 @@ JUDGE_CASES: dict[str, tuple[list[Record], set[CellKind], CellEvidence, behaviou
         replace(NO_BEHAVIOUR, lines=("[warning] added DeprecationWarning: mind the gap",)),
         _cell(),
     ),
+    "output-text and notice on a text change with a message": (
+        [_judged("output-text"), _judged("notice", _lines("tests/data/**", match="gap"))],
+        {OUTPUT, MESSAGES},
+        replace(NO_BEHAVIOUR, lines=("[message] added mind the gap",)),
+        _cell(),
+    ),
+    "output-text and notice on a text change with a warning and an exit difference": (
+        [_judged("output-text"), _judged("notice", _lines("tests/data/**", match="gap"))],
+        {OUTPUT, WARNINGS, EXIT},
+        replace(
+            NO_BEHAVIOUR, lines=("[exit] 0 -> 1", "[warning] added DeprecationWarning: mind the gap"), exits=(0, 1)
+        ),
+        _cell(),
+    ),
+    "output-text and notice on a text change with a warning outside the notice's match": (
+        [_judged("output-text"), _judged("notice", _lines("tests/data/**", match="gap"))],
+        {OUTPUT, WARNINGS},
+        replace(NO_BEHAVIOUR, lines=("[warning] added UserWarning: other",)),
+        _cell(),
+    ),
+    "output-text and notice on a behaviour change with a warning": (
+        [_judged("output-text"), _judged("notice", _lines("tests/data/**", match="gap"))],
+        {OUTPUT, WARNINGS},
+        replace(NO_BEHAVIOUR, cls="violation", lines=(TYPE_LINE, "[warning] added DeprecationWarning: mind the gap")),
+        _cell(),
+    ),
+    "two decisions, each line selected by one": (
+        [DECIDED, _judged("default-fix", _lines("tests/data/**", aspects=("default",)))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[default] Model:b: None -> '1'")),
+        _cell(),
+    ),
+    "two decisions of one category, each line selected by one": (
+        [DECIDED, replace(DECIDED, id="other-decided-change", cells=(_lines("tests/data/**", aspects=("default",)),))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[default] Model:b: None -> '1'")),
+        _cell(),
+    ),
+    "two decisions and a line neither selects": (
+        [DECIDED, _judged("default-fix", _lines("tests/data/**", aspects=("default",)))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[default] Model:b: None -> '1'", "[enum] Model:c: 'x' -> 'y'")),
+        _cell(),
+    ),
+    "a decision and a notice, a warning line only the notice selects": (
+        [DECIDED, _judged("notice", _lines("tests/data/**", match="gap"))],
+        {OUTPUT, WARNINGS},
+        CellEvidence("violation", lines=(TYPE_LINE, "[warning] added DeprecationWarning: mind the gap")),
+        _cell(),
+    ),
+    "two decisions, a line selected only by a selector of another cell": (
+        [DECIDED, _judged("default-fix", _lines("tests/data/*/other.json", aspects=("default",)))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[default] Model:b: None -> '1'")),
+        _cell(),
+    ),
     "experimental by its option, an equal companion": (
         [_judged("experimental", affects=(("experimental", ("cli-option.generate-client",)),))],
         {OUTPUT},
