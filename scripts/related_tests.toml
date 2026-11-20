@@ -178,6 +178,17 @@ paths = ["scripts/_behaviour_*.py"]
 tests = ["tests/test_behaviour_diff_script.py"]
 
 [[rule]]
+id = "cell-gate-oracle"
+incident = "a change to the change records or the comparison scripts left the oracle cases of the cell gate unrun until hosted CI"
+paths = [
+  "scripts/_change_records.py",
+  "scripts/declared_changes.py",
+  "scripts/compare_release.py",
+  "scripts/behaviour_diff.py",
+]
+tests = ["tests/test_behaviour_diff_script.py"]
+
+[[rule]]
 id = "source-model-importers"
 prs = [7170]
 incident = "a new importer of the source model failed the test that wants a rule for every importer only on hosted CI"
