@@ -3,7 +3,7 @@ id = "generation-core-out-of-root"
 category = "internal"
 title = "Move the generation core out of the package root"
 summary = "The run pipeline, generate(), the option stages and the --debug tracer move from the package root to private modules that the root re-exports under their public names; the start-up module lists name the three modules the root now imports, and the where script's example of a definition in a conditional block names its new file. The package writes the same output."
-refs = ["#7255"]
+refs = ["#7259"]
 covers = [
     "main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt",
     "main/cli_fast_paths/fast_paths_load_these_modules[help].txt",
