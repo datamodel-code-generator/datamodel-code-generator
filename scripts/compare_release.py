@@ -1254,7 +1254,7 @@ def _environment_name(base: str, python_version: str, pins: list[str]) -> str:
     return f"{base}-py{python_version}-{key}"
 
 
-def _built(root: Path, build: Callable[[], object]) -> Path:
+def built(root: Path, build: Callable[[], object]) -> Path:
     """Return `root` once `build` has filled it, built once under a lock: another run may be building the same.
 
     A root without its `.complete` mark (a build that stopped half way) is removed and built again.
@@ -1275,7 +1275,7 @@ def _base_python(version: str, candidate: Path, cache_dir: Path) -> Path:
     """Install the release next to the candidate's other packages, pinned to the same versions."""
     python_version, pins = _candidate_packages(candidate)
     root = cache_dir / "venvs" / _environment_name(version, python_version, pins)
-    return _built(root, lambda: _install_base(version, python_version, pins, root)) / "bin" / "python"
+    return built(root, lambda: _install_base(version, python_version, pins, root)) / "bin" / "python"
 
 
 def _install_base(version: str, python_version: str, pins: list[str], root: Path) -> None:
@@ -1343,7 +1343,7 @@ def source_tree(revision: str, cache_dir: Path, repo: Path = ROOT, paths: tuple[
     The version file is not in the repository (the build hook writes it), so it is written here.
     """
     root = cache_dir / "trees" / "-".join((revision, *paths))
-    return _built(root, lambda: _extract(revision, repo, paths, root))
+    return built(root, lambda: _extract(revision, repo, paths, root))
 
 
 @dataclass(frozen=True)

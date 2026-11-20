@@ -1963,7 +1963,9 @@ def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
 
     BASE is a released version or a revision of the candidate's repository, CANDIDATE a directory or a revision of
     this repository. A CANDIDATE directory whose `src` holds no package stops the gate too: the interpreter would run
-    its own package instead; one whose package does not import stops it with the exit status of its worker.
+    its own package instead; one whose package does not import stops it with the exit status of its worker. A
+    revision BASE with `--base-python` stops it: the plan reads the revision's tree, which the installed release is
+    not.
     """
     repo = tmp_path / "repo"
     _fake_generator(repo, ["first"], None)
@@ -1971,7 +1973,12 @@ def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     (empty / "tests" / "data" / "jsonschema").mkdir(parents=True)
     (empty / "tests" / "data" / "jsonschema" / "plain.json").write_text("{}", encoding="utf-8")
     installed = ["--base-python", sys.executable, "--types", "pydantic_v2.BaseModel"]
-    cases = (("no-such-revision", str(repo), []), ("0.0.0", "no-such-revision", []), ("0.0.0", str(empty), installed))
+    cases = (
+        ("no-such-revision", str(repo), []),
+        ("0.0.0", "no-such-revision", []),
+        ("0.0.0", str(empty), installed),
+        ("HEAD", str(repo), installed),
+    )
     refusals = []
     for base, candidate, extra in cases:
         with pytest.raises(SystemExit) as error, redirect_stderr(StringIO()), redirect_stdout(StringIO()):
@@ -2313,8 +2320,14 @@ VALIDATOR = """
 
 
 def main(argv):
-    """Write one model of the schema's `type`, changed as the `CHANGES` of its `name` under the given options say."""
+    """Write one model of the schema's `type`, changed as the `CHANGES` of its `name` under the given options say.
+
+    A preset of another target Python than `--target-python-version` is refused, as the package's.
+    """
     ns = arg_parser.parse_args(argv)
+    if ns.preset and ns.target_python_version and f"py{ns.target_python_version.replace('.', '')}" not in ns.preset:
+        print(f"Error: --preset {ns.preset} targets another Python than {ns.target_python_version}")
+        return 1
     spec = json.loads(Path(ns.input).read_text(encoding="utf-8"))
     effects = [effect for name, when, effect in CHANGES if name == spec["name"] and when in (None, *argv)]
     if "fail" in spec and "fixed" not in effects:
@@ -2586,6 +2599,14 @@ CHECKED = _cells_input("checked", type="int", validator=True)
 MEMORY = _cells_input("memory", type="int", memory=True)
 FAILS = _cells_input("fails", type="int", fail="boom")
 PLAIN_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/plain.py"
+BASE_GATE_PROBE = """import os
+import sys
+from pathlib import Path
+
+checkout = Path(os.environ.get("BEHAVIOUR_DIFF_REPOSITORY", "/nonexistent"))
+sys.exit(0 if (checkout / "docs" / "notes.md").exists() else 1)
+"""
+"""A base's gate that passes only when it runs for the PR's checkout, which has `docs/notes.md`."""
 CELLS_CASES: dict[str, CellsCase] = {
     "pass: no src change": CellsCase("pass", "no src change, the shortcut", {"docs/notes.md": "notes\n"}),
     "pass: a refactor, every cell equal": CellsCase(
@@ -2633,6 +2654,24 @@ CELLS_CASES: dict[str, CellsCase] = {
         "pass",
         "options * covers the preset cells",
         _cells_src(("plain", "--preset", "comment")) | _record("preset-note", "output-text", _cells("plain.json")),
+    ),
+    "pass: a selector glob ending in ** names the files below it": CellsCase(
+        "pass",
+        "a final ** names files on every Python",
+        _cells_src(("plain", "--keyword-only", "comment"))
+        | _record("plain-note", "output-text", _cells("**", options=[["--keyword-only"]])),
+    ),
+    "pass: a selector's inline option names the cell the tiers run": CellsCase(
+        "pass",
+        "inline option spelling",
+        _cells_src(("plain", "--preset", "comment"))
+        | _record("preset-note", "output-text", _cells("plain.json", options=[["--preset=standard-py310-20260101"]])),
+    ),
+    "pass: the base's gate runs for the PR's checkout": CellsCase(
+        "pass",
+        "oracle files, the base's gate runs for the checkout",
+        {"scripts/behaviour_diff.py": BASE_GATE_PROBE + "# changed\n", "docs/notes.md": "notes\n"},
+        release={"scripts/behaviour_diff.py": BASE_GATE_PROBE},
     ),
     "pass: crash-fix": CellsCase(
         "pass",
@@ -2779,6 +2818,18 @@ CELLS_CASES: dict[str, CellsCase] = {
         | _record(
             "client-float", "experimental", _cells("plain.json", options=[["--generate-client", "--use-annotated"]])
         ),
+    ),
+    "fail: output-text whose payload values change under an inline preset": CellsCase(
+        "fail",
+        "output-text, payload values change under an inline preset",
+        _cells_src(("plain", "--preset", "comment"), ("plain", "Payload", "type:float"))
+        | _record("preset-note", "output-text", _cells("plain.json", options=[["--preset=standard-py310-20260101"]])),
+    ),
+    "fail: experimental covers no head that stops": CellsCase(
+        "fail",
+        "experimental, the head stops",
+        _cells_src(("plain", "--generate-client", "memory"))
+        | _record("client-memory", "experimental", _cells("plain.json", options=[["--generate-client"]])),
     ),
     "fail: notice outside its match": CellsCase(
         "fail",

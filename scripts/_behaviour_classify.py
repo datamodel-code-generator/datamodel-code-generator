@@ -31,22 +31,24 @@ from __future__ import annotations
 
 import ast
 import fnmatch
+import itertools
 import json
+import os
 import re
 from collections import Counter
 from dataclasses import dataclass, field
 from keyword import iskeyword
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 import tomllib
 
 from scripts._behaviour_signature import MSGSPEC_CONFIG_KEYS, PYDANTIC_CONFIG_KEYS
-from scripts._change_records import ASPECTS, RULES, Category, CellKind
+from scripts._change_records import ASPECTS, RULES, Category, CellKind, split_options
 from scripts._source_model import SourceModelError, SourceModule
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Sequence
-    from pathlib import Path
 
     from scripts._change_records import CellSelector, Record
     from scripts._source_model import Scope
@@ -615,14 +617,35 @@ def _glob_matches(pattern: Sequence[str], parts: Sequence[str]) -> bool:
     return bool(parts) and fnmatch.fnmatchcase(parts[0], pattern[0]) and _glob_matches(pattern[1:], parts[1:])
 
 
+GLOB_WILDCARD = re.compile(r"[*?[]")
+
+
+def selector_paths(glob: str, root: Path) -> list[str]:
+    """Return the paths below `root` that a selector's input glob names, by the matching of `covers`, sorted.
+
+    The walk starts at the glob's parts before its first wildcard. A `**` names files and directories alike on every
+    Python (`Path.glob` names only directories with a final `**` before 3.13), and the walk follows no directory
+    symlink, as `**` does not.
+    """
+    pattern = glob.split("/")
+    fixed = list(itertools.takewhile(lambda part: not GLOB_WILDCARD.search(part), pattern))
+    start = root.joinpath(*fixed)
+    found = [start] if fixed and start.exists() else []
+    if len(fixed) < len(pattern) and start.is_dir():
+        for directory, names, files in os.walk(start):
+            found += [Path(directory, name) for name in (*names, *files)]
+    labels = {path.relative_to(root).as_posix() for path in found}
+    return sorted(label for label in labels if _glob_matches(pattern, label.split("/")))
+
+
 def covers(selector: CellSelector, cell: RunCell) -> bool:
     """Return whether a `[[change.cells]]` selector names a run cell.
 
     Its input path matches one of the selector's globs as the glob expands over the head tree (`*` within a path
-    part, `**` across parts), its backend and its option set are listed (or every one is, `"*"`), and its input file
-    type is the selector's; a selector that names none covers the cells whose type is their folder's below
-    `tests/data/` (a cell that runs its input with another type, such as a cli_doc example, needs a selector that
-    names it).
+    part, `**` across parts: `selector_paths`), its backend and its option set (in either spelling, `split_options`)
+    are listed (or every one is, `"*"`), and its input file type is the selector's; a selector that names none covers
+    the cells whose type is their folder's below `tests/data/` (a cell that runs its input with another type, such as
+    a cli_doc example, needs a selector that names it).
     """
     parts = cell.label.split("/")
     below = parts[2:] if parts[:2] == ["tests", "data"] else []
@@ -630,7 +653,7 @@ def covers(selector: CellSelector, cell: RunCell) -> bool:
     return (
         any(_glob_matches(glob.split("/"), parts) for glob in selector.input)
         and (selector.backends is None or cell.backend in selector.backends)
-        and (selector.options is None or cell.options in selector.options)
+        and (selector.options is None or split_options(cell.options) in selector.options)
         and cell.file_type == (folder if selector.input_file_type is None else selector.input_file_type)
     )
 

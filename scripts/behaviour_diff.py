@@ -128,15 +128,18 @@ from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-t
     payload_changes,
     probe_changes,
     rule_b,
+    selector_paths,
 )
 from scripts._behaviour_report import compare_records, redact, summarize_gate  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-of-file]
+    PRESET_OPTION,
     Category,
     Owner,
     owner_of,
     parse_entry,
     read_records,
     rule_problems,
+    split_options,
     version_key,
 )
 
@@ -218,6 +221,12 @@ Every `scripts` module the gate imports, directly or through another, or runs in
 equal to them (`tests/test_pre_commit_hooks.py`)."""
 BASE_GATE_FILES = ("scripts", "tests/__init__.py", "tests/units.py")
 BASE_GATE_ENV = "BEHAVIOUR_DIFF_BASE_GATE"
+REPOSITORY_ENV = "BEHAVIOUR_DIFF_REPOSITORY"
+"""The checkout a base's gate runs for (`base_gate`): its default candidate and the repository of its revisions; the
+gate's own checkout without it."""
+HEAD_STOPPED = (
+    "the head stopped at the timeout or the memory cap where the base finished: no record covers an unfinished output"
+)
 """Set in the environment of the base's gate, so that it does not run its own base's gate again."""
 UNCOVERED = "no record's [[change.cells]] covers the cell"
 REGEX_SPECIAL = re.compile(r"[\\.^$*+?{}\[\]|()]")
@@ -320,7 +329,7 @@ class Candidate:
     @property
     def repo(self) -> Path:
         """The repository the candidate's revisions and a revision base resolve in."""
-        return ROOT if self.revision else self.root
+        return repository() if self.revision else self.root
 
 
 @dataclass
@@ -443,9 +452,14 @@ class Gate:
     no_payloads: set[str] = field(default_factory=set)
 
 
+def repository() -> Path:
+    """Return the checkout the gate runs for: the one a base's gate is started for (`REPOSITORY_ENV`), else this one."""
+    return Path(os.environ.get(REPOSITORY_ENV) or ROOT)
+
+
 def latest_tag() -> str:
     """Return the latest release tag reachable from HEAD."""
-    return compare_release.git(ROOT, "describe", "--tags", "--abbrev=0").stdout.strip()
+    return compare_release.git(repository(), "describe", "--tags", "--abbrev=0").stdout.strip()
 
 
 def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) -> Candidate:
@@ -454,14 +468,14 @@ def resolve_candidate(spec: str | None, python: Path | None, cache_dir: Path) ->
     Either way the candidate imports the root's `src` (`compare_release.run_environment`).
     """
     if spec is None or Path(spec).is_dir():
-        root = Path(spec or ROOT).resolve()
+        root = Path(spec or repository()).resolve()
         venv = root / ".venv" / "bin" / "python"
         chosen = python or (venv if venv.exists() else Path(sys.executable))
         return Candidate(root, chosen.absolute(), compare_release.run_environment(root / "src"), None)
-    if not (revision := compare_release.commit_of(spec)):
-        msg = f"{spec} is neither a directory nor a revision of {ROOT}"
+    if not (revision := compare_release.commit_of(spec, repository())):
+        msg = f"{spec} is neither a directory nor a revision of {repository()}"
         raise SystemExit(msg)
-    root = compare_release.source_tree(revision, cache_dir, paths=("src", "tests"))
+    root = compare_release.source_tree(revision, cache_dir, repository(), paths=("src", "tests"))
     python = (python or Path(sys.executable)).absolute()
     return Candidate(root, python, compare_release.run_environment(root / "src"), revision)
 
@@ -1168,7 +1182,7 @@ def selector_cells(selector: CellSelector, root: Path, presets: list[str]) -> li
     selector's, or the input's folder below tests/data.
     """
     backends = selector.backends or compare_release.DEFAULT_TYPES
-    labels = sorted({path.relative_to(root).as_posix() for glob in selector.input for path in root.glob(glob)})
+    labels = sorted({label for glob in selector.input for label in selector_paths(glob, root)})
     cells = []
     for label in labels:
         parts = label.split("/")
@@ -1214,7 +1228,7 @@ def payload_case_equal(gate: Gate, cell: Cell, case: PayloadCase) -> bool:
     dropped, as the preset sets the target. Sides that both refuse the case alike give no payload evidence.
     """
     args = list(case["args"].get(cell.backend, []))
-    if "--preset" in cell.options:
+    if PRESET_OPTION in split_options(cell.options):
         args, _ = _without(args, "--target-python-version")
     probe = Cell(
         gate.payload_root / case["input"],
@@ -1306,15 +1320,18 @@ def judge_cell(
 ) -> tuple[Verdict | None, tuple[str, ...]]:
     """Judge a cell by the change records where its sides' facts differ, and return the verdict and change lines.
 
-    Equal facts, and sides the timeout or the memory cap stopped both, need nothing (None). Otherwise the head runs a
-    second time, which must give the same facts; then the records that cover the cell must admit every kind of its
-    difference with the evidence of their categories (`judge`), computed only for the categories that cover it.
+    Equal facts, and sides the timeout or the memory cap stopped both, need nothing (None). A head stopped where the
+    base finished is a violation no record covers: its output is unfinished. Otherwise the head runs a second time,
+    which must give the same facts; then the records that cover the cell must admit every kind of its difference
+    with the evidence of their categories (`judge`), computed only for the categories that cover it.
     """
     base, candidate = outcomes
     old, new = compare_release.cell_facts(base), compare_release.cell_facts(candidate)
     if gate.plan is None or (base.stopped() and candidate.stopped()) or old == new:
         return None, ()
-    if not candidate.stopped() and gate.rerun is not None:
+    if candidate.stopped():
+        return Verdict("violation", (HEAD_STOPPED,)), ()
+    if gate.rerun is not None:
         with tempfile.TemporaryDirectory() as name:
             repeated = compare_release.cell_facts(gate.rerun.generate(cell.args(), Path(name)))
         if repeated != new:
@@ -1540,8 +1557,10 @@ def stored_problems(gate: Gate) -> list[str]:
 def base_gate(plan: Plan, ns: argparse.Namespace, repo: Path) -> int | None:
     """Run the base's gate on the same arguments where a PR changes the gate's own files, and return its status.
 
-    The base's `scripts/` (and the test units it reads) are extracted with `git archive`; a base without the gate,
-    and the base's own gate (`BASE_GATE_ENV`), run none. The step fails if either gate fails (S7).
+    The base's `scripts/` (and the test units it reads) are extracted with `git archive`, once under a lock as another
+    run may share the cache; a base without the gate, and the base's own gate (`BASE_GATE_ENV`), run none. The base's
+    gate runs for the same checkout (`REPOSITORY_ENV`), and writes its `--json` and `--evidence` files beside its
+    scripts, not over the head's. The step fails if either gate fails (S7).
     """
     if plan.release or not plan.oracle or plan.base is None or os.environ.get(BASE_GATE_ENV):
         return None
@@ -1549,22 +1568,12 @@ def base_gate(plan: Plan, ns: argparse.Namespace, repo: Path) -> int | None:
         print(f"base gate: {plan.base[:12]} has no scripts/behaviour_diff.py")
         return None
     root = ns.cache_dir.absolute() / "base-gates" / plan.base
-    if not (root / ".complete").exists():
-        shutil.rmtree(root, ignore_errors=True)
-        root.mkdir(parents=True)
-        paths = [
-            path
-            for path in BASE_GATE_FILES
-            if not compare_release.git(repo, "cat-file", "-e", f"{plan.base}:{path}").returncode
-        ]
-        archive = root / "gate.tar"
-        compare_release.git(repo, "archive", "--output", str(archive), plan.base, *paths).check_returncode()
-        subprocess.run(["tar", "-x", "-f", str(archive), "-C", str(root)], check=True)
-        archive.unlink()
-        (root / ".complete").touch()
-    env = {**os.environ, BASE_GATE_ENV: "1"}
+    compare_release.built(root, lambda: _extract_gate(plan.base or "", repo, root))
+    reports = (("--json", ns.json), ("--evidence", ns.evidence))
+    own = [arg for name, path in reports if path is not None for arg in (name, str(root / f"base-{name[2:]}.out"))]
+    env = {**os.environ, BASE_GATE_ENV: "1", REPOSITORY_ENV: str(repo)}
     result = subprocess.run(
-        [sys.executable, str(root / "scripts" / "behaviour_diff.py"), *ns.argv],
+        [sys.executable, str(root / "scripts" / "behaviour_diff.py"), *ns.argv, *own],
         capture_output=True,
         text=True,
         env=env,
@@ -1573,6 +1582,18 @@ def base_gate(plan: Plan, ns: argparse.Namespace, repo: Path) -> int | None:
     print("".join(f"base gate: {line}\n" for line in (result.stdout + result.stderr).splitlines()[-40:]), end="")
     print(f"base gate ({plan.base[:12]}): exit {result.returncode}")
     return result.returncode
+
+
+def _extract_gate(base: str, repo: Path, root: Path) -> None:
+    """Extract the gate's files of a base revision (`BASE_GATE_FILES`, those it has) into `root`."""
+    root.mkdir(parents=True)
+    paths = [
+        path for path in BASE_GATE_FILES if not compare_release.git(repo, "cat-file", "-e", f"{base}:{path}").returncode
+    ]
+    archive = root / "gate.tar"
+    compare_release.git(repo, "archive", "--output", str(archive), base, *paths).check_returncode()
+    subprocess.run(["tar", "-x", "-f", str(archive), "-C", str(root)], check=True)
+    archive.unlink()
 
 
 def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[str] | None]) -> list[Cell]:
@@ -1905,6 +1926,11 @@ def build_gate(ns: argparse.Namespace) -> Gate:
     """Return the gate of a base and a candidate."""
     cache_dir = ns.cache_dir.absolute()
     candidate = resolve_candidate(ns.candidate, ns.candidate_python, cache_dir)
+    if ns.base_python is not None and not (
+        compare_release.RELEASE.fullmatch(ns.base) or ns.base.startswith("refs/tags/")
+    ):
+        msg = f"--base-python runs an installed release, but {ns.base} is a revision: its own tree is its base"
+        raise SystemExit(msg)
     plan = None if ns.identity else plan_records(ns, candidate)
     spec = plan.base if plan is not None and not plan.release and plan.base is not None else ns.base
     base = (
