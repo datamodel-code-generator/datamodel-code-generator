@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING
 
 import pytest
+from pydantic import ValidationError
 
 from datamodel_code_generator.http import join_url
 from datamodel_code_generator.reference import (
@@ -72,11 +73,10 @@ def test_model_resolver_add_takes_the_singular_of_a_field_name() -> None:
     assert ModelResolver().add(["#", "definitions", "pets"], "pets", singular_name=True).name == "pet"
 
 
-def test_reference_validation_keeps_an_instance() -> None:
-    """Validating a ``Reference`` instance returns it as it is."""
-    reference = Reference(path="Model", name="Model")
-
-    assert Reference.model_validate(reference) is reference
+def test_reference_validation_refuses_a_value_that_is_no_mapping() -> None:
+    """``Reference`` leaves a value that is no mapping to Pydantic, which refuses it."""
+    with pytest.raises(ValidationError, match="Input should be a valid dictionary or instance of Reference"):
+        Reference.model_validate("Model")
 
 
 def test_reference_dict_leaves_out_the_children() -> None:

@@ -2378,7 +2378,7 @@ def get_collapsed_unions(
     for duplicate in duplicates:
         duplicate_field = duplicate.fields[index]
         if not isinstance(discriminator := duplicate_field.extras.get("discriminator"), dict):
-            continue
+            continue  # pragma: no cover - reuse pairs models by their union tags, discriminators at the same fields
         data_types = duplicate_field.data_type.data_types
         unions.append((
             site_display_name(parser, duplicate, duplicate_field),

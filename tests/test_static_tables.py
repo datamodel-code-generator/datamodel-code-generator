@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 
 import pytest
 
@@ -12,28 +13,34 @@ from datamodel_code_generator.preset import PresetContext, PresetInfo, PresetNam
 
 
 def _preset_name_problems() -> list[str]:
-    infos = get_preset_infos()
-    problems = [] if {info.name for info in infos} == set(PresetName) else ["a preset name has no info"]
-    if len(infos) != len(PresetName):
-        problems.append("a preset is defined more than once")
-    return [*problems, *(f"{name.value} has no date" for name in PresetName if not re.search(r"-\d+$", name.value))]
+    names = [info.name for info in get_preset_infos()]
+    return [
+        *(f"{name.value} has no info" for name in PresetName if name not in names),
+        *(f"{name.value} is defined {count} times" for name, count in Counter(names).items() if count > 1),
+        *(f"{name.value} has no date" for name in PresetName if not re.search(r"-\d+$", name.value)),
+    ]
 
 
 def _preset_group_problems(info: PresetInfo) -> list[str]:
-    problems = []
-    if info.target_python_version.value.replace(".", "") not in info.name.value:
-        problems.append(f"{info.name.value} lacks its Python target")
-    output_model_groups: dict[tuple[DataModelType, str], str] = {}
-    for group in info.option_groups:
-        if not group.config.items():
-            problems.append(f"{info.name.value}: {group.title} defines no config fields")
-        for output_model_type in group.output_model_types:
-            for item in group.config.items():
-                key = (output_model_type, item.field_name)
-                if key in output_model_groups:
-                    problems.append(f"{info.name.value} sets {key} in {output_model_groups[key]} and {group.title}")
-                output_model_groups[key] = group.title
-    return problems
+    settings = Counter(
+        (output_model_type, item.field_name)
+        for group in info.option_groups
+        for output_model_type in group.output_model_types
+        for item in group.config.items()
+    )
+    return [
+        *(
+            [f"{info.name.value} lacks its Python target"]
+            if info.target_python_version.value.replace(".", "") not in info.name.value
+            else []
+        ),
+        *(
+            f"{info.name.value}: {group.title} defines no config fields"
+            for group in info.option_groups
+            if not group.config
+        ),
+        *(f"{info.name.value} sets {key} in {count} groups" for key, count in settings.items() if count > 1),
+    ]
 
 
 def _preset_resolution_problems(

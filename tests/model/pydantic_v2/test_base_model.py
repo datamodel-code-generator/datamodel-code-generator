@@ -10,6 +10,7 @@ from itertools import product
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from datamodel_code_generator import DataModelType, Formatter, PythonVersion
 from datamodel_code_generator.config import JSONSchemaParserConfig
@@ -501,12 +502,10 @@ def test_parser_simple_field_preserves_parent_and_fresh_extras() -> None:
     assert first.extras is not second.extras
 
 
-@pytest.mark.allow_direct_assert("states that validating an instance returns it, which writes no output")
-def test_constraints_validation_keeps_an_instance() -> None:
-    """Validating a ``Constraints`` instance returns it as it is."""
-    constraints = Constraints()
-
-    assert Constraints.model_validate(constraints) is constraints
+def test_constraints_validation_refuses_a_value_that_is_no_mapping() -> None:
+    """``Constraints`` leaves a value that is no mapping to Pydantic, which refuses it."""
+    with pytest.raises(ValidationError, match="Input should be a valid dictionary or instance of Constraints"):
+        Constraints.model_validate(["minItems", 1])
 
 
 def test_get_data_model_types_refuses_a_value_that_is_no_model_type() -> None:

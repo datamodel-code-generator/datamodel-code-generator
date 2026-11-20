@@ -639,28 +639,31 @@ class _XMLSchemaConverter:
         return max_version is None or processor_version < max_version
 
     def _parse_schema(self, text: str, source_path: Path) -> ET.Element:
+        """Return the root element of a schema document, recording the namespaces in scope at each element.
+
+        ``iterparse`` yields only the events it is asked for, so an event that is no namespace event starts an element.
+        """
         try:
             root: ET.Element | None = None
             active_namespaces: dict[str, str] = {}
             namespace_stack: list[tuple[str, str | None]] = []
             for event, payload in ET.iterparse(io.StringIO(text), events=("start", "start-ns", "end-ns")):  # noqa: S314
-                match event:
-                    case "start-ns":
-                        prefix, uri = cast("tuple[str, str]", payload)
-                        namespace_stack.append((prefix, active_namespaces.get(prefix)))
-                        active_namespaces[prefix] = uri
-                        self.namespaces.setdefault(prefix, uri)
-                    case "end-ns":
-                        prefix, previous_uri = namespace_stack.pop()
-                        if previous_uri is None:
-                            active_namespaces.pop(prefix, None)
-                        else:
-                            active_namespaces[prefix] = previous_uri
-                    case "start":
-                        element = cast("ET.Element", payload)
-                        if root is None:
-                            root = element
-                        self._element_namespaces[id(element)] = active_namespaces.copy()
+                if event == "start-ns":
+                    prefix, uri = cast("tuple[str, str]", payload)
+                    namespace_stack.append((prefix, active_namespaces.get(prefix)))
+                    active_namespaces[prefix] = uri
+                    self.namespaces.setdefault(prefix, uri)
+                elif event == "end-ns":
+                    prefix, previous_uri = namespace_stack.pop()
+                    if previous_uri is None:
+                        active_namespaces.pop(prefix, None)
+                    else:
+                        active_namespaces[prefix] = previous_uri
+                else:
+                    element = cast("ET.Element", payload)
+                    if root is None:
+                        root = element
+                    self._element_namespaces[id(element)] = active_namespaces.copy()
         except ET.ParseError as exc:
             msg = f"Invalid XML Schema document {source_path}: {exc}"
             raise Error(msg) from exc
