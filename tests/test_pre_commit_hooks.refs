@@ -2,5 +2,9 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_a_pattern_without_an_imported_module_misses_it]
 	pre_commit_hooks/a_pattern_without_an_imported_module_misses_it.txt
+[test_behaviour_gate_runs_when_its_scripts_change]
+	pre_commit_hooks/behaviour_gate_runs_when_its_scripts_change.txt
+[test_gate_paths_without_an_imported_module_miss_it]
+	pre_commit_hooks/gate_paths_without_an_imported_module_miss_it.txt
 [test_local_hooks_run_when_their_scripts_change]
 	pre_commit_hooks/local_hooks_run_when_their_scripts_change.txt
