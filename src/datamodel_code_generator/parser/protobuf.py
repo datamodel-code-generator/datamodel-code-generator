@@ -21,6 +21,7 @@ from typing_extensions import Unpack
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._process import run_captured
 from datamodel_code_generator._python_syntax import normalize_newlines as normalize_newlines
 from datamodel_code_generator._shared_types import Error, SchemaParseError
 from datamodel_code_generator._source import input_text as _input_text
@@ -367,14 +368,7 @@ def _run_protoc(protoc_script: Path, args: Sequence[str]) -> tuple[int, str]:
     ``protoc`` is C++ code that writes to its own standard error, so neither ``contextlib.redirect_stderr`` nor
     redirecting file descriptor 2 sees it where the extension carries its own C runtime (the Windows wheels).
     """
-    import subprocess  # noqa: PLC0415, S404
-
-    result = subprocess.run(  # noqa: S603
-        [sys.executable, str(protoc_script), *args],
-        check=False,
-        stdin=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-    )
+    result = run_captured((sys.executable, str(protoc_script), *args))
     return result.returncode, result.stderr.decode("utf-8", errors="replace").replace("\r\n", "\n")
 
 
