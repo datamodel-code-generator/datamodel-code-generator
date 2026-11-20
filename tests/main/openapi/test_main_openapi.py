@@ -13854,6 +13854,7 @@ def test_main_openapi_collapse_root_models_name_strategy_as_direct_reference(
     run_main_and_assert(
         input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / "derived_split.yaml",
         output_path=tmp_path / "collapsed",
+        expected_directory=direct_output,
         extra_args=args,
     )
 

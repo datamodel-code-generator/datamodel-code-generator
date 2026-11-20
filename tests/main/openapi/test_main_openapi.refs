@@ -909,9 +909,6 @@ typing.TypedDict	main/openapi/main_openapi/builtin_property_beside_root_models[t
 	main/openapi/main_openapi/collapse_root_models_child_reused_inner_in_tree_scope/
 [test_main_openapi_collapse_root_models_module_named_field]
 	main/openapi/main_openapi/collapse_root_models_module_named_field/
-[test_main_openapi_collapse_root_models_name_strategy_as_direct_reference]
-child-direct	main/openapi/main_openapi/collapse_root_models_name_strategy_as_direct_reference[child-direct]/	= main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-child]/
-parent-direct_parent	main/openapi/main_openapi/collapse_root_models_name_strategy_as_direct_reference[parent-direct_parent]/	= main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-parent]/
 [test_main_openapi_collapse_root_models_name_strategy_modular]
 holder-in-other-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-other-module-child]/
 holder-in-other-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-other-module-parent]/
