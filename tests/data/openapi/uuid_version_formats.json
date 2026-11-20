@@ -1,0 +1,18 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Events", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {"type": "string", "format": "uuid7"},
+          "traceIds": {"type": "array", "items": {"type": "string", "format": "uuid6"}},
+          "signature": {"type": "string", "format": "uuid8"}
+        }
+      }
+    }
+  }
+}

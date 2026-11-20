@@ -81,6 +81,7 @@ from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._parse_memo import PARSE_MEMO, rendering_memo
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
+from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
     IMPORT_ABC_MAPPING,
@@ -1713,6 +1714,9 @@ class Types(Enum):
     null = auto()
     array = auto()
     any = auto()
+    uuid6 = auto()
+    uuid7 = auto()
+    uuid8 = auto()
 
 
 _object_new = object.__new__
@@ -2100,6 +2104,8 @@ class DataTypeManager(ABC):
         _applicability.BASE_OUTPUT.target_number_keywords
     )
     """Number keywords a type takes once the target version of the output model has a construct, by the type's path."""
+    _TARGET_TYPE_FALLBACKS: ClassVar[Mapping[Types, tuple[PydanticConstruct, Import]]] = MappingProxyType({})
+    """The import a type of the type map takes where the target Pydantic version lacks the construct it needs."""
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.annotation_unions_take
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.BASE_OUTPUT.fixed_tuples_take_length
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.literals_take
@@ -2191,6 +2197,17 @@ class DataTypeManager(ABC):
             type_map[types] = _valid_data_type(
                 cls, data_types=[untyped_value_data_type(cls, untyped_value)], **{container: True}
             )
+
+    def use_target_pydantic_version(self, target_pydantic_version: TargetPydanticVersion | None) -> None:
+        """Write each type of ``_TARGET_TYPE_FALLBACKS`` whose construct the target Pydantic lacks as its fallback.
+
+        The target is set after construction, as --untyped-value-type is, so a type manager with the constructor of
+        an older release keeps working.
+        """
+        type_map = self.type_map
+        for types, (construct, fallback) in self._TARGET_TYPE_FALLBACKS.items():
+            if not pydantic_target_meets(construct, target_pydantic_version):
+                type_map[types] = _valid_import_type(type(type_map[types]), fallback)
 
     @abstractmethod
     def get_data_type(self, types: Types, **kwargs: Any) -> DataType:

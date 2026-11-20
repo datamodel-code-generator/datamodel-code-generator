@@ -22,6 +22,8 @@ read-ref-siblings-in-closed-allof-members-command-line	main/preset_opt_in_option
 read-ref-siblings-in-closed-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].py
 read-single-allof-refs-in-their-documents-command-line	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
 read-single-allof-refs-in-their-documents-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
+read-uuid6-uuid7-uuid8-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].py
+read-uuid6-uuid7-uuid8-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].py
 read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
 read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
 use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
@@ -139,6 +141,8 @@ read-single-allof-refs-in-their-documents-practical	main/preset_opt_in_options/p
 read-single-allof-refs-in-their-documents-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-single-allof-refs-in-their-documents-practical].py
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
+read-uuid6-uuid7-uuid8-formats-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-uuid6-uuid7-uuid8-formats-practical].py
+read-uuid6-uuid7-uuid8-formats-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-uuid6-uuid7-uuid8-formats-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-uuid6-uuid7-uuid8-formats-practical].py
 read-yaml-1-1-numbers-as-text-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-practical].py
 read-yaml-1-1-numbers-as-text-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-yaml-1-1-numbers-as-text-practical].py
 remove-unused-models-beside-type-overrides-practical	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].py

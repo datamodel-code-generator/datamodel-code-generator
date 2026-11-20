@@ -125,6 +125,7 @@ reviewed-safe read_ref_siblings_in_closed_allof_members
 reviewed-safe read_schema_version_per_document
 reviewed-safe read_single_allof_refs_in_their_documents
 reviewed-safe read_unevaluated_properties
+reviewed-safe read_uuid6_uuid7_uuid8_formats
 reviewed-safe read_yaml_1_1_numbers_as_text
 reviewed-safe remote_text_cache
 reviewed-safe remove_special_field_name_prefix

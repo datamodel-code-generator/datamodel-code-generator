@@ -3,13 +3,15 @@
 The 20261027 presets add the opt-in options of 0.87.0 to the 20261017 presets, the 20261104 presets add those of
 0.90.0 to the 20261027 presets, the 20261106 presets add those of 0.91.0 to the 20261104 presets, the 20261111
 presets add those of the next release to the 20261106 presets, the 20261112 presets add the opt-in options after
-them to the 20261111 presets, the 20261113 presets add the opt-in options after those to the 20261112 presets, and the
-20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets.
+them to the 20261111 presets, the 20261113 presets add the opt-in options after those to the 20261112 presets, the
+20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets, and the 20261120 presets
+add the opt-in options after those to the 20261118 presets.
 """
 
 from __future__ import annotations
 
 import sys
+from contextlib import AbstractContextManager, nullcontext
 from typing import TYPE_CHECKING
 
 import pytest
@@ -136,9 +138,30 @@ OPT_IN_OPTIONS_20261118: tuple[str, ...] = (
 )
 """The options the 20261118 presets set beyond the 20261113 presets."""
 
+OPT_IN_OPTIONS_20261120: tuple[str, ...] = ("--read-uuid6-uuid7-uuid8-formats",)
+"""The options the 20261120 presets set beyond the 20261118 presets."""
+
+WARNINGS_WITH_OPTION: dict[str, str] = {
+    "uuid_version_formats.json": "Pydantic does not take max_length on UUID7",
+}
+"""The warning each input gives in a generation with its options on, by file name."""
+
+WARNINGS_WITHOUT_OPTION: dict[str, str] = {
+    "uuid_version_formats.json": "format of 'uuid[678]' not understood",
+}
+"""The warning each input gives in a generation without the option that a turned-off test names, by file name."""
+
+
+def _warns(warnings_by_input: dict[str, str], input_path: Path) -> AbstractContextManager[object]:
+    """Return the context that expects the warning of an input, or one that expects none."""
+    pattern = warnings_by_input.get(input_path.name)
+    return nullcontext() if pattern is None else pytest.warns(UserWarning, match=pattern)
+
+
 PRACTICAL_OPT_IN_OPTIONS: dict[str, tuple[str, ...]] = {
     "20261113": ("--untyped-value-type", "pydantic.JsonValue"),
     "20261118": ("--untyped-value-type", "pydantic.JsonValue"),
+    "20261120": ("--untyped-value-type", "pydantic.JsonValue"),
 }
 """The options the practical presets of a date set beyond its standard options, for Pydantic output."""
 
@@ -150,6 +173,7 @@ PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261112": ("20261111", OPT_IN_OPTIONS_20261112),
     "20261113": ("20261112", OPT_IN_OPTIONS_20261113),
     "20261118": ("20261113", OPT_IN_OPTIONS_20261118),
+    "20261120": ("20261118", OPT_IN_OPTIONS_20261120),
 }
 """The preset before each dated preset and the options it adds to it."""
 
@@ -557,11 +581,22 @@ CASES_20261118: tuple[pytest.ParameterSet, ...] = (
 )
 """The inputs each opt-in option of the 20261118 presets changes."""
 
+CASES_20261120: tuple[pytest.ParameterSet, ...] = (
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "uuid_version_formats.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-uuid6-uuid7-uuid8-formats",
+    ),
+)
+"""The inputs each opt-in option of the 20261120 presets changes."""
+
 
 @pytest.mark.parametrize("family", ["standard", "practical"])
 @pytest.mark.parametrize(
     ("release", "input_path", "input_file_type", "extra_args"),
     [
+        *(pytest.param("20261120", *case.values, id=case.id, marks=case.marks) for case in CASES_20261120),
         *(pytest.param("20261118", *case.values, id=case.id, marks=case.marks) for case in CASES_20261118),
         *(pytest.param("20261113", *case.values, id=case.id, marks=case.marks) for case in CASES_20261113),
         *(pytest.param("20261112", *case.values, id=case.id, marks=case.marks) for case in CASES_20261112),
@@ -759,31 +794,33 @@ def test_preset_sets_opt_in_option(
         preset_output = preset_output.with_suffix(".py")
         options_output = options_output.with_suffix(".py")
     common = ["--disable-timestamp", *extra_args]
-    run_main_and_assert(
-        input_path=input_path,
-        output_path=preset_output,
-        input_file_type=input_file_type,
-        extra_args=["--preset", f"{family}-py312-{release}", *common],
-        skip_code_validation=sys.version_info < (3, 12),
-    )
-    run_main_and_assert(
-        input_path=input_path,
-        output_path=options_output,
-        input_file_type=input_file_type,
-        extra_args=[
-            "--preset",
-            f"{family}-py312-{previous}",
-            *common,
-            *options,
-            *(PRACTICAL_OPT_IN_OPTIONS.get(release, ()) if family == "practical" else ()),
-        ],
-        skip_code_validation=sys.version_info < (3, 12),
-        **(
-            {"expected_directory": preset_output}
-            if input_path.is_dir()
-            else {"expected_output": preset_output.read_text(encoding="utf-8")}
-        ),
-    )
+    with _warns(WARNINGS_WITH_OPTION, input_path):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=preset_output,
+            input_file_type=input_file_type,
+            extra_args=["--preset", f"{family}-py312-{release}", *common],
+            skip_code_validation=sys.version_info < (3, 12),
+        )
+    with _warns(WARNINGS_WITH_OPTION, input_path):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=options_output,
+            input_file_type=input_file_type,
+            extra_args=[
+                "--preset",
+                f"{family}-py312-{previous}",
+                *common,
+                *options,
+                *(PRACTICAL_OPT_IN_OPTIONS.get(release, ()) if family == "practical" else ()),
+            ],
+            skip_code_validation=sys.version_info < (3, 12),
+            **(
+                {"expected_directory": preset_output}
+                if input_path.is_dir()
+                else {"expected_output": preset_output.read_text(encoding="utf-8")}
+            ),
+        )
 
 
 @pytest.mark.parametrize("source", ["command-line", "pyproject"])
@@ -895,20 +932,27 @@ def test_preset_sets_opt_in_option(
             "--no-use-unmapped-variant-tag-values",
             id="use-unmapped-variant-tag-values",
         ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "uuid_version_formats.json",
+            [],
+            "--read-uuid6-uuid7-uuid8-formats",
+            "--no-read-uuid6-uuid7-uuid8-formats",
+            id="read-uuid6-uuid7-uuid8-formats",
+        ),
     ],
 )
 def test_preset_option_turned_off(
     input_path: Path, extra_args: list[str], option: str, off: str, source: str, tmp_path: Path
 ) -> None:
-    """Turn off one option of a 20261118 preset: the output is that of the preset without the option.
+    """Turn off one option of a 20261120 preset: the output is that of the preset without the option.
 
     The --no- form on the command line, or false for the option in the pyproject.toml that selects the preset, gives
-    the output of the 20261017 preset plus every option the 20261027, 20261104, 20261106, 20261111, 20261112, 20261113
-    and 20261118 presets add but that one; an alias of the option has a --no- form and a key too.
+    the output of the 20261017 preset plus every option the 20261027, 20261104, 20261106, 20261111, 20261112, 20261113,
+    20261118 and 20261120 presets add but that one; an alias of the option has a --no- form and a key too.
     """
     project = tmp_path / "project"
     project.mkdir()
-    preset = "standard-py312-20261118"
+    preset = "standard-py312-20261120"
     preset_args = ["--preset", preset, off]
     if source == "pyproject":
         (project / "pyproject.toml").write_text(
@@ -917,7 +961,7 @@ def test_preset_option_turned_off(
         preset_args = []
     common = ["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", *extra_args]
     off_output = tmp_path / "off.py"
-    with chdir(project):
+    with chdir(project), _warns(WARNINGS_WITHOUT_OPTION, input_path):
         run_main_and_assert(
             input_path=input_path,
             output_path=off_output,
@@ -935,17 +979,19 @@ def test_preset_option_turned_off(
             *OPT_IN_OPTIONS_20261112,
             *OPT_IN_OPTIONS_20261113,
             *OPT_IN_OPTIONS_20261118,
+            *OPT_IN_OPTIONS_20261120,
         )
         if item != option
     ]
-    run_main_and_assert(
-        input_path=input_path,
-        output_path=tmp_path / "options.py",
-        input_file_type="jsonschema",
-        extra_args=["--preset", "standard-py312-20261017", *common, *options],
-        skip_code_validation=sys.version_info < (3, 12),
-        expected_output=off_output.read_text(encoding="utf-8"),
-    )
+    with _warns(WARNINGS_WITHOUT_OPTION, input_path):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=tmp_path / "options.py",
+            input_file_type="jsonschema",
+            extra_args=["--preset", "standard-py312-20261017", *common, *options],
+            skip_code_validation=sys.version_info < (3, 12),
+            expected_output=off_output.read_text(encoding="utf-8"),
+        )
 
 
 @pytest.mark.parametrize(

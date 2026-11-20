@@ -1,0 +1,3 @@
+warning: format of 'uuid6' not understood for 'string' - using default
+warning: format of 'uuid7' not understood for 'string' - using default
+warning: format of 'uuid8' not understood for 'string' - using default

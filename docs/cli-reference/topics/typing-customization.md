@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 5 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 23 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 24 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -61,6 +61,7 @@ Scalar, date/time, and custom type mapping.
 | [`--read-format-as-annotation`](../typing-customization.md#read-format-as-annotation) | Read the format of a schema as an annotation, as JSON Schema does. |
 | [`--read-kubernetes-extensions`](../typing-customization.md#read-kubernetes-extensions) | Read the Kubernetes schema extensions as the keywords they stand for. |
 | [`--read-unevaluated-properties`](../typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
+| [`--read-uuid6-uuid7-uuid8-formats`](../typing-customization.md#read-uuid6-uuid7-uuid8-formats) | Read the string formats uuid6, uuid7 and uuid8 as the UUID versions they name. |
 | [`--strict-types`](../typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](../typing-customization.md#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](../typing-customization.md#type-overrides) | Replace schema model types with custom Python types via JSON mapping. |
