@@ -137,8 +137,6 @@ def test_type_alias_constraints_with_shadowed_imports(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_annotated" / "shadowed_imports.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_annotated/shadowed_imports.py",
         extra_args=["--use-type-alias", "--disable-timestamp"],
         force_exec_validation=True,
     )

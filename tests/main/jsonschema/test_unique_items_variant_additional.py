@@ -13,7 +13,6 @@ from datamodel_code_generator import (
     generate,
 )
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_generate_and_assert
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,7 +32,6 @@ def test_main_jsonschema_unique_items_variant_additional_values(output_file: Pat
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_variant_additional.py",
         **generate_kwargs,
     )
     generate(

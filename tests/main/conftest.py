@@ -215,11 +215,6 @@ def target_pydantic_args(target_pydantic_version: str | None) -> list[str]:
     return [] if target_pydantic_version is None else ["--target-pydantic-version", target_pydantic_version]
 
 
-def target_pydantic_expected_suffix(target_pydantic_version: str | None) -> str:
-    """Name the expected output for a target; an unset target shares the newest target's output."""
-    return "target_2" if target_pydantic_version == "2" else "target_2_12"
-
-
 UNSET_TARGET_PYDANTIC_VERSION = TargetPydanticVersion.V2_12.value
 """The oldest Pydantic an unset target runs on: the newest forms, but MISSING keeps its experimental import."""
 

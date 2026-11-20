@@ -265,7 +265,7 @@ wire_collision_serialization-wire_collision-wire_collision-options15-kind-Pet-cl
 wire_collision_serialization-wire_collision-wire_collision-options15-kind-Pet-cli	payloads/discriminator_alias_outputs/wireKind_dog.txt
 wire_collision_serialization-wire_collision-wire_collision-options15-kind-Pet-cli	payloads/discriminator_alias_outputs/wireKind_dog_ordinary.txt
 [test_duplicate_models]
-	main/openapi/duplicate_models2.py
+	main/openapi/main_openapi/duplicate_models.py
 [test_enable_command_header]
 	main/openapi/main_openapi/enable_command_header.py
 [test_enable_command_header_redacts_http_headers]
@@ -377,7 +377,7 @@ text	main/openapi/invalid_dotted_external_relative_ref.py
 [test_generate_invalid_dotted_schema_name_default_modules]
 	main/openapi/invalid_dotted_schema_name_default//*.py
 [test_generate_openapi_keeps_referenced_path_item_original_unchanged]
-	main/openapi/referenced_path_item_mutation_guard.py
+	main/openapi/main_openapi/generate_openapi_keeps_referenced_path_item_original_unchanged.py
 [test_generate_strict_dotted_module_names]
 	main/openapi/main_openapi/generate_strict_dotted_module_names.py
 [test_main]
@@ -387,8 +387,8 @@ text	main/openapi/invalid_dotted_external_relative_ref.py
 [test_main_base_class]
 	main/openapi/main_openapi/main_base_class.py	= main/openapi/base_class.py
 [test_main_builtin_type_field_names]
-extra_args0-builtin_type_field_names.py	main/openapi/builtin_type_field_names.py
-extra_args1-builtin_type_field_names_no_union_operator.py	main/openapi/builtin_type_field_names_no_union_operator.py
+extra_args0	main/openapi/main_openapi/main_builtin_type_field_names[extra_args0].py
+extra_args1	main/openapi/main_openapi/main_builtin_type_field_names[extra_args1].py
 [test_main_collapse_root_models]
 	main/openapi/collapse_root_models.py
 [test_main_collapse_root_models_field_constraints]
@@ -398,22 +398,22 @@ extra_args1-builtin_type_field_names_no_union_operator.py	main/openapi/builtin_t
 [test_main_collapse_root_models_with_references_to_flat_types]
 	main/openapi/collapse_root_models_with_references_to_flat_types.py
 [test_main_custom_file_header_comments_only]
-	main/openapi/custom_file_header_comments_only.py
+	main/openapi/main_openapi/main_custom_file_header_comments_only.py
 [test_main_custom_file_header_empty]
-	main/openapi/custom_file_header_empty.py
+	main/openapi/main_openapi/main_custom_file_header_empty.py	= main/openapi/custom_file_header_empty.py
 [test_main_custom_file_header_invalid_syntax]
-	main/openapi/custom_file_header_invalid_syntax.py
+	main/openapi/main_openapi/main_custom_file_header_invalid_syntax.py
 [test_main_custom_file_header_path]
-	main/openapi/custom_file_header.py
+	main/openapi/main_openapi/main_custom_file_header_path.py
 [test_main_custom_file_header_with_docstring]
-	main/openapi/custom_file_header_with_docstring.py
+	main/openapi/main_openapi/main_custom_file_header_with_docstring.py
 [test_main_custom_file_header_with_docstring_and_import]
 False	main/openapi/custom_file_header_with_docstring_and_import.py
 True	main/openapi/custom_file_header_with_docstring_and_import.py
 [test_main_custom_file_header_with_import]
-	main/openapi/custom_file_header_with_import.py
+	main/openapi/main_openapi/main_custom_file_header_with_import.py
 [test_main_custom_file_header_without_future_imports]
-	main/openapi/custom_file_header_no_future.py
+	main/openapi/main_openapi/main_custom_file_header_without_future_imports.py
 [test_main_custom_template_dir_old_style]
 	main/openapi/custom_template_dir_old_style.py
 [test_main_dataclass]
@@ -423,7 +423,7 @@ True	main/openapi/custom_file_header_with_docstring_and_import.py
 [test_main_disable_appending_item_suffix]
 	main/openapi/disable_appending_item_suffix.py
 [test_main_enum_builtin_conflict]
-	main/openapi/enum_builtin_conflict.py
+	main/openapi/main_openapi/main_enum_builtin_conflict.py
 [test_main_field_constraints_model_outputs]
 	main/openapi/main_openapi/main_field_constraints_model_outputs.py	= main/openapi/with_field_constraints.py
 [test_main_generate_custom_class_name_generator_modular]
@@ -487,7 +487,7 @@ extra_args5	main/openapi/main_openapi/main_literal_fields_keep_model_named_liter
 [test_main_modular_typed_dict]
 	main/openapi/modular_typed_dict//*.py
 [test_main_msgspec_nullable]
-	main/openapi/msgspec_nullable.py
+	main/openapi/main_openapi/main_msgspec_nullable.py
 [test_main_multiple_aliases_parameters_pydantic_v2]
 	main/openapi/main_openapi/main_multiple_aliases_parameters_pydantic_v2.py
 [test_main_multiple_required_any_of]
@@ -514,71 +514,71 @@ typing.TypedDict	main/openapi/main_openapi/all_exports_scope_package_cycle_outpu
 [test_main_openapi_all_of_required]
 	main/openapi/main_openapi/all_of_required.py
 [test_main_openapi_all_of_with_relative_ref]
-	main/openapi/all_of_with_relative_ref.py
+	main/openapi/main_openapi/all_of_with_relative_ref.py	= main/openapi/all_of_with_relative_ref.py
 [test_main_openapi_allof_array_ref_no_duplicate_model]
-	main/openapi/allof_array_ref_override.py
+	main/openapi/main_openapi/allof_array_ref_no_duplicate_model.py
 [test_main_openapi_allof_boolean_member]
 	main/openapi/openapi_allof_boolean_member.py
 [test_main_openapi_allof_inherited_constraint_composition_isolation]
-	main/openapi/allof_inherited_constraint_composition_isolation.py
+	main/openapi/main_openapi/allof_inherited_constraint_composition_isolation.py
 [test_main_openapi_allof_member_parts_request_response]
 combined	main/openapi/main_openapi/allof_member_parts_request_response[combined].py
 combined-deduped	main/openapi/main_openapi/allof_member_parts_request_response[combined-deduped].py	= main/openapi/main_openapi/allof_member_parts_request_response[combined].py
 released	main/openapi/main_openapi/allof_member_parts_request_response[released].py
 [test_main_openapi_allof_merge_mode_all]
-	main/openapi/allof_materialize_defaults.py
+	main/openapi/main_openapi/allof_merge_mode_all.py
 [test_main_openapi_allof_merge_mode_none]
-	main/openapi/allof_merge_mode_none.py
+	main/openapi/main_openapi/allof_merge_mode_none.py
 [test_main_openapi_allof_multiple_parents_same_property]
-	main/openapi/allof_multiple_parents_same_property.py
+	main/openapi/main_openapi/allof_multiple_parents_same_property.py
 [test_main_openapi_allof_no_merge_backend_types]
-dataclass	main/openapi/output_model_types/allof_no_merge_backend_types_dataclasses_dataclass.py
-msgspec	main/openapi/output_model_types/allof_no_merge_backend_types_msgspec_Struct.py
-pydantic-v2	main/openapi/output_model_types/allof_no_merge_backend_types_pydantic_v2_BaseModel.py
-pydantic-v2-dataclass	main/openapi/output_model_types/allof_no_merge_backend_types_pydantic_v2_dataclass.py
-typed-dict	main/openapi/output_model_types/allof_no_merge_backend_types_typing_TypedDict.py
+dataclass	main/openapi/main_openapi/allof_no_merge_backend_types[dataclass].py
+msgspec	main/openapi/main_openapi/allof_no_merge_backend_types[msgspec].py
+pydantic-v2	main/openapi/main_openapi/allof_no_merge_backend_types[pydantic-v2].py
+pydantic-v2-dataclass	main/openapi/main_openapi/allof_no_merge_backend_types[pydantic-v2-dataclass].py
+typed-dict	main/openapi/main_openapi/allof_no_merge_backend_types[typed-dict].py
 [test_main_openapi_allof_no_merge_constraint_type_shape]
-annotated	main/openapi/allof_no_merge_constraint_type_shape_annotated.py
-field-constraints	main/openapi/allof_no_merge_constraint_type_shape_field_constraints.py
-standard	main/openapi/allof_no_merge_constraint_type_shape_standard.py
+annotated	main/openapi/main_openapi/allof_no_merge_constraint_type_shape[annotated].py
+field-constraints	main/openapi/main_openapi/allof_no_merge_constraint_type_shape[field-constraints].py
+standard	main/openapi/main_openapi/allof_no_merge_constraint_type_shape[standard].py
 [test_main_openapi_allof_no_merge_external_relative_nested_ref]
-annotated	main/openapi/allof_no_merge_external_relative_nested_ref_annotated.py
-field-constraints	main/openapi/allof_no_merge_external_relative_nested_ref_field_constraints.py
-standard	main/openapi/allof_no_merge_external_relative_nested_ref_standard.py
+annotated	main/openapi/main_openapi/allof_no_merge_external_relative_nested_ref[annotated].py
+field-constraints	main/openapi/main_openapi/allof_no_merge_external_relative_nested_ref[field-constraints].py
+standard	main/openapi/main_openapi/allof_no_merge_external_relative_nested_ref[standard].py
 [test_main_openapi_allof_no_merge_recursive_constraints]
-annotated	main/openapi/allof_no_merge_recursive_constraints_annotated.py
-field-constraints	main/openapi/allof_no_merge_recursive_constraints_field_constraints.py
-standard	main/openapi/allof_no_merge_recursive_constraints_standard.py
+annotated	main/openapi/main_openapi/allof_no_merge_recursive_constraints[annotated].py
+field-constraints	main/openapi/main_openapi/allof_no_merge_recursive_constraints[field-constraints].py
+standard	main/openapi/main_openapi/allof_no_merge_recursive_constraints[standard].py
 [test_main_openapi_allof_parent_bool_property]
-	main/openapi/allof_parent_bool_property.py
+	main/openapi/main_openapi/allof_parent_bool_property.py
 [test_main_openapi_allof_parent_no_properties]
-	main/openapi/allof_parent_no_properties.py
+	main/openapi/main_openapi/allof_parent_no_properties.py
 [test_main_openapi_allof_partial_override_array_items]
-	main/openapi/allof_partial_override_array_items.py
+	main/openapi/main_openapi/allof_partial_override_array_items.py
 [test_main_openapi_allof_partial_override_array_items_no_parent]
-	main/openapi/allof_partial_override_array_items_no_parent.py
+	main/openapi/main_openapi/allof_partial_override_array_items_no_parent.py
 [test_main_openapi_allof_partial_override_deeply_nested_array]
-	main/openapi/allof_partial_override_deeply_nested_array.py
+	main/openapi/main_openapi/allof_partial_override_deeply_nested_array.py
 [test_main_openapi_allof_partial_override_inherited_types]
-	main/openapi/allof_partial_override_inherited_types.py
+	main/openapi/main_openapi/allof_partial_override_inherited_types.py
 [test_main_openapi_allof_partial_override_nested_array_items]
-	main/openapi/allof_partial_override_nested_array_items.py
+	main/openapi/main_openapi/allof_partial_override_nested_array_items.py
 [test_main_openapi_allof_partial_override_non_array_field]
-	main/openapi/allof_partial_override_non_array_field.py
+	main/openapi/main_openapi/allof_partial_override_non_array_field.py
 [test_main_openapi_allof_partial_override_simple_list_any]
-	main/openapi/allof_partial_override_simple_list_any.py
+	main/openapi/main_openapi/allof_partial_override_simple_list_any.py
 [test_main_openapi_allof_partial_override_unique_items]
-	main/openapi/allof_partial_override_unique_items_pydantic_v2.py
+	main/openapi/main_openapi/allof_partial_override_unique_items.py
 [test_main_openapi_allof_partial_unconstrained_schemas]
-annotated-all	main/openapi/allof_partial_unconstrained_schemas_annotated.py	= main/openapi/allof_partial_unconstrained_schemas_annotated~allof_partial_unconstrained_schemas[annotated-all].py
-annotated-constraints	main/openapi/allof_partial_unconstrained_schemas_annotated.py	= main/openapi/allof_partial_unconstrained_schemas_annotated~allof_partial_unconstrained_schemas[annotated-all].py
-annotated-none	main/openapi/allof_partial_unconstrained_schemas_annotated.py
-field-constraints-all	main/openapi/allof_partial_unconstrained_schemas_field_constraints.py	= main/openapi/allof_partial_unconstrained_schemas_field_constraints~allof_partial_unconstrained_schemas[field-constraints-all].py
-field-constraints-constraints	main/openapi/allof_partial_unconstrained_schemas_field_constraints.py	= main/openapi/allof_partial_unconstrained_schemas_field_constraints~allof_partial_unconstrained_schemas[field-constraints-all].py
-field-constraints-none	main/openapi/allof_partial_unconstrained_schemas_field_constraints.py
-standard-all	main/openapi/allof_partial_unconstrained_schemas_standard.py	= main/openapi/allof_partial_unconstrained_schemas_standard~allof_partial_unconstrained_schemas[standard-all].py
-standard-constraints	main/openapi/allof_partial_unconstrained_schemas_standard.py	= main/openapi/allof_partial_unconstrained_schemas_standard~allof_partial_unconstrained_schemas[standard-all].py
-standard-none	main/openapi/allof_partial_unconstrained_schemas_standard.py
+annotated-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas[annotated-all].py
+annotated-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas[annotated-constraints].py	= main/openapi/main_openapi/allof_partial_unconstrained_schemas[annotated-all].py
+annotated-none	main/openapi/main_openapi/allof_partial_unconstrained_schemas[annotated-none].py	= main/openapi/allof_partial_unconstrained_schemas_annotated.py
+field-constraints-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas[field-constraints-all].py
+field-constraints-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas[field-constraints-constraints].py	= main/openapi/main_openapi/allof_partial_unconstrained_schemas[field-constraints-all].py
+field-constraints-none	main/openapi/main_openapi/allof_partial_unconstrained_schemas[field-constraints-none].py	= main/openapi/allof_partial_unconstrained_schemas_field_constraints.py
+standard-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas[standard-all].py
+standard-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas[standard-constraints].py	= main/openapi/main_openapi/allof_partial_unconstrained_schemas[standard-all].py
+standard-none	main/openapi/main_openapi/allof_partial_unconstrained_schemas[standard-none].py	= main/openapi/allof_partial_unconstrained_schemas_standard.py
 [test_main_openapi_allof_partial_unconstrained_schemas_without_option]
 annotated-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[annotated-all].py	= main/openapi/allof_partial_unconstrained_schemas_annotated.py
 annotated-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[annotated-constraints].py	= main/openapi/allof_partial_unconstrained_schemas_annotated.py
@@ -590,7 +590,7 @@ standard-all	main/openapi/main_openapi/allof_partial_unconstrained_schemas_witho
 standard-constraints	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[standard-constraints].py	= main/openapi/allof_partial_unconstrained_schemas_standard.py
 standard-none	main/openapi/main_openapi/allof_partial_unconstrained_schemas_without_option[standard-none].py	= main/openapi/allof_partial_unconstrained_schemas_standard.py
 [test_main_openapi_allof_property_bool_schema]
-	main/openapi/allof_property_bool_schema.py
+	main/openapi/main_openapi/allof_property_bool_schema.py
 [test_main_openapi_allof_required_inherited_collision_msgspec]
 	main/openapi/main_openapi/allof_required_inherited_collision_msgspec.py
 [test_main_openapi_allof_required_inherited_collisions_msgspec]
@@ -607,15 +607,15 @@ pydantic-v2-dataclass-annotated-target-2	main/openapi/main_openapi/allof_require
 pydantic-v2-dataclass-target-2	main/openapi/main_openapi/allof_required_inherited_dataclass_metadata[pydantic-v2-dataclass-target-2].py
 typed-dict	main/openapi/main_openapi/allof_required_inherited_dataclass_metadata[typed-dict].py
 [test_main_openapi_allof_required_inherited_external]
-read-write-all	main/openapi/allof_required_inherited_external_all.py
-request-response	main/openapi/allof_required_inherited_external_request_response.py
-standard	main/openapi/allof_required_inherited_external.py
+read-write-all	main/openapi/main_openapi/allof_required_inherited_external[read-write-all].py
+request-response	main/openapi/main_openapi/allof_required_inherited_external[request-response].py
+standard	main/openapi/main_openapi/allof_required_inherited_external[standard].py
 [test_main_openapi_allof_required_inherited_metadata_literal]
 	main/openapi/main_openapi/allof_required_inherited_metadata_literal.py
 [test_main_openapi_allof_required_inherited_model_reference_transforms]
-collapse-root-models	main/openapi/allof_required_inherited_model_references_collapse_root_models.py
-collapse-root-models-request-response	main/openapi/allof_required_inherited_model_references_collapse_root_models_request_response.py
-reuse-model	main/openapi/allof_required_inherited_model_references_reuse_model.py
+collapse-root-models	main/openapi/main_openapi/allof_required_inherited_model_reference_transforms[collapse-root-models].py
+collapse-root-models-request-response	main/openapi/main_openapi/allof_required_inherited_model_reference_transforms[collapse-root-models-request-response].py
+reuse-model	main/openapi/main_openapi/allof_required_inherited_model_reference_transforms[reuse-model].py
 [test_main_openapi_allof_required_inherited_model_references]
 dataclass	main/openapi/main_openapi/allof_required_inherited_model_references[dataclass].py
 dataclass-keyword-only	main/openapi/main_openapi/allof_required_inherited_model_references[dataclass-keyword-only].py
@@ -627,11 +627,11 @@ typed-dict	main/openapi/main_openapi/allof_required_inherited_model_references[t
 [test_main_openapi_allof_required_inherited_model_references_force_optional]
 	main/openapi/main_openapi/allof_required_inherited_model_references_force_optional.py
 [test_main_openapi_allof_required_inherited_model_references_read_write]
-all	main/openapi/allof_required_inherited_model_references_read_write.py
-request-response	main/openapi/allof_required_inherited_model_references_request_response.py
+all	main/openapi/main_openapi/allof_required_inherited_model_references_read_write[all].py
+request-response	main/openapi/main_openapi/allof_required_inherited_model_references_read_write[request-response].py
 [test_main_openapi_allof_required_inherited_model_references_read_write_reuse]
-all	main/openapi/allof_required_inherited_model_references_read_write_reuse.py
-request-response	main/openapi/allof_required_inherited_model_references_request_response_reuse.py
+all	main/openapi/main_openapi/allof_required_inherited_model_references_read_write_reuse[all].py
+request-response	main/openapi/main_openapi/allof_required_inherited_model_references_read_write_reuse[request-response].py
 [test_main_openapi_allof_required_inherited_nested_inline]
 all-all	main/openapi/main_openapi/allof_required_inherited_nested_inline[all-all].py
 all-constraints	main/openapi/main_openapi/allof_required_inherited_nested_inline[all-constraints].py	= main/openapi/main_openapi/allof_required_inherited_nested_inline[all-all].py
@@ -683,9 +683,9 @@ typing.TypedDict	main/openapi/main_openapi/allof_scalar_roots_without_option[typ
 	main/openapi/allof_with_required_inherited_comprehensive.py	?
 	main/openapi/allof_with_required_inherited_comprehensive_black_lt_24.py	?	= main/openapi/allof_with_required_inherited_comprehensive.py
 [test_main_openapi_allof_with_required_inherited_coverage]
-	main/openapi/allof_with_required_inherited_coverage.py
+	main/openapi/main_openapi/allof_with_required_inherited_coverage.py
 [test_main_openapi_allof_with_required_inherited_edge_cases]
-	main/openapi/allof_with_required_inherited_edge_cases.py
+	main/openapi/main_openapi/allof_with_required_inherited_edge_cases.py
 [test_main_openapi_allof_with_required_inherited_fields]
 	main/openapi/main_openapi/allof_with_required_inherited_fields.py
 [test_main_openapi_allof_with_required_inherited_fields_force_optional]
@@ -693,7 +693,7 @@ typing.TypedDict	main/openapi/main_openapi/allof_scalar_roots_without_option[typ
 [test_main_openapi_allof_with_required_inherited_nested_object]
 	main/openapi/main_openapi/allof_with_required_inherited_nested_object.py
 [test_main_openapi_anchor_refs]
-	main/openapi/anchor_refs.py
+	main/openapi/main_openapi/anchor_refs.py
 [test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer]
 parameter	main/openapi/main_openapi/anchor_refs_in_object_document_loaded_by_pointer[parameter].py
 request-body	main/openapi/main_openapi/anchor_refs_in_object_document_loaded_by_pointer[request-body].py
@@ -724,34 +724,34 @@ strict-nullable	main/openapi/main_openapi/annotated_model_defaults[strict-nullab
 read	main/openapi/main_openapi/api_scope_name_map_spellings[read].py
 released	main/openapi/main_openapi/api_scope_name_map_spellings[released].py
 [test_main_openapi_api_scope_parameter_type_aliases]
-dataclass.py-extra_args11-api-scope	main/openapi/api_scope_parameter_type_aliases/dataclass.py
-dataclass.py-extra_args11-use-type-alias	main/openapi/api_scope_parameter_type_aliases/dataclass.py
-msgspec.py-extra_args13-api-scope	main/openapi/api_scope_parameter_type_aliases/msgspec.py
-msgspec.py-extra_args13-use-type-alias	main/openapi/api_scope_parameter_type_aliases/msgspec.py
-pydantic_v2.py-extra_args0-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
-pydantic_v2.py-extra_args0-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
-pydantic_v2_collapse.py-extra_args5-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse.py
-pydantic_v2_collapse.py-extra_args5-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse.py
-pydantic_v2_collapse_reuse.py-extra_args3-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_reuse.py
-pydantic_v2_collapse_reuse.py-extra_args3-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_reuse.py
-pydantic_v2_collapse_titles.py-extra_args6-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_titles.py
-pydantic_v2_collapse_titles.py-extra_args6-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_titles.py
-pydantic_v2_dataclass.py-extra_args10-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_dataclass.py
-pydantic_v2_dataclass.py-extra_args10-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_dataclass.py
-pydantic_v2_field_constraints.py-extra_args8-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_field_constraints.py
-pydantic_v2_field_constraints.py-extra_args8-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_field_constraints.py
-pydantic_v2_frozen.py-extra_args4-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_frozen.py
-pydantic_v2_frozen.py-extra_args4-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_frozen.py
-pydantic_v2_reuse.py-extra_args2-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_reuse.py
-pydantic_v2_reuse.py-extra_args2-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_reuse.py
-pydantic_v2_root_model_type_alias.py-extra_args9-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_root_model_type_alias.py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
-pydantic_v2_root_model_type_alias.py-extra_args9-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_root_model_type_alias.py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
-pydantic_v2_titles.py-extra_args7-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_titles.py
-pydantic_v2_titles.py-extra_args7-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_titles.py
-pydantic_v2_type_statement.py-extra_args1-api-scope	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_type_statement.py
-pydantic_v2_type_statement.py-extra_args1-use-type-alias	main/openapi/api_scope_parameter_type_aliases/pydantic_v2_type_statement.py
-typed_dict.py-extra_args12-api-scope	main/openapi/api_scope_parameter_type_aliases/typed_dict.py
-typed_dict.py-extra_args12-use-type-alias	main/openapi/api_scope_parameter_type_aliases/typed_dict.py
+extra_args0-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args0-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
+extra_args0-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args0-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
+extra_args1-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args1-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_type_statement.py
+extra_args1-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args1-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_type_statement.py
+extra_args10-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args10-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_dataclass.py
+extra_args10-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args10-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_dataclass.py
+extra_args11-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args11-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/dataclass.py
+extra_args11-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args11-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/dataclass.py
+extra_args12-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args12-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/typed_dict.py
+extra_args12-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args12-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/typed_dict.py
+extra_args13-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args13-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/msgspec.py
+extra_args13-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args13-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/msgspec.py
+extra_args2-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args2-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_reuse.py
+extra_args2-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args2-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_reuse.py
+extra_args3-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args3-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_reuse.py
+extra_args3-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args3-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_reuse.py
+extra_args4-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args4-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_frozen.py
+extra_args4-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args4-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_frozen.py
+extra_args5-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args5-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse.py
+extra_args5-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args5-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse.py
+extra_args6-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args6-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_titles.py
+extra_args6-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args6-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_collapse_titles.py
+extra_args7-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args7-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_titles.py
+extra_args7-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args7-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_titles.py
+extra_args8-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args8-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_field_constraints.py
+extra_args8-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args8-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2_field_constraints.py
+extra_args9-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args9-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
+extra_args9-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args9-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
 [test_main_openapi_api_scope_parameter_type_aliases_modules]
 collapse-extra_args3	main/openapi/api_scope_parameter_type_aliases_mixed/collapse//*.py
 collapse_reuse_tree-extra_args2	main/openapi/api_scope_parameter_type_aliases_mixed/collapse_reuse_tree//*.py
@@ -759,15 +759,15 @@ default-extra_args0	main/openapi/api_scope_parameter_type_aliases_mixed/default/
 frozen_reuse-extra_args4	main/openapi/api_scope_parameter_type_aliases_mixed/frozen_reuse//*.py
 reuse_tree-extra_args1	main/openapi/api_scope_parameter_type_aliases_mixed/reuse_tree//*.py
 [test_main_openapi_api_scope_path_names]
-capitalise_enum_members.py-extra_args2	main/openapi/api_scope_path_names/capitalise_enum_members.py
-class_name_affixes.py-extra_args3	main/openapi/api_scope_path_names/class_name_affixes.py
-default.py-extra_args0	main/openapi/api_scope_path_names/default.py
-snake_case_field.py-extra_args1	main/openapi/api_scope_path_names/snake_case_field.py
+extra_args0	main/openapi/main_openapi/api_scope_path_names[extra_args0].py
+extra_args1	main/openapi/main_openapi/api_scope_path_names[extra_args1].py
+extra_args2	main/openapi/main_openapi/api_scope_path_names[extra_args2].py
+extra_args3	main/openapi/main_openapi/api_scope_path_names[extra_args3].py
 [test_main_openapi_api_scope_path_names_custom_class_name_generator]
-	main/openapi/api_scope_path_names/custom_class_name_generator.py
+	main/openapi/main_openapi/api_scope_path_names_custom_class_name_generator.py
 [test_main_openapi_api_scope_ref_siblings]
-3.0	main/openapi/api_scope_ref_siblings/oas30.py
-3.1	main/openapi/api_scope_ref_siblings/oas31.py	= main/openapi/api_scope_ref_siblings/oas30.py
+3.0	main/openapi/main_openapi/api_scope_ref_siblings[3.0].py
+3.1	main/openapi/main_openapi/api_scope_ref_siblings[3.1].py	= main/openapi/main_openapi/api_scope_ref_siblings[3.0].py
 [test_main_openapi_api_scope_without_models]
 None-None-extra_args3-0-json_stdout.txt	main/openapi/api_scope_without_models/empty.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 None-None-extra_args3-0-json_stdout.txt	main/openapi/api_scope_without_models/json_stdout.txt	?
@@ -886,7 +886,7 @@ msgspec.Struct	main/openapi/main_openapi/builtin_property_beside_root_models[msg
 pydantic_v2.BaseModel	main/openapi/main_openapi/builtin_property_beside_root_models[pydantic_v2.BaseModel].py
 typing.TypedDict	main/openapi/main_openapi/builtin_property_beside_root_models[typing.TypedDict].py
 [test_main_openapi_byte_format]
-	main/openapi/byte_format.py
+	main/openapi/main_openapi/byte_format.py
 [test_main_openapi_circular_imports_acyclic]
 	main/openapi/circular_imports_acyclic//*.py
 [test_main_openapi_circular_imports_class_conflict]
@@ -960,11 +960,11 @@ wrapper-in-other-module	main/openapi/main_openapi/collapse_shared_parent_wrapper
 [test_main_openapi_complex_reference]
 	main/openapi/main_openapi/complex_reference.py
 [test_main_openapi_component_embedded_ids]
-	main/openapi/component_embedded_ids.py
+	main/openapi/main_openapi/component_embedded_ids.py	= main/openapi/component_embedded_ids.py
 [test_main_openapi_component_embedded_ids_inferred_input_type]
 	main/openapi/main_openapi/component_embedded_ids_inferred_input_type.py	= main/openapi/component_embedded_ids.py
 [test_main_openapi_component_embedded_remote_ids]
-	main/openapi/component_embedded_remote_ids.py
+	main/openapi/main_openapi/component_embedded_remote_ids.py
 [test_main_openapi_const]
 	main/openapi/main_openapi/const.py
 [test_main_openapi_const_field]
@@ -981,13 +981,13 @@ typing.TypedDict	main/openapi/main_openapi/const_field[typing.TypedDict].py
 [test_main_openapi_content_in_parameters]
 	main/openapi/main_openapi/content_in_parameters.py
 [test_main_openapi_custom_id_pydantic_v2]
-	main/openapi/custom_id_pydantic_v2.py
+	main/openapi/main_openapi/custom_id_pydantic_v2.py
 [test_main_openapi_custom_template_dir]
 	main/openapi/custom_template_dir.py	= main/openapi/extra_template_data_config_pydantic_v2.py
 [test_main_openapi_custom_template_dir_include_override]
 	main/openapi/custom_template_dir_include_override.py
 [test_main_openapi_dataclass_inheritance_parent_default]
-	main/openapi/dataclass_inheritance_field_ordering_py310.py
+	main/openapi/main_openapi/dataclass_inheritance_parent_default.py	= main/openapi/dataclass_inheritance_field_ordering_py310.py
 [test_main_openapi_dataclass_inheritance_parent_default_annotated]
 	main/openapi/main_openapi/dataclass_inheritance_parent_default_annotated.py	= main/openapi/dataclass_inheritance_field_ordering_py310.py
 [test_main_openapi_dataclass_optional_metadata_defaults]
@@ -1016,19 +1016,19 @@ request-response-read_only_numbered_variants_by_direction	main/openapi/main_open
 msgspec.Struct-msgspec_default_object	main/openapi/msgspec_default_object//*.py
 pydantic_v2.BaseModel-pydantic_v2_default_object	main/openapi/pydantic_v2_default_object//*.py
 [test_main_openapi_deprecated_field]
-	main/openapi/deprecated_field.py	= main/openapi/deprecated_field_target_2_12.py
+	main/openapi/main_openapi/deprecated_field.py
 [test_main_openapi_deprecated_field_pydantic26]
-target-2	main/openapi/deprecated_field_target_2.py
-target-2.12	main/openapi/deprecated_field_target_2_12.py
-target-unset	main/openapi/deprecated_field_target_2_12.py
+target-2	main/openapi/main_openapi/deprecated_field_pydantic26[target-2].py
+target-2.12	main/openapi/main_openapi/deprecated_field_pydantic26[target-2.12].py	= main/openapi/main_openapi/deprecated_field.py
+target-unset	main/openapi/main_openapi/deprecated_field_pydantic26[target-unset].py	= main/openapi/main_openapi/deprecated_field.py
 [test_main_openapi_detects_created_include_only_template_directory]
 	main/openapi/custom_template_dir_include_override.py
 	main/openapi/extra_template_data_config_pydantic_v2.py
 [test_main_openapi_discriminated_oneof_allof_cycle]
 	main/openapi/openapi_discriminated_oneof_allof_cycle.py
 [test_main_openapi_discriminator]
-discriminator.yaml-general.py	main/openapi/discriminator/general.py
-discriminator_without_mapping.yaml-without_mapping.py	main/openapi/discriminator/without_mapping.py
+discriminator.yaml	main/openapi/main_openapi/discriminator[discriminator.yaml].py
+discriminator_without_mapping.yaml	main/openapi/main_openapi/discriminator[discriminator_without_mapping.yaml].py
 [test_main_openapi_discriminator_allof]
 	main/openapi/main_openapi/discriminator_allof.py
 [test_main_openapi_discriminator_allof_no_subtypes]
@@ -1096,18 +1096,18 @@ pydantic-v2	main/openapi/main_openapi/discriminator_float_enum_use_enum_values[p
 [test_main_openapi_discriminator_float_mapping]
 	main/openapi/main_openapi/discriminator_float_mapping.py
 [test_main_openapi_discriminator_import_override_removes_original]
-	main/openapi/discriminator/import_override.py
+	main/openapi/main_openapi/discriminator_import_override_removes_original.py
 [test_main_openapi_discriminator_in_array]
-anyOf---collapse-root-models-None-in_array_collapse_root_models.py	main/openapi/discriminator/in_array_collapse_root_models.py
-anyOf---collapse-root-models-pydantic_v2.BaseModel-in_array_collapse_root_models_pydantic_v2.py	main/openapi/discriminator/in_array_collapse_root_models_pydantic_v2.py	= main/openapi/discriminator/in_array_collapse_root_models.py
-anyOf-None-None-in_array.py	main/openapi/discriminator/in_array.py
-oneOf---collapse-root-models-None-in_array_collapse_root_models.py	main/openapi/discriminator/in_array_collapse_root_models.py
-oneOf---collapse-root-models-pydantic_v2.BaseModel-in_array_collapse_root_models_pydantic_v2.py	main/openapi/discriminator/in_array_collapse_root_models_pydantic_v2.py	= main/openapi/discriminator/in_array_collapse_root_models.py
-oneOf-None-None-in_array.py	main/openapi/discriminator/in_array.py
+anyOf---collapse-root-models-None	main/openapi/main_openapi/discriminator_in_array[anyOf---collapse-root-models-None].py	= main/openapi/discriminator/in_array_collapse_root_models.py
+anyOf---collapse-root-models-pydantic_v2.BaseModel	main/openapi/main_openapi/discriminator_in_array[anyOf---collapse-root-models-pydantic_v2.BaseModel].py	= main/openapi/discriminator/in_array_collapse_root_models.py
+anyOf-None-None	main/openapi/main_openapi/discriminator_in_array[anyOf-None-None].py	= main/openapi/discriminator/in_array.py
+oneOf---collapse-root-models-None	main/openapi/main_openapi/discriminator_in_array[oneOf---collapse-root-models-None].py	= main/openapi/discriminator/in_array_collapse_root_models.py
+oneOf---collapse-root-models-pydantic_v2.BaseModel	main/openapi/main_openapi/discriminator_in_array[oneOf---collapse-root-models-pydantic_v2.BaseModel].py	= main/openapi/discriminator/in_array_collapse_root_models.py
+oneOf-None-None	main/openapi/main_openapi/discriminator_in_array[oneOf-None-None].py	= main/openapi/discriminator/in_array.py
 [test_main_openapi_discriminator_in_array_snake_case]
-	main/openapi/discriminator/in_array_snake_case_pydantic_v2.py
+	main/openapi/main_openapi/discriminator_in_array_snake_case.py
 [test_main_openapi_discriminator_in_array_underscore]
-	main/openapi/discriminator/in_array_underscore_pydantic_v2.py
+	main/openapi/main_openapi/discriminator_in_array_underscore.py
 [test_main_openapi_discriminator_inherited_msgspec_untagged]
 api	main/openapi/discriminator/inherited_msgspec_untagged.py
 cli	main/openapi/discriminator/inherited_msgspec_untagged.py
@@ -1213,10 +1213,10 @@ discriminator_ref_variant_default-pydantic_v2.BaseModel-extra_args17	main/openap
 [test_main_openapi_discriminator_no_mapping_no_subtypes]
 	main/openapi/main_openapi/discriminator_no_mapping_no_subtypes.py
 [test_main_openapi_discriminator_one_literal_as_default]
-dataclasses.dataclass-discriminator/dataclass_enum_one_literal_as_default.py	main/openapi/discriminator/dataclass_enum_one_literal_as_default.py
-pydantic_v2.BaseModel-discriminator/enum_one_literal_as_default.py	main/openapi/discriminator/enum_one_literal_as_default.py
+dataclasses.dataclass	main/openapi/main_openapi/discriminator_one_literal_as_default[dataclasses.dataclass].py	= main/openapi/discriminator/dataclass_enum_one_literal_as_default.py
+pydantic_v2.BaseModel	main/openapi/main_openapi/discriminator_one_literal_as_default[pydantic_v2.BaseModel].py
 [test_main_openapi_discriminator_one_literal_as_default_dataclass_py310]
-	main/openapi/discriminator/dataclass_enum_one_literal_as_default_py310.py	= main/openapi/discriminator/dataclass_enum_one_literal_as_default.py
+	main/openapi/main_openapi/discriminator_one_literal_as_default_dataclass_py310.py	= main/openapi/discriminator/dataclass_enum_one_literal_as_default.py
 [test_main_openapi_discriminator_oneof_short_mapping]
 	main/openapi/main_openapi/discriminator_oneof_short_mapping.py
 [test_main_openapi_discriminator_optional_literal]
@@ -1229,10 +1229,10 @@ discriminator_optional_literal_nested-pydantic_v2.BaseModel-optional_args4	main/
 discriminator_optional_literal_nested-pydantic_v2.BaseModel-optional_args6	main/openapi/openapi_discriminator_optional_literal.py	= main/openapi/openapi_discriminator_optional_literal~discriminator_optional_literal[discriminator_optional_literal_nested-pydantic_v2.BaseModel-optional_args6].py
 discriminator_optional_literal_nested-pydantic_v2.dataclass-optional_args7	main/openapi/openapi_discriminator_optional_literal.py	= main/openapi/openapi_discriminator_optional_literal~discriminator_optional_literal[discriminator_optional_literal_nested-pydantic_v2.dataclass-optional_args7].py
 [test_main_openapi_discriminator_optional_pydantic_v2]
-pydantic_v2.BaseModel-optional_args0-discriminator/required_pydantic_v2.py	main/openapi/discriminator/required_pydantic_v2.py
-pydantic_v2.BaseModel-optional_args1-discriminator/force_optional_pydantic_v2.py	main/openapi/discriminator/force_optional_pydantic_v2.py
-pydantic_v2.BaseModel-optional_args2-discriminator/force_optional_pydantic_v2.py	main/openapi/discriminator/force_optional_pydantic_v2.py
-pydantic_v2.dataclass-optional_args3-discriminator/force_optional_pydantic_v2_dataclass.py	main/openapi/discriminator/force_optional_pydantic_v2_dataclass.py
+pydantic_v2.BaseModel-optional_args0	main/openapi/main_openapi/discriminator_optional_pydantic_v2[pydantic_v2.BaseModel-optional_args0].py
+pydantic_v2.BaseModel-optional_args1	main/openapi/main_openapi/discriminator_optional_pydantic_v2[pydantic_v2.BaseModel-optional_args1].py	= main/openapi/discriminator/force_optional_pydantic_v2.py
+pydantic_v2.BaseModel-optional_args2	main/openapi/main_openapi/discriminator_optional_pydantic_v2[pydantic_v2.BaseModel-optional_args2].py	= main/openapi/discriminator/force_optional_pydantic_v2.py
+pydantic_v2.dataclass-optional_args3	main/openapi/main_openapi/discriminator_optional_pydantic_v2[pydantic_v2.dataclass-optional_args3].py
 [test_main_openapi_discriminator_partial_mapping]
 	main/openapi/main_openapi/discriminator_partial_mapping.py
 [test_main_openapi_discriminator_pattern]
@@ -1356,21 +1356,21 @@ released	main/openapi/main_openapi/dynamic_anchor_declared_once[released].py	= m
 [test_main_openapi_dynamic_anchor_registered_after_its_reference]
 	main/openapi/main_openapi/dynamic_anchor_registered_after_its_reference.txt
 [test_main_openapi_dynamic_ref]
-	main/openapi/dynamic_ref.py
+	main/openapi/main_openapi/dynamic_ref.py	= main/openapi/dynamic_ref.py
 [test_main_openapi_dynamic_ref_component_anchors]
-	main/openapi/dynamic_ref_component_anchors.py
+	main/openapi/main_openapi/dynamic_ref_component_anchors.py
 [test_main_openapi_dynamic_ref_external_generic]
-	main/openapi/dynamic_ref_external_generic.py
+	main/openapi/main_openapi/dynamic_ref_external_generic.py
 [test_main_openapi_dynamic_ref_request_response]
 	main/openapi/main_openapi/dynamic_ref_request_response.py	= main/openapi/dynamic_ref.py
 [test_main_openapi_dynamic_ref_to_anchor_and_dynamic_anchor]
 read	main/openapi/main_openapi/dynamic_ref_to_anchor_and_dynamic_anchor[read].py
 released	main/openapi/main_openapi/dynamic_ref_to_anchor_and_dynamic_anchor[released].py
 [test_main_openapi_empty_dict_default]
-msgspec.Struct-msgspec_empty_dict_default.py	main/openapi/msgspec_empty_dict_default.py
-pydantic_v2.BaseModel-pydantic_v2_empty_dict_default.py	main/openapi/pydantic_v2_empty_dict_default.py
+msgspec.Struct	main/openapi/main_openapi/empty_dict_default[msgspec.Struct].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/empty_dict_default[pydantic_v2.BaseModel].py
 [test_main_openapi_empty_list_default]
-	main/openapi/pydantic_v2_empty_list_default.py
+	main/openapi/main_openapi/empty_list_default.py
 [test_main_openapi_enum_const_positions]
 msgspec.Struct	main/openapi/main_openapi/enum_const_positions[msgspec.Struct].py
 msgspec.Struct	main/openapi/main_openapi/enum_const_positions[msgspec.Struct].warnings.txt
@@ -1394,7 +1394,7 @@ enum_const_positions-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_
 enum_const_unsatisfiable-msgspec.Struct	main/openapi/main_openapi/enum_const_without_option[enum_const_unsatisfiable-msgspec.Struct].py	= main/openapi/main_openapi/enum_const_unsatisfiable.py
 enum_const_unsatisfiable-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_without_option[enum_const_unsatisfiable-pydantic_v2.BaseModel].py	= main/openapi/main_openapi/enum_const_unsatisfiable.py
 [test_main_openapi_enum_literal_type_alias_property_ref]
-	main/openapi/enum_literal_type_alias_property_ref.py
+	main/openapi/main_openapi/enum_literal_type_alias_property_ref.py
 [test_main_openapi_enum_models_as_literal]
 	main/openapi/enum_models/as_literal.py	= main/openapi/enum_models/all.py
 [test_main_openapi_enum_models_as_literal_all]
@@ -1406,13 +1406,13 @@ enum_const_unsatisfiable-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_co
 [test_main_openapi_external_ref_mapping_absolute_path_ref]
 	main/openapi/external_ref_mapping_absolute_path.py
 [test_main_openapi_external_ref_mapping_basic]
-	main/openapi/external_ref_mapping.py
+	main/openapi/main_openapi/external_ref_mapping_basic.py	= main/openapi/external_ref_mapping.py
 [test_main_openapi_external_ref_mapping_file_uri]
 	main/openapi/external_ref_mapping_file_uri.py
 [test_main_openapi_external_ref_mapping_local_ref_unchanged]
 	main/openapi/external_ref_mapping_local_ref_unchanged.py
 [test_main_openapi_external_ref_mapping_nested_relative_ref]
-	main/openapi/external_ref_mapping_nested.py
+	main/openapi/main_openapi/external_ref_mapping_nested_relative_ref.py
 [test_main_openapi_external_ref_mapping_no_duplicate_classes]
 	main/openapi/external_ref_mapping.py
 [test_main_openapi_external_ref_mapping_normalizes_imported_class_name]
@@ -1422,9 +1422,9 @@ enum_const_unsatisfiable-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_co
 [test_main_openapi_external_ref_mapping_without_flag_generates_classes]
 	main/openapi/external_ref_mapping_without_flag.py
 [test_main_openapi_external_ref_with_transitive_local_ref]
-	main/openapi/external_ref_with_transitive_local_ref/output.py
+	main/openapi/main_openapi/external_ref_with_transitive_local_ref.py
 [test_main_openapi_extra_fields_forbid]
-	main/openapi/additional_properties.py
+	main/openapi/main_openapi/extra_fields_forbid.py
 [test_main_openapi_extra_template_data_config]
 	main/openapi/extra_template_data_config_pydantic_v2.py
 [test_main_openapi_false_all_of_keywords]
@@ -1434,18 +1434,18 @@ false_keywords	main/openapi/main_openapi/false_all_of_keywords[false_keywords].p
 false_all_of_values	main/openapi/main_openapi/false_all_of_values[false_all_of_values].py
 false_values	main/openapi/main_openapi/false_all_of_values[false_values].py	= main/openapi/main_openapi/false_all_of_values[false_all_of_values].py
 [test_main_openapi_field_name_collision_with_alias_constraints]
-alias_description_property_names.yaml-pydantic_v2.BaseModel-extra_args6-alias_description_property_names.py	main/openapi/field_name_collision/alias_description_property_names.py
-alias_description_property_names.yaml-pydantic_v2.BaseModel-extra_args9-None	main/openapi/openapi_field_name_collision_with_alias_constraints.py
-annotated_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args5-annotated_model_type_alias.py	main/openapi/field_name_collision/annotated_model_type_alias.py
-annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args11-None	main/openapi/openapi_field_name_collision_with_alias_constraints.py	= main/openapi/openapi_field_name_collision_with_alias_constraints~field_name_collision_with_alias_constraints[annotated_property_use_annotated.yam~a8e019a7.py
-annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args7-annotated_property_use_annotated.py	main/openapi/field_name_collision/annotated_property_use_annotated.py
-annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args8-annotated_property_type_statement.py	main/openapi/field_name_collision/annotated_property_type_statement.py
-field_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args0-model_type_alias.py	main/openapi/field_name_collision/model_type_alias.py
-field_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args1-model_root_model.py	main/openapi/field_name_collision/model_root_model.py
-field_model_name_collision.yaml-pydantic_v2.dataclass-extra_args2-model_dataclass_type_alias.py	main/openapi/field_name_collision/model_dataclass_type_alias.py
-field_property_name_collision.yaml-pydantic_v2.BaseModel-extra_args3-property_type_alias.py	main/openapi/field_name_collision/property_type_alias.py
-field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_dataclass_type_alias.py	main/openapi/field_name_collision/property_dataclass_type_alias.py
-literal_property_enum_root_names.yaml-pydantic_v2.BaseModel-extra_args10-None	main/openapi/openapi_field_name_collision_with_alias_constraints.py	= main/openapi/openapi_field_name_collision_with_alias_constraints~field_name_collision_with_alias_constraints[literal_property_enum_root_names.yam~60348f56.py
+alias_description_property_names.yaml-pydantic_v2.BaseModel-extra_args6	main/openapi/main_openapi/field_name_collision_with_alias_constraints[alias_description_property_names.yaml-pydantic_v2.BaseModel-extra_args6].py
+alias_description_property_names.yaml-pydantic_v2.BaseModel-extra_args9	main/openapi/main_openapi/field_name_collision_with_alias_constraints[alias_description_property_names.yaml-pydantic_v2.BaseModel-extra_args9].py
+annotated_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args5	main/openapi/main_openapi/field_name_collision_with_alias_constraints[annotated_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args5].py
+annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args11	main/openapi/main_openapi/field_name_collision_with_alias_constraints[annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args11].py
+annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args7	main/openapi/main_openapi/field_name_collision_with_alias_constraints[annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args7].py
+annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args8	main/openapi/main_openapi/field_name_collision_with_alias_constraints[annotated_property_use_annotated.yaml-pydantic_v2.BaseModel-extra_args8].py
+field_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args0	main/openapi/main_openapi/field_name_collision_with_alias_constraints[field_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args0].py
+field_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args1	main/openapi/main_openapi/field_name_collision_with_alias_constraints[field_model_name_collision.yaml-pydantic_v2.BaseModel-extra_args1].py
+field_model_name_collision.yaml-pydantic_v2.dataclass-extra_args2	main/openapi/main_openapi/field_name_collision_with_alias_constraints[field_model_name_collision.yaml-pydantic_v2.dataclass-extra_args2].py
+field_property_name_collision.yaml-pydantic_v2.BaseModel-extra_args3	main/openapi/main_openapi/field_name_collision_with_alias_constraints[field_property_name_collision.yaml-pydantic_v2.BaseModel-extra_args3].py
+field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4	main/openapi/main_openapi/field_name_collision_with_alias_constraints[field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4].py
+literal_property_enum_root_names.yaml-pydantic_v2.BaseModel-extra_args10	main/openapi/main_openapi/field_name_collision_with_alias_constraints[literal_property_enum_root_names.yaml-pydantic_v2.BaseModel-extra_args10].py
 [test_main_openapi_fixed_length_array_tuples]
 	main/openapi/main_openapi/fixed_length_array_tuples.py
 [test_main_openapi_fixed_length_array_tuples_disabled]
@@ -1466,19 +1466,19 @@ overlaid	main/openapi/main_openapi/ignore_ref_siblings_by_schema_version[overlai
 [test_main_openapi_include_info_version_modular]
 	main/openapi/modular_info_version/__init__.py
 [test_main_openapi_include_paths]
-	main/openapi/openapi_include_paths/pets_only.py
+	main/openapi/main_openapi/include_paths.py
 [test_main_openapi_include_paths_match_case_and_slash_on_every_os]
 backslash	main/openapi/main_openapi/include_paths_match_case_and_slash_on_every_os[backslash].py
 upper-case	main/openapi/main_openapi/include_paths_match_case_and_slash_on_every_os[upper-case].py	= main/openapi/main_openapi/include_paths_match_case_and_slash_on_every_os[backslash].py
 [test_main_openapi_include_paths_without_leading_slash]
-	main/openapi/openapi_include_paths/pets_only.py
+	main/openapi/main_openapi/include_paths_without_leading_slash.py	= main/openapi/main_openapi/include_paths.py
 [test_main_openapi_item_schema]
-	main/openapi/item_schema.py
+	main/openapi/main_openapi/item_schema.py
 [test_main_openapi_item_schema_beside_null_schema]
 api	main/openapi/openapi_item_schema_beside_null_schema.py
 paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	= main/openapi/openapi_item_schema_beside_null_schema~item_schema_beside_null_schema[paths-and-request-bodies].py
 [test_main_openapi_item_schema_requires_32]
-	main/openapi/item_schema_31.py
+	main/openapi/main_openapi/item_schema_requires_32.py
 [test_main_openapi_json_pointer]
 	main/openapi/main_openapi/json_pointer.py
 [test_main_openapi_json_pointer_boolean_key]
@@ -1500,17 +1500,17 @@ typed_dict-kept	main/openapi/main_openapi/keep_first_character_of_path_keys[type
 [test_main_openapi_keep_model_order_same_short_name_in_another_module]
 	main/openapi/main_openapi/keep_model_order_same_short_name_in_another_module/
 [test_main_openapi_keyword_only_dataclass]
-	main/openapi/dataclass_keyword_only.py
+	main/openapi/main_openapi/keyword_only_dataclass.py
 [test_main_openapi_keyword_only_msgspec]
-	main/openapi/msgspec_keyword_only.py
+	main/openapi/main_openapi/keyword_only_msgspec.py
 [test_main_openapi_keyword_only_msgspec_with_extra_data]
-	main/openapi/msgspec_keyword_only_omit_defaults.py
+	main/openapi/main_openapi/keyword_only_msgspec_with_extra_data.py	= main/openapi/msgspec_keyword_only_omit_defaults.py
 [test_main_openapi_max_items_enum]
 	main/openapi/main_openapi/max_items_enum.py
 [test_main_openapi_max_items_enum_without_option]
 	main/openapi/main_openapi/max_items_enum_without_option.py
 [test_main_openapi_max_min]
-	main/openapi/max_min_number.py
+	main/openapi/main_openapi/max_min.py
 [test_main_openapi_merge_shared_variant_tags]
 pydantic_v2	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2].py
 pydantic_v2	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2].warnings.txt
@@ -1565,8 +1565,8 @@ value-is-another-key	main/openapi/openapi_model_name_map_key_of_numbered_name.py
 [test_main_openapi_module_class_name_collision_pydantic_v2]
 	main/openapi/module_class_name_collision//*.py
 [test_main_openapi_msgspec_anyof]
-	main/openapi/msgspec_anyof.py
-	main/openapi/msgspec_anyof_warnings.txt
+	main/openapi/main_openapi/msgspec_anyof.msgspec_anyof_warnings.txt
+	main/openapi/main_openapi/msgspec_anyof.py
 [test_main_openapi_msgspec_enum_unions]
 collapse_root_models	main/openapi/main_openapi/msgspec_enum_unions[collapse_root_models]._warnings.txt
 collapse_root_models	main/openapi/main_openapi/msgspec_enum_unions[collapse_root_models].py
@@ -1576,9 +1576,9 @@ default	main/openapi/main_openapi/msgspec_enum_unions[default].py
 	main/openapi/main_openapi/msgspec_enum_unions_subclass_values.msgspec_enum_unions.txt
 	main/openapi/main_openapi/msgspec_enum_unions_subclass_values.py
 [test_main_openapi_msgspec_inline_const]
-	main/openapi/msgspec_inline_const.py
+	main/openapi/main_openapi/msgspec_inline_const.py
 [test_main_openapi_msgspec_no_use_union_operator]
-	main/openapi/msgspec_no_use_union_operator.py
+	main/openapi/main_openapi/msgspec_no_use_union_operator.py
 [test_main_openapi_msgspec_nullable_enum]
 inherited	main/openapi/msgspec_nullable_enum/openapi_inherited.py
 inherited	main/openapi/msgspec_nullable_enum/openapi_inherited_warnings.txt
@@ -1595,18 +1595,18 @@ openapi-30-set-default-enum-member-alias	main/openapi/msgspec_nullable_enum/open
 openapi-31	main/openapi/msgspec_nullable_enum/openapi_31.py
 openapi-31	main/openapi/msgspec_nullable_enum/openapi_31_warnings.txt
 [test_main_openapi_msgspec_oneof_with_null]
-	main/openapi/msgspec_oneof_with_null.py
+	main/openapi/main_openapi/msgspec_oneof_with_null.py
 [test_main_openapi_msgspec_oneof_with_null_no_use_union_operator]
-	main/openapi/msgspec_oneof_with_null_no_use_union_operator.py
+	main/openapi/main_openapi/msgspec_oneof_with_null_no_use_union_operator.py
 [test_main_openapi_msgspec_oneof_with_null_union_operator]
-	main/openapi/msgspec_oneof_with_null_union_operator.py	= main/openapi/msgspec_oneof_with_null.py
+	main/openapi/main_openapi/msgspec_oneof_with_null_union_operator.py	= main/openapi/main_openapi/msgspec_oneof_with_null.py
 [test_main_openapi_msgspec_ref_nullable_strict_nullable]
 no-use-union-operator	main/openapi/main_openapi/msgspec_ref_nullable_strict_nullable[no-use-union-operator].py
 union-operator	main/openapi/main_openapi/msgspec_ref_nullable_strict_nullable[union-operator].py
 [test_main_openapi_msgspec_struct]
-	main/openapi/msgspec_struct.py
+	main/openapi/main_openapi/msgspec_struct.py
 [test_main_openapi_msgspec_struct_snake_case]
-	main/openapi/msgspec_struct_snake_case.py
+	main/openapi/main_openapi/msgspec_struct_snake_case.py
 [test_main_openapi_msgspec_tagged_base_redefined_field]
 	main/openapi/discriminator/msgspec_tagged_base_redefined_field//*.py
 	main/openapi/main_openapi/msgspec_tagged_base_redefined_field._decoded.txt
@@ -1628,10 +1628,10 @@ msgspec_tagged_unions_modules_variants_first	main/openapi/discriminator/msgspec_
 	main/openapi/main_openapi/msgspec_union_tag_clashes.msgspec_union_tag_clashes_warnings.txt
 	main/openapi/main_openapi/msgspec_union_tag_clashes.py
 [test_main_openapi_msgspec_use_annotated_with_field_constraints]
-	main/openapi/msgspec_numeric_unions_runtime.txt
-	main/openapi/msgspec_use_annotated_with_field_constraints.py
+	main/openapi/main_openapi/msgspec_use_annotated_with_field_constraints.msgspec_numeric_unions_runtime.txt
+	main/openapi/main_openapi/msgspec_use_annotated_with_field_constraints.py
 [test_main_openapi_msgspec_use_union_operator]
-	main/openapi/msgspec_use_union_operator.py	= main/openapi/msgspec_nullable.py
+	main/openapi/main_openapi/msgspec_use_union_operator.py	= main/openapi/main_openapi/main_msgspec_nullable.py
 [test_main_openapi_name_allof_union_members_after_branches]
 dataclass-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[dataclass-members-infer].py
 msgspec-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[msgspec-members-infer].py
@@ -1674,11 +1674,11 @@ typed_dict-enclosing-model	main/openapi/main_openapi/naming_strategy_enclosing_m
 [test_main_openapi_non_operations_and_security]
 	main/openapi/openapi_non_operations_and_security.py
 [test_main_openapi_null_only_enum]
-	main/openapi/null_only_enum.py
+	main/openapi/main_openapi/null_only_enum.py
 [test_main_openapi_nullable]
 	main/openapi/main_openapi/nullable.py
 [test_main_openapi_nullable_31]
-	main/openapi/nullable_31.py
+	main/openapi/main_openapi/nullable_31.py
 [test_main_openapi_nullable_enum_alias_ignored_by_pydantic]
 alias	main/openapi/main_openapi/nullable_enum_alias_ignored_by_pydantic[alias].py
 default	main/openapi/main_openapi/nullable_enum_alias_ignored_by_pydantic[default].py	= main/openapi/main_openapi/nullable_enum_alias_ignored_by_pydantic[alias].py
@@ -1762,7 +1762,7 @@ layout-typed-dict-reuse-model	main/openapi/nullable_map_untyped/layout_typed_dic
 typed-falls-back	main/openapi/nullable_map_untyped/parameter_layout//*.py
 untyped	main/openapi/nullable_map_untyped/parameter_layout//*.py
 [test_main_openapi_nullable_required_annotated]
-	main/openapi/nullable_required_annotated.py
+	main/openapi/main_openapi/nullable_required_annotated.py
 [test_main_openapi_nullable_reuse_collapse]
 collapse-dataclasses.dataclass	main/openapi/main_openapi/nullable_reuse_collapse[collapse-dataclasses.dataclass].py
 collapse-msgspec.Struct	main/openapi/main_openapi/nullable_reuse_collapse[collapse-msgspec.Struct].py
@@ -1832,13 +1832,13 @@ args1	main/openapi/main_openapi/pattern_with_lookaround_pydantic_v2_dataclass[ar
 api-scope	main/openapi/main_openapi/pointer_into_document_with_integer_top_level_key[api-scope].py
 models	main/openapi/main_openapi/pointer_into_document_with_integer_top_level_key[models].py	= main/openapi/main_openapi/pointer_into_document_with_integer_top_level_key[api-scope].py
 [test_main_openapi_pydantic_dataclass_inheritance_parent_default]
-	main/openapi/pydantic_dataclass_inheritance_field_ordering_py310.py
+	main/openapi/main_openapi/pydantic_dataclass_inheritance_parent_default.py
 [test_main_openapi_pydantic_v2_strip_default_none_field_metadata]
 	main/openapi/main_openapi/pydantic_v2_strip_default_none_field_metadata.py
 [test_main_openapi_query_parameter_without_name]
-	main/openapi/parameter_without_name.py
+	main/openapi/main_openapi/query_parameter_without_name.py
 [test_main_openapi_querystring_parameter_requires_32]
-	main/openapi/querystring_parameter_31.py
+	main/openapi/main_openapi/querystring_parameter_requires_32.py
 [test_main_openapi_read_dynamic_anchors_in_document_order]
 read	main/openapi/main_openapi/read_dynamic_anchors_in_document_order[read].py
 released	main/openapi/main_openapi/read_dynamic_anchors_in_document_order[released].py
@@ -1849,37 +1849,37 @@ released	main/openapi/main_openapi/read_escaped_ref_pointers[released].py
 with-option	main/openapi/main_openapi/read_nullable_beside_type_list[with-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output[null_multiple_types_oas30-pydantic_v2.BaseModel-use-missing-sentinel].py
 without-option	main/openapi/main_openapi/read_nullable_beside_type_list[without-option].py
 [test_main_openapi_read_only_write_only_all]
-	main/openapi/read_only_write_only_all.py
+	main/openapi/main_openapi/read_only_write_only_all.py
 [test_main_openapi_read_only_write_only_all_reentrant_additional_properties_default]
 	main/openapi/openapi_read_only_write_only_all_reentrant_additional_properties_default.py
 [test_main_openapi_read_only_write_only_allof]
-	main/openapi/read_only_write_only_allof.py
+	main/openapi/main_openapi/read_only_write_only_allof.py
 [test_main_openapi_read_only_write_only_allof_member_declarations]
 all	main/openapi/main_openapi/read_only_write_only_allof_member_declarations[all].py
 request-response	main/openapi/main_openapi/read_only_write_only_allof_member_declarations[request-response].py
 [test_main_openapi_read_only_write_only_allof_order]
-	main/openapi/read_only_write_only_allof_order.py
+	main/openapi/main_openapi/read_only_write_only_allof_order.py
 [test_main_openapi_read_only_write_only_allof_parent_inline_models]
 dedupe	main/openapi/openapi_read_only_write_only_allof_parent_inline_models.py
 default	main/openapi/openapi_read_only_write_only_allof_parent_inline_models.py	= main/openapi/openapi_read_only_write_only_allof_parent_inline_models~read_only_write_only_allof_parent_inline_models[default].py
 [test_main_openapi_read_only_write_only_allof_request_response]
-	main/openapi/read_only_write_only_allof_request_response.py
+	main/openapi/main_openapi/read_only_write_only_allof_request_response.py
 [test_main_openapi_read_only_write_only_allof_required_only]
-	main/openapi/read_only_write_only_allof_required_only.py
+	main/openapi/main_openapi/read_only_write_only_allof_required_only.py
 [test_main_openapi_read_only_write_only_allof_url_ref]
-	main/openapi/read_only_write_only_allof_url_ref.py
+	main/openapi/main_openapi/read_only_write_only_allof_url_ref.py
 [test_main_openapi_read_only_write_only_anyof]
-	main/openapi/read_only_write_only_anyof.py
+	main/openapi/main_openapi/read_only_write_only_anyof.py
 [test_main_openapi_read_only_write_only_collision]
-	main/openapi/read_only_write_only_collision.py
+	main/openapi/main_openapi/read_only_write_only_collision.py
 [test_main_openapi_read_only_write_only_default]
-	main/openapi/read_only_write_only_default.py
+	main/openapi/main_openapi/read_only_write_only_default.py
 [test_main_openapi_read_only_write_only_double_collision]
-	main/openapi/read_only_write_only_double_collision.py
+	main/openapi/main_openapi/read_only_write_only_double_collision.py
 [test_main_openapi_read_only_write_only_duplicate_allof_ref]
-	main/openapi/read_only_write_only_duplicate_allof_ref.py
+	main/openapi/main_openapi/read_only_write_only_duplicate_allof_ref.py
 [test_main_openapi_read_only_write_only_empty_base]
-	main/openapi/read_only_write_only_empty_base.py
+	main/openapi/main_openapi/read_only_write_only_empty_base.py
 [test_main_openapi_read_only_write_only_external_directory]
 all	main/openapi/main_openapi/read_only_write_only_external_directory[all].py
 request-response	main/openapi/main_openapi/read_only_write_only_external_directory[request-response].py
@@ -1889,11 +1889,11 @@ single-document-request-response	main/openapi/main_openapi/read_only_write_only_
 	main/openapi/main_openapi/read_only_write_only_extra_items_patterns.py
 	main/openapi/main_openapi/read_only_write_only_extra_items_patterns.warnings.txt
 [test_main_openapi_read_only_write_only_mixed]
-	main/openapi/read_only_write_only_mixed.py
+	main/openapi/main_openapi/read_only_write_only_mixed.py
 [test_main_openapi_read_only_write_only_nested_allof]
-	main/openapi/read_only_write_only_nested_allof.py
+	main/openapi/main_openapi/read_only_write_only_nested_allof.py
 [test_main_openapi_read_only_write_only_nested_allof_order]
-	main/openapi/read_only_write_only_nested_allof_order.py
+	main/openapi/main_openapi/read_only_write_only_nested_allof_order.py
 [test_main_openapi_read_only_write_only_nullable_enum_reference]
 dedupe	main/openapi/openapi_read_only_write_only_nullable_enum_reference.py
 default	main/openapi/openapi_read_only_write_only_nullable_enum_reference.py	= main/openapi/openapi_read_only_write_only_nullable_enum_reference~read_only_write_only_nullable_enum_reference[default].py
@@ -1902,30 +1902,30 @@ paths-parameters	main/openapi/main_openapi/read_only_write_only_parameters[paths
 paths-parameters-dedupe	main/openapi/main_openapi/read_only_write_only_parameters[paths-parameters-dedupe].py	= main/openapi/main_openapi/read_only_write_only_parameters[paths-parameters].py
 schemas-paths-parameters	main/openapi/main_openapi/read_only_write_only_parameters[schemas-paths-parameters].py
 [test_main_openapi_read_only_write_only_ref]
-	main/openapi/read_only_write_only_ref.py
+	main/openapi/main_openapi/read_only_write_only_ref.py
 [test_main_openapi_read_only_write_only_ref_request_response]
-	main/openapi/read_only_write_only_ref_request_response.py
+	main/openapi/main_openapi/read_only_write_only_ref_request_response.py
 [test_main_openapi_read_only_write_only_ref_with_desc]
-	main/openapi/read_only_write_only_ref_with_desc.py
+	main/openapi/main_openapi/read_only_write_only_ref_with_desc.py
 [test_main_openapi_read_only_write_only_request_response]
-	main/openapi/read_only_write_only_request_response.py
+	main/openapi/main_openapi/read_only_write_only_request_response.py
 [test_main_openapi_read_only_write_only_shared_base_ref]
-	main/openapi/read_only_write_only_shared_base_ref.py
+	main/openapi/main_openapi/read_only_write_only_shared_base_ref.py
 [test_main_openapi_read_only_write_only_union]
-	main/openapi/read_only_write_only_union.py
+	main/openapi/main_openapi/read_only_write_only_union.py
 [test_main_openapi_read_only_write_only_url_ref]
-	main/openapi/read_only_write_only_url_ref.py
+	main/openapi/main_openapi/read_only_write_only_url_ref.py
 [test_main_openapi_read_only_write_only_variant_graph]
-dataclass	main/openapi/output_model_types/read_only_write_only_variant_graph_dataclasses_dataclass.py
-dataclass	main/openapi/output_model_types/read_only_write_only_variant_graph_dataclasses_dataclass_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-msgspec	main/openapi/output_model_types/read_only_write_only_variant_graph_msgspec_Struct.py
-msgspec	main/openapi/output_model_types/read_only_write_only_variant_graph_msgspec_Struct_warnings.txt
-pydantic-v2	main/openapi/output_model_types/read_only_write_only_variant_graph_pydantic_v2_BaseModel.py
-pydantic-v2	main/openapi/output_model_types/read_only_write_only_variant_graph_pydantic_v2_BaseModel_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pydantic-v2-dataclass	main/openapi/output_model_types/read_only_write_only_variant_graph_pydantic_v2_dataclass.py
-pydantic-v2-dataclass	main/openapi/output_model_types/read_only_write_only_variant_graph_pydantic_v2_dataclass_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-typed-dict	main/openapi/output_model_types/read_only_write_only_variant_graph_typing_TypedDict.py
-typed-dict	main/openapi/output_model_types/read_only_write_only_variant_graph_typing_TypedDict_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+dataclass	main/openapi/main_openapi/read_only_write_only_variant_graph[dataclass]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+dataclass	main/openapi/main_openapi/read_only_write_only_variant_graph[dataclass].py
+msgspec	main/openapi/main_openapi/read_only_write_only_variant_graph[msgspec]._warnings.txt
+msgspec	main/openapi/main_openapi/read_only_write_only_variant_graph[msgspec].py
+pydantic-v2	main/openapi/main_openapi/read_only_write_only_variant_graph[pydantic-v2]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pydantic-v2	main/openapi/main_openapi/read_only_write_only_variant_graph[pydantic-v2].py
+pydantic-v2-dataclass	main/openapi/main_openapi/read_only_write_only_variant_graph[pydantic-v2-dataclass]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pydantic-v2-dataclass	main/openapi/main_openapi/read_only_write_only_variant_graph[pydantic-v2-dataclass].py
+typed-dict	main/openapi/main_openapi/read_only_write_only_variant_graph[typed-dict]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+typed-dict	main/openapi/main_openapi/read_only_write_only_variant_graph[typed-dict].py
 [test_main_openapi_read_only_write_only_variant_graph_default]
 dataclass	main/openapi/openapi_read_only_write_only_variant_graph_default.py
 msgspec	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= main/openapi/openapi_read_only_write_only_variant_graph_default~read_only_write_only_variant_graph_default[msgspec].py
@@ -1933,7 +1933,7 @@ pydantic-v2	main/openapi/openapi_read_only_write_only_variant_graph_default.py	=
 pydantic-v2-dataclass	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= main/openapi/openapi_read_only_write_only_variant_graph_default~read_only_write_only_variant_graph_default[pydantic-v2-dataclass].py
 typed-dict	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= main/openapi/openapi_read_only_write_only_variant_graph_default~read_only_write_only_variant_graph_default[typed-dict].py
 [test_main_openapi_read_only_write_only_variant_graph_schema_validators]
-	main/openapi/read_only_write_only_variant_graph_schema_validators.py
+	main/openapi/main_openapi/read_only_write_only_variant_graph_schema_validators.py
 [test_main_openapi_read_schema_version_per_document]
 first-read	main/openapi/main_openapi/read_schema_version_per_document[first-read].py
 per-document	main/openapi/main_openapi/read_schema_version_per_document[per-document].py
@@ -1942,9 +1942,9 @@ first-read	main/openapi/main_openapi/read_schema_version_per_document_external_i
 per-document	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document].py
 per-document-api-scope	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document-api-scope].py	= main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document].py
 [test_main_openapi_recursive_ref_discriminator]
-	main/openapi/recursive_ref_discriminator.py
+	main/openapi/main_openapi/recursive_ref_discriminator.py	= main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_recursive_ref_discriminator_pydantic_v2]
-	main/openapi/recursive_ref_discriminator_pydantic_v2.py	= main/openapi/recursive_ref_discriminator.py
+	main/openapi/main_openapi/recursive_ref_discriminator_pydantic_v2.py	= main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_recursive_ref_discriminator_request_response]
 	main/openapi/openapi_recursive_ref_discriminator_request_response.py	= main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_ref_components_as_definitions]
@@ -1955,7 +1955,7 @@ without-option	main/openapi/main_openapi/ref_components_as_definitions[without-o
 [test_main_openapi_reference_object_siblings]
 	main/openapi/main_openapi/reference_object_siblings.py
 [test_main_openapi_reference_same_hierarchy_directory]
-	main/openapi/reference_same_hierarchy_directory.py
+	main/openapi/main_openapi/reference_same_hierarchy_directory.py
 [test_main_openapi_reference_to_component_without_model]
 msgspec.Struct	main/openapi/main_openapi/reference_to_component_without_model[msgspec.Struct].py
 pydantic_v2.BaseModel	main/openapi/main_openapi/reference_to_component_without_model[pydantic_v2.BaseModel].py
@@ -1969,13 +1969,13 @@ typing.TypedDict	main/openapi/main_openapi/reference_to_component_without_model_
 [test_main_openapi_reference_to_object_properties_collapse_root_models]
 	main/openapi/main_openapi/reference_to_object_properties_collapse_root_models.py
 [test_main_openapi_referenced_default]
-	main/openapi/referenced_default.py
+	main/openapi/main_openapi/referenced_default.py
 [test_main_openapi_referenced_default_use_annotated]
-	main/openapi/referenced_default_use_annotated.py
+	main/openapi/main_openapi/referenced_default_use_annotated.py
 [test_main_openapi_request_bodies_scope]
-	main/openapi/request_bodies_scope.py
+	main/openapi/main_openapi/request_bodies_scope.py
 [test_main_openapi_request_bodies_scope_with_ref]
-	main/openapi/request_bodies_scope_with_ref.py
+	main/openapi/main_openapi/request_bodies_scope_with_ref.py
 [test_main_openapi_reserved_target_parsed_from_the_prepared_tree]
 	main/openapi/main_openapi/reserved_target_parsed_from_the_prepared_tree.txt
 [test_main_openapi_responses_object_extension_holding_an_object_is_a_response]
@@ -2008,9 +2008,9 @@ pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydant
 pydantic_v2-single	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydantic_v2-single].txt	= main/openapi/main_openapi/reuse_scope_tree_shared_class_names[msgspec].txt
 pydantic_v2-single	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydantic_v2-single]/
 [test_main_openapi_root_model_default_primitive]
-	main/openapi/root_model_default_primitive.py
+	main/openapi/main_openapi/root_model_default_primitive.py
 [test_main_openapi_same_name_objects]
-	main/openapi/same_name_objects.py
+	main/openapi/main_openapi/same_name_objects.py
 [test_main_openapi_schema_extensions]
 	main/openapi/schema_extensions.py
 [test_main_openapi_schema_extensions_enum]
@@ -2029,13 +2029,13 @@ every-subclass-exact-collapsed	main/openapi/main_openapi/serialize_as_any_module
 released	main/openapi/main_openapi/serialize_as_any_module_qualified[released].dump.txt
 released	main/openapi/main_openapi/serialize_as_any_module_qualified[released]/
 [test_main_openapi_serialize_as_any_pydantic_v2]
-	main/openapi/serialize_as_any_pydantic_v2.py
+	main/openapi/main_openapi/serialize_as_any_pydantic_v2.py
 [test_main_openapi_shadowed_imports]
-	main/openapi/shadowed_imports.py
+	main/openapi/main_openapi/shadowed_imports.py
 [test_main_openapi_shadowed_imports_base_and_fields]
-	main/openapi/shadowed_imports_base_and_fields.py
+	main/openapi/main_openapi/shadowed_imports_base_and_fields.py
 [test_main_openapi_shadowed_imports_base_and_fields_custom_base]
-	main/openapi/shadowed_imports_base_and_fields_custom_base.py
+	main/openapi/main_openapi/shadowed_imports_base_and_fields_custom_base.py
 [test_main_openapi_single_value_enum_as_const]
 api-enum	main/openapi/main_openapi/single_value_enum_as_const[api-enum].py
 api-written-as-const	main/openapi/main_openapi/single_value_enum_as_const[api-written-as-const].py	= main/openapi/main_openapi/single_value_enum_as_const[api-enum].py
@@ -2086,9 +2086,9 @@ pydantic_v2	main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2].py
 pydantic_v2-no-skip	main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2-no-skip].py	= main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2].py
 pydantic_v2-skipped	main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2-skipped].py
 [test_main_openapi_strict_types_field_constraints_msgspec]
-	main/openapi/strict_types_field_constraints_msgspec.py
+	main/openapi/main_openapi/strict_types_field_constraints_msgspec.py
 [test_main_openapi_strict_types_field_constraints_pydantic_v2]
-	main/openapi/strict_types_field_constraints_pydantic_v2.py
+	main/openapi/main_openapi/strict_types_field_constraints_pydantic_v2.py
 [test_main_openapi_strip_default_none_constructor_order]
 dataclass	main/openapi/main_openapi/strip_default_none_constructor_order[dataclass].py
 msgspec	main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py
@@ -2112,33 +2112,33 @@ pydantic_v2.dataclass	main/openapi/main_openapi/strip_default_none_nullable_refe
 dataclass	main/openapi/main_openapi/strip_default_none_semantic_default[dataclass].py
 msgspec	main/openapi/main_openapi/strip_default_none_semantic_default[msgspec].py
 [test_main_openapi_structured_field_render_plan]
-msgspec	main/openapi/output_model_types/field_render_plan_msgspec_Struct.py
-pydantic-base-model	main/openapi/output_model_types/field_render_plan_pydantic_v2_BaseModel.py
-pydantic-dataclass-annotated	main/openapi/output_model_types/field_render_plan_pydantic_v2_dataclass_annotated.py
+msgspec	main/openapi/main_openapi/structured_field_render_plan[msgspec].py
+pydantic-base-model	main/openapi/main_openapi/structured_field_render_plan[pydantic-base-model].py
+pydantic-dataclass-annotated	main/openapi/main_openapi/structured_field_render_plan[pydantic-dataclass-annotated].py
 [test_main_openapi_type_alias]
-	main/openapi/type_alias.py
+	main/openapi/main_openapi/type_alias.py
 [test_main_openapi_type_alias_cross_module_collision_a]
-	main/openapi/type_alias_cross_module_collision_a.py
+	main/openapi/main_openapi/type_alias_cross_module_collision_a.py
 [test_main_openapi_type_alias_cross_module_collision_b]
-	main/openapi/type_alias_cross_module_collision_b.py
+	main/openapi/main_openapi/type_alias_cross_module_collision_b.py
 [test_main_openapi_type_alias_forward_ref_multiple]
-	main/openapi/type_alias_forward_ref_multiple.py
+	main/openapi/main_openapi/type_alias_forward_ref_multiple.py
 [test_main_openapi_type_alias_mutual_recursive_py311]
-	main/openapi/type_alias_mutual_recursive.py
+	main/openapi/main_openapi/type_alias_mutual_recursive_py311.py
 [test_main_openapi_type_alias_mutual_recursive_typealiastype_py311]
-	main/openapi/msgspec_mutual_type_alias.py
+	main/openapi/main_openapi/type_alias_mutual_recursive_typealiastype_py311.py
 [test_main_openapi_type_alias_py312]
-	main/openapi/type_alias_py312.py
+	main/openapi/main_openapi/type_alias_py312.py
 [test_main_openapi_type_alias_recursive]
-	main/openapi/type_alias_recursive.py
+	main/openapi/main_openapi/type_alias_recursive.py
 [test_main_openapi_type_alias_recursive_py311]
-	main/openapi/type_alias_recursive_py311.py	= main/openapi/type_alias_recursive.py
+	main/openapi/main_openapi/type_alias_recursive_py311.py	= main/openapi/main_openapi/type_alias_recursive.py
 [test_main_openapi_type_alias_recursive_py312]
-	main/openapi/type_alias_recursive_py312.py
+	main/openapi/main_openapi/type_alias_recursive_py312.py
 [test_main_openapi_type_alias_recursive_pydantic_v2]
-	main/openapi/type_alias_recursive_pydantic_v2.py
+	main/openapi/main_openapi/type_alias_recursive_pydantic_v2.py
 [test_main_openapi_type_mappings_byte_to_binary]
-	main/openapi/type_mappings_byte_to_binary.py
+	main/openapi/main_openapi/type_mappings_byte_to_binary.py
 [test_main_openapi_type_overrides_constructor_order]
 base-class-type-override	main/openapi/main_openapi/type_overrides_constructor_order[base-class-type-override].py
 field-constraints-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[field-constraints-field-type-override].py
@@ -2184,14 +2184,14 @@ type_alias_type	main/openapi/main_openapi/typed_dict_functional_forward_referenc
 type_statement	main/openapi/main_openapi/typed_dict_functional_forward_references_payloads[type_statement].payloads.txt
 type_statement	main/openapi/main_openapi/typed_dict_functional_forward_references_payloads[type_statement].py	= main/openapi/main_openapi/typed_dict_functional_forward_references[type-statement].py
 [test_main_openapi_union_default_object]
-msgspec.Struct-msgspec_union_default_object.py	main/openapi/msgspec_union_default_object.py
-pydantic_v2.BaseModel-pydantic_v2_union_default_object.py	main/openapi/pydantic_v2_union_default_object.py
+msgspec.Struct	main/openapi/main_openapi/union_default_object[msgspec.Struct].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/union_default_object[pydantic_v2.BaseModel].py
 [test_main_openapi_unique_items_as_set_nullable_alias_items]
 	main/openapi/main_openapi/unique_items_as_set_nullable_alias_items.py
 [test_main_openapi_unquoted_null]
-	main/openapi/unquoted_null.py
+	main/openapi/main_openapi/unquoted_null.py
 [test_main_openapi_use_default_with_default_values_parameters]
-	main/openapi/default_values_parameters_use_default.py
+	main/openapi/main_openapi/use_default_with_default_values_parameters.py
 [test_main_openapi_use_enum_field_as_literal_in_operations]
 msgspec-literal	main/openapi/main_openapi/use_enum_field_as_literal_in_operations[msgspec-literal].py
 pydantic_v2	main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2].py
@@ -2209,9 +2209,9 @@ pydantic_v2-no-literal	main/openapi/main_openapi/use_enum_field_as_literal_in_op
 [test_main_openapi_use_one_literal_as_default_keeps_nullable]
 	main/openapi/openapi_use_one_literal_as_default_keeps_nullable.py
 [test_main_openapi_use_operation_id_as_name]
-	main/openapi/use_operation_id_as_name.py
+	main/openapi/main_openapi/use_operation_id_as_name.py
 [test_main_openapi_use_status_code_in_response_name]
-	main/openapi/use_status_code_in_response_name.py
+	main/openapi/main_openapi/use_status_code_in_response_name.py
 [test_main_openapi_use_tag_as_union_variant_name_parent_prefix]
 full-path	main/openapi/openapi_use_tag_as_union_variant_name_parent_prefix.py
 model-name-map	main/openapi/openapi_use_tag_as_union_variant_name_parent_prefix.py	= main/openapi/openapi_use_tag_as_union_variant_name_parent_prefix~use_tag_as_union_variant_name_parent_prefix[model-name-map].py
@@ -2228,15 +2228,15 @@ without-tags	main/openapi/openapi_use_tag_as_union_variant_name_parent_prefix.py
 [test_main_openapi_webhooks_with_parameters]
 	main/openapi/openapi_webhooks_with_parameters.py
 [test_main_openapi_x_enum_descriptions_null]
-	main/openapi/x_enum_descriptions_null.py
+	main/openapi/main_openapi/x_enum_descriptions_null.py
 [test_main_openapi_x_enum_names]
-	main/openapi/x_enum_names.py
+	main/openapi/main_openapi/x_enum_names.py
 [test_main_openapi_x_property_names]
-	main/openapi/x_property_names.py
+	main/openapi/main_openapi/x_property_names.py
 [test_main_openapi_x_property_names_false]
-	main/openapi/x_property_names_false.py
+	main/openapi/main_openapi/x_property_names_false.py
 [test_main_openapi_x_property_names_non_dict]
-	main/openapi/x_property_names_non_dict.py
+	main/openapi/main_openapi/x_property_names_non_dict.py
 [test_main_pydantic_v2]
 	main/openapi/pydantic_v2.py	= main/openapi/custom_file_header_empty.py
 [test_main_reuse_model_with_type_alias]
@@ -2270,9 +2270,9 @@ without-tags	main/openapi/openapi_use_tag_as_union_variant_name_parent_prefix.py
 [test_main_typed_dict_py]
 	main/openapi/typed_dict_py.py	= main/openapi/typed_dict.py
 [test_main_unique_items_default_set]
-dataclasses.dataclass-unique_items_default_set_dataclass.py	main/openapi/unique_items_default_set_dataclass.py
-msgspec.Struct-unique_items_default_set_msgspec.py	main/openapi/unique_items_default_set_msgspec.py
-pydantic_v2.BaseModel-unique_items_default_set_pydantic_v2.py	main/openapi/unique_items_default_set_pydantic_v2.py
+dataclasses.dataclass	main/openapi/main_openapi/main_unique_items_default_set[dataclasses.dataclass].py
+msgspec.Struct	main/openapi/main_openapi/main_unique_items_default_set[msgspec.Struct].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/main_unique_items_default_set[pydantic_v2.BaseModel].py
 [test_main_unrelated_invalid_dotted_model_stdout]
 	main/openapi/unrelated_invalid_dotted_model_stdout.py
 [test_main_unsorted_optional_fields]
@@ -2346,7 +2346,7 @@ cli	main/openapi/type_union_nullable.py
 [test_pyproject_not_found]
 	main/openapi/pyproject_not_found.py	= main/openapi/custom_file_header_empty.py
 [test_query_parameters_with_model_config]
-	main/openapi/query_parameters_with_config.py
+	main/openapi/main_openapi/query_parameters_with_model_config.py
 [test_ref_merge_parameters]
 	main/openapi/ref_merge_parameters.py
 [test_stdin]
@@ -2364,4 +2364,4 @@ cli	main/openapi/type_union_nullable.py
 [test_validation_refused_with_no_allow_remote_refs]
 	main/openapi/main_openapi/validation_refused_with_no_allow_remote_refs.txt
 [test_webhooks_ref_with_external_schema]
-	main/openapi/webhooks_ref_with_external_schema.py
+	main/openapi/main_openapi/webhooks_ref_with_external_schema.py

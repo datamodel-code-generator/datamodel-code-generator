@@ -17,7 +17,6 @@ from tests.main.conftest import (
     assert_generated_model_json_validation,
     run_generate_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -39,7 +38,6 @@ def test_main_jsonschema_unique_items_variant_ownership(output_file: Path) -> No
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_variant_ownership.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)

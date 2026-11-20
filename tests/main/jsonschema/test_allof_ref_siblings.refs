@@ -1703,7 +1703,7 @@ string_draft-07-none-True-cli-True	payloads/allof_ref_sibling_outputs/string_dra
 	main/jsonschema/allof_ref_siblings/integer_multiple_of_beyond_float.py
 	main/jsonschema/allof_ref_siblings/integer_multiple_of_beyond_float.values.txt
 [test_allof_ref_siblings_pattern_properties]
-	main/jsonschema/allof_ref_siblings/items_pattern.py
+	main/jsonschema/allof_ref_siblings/pattern_properties.py
 [test_allof_ref_siblings_root_config]
 DataModelType.DataclassesDataclass-api	main/jsonschema/allof_ref_siblings/root_config_DataclassesDataclass.py
 DataModelType.DataclassesDataclass-cli	main/jsonschema/allof_ref_siblings/root_config_DataclassesDataclass.py

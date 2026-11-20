@@ -35,7 +35,6 @@ def test_main_jsonschema_unique_items_generic_container_mapping(output_file: Pat
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / f"{schema_name}.py",
         output=output_file,
         **generate_kwargs,
     )

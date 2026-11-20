@@ -192,12 +192,9 @@ def test_allof_enum_scalar_subclasses(output_file: Path, mode: str, scalar_kind:
                 attributes["__hash__"] = base.__hash__
             scalar = type("Scalar", (base,), attributes)
             field["enum"] = [scalar(value) for value in field["enum"]]
-    suffix = "_parent" if mode == "equal" and subclass_side == "parent" else ""
-    expected = EXPECTED_JSON_SCHEMA_PATH / "allof_constraint_intersections" / f"scalars_{mode}_api{suffix}.py"
     run_generate_and_assert(
         input_=schema,
         output=output_file,
-        expected_file=expected,
         assert_input_unchanged=True,
         input_file_type=InputFileType.JsonSchema,
         disable_timestamp=True,
@@ -225,8 +222,6 @@ def test_allof_enum_scalar_cli_control(output_file: Path, mode: str) -> None:
         input_file_type="jsonschema",
         output_path=output_file,
         extra_args=["--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file=f"allof_constraint_intersections/scalars_{mode}.py",
         force_exec_validation=True,
     )
 
