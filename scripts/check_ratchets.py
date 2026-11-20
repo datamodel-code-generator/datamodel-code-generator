@@ -55,7 +55,8 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, the generation store allowlist, the host baseline
   (``allowlist:host-private-access``, the sum of its access counts), and the allowlists of the test style and
-  architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
+  architecture checks and the callers of decision homes that no row lists (``allowlist:UNLISTED_CALLERS``)
+  (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
   of ``STORED_LISTS`` stores per item (through its ``.refs`` file), which may only shrink. ``items`` counts the
   records, an item's default and each environment's override (``@<predicate>``), which is never a rise. ``lines``
@@ -230,6 +231,7 @@ ALLOWLISTS = (
         }),
     ),
     ("tests/generated_import_closure_allowlist.py", frozenset({"UNBOUND_NAME_VIOLATIONS"})),
+    ("tests/decision_home_allowlist.py", frozenset({"UNLISTED_CALLERS"})),
     ("scripts/check_architecture_boundaries.py", frozenset({"DEFAULT_ALLOWLIST"})),
     ("tests/test_checks_are_run.py", frozenset({"UNREACHED"})),
 )
@@ -874,17 +876,29 @@ def _ruff_files(tally: Tally, root: Path, files: list[str]) -> None:
             tally.add(f"ruff-config:file:{path}", path)
 
 
+def _is_one_entry(value: ast.expr) -> bool:
+    """Return whether a dict value is a constant or a record built by a class (``Entry(...)``): one entry, not many."""
+    if isinstance(value, ast.Call):
+        callee = ast.unparse(value.func)
+        return callee.isidentifier() and callee[:1].isupper()
+    return isinstance(value, ast.Constant)
+
+
 def _entries(node: ast.expr) -> list[ast.expr] | None:
     """Return the entries of an allowlist literal, or None where it is not one this script can read.
 
-    The entries are the elements, or the members of a dict's collection values.
+    The entries are the elements, or the members of a dict's collection values, or the keys of a dict whose values are
+    all constants or records (``Entry(...)``). A dict with any other value (``tuple([...])``, ``a + b``, a name) is
+    not readable: its members could be counted only by running it, and counting its keys would hide them.
     """
     value = node.args[0] if isinstance(node, ast.Call) and node.args else node
     if isinstance(value, ast.Dict):
         groups = [item.elts for item in value.values if isinstance(item, (ast.Tuple, ast.List, ast.Set))]
         if len(groups) == len(value.values):
             return [entry for group in groups for entry in group]
-        return [key for key in value.keys if key is not None]
+        if all(_is_one_entry(item) for item in value.values):
+            return [key for key in value.keys if key is not None]
+        return None
     return list(value.elts) if isinstance(value, (ast.Tuple, ast.List, ast.Set)) else None
 
 
