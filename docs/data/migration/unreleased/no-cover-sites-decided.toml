@@ -1,6 +1,8 @@
 [[change]]
 id = "no-cover-sites-decided"
-extends = "fast-path-lazy-exports"
+category = "harness"
+title = "The CLI fast paths load fewer modules and an input-model test names its output"
+summary = "Stored module lists of four CLI fast paths drop modules whose import-time table checks moved into tests/test_static_tables.py, and the input-model collection test compares its whole output; generated output is the same."
 refs = ["#7224"]
 covers = [
     "input_model/collection_classes_beside_the_preserved_ones.txt",
