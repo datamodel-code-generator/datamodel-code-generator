@@ -6015,7 +6015,7 @@ named after the class in snake_case. Use with `--all-exports-scope=recursive` to
 create an __init__.py that re-exports all models for convenient imports.""",
     input_schema="jsonschema/module_split_single/input.json",
     cli_args=["--module-split-mode", "single", "--all-exports-scope", "recursive", "--use-exact-imports"],
-    golden_output="main_general/module_split_mode_single",
+    golden_output="main_general/generate_builtin_string_normalization_module_split",
     related_options=["--all-exports-scope", "--use-exact-imports"],
 )
 def test_module_split_mode_single(output_dir: Path) -> None:
