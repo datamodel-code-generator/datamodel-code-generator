@@ -21,8 +21,8 @@
 The change records judge a cell whose facts differ (`kinds`): `covers` finds the records' `[[change.cells]]` selectors
 that name it, and `judge` decides whether the records that cover it admit every kind of its difference with the
 evidence of their categories (`CellEvidence`, its change lines from `change_lines`, `rule_b` for `output-text`).
-`scripts/behaviour_diff.py` does not call them yet: until it does, `classify_cell` with the allowlist decides the
-gate's cells.
+`scripts/behaviour_diff.py` judges every differing cell of a gate run this way; `classify_cell` gives the class its
+evidence reads and the class each cell's row reports.
 
 Pure functions only: no file system access apart from `Allowlist.load`.
 """
@@ -31,22 +31,24 @@ from __future__ import annotations
 
 import ast
 import fnmatch
+import itertools
 import json
+import os
 import re
 from collections import Counter
 from dataclasses import dataclass, field
 from keyword import iskeyword
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 import tomllib
 
 from scripts._behaviour_signature import MSGSPEC_CONFIG_KEYS, PYDANTIC_CONFIG_KEYS
-from scripts._change_records import ASPECTS, RULES, Category, CellKind
+from scripts._change_records import ASPECTS, RULES, Category, CellKind, split_options
 from scripts._source_model import SourceModelError, SourceModule
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Sequence
-    from pathlib import Path
 
     from scripts._change_records import CellSelector, Record
     from scripts._source_model import Scope
@@ -551,7 +553,7 @@ FACTS_LENGTH = 4
 
 
 def kinds(base: Facts, head: Facts) -> frozenset[CellKind]:
-    """Return the kinds of the difference between two sides' facts of a cell (`compare_release._facts`).
+    """Return the kinds of the difference between two sides' facts of a cell (`compare_release.cell_facts`).
 
     The files' hashes (and the file set, which holds the outputs written outside the run's directory under the
     prefix `compare_release.OUTSIDE_PREFIX`) are its output, the exit status its exit, the warnings' hash its warnings
@@ -615,14 +617,35 @@ def _glob_matches(pattern: Sequence[str], parts: Sequence[str]) -> bool:
     return bool(parts) and fnmatch.fnmatchcase(parts[0], pattern[0]) and _glob_matches(pattern[1:], parts[1:])
 
 
+GLOB_WILDCARD = re.compile(r"[*?[]")
+
+
+def selector_paths(glob: str, root: Path) -> list[str]:
+    """Return the paths below `root` that a selector's input glob names, by the matching of `covers`, sorted.
+
+    The walk starts at the glob's parts before its first wildcard. A `**` names files and directories alike on every
+    Python (`Path.glob` names only directories with a final `**` before 3.13), and the walk follows no directory
+    symlink, as `**` does not.
+    """
+    pattern = glob.split("/")
+    fixed = list(itertools.takewhile(lambda part: not GLOB_WILDCARD.search(part), pattern))
+    start = root.joinpath(*fixed)
+    found = [start] if fixed and start.exists() else []
+    if len(fixed) < len(pattern) and start.is_dir():
+        for directory, names, files in os.walk(start):
+            found += [Path(directory, name) for name in (*names, *files)]
+    labels = {path.relative_to(root).as_posix() for path in found}
+    return sorted(label for label in labels if _glob_matches(pattern, label.split("/")))
+
+
 def covers(selector: CellSelector, cell: RunCell) -> bool:
     """Return whether a `[[change.cells]]` selector names a run cell.
 
     Its input path matches one of the selector's globs as the glob expands over the head tree (`*` within a path
-    part, `**` across parts), its backend and its option set are listed (or every one is, `"*"`), and its input file
-    type is the selector's; a selector that names none covers the cells whose type is their folder's below
-    `tests/data/` (a cell that runs its input with another type, such as a cli_doc example, needs a selector that
-    names it).
+    part, `**` across parts: `selector_paths`), its backend and its option set (in either spelling, `split_options`)
+    are listed (or every one is, `"*"`), and its input file type is the selector's; a selector that names none covers
+    the cells whose type is their folder's below `tests/data/` (a cell that runs its input with another type, such as
+    a cli_doc example, needs a selector that names it).
     """
     parts = cell.label.split("/")
     below = parts[2:] if parts[:2] == ["tests", "data"] else []
@@ -630,7 +653,7 @@ def covers(selector: CellSelector, cell: RunCell) -> bool:
     return (
         any(_glob_matches(glob.split("/"), parts) for glob in selector.input)
         and (selector.backends is None or cell.backend in selector.backends)
-        and (selector.options is None or cell.options in selector.options)
+        and (selector.options is None or split_options(cell.options) in selector.options)
         and cell.file_type == (folder if selector.input_file_type is None else selector.input_file_type)
     )
 
@@ -699,9 +722,10 @@ def evidence_problem(
     `output-text`: a no-behaviour model output; `crash-fix`: the classifier's crash-fix (an exit difference from a
     failure to 0); a decision: every change line inside a covering selector's aspects and match; `experimental`: a
     feature of the record in the cell and an equal companion cell; `notice`: equal output and exit, every warning and
-    message line matching; `api`: a removed option the record names. Other categories cover no cell. A decision and
-    a notice prove nothing where a signature could not be taken, or where an exit, warning or message difference shows
-    in no change line (the exit, warning and message lines, `change_lines`): the cell is unproved for them.
+    message line matching; `api`: a removed option the record names, which the head refuses. Other categories cover no
+    cell. A decision and a notice prove nothing where a signature could not be taken, or where an exit, warning or
+    message difference shows in no change line (the exit, warning and message lines, `change_lines`): the cell is
+    unproved for them.
     """
     problems: tuple[tuple[bool, str], ...] = ((True, f"category {record.category} covers no cell"),)
     unshown = _unshown(found, evidence.lines)
@@ -749,7 +773,10 @@ def evidence_problem(
             )
         case Category.API:
             named = set(dict(record.affects).get("options", ()))
-            problems = ((not evidence.removed & named, "the cell sets no removed option the record names"),)
+            problems = (
+                (not evidence.removed & named, "the cell sets no removed option the record names"),
+                (evidence.exits[1] == 0, "the head still generates the cell"),
+            )
     return next((problem for failed, problem in problems if failed), None)
 
 

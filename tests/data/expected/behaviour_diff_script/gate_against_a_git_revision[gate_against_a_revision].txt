@@ -1,4 +1,4 @@
-exit=0
+exit=1
 summary: same=7, no-behaviour=1, crash-fix=0, accepted=0, violation=0, both-fail=4, opt-in=0, base-skipped=0
 tests/data/jsonschema/caught.json | default | both-fail | []
 tests/data/jsonschema/crashes.json | default | both-fail | []

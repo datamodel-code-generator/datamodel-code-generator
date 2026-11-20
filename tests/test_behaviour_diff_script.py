@@ -603,7 +603,7 @@ def test_report_stale_entries_by_tier(case: str) -> None:
     result = SimpleNamespace(
         cell=cell, verdict=SimpleNamespace(cls="same", accepted_by=set(), notes=[]), base_skip=None
     )
-    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0))
+    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0), plan=None)
     index, _, total = shard.partition("/")
     ns = SimpleNamespace(
         base="0.86.0",
@@ -706,7 +706,7 @@ def test_report_base_skipped_cells_and_stale_entries(case: str) -> None:
     cell = SimpleNamespace(label="tests/data/a.json", backend="pydantic_v2.BaseModel", option_label="default")
     verdict = SimpleNamespace(cls="base-skipped" if used else "same", accepted_by=set(), notes=[])
     result = SimpleNamespace(cell=cell, verdict=verdict, base_skip=0 if used else None)
-    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0))
+    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0), plan=None)
     ns = SimpleNamespace(
         base=base,
         tier=tier,
@@ -741,7 +741,7 @@ def test_report_stale_entries_of_a_shard(case: str) -> None:
     verdict = SimpleNamespace(cls="same", accepted_by=set(), notes=[])
     result = SimpleNamespace(cell=cell, verdict=verdict, base_skip=allowlist.skip_for(label, "0.86.0"))
     run = behaviour_diff.place([(name, cell.backend) for name in run_labels], allowlist, "0.86.0")
-    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0))
+    gate = SimpleNamespace(allowlist=allowlist, loaded_allowlist=allowlist, cache=SimpleNamespace(hits=0), plan=None)
     index, _, total = shard.partition("/")
     ns = SimpleNamespace(
         base="0.86.0",
@@ -1963,7 +1963,9 @@ def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
 
     BASE is a released version or a revision of the candidate's repository, CANDIDATE a directory or a revision of
     this repository. A CANDIDATE directory whose `src` holds no package stops the gate too: the interpreter would run
-    its own package instead; one whose package does not import stops it with the exit status of its worker.
+    its own package instead; one whose package does not import stops it with the exit status of its worker. A
+    revision BASE with `--base-python` stops it: the plan reads the revision's tree, which the installed release is
+    not.
     """
     repo = tmp_path / "repo"
     _fake_generator(repo, ["first"], None)
@@ -1971,7 +1973,12 @@ def test_gate_refuses_a_side_that_is_no_revision(tmp_path: Path) -> None:
     (empty / "tests" / "data" / "jsonschema").mkdir(parents=True)
     (empty / "tests" / "data" / "jsonschema" / "plain.json").write_text("{}", encoding="utf-8")
     installed = ["--base-python", sys.executable, "--types", "pydantic_v2.BaseModel"]
-    cases = (("no-such-revision", str(repo), []), ("0.0.0", "no-such-revision", []), ("0.0.0", str(empty), installed))
+    cases = (
+        ("no-such-revision", str(repo), []),
+        ("0.0.0", "no-such-revision", []),
+        ("0.0.0", str(empty), installed),
+        ("HEAD", str(repo), installed),
+    )
     refusals = []
     for base, candidate, extra in cases:
         with pytest.raises(SystemExit) as error, redirect_stderr(StringIO()), redirect_stdout(StringIO()):
@@ -2313,12 +2320,21 @@ VALIDATOR = """
 
 
 def main(argv):
-    """Write one model of the schema's `type`, changed as the `CHANGES` of its `name` under the given options say."""
+    """Write one model of the schema's `type`, changed as the `CHANGES` of its `name` under the given options say.
+
+    A preset of another target Python than `--target-python-version` is refused, as the package's.
+    """
     ns = arg_parser.parse_args(argv)
+    if ns.preset and ns.target_python_version and f"py{ns.target_python_version.replace('.', '')}" not in ns.preset:
+        print(f"Error: --preset {ns.preset} targets another Python than {ns.target_python_version}")
+        return 1
     spec = json.loads(Path(ns.input).read_text(encoding="utf-8"))
     effects = [effect for name, when, effect in CHANGES if name == spec["name"] and when in (None, *argv)]
     if "fail" in spec and "fixed" not in effects:
         print(f"Error: {spec['fail']}")
+        return 1
+    if "break" in effects:
+        print("Error: broken")
         return 1
     if ("memory" in spec and "fixed" not in effects) or "memory" in effects:
         raise MemoryError
@@ -2341,6 +2357,14 @@ def main(argv):
         (out.parent / "notes.txt").write_text("notes\\n", encoding="utf-8")
     return 0
 '''
+CELLS_VERSION = """def get_version():
+    try:
+        from datamodel_code_generator._version import __version__
+    except ImportError:
+        return "0.0.0"
+    return __version__
+"""
+"""The stand-in's version lookup, as the package's: the version file a revision's tree gets, else `0.0.0`."""
 CELLS_HARNESS = {
     "tests/__init__.py": "",
     "tests/main/__init__.py": "",
@@ -2465,7 +2489,7 @@ def _cells_input(name: str, **spec: object) -> dict[str, str]:
 CELLS_REFACTOR = _cells_src(helper="HELPER = 1\n")
 """A source change that changes no output."""
 CELLS_RELEASE = {
-    f"{CELLS_PACKAGE}/__init__.py": "",
+    f"{CELLS_PACKAGE}/__init__.py": CELLS_VERSION,
     f"{CELLS_PACKAGE}/arguments.py": CELLS_ARGUMENTS,
     f"{CELLS_PACKAGE}/__main__.py": CELLS_MAIN,
     **_cells_src(),
@@ -2575,6 +2599,14 @@ CHECKED = _cells_input("checked", type="int", validator=True)
 MEMORY = _cells_input("memory", type="int", memory=True)
 FAILS = _cells_input("fails", type="int", fail="boom")
 PLAIN_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/plain.py"
+BASE_GATE_PROBE = """import os
+import sys
+from pathlib import Path
+
+checkout = Path(os.environ.get("BEHAVIOUR_DIFF_REPOSITORY", "/nonexistent"))
+sys.exit(0 if (checkout / "docs" / "notes.md").exists() else 1)
+"""
+"""A base's gate that passes only when it runs for the PR's checkout, which has `docs/notes.md`."""
 CELLS_CASES: dict[str, CellsCase] = {
     "pass: no src change": CellsCase("pass", "no src change, the shortcut", {"docs/notes.md": "notes\n"}),
     "pass: a refactor, every cell equal": CellsCase(
@@ -2593,6 +2625,21 @@ CELLS_CASES: dict[str, CellsCase] = {
         | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
         | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
     ),
+    "pass: output-text whose payload cases both sides refuse alike": CellsCase(
+        "pass",
+        "output-text, payload cases refused alike",
+        _cells_src(("plain", None, "comment"), ("plain", "Payload", "break"))
+        | _record("plain-note", "output-text", _cells("plain.json")),
+        release=_cells_src(("plain", "Payload", "break")),
+    ),
+    "pass: output-text with a covered stored module that has no payloads": CellsCase(
+        "pass",
+        "output-text, covered stored module without payloads",
+        COMMENT_PLAIN
+        | {PLAIN_MODULE: "VALUE = 1  # note\n"}
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
+        release={PLAIN_MODULE: "VALUE = 1\n"},
+    ),
     "pass: output-text with an added stored module": CellsCase(
         "pass",
         "output-text, added module",
@@ -2607,6 +2654,24 @@ CELLS_CASES: dict[str, CellsCase] = {
         "pass",
         "options * covers the preset cells",
         _cells_src(("plain", "--preset", "comment")) | _record("preset-note", "output-text", _cells("plain.json")),
+    ),
+    "pass: a selector glob ending in ** names the files below it": CellsCase(
+        "pass",
+        "a final ** names files on every Python",
+        _cells_src(("plain", "--keyword-only", "comment"))
+        | _record("plain-note", "output-text", _cells("**", options=[["--keyword-only"]])),
+    ),
+    "pass: a selector's inline option names the cell the tiers run": CellsCase(
+        "pass",
+        "inline option spelling",
+        _cells_src(("plain", "--preset", "comment"))
+        | _record("preset-note", "output-text", _cells("plain.json", options=[["--preset=standard-py310-20260101"]])),
+    ),
+    "pass: the base's gate runs for the PR's checkout": CellsCase(
+        "pass",
+        "oracle files, the base's gate runs for the checkout",
+        {"scripts/behaviour_diff.py": BASE_GATE_PROBE + "# changed\n", "docs/notes.md": "notes\n"},
+        release={"scripts/behaviour_diff.py": BASE_GATE_PROBE},
     ),
     "pass: crash-fix": CellsCase(
         "pass",
@@ -2754,6 +2819,18 @@ CELLS_CASES: dict[str, CellsCase] = {
             "client-float", "experimental", _cells("plain.json", options=[["--generate-client", "--use-annotated"]])
         ),
     ),
+    "fail: output-text whose payload values change under an inline preset": CellsCase(
+        "fail",
+        "output-text, payload values change under an inline preset",
+        _cells_src(("plain", "--preset", "comment"), ("plain", "Payload", "type:float"))
+        | _record("preset-note", "output-text", _cells("plain.json", options=[["--preset=standard-py310-20260101"]])),
+    ),
+    "fail: experimental covers no head that stops": CellsCase(
+        "fail",
+        "experimental, the head stops",
+        _cells_src(("plain", "--generate-client", "memory"))
+        | _record("client-memory", "experimental", _cells("plain.json", options=[["--generate-client"]])),
+    ),
     "fail: notice outside its match": CellsCase(
         "fail",
         "notice, outside its match",
@@ -2819,6 +2896,18 @@ CELLS_CASES: dict[str, CellsCase] = {
         "fail",
         "oracle files, the base's gate fails",
         {"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)\n"},
+        release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
+    ),
+    "fail: a change to the stored-module side runs the base's gate, which fails": CellsCase(
+        "fail",
+        "stored-module side changed, the base's gate fails",
+        {"scripts/_stored_module.py": "# weakened\n"},
+        release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
+    ),
+    "fail: a change to the source model beside a covered change runs the base's gate": CellsCase(
+        "fail",
+        "source model changed beside covered cells, the base's gate fails",
+        COMMENT_OTHER | OUTPUT_TEXT_OTHER | {"scripts/_source_model.py": "# weakened\n"},
         release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
     ),
     "fail: selectors added to a record of the base": CellsCase(
@@ -2908,47 +2997,6 @@ CELLS_CASES: dict[str, CellsCase] = {
     ),
 }
 """Every fail-closed rule of the cell gate and every passing shape it must keep, with the verdict it must give."""
-ALLOWLIST_ONLY = "fails: a behaviour change needs an allowlist entry; a revision base reads none"
-REPLAYED = "passes: the records check sends harness labels to its replay list, which it never fails"
-CELLS_NOT_BUILT: dict[str, str] = {
-    "fail: a base without a merge base": "passes: it compares the given revision, whatever its history",
-    "fail: a fragment of the tag covers nothing": "passes: records are not read",
-    "fail: a fragment that does not parse": "passes: records are not read",
-    "fail: a kind no covering record admits": "passes: warnings are not compared, and the comment is no behaviour",
-    "fail: a nondeterministic head": "passes: it does not run the head twice",
-    "fail: a selector naming an unreleased option": "passes: records are not read",
-    "fail: a selector naming an unreleased preset": "passes: records are not read",
-    "fail: a selector that matches equal cells only": "passes: records are not read",
-    "fail: a selector that matches no input": "passes: records are not read",
-    "fail: an empty input list": "passes: records are not read",
-    "fail: an oracle-file change runs the base's gate, which fails": "passes: it does not run the base's gate",
-    "fail: an unknown backend": "passes: records are not read",
-    "fail: an unknown key in cells": "passes: records are not read",
-    "fail: cells in a harness record": "passes: records are not read",
-    "fail: cells without a src change": "passes: records are not read",
-    "fail: crash-fix on a cell that was no crash": "passes: records are not read; the comment is no behaviour",
-    "fail: experimental whose companion differs": "passes: the PR tier runs neither option",
-    "fail: harness covers a modified listing": REPLAYED,
-    "fail: harness covers a modified module the proof fails for": REPLAYED,
-    "fail: malformed options": "passes: records are not read",
-    "fail: notice outside its match": "passes: warnings are not compared",
-    "fail: output-text against rule (b)": "passes: the signatures are equal; rule (b) does not exist yet",
-    "fail: output-text whose covered module fails the proof": "passes: records are not read",
-    "fail: output-text whose covered payload companion changed": "passes: records are not read",
-    "fail: output-text whose payload verdicts change": "passes: a fixture cell runs no payload cells",
-    "fail: output-text with a differing non-model file": "passes: the differing file holds no behaviour",
-    "fail: output-text without cells": "passes: records are not read",
-    "fail: selectors added to a record of the base": "passes: records are not read",
-    "fail: the release run's stale selector": "passes: records are not read",
-    "pass: a decision record beside an output-text record": ALLOWLIST_ONLY,
-    "pass: a lagging branch is judged from its merge base": "fails: it compares main's tip, not the merge base",
-    "pass: decided-change inside aspects and match": ALLOWLIST_ONLY,
-}
-"""The cases the gate does not judge yet as the cell gate must, with what it does instead.
-
-They are not collected: the change that builds a case's check moves it out of this table. The collected cases give
-the cell gate's verdict on the gate as it is, many only because it reads no records yet.
-"""
 
 
 def _cells_write(repo: Path, files: dict[str, str | None]) -> None:
@@ -2991,6 +3039,7 @@ def _cells_exit(run: Callable[[], int], log: StringIO) -> int:
         with redirect_stdout(log), redirect_stderr(log):
             return run()
     except SystemExit as stopped:
+        log.write(f"{stopped.code}\n" * (not isinstance(stopped.code, int)))
         return stopped.code if isinstance(stopped.code, int) else 1
 
 
@@ -3017,11 +3066,81 @@ def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
 @needs("posix")
-@pytest.mark.parametrize("case", sorted(CELLS_CASES.keys() - CELLS_NOT_BUILT.keys()))
+@pytest.mark.parametrize("case", sorted(CELLS_CASES))
 def test_cells_oracle(case: str, tmp_path: Path) -> None:
     """The gate gives each oracle case the verdict of the cell gate: a case that fails, fails on that verdict."""
     verdict, log = cells_verdict(CELLS_CASES[case], tmp_path)
     assert verdict == CELLS_CASES[case].verdict, log
+
+
+REPORT_LINES = (
+    "violation:",
+    "    ",
+    "records:",
+    "covered:",
+    "signature only",
+    "payload cases both sides refused",
+    "stored modules with no payloads",
+    "uncovered",
+    "[[change.cells]]",
+    "input",
+    "back",
+    "options",
+    "# ",
+)
+
+
+@needs("posix")
+@pytest.mark.parametrize(
+    "case",
+    [
+        "fail: an uncovered differing cell",
+        "pass: decided-change inside aspects and match",
+        "pass: output-text whose payload cases both sides refuse alike",
+        "pass: output-text with a covered stored module that has no payloads",
+    ],
+)
+def test_cells_report(case: str, tmp_path: Path) -> None:
+    """The gate reports each violation, the records that covered cells and a block for the cells none covers.
+
+    The block is a starting `[[change.cells]]` table per input, with the aspects and a `match` of the change lines.
+    """
+    _, log = cells_verdict(CELLS_CASES[case], tmp_path)
+    lines = [line for line in log.splitlines() if line.startswith(REPORT_LINES)]
+    assert_output("\n".join(sorted(set(lines), key=lines.index)) + "\n")
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+def test_cells_stored_side_that_draws_nothing_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stored module whose head side wrote no draws (the timeout, a crash) fails its proof; it is no empty pass."""
+    draw = behaviour_diff.stored_side
+
+    def stopped(
+        gate: behaviour_diff.Gate, target: Path, backend: str, values: Path | None
+    ) -> behaviour_diff.StoredSide:
+        return {} if values is None and target.parent.name == "head" else draw(gate, target, backend, values)
+
+    monkeypatch.setattr(behaviour_diff, "stored_side", stopped)
+    verdict, log = cells_verdict(CELLS_CASES["pass: output-text with a covered stored module"], tmp_path)
+    assert verdict == "fail", log
+    assert "wrote no draws" in log, log
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+def test_cells_selector_over_the_cell_limit_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A selector that names more cells than the limit stops the gate with a message that names the record."""
+    case = CELLS_CASES["pass: options * covers the preset cells"]
+    monkeypatch.setattr(behaviour_diff, "SELECTOR_CELL_LIMIT", 10)
+    verdict, log = cells_verdict(case, tmp_path)
+    assert verdict == "fail", log
+    assert "entry preset-note: cells 1 names" in log, log
+    assert "narrow its input, backends or options" in log, log
 
 
 FACTS_BASE = (0, (("model.py", "a1"),), "w1", "o1")

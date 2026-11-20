@@ -1254,7 +1254,7 @@ def _environment_name(base: str, python_version: str, pins: list[str]) -> str:
     return f"{base}-py{python_version}-{key}"
 
 
-def _built(root: Path, build: Callable[[], object]) -> Path:
+def built(root: Path, build: Callable[[], object]) -> Path:
     """Return `root` once `build` has filled it, built once under a lock: another run may be building the same.
 
     A root without its `.complete` mark (a build that stopped half way) is removed and built again.
@@ -1275,7 +1275,7 @@ def _base_python(version: str, candidate: Path, cache_dir: Path) -> Path:
     """Install the release next to the candidate's other packages, pinned to the same versions."""
     python_version, pins = _candidate_packages(candidate)
     root = cache_dir / "venvs" / _environment_name(version, python_version, pins)
-    return _built(root, lambda: _install_base(version, python_version, pins, root)) / "bin" / "python"
+    return built(root, lambda: _install_base(version, python_version, pins, root)) / "bin" / "python"
 
 
 def _install_base(version: str, python_version: str, pins: list[str], root: Path) -> None:
@@ -1343,7 +1343,7 @@ def source_tree(revision: str, cache_dir: Path, repo: Path = ROOT, paths: tuple[
     The version file is not in the repository (the build hook writes it), so it is written here.
     """
     root = cache_dir / "trees" / "-".join((revision, *paths))
-    return _built(root, lambda: _extract(revision, repo, paths, root))
+    return built(root, lambda: _extract(revision, repo, paths, root))
 
 
 @dataclass(frozen=True)
@@ -1762,13 +1762,14 @@ def _digest(text: str) -> str:
 
 
 OUTSIDE_PREFIX = "<outside>/"
-"""The prefix of the name an output written outside the run's directory has among a cell's files (`_facts`)."""
+"""The prefix of the name an output written outside the run's directory has among a cell's files (`cell_facts`)."""
 
 Facts = tuple[int, tuple[tuple[str, str], ...], str, str]
-"""What one side of a run proved (`_facts`): exit status, each output file's hash, its warnings' and others' hash."""
+"""What one side of a run proved (`cell_facts`): exit status, each output file's hash, its warnings' and others'
+hash."""
 
 
-def _facts(outcome: Outcome) -> Facts:
+def cell_facts(outcome: Outcome) -> Facts:
     """Return what a cell's run proved: its exit status, each file's hash, its warnings' hash, its other facts' hash.
 
     The files are the run's output files and, under `OUTSIDE_PREFIX`, the outputs its arguments wrote elsewhere
@@ -1819,7 +1820,7 @@ class Evidence:
     An input group is the directory of its inputs, whether they are files or directories (modular inputs), the output
     model type and the option set. A run is compared where both sides generated and wrote all their output in the
     run's directory (`Outcome.outside`): a run that failed on one side or both, or wrote elsewhere, compared nothing,
-    and the probes its sides ran do not count. Per run it keeps what the run proved (`_facts`: exit status and
+    and the probes its sides ran do not count. Per run it keeps what the run proved (`cell_facts`: exit status and
     hashes), so its size grows with neither the outputs nor the change; per side the probes compared runs ran.
     """
 
@@ -1852,7 +1853,7 @@ class Evidence:
                 "failed on both sides" if not base.ok and not candidate.ok else "failed on one side"
             )
         refused = refused_on_head(base, candidate)
-        before, after = _facts(base), _facts(candidate)
+        before, after = cell_facts(base), cell_facts(candidate)
         with self.lock:
             self.groups.setdefault(group, [0] * len(GROUP_COUNTS))[kind] += 1
             self.cells[name] = (group, not kind, before, before if after == before else after)

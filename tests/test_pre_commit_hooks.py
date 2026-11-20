@@ -16,6 +16,7 @@ import pytest
 import yaml
 
 from scripts._source_model import SourceModule
+from scripts.behaviour_diff import ORACLE_FILES
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +24,8 @@ CONFIG = ".pre-commit-config.yaml"
 GATE_WORKFLOW = ".github/workflows/behaviour-diff.yaml"
 CHECKER_PACKAGES = ("scripts", "tests")
 ENTRY_SCRIPT = re.compile(r"scripts/[\w/]+\.py")
+GATE_ENTRY = "scripts/behaviour_diff.py"
+SPAWNED_SCRIPT = re.compile(r'with_name\("(\w+\.py)"\)|"-m", "scripts\.(\w+)"|"(scripts/\w+\.py)"')
 MISSING_FAILURE_MESSAGE = (
     "These local pre-commit hooks run modules their files pattern does not match, so a change to one of them skips "
     "the hook: add each module to the hook's files pattern in .pre-commit-config.yaml."
@@ -103,12 +106,13 @@ def test_a_pattern_without_an_imported_module_misses_it() -> None:
 def gate_misses(root: Path, workflow: dict) -> dict[str, list[str]]:
     """Return, per event of the gate's workflow, the scripts its steps run that the event's ``paths`` miss.
 
-    The gate's own code is the steps' scripts and every ``scripts`` module they import; the harness modules under
-    ``tests`` they import are the Test workflow's to run on a change, so they are not required here.
+    The gate's own code is the steps' scripts, every ``scripts`` module they import and every script they start in a
+    subprocess (`gate_files`); the harness modules under ``tests`` they import are the Test workflow's to run on a
+    change, so they are not required here.
     """
     steps = [step for job in workflow["jobs"].values() for step in job.get("steps", [])]
     scripts = sorted({script for step in steps for script in ENTRY_SCRIPT.findall(step.get("run", ""))})
-    ran = sorted({path for script in scripts for path in runs(root, root / script) if path.startswith("scripts/")})
+    ran = gate_files(root, scripts)
     events = workflow.get("on", workflow.get(True))
     return {
         event: [path for path in ran if not any(fnmatch.fnmatchcase(path, glob) for glob in events[event]["paths"])]
@@ -138,3 +142,37 @@ def test_gate_paths_without_an_imported_module_miss_it() -> None:
     found = gate_misses(ROOT, workflow)
     assert all("scripts/compare_release.py" in paths for paths in found.values()), found
     assert_output("".join(f"{event}: {', '.join(paths)}\n" for event, paths in found.items()))
+
+
+def gate_files(root: Path, entries: list[str]) -> list[str]:
+    """Return the ``scripts`` files entry scripts run: themselves, their imports and the scripts they start.
+
+    A started script is named by a ``with_name("x.py")`` beside its starter, by ``"-m", "scripts.x"`` or
+    by a ``"scripts/x.py"`` path; each runs what it imports in turn.
+    """
+    seen: set[str] = set()
+    pending = list(entries)
+    while pending:
+        entry = pending.pop()
+        if entry in seen:
+            continue
+        files = runs(root, root / entry)
+        seen.update(files)
+        for name in files:
+            for beside, module, path in SPAWNED_SCRIPT.findall((root / name).read_text(encoding="utf-8")):
+                spawned = path or (f"scripts/{beside}" if beside else f"scripts/{module}.py")
+                pending += [spawned] if (root / spawned).is_file() else []
+    return sorted(path for path in seen if path.startswith("scripts/") and path != "scripts/__init__.py")
+
+
+@pytest.mark.allow_direct_assert(
+    "a list that drifts from the gate's files fails on its own, not through a stored output"
+)
+def test_oracle_files_are_the_files_the_gate_runs() -> None:
+    """``ORACLE_FILES``, the files whose change also runs the base's gate, are every ``scripts`` file the gate runs."""
+    ran = gate_files(ROOT, [GATE_ENTRY])
+    assert sorted(ORACLE_FILES) == ran, (
+        f"missing from ORACLE_FILES in {GATE_ENTRY}: {sorted(set(ran) - set(ORACLE_FILES))}; "
+        f"not run by the gate: {sorted(set(ORACLE_FILES) - set(ran))}"
+    )
+    assert_output("".join(f"{path}\n" for path in ran))

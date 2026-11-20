@@ -8,8 +8,8 @@ stored output its `covers` may list. Entries of released changes may lack a cate
 A record names the comparator cells its change moves with `[[change.cells]]` selectors (`CellSelector`); the `cells`
 of its category's rule (`CellRule`) say whether it must, may or must not name cells and which kinds of a cell's
 difference it admits, and `scripts/_behaviour_classify.py` judges a differing cell by them. The behaviour gate
-(`scripts/behaviour_diff.py`) reads no cells yet: until it does, its allowlist decides its cells, and no caller asks
-`rule_problems` for the cells an added record must name.
+(`scripts/behaviour_diff.py`) judges its cells by the records and asks `rule_problems` for the cells the records a
+change adds must name.
 
 `scripts/build_migration_docs.py` reads every entry through `parse_entry`, and `scripts/declared_changes.py` reads the
 records of any revision the same way. Standard library only, so the static check needs no environment.
@@ -30,7 +30,7 @@ import tomllib
 from scripts.compare_release import DEFAULT_TYPES
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Mapping
+    from collections.abc import Collection, Iterable, Mapping
     from pathlib import Path
 
 
@@ -218,9 +218,10 @@ class CellSelector:
 
     `input`: globs over the head tree's paths (`*` within a path part, `**` across parts), each naming input files or
     directories; `backends`: output model types, None for every one (`"*"`); `options`: option sets, None for every
-    option set the run has for the inputs (`"*"`); `input_file_type`: the input type the cells run with, None for the
-    folder under `tests/data/` (a cell that runs its input with another type needs it named); `aspects` and `match`:
-    what every change line of a covered cell must have, the aspect and a regular expression it holds (searched).
+    option set the run has for the inputs (`"*"`), each in the spelling the runs use (`split_options`);
+    `input_file_type`: the input type the cells run with, None for the folder under `tests/data/` (a cell that runs
+    its input with another type needs it named); `aspects` and `match`: what every change line of a covered cell must
+    have, the aspect and a regular expression it holds (searched).
     """
 
     input: tuple[str, ...]
@@ -387,7 +388,7 @@ RULES: Mapping[Category, Rule] = MappingProxyType({
         frozenset({"refs", "decision"}),
         _pairs([Kind.REMOVAL, Kind.CLI, Kind.PYTHON_API, Kind.RUNTIME], [Action.REQUIRED, Action.REVIEW]),
         frozenset({Owner.API, Owner.LISTING}),
-        CellRule(Need.OPTIONAL, frozenset({CellKind.EXIT, CellKind.MESSAGES})),
+        CellRule(Need.OPTIONAL, frozenset({CellKind.OUTPUT, CellKind.EXIT, CellKind.MESSAGES})),
     ),
     Category.DOCS_TEXT: Rule(frozenset({"title"}), None, frozenset({Owner.LISTING})),
     Category.INTERNAL: Rule(frozenset({"title"}), None, frozenset({Owner.INTERNAL})),
@@ -409,11 +410,11 @@ equal apart from docstrings, comments and the order of imports, or else their si
 is in a function body, a decorator or a configuration key the signature does not list.
 
 Cells: an `output-text` record admits an output difference, a `crash-fix` one also an exit difference and messages, a
-`notice` warnings and messages, an `api` one an exit difference and messages (a removed option), and a decision
-(`default-fix`, `decided-change`) or `experimental` record any difference. An added `output-text`, `crash-fix` or
-`notice` record must name the cells it covers (`rule_problems` with `added`, for the records a change adds, so released
-records need none); the others may. `new-surface` names none, as no comparator run judges surface the latest release
-lacks, nor do the categories without output (`docs-text`, `internal`, `harness`).
+`notice` warnings and messages, an `api` one the refusal of a removed option (its output, exit and messages), and a
+decision (`default-fix`, `decided-change`) or `experimental` record any difference. An added `output-text`,
+`crash-fix` or `notice` record must name the cells it covers (`rule_problems` with `added`, for the records a change
+adds, so released records need none); the others may. `new-surface` names none, as no comparator run judges surface
+the latest release lacks, nor do the categories without output (`docs-text`, `internal`, `harness`).
 """
 
 
@@ -669,11 +670,24 @@ def _selector(cell: Mapping[str, object]) -> CellSelector:
     return CellSelector(
         input=tuple(globs) if _strings(globs) else (),
         backends=tuple(backends) if _strings(backends) else None,
-        options=tuple(tuple(item) for item in options if _strings(item)) if isinstance(options, list) else None,
+        options=tuple(split_options(item) for item in options if _strings(item)) if isinstance(options, list) else None,
         input_file_type=file_type if isinstance(file_type, str) else None,
         aspects=tuple(aspects) if _strings(aspects) else None,
         match=match if isinstance(match, str) else None,
     )
+
+
+def split_options(options: Iterable[str]) -> tuple[str, ...]:
+    """Return an option set in the spelling the gate's runs use: `--name=value` as `--name`, `value`.
+
+    The command line reads both spellings alike, so a selector covers, and a cell runs, the same invocation either way.
+    A value that starts with `-` keeps `--name=value`, the only spelling that reads it as a value.
+    """
+    split: list[str] = []
+    for item in options:
+        name, equals, value = item.partition("=")
+        split += [name, value] if item.startswith("--") and equals and not value.startswith("-") else [item]
+    return tuple(split)
 
 
 def _filled(record: Record, name: str) -> bool:
@@ -977,6 +991,7 @@ __all__ = [
     "read_records",
     "rule_problems",
     "selector_surface",
+    "split_options",
     "stamp_pending",
     "version_key",
     "with_covers",

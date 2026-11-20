@@ -370,7 +370,7 @@ def _stand_in_outcome(tmp_path: Path, version: str, *args: str, elsewhere: str =
 def _difference(tmp_path: Path, *args: str) -> str:
     """Return the kinds in which two stand-in versions' runs differ, the first one's tree and both messages."""
     base, head = (_stand_in_outcome(tmp_path, version, *args) for version in ("1.0.0", "1.0.1"))
-    differing = sorted(kind.value for kind in kinds(compare_release._facts(base), compare_release._facts(head)))
+    differing = sorted(kind.value for kind in kinds(compare_release.cell_facts(base), compare_release.cell_facts(head)))
     return f"{differing}\n{base.tree}\n{base.messages!r} {head.messages!r}\n"
 
 
@@ -381,10 +381,10 @@ def test_the_version_lines_read_the_same_on_each_version(tmp_path: Path) -> None
 
 def test_an_output_outside_the_directory_is_a_difference_of_output(tmp_path: Path) -> None:
     """The outputs a run's arguments wrote elsewhere are among its files, so another one is a difference of output."""
-    base = compare_release._facts(_stand_in_outcome(tmp_path / "base", "1.0.0"))
+    base = compare_release.cell_facts(_stand_in_outcome(tmp_path / "base", "1.0.0"))
     lines = []
     for name, elsewhere in (("same", "a.txt"), ("other", "b.txt")):
-        head = compare_release._facts(_stand_in_outcome(tmp_path / name, "1.0.0", elsewhere=elsewhere))
+        head = compare_release.cell_facts(_stand_in_outcome(tmp_path / name, "1.0.0", elsewhere=elsewhere))
         differing = sorted(kind.value for kind in kinds(base, head))
         lines.append(f"{differing} {[name for name, _ in head[1]]}")
     assert_output("\n".join(lines) + "\n")
