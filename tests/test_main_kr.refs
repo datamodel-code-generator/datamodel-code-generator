@@ -246,7 +246,7 @@ modular	main_kr/multi_module_stdout/error.txt
 [test_profile_overrides_base_config_shallow_merge]
 	main_kr/profile_overrides_base_config_shallow_merge.py
 [test_pyproject]
-	main_kr/pyproject/output.py
+	main_kr/pyproject.py	?
 [test_pyproject_all_jobs_runs_every_job]
 	main/person.py
 	main_kr/jobs/strict.py

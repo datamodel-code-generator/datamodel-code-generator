@@ -214,4 +214,5 @@ covers = [
     "main/avro/py314/schema_declaration_forms/root_type_union.py",
     "main/avro/py314/schema_declaration_forms/root_union_named.py",
     "main/avro/py314/spec_matrix.py",
+    "main_kr/pyproject/output.py",
 ]
