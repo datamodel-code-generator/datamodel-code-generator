@@ -2084,10 +2084,9 @@ jobs:
         run: |
           set -euo pipefail
           BASE=$(git merge-base "$BASE_SHA" HEAD)
-          if git diff --quiet "$BASE" HEAD -- src docs/data/migration/unreleased scripts/behaviour_diff.py \
-              scripts/compare_release.py scripts/_behaviour_classify.py scripts/_behaviour_signature.py \
-              scripts/_change_records.py scripts/declared_changes.py; then
-            echo "src/, change records and the gate unchanged since the merge base: every cell is equal"; exit 0
+          # scripts/ as a whole: the gate's ORACLE_FILES (which make it run the base's gate too) live there and grow.
+          if git diff --quiet "$BASE" HEAD -- src docs/data/migration/unreleased scripts; then
+            echo "src/, change records and scripts/ unchanged since the merge base: every cell is equal"; exit 0
           fi
           uv sync --frozen --python 3.14.6 --extra all --group dev
           .venv/bin/python scripts/behaviour_diff.py gate "$BASE" --tier pr --check -j 4
