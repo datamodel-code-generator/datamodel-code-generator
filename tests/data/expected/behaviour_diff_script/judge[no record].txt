@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "no record's [[change.cells]] covers the cell"
+ ],
+ "accepted_by": []
+}

@@ -2,7 +2,7 @@ exit 1
 Invalid migration data:
 - entry released-notice has no refs
 - entry released-notice: category notice has no kind default-output with action review, only error/none, error/required, error/warn, warning/none, warning/required, warning/warn
-- entry option:--new-flag: an entry that extends a derived entry has no category
+- entry option:--new-flag: an entry that extends a derived entry has no category and no cells
 - entry api-unscheduled has no decision
 - entry bad-decision: decision '5' is not #<number>
 - entry bad-tables: affects is not a table
@@ -10,8 +10,12 @@ Invalid migration data:
 - entry bad-tables: keep.note is not a string
 - entry bad-tables: verify.schema is not a string
 - entry bad-tables: verify.args is not a list
+- entry cells-inline: category docs-text names no cells
+- unreleased/cells-inline.toml: cells are written as [[change.cells]] tables only
+- entry cells-of-harness: category harness names no cells
+- entry cells-unknown-key: cells 1: unknown key colour
 - entry decided-without-keep has no keep
-- entry extends-missing: an extending record holds only extends, covers and refs, not title
+- entry extends-missing: an extending record holds only extends, covers, refs and cells, not title
 - entry features has no refs
 - entry features has no decision
 - entry features: category experimental has no kind experimental with action warn, only experimental/none, experimental/required, experimental/review

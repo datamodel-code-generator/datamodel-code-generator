@@ -1,0 +1,3 @@
+[
+ "[warning] the same warnings in another order"
+]

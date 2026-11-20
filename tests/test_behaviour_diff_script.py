@@ -13,7 +13,7 @@ import re
 import subprocess
 import sys
 from contextlib import redirect_stderr, redirect_stdout
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from io import StringIO
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -22,9 +22,22 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from scripts import behaviour_diff, declared_changes
-from scripts._behaviour_classify import Allowlist, Side, classify_base_skipped, classify_cell, diff
+from scripts._behaviour_classify import (
+    Allowlist,
+    CellEvidence,
+    Change,
+    Side,
+    change_lines,
+    classify_base_skipped,
+    classify_cell,
+    covers,
+    diff,
+    judge,
+    kinds,
+    rule_b,
+)
 from scripts._behaviour_signature import Context, _pydantic_item, canonical, example_value, meta_items
-from scripts._change_records import covers_block
+from scripts._change_records import Category, CellKind, CellSelector, Record, covers_block, read_records
 from tests.capabilities import needs
 from tests.conftest import assert_output
 from tests.units import REFS_HEADER
@@ -1059,10 +1072,10 @@ def test_signature(case: str, tmp_path: Path) -> None:
     assert_output(json.dumps(json.loads(result.stdout), indent=2, sort_keys=True) + "\n")
 
 
-def test_guide_changes_are_built_not_read_from_the_repository() -> None:
-    """The gate names accepted changes from a fresh build of the guide data; no committed or local file is needed."""
-    changes = behaviour_diff.guide_changes()
-    assert_output(json.dumps({"titled": bool(changes) and all(entry["id"] and entry["title"] for entry in changes)}))
+def test_guide_names_accepted_changes_by_the_records() -> None:
+    """The gate names accepted changes by the titles of the change records of docs/data/migration."""
+    titled = [record.id for record in read_records(behaviour_diff.MIGRATION_DATA) if record.title]
+    assert_output(json.dumps({"titled": bool(titled)}))
 
 
 def test_candidate_payload_path_does_not_import_the_guide_builder() -> None:
@@ -3009,3 +3022,554 @@ def test_cells_oracle(case: str, tmp_path: Path) -> None:
     """The gate gives each oracle case the verdict of the cell gate: a case that fails, fails on that verdict."""
     verdict, log = cells_verdict(CELLS_CASES[case], tmp_path)
     assert verdict == CELLS_CASES[case].verdict, log
+
+
+FACTS_BASE = (0, (("model.py", "a1"),), "w1", "o1")
+KINDS_CASES = {
+    "equal": FACTS_BASE,
+    "a file's hash": (0, (("model.py", "a2"),), "w1", "o1"),
+    "the file set": (0, (("model.py", "a1"), ("pkg/__init__.py", "b1")), "w1", "o1"),
+    "the exit status": (1, (("model.py", "a1"),), "w1", "o1"),
+    "the warnings": (0, (("model.py", "a1"),), "w2", "o1"),
+    "the other facts": (0, (("model.py", "a1"),), "w1", "o2"),
+    "everything": (2, (), "w2", "o2"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(KINDS_CASES))
+def test_kinds(case: str) -> None:
+    """A cell's difference has the kinds of the facts that differ: output, exit, warnings and messages."""
+    assert_output(json.dumps(sorted(kinds(FACTS_BASE, KINDS_CASES[case]))) + "\n")
+
+
+@pytest.mark.parametrize(
+    "facts",
+    ['[0, [["model.py", "a1"]], "w1", "o1", "outside"]', '[0, [["model.py", "a1"]], "w1"]'],
+    ids=["a fifth element", "a missing element"],
+)
+def test_kinds_refuses_facts_of_another_length(facts: str) -> None:
+    """Facts of another length are refused: an element no kind reads would never show as a difference."""
+    base = json.loads(facts)
+    with pytest.raises(ValueError, match="4 elements") as raised:
+        kinds(base, base)
+    assert_output(f"{raised.value}\n")
+
+
+TYPE_CHANGE = Change("__init__", "Model", "type", "int -> float", "a")
+WARNING = ["DeprecationWarning", "mind the gap", "datamodel_code_generator.parser"]
+OTHER_WARNING = ["UserWarning", "other", "datamodel_code_generator"]
+Warnings = tuple[list[list[str]], list[list[str]]]
+CHANGE_LINE_CASES: dict[str, tuple[list[Change], tuple[int, int], Warnings, tuple[str, str]]] = {
+    "nothing differs": ([], (0, 0), ([], []), ("", "")),
+    "behaviour changes, a new name left out": (
+        [TYPE_CHANGE, Change("__init__", "Other", "name-added", "added")],
+        (0, 0),
+        ([], []),
+        ("", ""),
+    ),
+    "the exit status": ([], (1, 0), ([], []), ("", "")),
+    "a warning added and one removed": ([], (0, 0), ([WARNING, OTHER_WARNING], [WARNING, WARNING]), ("", "")),
+    "a warning removed": ([], (0, 0), ([WARNING], []), ("", "")),
+    "the warnings in another order": ([], (0, 0), ([WARNING, OTHER_WARNING], [OTHER_WARNING, WARNING]), ("", "")),
+    "a message line added": ([], (0, 0), ([], []), ("Error: one\n", "Error: one\nError: two\nhint\n")),
+    "a message line removed": ([], (0, 0), ([], []), ("Error: one\nError: two\n", "Error: one\n")),
+    "a message line printed once more": ([], (0, 0), ([], []), ("Error: one\n", "Error: one\nError: one\n")),
+    "the message lines in another order": ([], (0, 0), ([], []), ("a\nb\n", "b\na\n")),
+}
+
+
+def test_change_refuses_an_aspect_the_records_cannot_name() -> None:
+    """A change's aspect is one a record's selector can name, so a new aspect is added to the records' list first."""
+    with pytest.raises(ValueError, match="ASPECTS") as raised:
+        Change("__init__", "Model", "colour", "red -> blue")
+    assert_output(f"{raised.value}\n")
+
+
+@pytest.mark.parametrize("case", sorted(CHANGE_LINE_CASES))
+def test_change_lines(case: str) -> None:
+    """A cell's change lines: its behaviour changes, then its exit, warning and message lines."""
+    changes, exits, warnings, messages = CHANGE_LINE_CASES[case]
+    lines = change_lines(changes, exits=exits, warnings=warnings, messages=messages)
+    assert_output(json.dumps(lines, indent=1) + "\n")
+
+
+def _selector(glob: str, backends: list[str] | None = None, options: list[list[str]] | None = None) -> CellSelector:
+    """Return a selector as a `[[change.cells]]` table gives it; no `backends` or `options` is `"*"`."""
+    listed = None if options is None else tuple(map(tuple, options))
+    return CellSelector((glob,), None if backends is None else tuple(backends), listed)
+
+
+def _lines(glob: str, aspects: tuple[str, ...] | None = None, match: str | None = None) -> CellSelector:
+    """Return a selector of every backend and option set whose cells' change lines hold its aspects and match."""
+    return CellSelector((glob,), aspects=aspects, match=match)
+
+
+def _cell(
+    label: str = "tests/data/jsonschema/plain.json",
+    backend: str = "pydantic_v2.BaseModel",
+    options: tuple[str, ...] = (),
+    file_type: str = "jsonschema",
+) -> behaviour_diff.Cell:
+    return behaviour_diff.Cell(ROOT / label, label, file_type, backend, options)
+
+
+COVERS_CASES: dict[str, tuple[CellSelector, behaviour_diff.Cell]] = {
+    "the input file": (_selector("tests/data/jsonschema/plain.json"), _cell()),
+    "another input file": (_selector("tests/data/jsonschema/other.json"), _cell()),
+    "a folder's file by *": (_selector("tests/data/jsonschema/*"), _cell()),
+    "not a file below a folder by *": (_selector("tests/data/*"), _cell()),
+    "a file below a folder by **": (_selector("tests/data/**"), _cell()),
+    "the folder itself by **": (_selector("tests/data/jsonschema/**"), _cell("tests/data/jsonschema")),
+    "a part by a pattern": (_selector("tests/data/*/pl?in.[jy]son"), _cell()),
+    "a listed backend": (_selector("tests/data/**", backends=["msgspec.Struct"]), _cell(backend="msgspec.Struct")),
+    "an unlisted backend": (_selector("tests/data/**", backends=["msgspec.Struct"]), _cell()),
+    "the default option set": (_selector("tests/data/**", options=[[], ["--use-annotated"]]), _cell()),
+    "a listed option set": (
+        _selector("tests/data/**", options=[["--use-annotated", "--keyword-only"]]),
+        _cell(options=("--use-annotated", "--keyword-only")),
+    ),
+    "an option set in another order": (
+        _selector("tests/data/**", options=[["--keyword-only", "--use-annotated"]]),
+        _cell(options=("--use-annotated", "--keyword-only")),
+    ),
+    "every option set": (_selector("tests/data/**"), _cell(options=("--preset", "standard-py314-20260101"))),
+    "the input file type": (replace(_selector("tests/data/**"), input_file_type="jsonschema"), _cell()),
+    "another input file type": (replace(_selector("tests/data/**"), input_file_type="openapi"), _cell()),
+    "no input file type, a cell of another type than its folder": (
+        _selector("tests/data/**"),
+        _cell("tests/data/jsonschema/plain.json", file_type="openapi"),
+    ),
+    "the input file type named, a cell of another type than its folder": (
+        replace(_selector("tests/data/**"), input_file_type="openapi"),
+        _cell("tests/data/jsonschema/plain.json", file_type="openapi"),
+    ),
+    "no input file type, a cell outside tests/data": (_selector("docs/**"), _cell("docs/plain.json")),
+}
+
+
+@pytest.mark.parametrize("case", sorted(COVERS_CASES))
+def test_covers(case: str) -> None:
+    """A selector covers a run cell whose input its globs name over the tree, with a listed backend and option set."""
+    assert_output(json.dumps(covers(*COVERS_CASES[case])) + "\n")
+
+
+MODEL_TEXT = '''"""Models."""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class Model(BaseModel):
+    model_config = ConfigDict(extra="forbid", title="Model")
+    a: int  # the count
+    b: list[int] = Field(default_factory=lambda: [1])
+
+    @field_validator("a")
+    @classmethod
+    def check(cls, value: int) -> int:
+        return value
+'''
+ROOT_UNION_TEXT = """from __future__ import annotations
+
+from typing import Optional, Union
+
+from pydantic import BaseModel, RootModel
+
+
+class Model(RootModel[Union[int, float, str]]):
+    root: Union[int, float, str]
+
+
+class Holder(BaseModel):
+    a: Union[int, str]
+    b: Optional[int] = None
+    c: list[int | str | None] = []
+"""
+SWAP_MODEL = """
+
+@dataclass
+class Model:
+    a: list[int] = field(default_factory=lambda: [1])
+    b: list[int] = field(default_factory=lambda: [2])
+    c: Union[int, str] = 0
+    d: Union[str, int] = 0
+
+    @property
+    def e(self) -> int:
+        return 1
+
+    @e.setter
+    def e(self, value: int) -> None:
+        pass
+"""
+SWAP_OTHER = """
+
+@dataclass
+class Other:
+    f: int = 0
+"""
+SWAP_IMPORTS = "from dataclasses import dataclass, field\nfrom typing import Union\n"
+SWAP_TEXT = SWAP_IMPORTS + SWAP_MODEL + SWAP_OTHER
+ALIAS_X = "X = Union[int, str]\n"
+ALIAS_Y = "Y = Union[\n    str,\n    int,\n]\n"
+ALIAS_TEXT = "from typing import Union\n" + ALIAS_X + ALIAS_Y
+RULE_B_OLD = {
+    "the members of a root model's union in another order": ROOT_UNION_TEXT,
+    "the members of a field's union in another order": ROOT_UNION_TEXT,
+    "a nested union flattened": ROOT_UNION_TEXT,
+    "a union spelled otherwise with the same members": ROOT_UNION_TEXT,
+    "an import moved past a statement it shadows": (
+        "from pydantic import BaseModel\nField = 1\nfrom pydantic import Field\n"
+    ),
+    "two fields' default factories traded": SWAP_TEXT,
+    "two fields' union orders traded": SWAP_TEXT,
+    "two classes in another order": SWAP_TEXT,
+    "two aliases' union orders traded": ALIAS_TEXT,
+    "two aliases in another order": ALIAS_TEXT,
+    "a getter's and a setter's bodies traded": SWAP_TEXT,
+}
+RULE_B_CASES: dict[str, tuple[str, bool]] = {
+    "the members of a root model's union in another order": (
+        ROOT_UNION_TEXT.replace("Union[int, float, str]", "Union[str, float, int]"),
+        True,
+    ),
+    "the members of a field's union in another order": (
+        ROOT_UNION_TEXT.replace("a: Union[int, str]", "a: Union[str, int]"),
+        True,
+    ),
+    "a nested union flattened": (ROOT_UNION_TEXT.replace("a: Union[int, str]", "a: Union[int, Union[str]]"), True),
+    "a union spelled otherwise with the same members": (
+        ROOT_UNION_TEXT.replace("b: Optional[int]", "b: int | None").replace(
+            "c: list[int | str | None]", "c: list[Union[int, str, None]]"
+        ),
+        True,
+    ),
+    "an import moved past a statement it shadows": (
+        "from pydantic import BaseModel\nfrom pydantic import Field\nField = 1\n",
+        False,
+    ),
+    "two fields' default factories traded": (
+        SWAP_TEXT.replace("lambda: [1]", "lambda: [0]").replace("lambda: [2]", "lambda: [1]").replace("[0]", "[2]"),
+        True,
+    ),
+    "two fields' union orders traded": (
+        SWAP_TEXT
+        .replace("Union[int, str]", "Union[0]")
+        .replace("Union[str, int]", "Union[int, str]")
+        .replace("Union[0]", "Union[str, int]"),
+        True,
+    ),
+    "two classes in another order": (SWAP_IMPORTS + SWAP_OTHER + SWAP_MODEL, True),
+    "two aliases' union orders traded": (
+        ALIAS_TEXT.replace("Union[int, str]", "Union[str, int]").replace("str,\n    int,", "int,\n    str,"),
+        True,
+    ),
+    "two aliases in another order": ("from typing import Union\n" + ALIAS_Y + ALIAS_X, True),
+    "a getter's and a setter's bodies traded": (
+        SWAP_TEXT
+        .replace("        return 1\n", "        pass0\n")
+        .replace("        pass\n", "        return 1\n")
+        .replace("pass0", "pass"),
+        True,
+    ),
+    "same text": (MODEL_TEXT, False),
+    "docstrings and comments": (
+        MODEL_TEXT
+        .replace('"""Models."""', '"""Other models."""')
+        .replace("  # the count", "")
+        .replace("class Model(BaseModel):\n", 'class Model(BaseModel):\n    """A model."""\n\n'),
+        False,
+    ),
+    "the order of the imports": (
+        MODEL_TEXT.replace(
+            "from typing import Annotated\n\nfrom pydantic import BaseModel, ConfigDict, Field, field_validator",
+            "from pydantic import field_validator, Field, ConfigDict, BaseModel\nfrom typing import Annotated",
+        ),
+        False,
+    ),
+    "a field type, the signatures differ": (MODEL_TEXT.replace("a: int", "a: float"), False),
+    "a field default spelled otherwise, the signatures equal": (
+        MODEL_TEXT.replace(
+            "b: list[int] = Field(default_factory=lambda: [1])",
+            "b: list[int] = Field(default_factory=lambda: [1], description='d')",
+        ),
+        True,
+    ),
+    "a default factory's body, the signatures equal": (MODEL_TEXT.replace("lambda: [1]", "lambda: [2]"), True),
+    "a validator's body, the signatures equal": (MODEL_TEXT.replace("return value", "return value + 1"), True),
+    "a decorator, the signatures equal": (
+        MODEL_TEXT.replace('@field_validator("a")', '@field_validator("a", mode="before")'),
+        True,
+    ),
+    "a configuration key the signature does not list": (MODEL_TEXT.replace('title="Model"', 'title="Other"'), True),
+    "a configuration key the signature lists": (MODEL_TEXT.replace('extra="forbid"', 'extra="allow"'), True),
+    "a class keyword the signature does not list": (
+        MODEL_TEXT.replace("class Model(BaseModel):", "class Model(BaseModel, defer_build=True):"),
+        True,
+    ),
+    "a Config class key": (MODEL_TEXT + "\n    class Config:\n        title = 'x'\n", True),
+    "a configuration dictionary that unpacks another": (
+        MODEL_TEXT.replace('ConfigDict(extra="forbid", title="Model")', '{**BASE, "title": "Model"}'),
+        True,
+    ),
+    "a configuration of a name": (MODEL_TEXT.replace('ConfigDict(extra="forbid", title="Model")', "BASE"), True),
+    "a configuration dictionary": (
+        MODEL_TEXT.replace('ConfigDict(extra="forbid", title="Model")', '{"extra": "forbid", "title": "Other"}'),
+        True,
+    ),
+    "text that does not parse": (MODEL_TEXT + "\nclass (:\n", True),
+}
+
+
+@pytest.mark.parametrize("case", sorted(RULE_B_CASES))
+def test_rule_b(case: str) -> None:
+    """Rule (b) holds on two texts of a model module, or does not.
+
+    It holds on equal trees apart from docstrings, comments and import order, or on equal signatures with equal bodies,
+    lambdas, decorators and configuration keys the signature does not list.
+    """
+    new, signature_equal = RULE_B_CASES[case]
+    assert_output(json.dumps(rule_b(RULE_B_OLD.get(case, MODEL_TEXT), new, signature_equal=signature_equal)) + "\n")
+
+
+EVERY_CELL = _selector("tests/data/**")
+
+
+def _judged(
+    category: str | None, *cells: CellSelector, affects: tuple[tuple[str, tuple[str, ...]], ...] = ()
+) -> Record:
+    """Return a record of a category whose selectors are `cells` (by default every cell of the fixtures)."""
+    category_value = Category(category) if category else None
+    return Record(str(category), frozenset(), category=category_value, cells=cells or (EVERY_CELL,), affects=affects)
+
+
+NO_BEHAVIOUR = CellEvidence("no-behaviour", model_files=True, rule_b=True, payloads=True, companion_equal=True)
+TYPE_LINE = "[type] Model:a: int -> float"
+DECIDED = _judged("decided-change", _lines("tests/data/**", aspects=("type",), match="int -> float"))
+OUTPUT, EXIT, WARNINGS, MESSAGES = CellKind.OUTPUT, CellKind.EXIT, CellKind.WARNINGS, CellKind.MESSAGES
+JUDGE_CASES: dict[str, tuple[list[Record], set[CellKind], CellEvidence, behaviour_diff.Cell]] = {
+    "no record": ([], {OUTPUT}, NO_BEHAVIOUR, _cell()),
+    "no selector covers the cell": (
+        [_judged("output-text", _selector("tests/data/**", backends=["msgspec.Struct"]))],
+        {OUTPUT},
+        NO_BEHAVIOUR,
+        _cell(),
+    ),
+    "output-text holds": ([_judged("output-text")], {OUTPUT}, NO_BEHAVIOUR, _cell()),
+    "output-text on a warning too": ([_judged("output-text")], {OUTPUT, WARNINGS}, NO_BEHAVIOUR, _cell()),
+    "output-text on a behaviour change": (
+        [_judged("output-text")],
+        {OUTPUT},
+        replace(NO_BEHAVIOUR, cls="violation", lines=(TYPE_LINE,)),
+        _cell(),
+    ),
+    "output-text on a non-model file": (
+        [_judged("output-text")],
+        {OUTPUT},
+        replace(NO_BEHAVIOUR, model_files=False),
+        _cell(),
+    ),
+    "output-text without a signature": (
+        [_judged("output-text")],
+        {OUTPUT},
+        replace(NO_BEHAVIOUR, signature_failed=True),
+        _cell(),
+    ),
+    "output-text against rule (b)": ([_judged("output-text")], {OUTPUT}, replace(NO_BEHAVIOUR, rule_b=False), _cell()),
+    "output-text with differing payload cells": (
+        [_judged("output-text")],
+        {OUTPUT},
+        replace(NO_BEHAVIOUR, payloads=False),
+        _cell(),
+    ),
+    "crash-fix holds": (
+        [_judged("crash-fix")],
+        {OUTPUT, EXIT, MESSAGES},
+        CellEvidence("crash-fix", lines=("[exit] 1 -> 0",), exits=(1, 0)),
+        _cell(),
+    ),
+    "crash-fix on a cell that now fails": (
+        [_judged("crash-fix")],
+        {OUTPUT, EXIT},
+        CellEvidence("crash-fix", exits=(0, 1)),
+        _cell(),
+    ),
+    "crash-fix on a cell that was no crash": ([_judged("crash-fix")], {OUTPUT}, NO_BEHAVIOUR, _cell()),
+    "decided-change inside its aspects and match": (
+        [DECIDED],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE,)),
+        _cell(),
+    ),
+    "decided-change with a line outside its match": (
+        [DECIDED],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[default] Model:b: None -> '1'")),
+        _cell(),
+    ),
+    "decided-change with a line outside its aspects": (
+        [_judged("default-fix", _lines("tests/data/**", aspects=("default",)))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE,)),
+        _cell(),
+    ),
+    "decided-change with lines its two selectors match": (
+        [
+            _judged(
+                "decided-change",
+                _lines("tests/data/**", match="int -> float"),
+                _lines("tests/data/*/plain.json", aspects=("default",)),
+            )
+        ],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[default] Model:b: None -> '1'")),
+        _cell(),
+    ),
+    "decided-change on a no-behaviour cell": ([DECIDED], {OUTPUT}, NO_BEHAVIOUR, _cell()),
+    "a decision beside a failing output-text record": (
+        [_judged("output-text"), DECIDED],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE,)),
+        _cell(),
+    ),
+    "a failing output-text record beside a notice that admits nothing of the cell": (
+        [_judged("output-text"), _judged("notice", _lines("tests/data/**", match="float"))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE,), model_files=True, rule_b=True, payloads=True),
+        _cell(),
+    ),
+    "output-text and notice on a text change with a warning": (
+        [_judged("output-text"), _judged("notice", _lines("tests/data/**", match="gap"))],
+        {OUTPUT, WARNINGS},
+        replace(NO_BEHAVIOUR, lines=("[warning] added DeprecationWarning: mind the gap",)),
+        _cell(),
+    ),
+    "experimental by its option, an equal companion": (
+        [_judged("experimental", affects=(("experimental", ("cli-option.generate-client",)),))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE,), companion_equal=True),
+        _cell(options=("--generate-client", "--use-annotated")),
+    ),
+    "experimental by its input type": (
+        [_judged("experimental", affects=(("experimental", ("input-format.avro",)),))],
+        {OUTPUT, MESSAGES},
+        CellEvidence("violation", lines=(TYPE_LINE,), companion_equal=True),
+        _cell("tests/data/avro/plain.avsc", file_type="avro"),
+    ),
+    "experimental whose companion differs": (
+        [_judged("experimental", affects=(("experimental", ("cli-option.generate-client",)),))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE,)),
+        _cell(options=("--generate-client", "--use-annotated")),
+    ),
+    "experimental without its feature in the cell": (
+        [_judged("experimental", affects=(("experimental", ("cli-option.generate-client",)),))],
+        {OUTPUT},
+        CellEvidence("violation", lines=(TYPE_LINE,), companion_equal=True),
+        _cell(options=("--use-annotated",)),
+    ),
+    "notice inside its match": (
+        [_judged("notice", _lines("tests/data/**", match="mind the gap"))],
+        {WARNINGS, MESSAGES},
+        CellEvidence("same", lines=("[warning] added DeprecationWarning: mind the gap", "[message] mind the gap")),
+        _cell(),
+    ),
+    "notice outside its match": (
+        [_judged("notice", _lines("tests/data/**", match="mind the gap"))],
+        {WARNINGS},
+        CellEvidence("same", lines=("[warning] added UserWarning: other",)),
+        _cell(),
+    ),
+    "notice on an exit difference too": (
+        [_judged("notice", _lines("tests/data/**", match="gap")), _judged("api")],
+        {EXIT, MESSAGES},
+        CellEvidence("violation", lines=("[exit] 0 -> 2", "[message] gap"), exits=(0, 2)),
+        _cell(),
+    ),
+    "api for a removed option it names": (
+        [_judged("api", affects=(("options", ("--old-flag",)),))],
+        {EXIT, MESSAGES},
+        CellEvidence("violation", exits=(0, 2), removed=frozenset({"--old-flag"})),
+        _cell(options=("--old-flag",)),
+    ),
+    "api for a removed option it does not name": (
+        [_judged("api", affects=(("options", ("--other-flag",)),))],
+        {EXIT, MESSAGES},
+        CellEvidence("violation", exits=(0, 2), removed=frozenset({"--old-flag"})),
+        _cell(options=("--old-flag",)),
+    ),
+    "no differing kind": ([_judged("output-text")], set(), NO_BEHAVIOUR, _cell()),
+    "a notice for messages that show in no line": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {MESSAGES},
+        CellEvidence("same"),
+        _cell(),
+    ),
+    "a notice for warnings that show in no line": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {WARNINGS},
+        CellEvidence("same"),
+        _cell(),
+    ),
+    "a notice for a message line it matches": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {MESSAGES},
+        CellEvidence("same", lines=("[message] mind the gap",)),
+        _cell(),
+    ),
+    "a notice matching only the last of the message lines added": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {MESSAGES},
+        CellEvidence(
+            "same", lines=change_lines([], messages=("Error: one\n", "Error: one\nError: two\nmind the gap\n"))
+        ),
+        _cell(),
+    ),
+    "a notice when a signature could not be taken": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {WARNINGS},
+        CellEvidence("same", lines=("[warning] added UserWarning: gap",), signature_failed=True),
+        _cell(),
+    ),
+    "a decision for messages that show in no line": (
+        [DECIDED],
+        {OUTPUT, MESSAGES},
+        CellEvidence("violation", lines=(TYPE_LINE,)),
+        _cell(),
+    ),
+    "a decision for an exit status that shows in no line": (
+        [_judged("default-fix", _lines("tests/data/**", aspects=("type", "exit")))],
+        {OUTPUT, EXIT},
+        CellEvidence("violation", lines=(TYPE_LINE,), exits=(0, 1)),
+        _cell(),
+    ),
+    "a decision for the exit line it names": (
+        [_judged("default-fix", _lines("tests/data/**", aspects=("type", "exit")))],
+        {OUTPUT, EXIT},
+        CellEvidence("violation", lines=(TYPE_LINE, "[exit] 0 -> 1"), exits=(0, 1)),
+        _cell(),
+    ),
+    "a decision when both signatures failed": (
+        [_judged("default-fix", _lines("tests/data/**", match="int -> float"))],
+        {OUTPUT},
+        CellEvidence("both-fail", signature_failed=True),
+        _cell(),
+    ),
+    "a record without a category": ([_judged(None)], {OUTPUT}, NO_BEHAVIOUR, _cell()),
+    "a harness record": ([_judged("harness")], {OUTPUT}, NO_BEHAVIOUR, _cell()),
+}
+
+
+@pytest.mark.parametrize("case", sorted(JUDGE_CASES))
+def test_judge(case: str) -> None:
+    """A differing cell passes when the records that cover it admit each kind of its difference with their evidence.
+
+    A decision's, an experimental or a crash-fix record's holding evidence covers the kinds it admits alone.
+    """
+    records, found, evidence, cell = JUDGE_CASES[case]
+    verdict = judge(cell, frozenset(found), records, evidence)
+    output = {**asdict(verdict), "accepted_by": [records[index].id for index in sorted(verdict.accepted_by)]}
+    assert_output(json.dumps(output, indent=1) + "\n")

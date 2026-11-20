@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "default-fix (default-fix): a change line is outside its aspects and match: ['[type] Model:a: int -> float']"
+ ],
+ "accepted_by": []
+}

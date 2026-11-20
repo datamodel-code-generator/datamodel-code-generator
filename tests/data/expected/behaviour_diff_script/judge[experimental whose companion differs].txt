@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "experimental (experimental): the cell without the feature's options differs too: it needs a record"
+ ],
+ "accepted_by": []
+}

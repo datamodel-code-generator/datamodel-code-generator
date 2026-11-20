@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "output-text (output-text): rule (b) does not hold on a differing file"
+ ],
+ "accepted_by": []
+}

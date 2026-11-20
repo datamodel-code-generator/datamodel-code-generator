@@ -5550,9 +5550,9 @@ pydantic_v2.BaseModel-extra_args1	main/jsonschema/all_of_value_site_keywords.py	
 [test_main_all_of_with_object]
 	main/jsonschema/all_of_with_object.py
 [test_main_allof_class_hierarchy]
-	main/jsonschema/allof_class_hierarchy.py
+	main/jsonschema/main_jsonschema/main_allof_class_hierarchy.py
 [test_main_allof_class_hierarchy_default]
-	main/jsonschema/allof_class_hierarchy_ref.py
+	main/jsonschema/main_jsonschema/main_allof_class_hierarchy_default.py
 [test_main_allof_inheritance_cycle_custom_class_template]
 	main/jsonschema/allof_inheritance_cycle_custom_class_template.py
 [test_main_allof_inheritance_cycle_custom_typed_dict_class_template]
@@ -5566,17 +5566,17 @@ pydantic_v2.BaseModel-extra_args1	main/jsonschema/all_of_value_site_keywords.py	
 [test_main_allof_inheritance_shared_joins]
 	main/jsonschema/allof_inheritance_shared_joins.py
 [test_main_allof_list_any_inheritance]
-	main/jsonschema/allof_list_any_inheritance.py
+	main/jsonschema/main_jsonschema/main_allof_list_any_inheritance.py
 [test_main_allof_mro]
 	main/jsonschema/allof_mro.py
 [test_main_allof_root_model_constraints_intersect]
 	main/jsonschema/main_jsonschema/main_allof_root_model_constraints_intersect.py	= main/jsonschema/allof_root_model_constraints_merge.py
 [test_main_allof_root_model_constraints_merge]
-	main/jsonschema/allof_root_model_constraints_merge.py
+	main/jsonschema/main_jsonschema/main_allof_root_model_constraints_merge.py	= main/jsonschema/allof_root_model_constraints_merge.py
 [test_main_allof_root_model_constraints_merge_pydantic_v2]
-	main/jsonschema/allof_root_model_constraints_merge_pydantic_v2.py	= main/jsonschema/allof_root_model_constraints_merge.py
+	main/jsonschema/main_jsonschema/main_allof_root_model_constraints_merge_pydantic_v2.py	= main/jsonschema/allof_root_model_constraints_merge.py
 [test_main_allof_root_model_constraints_none]
-	main/jsonschema/allof_root_model_constraints.py
+	main/jsonschema/main_jsonschema/main_allof_root_model_constraints_none.py
 [test_main_allow_leading_underscore_class_name_cli]
 	main/jsonschema/main_jsonschema/main_allow_leading_underscore_class_name_cli.py
 [test_main_array_field_constraints]
@@ -5604,19 +5604,19 @@ or-external-cli	main/jsonschema/builtin_boolean_wrapping/or.py
 88-cli	main/jsonschema/builtin_boolean_wrapping/guards_88.py
 88-cli	main/jsonschema/builtin_boolean_wrapping/runtime.txt
 [test_main_builtin_field_names]
-	main/jsonschema/builtin_field_names.py
+	main/jsonschema/main_jsonschema/main_builtin_field_names.py
 [test_main_builtin_field_names_container_types]
-	main/jsonschema/builtin_field_names_container_types.py
+	main/jsonschema/main_jsonschema/main_builtin_field_names_container_types.py
 [test_main_builtin_field_names_container_types_no_use_standard_collections]
-	main/jsonschema/builtin_field_names_container_types_no_use_standard_collections.py
+	main/jsonschema/main_jsonschema/main_builtin_field_names_container_types_no_use_standard_collections.py
 [test_main_builtin_field_names_python_315_builtins]
-python-3.14	main/jsonschema/builtin_field_names_python_315_builtins_314.py
-python-3.15	main/jsonschema/builtin_field_names_python_315_builtins_315.py
+python-3.14	main/jsonschema/main_jsonschema/main_builtin_field_names_python_315_builtins[python-3.14].py
+python-3.15	main/jsonschema/main_jsonschema/main_builtin_field_names_python_315_builtins[python-3.15].py
 [test_main_builtin_field_names_snake_case]
-	main/jsonschema/builtin_field_names_snake_case.py
+	main/jsonschema/main_jsonschema/main_builtin_field_names_snake_case.py
 [test_main_builtin_field_names_target_python_version]
-3.10-builtin_field_names_target_python_version_310.py	main/jsonschema/builtin_field_names_target_python_version_310.py
-3.13-builtin_field_names_target_python_version_313.py	main/jsonschema/builtin_field_names_target_python_version_313.py
+3.10	main/jsonschema/main_jsonschema/main_builtin_field_names_target_python_version[3.10].py
+3.13	main/jsonschema/main_jsonschema/main_builtin_field_names_target_python_version[3.13].py
 [test_main_builtin_formatter_groups_target_stdlib]
 python-3.10	main/jsonschema/builtin_formatter_stdlib_imports_310.py
 python-3.14	main/jsonschema/builtin_formatter_stdlib_imports_314.py
@@ -5629,7 +5629,7 @@ config-dict	main/jsonschema/main_jsonschema/main_builtin_generated_formatter_fal
 string-normalization	main/jsonschema/main_jsonschema/main_builtin_generated_formatter_fallbacks[string-normalization].py	= main/jsonschema/all_of_any_of_base_class_ref.py
 wrap-string-literal	main/jsonschema/main_jsonschema/main_builtin_generated_formatter_fallbacks[wrap-string-literal].py	= main/jsonschema/long_description_wrap_string_literal.py
 [test_main_bundled_schema_with_id_local_file]
-	main/jsonschema/bundled_schema_with_id.py
+	main/jsonschema/main_jsonschema/main_bundled_schema_with_id_local_file.py	= main/jsonschema/bundled_schema_with_id.py
 [test_main_bundled_schema_with_id_url]
 	main/jsonschema/bundled_schema_with_id.py
 [test_main_capitalise_numbered_enum_members]
@@ -5639,8 +5639,8 @@ pydantic_v2-numbered	main/jsonschema/main_jsonschema/main_capitalise_numbered_en
 [test_main_capitalise_numbered_enum_members_without_capitalise]
 	main/jsonschema/main_jsonschema/main_capitalise_numbered_enum_members_without_capitalise.py
 [test_main_capitalised_enum_members_follow_target]
-python-3.13	main/jsonschema/identifier_case_target_313.py
-python-3.14	main/jsonschema/identifier_case_target_314.py
+python-3.13	main/jsonschema/main_jsonschema/main_capitalised_enum_members_follow_target[python-3.13].py
+python-3.14	main/jsonschema/main_jsonschema/main_capitalised_enum_members_follow_target[python-3.14].py
 [test_main_circular_ref_external_relative_keywords]
 	main/jsonschema/circular_ref_external_relative_keywords.py
 [test_main_circular_ref_external_url_keywords]
@@ -5786,9 +5786,9 @@ use_annotated_released	main/jsonschema/main_jsonschema/main_decimal_multiple_of_
 zero_bound_classes	main/jsonschema/decimal_multiple_of_in_field_forms.py	= main/jsonschema/decimal_multiple_of_in_field_forms~main_decimal_multiple_of_in_field_forms[zero_bound_classes].py
 zero_bound_classes	main/jsonschema/main_jsonschema/main_decimal_multiple_of_in_field_forms[zero_bound_classes].rejected.txt	= main/jsonschema/main_jsonschema/main_decimal_multiple_of_in_field_forms[dataclass_annotated].rejected.txt
 [test_main_defer_forward_nested_model_default_factories]
-dataclasses.dataclass-default_factory_forward_nested_models_dataclass.py	main/jsonschema/default_factory_forward_nested_models_dataclass.py
-msgspec.Struct-default_factory_forward_nested_models_msgspec.py	main/jsonschema/default_factory_forward_nested_models_msgspec.py
-pydantic_v2.BaseModel-default_factory_forward_nested_models_pydantic_v2.py	main/jsonschema/default_factory_forward_nested_models_pydantic_v2.py
+dataclasses.dataclass-default_factory_forward_nested_models_dataclass.py	main/jsonschema/main_jsonschema/main_defer_forward_nested_model_default_factories[dataclasses.dataclass-default_~6997cc75.py
+msgspec.Struct-default_factory_forward_nested_models_msgspec.py	main/jsonschema/main_jsonschema/main_defer_forward_nested_model_default_factories[msgspec.Struct-default_factory_forward_nested_models_msgspec.py].py
+pydantic_v2.BaseModel-default_factory_forward_nested_models_pydantic_v2.py	main/jsonschema/main_jsonschema/main_defer_forward_nested_model_default_factories[pydantic_v2.BaseModel-default_~0fa73a25.py
 [test_main_deprecated_model_distinguishes_prefixed_decorator]
 pydantic-v2	main/jsonschema/main_jsonschema/main_deprecated_model_distinguishes_prefixed_decorator[pydantic-v2].py
 stdlib	main/jsonschema/main_jsonschema/main_deprecated_model_distinguishes_prefixed_decorator[stdlib].py
@@ -5913,9 +5913,9 @@ discriminator	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_ali
 [test_main_external_ref_slash_containing_key]
 	main/jsonschema/external_ref_slash_key//*.py
 [test_main_extra_fields]
-allow-pydantic_v2.BaseModel-extra_fields_v2_allow.py	main/jsonschema/extra_fields_v2_allow.py
-forbid-pydantic_v2.BaseModel-extra_fields_v2_forbid.py	main/jsonschema/extra_fields_v2_forbid.py
-ignore-pydantic_v2.BaseModel-extra_fields_v2_ignore.py	main/jsonschema/extra_fields_v2_ignore.py
+allow-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/main_extra_fields[allow-pydantic_v2.BaseModel].py
+forbid-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/main_extra_fields[forbid-pydantic_v2.BaseModel].py	= main/jsonschema/extra_fields_v2_forbid.py
+ignore-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/main_extra_fields[ignore-pydantic_v2.BaseModel].py
 [test_main_field_name_shadows_class_name]
 	main/jsonschema/field_name_shadows_class_name.py
 [test_main_generate]
@@ -6018,12 +6018,12 @@ pydantic_v2_model_default_nullable_dict_non_empty.json-pydantic_v2_model_default
 headers_arguments0-headers_requests0-query_parameters_arguments0-query_parameters_requests0-False	main/jsonschema/external_files_in_directory.py
 headers_arguments1-headers_requests1-query_parameters_arguments1-query_parameters_requests1-True	main/jsonschema/external_files_in_directory.py
 [test_main_identifier_unicode_follows_target]
-dataclass-3.12	main/jsonschema/identifier_unicode_target_dataclass_312.py
-dataclass-3.13	main/jsonschema/identifier_unicode_target_dataclass_313.py
-dataclass-3.14	main/jsonschema/identifier_unicode_target_dataclass_314.py
-dataclass-3.15	main/jsonschema/identifier_unicode_target_dataclass_315.py
-pydantic-3.15	main/jsonschema/identifier_unicode_target_pydantic_315.py
-typed-dict-3.14	main/jsonschema/identifier_unicode_target_typed_dict_314.py
+dataclass-3.12	main/jsonschema/main_jsonschema/main_identifier_unicode_follows_target[dataclass-3.12].py
+dataclass-3.13	main/jsonschema/main_jsonschema/main_identifier_unicode_follows_target[dataclass-3.13].py
+dataclass-3.14	main/jsonschema/main_jsonschema/main_identifier_unicode_follows_target[dataclass-3.14].py
+dataclass-3.15	main/jsonschema/main_jsonschema/main_identifier_unicode_follows_target[dataclass-3.15].py
+pydantic-3.15	main/jsonschema/main_jsonschema/main_identifier_unicode_follows_target[pydantic-3.15].py
+typed-dict-3.14	main/jsonschema/main_jsonschema/main_identifier_unicode_follows_target[typed-dict-3.14].py
 [test_main_import_fast_path_primitives]
 	main/jsonschema/import_fast_path_primitives.py
 [test_main_imports_correct]
@@ -6076,9 +6076,9 @@ written-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/additional_import_
 [test_main_jsonschema_additional_import_named_like_module]
 	main/jsonschema/main_jsonschema/additional_import_named_like_module/
 [test_main_jsonschema_additional_items_false_empty_tuple]
-	main/jsonschema/additional_items_false_empty_tuple.py
+	main/jsonschema/main_jsonschema/additional_items_false_empty_tuple.py
 [test_main_jsonschema_additional_items_schema_tuple]
-	main/jsonschema/additional_items_schema_tuple.py
+	main/jsonschema/main_jsonschema/additional_items_schema_tuple.py
 [test_main_jsonschema_additional_properties_anyof_schema_with_required_property]
 	main/jsonschema/main_jsonschema/additional_properties_anyof_schema_with_required_property.py
 [test_main_jsonschema_additional_properties_anyof_schema_without_nullable_property]
@@ -6194,7 +6194,7 @@ released	main/jsonschema/main_jsonschema/anchor_declared_twice_in_document_with_
 [test_main_jsonschema_anyof_with_false_schema]
 	main/jsonschema/main_jsonschema/anyof_with_false_schema.py
 [test_main_jsonschema_array_combined_types]
-	main/jsonschema/array_combined.py
+	main/jsonschema/main_jsonschema/array_combined_types.py
 [test_main_jsonschema_array_constraint_fast_path]
 	main/jsonschema/main_jsonschema/array_constraint_fast_path.py
 [test_main_jsonschema_array_in_additional_properites]
@@ -6283,17 +6283,17 @@ pydantic_v2.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_u
 typing.TypedDict	main/jsonschema/main_jsonschema/collapse_root_models_any_union[typing.TypedDict].payloads.txt	= main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].payloads.txt
 typing.TypedDict	main/jsonschema/main_jsonschema/collapse_root_models_any_union[typing.TypedDict].py
 [test_main_jsonschema_collapse_root_models_array_item_union_self_reference]
-	main/jsonschema/collapse_root_models_array_item_union_self_reference.py
+	main/jsonschema/main_jsonschema/collapse_root_models_array_item_union_self_reference.py
 [test_main_jsonschema_collapse_root_models_atomic_replace]
 	main/jsonschema/jsonschema_collapse_root_models_atomic_replace.py
 [test_main_jsonschema_collapse_root_models_container_constraints]
-	main/jsonschema/collapse_root_models_container_constraints.py
+	main/jsonschema/main_jsonschema/collapse_root_models_container_constraints.py
 [test_main_jsonschema_collapse_root_models_container_field_constraints]
-	main/jsonschema/collapse_root_models_container_field_constraints.py
+	main/jsonschema/main_jsonschema/collapse_root_models_container_field_constraints.py
 [test_main_jsonschema_collapse_root_models_dict_key_self_reference_preserves_legacy_output]
-	main/jsonschema/collapse_root_models_dict_key_self_reference_legacy.py
+	main/jsonschema/main_jsonschema/collapse_root_models_dict_key_self_reference_preserves_legacy_output.py
 [test_main_jsonschema_collapse_root_models_dict_key_self_reference_retries_once]
-	main/jsonschema/collapse_root_models_dict_key_self_reference.py
+	main/jsonschema/main_jsonschema/collapse_root_models_dict_key_self_reference_retries_once.py
 [test_main_jsonschema_collapse_root_models_empty_union]
 	main/jsonschema/jsonschema_collapse_root_models_empty_union.py
 [test_main_jsonschema_collapse_root_models_item_count_alias_reuse]
@@ -6307,27 +6307,27 @@ request-response	main/jsonschema/jsonschema_collapse_root_models_item_count_alia
 root_model	main/jsonschema/main_jsonschema/collapse_root_models_kept_in_internal[root_model]/
 type_alias	main/jsonschema/main_jsonschema/collapse_root_models_kept_in_internal[type_alias]/
 [test_main_jsonschema_collapse_root_models_lookaround]
-discriminator	main/jsonschema/collapse_root_models_lookaround_discriminator.py
-fields	main/jsonschema/collapse_root_models_lookaround.py
-fields-type-alias	main/jsonschema/collapse_root_models_lookaround.py
-inheritance	main/jsonschema/collapse_root_models_lookaround_inheritance.py
-root-model	main/jsonschema/collapse_root_models_lookaround_root.py
+discriminator	main/jsonschema/main_jsonschema/collapse_root_models_lookaround[discriminator].py
+fields	main/jsonschema/main_jsonschema/collapse_root_models_lookaround[fields].py
+fields-type-alias	main/jsonschema/main_jsonschema/collapse_root_models_lookaround[fields-type-alias].py	= main/jsonschema/main_jsonschema/collapse_root_models_lookaround[fields].py
+inheritance	main/jsonschema/main_jsonschema/collapse_root_models_lookaround[inheritance].py
+root-model	main/jsonschema/main_jsonschema/collapse_root_models_lookaround[root-model].py
 [test_main_jsonschema_collapse_root_models_module_class_collision]
 	main/jsonschema/main_jsonschema/collapse_root_models_module_class_collision/	= main/jsonschema/exact_imports_collapse_root_models//*.py
 [test_main_jsonschema_collapse_root_models_name_strategy_child]
 	main/jsonschema/jsonschema_collapse_root_models_name_strategy_child.py
 [test_main_jsonschema_collapse_root_models_name_strategy_complex_child]
-	main/jsonschema/jsonschema_collapse_root_models_name_strategy_complex_child.py
+	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_complex_child.py
 [test_main_jsonschema_collapse_root_models_name_strategy_complex_parent]
-	main/jsonschema/jsonschema_collapse_root_models_name_strategy_complex_parent.py
+	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_complex_parent.py
 [test_main_jsonschema_collapse_root_models_name_strategy_direct_refs]
 	main/jsonschema/jsonschema_collapse_root_models_name_strategy_direct_refs.py
 [test_main_jsonschema_collapse_root_models_name_strategy_multiple_wrappers]
 	main/jsonschema/jsonschema_collapse_root_models_name_strategy_multiple_wrappers.py
 [test_main_jsonschema_collapse_root_models_name_strategy_nested_wrappers_child]
-	main/jsonschema/jsonschema_collapse_root_models_name_strategy_nested_wrappers_child.py
+	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_nested_wrappers_child.py
 [test_main_jsonschema_collapse_root_models_name_strategy_nested_wrappers_parent]
-	main/jsonschema/jsonschema_collapse_root_models_name_strategy_nested_wrappers_parent_v2.py
+	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_nested_wrappers_parent.py
 [test_main_jsonschema_collapse_root_models_name_strategy_parent]
 	main/jsonschema/jsonschema_collapse_root_models_name_strategy_parent.py
 [test_main_jsonschema_collapse_root_models_name_strategy_parent_recursive_wrapper]
@@ -6343,9 +6343,9 @@ parent	main/jsonschema/main_jsonschema/collapse_root_models_name_strategy_reused
 [test_main_jsonschema_collapse_root_models_nested_reference]
 	main/jsonschema/jsonschema_collapse_root_models_nested_reference.py
 [test_main_jsonschema_collapse_root_models_parse_warning_emitted_once]
-	main/jsonschema/collapse_root_models_parse_warning.py
+	main/jsonschema/main_jsonschema/collapse_root_models_parse_warning_emitted_once.py
 [test_main_jsonschema_collapse_root_models_property_names_reference]
-	main/jsonschema/collapse_root_models_property_names_reference.py
+	main/jsonschema/main_jsonschema/collapse_root_models_property_names_reference.py
 [test_main_jsonschema_collapse_root_models_rule_categories]
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/collapse_root_models_rule_categories[pydantic_v2.BaseModel].py
 typing.TypedDict	main/jsonschema/main_jsonschema/collapse_root_models_rule_categories[typing.TypedDict].py
@@ -6427,19 +6427,19 @@ root_model_type_alias	main/jsonschema/main_jsonschema/contains_count_beside_mode
 sequence_interface	main/jsonschema/main_jsonschema/contains_count_beside_model_reference[sequence_interface].py
 use_annotated	main/jsonschema/main_jsonschema/contains_count_beside_model_reference[use_annotated].py	= main/jsonschema/main_jsonschema/contains_count_beside_model_reference[default].py
 [test_main_jsonschema_contains_empty_schema_count_constraints]
-	main/jsonschema/contains_empty_schema_count_constraints.py
+	main/jsonschema/main_jsonschema/contains_empty_schema_count_constraints.py
 [test_main_jsonschema_contains_false_default]
-	main/jsonschema/contains_false_default.py
+	main/jsonschema/main_jsonschema/contains_false_default.py
 [test_main_jsonschema_contains_false_min_contains_zero]
-	main/jsonschema/contains_false_min_contains_zero.py
+	main/jsonschema/main_jsonschema/contains_false_min_contains_zero.py
 [test_main_jsonschema_contains_integral_float_counts]
 	main/jsonschema/main_jsonschema/contains_integral_float_counts.py
 [test_main_jsonschema_contains_true_count_constraints]
-	main/jsonschema/contains_true_count_constraints.py
+	main/jsonschema/main_jsonschema/contains_true_count_constraints.py
 [test_main_jsonschema_contains_true_default_min_contains]
-	main/jsonschema/contains_true_default_min_contains.py
+	main/jsonschema/main_jsonschema/contains_true_default_min_contains.py
 [test_main_jsonschema_contains_true_max_contains_zero]
-	main/jsonschema/contains_true_max_contains_zero.py
+	main/jsonschema/main_jsonschema/contains_true_max_contains_zero.py
 [test_main_jsonschema_copy_deep_pattern_properties]
 	main/jsonschema/main_jsonschema/copy_deep_pattern_properties.py
 [test_main_jsonschema_custom_base_path]
@@ -6766,7 +6766,7 @@ unsatisfiable-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_w
 generic-option	main/jsonschema/enum_list_defaults.py
 legacy-option	main/jsonschema/enum_list_defaults.py
 [test_main_jsonschema_enum_literal_type_alias_default]
-	main/jsonschema/enum_literal_type_alias_default.py
+	main/jsonschema/main_jsonschema/enum_literal_type_alias_default.py
 [test_main_jsonschema_enum_member_descriptions]
 pydantic-v2	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2].py
 pydantic-v2-custom-enum-template	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-custom-enum-template].py
@@ -6869,9 +6869,9 @@ msgspec.Struct-discriminator_with_external_references_folder_msgspec	main/jsonsc
 [test_main_jsonschema_external_ref_mapping_whole_document_unused]
 	main/jsonschema/main_jsonschema/external_ref_mapping_whole_document_unused.py
 [test_main_jsonschema_external_root_refs]
-	main/jsonschema/external_root_refs.py
+	main/jsonschema/main_jsonschema/external_root_refs.py
 [test_main_jsonschema_extras_in_oneof]
-	main/jsonschema/extras_in_oneof.py
+	main/jsonschema/main_jsonschema/extras_in_oneof.py
 [test_main_jsonschema_extras_without_x_prefix_strip_the_prefix_only]
 	main/jsonschema/main_jsonschema/extras_without_x_prefix_strip_the_prefix_only.py
 [test_main_jsonschema_false_reference_fast_path]
@@ -6895,11 +6895,11 @@ pydantic_v2.dataclass-field_discriminator_not_a_name	main/jsonschema/jsonschema_
 [test_main_jsonschema_field_extras_field_include_all_keys]
 	main/jsonschema/main_jsonschema/field_extras_field_include_all_keys.py
 [test_main_jsonschema_field_has_same_name]
-	main/jsonschema/field_has_same_name_v2.py
+	main/jsonschema/main_jsonschema/field_has_same_name.py
 [test_main_jsonschema_field_has_same_name_rename_type]
-	main/jsonschema/field_has_same_name_rename_type.py
+	main/jsonschema/main_jsonschema/field_has_same_name_rename_type.py
 [test_main_jsonschema_field_has_same_name_rename_type_cli_doc]
-	main/jsonschema/field_has_same_name_rename_type.py
+	main/jsonschema/main_jsonschema/field_has_same_name_rename_type_cli_doc.py	= main/jsonschema/main_jsonschema/field_has_same_name_rename_type.py
 [test_main_jsonschema_field_include_all_keys]
 	main/jsonschema/main_jsonschema/field_include_all_keys.py	= main/jsonschema/autodetect.py
 [test_main_jsonschema_field_named_like_type_beside_enum_named_base]
@@ -6973,7 +6973,7 @@ packages-first-rename-type-base-model-exact-import	main/jsonschema/main_jsonsche
 [test_main_jsonschema_field_type_collision_inherited_modules_default_order]
 	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules_default_order/
 [test_main_jsonschema_field_type_collision_rename_type_double]
-	main/jsonschema/field_type_collision_rename_type_double.py
+	main/jsonschema/main_jsonschema/field_type_collision_rename_type_double.py
 [test_main_jsonschema_field_type_collision_runtime]
 base-model-other	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other].py
 base-model-other	main/jsonschema/main_jsonschema/field_type_collision_runtime[base-model-other].runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
@@ -7100,7 +7100,7 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loa
 [test_main_jsonschema_has_default_value]
 	main/jsonschema/main_jsonschema/has_default_value.py
 [test_main_jsonschema_hierarchical_aliases_inline_json]
-	main/jsonschema/jsonschema_hierarchical_aliases_scoped.py
+	main/jsonschema/main_jsonschema/hierarchical_aliases_inline_json.py	= main/jsonschema/jsonschema_hierarchical_aliases_scoped.py
 [test_main_jsonschema_hierarchical_aliases_scoped]
 	main/jsonschema/jsonschema_hierarchical_aliases_scoped.py
 [test_main_jsonschema_hyphenated_directory_reference]
@@ -7170,13 +7170,13 @@ pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/items_array_additi
 [test_main_jsonschema_items_array_tuple_allof_single_part_intersection]
 	main/jsonschema/main_jsonschema/items_array_tuple_allof_single_part_intersection.py	= main/jsonschema/main_jsonschema/items_array_tuple_allof_keeps_legacy_list.py
 [test_main_jsonschema_items_array_with_false_schema]
-	main/jsonschema/items_array_with_false_schema.py
+	main/jsonschema/main_jsonschema/items_array_with_false_schema.py
 [test_main_jsonschema_items_array_with_true_schema]
-	main/jsonschema/items_array_with_true_schema.py
+	main/jsonschema/main_jsonschema/items_array_with_true_schema.py
 [test_main_jsonschema_items_boolean]
 	main/jsonschema/main_jsonschema/items_boolean.py
 [test_main_jsonschema_items_false_array]
-	main/jsonschema/items_false_array.py
+	main/jsonschema/main_jsonschema/items_false_array.py
 [test_main_jsonschema_json_pointer_array]
 	main/jsonschema/main_jsonschema/json_pointer_array.py
 [test_main_jsonschema_keep_reference_null_on_merged_models]
@@ -7204,10 +7204,10 @@ self-ref-no-future	main/jsonschema/main_jsonschema/legacy_pydantic_extra_custom_
 [test_main_jsonschema_local_reference_file_cache]
 	main/jsonschema/jsonschema_local_reference_file_cache.py
 [test_main_jsonschema_merged_copy_duplicates]
-conditional	main/jsonschema/merged_copy_duplicates_conditional.py
-recursive	main/jsonschema/merged_copy_duplicates.py
+conditional	main/jsonschema/main_jsonschema/merged_copy_duplicates[conditional].py
+recursive	main/jsonschema/main_jsonschema/merged_copy_duplicates[recursive].py
 [test_main_jsonschema_merged_copy_field_names]
-	main/jsonschema/merged_copy_field_names.py
+	main/jsonschema/main_jsonschema/merged_copy_field_names.py
 [test_main_jsonschema_merged_external_false_member]
 	main/jsonschema/main_jsonschema/merged_external_false_member/
 [test_main_jsonschema_merged_external_refs]
@@ -7217,13 +7217,13 @@ issue	main/jsonschema/main_jsonschema/merged_external_refs[issue].py
 package	main/jsonschema/main_jsonschema/merged_external_refs[package].py
 podman-desktop-extension	main/jsonschema/main_jsonschema/merged_external_refs[podman-desktop-extension].py
 [test_main_jsonschema_merged_recursive_ref]
-holder	main/jsonschema/merged_recursive_ref_holder.py
-strict	main/jsonschema/merged_recursive_ref_strict.py
+holder	main/jsonschema/main_jsonschema/merged_recursive_ref[holder].py
+strict	main/jsonschema/main_jsonschema/merged_recursive_ref[strict].py
 [test_main_jsonschema_merged_ref_target_mappings]
-sub/things.json=mypkg.things-merged_ref_targets_mapped.py	main/jsonschema/merged_ref_targets_mapped.py
-things.json=mypkg.things-merged_ref_targets.py	main/jsonschema/merged_ref_targets.py
+sub/things.json=mypkg.things	main/jsonschema/main_jsonschema/merged_ref_target_mappings[sub_things.json=mypkg.things].py
+things.json=mypkg.things	main/jsonschema/main_jsonschema/merged_ref_target_mappings[things.json=mypkg.things].py	= main/jsonschema/merged_ref_targets.py
 [test_main_jsonschema_merged_ref_targets]
-	main/jsonschema/merged_ref_targets.py
+	main/jsonschema/main_jsonschema/merged_ref_targets.py	= main/jsonschema/merged_ref_targets.py
 [test_main_jsonschema_model_extras]
 pydantic_v2.BaseModel-model_extras_v2.py	main/jsonschema/model_extras_v2.py
 [test_main_jsonschema_model_extras_no_match]
@@ -7293,7 +7293,7 @@ typed-dict	main/jsonschema/output_model_types/msgspec_unset_fastpath_typing_Type
 [test_main_jsonschema_multiple_aliases_required_pydantic_v2]
 	main/jsonschema/jsonschema_multiple_aliases_required_pydantic_v2.py
 [test_main_jsonschema_multiple_aliases_serialization_alias_pydantic_v2]
-	main/jsonschema/jsonschema_multiple_aliases_serialization_alias_pydantic_v2.py
+	main/jsonschema/main_jsonschema/multiple_aliases_serialization_alias_pydantic_v2.py
 [test_main_jsonschema_multiple_files]
 	main/jsonschema/multiple_files//*.py
 [test_main_jsonschema_multiple_files_json_pointer]
@@ -7355,7 +7355,7 @@ collapse-pydantic_v2.dataclass	main/jsonschema/main_jsonschema/nullable_reuse_co
 collapse-typing.TypedDict	main/jsonschema/main_jsonschema/nullable_reuse_collapse[collapse-typing.TypedDict].py
 same-name	main/jsonschema/main_jsonschema/nullable_reuse_collapse[same-name].py
 [test_main_jsonschema_nullable_root_reuse_keeps_class_base]
-	main/jsonschema/nullable_reuse.py
+	main/jsonschema/main_jsonschema/nullable_root_reuse_keeps_class_base.py
 [test_main_jsonschema_object_has_one_of]
 	main/jsonschema/main_jsonschema/object_has_one_of.py
 [test_main_jsonschema_object_impossible_property_count]
@@ -7407,7 +7407,7 @@ object_property_count_additional_true	main/jsonschema/main_jsonschema/object_pro
 [test_main_jsonschema_oneof_with_true_schema]
 	main/jsonschema/main_jsonschema/oneof_with_true_schema.py
 [test_main_jsonschema_openapi_keyword_only_msgspec_with_extra_data]
-	main/jsonschema/discriminator_literals_msgspec_keyword_only_omit_defaults.py
+	main/jsonschema/main_jsonschema/openapi_keyword_only_msgspec_with_extra_data.py	= main/jsonschema/discriminator_literals_msgspec_keyword_only_omit_defaults.py
 [test_main_jsonschema_pattern]
 	main/jsonschema/main_jsonschema/pattern.py
 [test_main_jsonschema_pattern_escaped_quote]
@@ -7439,15 +7439,15 @@ msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevalua
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevaluated[pydantic_v2.BaseModel].py
 use-tuple-for-closed-arrays	main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevaluated[use-tuple-for-closed-arrays].py	= main/jsonschema/main_jsonschema/prefix_items_closed_tail_unevaluated[pydantic_v2.BaseModel].py
 [test_main_jsonschema_prefix_items_fixed_any_tail_schema]
-	main/jsonschema/prefix_items_fixed_any_tail_schema.py
+	main/jsonschema/main_jsonschema/prefix_items_fixed_any_tail_schema.py
 [test_main_jsonschema_prefix_items_fixed_tail_schema]
-	main/jsonschema/prefix_items_fixed_tail_schema.py
+	main/jsonschema/main_jsonschema/prefix_items_fixed_tail_schema.py
 [test_main_jsonschema_prefix_items_fixed_unevaluated_tail_schema]
-	main/jsonschema/prefix_items_fixed_unevaluated_tail_schema.py
+	main/jsonschema/main_jsonschema/prefix_items_fixed_unevaluated_tail_schema.py
 [test_main_jsonschema_prefix_items_items_false]
-	main/jsonschema/prefix_items_items_false.py
+	main/jsonschema/main_jsonschema/prefix_items_items_false.py
 [test_main_jsonschema_prefix_items_items_schema]
-	main/jsonschema/prefix_items_items_schema.py
+	main/jsonschema/main_jsonschema/prefix_items_items_schema.py
 [test_main_jsonschema_prefix_items_no_tuple]
 	main/jsonschema/main_jsonschema/prefix_items_no_tuple.py
 [test_main_jsonschema_prefix_items_unique_items]
@@ -7473,9 +7473,9 @@ msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[pydantic_v2.BaseModel].py
 pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[pydantic_v2.BaseModel-default].py	= main/jsonschema/main_jsonschema/prefix_items_unsatisfiable_length[pydantic_v2.BaseModel].py
 [test_main_jsonschema_prefix_items_with_false_schema]
-	main/jsonschema/prefix_items_with_false_schema.py
+	main/jsonschema/main_jsonschema/prefix_items_with_false_schema.py
 [test_main_jsonschema_prefix_items_with_true_schema]
-	main/jsonschema/prefix_items_with_true_schema.py
+	main/jsonschema/main_jsonschema/prefix_items_with_true_schema.py
 [test_main_jsonschema_property_count_constraints]
 	main/jsonschema/main_jsonschema/property_count_constraints.py
 [test_main_jsonschema_property_count_cross_module_capabilities]
@@ -7587,7 +7587,7 @@ use-annotated	main/jsonschema/main_jsonschema/property_names_root_model_keys[use
 	main/jsonschema/main_jsonschema/read_as_const_marker_in_document.py
 	main/jsonschema/main_jsonschema/read_as_const_marker_in_document.warnings.txt
 [test_main_jsonschema_read_only_write_only_compositions]
-	main/jsonschema/read_only_write_only_compositions.py
+	main/jsonschema/main_jsonschema/read_only_write_only_compositions.py
 [test_main_jsonschema_read_only_write_only_external_directory]
 all	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[all].py
 request-response	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[request-response].py
@@ -7613,7 +7613,7 @@ per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_ex
 first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_property_count[first-read].py
 per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_property_count[per-document].py
 [test_main_jsonschema_recursive_array]
-	main/jsonschema/recursive_array.py
+	main/jsonschema/main_jsonschema/recursive_array.py
 [test_main_jsonschema_recursive_fixed_length_array_keeps_tuple_shape]
 	main/jsonschema/main_jsonschema/recursive_fixed_length_array_keeps_tuple_shape.py
 [test_main_jsonschema_recursive_ref]
@@ -7631,8 +7631,8 @@ per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_pr
 [test_main_jsonschema_recursive_ref_pydantic_v2]
 	main/jsonschema/recursive_ref_pydantic_v2.py	= main/jsonschema/recursive_ref.py
 [test_main_jsonschema_recursive_ref_resources]
-holder	main/jsonschema/recursive_ref_resources_holder.py
-tree	main/jsonschema/recursive_ref_resources_tree.py
+holder	main/jsonschema/main_jsonschema/recursive_ref_resources[holder].py
+tree	main/jsonschema/main_jsonschema/recursive_ref_resources[tree].py
 [test_main_jsonschema_ref_sibling_dialect_directory]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[dataclasses.dataclass]/
 msgspec.Struct	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[msgspec.Struct]/
@@ -7655,7 +7655,7 @@ target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].t
 [test_main_jsonschema_remove_special_prefix_preserves_underscore_alias]
 	main/jsonschema/main_jsonschema/remove_special_prefix_preserves_underscore_alias.py
 [test_main_jsonschema_rename_preserves_source_alias]
-	main/jsonschema/rename_preserve_source_alias.py
+	main/jsonschema/main_jsonschema/rename_preserves_source_alias.py
 [test_main_jsonschema_renamed_import_beside_shared_import]
 builtin	main/jsonschema/main_jsonschema/renamed_import_beside_shared_import[builtin]/
 submodule	main/jsonschema/main_jsonschema/renamed_import_beside_shared_import[submodule]/
@@ -7663,12 +7663,12 @@ submodule	main/jsonschema/main_jsonschema/renamed_import_beside_shared_import[su
 dynamic-ref-merged-generic	main/jsonschema/main_jsonschema/request_response_refs_of_other_documents[dynamic-ref-merged-generic].py	= main/jsonschema/dynamic_ref_merged_generic.py
 path-absolute-root-id-refs	main/jsonschema/main_jsonschema/request_response_refs_of_other_documents[path-absolute-root-id-refs].py
 [test_main_jsonschema_required_and_any_of_required]
-	main/jsonschema/required_and_any_of_required.py
+	main/jsonschema/main_jsonschema/required_and_any_of_required.py
 [test_main_jsonschema_reserved_field_name]
-dataclasses.dataclass-reserved_field_name_schema_dataclass.py	main/jsonschema/reserved_field_name_schema_dataclass.py
-pydantic_v2.BaseModel-reserved_field_name_schema_pydantic.py	main/jsonschema/reserved_field_name_schema_pydantic.py
-pydantic_v2.dataclass-reserved_field_name_schema_pydantic_dataclass.py	main/jsonschema/reserved_field_name_schema_pydantic_dataclass.py
-typing.TypedDict-reserved_field_name_schema_typed_dict.py	main/jsonschema/reserved_field_name_schema_typed_dict.py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/reserved_field_name[dataclasses.dataclass].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/reserved_field_name[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/reserved_field_name[pydantic_v2.dataclass].py
+typing.TypedDict	main/jsonschema/main_jsonschema/reserved_field_name[typing.TypedDict].py
 [test_main_jsonschema_reserved_field_names]
 	main/jsonschema/main_jsonschema/reserved_field_names.py
 [test_main_jsonschema_reserved_field_names_are_output_owned]
@@ -7734,13 +7734,13 @@ named	main/jsonschema/reuse_scope_tree_shared_module_name//*.py
 [test_main_jsonschema_reuse_scope_tree_warning]
 	main/jsonschema/main_jsonschema/reuse_scope_tree_warning/
 [test_main_jsonschema_root_model_default_value]
-	main/jsonschema/root_model_default_value.py
+	main/jsonschema/main_jsonschema/root_model_default_value.py
 [test_main_jsonschema_root_model_default_value_branches]
-	main/jsonschema/root_model_default_value_branches.py
+	main/jsonschema/main_jsonschema/root_model_default_value_branches.py
 [test_main_jsonschema_root_model_default_value_no_annotated]
-	main/jsonschema/root_model_default_value_no_annotated.py
+	main/jsonschema/main_jsonschema/root_model_default_value_no_annotated.py
 [test_main_jsonschema_root_model_default_value_non_root]
-	main/jsonschema/root_model_default_value_non_root.py
+	main/jsonschema/main_jsonschema/root_model_default_value_non_root.py
 [test_main_jsonschema_root_model_ordering]
 extra_args0	main/jsonschema/main_jsonschema/root_model_ordering[extra_args0].py
 extra_args1	main/jsonschema/main_jsonschema/root_model_ordering[extra_args1].py
@@ -7754,7 +7754,7 @@ extra_args1	main/jsonschema/main_jsonschema/root_model_ordering[extra_args1].py
 	main/jsonschema/schema_validators_runtime_root_cross_module/a.py
 	main/jsonschema/schema_validators_runtime_root_cross_module/z.py
 [test_main_jsonschema_same_name_objects]
-	main/jsonschema/same_name_objects.py
+	main/jsonschema/main_jsonschema/same_name_objects.py
 [test_main_jsonschema_same_name_reference_fields]
 	main/jsonschema/main_jsonschema/same_name_reference_fields.py
 [test_main_jsonschema_same_name_reference_literals]
@@ -7778,20 +7778,20 @@ keep-model-order	main/jsonschema/main_jsonschema/schema_validators_pattern_ref_d
 [test_main_jsonschema_serialization_alias_equal_to_the_field_name_pydantic_v2]
 	main/jsonschema/jsonschema_serialization_alias_equal_to_the_field_name_pydantic_v2.py	= main/jsonschema/autodetect.py
 [test_main_jsonschema_serialization_alias_same_name_pydantic_v2]
-	main/jsonschema/serialization_alias_same_name.py
+	main/jsonschema/main_jsonschema/serialization_alias_same_name_pydantic_v2.py
 [test_main_jsonschema_serialization_aliases_alias_generator]
-alias	main/jsonschema/alias_generator_serialization_aliases/alias.py
-alias	main/jsonschema/alias_generator_serialization_aliases/round_trip.txt
-no_alias	main/jsonschema/alias_generator_serialization_aliases/no_alias.py
-no_alias	main/jsonschema/alias_generator_serialization_aliases/round_trip.txt
-serialization_alias	main/jsonschema/alias_generator_serialization_aliases/round_trip.txt
-serialization_alias	main/jsonschema/alias_generator_serialization_aliases/serialization_alias.py	= main/jsonschema/alias_generator_serialization_aliases/no_alias.py
+alias	main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[alias].alias_generator_serialization_aliases.txt
+alias	main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[alias].py
+no_alias	main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[no_alias].alias_generator_serialization_aliases.txt	= main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[alias].alias_generator_serialization_aliases.txt
+no_alias	main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[no_alias].py
+serialization_alias	main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[serialization_alias].alias_generator_serialization_aliases.txt	= main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[alias].alias_generator_serialization_aliases.txt
+serialization_alias	main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[serialization_alias].py	= main/jsonschema/main_jsonschema/serialization_aliases_alias_generator[no_alias].py
 [test_main_jsonschema_serialization_aliases_inline_json_pydantic_v2]
-	main/jsonschema/serialization_aliases.py
+	main/jsonschema/main_jsonschema/serialization_aliases_inline_json_pydantic_v2.py
 [test_main_jsonschema_serialization_aliases_pydantic_v2]
-	main/jsonschema/serialization_aliases.py
+	main/jsonschema/main_jsonschema/serialization_aliases_pydantic_v2.py	= main/jsonschema/main_jsonschema/serialization_aliases_inline_json_pydantic_v2.py
 [test_main_jsonschema_serialization_aliases_with_use_serialization_alias_pydantic_v2]
-	main/jsonschema/serialization_aliases_with_use_serialization_alias.py
+	main/jsonschema/main_jsonschema/serialization_aliases_with_use_serialization_alias_pydantic_v2.py
 [test_main_jsonschema_shared_import_named_like_module_and_model]
 	main/jsonschema/main_jsonschema/shared_import_named_like_module_and_model/
 [test_main_jsonschema_shared_schema_with_cyclic_extension]
@@ -7954,52 +7954,52 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/time_delta[pydantic_v2.Bas
 dropped-import	main/jsonschema/main_jsonschema/treat_dot_as_module_writes_importable_modules[dropped-import]/
 no-treat-dot-as-module	main/jsonschema/main_jsonschema/treat_dot_as_module_writes_importable_modules[no-treat-dot-as-module]/
 [test_main_jsonschema_type_alias]
-	main/jsonschema/type_alias.py
+	main/jsonschema/main_jsonschema/type_alias.py
 [test_main_jsonschema_type_alias_chain_model_default_object_ref]
-	main/jsonschema/type_alias_chain_model_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_chain_model_default_object_ref.py
 [test_main_jsonschema_type_alias_chain_union_default_object_ref_relevant_flags]
-	main/jsonschema/type_alias_chain_union_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_chain_union_default_object_ref_relevant_flags.py
 [test_main_jsonschema_type_alias_dict_union_default_object_ref_relevant_flags]
-	main/jsonschema/type_alias_dict_union_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_dict_union_default_object_ref_relevant_flags.py
 [test_main_jsonschema_type_alias_inline_dict_union_default_object_relevant_flags]
-	main/jsonschema/type_alias_inline_dict_union_default_object.py
+	main/jsonschema/main_jsonschema/type_alias_inline_dict_union_default_object_relevant_flags.py
 [test_main_jsonschema_type_alias_inline_list_union_default_object_relevant_flags]
-	main/jsonschema/type_alias_inline_list_union_default_object.py
+	main/jsonschema/main_jsonschema/type_alias_inline_list_union_default_object_relevant_flags.py
 [test_main_jsonschema_type_alias_inline_union_default_object]
-	main/jsonschema/type_alias_inline_union_default_object.py
+	main/jsonschema/main_jsonschema/type_alias_inline_union_default_object.py
 [test_main_jsonschema_type_alias_inline_union_default_object_import_collision_relevant_flags]
-	main/jsonschema/type_alias_inline_union_default_object_import_collision.py
+	main/jsonschema/main_jsonschema/type_alias_inline_union_default_object_import_collision_relevant_flags.py
 [test_main_jsonschema_type_alias_inline_union_default_object_one_of_relevant_flags]
-	main/jsonschema/type_alias_inline_union_default_object_one_of.py
+	main/jsonschema/main_jsonschema/type_alias_inline_union_default_object_one_of_relevant_flags.py
 [test_main_jsonschema_type_alias_inline_union_default_object_silent_wrong_branch_relevant_flags]
-	main/jsonschema/type_alias_inline_union_default_object_silent_wrong_branch.py
+	main/jsonschema/main_jsonschema/type_alias_inline_union_default_object_silent_wrong_branch_relevant_flags.py
 [test_main_jsonschema_type_alias_inline_union_default_object_type_override_relevant_flags]
-	main/jsonschema/type_alias_inline_union_default_object_type_override.py
+	main/jsonschema/main_jsonschema/type_alias_inline_union_default_object_type_override_relevant_flags.py
 [test_main_jsonschema_type_alias_list_model_default_object_ref]
-	main/jsonschema/type_alias_list_model_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_list_model_default_object_ref.py
 [test_main_jsonschema_type_alias_list_union_default_object_ref_relevant_flags]
-	main/jsonschema/type_alias_list_union_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_list_union_default_object_ref_relevant_flags.py
 [test_main_jsonschema_type_alias_model_default_object_ref]
-	main/jsonschema/type_alias_model_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_model_default_object_ref.py
 [test_main_jsonschema_type_alias_nullable_list_model_default_object_ref]
-	main/jsonschema/type_alias_nullable_list_model_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_nullable_list_model_default_object_ref.py
 [test_main_jsonschema_type_alias_nullable_model_default_object_ref]
-	main/jsonschema/type_alias_nullable_model_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_nullable_model_default_object_ref.py
 [test_main_jsonschema_type_alias_py312]
-	main/jsonschema/type_alias_py312.py
+	main/jsonschema/main_jsonschema/type_alias_py312.py
 [test_main_jsonschema_type_alias_recursive_container]
-collapse-dataclasses.dataclass-3.11-options11-type_alias_recursive_container_collapse_dataclass.py	main/jsonschema/type_alias_recursive_container_collapse_dataclass.py
-collapse-pydantic_v2.BaseModel-3.11-options10-type_alias_recursive_container_collapse_no_future.py	main/jsonschema/type_alias_recursive_container_collapse_no_future.py
-collapse-pydantic_v2.BaseModel-3.11-options9-type_alias_recursive_container_collapse.py	main/jsonschema/type_alias_recursive_container_collapse.py
-container-dataclasses.dataclass-3.11-options6-type_alias_recursive_container_dataclass.py	main/jsonschema/type_alias_recursive_container_dataclass.py
-container-msgspec.Struct-3.11-options8-type_alias_recursive_container_msgspec.py	main/jsonschema/type_alias_recursive_container_msgspec.py
-container-pydantic_v2.BaseModel-3.10-options0-type_alias_recursive_container.py	main/jsonschema/type_alias_recursive_container.py
-container-pydantic_v2.BaseModel-3.11-options2-type_alias_recursive_container_typing_collections.py	main/jsonschema/type_alias_recursive_container_typing_collections.py
-container-pydantic_v2.BaseModel-3.11-options3-type_alias_recursive_container_pydantic_2_0.py	main/jsonschema/type_alias_recursive_container_pydantic_2_0.py
-container-pydantic_v2.BaseModel-3.11-options4-type_alias_recursive_container_ruff.py	main/jsonschema/type_alias_recursive_container_ruff.py
-container-pydantic_v2.BaseModel-3.12-options1-type_alias_recursive_container_py312.py	main/jsonschema/type_alias_recursive_container_py312.py
-container-pydantic_v2.dataclass-3.11-options5-type_alias_recursive_container_pydantic_dataclass.py	main/jsonschema/type_alias_recursive_container_pydantic_dataclass.py
-container-typing.TypedDict-3.11-options7-type_alias_recursive_container_typed_dict.py	main/jsonschema/type_alias_recursive_container_typed_dict.py
+collapse-dataclasses.dataclass-3.11-options11	main/jsonschema/main_jsonschema/type_alias_recursive_container[collapse-dataclasses.dataclass-3.11-options11].py
+collapse-pydantic_v2.BaseModel-3.11-options10	main/jsonschema/main_jsonschema/type_alias_recursive_container[collapse-pydantic_v2.BaseModel-3.11-options10].py
+collapse-pydantic_v2.BaseModel-3.11-options9	main/jsonschema/main_jsonschema/type_alias_recursive_container[collapse-pydantic_v2.BaseModel-3.11-options9].py
+container-dataclasses.dataclass-3.11-options6	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-dataclasses.dataclass-3.11-options6].py
+container-msgspec.Struct-3.11-options8	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-msgspec.Struct-3.11-options8].py
+container-pydantic_v2.BaseModel-3.10-options0	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-pydantic_v2.BaseModel-3.10-options0].py
+container-pydantic_v2.BaseModel-3.11-options2	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-pydantic_v2.BaseModel-3.11-options2].py
+container-pydantic_v2.BaseModel-3.11-options3	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-pydantic_v2.BaseModel-3.11-options3].py
+container-pydantic_v2.BaseModel-3.11-options4	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-pydantic_v2.BaseModel-3.11-options4].py
+container-pydantic_v2.BaseModel-3.12-options1	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-pydantic_v2.BaseModel-3.12-options1].py
+container-pydantic_v2.dataclass-3.11-options5	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-pydantic_v2.dataclass-3.11-options5].py
+container-typing.TypedDict-3.11-options7	main/jsonschema/main_jsonschema/type_alias_recursive_container[container-typing.TypedDict-3.11-options7].py
 [test_main_jsonschema_type_alias_recursive_container_head]
 container_without_cycle_reference-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/type_alias_recursive_container_head[container_without_cycle_reference-pydantic_v2.BaseModel].py
 head_backward-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/type_alias_recursive_container_head[head_backward-pydantic_v2.BaseModel].py
@@ -8007,67 +8007,67 @@ head_backward-pydantic_v2.dataclass	main/jsonschema/main_jsonschema/type_alias_r
 non_head_backward-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/type_alias_recursive_container_head[non_head_backward-pydantic_v2.BaseModel].py
 reached_before_head-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/type_alias_recursive_container_head[reached_before_head-pydantic_v2.BaseModel].py
 [test_main_jsonschema_type_alias_recursive_default_list]
-	main/jsonschema/type_alias_recursive_default_list.py
+	main/jsonschema/main_jsonschema/type_alias_recursive_default_list.py
 [test_main_jsonschema_type_alias_recursive_default_list_pydantic_v2_dataclass]
-	main/jsonschema/type_alias_recursive_default_list_pydantic_v2_dataclass.py
+	main/jsonschema/main_jsonschema/type_alias_recursive_default_list_pydantic_v2_dataclass.py
 [test_main_jsonschema_type_alias_type_executes_forward_references]
-type_alias_cycle.json-type_alias_type_cycle.py	main/jsonschema/type_alias_type_cycle.py
-type_alias_forward_ref.json-type_alias_type_forward_ref.py	main/jsonschema/type_alias_type_forward_ref.py
+type_alias_cycle.json	main/jsonschema/main_jsonschema/type_alias_type_executes_forward_references[type_alias_cycle.json].py
+type_alias_forward_ref.json	main/jsonschema/main_jsonschema/type_alias_type_executes_forward_references[type_alias_forward_ref.json].py
 [test_main_jsonschema_type_alias_type_non_pydantic]
-dataclasses.dataclass-type_alias_type_dataclass.py	main/jsonschema/type_alias_type_dataclass.py
-msgspec.Struct-type_alias_type_msgspec.py	main/jsonschema/type_alias_type_msgspec.py
-typing.TypedDict-type_alias_type_typeddict.py	main/jsonschema/type_alias_type_typeddict.py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/type_alias_type_non_pydantic[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/type_alias_type_non_pydantic[msgspec.Struct].py
+typing.TypedDict	main/jsonschema/main_jsonschema/type_alias_type_non_pydantic[typing.TypedDict].py
 [test_main_jsonschema_type_alias_type_recursive_exports]
 	main/jsonschema/type_alias_type_module//*.py
 [test_main_jsonschema_type_alias_type_typeddict_py312]
-	main/jsonschema/type_alias_type_typeddict_py312.py
+	main/jsonschema/main_jsonschema/type_alias_type_typeddict_py312.py
 [test_main_jsonschema_type_alias_union_default_object_ref]
-	main/jsonschema/type_alias_union_default_object_ref.py
+	main/jsonschema/main_jsonschema/type_alias_union_default_object_ref.py
 [test_main_jsonschema_type_alias_union_default_object_ref_any_of_relevant_flags]
-	main/jsonschema/type_alias_union_default_object_ref_any_of.py
+	main/jsonschema/main_jsonschema/type_alias_union_default_object_ref_any_of_relevant_flags.py
 [test_main_jsonschema_type_alias_union_default_object_ref_dict_alias_branch_relevant_flags]
-	main/jsonschema/type_alias_union_default_object_ref_dict_alias_branch.py
+	main/jsonschema/main_jsonschema/type_alias_union_default_object_ref_dict_alias_branch_relevant_flags.py
 [test_main_jsonschema_type_alias_union_default_object_ref_mixed_scalar_relevant_flags]
-	main/jsonschema/type_alias_union_default_object_ref_mixed_scalar.py
+	main/jsonschema/main_jsonschema/type_alias_union_default_object_ref_mixed_scalar_relevant_flags.py
 [test_main_jsonschema_type_alias_union_default_object_ref_one_of_relevant_flags]
-	main/jsonschema/type_alias_union_default_object_ref_one_of.py
+	main/jsonschema/main_jsonschema/type_alias_union_default_object_ref_one_of_relevant_flags.py
 [test_main_jsonschema_type_alias_with_circular_ref_to_class_msgspec]
-	main/jsonschema/type_alias_with_circular_ref_to_class_msgspec.py
-	main/jsonschema/type_alias_with_circular_ref_to_class_msgspec_warnings.txt
+	main/jsonschema/main_jsonschema/type_alias_with_circular_ref_to_class_msgspec.py
+	main/jsonschema/main_jsonschema/type_alias_with_circular_ref_to_class_msgspec.type_alias_with_circular_ref_to_class_msgspec_warnings.txt
 [test_main_jsonschema_type_alias_with_field_description]
-	main/jsonschema/type_alias_with_field_description.py
+	main/jsonschema/main_jsonschema/type_alias_with_field_description.py
 [test_main_jsonschema_type_alias_with_field_description_py312]
-	main/jsonschema/type_alias_with_field_description_py312.py
+	main/jsonschema/main_jsonschema/type_alias_with_field_description_py312.py
 [test_main_jsonschema_type_mappings]
-	main/jsonschema/type_mappings.py
+	main/jsonschema/main_jsonschema/type_mappings.py
 [test_main_jsonschema_type_mappings_byte_to_binary]
-collapse_field_constraints.py-extra_args7	main/jsonschema/type_mappings_byte_to_binary/collapse_field_constraints.py	= main/jsonschema/type_mappings_byte_to_binary/field_constraints.py
-collapse_field_constraints.py-extra_args7	main/jsonschema/type_mappings_byte_to_binary/collapse_field_constraints_validated.txt	= main/jsonschema/type_mappings_byte_to_binary/field_constraints_validated.txt
-collapse_field_constraints.py-extra_args7	main/jsonschema/type_mappings_byte_to_binary/collapse_field_constraints_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-collapse_use_annotated_dataclass.py-extra_args8	main/jsonschema/type_mappings_byte_to_binary/collapse_use_annotated_dataclass.py
-collapse_use_annotated_dataclass.py-extra_args8	main/jsonschema/type_mappings_byte_to_binary/collapse_use_annotated_dataclass_validated.txt	= main/jsonschema/type_mappings_byte_to_binary/default_validated.txt
-collapse_use_annotated_dataclass.py-extra_args8	main/jsonschema/type_mappings_byte_to_binary/collapse_use_annotated_dataclass_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-default.py-extra_args0	main/jsonschema/type_mappings_byte_to_binary/default.py
-default.py-extra_args0	main/jsonschema/type_mappings_byte_to_binary/default_validated.txt
-default.py-extra_args0	main/jsonschema/type_mappings_byte_to_binary/default_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-field_constraints.py-extra_args1	main/jsonschema/type_mappings_byte_to_binary/field_constraints.py
-field_constraints.py-extra_args1	main/jsonschema/type_mappings_byte_to_binary/field_constraints_validated.txt
-field_constraints.py-extra_args1	main/jsonschema/type_mappings_byte_to_binary/field_constraints_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pydantic_v2_dataclass.py-extra_args5	main/jsonschema/type_mappings_byte_to_binary/pydantic_v2_dataclass.py
-pydantic_v2_dataclass.py-extra_args5	main/jsonschema/type_mappings_byte_to_binary/pydantic_v2_dataclass_validated.txt	= main/jsonschema/type_mappings_byte_to_binary/default_validated.txt
-pydantic_v2_dataclass.py-extra_args5	main/jsonschema/type_mappings_byte_to_binary/pydantic_v2_dataclass_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-strict_bytes.py-extra_args3	main/jsonschema/type_mappings_byte_to_binary/strict_bytes.py	= main/jsonschema/type_mappings_byte_to_binary/default.py
-strict_bytes.py-extra_args3	main/jsonschema/type_mappings_byte_to_binary/strict_bytes_validated.txt	= main/jsonschema/type_mappings_byte_to_binary/default_validated.txt
-strict_bytes.py-extra_args3	main/jsonschema/type_mappings_byte_to_binary/strict_bytes_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-strict_bytes_field_constraints.py-extra_args4	main/jsonschema/type_mappings_byte_to_binary/strict_bytes_field_constraints.py	= main/jsonschema/type_mappings_byte_to_binary/field_constraints.py
-strict_bytes_field_constraints.py-extra_args4	main/jsonschema/type_mappings_byte_to_binary/strict_bytes_field_constraints_validated.txt	= main/jsonschema/type_mappings_byte_to_binary/field_constraints_validated.txt
-strict_bytes_field_constraints.py-extra_args4	main/jsonschema/type_mappings_byte_to_binary/strict_bytes_field_constraints_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-target_pydantic_2.py-extra_args6	main/jsonschema/type_mappings_byte_to_binary/target_pydantic_2.py	= main/jsonschema/type_mappings_byte_to_binary/field_constraints.py
-target_pydantic_2.py-extra_args6	main/jsonschema/type_mappings_byte_to_binary/target_pydantic_2_validated.txt	= main/jsonschema/type_mappings_byte_to_binary/field_constraints_validated.txt
-target_pydantic_2.py-extra_args6	main/jsonschema/type_mappings_byte_to_binary/target_pydantic_2_warnings.txt
-use_annotated.py-extra_args2	main/jsonschema/type_mappings_byte_to_binary/use_annotated.py
-use_annotated.py-extra_args2	main/jsonschema/type_mappings_byte_to_binary/use_annotated_validated.txt
-use_annotated.py-extra_args2	main/jsonschema/type_mappings_byte_to_binary/use_annotated_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args0	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args0]._validated.txt
+extra_args0	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args0]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args0	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args0].py
+extra_args1	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1]._validated.txt
+extra_args1	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args1	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1].py
+extra_args2	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args2]._validated.txt
+extra_args2	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args2]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args2	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args2].py
+extra_args3	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args3]._validated.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args0]._validated.txt
+extra_args3	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args3]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args3	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args3].py	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args0].py
+extra_args4	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args4]._validated.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1]._validated.txt
+extra_args4	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args4]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args4	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args4].py	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1].py
+extra_args5	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args5]._validated.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args0]._validated.txt
+extra_args5	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args5]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args5	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args5].py
+extra_args6	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args6]._validated.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1]._validated.txt
+extra_args6	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args6]._warnings.txt
+extra_args6	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args6].py	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1].py
+extra_args7	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args7]._validated.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1]._validated.txt
+extra_args7	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args7]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args7	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args7].py	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args1].py
+extra_args8	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args8]._validated.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args0]._validated.txt
+extra_args8	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args8]._warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra_args8	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary[extra_args8].py
 [test_main_jsonschema_type_mappings_byte_to_binary_pattern]
 field_constraints	main/jsonschema/jsonschema_type_mappings_byte_to_binary_pattern.py
 field_constraints	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary_pattern[field_constraints].payloads.txt
@@ -8079,11 +8079,11 @@ use_annotated	main/jsonschema/jsonschema_type_mappings_byte_to_binary_pattern.py
 use_annotated	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary_pattern[use_annotated].payloads.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary_pattern[field_constraints].payloads.txt
 use_annotated	main/jsonschema/main_jsonschema/type_mappings_byte_to_binary_pattern[use_annotated].warnings.txt	= main/jsonschema/main_jsonschema/type_mappings_byte_to_binary_pattern[field_constraints].warnings.txt
 [test_main_jsonschema_type_mappings_to_boolean]
-	main/jsonschema/type_mappings_to_boolean.py
+	main/jsonschema/main_jsonschema/type_mappings_to_boolean.py
 [test_main_jsonschema_type_mappings_to_type_default]
-	main/jsonschema/type_mappings_to_integer.py
+	main/jsonschema/main_jsonschema/type_mappings_to_type_default.py
 [test_main_jsonschema_type_mappings_with_type_prefix]
-	main/jsonschema/type_mappings.py
+	main/jsonschema/main_jsonschema/type_mappings_with_type_prefix.py	= main/jsonschema/main_jsonschema/type_mappings.py
 [test_main_jsonschema_type_overrides_warns_on_unmatched_keys]
 close-names	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[close-names].py
 close-names	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[close-names].warnings.txt
@@ -8104,11 +8104,11 @@ several	main/jsonschema/main_jsonschema/type_overrides_warns_on_unmatched_keys[s
 [test_main_jsonschema_typed_map_values_without_other_types]
 	main/jsonschema/main_jsonschema/typed_map_values_without_other_types.py
 [test_main_jsonschema_unevaluated_items_false_array]
-	main/jsonschema/unevaluated_items_false_array.py
+	main/jsonschema/main_jsonschema/unevaluated_items_false_array.py
 [test_main_jsonschema_unevaluated_items_false_prefix]
-	main/jsonschema/unevaluated_items_false_prefix.py
+	main/jsonschema/main_jsonschema/unevaluated_items_false_prefix.py
 [test_main_jsonschema_unevaluated_items_schema_array]
-	main/jsonschema/unevaluated_items_schema_array.py
+	main/jsonschema/main_jsonschema/unevaluated_items_schema_array.py
 [test_main_jsonschema_unevaluated_properties]
 	main/jsonschema/main_jsonschema/unevaluated_properties.py	= main/jsonschema/unevaluated_properties.py
 [test_main_jsonschema_unevaluated_properties_kept_untyped]
@@ -8160,34 +8160,34 @@ frozen-keyword-only	main/jsonschema/main_jsonschema/use_missing_sentinel_pydanti
 [test_main_jsonschema_use_missing_sentinel_target_pydantic_214]
 	main/jsonschema/main_jsonschema/use_missing_sentinel_target_pydantic_214.py
 [test_main_jsonschema_use_serialization_alias_alias_generator]
-to_camel-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_camel-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/to_camel_multiple_aliases.py
-to_camel-schema_names	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_camel-schema_names	main/jsonschema/alias_generator_serialization_alias/to_camel_schema_names.py
-to_camel-snake_case_field	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_camel-snake_case_field	main/jsonschema/alias_generator_serialization_alias/to_camel_snake_case_field.py
-to_pascal-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_pascal-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/to_pascal_multiple_aliases.py
-to_pascal-schema_names	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_pascal-schema_names	main/jsonschema/alias_generator_serialization_alias/to_pascal_schema_names.py
-to_pascal-snake_case_field	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_pascal-snake_case_field	main/jsonschema/alias_generator_serialization_alias/to_pascal_snake_case_field.py
-to_snake-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_snake-multiple_aliases	main/jsonschema/alias_generator_serialization_alias/to_snake_multiple_aliases.py
-to_snake-schema_names	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_snake-schema_names	main/jsonschema/alias_generator_serialization_alias/to_snake_schema_names.py
-to_snake-snake_case_field	main/jsonschema/alias_generator_serialization_alias/round_trip.txt
-to_snake-snake_case_field	main/jsonschema/alias_generator_serialization_alias/to_snake_snake_case_field.py
+to_camel-multiple_aliases	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_camel-multiple_aliases	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].py
+to_camel-schema_names	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-schema_names].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_camel-schema_names	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-schema_names].py
+to_camel-snake_case_field	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-snake_case_field].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_camel-snake_case_field	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-snake_case_field].py
+to_pascal-multiple_aliases	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_pascal-multiple_aliases].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_pascal-multiple_aliases	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_pascal-multiple_aliases].py
+to_pascal-schema_names	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_pascal-schema_names].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_pascal-schema_names	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_pascal-schema_names].py
+to_pascal-snake_case_field	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_pascal-snake_case_field].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_pascal-snake_case_field	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_pascal-snake_case_field].py
+to_snake-multiple_aliases	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_snake-multiple_aliases].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_snake-multiple_aliases	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_snake-multiple_aliases].py
+to_snake-schema_names	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_snake-schema_names].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_snake-schema_names	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_snake-schema_names].py
+to_snake-snake_case_field	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_snake-snake_case_field].alias_generator_serialization_alias.txt	= main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_camel-multiple_aliases].alias_generator_serialization_alias.txt
+to_snake-snake_case_field	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator[to_snake-snake_case_field].py
 [test_main_jsonschema_use_serialization_alias_alias_generator_target_pydantic_version]
-	main/jsonschema/alias_generator_serialization_alias/to_camel_snake_case_field_target_2.py
+	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator_target_pydantic_version.py
 [test_main_jsonschema_use_serialization_alias_alias_generator_template_data_dataclass]
-	main/jsonschema/alias_generator_serialization_alias/template_data_dataclass.py
+	main/jsonschema/main_jsonschema/use_serialization_alias_alias_generator_template_data_dataclass.py
 [test_main_jsonschema_uuid_format_versions]
 	main/jsonschema/uuid_format_versions.py
 [test_main_jsonschema_value_base_enum_null]
-default	main/jsonschema/integer_enum_null/default.py
-subclass	main/jsonschema/integer_enum_null/subclass.py
-subclass-no-specialized	main/jsonschema/integer_enum_null/subclass_no_specialized.py
+default	main/jsonschema/main_jsonschema/value_base_enum_null[default].py
+subclass	main/jsonschema/main_jsonschema/value_base_enum_null[subclass].py
+subclass-no-specialized	main/jsonschema/main_jsonschema/value_base_enum_null[subclass-no-specialized].py
 [test_main_jsonschema_warns_local_ref_outside_base_path]
 ../secret/leak.json	main/jsonschema/main_jsonschema/warns_local_ref_outside_base_path[.._secret_leak.json].py
 {file_uri}	main/jsonschema/main_jsonschema/warns_local_ref_outside_base_path[{file_uri}].py	= main/jsonschema/main_jsonschema/warns_local_ref_outside_base_path[.._secret_leak.json].py
@@ -8283,32 +8283,32 @@ literal_constraints_undecided-literal	main/jsonschema/main_jsonschema/main_liter
 [test_main_long_ref_sibling_chain_with_schema_validators_one_model_per_site]
 	main/jsonschema/main_jsonschema/main_long_ref_sibling_chain_with_schema_validators_one_model_per_site.py
 [test_main_lookaround_anyof_nullable_pydantic_v2]
-	main/jsonschema/lookaround_anyof_nullable_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_pydantic_v2.py
 [test_main_lookaround_anyof_nullable_pydantic_v2_dataclass]
-	main/jsonschema/lookaround_anyof_nullable_pydantic_v2_dataclass.py
+	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_pydantic_v2_dataclass.py	= main/jsonschema/lookaround_anyof_nullable_pydantic_v2_dataclass.py
 [test_main_lookaround_anyof_nullable_pydantic_v2_dataclass_json_validation]
 	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_pydantic_v2_dataclass_json_validation.py	= main/jsonschema/lookaround_anyof_nullable_pydantic_v2_dataclass.py
 [test_main_lookaround_anyof_nullable_target_pydantic_version]
-base-model-target-2	main/jsonschema/lookaround_anyof_nullable_pydantic_v2.py
+base-model-target-2	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[base-model-target-2].py	= main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_pydantic_v2.py
 base-model-target-2	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[base-model-target-2].warnings.txt
-base-model-target-2.12	main/jsonschema/lookaround_anyof_nullable_pydantic_v2.py
+base-model-target-2.12	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[base-model-target-2.12].py	= main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_pydantic_v2.py
 base-model-target-2.12	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[base-model-target-2.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-dataclass-target-2	main/jsonschema/lookaround_anyof_nullable_pydantic_v2_dataclass_target_2.py
+dataclass-target-2	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[dataclass-target-2].py
 dataclass-target-2	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[dataclass-target-2].warnings.txt
-dataclass-target-2.12	main/jsonschema/lookaround_anyof_nullable_pydantic_v2_dataclass.py
+dataclass-target-2.12	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[dataclass-target-2.12].py	= main/jsonschema/lookaround_anyof_nullable_pydantic_v2_dataclass.py
 dataclass-target-2.12	main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[dataclass-target-2.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_lookaround_dict_generic_container]
-	main/jsonschema/lookaround_dict_generic_container.py
+	main/jsonschema/main_jsonschema/main_lookaround_dict_generic_container.py
 [test_main_lookaround_dict_key_pydantic_v2]
-	main/jsonschema/lookaround_dict_key_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_lookaround_dict_key_pydantic_v2.py
 [test_main_lookaround_dict_pydantic_v2]
-	main/jsonschema/lookaround_dict_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_lookaround_dict_pydantic_v2.py
 [test_main_lookaround_dict_standard_collections]
-	main/jsonschema/lookaround_dict_standard_collections.py	= main/jsonschema/lookaround_dict_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_lookaround_dict_standard_collections.py	= main/jsonschema/main_jsonschema/main_lookaround_dict_pydantic_v2.py
 [test_main_lookaround_mixed_constraints_pydantic_v2]
-	main/jsonschema/lookaround_mixed_constraints_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_lookaround_mixed_constraints_pydantic_v2.py
 [test_main_lookaround_union_types_pydantic_v2]
-	main/jsonschema/lookaround_union_types_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_lookaround_union_types_pydantic_v2.py
 [test_main_module_named_by_newer_target]
 	main/jsonschema/identifier_module_target_315.txt
 [test_main_msgspec_annotated_optional_imports]
@@ -8318,7 +8318,7 @@ dataclass-target-2.12	main/jsonschema/main_jsonschema/main_lookaround_anyof_null
 [test_main_msgspec_array_length_constraints_without_annotated]
 	main/jsonschema/msgspec_array_length_constraints_without_annotated.py
 [test_main_msgspec_boolean_enum_literal]
-	main/jsonschema/msgspec_boolean_enum_literal.py
+	main/jsonschema/main_jsonschema/main_msgspec_boolean_enum_literal.py
 [test_main_msgspec_combined_numeric_bounds]
 combined-api	main/jsonschema/integer_bound_comparisons/combined_msgspec.py
 combined-api	main/jsonschema/integer_bound_comparisons/combined_msgspec_runtime.txt
@@ -8331,20 +8331,20 @@ ordinary-cli	main/jsonschema/integer_bound_comparisons/ordinary_msgspec_runtime.
 [test_main_msgspec_decimal_constraints]
 	main/jsonschema/msgspec_decimal_constraints.py
 [test_main_msgspec_discriminator_const_enum]
-default	main/jsonschema/discriminator_const_enum_msgspec.py
-tagged-unions	main/jsonschema/discriminator_const_enum_msgspec.py
+default	main/jsonschema/main_jsonschema/main_msgspec_discriminator_const_enum[default].py	= main/jsonschema/discriminator_const_enum_msgspec.py
+tagged-unions	main/jsonschema/main_jsonschema/main_msgspec_discriminator_const_enum[tagged-unions].py	= main/jsonschema/discriminator_const_enum_msgspec.py
 [test_main_msgspec_discriminator_mapping_tags]
-	main/jsonschema/discriminator_mapping_msgspec_tags.py
+	main/jsonschema/main_jsonschema/main_msgspec_discriminator_mapping_tags.py
 [test_main_msgspec_discriminator_wire_name]
 default	main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default]~main_msgspec_discriminator_wire_name[default].py
 payload-name	main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[payload-name].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 tagged-unions	main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[tagged-unions].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 [test_main_msgspec_discriminator_with_meta]
-	main/jsonschema/discriminator_with_meta_msgspec.py
+	main/jsonschema/main_jsonschema/main_msgspec_discriminator_with_meta.py
 [test_main_msgspec_discriminator_with_type_string]
-	main/jsonschema/discriminator_with_type_string_msgspec.py
+	main/jsonschema/main_jsonschema/main_msgspec_discriminator_with_type_string.py
 [test_main_msgspec_discriminator_without_annotated]
-	main/jsonschema/discriminator_with_type_string_msgspec_no_annotated.py	= main/jsonschema/discriminator_with_type_string_msgspec.py
+	main/jsonschema/main_jsonschema/main_msgspec_discriminator_without_annotated.py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_with_type_string.py
 [test_main_msgspec_falsy_defaults]
 	main/jsonschema/msgspec_falsy_defaults.py
 [test_main_msgspec_float_multiple_of]
@@ -8366,10 +8366,10 @@ type_overrides.py-extra_args1	main/jsonschema/msgspec_meta_unsupported_types/typ
 type_overrides.py-extra_args1	main/jsonschema/msgspec_meta_unsupported_types/type_overrides_rejected.txt
 type_overrides.py-extra_args1	main/jsonschema/msgspec_meta_unsupported_types/type_overrides_warnings.txt
 [test_main_msgspec_nested_unions]
-	main/jsonschema/msgspec_nested_unions.py
-	main/jsonschema/msgspec_nested_unions_warnings.txt
+	main/jsonschema/main_jsonschema/main_msgspec_nested_unions.msgspec_nested_unions_warnings.txt
+	main/jsonschema/main_jsonschema/main_msgspec_nested_unions.py
 [test_main_msgspec_non_dict_base_class_kwargs]
-	main/jsonschema/msgspec_non_dict_base_class_kwargs.py
+	main/jsonschema/main_jsonschema/main_msgspec_non_dict_base_class_kwargs.py
 [test_main_msgspec_non_finite_number_values]
 	main/jsonschema/msgspec_non_finite_number_values.py
 [test_main_msgspec_null_field]
@@ -8459,11 +8459,11 @@ pydantic_v2.dataclass	main/jsonschema/nested_array_item_counts.py	= main/jsonsch
 [test_main_nested_json_pointer]
 	main/jsonschema/nested_json_pointer.py
 [test_main_nested_lookaround_array_generic_container]
-	main/jsonschema/nested_lookaround_array_generic_container.py
+	main/jsonschema/main_jsonschema/main_nested_lookaround_array_generic_container.py
 [test_main_nested_lookaround_array_pydantic_v2]
-	main/jsonschema/nested_lookaround_array_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_nested_lookaround_array_pydantic_v2.py
 [test_main_nested_lookaround_array_standard_collections]
-	main/jsonschema/nested_lookaround_array_standard_collections.py	= main/jsonschema/nested_lookaround_array_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_nested_lookaround_array_standard_collections.py	= main/jsonschema/main_jsonschema/main_nested_lookaround_array_pydantic_v2.py
 [test_main_nested_map_property_counts]
 field_constraints	main/jsonschema/nested_map_property_counts.py
 msgspec.Struct	main/jsonschema/nested_map_property_counts.py	= main/jsonschema/nested_map_property_counts~main_nested_map_property_counts[msgspec.Struct].py
@@ -8498,7 +8498,7 @@ msgspec.Struct-generated_msgspec_non_finite_container_defaults-msgspec_non_finit
 [test_main_nullable_any_of_use_union_operator]
 	main/jsonschema/nullable_any_of_use_union_operator.py	= main/jsonschema/nullable_any_of.py
 [test_main_nullable_array_items_strict_nullable]
-	main/jsonschema/nullable_array_items_strict_nullable.py
+	main/jsonschema/main_jsonschema/main_nullable_array_items_strict_nullable.py
 [test_main_nullable_enum_literal_length]
 field_constraints	main/jsonschema/main_jsonschema/main_nullable_enum_literal_length[field_constraints].payloads.txt
 field_constraints	main/jsonschema/main_jsonschema/main_nullable_enum_literal_length[field_constraints].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
@@ -9110,74 +9110,74 @@ union_set-cli-builtin-template	main/jsonschema/root_sequence_final/union_set.run
 union_set-cli-custom-template	main/jsonschema/root_sequence_final/union_set.py
 union_set-cli-custom-template	main/jsonschema/root_sequence_final/union_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 [test_main_rust_only_syntax]
-	main/jsonschema/rust_only_syntax_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_rust_only_syntax.py
 [test_main_rust_unsupported_pattern]
-args0-rust_unsupported_pattern_pydantic_v2.py-doubled_path0	main/jsonschema/rust_unsupported_pattern_pydantic_v2.py
-args1-rust_unsupported_pattern_pydantic_v2_annotated.py-doubled_path1	main/jsonschema/rust_unsupported_pattern_pydantic_v2_annotated.py
-args2-rust_unsupported_pattern_pydantic_v2_field_constraints.py-doubled_path2	main/jsonschema/rust_unsupported_pattern_pydantic_v2_field_constraints.py
-args3-rust_unsupported_pattern_pydantic_v2_dataclass.py-doubled_path3	main/jsonschema/rust_unsupported_pattern_pydantic_v2_dataclass.py
+args0-doubled_path0	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern[args0-doubled_path0].py
+args1-doubled_path1	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern[args1-doubled_path1].py
+args2-doubled_path2	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern[args2-doubled_path2].py
+args3-doubled_path3	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern[args3-doubled_path3].py
 [test_main_rust_unsupported_pattern_bytes]
-rust_unsupported_pattern_bytes.json-args0-None-rust_unsupported_pattern_bytes_pydantic_v2_annotated.py-payloads0	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
-rust_unsupported_pattern_bytes.json-args0-None-rust_unsupported_pattern_bytes_pydantic_v2_annotated.py-payloads0	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_annotated.py
-rust_unsupported_pattern_bytes.json-args1-None-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py-payloads1	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args1-No~453bc06a.warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
-rust_unsupported_pattern_bytes.json-args1-None-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py-payloads1	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py
-rust_unsupported_pattern_bytes.json-args13-2.14-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_strict_target_2_14.py-payloads13	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args13-2~7bd56d20.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes.json-args13-2.14-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_strict_target_2_14.py-payloads13	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_strict_target_2_14.py
-rust_unsupported_pattern_bytes.json-args2-2-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py-payloads2	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args2-2-~614cda0d.warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsu~20f8f426~main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args2-2-~c09b55d5.txt
-rust_unsupported_pattern_bytes.json-args2-2-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py-payloads2	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py
-rust_unsupported_pattern_bytes.json-args3-2.12-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py-payloads3	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args3-2.~48415a1d.warnings.txt
-rust_unsupported_pattern_bytes.json-args3-2.12-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py-payloads3	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py
-rust_unsupported_pattern_bytes.json-args4-None-rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints.py-payloads4	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args4-No~6669f6a5.warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
-rust_unsupported_pattern_bytes.json-args4-None-rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints.py-payloads4	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints.py
-rust_unsupported_pattern_bytes.json-args6-2.14-rust_unsupported_pattern_bytes_pydantic_v2_annotated_target_2_14.py-payloads6	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args6-2.~4ae9bd7b.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes.json-args6-2.14-rust_unsupported_pattern_bytes_pydantic_v2_annotated_target_2_14.py-payloads6	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_annotated_target_2_14.py
-rust_unsupported_pattern_bytes.json-args7-2.14-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_target_2_14.py-payloads7	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args7-2.~9b06a8db.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes.json-args7-2.14-rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_target_2_14.py-payloads7	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_target_2_14.py
-rust_unsupported_pattern_bytes.json-args8-2.14-rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints_target_2_14.py-payloads8	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args8-2.~1421e6c4.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes.json-args8-2.14-rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints_target_2_14.py-payloads8	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints_target_2_14.py
-rust_unsupported_pattern_bytes_alias.json-args10-2.14-rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints_target_2_14.py-payloads10	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_alias.json-ar~c59aae23.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes_alias.json-args10-2.14-rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints_target_2_14.py-payloads10	main/jsonschema/rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints_target_2_14.py
-rust_unsupported_pattern_bytes_alias.json-args9-None-rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints.py-payloads9	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_alias.json-ar~a951c716.warnings.txt
-rust_unsupported_pattern_bytes_alias.json-args9-None-rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints.py-payloads9	main/jsonschema/rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints.py
-rust_unsupported_pattern_bytes_nullable.json-args11-None-rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints.py-payloads11	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_nullable.json~1ee92488.warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
-rust_unsupported_pattern_bytes_nullable.json-args11-None-rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints.py-payloads11	main/jsonschema/rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints.py
-rust_unsupported_pattern_bytes_nullable.json-args12-2.14-rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints_target_2_14.py-payloads12	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_nullable.json~ca6cf404.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes_nullable.json-args12-2.14-rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints_target_2_14.py-payloads12	main/jsonschema/rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints_target_2_14.py
-rust_unsupported_pattern_bytes_unicode.json-args5-None-rust_unsupported_pattern_bytes_unicode_pydantic_v2_field_constraints.py-payloads5	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_unicode.json-~a8512b78.warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
-rust_unsupported_pattern_bytes_unicode.json-args5-None-rust_unsupported_pattern_bytes_unicode_pydantic_v2_field_constraints.py-payloads5	main/jsonschema/rust_unsupported_pattern_bytes_unicode_pydantic_v2_field_constraints.py
-rust_unsupported_pattern_bytes_union.json-args14-None-rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py-payloads14	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_union.json-ar~e895856c.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes_union.json-args14-None-rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py-payloads14	main/jsonschema/rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py
-rust_unsupported_pattern_bytes_union.json-args15-2.14-rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py-payloads15	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_union.json-ar~86039bda.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-rust_unsupported_pattern_bytes_union.json-args15-2.14-rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py-payloads15	main/jsonschema/rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py
+rust_unsupported_pattern_bytes.json-args0-None-payloads0	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-None-payloads0].py
+rust_unsupported_pattern_bytes.json-args0-None-payloads0	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-None-payloads0].warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
+rust_unsupported_pattern_bytes.json-args1-None-payloads1	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args1-None-payloads1].py	= main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py
+rust_unsupported_pattern_bytes.json-args1-None-payloads1	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args1-None-payloads1].warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
+rust_unsupported_pattern_bytes.json-args13-2.14-payloads13	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args13-2.14-payloads13].py
+rust_unsupported_pattern_bytes.json-args13-2.14-payloads13	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args13-2.14-payloads13].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+rust_unsupported_pattern_bytes.json-args2-2-payloads2	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args2-2-payloads2].py	= main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py
+rust_unsupported_pattern_bytes.json-args2-2-payloads2	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args2-2-payloads2].warnings.txt
+rust_unsupported_pattern_bytes.json-args3-2.12-payloads3	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args3-2.12-payloads3].py	= main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py
+rust_unsupported_pattern_bytes.json-args3-2.12-payloads3	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args3-2.12-payloads3].warnings.txt
+rust_unsupported_pattern_bytes.json-args4-None-payloads4	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args4-None-payloads4].py
+rust_unsupported_pattern_bytes.json-args4-None-payloads4	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args4-None-payloads4].warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
+rust_unsupported_pattern_bytes.json-args6-2.14-payloads6	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args6-2.14-payloads6].py
+rust_unsupported_pattern_bytes.json-args6-2.14-payloads6	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args6-2.14-payloads6].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+rust_unsupported_pattern_bytes.json-args7-2.14-payloads7	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args7-2.14-payloads7].py
+rust_unsupported_pattern_bytes.json-args7-2.14-payloads7	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args7-2.14-payloads7].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+rust_unsupported_pattern_bytes.json-args8-2.14-payloads8	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args8-2.14-payloads8].py
+rust_unsupported_pattern_bytes.json-args8-2.14-payloads8	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args8-2.14-payloads8].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+rust_unsupported_pattern_bytes_alias.json-args10-2.14-payloads10	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_alias.json-args10-2.14-payloads10].py
+rust_unsupported_pattern_bytes_alias.json-args10-2.14-payloads10	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_alias.json-args10-2.14-payloads10].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+rust_unsupported_pattern_bytes_alias.json-args9-None-payloads9	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_alias.json-args9-None-payloads9].py
+rust_unsupported_pattern_bytes_alias.json-args9-None-payloads9	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_alias.json-args9-None-payloads9].warnings.txt
+rust_unsupported_pattern_bytes_nullable.json-args11-None-payloads11	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_nullable.json-args11-None-payloads11].py
+rust_unsupported_pattern_bytes_nullable.json-args11-None-payloads11	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_nullable.json-args11-None-payloads11].warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
+rust_unsupported_pattern_bytes_nullable.json-args12-2.14-payloads12	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_nullable.json-args12-2.14-payloads12].py
+rust_unsupported_pattern_bytes_nullable.json-args12-2.14-payloads12	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_nullable.json-args12-2.14-payloads12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+rust_unsupported_pattern_bytes_unicode.json-args5-None-payloads5	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_unicode.json-args5-None-payloads5].py
+rust_unsupported_pattern_bytes_unicode.json-args5-None-payloads5	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_unicode.json-args5-None-payloads5].warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args0-No~efc49971.warnings.txt
+rust_unsupported_pattern_bytes_union.json-args14-None-payloads14	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_union.json-args14-None-payloads14].py	= main/jsonschema/rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py
+rust_unsupported_pattern_bytes_union.json-args14-None-payloads14	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_union.json-args14-None-payloads14].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+rust_unsupported_pattern_bytes_union.json-args15-2.14-payloads15	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_union.json-args15-2.14-payloads15].py	= main/jsonschema/rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py
+rust_unsupported_pattern_bytes_union.json-args15-2.14-payloads15	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes_union.json-args15-2.14-payloads15].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_rust_unsupported_pattern_bytes_without_constraints]
-2	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2.py
-2.12	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2.py
-2.14	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2.py
-None	main/jsonschema/rust_unsupported_pattern_bytes_pydantic_v2.py
+2	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes_without_constraints[2].py
+2.12	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes_without_constraints[2.12].py	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes_without_constraints[2].py
+2.14	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes_without_constraints[2.14].py	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes_without_constraints[2].py
+None	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes_without_constraints[None].py	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes_without_constraints[2].py
 [test_main_rust_unsupported_pattern_non_string]
-args0-rust_unsupported_pattern_non_string_pydantic_v2.py	main/jsonschema/rust_unsupported_pattern_non_string_pydantic_v2.py
-args1-rust_unsupported_pattern_non_string_pydantic_v2_annotated.py	main/jsonschema/rust_unsupported_pattern_non_string_pydantic_v2_annotated.py
+args0	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_non_string[args0].py
+args1	main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_non_string[args1].py
 [test_main_rust_unsupported_pattern_on_string_like_types]
 base64-annotated	main/jsonschema/rust_unsupported_pattern_on_string_like_types.py
 base64-field-constraints	main/jsonschema/rust_unsupported_pattern_on_string_like_types.py	= main/jsonschema/rust_unsupported_pattern_on_string_like_types~main_rust_unsupported_pattern_on_string_like_types[base64-field-constraints].py
 email-annotated	main/jsonschema/rust_unsupported_pattern_on_string_like_types.py	= main/jsonschema/rust_unsupported_pattern_on_string_like_types~main_rust_unsupported_pattern_on_string_like_types[email-annotated].py
 email-field-constraints	main/jsonschema/rust_unsupported_pattern_on_string_like_types.py	= main/jsonschema/rust_unsupported_pattern_on_string_like_types~main_rust_unsupported_pattern_on_string_like_types[email-field-constraints].py
 [test_main_rust_unsupported_python_rejected]
-	main/jsonschema/rust_unsupported_python_rejected_pydantic_v2.py
+	main/jsonschema/main_jsonschema/main_rust_unsupported_python_rejected.py
 [test_main_rust_unsupported_syntax]
+2	main/jsonschema/main_jsonschema/main_rust_unsupported_syntax[2].py
 2	main/jsonschema/main_jsonschema/main_rust_unsupported_syntax[2].warnings.txt
-2	main/jsonschema/rust_unsupported_syntax_pydantic_v2.py
+2.12	main/jsonschema/main_jsonschema/main_rust_unsupported_syntax[2.12].py	= main/jsonschema/main_jsonschema/main_rust_unsupported_syntax[2].py
 2.12	main/jsonschema/main_jsonschema/main_rust_unsupported_syntax[2.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-2.12	main/jsonschema/rust_unsupported_syntax_pydantic_v2.py
 [test_main_rust_unsupported_target_python]
-atomic-group-3.10	main/jsonschema/rust_unsupported_atomic_group_py310.py
-atomic-group-3.11	main/jsonschema/rust_unsupported_atomic_group_py311.py	= main/jsonschema/rust_unsupported_atomic_group_py310.py
-end-of-string-3.13	main/jsonschema/rust_unsupported_end_of_string_py313.py
-end-of-string-3.14	main/jsonschema/rust_unsupported_end_of_string_py314.py
+atomic-group-3.10	main/jsonschema/main_jsonschema/main_rust_unsupported_target_python[atomic-group-3.10].py
+atomic-group-3.11	main/jsonschema/main_jsonschema/main_rust_unsupported_target_python[atomic-group-3.11].py	= main/jsonschema/main_jsonschema/main_rust_unsupported_target_python[atomic-group-3.10].py
+end-of-string-3.13	main/jsonschema/main_jsonschema/main_rust_unsupported_target_python[end-of-string-3.13].py
+end-of-string-3.14	main/jsonschema/main_jsonschema/main_rust_unsupported_target_python[end-of-string-3.14].py
 [test_main_rust_unsupported_typed_extra_target_python]
-python-3.10	main/jsonschema/rust_unsupported_typed_extra_py310.py	= main/jsonschema/rust_unsupported_typed_extra_py311.py
-python-3.11	main/jsonschema/rust_unsupported_typed_extra_py311.py
-python-3.11-collapse-root-models	main/jsonschema/rust_unsupported_typed_extra_py311.py
+python-3.10	main/jsonschema/main_jsonschema/main_rust_unsupported_typed_extra_target_python[python-3.10].py
+python-3.11	main/jsonschema/main_jsonschema/main_rust_unsupported_typed_extra_target_python[python-3.11].py	= main/jsonschema/main_jsonschema/main_rust_unsupported_typed_extra_target_python[python-3.10].py
+python-3.11-collapse-root-models	main/jsonschema/main_jsonschema/main_rust_unsupported_typed_extra_target_python[python-3.11-collapse-root-models].py	= main/jsonschema/main_jsonschema/main_rust_unsupported_typed_extra_target_python[python-3.10].py
 [test_main_selective_constraint_kwargs_pydantic_v2]
 	main/jsonschema/main_jsonschema/main_selective_constraint_kwargs_pydantic_v2.py
 [test_main_self_reference]
@@ -9549,14 +9549,14 @@ unset	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference_datac
 [test_main_use_annotated_forward_reference_eager]
 	main/jsonschema/main_jsonschema/main_use_annotated_forward_reference_eager.py
 [test_main_use_default_factory_for_optional_nested_models]
-dataclasses.dataclass-default_factory_nested_model_dataclass.py	main/jsonschema/default_factory_nested_model_dataclass.py
-msgspec.Struct-default_factory_nested_model_msgspec.py	main/jsonschema/default_factory_nested_model_msgspec.py
-pydantic_v2.BaseModel-default_factory_nested_model_pydantic_v2.py	main/jsonschema/default_factory_nested_model_pydantic_v2.py
-pydantic_v2.dataclass-default_factory_nested_model_pydantic_v2_dataclass.py	main/jsonschema/default_factory_nested_model_pydantic_v2_dataclass.py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models[pydantic_v2.dataclass].py
 [test_main_use_default_factory_for_optional_nested_models_with_dict]
-dataclasses.dataclass-default_factory_nested_model_with_dict_dataclass.py	main/jsonschema/default_factory_nested_model_with_dict_dataclass.py
-msgspec.Struct-default_factory_nested_model_with_dict_msgspec.py	main/jsonschema/default_factory_nested_model_with_dict_msgspec.py
-pydantic_v2.BaseModel-default_factory_nested_model_with_dict_pydantic_v2.py	main/jsonschema/default_factory_nested_model_with_dict_pydantic_v2.py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models_with_dict[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models_with_dict[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models_with_dict[pydantic_v2.BaseModel].py
 [test_main_use_default_inherited_required]
 dataclasses.dataclass-keep	main/jsonschema/main_jsonschema/main_use_default_inherited_required[dataclasses.dataclass-keep].py
 dataclasses.dataclass-released	main/jsonschema/main_jsonschema/main_use_default_inherited_required[dataclasses.dataclass-released].py
@@ -9579,47 +9579,47 @@ typed_dict-every	main/jsonschema/main_jsonschema/main_use_duplicate_name_suffix_
 [test_main_use_duplicate_name_suffix_for_every_collision_without_suffix_map]
 	main/jsonschema/main_jsonschema/main_use_duplicate_name_suffix_for_every_collision_without_suffix_map.py	= main/jsonschema/main_jsonschema/main_use_duplicate_name_suffix_for_every_collision[pydantic_v2].py
 [test_main_use_frozen_field]
-dataclasses.dataclass-use_frozen_field_dataclass.py	main/jsonschema/use_frozen_field_dataclass.py
-pydantic_v2.BaseModel-use_frozen_field_v2.py	main/jsonschema/use_frozen_field_v2.py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/main_use_frozen_field[dataclasses.dataclass].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/main_use_frozen_field[pydantic_v2.BaseModel].py
 [test_main_use_frozen_field_no_readonly]
-	main/jsonschema/use_frozen_field_no_readonly.py
+	main/jsonschema/main_jsonschema/main_use_frozen_field_no_readonly.py
 [test_main_use_frozen_field_typed_dict]
-3.10-use_frozen_field_typed_dict_py310.py	main/jsonschema/use_frozen_field_typed_dict_py310.py
-3.11-use_frozen_field_typed_dict_py311.py	main/jsonschema/use_frozen_field_typed_dict_py311.py
-3.13-use_frozen_field_typed_dict.py	main/jsonschema/use_frozen_field_typed_dict.py
+3.10	main/jsonschema/main_jsonschema/main_use_frozen_field_typed_dict[3.10].py
+3.11	main/jsonschema/main_jsonschema/main_use_frozen_field_typed_dict[3.11].py
+3.13	main/jsonschema/main_jsonschema/main_use_frozen_field_typed_dict[3.13].py
 [test_main_use_generic_base_class]
-	main/jsonschema/use_generic_base_class.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class.py
 [test_main_use_generic_base_class_alias_generator]
-	main/jsonschema/alias_generator_generic_base.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_alias_generator.py
 [test_main_use_generic_base_class_allow_extra]
-	main/jsonschema/use_generic_base_class_allow_extra.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_allow_extra.py
 [test_main_use_generic_base_class_attr_docstrings]
-	main/jsonschema/use_generic_base_class_attr_docstrings.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_attr_docstrings.py
 [test_main_use_generic_base_class_circular]
 	main/jsonschema/use_generic_base_class_circular//*.py
 [test_main_use_generic_base_class_dataclass]
-	main/jsonschema/use_generic_base_class_dataclass.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_dataclass.py
 [test_main_use_generic_base_class_deep_inheritance]
 	main/jsonschema/use_generic_base_class_deep_inheritance//*.py
 [test_main_use_generic_base_class_enum_only]
-	main/jsonschema/use_generic_base_class_enum_only.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_enum_only.py
 [test_main_use_generic_base_class_frozen]
-	main/jsonschema/use_generic_base_class_frozen.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_frozen.py
 [test_main_use_generic_base_class_module_split]
 	main/jsonschema/use_generic_base_class_module_split//*.py
 [test_main_use_generic_base_class_msgspec]
-	main/jsonschema/use_generic_base_class_msgspec.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_msgspec.py
 [test_main_use_generic_base_class_msgspec_forbid]
-	main/jsonschema/use_generic_base_class_msgspec_forbid.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_msgspec_forbid.py
 [test_main_use_generic_base_class_multi_root]
 	main/jsonschema/use_generic_base_class_multi_root//*.py
 [test_main_use_generic_base_class_populate_by_name]
-	main/jsonschema/use_generic_base_class_populate_by_name.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_populate_by_name.py
 [test_main_use_generic_base_class_target_pydantic_v2_11_or_later]
-2.11	main/jsonschema/use_generic_base_class_target_pydantic_v2_11.py
-2.12	main/jsonschema/use_generic_base_class_target_pydantic_v2_11.py
+2.11	main/jsonschema/main_jsonschema/main_use_generic_base_class_target_pydantic_v2_11_or_later[2.11].py
+2.12	main/jsonschema/main_jsonschema/main_use_generic_base_class_target_pydantic_v2_11_or_later[2.12].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_target_pydantic_v2_11_or_later[2.11].py
 [test_main_use_generic_base_class_with_inheritance]
-	main/jsonschema/use_generic_base_class_with_inheritance.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_with_inheritance.py
 [test_main_use_one_model_per_ref_site]
 released	main/jsonschema/use_one_model_per_ref_site.py
 site	main/jsonschema/use_one_model_per_ref_site.py	= main/jsonschema/use_one_model_per_ref_site~main_use_one_model_per_ref_site[site].py

@@ -95,7 +95,7 @@ PROCESS_STATE_OPTIONS = frozenset({"--debug"})
 worker of such a run is closed after it, as after running out of memory, so later runs do not inherit it."""
 RECYCLE = 200
 """Jobs a worker runs before a new one takes its place, which bounds the memory and the state a worker gathers."""
-CACHE_FORMAT = 5
+CACHE_FORMAT = 6
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "datamodel_code_generator"
 RELEASE = re.compile(r"\d+(?:\.\d+)+")
@@ -837,7 +837,16 @@ def _worker() -> None:
                 importlib.import_module(name)
     # Importing the CLI installs its own SIGINT handler; a worker stops on SIGINT, the driver by closing its stdin.
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    ready = {"package": sys.modules["datamodel_code_generator"].__file__, "measured": bool(_TRACER)}
+    package = sys.modules["datamodel_code_generator"]
+    version = ""
+    tracer_active = [tracer.active for tracer in _TRACER]
+    for tracer in _TRACER:
+        tracer.active = False  # the lookup is the comparator's own: no generation is credited with its code
+    with contextlib.suppress(Exception):  # a stand-in package or a tree without a version file reports none
+        version = package.get_version()
+    for tracer, active in zip(_TRACER, tracer_active, strict=False):
+        tracer.active = active
+    ready = {"package": package.__file__, "measured": bool(_TRACER), "version": version}
     sys.stdout.write(json.dumps(ready) + "\n")
     sys.stdout.flush()
     for line in sys.stdin:
@@ -892,6 +901,7 @@ class Worker:
             raise RuntimeError(msg)
         self.package = Path(os.path.normpath(Path(ready["package"]).absolute())).parent
         self.measured = bool(ready.get("measured"))
+        self.version = str(ready.get("version") or "")
         if package is not None and not self.package.is_relative_to(os.path.normpath(package.absolute())):
             self.close()
             msg = f"{python} imports datamodel_code_generator from {self.package}, not from below {package}"
@@ -948,7 +958,8 @@ class Outcome:
     `datamodel_code_generator.__main__` caught; paths of the run's directory, output and package read `<tmp>`,
     `<output>` and `<package>`. `first` holds these facts of a refused single-file attempt before a modular run.
     `tree` is every file the run wrote below its directory, which is its working directory too, so an output written
-    to a relative path (a client's package) is compared; `outside` the outputs its arguments name elsewhere
+    to a relative path (a client's package) is compared, with those paths and the side's version lines normalised
+    (`_tree`); `outside` the outputs its arguments name elsewhere
     (`_outside`). `ran` are the probes of its runner (`Runner.probes`, by index) the run ran, over both attempts; None
     where none were asked for or the interpreter cannot tell.
     """
@@ -1180,12 +1191,31 @@ def resolve_base(spec: str, candidate: Path, cache_dir: Path, repo: Path = ROOT)
     return Base(candidate, source, name, revision, source)
 
 
-def _tree(path: Path) -> dict[str, str]:
-    """Return every file below a run's directory by its relative path, outside hidden and cache directories."""
-    return {
+def _tree(path: Path, paths: tuple[Path, Path, Path] | None = None, version: str = "") -> dict[str, str]:
+    """Return every file below a run's directory by its relative path, outside hidden and cache directories.
+
+    With `paths` (the run's output, directory and package: `_relative`) the text of each file reads the same on each
+    run and side, and with a `version` its header line reads the same on each side (`_versioned`).
+    """
+    tree = {
         file.relative_to(path).as_posix(): file.read_text(encoding="utf-8", errors="surrogateescape")
         for file in _hashed_files(path)
     }
+    return {name: _versioned(_relative(text, *paths) if paths else text, version) for name, text in tree.items()}
+
+
+def _versioned(text: str, version: str) -> str:
+    """Return `text` with the version line of the package's headers and of `--version` as `<version>`.
+
+    Only the lines the package writes change: `#   version:   <version>` (`--enable-version-header`) and
+    `datamodel-codegen <version>` (`--version`). A replacement of every occurrence would also change a schema literal
+    that equals the version, and it could never hide a difference the lines do not show.
+    """
+    if not version:
+        return text
+    for line in (r"#   version:   ", r"datamodel-codegen "):
+        text = re.sub(rf"(?m)^{line}{re.escape(version)}$", f"{line}<version>", text)
+    return text
 
 
 def _relative(text: str, out: Path, tmp: Path, package: Path) -> str:
@@ -1215,9 +1245,9 @@ def ran_out_of_memory(last_line: str) -> bool:
     )
 
 
-def _attempt(rc: int, log: Path, record: Path, paths: tuple[Path, Path, Path]) -> Record:
+def _attempt(rc: int, log: Path, record: Path, paths: tuple[Path, Path, Path], version: str = "") -> Record:
     """Return what one attempt of a run showed (`Outcome`); `paths` are its output, directory and package."""
-    printed = TRACEBACK_FRAMES.sub("", log.read_text(encoding="utf-8", errors="replace"))
+    printed = _versioned(TRACEBACK_FRAMES.sub("", log.read_text(encoding="utf-8", errors="replace")), version)
     recorded = json.loads(text) if record.exists() and (text := record.read_text(encoding="utf-8")) else {}
     return {
         "code": rc,
@@ -1295,21 +1325,22 @@ class Runner:
         rc = (worker := self._worker(fresh=fresh)).run(job)
         first: Record = {}
         if rc != 0 and any(text in log.read_text(encoding="utf-8", errors="replace") for text in MODULAR_OUTPUT_ERRORS):
-            first = _attempt(rc, log, record, (out, tmp, worker.package))
+            first = _attempt(rc, log, record, (out, tmp, worker.package), worker.version)
             job["args"] = [*args, "--output", str(out / "pkg")]
             rc = (worker := self._worker(fresh=fresh)).run(job)
         if rc > 0 and self.memory_mb and ran_out_of_memory(_last_line(log)):
             rc = OUT_OF_MEMORY
         if rc == OUT_OF_MEMORY or fresh:
             worker.close()
-        facts = _attempt(rc, log, record, (out, tmp, worker.package)) | {"first": first}
+        paths = (out, tmp, worker.package)
+        facts = _attempt(rc, log, record, paths, worker.version) | {"first": first}
         if (earlier := first.pop("ran", None)) is not None:
             facts["ran"] = sorted({*earlier, *(facts["ran"] or [])})
         if rc != 0:
             return Outcome(
                 ok=False,
                 error=self._error(rc, log),
-                tree=_tree(out),
+                tree=_tree(out, paths, worker.version),
                 import_error="",
                 cacheable=rc > 0 and rc != OUT_OF_MEMORY,
                 **facts,
@@ -1320,7 +1351,8 @@ class Runner:
             job = {"kind": "import", "cwd": str(tmp), "log": str(import_log), "timeout": self.timeout, "out": str(out)}
             if (rc := self._worker().run(job)) != 0:
                 import_error = self._error(rc, import_log)
-        return Outcome(ok=True, error="", tree=_tree(out), import_error=import_error, cacheable=rc >= 0, **facts)
+        tree = _tree(out, paths, worker.version)
+        return Outcome(ok=True, error="", tree=tree, import_error=import_error, cacheable=rc >= 0, **facts)
 
     def _error(self, rc: int, log: Path) -> str:
         if rc == -signal.SIGALRM:
@@ -1527,6 +1559,9 @@ def _digest(text: str) -> str:
     return hashlib.blake2b(text.encode("utf-8", "surrogateescape"), digest_size=16).hexdigest()
 
 
+OUTSIDE_PREFIX = "<outside>/"
+"""The prefix of the name an output written outside the run's directory has among a cell's files (`_facts`)."""
+
 Facts = tuple[int, tuple[tuple[str, str], ...], str, str]
 """What one side of a run proved (`_facts`): exit status, each output file's hash, its warnings' and others' hash."""
 
@@ -1534,10 +1569,13 @@ Facts = tuple[int, tuple[tuple[str, str], ...], str, str]
 def _facts(outcome: Outcome) -> Facts:
     """Return what a cell's run proved: its exit status, each file's hash, its warnings' hash, its other facts' hash.
 
+    The files are the run's output files and, under `OUTSIDE_PREFIX`, the outputs its arguments wrote elsewhere
+    (`Outcome.outside`: their paths, as they are the only thing known of them), so a difference in either is output.
     The other facts are the exceptions it handled, its messages, the single output file's refusal and the error of
     its import check (empty where it passed or `--import-check` is off, which holds for every cell of a run).
     """
-    files = tuple((sys.intern(name), _digest(text)) for name, text in sorted(outcome.tree.items()))
+    written = outcome.tree | {f"{OUTSIDE_PREFIX}{path}": "" for path in outcome.outside}
+    files = tuple((sys.intern(name), _digest(text)) for name, text in sorted(written.items()))
     other = json.dumps([outcome.handled, outcome.messages, outcome.first, outcome.import_error], sort_keys=True)
     return outcome.code, files, _digest(json.dumps(outcome.warnings)), _digest(other)
 

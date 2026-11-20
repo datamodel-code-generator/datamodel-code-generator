@@ -1,0 +1,8 @@
+{
+ "cls": "violation",
+ "notes": [
+  "notice (notice): the output or the exit status differs",
+  "api (api): the cell sets no removed option the record names"
+ ],
+ "accepted_by": []
+}

@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "output-text (output-text): the payload cells' verdicts or parsed values differ"
+ ],
+ "accepted_by": []
+}
