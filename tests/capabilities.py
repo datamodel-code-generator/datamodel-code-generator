@@ -38,6 +38,7 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
     "typed-dict-validation": (("python>=3.12",), "Pydantic validates typing.TypedDict from Python 3.12 on"),
     "native-deferred-annotations": (("python>=3.14",), "Python defers annotations natively from 3.14 on"),
     "target-newer-than-runtime": (("python<3.14",), "the test needs a target Python version newer than the runtime"),
+    "sys-monitoring": (("python>=3.12",), "sys.monitoring records the lines a run executes from Python 3.12 on"),
     "black-before-24": (("black<24",), "the test checks how black before 24 formats the output"),
 }
 """Every capability a test may need: its clauses over the environment facts and why a test needs it."""

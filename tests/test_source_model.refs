@@ -24,6 +24,7 @@ expected-access	source_model/every_rule_states_its_verdicts[expected-access].txt
 generated-import-closure	source_model/every_rule_states_its_verdicts[generated-import-closure].txt
 generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt
 import-cycle	source_model/every_rule_states_its_verdicts[import-cycle].txt
+legacy-row-reads	source_model/every_rule_states_its_verdicts[legacy-row-reads].txt
 pass-pipeline	source_model/every_rule_states_its_verdicts[pass-pipeline].txt
 pre-commit-hook-runs	source_model/every_rule_states_its_verdicts[pre-commit-hook-runs].txt
 private-scope-walk	source_model/every_rule_states_its_verdicts[private-scope-walk].txt
@@ -147,6 +148,7 @@ references/keyword_separator	source_model/model_answers_on_every_form[references
 references/lambda_closure_in_comprehension	source_model/model_answers_on_every_form[references_lambda_closure_in_comprehension].txt
 references/late_attribute_writes	source_model/model_answers_on_every_form[references_late_attribute_writes].txt
 references/lazy_table_module_getattr	source_model/model_answers_on_every_form[references_lazy_table_module_getattr].txt
+references/legacy_row_reading_lines	source_model/model_answers_on_every_form[references_legacy_row_reading_lines].txt
 references/literal_constants_and_late_writes	source_model/model_answers_on_every_form[references_literal_constants_and_late_writes].txt
 references/mangled_module_global	source_model/model_answers_on_every_form[references_mangled_module_global].txt
 references/method_receiver_by_position	source_model/model_answers_on_every_form[references_method_receiver_by_position].txt

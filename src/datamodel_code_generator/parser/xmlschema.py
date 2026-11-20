@@ -137,6 +137,7 @@ class _Occurs(NamedTuple):
 
 
 def _occurs(owner: ET.Element) -> _Occurs:
+    """Read the occurrence bounds of an element as written (row ``legacy-string-occurs-tests``)."""
     min_occurs, max_occurs = owner.get("minOccurs"), owner.get("maxOccurs")
     return _Occurs(min_occurs, max_occurs, max_occurs != "0", min_occurs == "0", max_occurs not in {None, "1"})
 

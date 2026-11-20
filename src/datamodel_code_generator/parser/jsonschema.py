@@ -7280,7 +7280,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         keywords and item counts, the property counts follow the map type. The bounds of a float const join them
         (``_field_const_bounds``).
         ``preserve`` reads the keywords without ``--field-constraints`` and ``assembled`` (the array builder's
-        constraints of a preserved root) replaces the declared ones.
+        constraints of a preserved root) replaces the declared ones. A root site keeps the lengths of a fixed tuple
+        (row ``legacy-root-tuple-lengths``) and records what it leaves out by the option (row
+        ``legacy-root-records-by-option``).
         """
         field_constraints = self.field_constraints
         skip = (

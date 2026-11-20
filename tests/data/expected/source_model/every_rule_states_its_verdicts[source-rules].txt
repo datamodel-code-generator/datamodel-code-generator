@@ -71,6 +71,8 @@ references/keyword_separator: src/keyword_separator.py:8: hash-split: str.split(
 references/late_attribute_writes: src/late_attribute_writes.py:4: ellipsis-statement: ...
 references/late_attribute_writes: src/late_attribute_writes.py:7: ellipsis-statement: ...
 references/lazy_table_module_getattr: src/lazy_table_module_getattr.py:10: unused-private-global: _COMPUTED
+references/legacy_row_reading_lines: src/legacy_row_reading_lines/reader.py:9: redundant-local-import: datamodel_code_generator.legacy_row_reading_lines.rows
+references/legacy_row_reading_lines: src/legacy_row_reading_lines/reader.py:15: redundant-local-import: datamodel_code_generator.legacy_row_reading_lines.rows
 references/parameter_shadows_global: src/parameter_shadows_global.py:3: unused-private-global: _CACHE
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:6: unused-private-global: _UNUSED
 references/private_globals_read_or_shadowed: src/private_globals_read_or_shadowed.py:8: unused-private-global: _SHADOWED
