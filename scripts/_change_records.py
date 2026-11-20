@@ -7,7 +7,9 @@ stored output its `covers` may list. Entries of released changes may lack a cate
 
 A record names the comparator cells its change moves with `[[change.cells]]` selectors (`CellSelector`); the `cells`
 of its category's rule (`CellRule`) say whether it must, may or must not name cells and which kinds of a cell's
-difference it admits, and `scripts/_behaviour_classify.py` judges a differing cell by them.
+difference it admits, and `scripts/_behaviour_classify.py` judges a differing cell by them. The behaviour gate
+(`scripts/behaviour_diff.py`) reads no cells yet: until it does, its allowlist decides its cells, and no caller asks
+`rule_problems` for the cells an added record must name.
 
 `scripts/build_migration_docs.py` reads every entry through `parse_entry`, and `scripts/declared_changes.py` reads the
 records of any revision the same way. Standard library only, so the static check needs no environment.
@@ -408,9 +410,9 @@ is in a function body, a decorator or a configuration key the signature does not
 
 Cells: an `output-text` record admits an output difference, a `crash-fix` one also an exit difference and messages, a
 `notice` warnings and messages, an `api` one an exit difference and messages (a removed option), and a decision
-(`default-fix`, `decided-change`) or `experimental` record any difference; the first three must name the cells they
-cover once they are added (the comparator checks that on the records a change adds, so released records need none),
-the others may. `new-surface` names none, as no comparator run judges surface the latest release lacks, nor do the
+(`default-fix`, `decided-change`) or `experimental` record any difference. An added `output-text`, `crash-fix` or
+`notice` record must name the cells it covers (`rule_problems` with `added`, for the records a change adds, so released
+records need none); the others may. `new-surface` names none, as no comparator run judges surface the latest release lacks, nor do the
 categories without output (`docs-text`, `internal`, `harness`).
 """
 

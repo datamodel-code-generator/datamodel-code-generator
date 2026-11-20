@@ -21,6 +21,8 @@
 The change records judge a cell whose facts differ (`kinds`): `covers` finds the records' `[[change.cells]]` selectors
 that name it, and `judge` decides whether the records that cover it admit every kind of its difference with the
 evidence of their categories (`CellEvidence`, its change lines from `change_lines`, `rule_b` for `output-text`).
+`scripts/behaviour_diff.py` does not call them yet: until it does, `classify_cell` with the allowlist decides the
+gate's cells.
 
 Pure functions only: no file system access apart from `Allowlist.load`.
 """
