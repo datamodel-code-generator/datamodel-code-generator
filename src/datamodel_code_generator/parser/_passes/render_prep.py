@@ -856,7 +856,8 @@ def field_forward_references(  # noqa: PLR0913
         if not data_type.reference:
             continue
         source = data_type.reference.source
-        assert isinstance(source, DataModel)
+        if not isinstance(source, DataModel):
+            continue  # pragma: no cover - not proven unreachable
         if source.module_path != model.module_path:
             continue
         name = data_type.reference.short_name

@@ -716,6 +716,9 @@ def load_ref_data_from_local_http_file(parser: SchemaDocumentsHost, path: Path, 
 def get_ref_body_from_local_http_path(parser: SchemaDocumentsHost, ref: str) -> dict[str, YamlValue]:
     assert parser.http_local_ref_path is not None
     parsed = urlparse(ref)
+    if parsed.scheme not in {"http", "https"}:  # pragma: no cover - not proven unreachable
+        msg = f"Unsupported local HTTP $ref URL: {redact_url(ref)}"
+        raise Error(msg)
 
     parts = [unquote(part) for part in parsed.path.split("/") if part]
     host = parsed.netloc.rpartition("@")[2]

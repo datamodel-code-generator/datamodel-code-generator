@@ -66,7 +66,11 @@ def _tool_validation_error(value: JSONSchemaMapping, validation_error: Validatio
         return f"MCP tool {stable_repr(tool_name)} is missing inputSchema"
     if key in OPTIONAL_MAPPING_TOOL_KEYS or key == "inputSchema":
         return f"MCP tool {stable_repr(tool_name)} {key} must be a JSON Schema object"
-    return f"MCP tool {stable_repr(tool_name)} {key} must be a string"
+    if key in OPTIONAL_STRING_TOOL_KEYS:
+        return f"MCP tool {stable_repr(tool_name)} {key} must be a string"
+    return (  # pragma: no cover - not proven unreachable
+        f"Invalid MCP tool {stable_repr(tool_name)}: {first_error['msg']}"
+    )
 
 
 def _parse_tool(value: JSONSchemaMapping) -> MCPTool:

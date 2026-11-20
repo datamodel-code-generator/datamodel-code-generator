@@ -487,6 +487,9 @@ class _XMLSchemaConverter:
 
     def convert(self, source: Source, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
         if source.raw_data is not None:
+            if not isinstance(source.raw_data, dict):  # pragma: no cover - not proven unreachable
+                msg = f"Expected dict, got {type(source.raw_data).__name__}"
+                raise TypeError(msg)
             return source.raw_data
         source_path = self.base_path / source.path
         self.loaded_source_paths.add(source_path.resolve())
@@ -648,26 +651,31 @@ class _XMLSchemaConverter:
             active_namespaces: dict[str, str] = {}
             namespace_stack: list[tuple[str, str | None]] = []
             for event, payload in ET.iterparse(io.StringIO(text), events=("start", "start-ns", "end-ns")):  # noqa: S314
-                if event == "start-ns":
-                    prefix, uri = cast("tuple[str, str]", payload)
-                    namespace_stack.append((prefix, active_namespaces.get(prefix)))
-                    active_namespaces[prefix] = uri
-                    self.namespaces.setdefault(prefix, uri)
-                elif event == "end-ns":
-                    prefix, previous_uri = namespace_stack.pop()
-                    if previous_uri is None:
-                        active_namespaces.pop(prefix, None)
-                    else:
-                        active_namespaces[prefix] = previous_uri
-                else:
-                    element = cast("ET.Element", payload)
-                    if root is None:
-                        root = element
-                    self._element_namespaces[id(element)] = active_namespaces.copy()
+                match event:
+                    case "start-ns":
+                        prefix, uri = cast("tuple[str, str]", payload)
+                        namespace_stack.append((prefix, active_namespaces.get(prefix)))
+                        active_namespaces[prefix] = uri
+                        self.namespaces.setdefault(prefix, uri)
+                    case "end-ns":
+                        prefix, previous_uri = namespace_stack.pop()
+                        if previous_uri is None:
+                            active_namespaces.pop(prefix, None)
+                        else:
+                            active_namespaces[prefix] = previous_uri
+                    case "start":
+                        element = cast("ET.Element", payload)
+                        if root is None:
+                            root = element
+                        self._element_namespaces[id(element)] = active_namespaces.copy()
+                    case _:  # pragma: no cover - not proven unreachable
+                        pass
         except ET.ParseError as exc:
             msg = f"Invalid XML Schema document {source_path}: {exc}"
             raise Error(msg) from exc
-        assert root is not None
+        if root is None:  # pragma: no cover - not proven unreachable
+            msg = f"Invalid XML Schema document {source_path}: empty document"
+            raise Error(msg)
         if root.tag != XML_SCHEMA_TAG:
             msg = f"XML Schema root element must be xs:schema: {source_path}"
             raise Error(msg)

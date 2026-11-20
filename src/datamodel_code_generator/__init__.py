@@ -1433,7 +1433,7 @@ def _warn_genson_optional() -> None:
     warn_undeclared_extra("dependency.genson-optional", "genson")
 
 
-def _normalize_raw_input(
+def _normalize_raw_input(  # noqa: PLR0912
     input_: _GenerationInput,
     input_text: str | None,
     input_file_type: InputFileType,
@@ -1476,7 +1476,7 @@ def _normalize_raw_input(
                 obj = get_header_and_first_line(io.StringIO(text))
         elif input_file_type == InputFileType.Dict and isinstance(input_, Mapping):
             obj = input_
-        else:
+        elif input_file_type in {InputFileType.Yaml, InputFileType.Json, InputFileType.Dict}:
             text = _input_text(input_, config.encoding, read_once_data) if isinstance(input_, Path) else input_text
             assert text is not None
             if input_file_type == InputFileType.Yaml:
@@ -1487,6 +1487,9 @@ def _normalize_raw_input(
                 import ast  # noqa: PLC0415
 
                 obj = ast.literal_eval(text)
+        else:  # pragma: no cover - not proven unreachable
+            msg = f"Unsupported input file type: {input_file_type}"
+            raise Error(msg)  # noqa: TRY301
 
         from genson import SchemaBuilder  # noqa: PLC0415
 

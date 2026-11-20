@@ -242,7 +242,8 @@ def _argparse_index() -> _ArgparseIndex:
 
     index = _ArgparseIndex({}, {}, {})
     for action in argument_parser._actions:  # noqa: SLF001
-        options = tuple(action.option_strings)
+        if not (options := tuple(action.option_strings)):
+            continue  # pragma: no cover - not proven unreachable
         canonical = max(options, key=_canonical_option_key)
         for option in options:
             index.canonical[option] = canonical

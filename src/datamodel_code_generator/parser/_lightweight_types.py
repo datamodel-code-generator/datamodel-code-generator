@@ -67,6 +67,7 @@ class LightweightTypesHost(ValueKeywordsHost, Protocol):
         self,
         item_schema: JsonSchemaObject | bool,  # noqa: FBT001
         depth: int,
+        visited: frozenset[int],
         max_depth: int,
         max_union_elements: int,
     ) -> DataType | None:
@@ -167,10 +168,11 @@ def merge_schema_constraints(
             base_dict.pop(field, None)
 
 
-def build_lightweight_array_type(
+def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
     parser: LightweightTypesHost,
     schema: JsonSchemaObject,
     depth: int,
+    visited: frozenset[int],
     max_depth: int,
     max_union_elements: int,
 ) -> DataType:
@@ -192,7 +194,11 @@ def build_lightweight_array_type(
         else [
             item_type
             for item_schema in item_schemas
-            if (item_type := parser._build_lightweight_item_type(item_schema, depth, max_depth, max_union_elements))
+            if (
+                item_type := parser._build_lightweight_item_type(
+                    item_schema, depth, visited, max_depth, max_union_elements
+                )
+            )
             is not None
         ]
     )
@@ -227,8 +233,11 @@ def contains_false_schema(parser: LightweightTypesHost, items: Iterable[JsonSche
     return any(is_false_schema_item(parser, item) for item in items)
 
 
-def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType) -> bool:  # noqa: ARG001
+def is_list_with_any_item_type(parser: LightweightTypesHost, data_type: DataType | None) -> bool:  # noqa: ARG001
     """Return True when data_type represents List[Any] (including nested lists)."""
+    if not data_type:  # pragma: no cover - not proven unreachable
+        return False
+
     candidate = data_type
     if candidate._wraps_one_list:
         candidate = candidate.data_types[0]

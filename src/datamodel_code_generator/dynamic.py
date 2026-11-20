@@ -575,7 +575,9 @@ def _build_dynamic_module(  # noqa: PLR0913
     result, metadata, identities = generated or _generate_code(
         input_, config, collect_model_metadata=collect_model_metadata
     )
-    assert result is not None
+    if result is None:  # pragma: no cover - not proven unreachable
+        msg = "generate() returned None"
+        raise Error(msg)
     include_private_models = config.allow_leading_underscore_class_name
     if isinstance(result, str):
         if module_spec is not None and module_name is not None and module_name not in sys.modules:

@@ -368,8 +368,13 @@ class _AvroSchemaConverter:
             converted = self._convert_record(raw_schema, fullname, as_root=as_root)
         elif type_value == "enum":
             converted = self._convert_enum(raw_schema, fullname)
-        else:
+        elif type_value == "fixed":
             converted = self._convert_fixed(raw_schema, fullname)
+        else:  # pragma: no cover - not proven unreachable
+            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+            msg = f"Unsupported Avro named type: {stable_repr(type_value)}"
+            raise Error(msg)
         converted.setdefault("title", definition_key)
         self._building_definitions.remove(fullname)
         self.definitions[definition_key] = converted
