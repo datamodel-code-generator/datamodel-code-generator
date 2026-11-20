@@ -2,7 +2,7 @@
 id = "records-r2-hook-and-allowlist"
 category = "internal"
 title = "The records check fails the harness labels the gate refuses in a src change"
-refs = ["#1"]
+refs = ["#7247"]
 covers = [
     "declared_changes_script/declared_changes_check[harness on a src change].txt",
     "declared_changes_script/declared_changes_check[revert of a change the base does not declare, declared].txt",

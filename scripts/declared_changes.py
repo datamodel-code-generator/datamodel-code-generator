@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import glob
+import hashlib
 import json
 import operator
 import os
@@ -116,6 +117,11 @@ NO_VERDICT = (
     "'python scripts/behaviour_diff.py gate BASE --tier pr --verdicts FILE' and pass --verdicts FILE"
 )
 """Why a label that needs the gate's proof fails without a verdict of the gate for its base and head contents."""
+LOCK_ONLY = (
+    "the gate judges src/ only, so it can never give a verdict for a change of uv.lock alone: "
+    "cover this changed label with a category other than harness"
+)
+"""What a label that needs the gate's proof in a change of uv.lock alone tells the author."""
 Proof = tuple[str, str, str]
 """A label that needs the gate's proof, with the digests of its base and head contents."""
 Verdicts = dict[Proof, str | None]
@@ -237,6 +243,32 @@ class Side:
                 value = {relative: unit_value(relative, self.read(path), in_tree=True) for relative, path in members}
             self._digests[storage] = None if value is None else unit_digest(storage, value)
         return self._digests[storage]
+
+    def storages(self, label: str) -> list[str]:
+        """Return the storages a label's references compare, sorted; the label itself where nothing references it.
+
+        A shared output (`= other.py`) is stored under another name than its label.
+        """
+        found = {storage for reference in self.by_label.get(label, []) for *_, storage in self.references[reference]}
+        return sorted(found) or [label]
+
+    def content(self, label: str) -> str | None:
+        """Return the digest of the content a label's references compare, None when no reference has stored output.
+
+        The digest of one stored unit when every reference compares it, else one of the units by predicate, so a
+        label that starts or stops sharing another's stored file changes content as its own file does.
+        """
+        if not self.by_label.get(label):
+            return self.digest(label)
+        lines = {
+            (predicate, conditional, digest)
+            for reference in self.by_label[label]
+            for predicate, conditional, storage in self.references[reference]
+            if (digest := self.digest(storage)) is not None
+        }
+        if len({digest for *_, digest in lines}) <= 1:
+            return next(iter(lines))[2] if lines else None
+        return hashlib.sha256(json.dumps(sorted(lines)).encode()).hexdigest()
 
     @cached_property
     def sidecars(self) -> dict[str, dict[Reference, tuple[Line, ...]]]:
@@ -449,6 +481,7 @@ class Report:
     main: bool = False
     returned: dict[str, list[str]] = field(default_factory=dict)
     proofs: list[Proof] = field(default_factory=list)
+    lock_only: bool = False
     verdicts: Verdicts = field(default_factory=dict)
     commands: list[str] = field(default_factory=list)
 
@@ -458,7 +491,8 @@ class Report:
         return [
             problem
             for proof in self.proofs
-            if (problem := self.verdicts.get(proof, f"{proof[0]}: {NO_VERDICT}")) is not None
+            if (problem := self.verdicts.get(proof, f"{proof[0]}: {LOCK_ONLY if self.lock_only else NO_VERDICT}"))
+            is not None
         ]
 
     @property
@@ -486,7 +520,7 @@ def needs_proof(label: str, base: Side, head: Side) -> bool:
     Internal output is admitted, and so are an unchanged label and one that a side lacks (an added or removed output
     follows the rule for records); every other label needs the gate's proof that the package writes the same output.
     """
-    old, new = base.digest(label), head.digest(label)
+    old, new = base.content(label), head.content(label)
     return old is not None and new is not None and old != new and _kinds(label, base, head) != {Owner.INTERNAL}
 
 
@@ -494,10 +528,10 @@ def load_verdicts(path: Path) -> Verdicts:
     """Return the verdicts a gate run wrote (`behaviour_diff.py gate --verdicts`)."""
     try:
         rows = json.loads(path.read_text(encoding="utf-8"))["verdicts"]
+        return {(row["label"], row["base"], row["head"]): row["problem"] for row in rows}
     except (OSError, ValueError, KeyError, TypeError):
         msg = f"{path.as_posix()} holds no verdicts of the gate (behaviour_diff.py gate --verdicts writes them)"
         raise CheckError(msg) from None
-    return {(row["label"], row["base"], row["head"]): row["problem"] for row in rows}
 
 
 def _refused(category: Category, surface: tuple[str, ...] | None, kinds: set[Owner], *, released: bool) -> set[Owner]:
@@ -692,6 +726,9 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
     report.older_gaps = len(head_gaps & older)
     report.stamp = stamp_pending(tag.name, head.released())
     if generator:
+        report.lock_only = {path: blob for path, blob in base.generator().items() if path.startswith("src/")} == {
+            path: blob for path, blob in head.generator().items() if path.startswith("src/")
+        }
         harness = {
             label
             for stem, labels in added.items()
@@ -699,7 +736,7 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
             for label in labels
         }
         report.proofs = [
-            (label, base.digest(label) or "", head.digest(label) or "")
+            (label, base.content(label) or "", head.content(label) or "")
             for label in sorted(harness)
             if needs_proof(label, base, head)
         ]

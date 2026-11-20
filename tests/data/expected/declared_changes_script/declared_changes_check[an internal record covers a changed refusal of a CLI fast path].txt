@@ -1,0 +1,4 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+record problem: unreleased/same-output.toml: covers main/cli_fast_paths/parsed_fast_paths_refuse_the_options_of_the_skill_installer.result.txt, notice output, which category internal does not cover: give it a record of its own
+failed

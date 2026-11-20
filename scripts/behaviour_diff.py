@@ -1388,15 +1388,18 @@ def judge_cell(
 def _stored_files(side: declared_changes.Side, label: str) -> dict[str, str]:
     """Return the Python modules a stored label holds on one side, laid out as a run writes them.
 
-    A file label is `model.py`; a tree label is the package `pkg` with its `.py` members.
+    A file label is `model.py`; a tree label is the package `pkg` with its `.py` members. They are read from the
+    storage the label's references compare (the label's own when it is one of them), so a shared output has its text.
     """
-    path, pattern = declared_changes.split_label(label)
+    storages = side.storages(label)
+    storage = label if label in storages else storages[0]
+    path, pattern = declared_changes.split_label(storage)
     if pattern is None:
         text = side.text(f"{EXPECTED}{path}")
         return {"model.py": text} if text is not None else {}
     return {
         f"pkg/{relative}": text
-        for relative, file in side.members(label)
+        for relative, file in side.members(storage)
         if relative.endswith(".py") and (text := side.text(file)) is not None
     }
 
@@ -1462,6 +1465,8 @@ def stored_module_problem(
     change, rule (b) holds on each changed module, and values drawn from both sides' schemas get the same verdicts and
     parsed values.
     """
+    if any(len(side.storages(label)) > 1 for side in sides):
+        return f"{label}: its references compare several stored units, which the proof cannot read as one module"
     old, new = (_stored_files(side, label) for side in sides)
     if set(old) != set(new):
         return f"{label}: a module was added or removed, which the proof cannot pair"
@@ -1508,7 +1513,7 @@ def stored_label_problem(
             != [head.digest(stored) for *_, stored in head.references[reference]]
         ]
         return f"{label}: the stored payloads of {changed[0]} changed" if changed else None
-    old, new = base.digest(label), head.digest(label)
+    old, new = base.content(label), head.content(label)
     if old is None or new is None or old == new:
         return None
     if _module_label(label):
@@ -1555,7 +1560,7 @@ def stored_problems(gate: Gate) -> list[str]:
     for label, category in dict.fromkeys(labels):
         problem = stored_label_problem(gate, label, category, sides)
         if category == Category.HARNESS and declared_changes.needs_proof(label, *sides):
-            digests = {"base": sides[0].digest(label), "head": sides[1].digest(label)}
+            digests = {"base": sides[0].content(label), "head": sides[1].content(label)}
             gate.verdicts.append({"label": label, **digests, "problem": problem})
         problems += [problem] if problem else []
     return problems

@@ -126,11 +126,51 @@ RENAMED_OUTPUT = {
     f"{EXPECTED}/models/renamed.py": "N = 1\n",
 }
 COVERS_B = 'covers = [\n    "models/b.py",\n]\n'
-FAST_PATH = {
-    "tests/main/test_cli_fast_paths.refs": _sidecar({"test_modules": ["help\tmain/cli_fast_paths/modules[help].txt"]}),
-    f"{EXPECTED}/main/cli_fast_paths/modules[help].txt": "pkg\npkg.arguments\n",
+SHARED_B = {
+    "tests/test_models.refs": _sidecar(
+        REFS
+        | {
+            "test_model": [
+                line if line != "b\tmodels/b.py" else "b\tmodels/b.py\t= models/a.py" for line in REFS["test_model"]
+            ]
+        }
+    ),
+    f"{EXPECTED}/models/b.py": None,
 }
-"""A stored list of the modules a CLI fast path imports: internal output."""
+"""The output of `b` is now the stored file of `a`."""
+OWN_C = {
+    "tests/test_models.refs": _sidecar(
+        REFS | {"test_model": [line if not line.startswith("c\t") else "c\tmodels/c.py" for line in REFS["test_model"]]}
+    ),
+    f"{EXPECTED}/models/c.py": "C = 9\n",
+}
+"""The output of `c` was the stored file of `a`; it is now a file of its own with other content."""
+VARIANTS_B = {
+    "tests/test_models.refs": _sidecar(
+        REFS
+        | {
+            "test_model": [
+                line
+                if line != "b\tmodels/b.py"
+                else "\tmodels/b.py\t@python=3.14\n\tmodels/b.py\t@python=3.15\t= models/a.py"
+                for line in REFS["test_model"]
+            ]
+        }
+    ),
+}
+"""The output of `b` is its own file under one Python and the stored file of `a` under another."""
+FAST_PATHS = "main/cli_fast_paths"
+FAST_PATH_LIST = f"{FAST_PATHS}/fast_paths_load_these_modules[help].txt"
+FAST_PATH_REFUSAL = f"{FAST_PATHS}/parsed_fast_paths_refuse_the_options_of_the_skill_installer.result.txt"
+FAST_PATH = {
+    "tests/main/test_cli_fast_paths.refs": _sidecar({
+        "test_fast_paths_load_these_modules": [f"help\t{FAST_PATH_LIST}"],
+        "test_parsed_fast_paths_refuse_the_options_of_the_skill_installer": [f"\t{FAST_PATH_REFUSAL}"],
+    }),
+    f"{EXPECTED}/{FAST_PATH_LIST}": "pkg\npkg.arguments\n",
+    f"{EXPECTED}/{FAST_PATH_REFUSAL}": "2\nError: --skill-scope requires --install-skill\n",
+}
+"""The stored module list of a CLI fast path (internal output) and the exit code and message of one of its refusals."""
 CASES: dict[str, dict[str, Any]] = {
     "changed without a record": {"head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}, "origin": True},
     "changed with a record": {
@@ -402,8 +442,42 @@ CASES: dict[str, dict[str, Any]] = {
         "release": FAST_PATH,
         "head": SRC
         | NEW_OUTPUT
-        | {f"{EXPECTED}/main/cli_fast_paths/modules[help].txt": "pkg\n"}
-        | _record("same-output", ["main/cli_fast_paths/modules[help].txt", "models/new.py"]),
+        | {f"{EXPECTED}/{FAST_PATH_LIST}": "pkg\n"}
+        | _record("same-output", [FAST_PATH_LIST, "models/new.py"]),
+    },
+    "an internal record covers a changed refusal of a CLI fast path": {
+        "release": FAST_PATH,
+        "head": SRC
+        | {f"{EXPECTED}/{FAST_PATH_REFUSAL}": "0\n\n"}
+        | _record("same-output", [FAST_PATH_REFUSAL], category="internal"),
+    },
+    "a harness record covers a changed refusal of a CLI fast path": {
+        "release": FAST_PATH,
+        "head": SRC | {f"{EXPECTED}/{FAST_PATH_REFUSAL}": "0\n\n"} | _record("same-output", [FAST_PATH_REFUSAL]),
+    },
+    "harness on a change of uv.lock alone": {
+        "head": {"uv.lock": "locked\n", f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
+    },
+    "harness on a src change that makes a label share another's output": {
+        "head": SRC | SHARED_B | _record("same-output", ["models/b.py"]),
+    },
+    "harness on a src change that makes a label share another's output, the gate admits": {
+        "head": SRC | SHARED_B | _record("same-output", ["models/b.py"]),
+        "verdicts": {"models/b.py": None},
+    },
+    "harness on a src change that gives a label several stored outputs": {
+        "head": SRC | VARIANTS_B | _record("same-output", ["models/b.py"]),
+    },
+    "harness on a src change that gives a label several stored outputs, the gate admits": {
+        "head": SRC | VARIANTS_B | _record("same-output", ["models/b.py"]),
+        "verdicts": {"models/b.py": None},
+    },
+    "harness on a src change that gives a shared label its own output": {
+        "head": SRC | OWN_C | _record("same-output", ["models/c.py"]),
+    },
+    "harness on a src change that gives a shared label its own output, the gate admits": {
+        "head": SRC | OWN_C | _record("same-output", ["models/c.py"]),
+        "verdicts": {"models/c.py": None},
     },
     "report only": {"head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}, "args": ["--report-only"]},
     "a test-only change adds an output after a src change": {
@@ -504,7 +578,7 @@ def test_declared_changes_check(case: str, tmp_path: Path, capsys: pytest.Captur
     if "verdicts" in spec:
         base, head = (declared_changes.Side(repository, rev) for rev in ("base", spec.get("verdicts_head", "HEAD")))
         rows = [
-            {"label": label, "base": base.digest(label), "head": head.digest(label), "problem": problem}
+            {"label": label, "base": base.content(label), "head": head.content(label), "problem": problem}
             for label, problem in spec["verdicts"].items()
         ]
         (verdicts := tmp_path / "verdicts.json").write_text(json.dumps({"verdicts": rows}), encoding="utf-8")
@@ -744,6 +818,7 @@ def test_declared_changes_errors(tmp_path: Path, capsys: pytest.CaptureFixture[s
             text=True,
         ).stdout.strip()
         subprocess.run([*GIT, "update-ref", f"refs/heads/{name}", commit], cwd=repository, check=True)
+    (repository / "malformed-verdicts.json").write_text('{"verdicts": [{"label": "models/b.py"}]}', encoding="utf-8")
     output = [
         _run(repository, capsys, ["check", "--base", "nothing"]),
         _run(repository, capsys, ["check", "--base", "base", "--head", "nothing"]),
@@ -755,6 +830,7 @@ def test_declared_changes_errors(tmp_path: Path, capsys: pytest.CaptureFixture[s
         _run(shallow, capsys, ["check", "--base", "HEAD", "--tag", "HEAD"]),
         _run(repository, capsys, ["status"]),
         _run(repository, capsys, ["check", "--base", "base", "--verdicts", "no-verdicts.json"]),
+        _run(repository, capsys, ["check", "--base", "base", "--verdicts", "malformed-verdicts.json"]),
     ]
     subprocess.run([*GIT, "tag", "-d", "0.1.0"], cwd=repository, check=True, capture_output=True)
     output.append(_run(repository, capsys, ["check", "--base", "base"]))

@@ -40,6 +40,10 @@ $ check --base base --verdicts no-verdicts.json
 exit 2
 scripts/declared_changes.py: no-verdicts.json holds no verdicts of the gate (behaviour_diff.py gate --verdicts writes them)
 
+$ check --base base --verdicts malformed-verdicts.json
+exit 2
+scripts/declared_changes.py: malformed-verdicts.json holds no verdicts of the gate (behaviour_diff.py gate --verdicts writes them)
+
 $ check --base base
 exit 2
 scripts/declared_changes.py: no release tag is reachable; pass --tag

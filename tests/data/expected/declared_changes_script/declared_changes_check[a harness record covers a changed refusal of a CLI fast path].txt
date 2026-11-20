@@ -1,0 +1,5 @@
+exit 1
+declared changes: HEAD against base, release since 0.1.0
+1 stored outputs a harness record covers are refused, as src/ changes:
+  main/cli_fast_paths/parsed_fast_paths_refuse_the_options_of_the_skill_installer.result.txt: the gate has no verdict for these contents: run 'python scripts/behaviour_diff.py gate BASE --tier pr --verdicts FILE' and pass --verdicts FILE
+failed

@@ -2602,13 +2602,36 @@ MEMORY = _cells_input("memory", type="int", memory=True)
 FAILS = _cells_input("fails", type="int", fail="boom")
 PLAIN_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/plain.py"
 FAST_PATH_LIST = "main/cli_fast_paths/fast_paths_load_these_modules[help].txt"
+FAST_PATH_REFUSAL = "main/cli_fast_paths/parsed_fast_paths_refuse_the_options_of_the_skill_installer.result.txt"
 FAST_PATH_RELEASE = {
     "tests/main/test_cli_fast_paths.refs": _cells_refs({
-        "test_fast_paths_load_these_modules": [f"help\t{FAST_PATH_LIST}"]
+        "test_fast_paths_load_these_modules": [f"help\t{FAST_PATH_LIST}"],
+        "test_parsed_fast_paths_refuse_the_options_of_the_skill_installer": [f"\t{FAST_PATH_REFUSAL}"],
     }),
     f"{CELLS_EXPECTED}/{FAST_PATH_LIST}": '{"package": ["pkg", "pkg.arguments"]}\n',
+    f"{CELLS_EXPECTED}/{FAST_PATH_REFUSAL}": '{"code": 2, "stderr": "Error: --skill-scope requires --install-skill"}\n',
 }
-"""The stored list of the modules a CLI fast path imports, an internal trace (#7155)."""
+"""The stored module list of a CLI fast path (an internal trace, #7155) and one of its refusals (a notice)."""
+SECOND_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/second.py"
+SECOND_REFS = "tests/main/test_second.refs"
+SECOND_OWN = {
+    SECOND_REFS: _cells_refs({"test_second": ["\tmain/jsonschema/second.py"]}),
+    SECOND_MODULE: CELLS_MODULE.format("int  # note"),
+}
+"""A second stored module of its own, its output the plain module with a comment."""
+SECOND_SHARED = {SECOND_REFS: _cells_refs({"test_second": ["\tmain/jsonschema/second.py\t= main/jsonschema/plain.py"]})}
+"""The same label, its output now the stored file of the plain module."""
+SECOND_FLOAT = {SECOND_REFS: SECOND_OWN[SECOND_REFS], SECOND_MODULE: CELLS_MODULE.format("float")}
+"""The second module with the other type, a file of its own."""
+SECOND_VARIANTS = {
+    SECOND_REFS: _cells_refs({
+        "test_second": [
+            "\tmain/jsonschema/second.py\t@python=3.14",
+            "\tmain/jsonschema/second.py\t@python=3.15\t= main/jsonschema/plain.py",
+        ]
+    })
+}
+"""The same label under two storages: its own file under one Python, the plain module's under another."""
 BASE_GATE_PROBE = """import os
 import sys
 from pathlib import Path
@@ -2795,6 +2818,23 @@ CELLS_CASES: dict[str, CellsCase] = {
         release=FAST_PATH_RELEASE,
         records=True,
     ),
+    "pass: harness covers a label that becomes shared and keeps its behaviour": CellsCase(
+        "pass",
+        "harness, a label that becomes shared, the proof holds",
+        CELLS_REFACTOR
+        | SECOND_SHARED
+        | {SECOND_MODULE: None}
+        | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_OWN,
+        records=True,
+    ),
+    "pass: harness covers a label that leaves a shared file and keeps its behaviour": CellsCase(
+        "pass",
+        "harness, a label that splits from a shared file, the proof holds",
+        CELLS_REFACTOR | SECOND_OWN | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_SHARED,
+        records=True,
+    ),
     "pass: harness covers an added label": CellsCase(
         "pass",
         "harness, added label",
@@ -2975,6 +3015,39 @@ CELLS_CASES: dict[str, CellsCase] = {
         CELLS_REFACTOR
         | {PLAIN_MODULE: CELLS_MODULE.format("float")}
         | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        records=True,
+    ),
+    "fail: harness covers a label that becomes shared and changes its behaviour": CellsCase(
+        "fail",
+        "harness, a label that becomes shared, the proof fails",
+        CELLS_REFACTOR
+        | SECOND_SHARED
+        | {SECOND_MODULE: None}
+        | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_FLOAT,
+        records=True,
+    ),
+    "fail: harness covers a label that leaves a shared file and changes its behaviour": CellsCase(
+        "fail",
+        "harness, a label that splits from a shared file with new content, the proof fails",
+        CELLS_REFACTOR | SECOND_FLOAT | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_SHARED,
+        records=True,
+    ),
+    "fail: harness covers a label that compares several stored files": CellsCase(
+        "fail",
+        "harness, a label with several stored outputs, the proof cannot read them",
+        CELLS_REFACTOR | SECOND_VARIANTS | _record("second-test", "harness", covers=("main/jsonschema/second.py",)),
+        release=SECOND_OWN,
+        records=True,
+    ),
+    "fail: harness covers a changed refusal of a CLI fast path": CellsCase(
+        "fail",
+        "harness, a CLI fast path's refusal changed",
+        CELLS_REFACTOR
+        | {f"{CELLS_EXPECTED}/{FAST_PATH_REFUSAL}": '{"code": 0, "stderr": ""}\n'}
+        | _record("fast-path-refusal", "harness", covers=(FAST_PATH_REFUSAL,)),
+        release=FAST_PATH_RELEASE,
         records=True,
     ),
     "fail: harness covers a modified listing": CellsCase(
