@@ -47,6 +47,7 @@ import hashlib
 import heapq
 import json
 import re
+import shlex
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -238,6 +239,9 @@ def file_maps(repo: Path, catalog: str, side: str | None) -> dict[str, FileMap]:
     """
     revisions = [catalog, *([side] if side else [])]
     diff = compare_release.git(repo, "diff", "-U0", "-M", "--no-color", "--no-ext-diff", *revisions, "--", "src")
+    if diff.returncode:  # a revision the checkout lacks (a shallow clone) prints nothing: that is no unchanged file
+        msg = f"git diff {' '.join(revisions)} failed ({diff.returncode}): {diff.stderr.strip()}"
+        raise SystemExit(msg)
     maps: dict[str, FileMap] = {}
     old: str | None = None
     current: tuple[str | None, str | None, list[tuple[int, int, int, int]]] | None = None
@@ -479,6 +483,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def option_sets(text: str) -> list[tuple[str, ...]]:
+    """Return the option sets of `--options`: separated by ';', each split like a shell would ('default' is none)."""
+    parts = (part.strip() for part in text.split(";"))
+    return [() if part == "default" else tuple(shlex.split(part)) for part in parts]
+
+
 def _build(ns: argparse.Namespace) -> int:
     python = Path(sys.executable).absolute()
     base = compare_release.resolve_base(ns.revision, python, ns.cache_dir.absolute())
@@ -488,7 +498,7 @@ def _build(ns: argparse.Namespace) -> int:
     )
     inputs = behaviour_diff.fixture_inputs(candidate, revision)
     inputs = [item for item in inputs if not ns.select or any(fnmatch.fnmatch(item[0], glob) for glob in ns.select)]
-    sets = [() if opts == "default" else tuple(opts.split()) for opts in (o.strip() for o in ns.options.split(";"))]
+    sets = option_sets(ns.options)
     kinds = ["default" if not options else "option-set" for options in sets]
     cells = [
         behaviour_diff.Cell(compare_release.ROOT / name, name, file_type, backend, options, kind)

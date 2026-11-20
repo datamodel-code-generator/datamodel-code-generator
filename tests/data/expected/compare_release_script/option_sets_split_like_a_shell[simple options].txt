@@ -1,0 +1,1 @@
+[('--snake-case-field', '--use-annotated')]

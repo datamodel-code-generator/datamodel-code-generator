@@ -113,8 +113,16 @@ a replaced line and the lines around it	compare_release_script/file_map_places_a
 an insertion at the top	compare_release_script/file_map_places_a_side_line_on_the_catalog[an insertion at the top].txt
 an unchanged file	compare_release_script/file_map_places_a_side_line_on_the_catalog[an unchanged file].txt
 two hunks	compare_release_script/file_map_places_a_side_line_on_the_catalog[two hunks].txt
+[test_file_maps_refuse_a_revision_the_checkout_lacks]
+	compare_release_script/file_maps_refuse_a_revision_the_checkout_lacks.txt
 [test_handled_exceptions_are_tracked]
 	compare_release_script/handled_exceptions_are_tracked.txt
+[test_option_sets_split_like_a_shell]
+default	compare_release_script/option_sets_split_like_a_shell[default].txt
+double quotes	compare_release_script/option_sets_split_like_a_shell[double quotes].txt
+quoted directory	compare_release_script/option_sets_split_like_a_shell[quoted directory].txt
+sets	compare_release_script/option_sets_split_like_a_shell[sets].txt
+simple options	compare_release_script/option_sets_split_like_a_shell[simple options].txt
 [test_ran_out_of_memory]
 	compare_release_script/ran_out_of_memory.txt
 [test_the_annotation_reader_sites_are_the_package_s]

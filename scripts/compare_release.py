@@ -975,7 +975,9 @@ def _run_job(job: Record, main: Callable[[list[str]], object]) -> int:
     """Run one job and return its exit code: a generation in this worker, an import check in a fresh child.
 
     An import check runs the generated code, which has to leave nothing behind, so it gets a child of its own; so
-    does a recorded generation (`lines`), so that what it records depends on no job before it.
+    does a recorded generation (`lines`), so that what it records depends on no job before it. The child enables
+    the recorder's events again: code that ran while the worker warmed up (a function an import called) has them
+    disabled in every fork, and a cell that runs it again must show it.
     """
     if job["kind"] == "generate" and not _RECORDER:
         with _job_scope(job):
@@ -983,6 +985,8 @@ def _run_job(job: Record, main: Callable[[list[str]], object]) -> int:
     if (pid := os.fork()) == 0:  # pragma: no cover - child process
         code = 1
         try:
+            if _RECORDER:
+                sys.monitoring.restart_events()  # events of code the warm-up ran are disabled
             with _job_scope(job):
                 code = _generate_recorded(job, main) if job["kind"] == "generate" else _import_modules(job["out"])
         finally:

@@ -1854,3 +1854,50 @@ def test_cell_catalog_files_follow_renames_and_hunks(tmp_path: Path) -> None:
     git("commit", "-qm", "side")
     maps = file_maps(tmp_path, catalog, git("rev-parse", "HEAD"))
     assert_output("".join(f"{name}: {maps[name]}\n" for name in sorted(maps)))
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own pick, never through a stored output a fix run accepts"
+)
+@needs("sys-monitoring")
+def test_cell_catalog_records_code_the_warm_up_ran(tmp_path: Path) -> None:
+    """A function an import called while the worker warmed up is still run, and recorded, by the cell that calls it.
+
+    `_warm` calls `_case.run` when the worker imports it, before any job; the cells run it again. The pick of a change
+    inside `run` finds those cells, not `no catalog cell`.
+    """
+    warm = "from datamodel_code_generator import _case\n\n_case.run({'value': 'warm'})\n"
+    changed = "def run(spec):\n    value = spec['value']\n    return value\n"
+    oracle = Oracle({"_case.py": PLAIN_RUN, "_warm.py": warm}, {"_case.py": changed})
+    _, _, picked = _catalog_pick(tmp_path, oracle)
+    assert len(picked) == REDUNDANCY, picked
+    assert set(picked) <= set(PLAIN_CELLS), picked
+
+
+OPTION_SET_CASES = {
+    "default": "default",
+    "simple options": "--snake-case-field --use-annotated",
+    "sets": "default; --x 1 ;--y",
+    "quoted directory": "--custom-template-dir '/tmp/my templates'",
+    "double quotes": '--field-constraints --http-headers "a: b c"',
+}
+"""`--options` values of `_cell_catalog build`."""
+
+
+@pytest.mark.parametrize("case", sorted(OPTION_SET_CASES))
+def test_option_sets_split_like_a_shell(case: str) -> None:
+    """A quoted argument of an option set stays one argument, without its quotes."""
+    from scripts._cell_catalog import option_sets
+
+    assert_output(f"{option_sets(OPTION_SET_CASES[case])}\n")
+
+
+def test_file_maps_refuse_a_revision_the_checkout_lacks(tmp_path: Path) -> None:
+    """A failed `git diff` (a shallow clone without the catalog's revision) is an error, not a tree with no changes."""
+    from scripts._cell_catalog import file_maps
+
+    for args in (["init", "-q"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x", "--allow-empty"]):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+    with pytest.raises(SystemExit) as refused:
+        file_maps(tmp_path, "0" * 40, None)
+    assert_output(f"{str(refused.value)[:20]}\n")
