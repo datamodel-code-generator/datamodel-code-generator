@@ -43,7 +43,7 @@ match sys.argv:
         sys.stdout.write(f"datamodel-codegen {get_version()}\n")
         sys.exit(0)
     # Fast path for --help (avoid importing heavy modules)
-    case [_, "--help" | "-h"]:  # pragma: no cover
+    case [_, "--help" | "-h"]:
         from datamodel_code_generator.arguments import arg_parser
 
         arg_parser.print_help()
@@ -62,7 +62,7 @@ match sys.argv:
 # fast paths step aside
 if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     arg == "--install-skill" or arg.startswith("--install-skill=") for arg in sys.argv[1:]
-):  # pragma: no cover
+):
     from datamodel_code_generator._agent_skill_cli import run_agent_skill_installer
 
     sys.exit(run_agent_skill_installer(sys.argv[1:]))
