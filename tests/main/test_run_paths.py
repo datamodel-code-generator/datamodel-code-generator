@@ -284,7 +284,7 @@ def test_missing_staged_model_metadata_publishes_nothing(
 ) -> None:
     """A staged model metadata file that is gone when the run publishes fails the publication of every file (#5620)."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("datamodel_code_generator._write_model_metadata", lambda *_args: None)
+    monkeypatch.setattr("datamodel_code_generator._generation._write_model_metadata", lambda *_args: None)
     if run == "generate":
         with pytest.raises(FileNotFoundError):
             generate(

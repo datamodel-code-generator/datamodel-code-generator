@@ -1503,7 +1503,7 @@ def warn_about_unmatched_type_override_keys(parser: FinishHost) -> None:
 
     The last lookups are those of the module passes (L5) and of render preparation, so the keys are final here. A
     parse of a generation run records the warning (``PydanticFloors``), which the run emits for the parse it keeps
-    (``__init__.py:_parse_generation_run``); a parse outside one warns.
+    (``_generation.py:_parse_generation_run``); a parse outside one warns.
     """
     if (lookups := parser._type_override_lookups) is None or not (
         unmatched := sorted(set(parser.type_overrides) - lookups.found)
@@ -2442,7 +2442,7 @@ def record_generated_class_names(parser: FinishHost, run: FinishRun[Any, ModuleC
 def translate_final_name_keys(parser: FinishHost, run: FinishRun[Any, ModuleContextView, Any]) -> None:
     """Record the output names of the models renamed after L2 that keys of the options read at L1 name, by path.
 
-    Such a name is none a lookup at L1 reads: the parse again (``__init__.py:_parse_generation_run``) gives it to the
+    Such a name is none a lookup at L1 reads: the parse again (``_generation.py:_parse_generation_run``) gives it to the
     model built at the path the model had at L2 (``ModelResolver.final_name_keys``), whose keys then also name it. A
     name is recorded where a ``ConstructionKeys`` key names it or its class name, the part after its last dot, and it
     is not the name the model had at L2.

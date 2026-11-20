@@ -106,7 +106,7 @@ def test_generate_scopes_tuned_gc_for_e2e_mapping_input(gc_state: tuple[int, int
 
 def test_generate_restores_gc_threshold_after_exception(gc_state: tuple[int, int, int], mocker: Any) -> None:
     """Restore the threshold when the generation parser raises."""
-    mocker.patch("datamodel_code_generator._parse_generation", side_effect=RuntimeError("parse failure"))
+    mocker.patch("datamodel_code_generator._generation._parse_generation", side_effect=RuntimeError("parse failure"))
 
     with pytest.raises(RuntimeError, match="parse failure"):
         generate(

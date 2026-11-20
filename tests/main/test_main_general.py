@@ -142,9 +142,8 @@ def test_collapse_root_models_retry_reraises_second_recursion_error(mocker: Mock
         except RecursionError as exc:
             raise datamodel_code_generator._CollapseRootModelsRecursionError from exc
 
-    parse_with_disposal = mocker.patch.object(
-        datamodel_code_generator,
-        "_parse_with_disposal",
+    parse_with_disposal = mocker.patch(
+        "datamodel_code_generator._generation._parse_with_disposal",
         side_effect=raise_collapse_recursion,
     )
 
@@ -164,9 +163,8 @@ def test_collapse_root_models_retry_normalizes_sentinel_without_cause(mocker: Mo
     """Never expose the private retry sentinel when an abnormal retry loses its cause."""
     initial_error = datamodel_code_generator._CollapseRootModelsRecursionError()
     initial_error.__cause__ = RecursionError("initial parse recursion")
-    parse_with_disposal = mocker.patch.object(
-        datamodel_code_generator,
-        "_parse_with_disposal",
+    parse_with_disposal = mocker.patch(
+        "datamodel_code_generator._generation._parse_with_disposal",
         side_effect=[initial_error, datamodel_code_generator._CollapseRootModelsRecursionError("retry recursion")],
     )
 
@@ -185,7 +183,7 @@ def test_collapse_root_models_retry_normalizes_sentinel_without_cause(mocker: Mo
 @pytest.mark.allow_direct_assert("counts the parser disposals that no generated output shows")
 def test_failed_untyped_nullable_map_parse_disposes_the_typed_parser(mocker: MockerFixture) -> None:
     """Release the typed parser when parsing the nullable map values again untyped fails."""
-    mocker.patch.object(datamodel_code_generator, "_parse_again", side_effect=_GenerateParseAbort)
+    mocker.patch("datamodel_code_generator._generation._parse_again", side_effect=_GenerateParseAbort)
     dispose = mocker.spy(OpenAPIParser, "dispose")
 
     with pytest.raises(_GenerateParseAbort):
@@ -8123,7 +8121,7 @@ def test_generate_disposes_parser_when_parse_raises(parse_error: BaseException, 
     parser = mocker.Mock()
     parser.parse.side_effect = parse_error
     parser.dispose.side_effect = RuntimeError("dispose failed")
-    mocker.patch.object(datamodel_code_generator, "_build_parser", return_value=parser)
+    mocker.patch("datamodel_code_generator._generation._build_parser", return_value=parser)
 
     with pytest.raises(type(parse_error)) as exc_info:
         generate("{}", input_file_type=InputFileType.JsonSchema, formatters=[])

@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
-from datamodel_code_generator import _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._config_fields import (
     CLI_RESOLVED_PATH_FIELDS,
     DEFAULT_WATCH_DELAY,
@@ -311,12 +310,16 @@ def _get_config_class() -> type[Config]:
         @model_validator(mode="after")
         def validate_output_datetime_class(self: Self) -> Self:
             """Validate output datetime class compatibility."""
+            from datamodel_code_generator._option_rules import _validate_output_datetime_class  # noqa: PLC0415
+
             _validate_output_datetime_class(self.output_model_type, self.output_datetime_class)
             return self
 
         @model_validator(mode="after")
         def validate_alias_generator(self: Self) -> Self:
             """Validate alias generator compatibility."""
+            from datamodel_code_generator._option_rules import _validate_alias_generator  # noqa: PLC0415
+
             _validate_alias_generator(self.output_model_type, self.alias_generator)
             return self
 

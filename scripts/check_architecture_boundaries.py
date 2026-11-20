@@ -418,7 +418,7 @@ class Violation:
 
 DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
     BoundaryKey(
-        "src/datamodel_code_generator/__init__.py",
+        "src/datamodel_code_generator/_facade.py",
         "generate",
         "target-reverse-import",
         "datamodel_code_generator._target_selection",
@@ -1373,7 +1373,7 @@ def _classify_source_path(path: Path) -> Layer:
     relative = path.resolve().relative_to(SOURCE_ROOT)
     layer: Layer = "shared"
     match relative.parts:
-        case ("__init__.py",):
+        case ("__init__.py" | "_facade.py" | "_generation.py" | "_option_stages.py",):
             layer = "entrypoint"
         case ("parser", "_facts.py"):
             layer = "facts"

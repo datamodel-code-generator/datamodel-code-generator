@@ -25,9 +25,28 @@ from datamodel_code_generator._fastapi.packages import (
     implementations_owner,
     services_package,
 )
+from datamodel_code_generator._generation import (
+    _absolute_generation_path,
+    _build_file_header_parts,
+    _build_module_content,
+    _check_facade_outputs,
+    _default_input_filename,
+    _ensure_output_text_encodable,
+    _format_file_header,
+    _output_context_path,
+    _prepare_atomic_generation_remote_lock,
+    _read_custom_file_header,
+    _refuse_output_layout,
+    _resolve_generation_remote_lock,
+    _run_generation,
+    _settings_path_from,
+    _uses_legacy_process_state,
+    _warn_facade_dependencies,
+)
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
+from datamodel_code_generator._option_stages import _resolve_run_options
 from datamodel_code_generator._paths import (
     concrete,
     concrete_parent,
@@ -38,6 +57,7 @@ from datamodel_code_generator._paths import (
     overlaps,
     resolved,
 )
+from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_config import (
@@ -216,7 +236,6 @@ def prepare_target(
     setting given a value the target cannot use is an `Error` that names the option. The checks after it read the
     resolved settings.
     """
-    from datamodel_code_generator import _check_facade_outputs, _resolve_run_options, _warn_facade_dependencies  # noqa: PLC0415
     from datamodel_code_generator._target_render import PYDANTIC_TARGET_MINIMUM  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
@@ -378,10 +397,6 @@ def _remote_lock(
     input_: _GenerationInput, config: GenerateConfig, target: TargetConfig, cwd: Path
 ) -> tuple[GenerateConfig, RemoteReferenceLock | None]:
     """Resolve the remote lock of the models; an update must not overlap the package, as it must not the models."""
-    from datamodel_code_generator import (  # noqa: PLC0415
-        _prepare_atomic_generation_remote_lock,
-        _resolve_generation_remote_lock,
-    )
     from datamodel_code_generator._lock_plan import owns_lock_update  # noqa: PLC0415
 
     if owns_lock_update(config):
@@ -423,15 +438,6 @@ def _generate_models(  # noqa: PLR0913
     use_output_cwd: bool,
     compares: bool = False,
 ) -> _Models:
-    from datamodel_code_generator import (  # noqa: PLC0415
-        _absolute_generation_path,
-        _default_input_filename,
-        _output_context_path,
-        _read_custom_file_header,
-        _refuse_output_layout,
-        _run_generation,
-        _settings_path_from,
-    )
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         STAGED_METADATA_NAME,
@@ -843,12 +849,6 @@ class _Planner:
         their `implementation_text`. Every final text, Ruff's output included (it stages UTF-8 whatever the encoding),
         is checked against the encoding of its file before any is encoded, as model files are before any is written.
         """
-        from datamodel_code_generator import (  # noqa: PLC0415
-            _build_file_header_parts,
-            _build_module_content,
-            _ensure_output_text_encodable,
-            _format_file_header,
-        )
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
         from datamodel_code_generator.format import _model_formatter_arguments  # noqa: PLC0415
         from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
@@ -1116,9 +1116,6 @@ def _quietly(cleanup: Callable[[], None]) -> None:
 def _run_models(
     input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig, *, compares: bool = False
 ) -> _Models:
-    from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415
-    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
-
     if _uses_legacy_process_state(effective):
         with PROCESS_STATE_LOCK:
             return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True, compares=compares)

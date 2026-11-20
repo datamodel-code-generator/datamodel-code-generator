@@ -1,0 +1,13 @@
+[[change]]
+id = "generation-core-warning-location"
+category = "notice"
+title = "Warnings of a parse name the generation module that runs it"
+summary = "A warning that names the caller of a parse or of the input reading, such as the unresolved local $ref, duplicate anchor and deprecated YAML bool warnings, names datamodel_code_generator/_generation.py, where the generation run now lives, instead of the package's __init__.py; its text is unchanged. A -W filter that names the module datamodel_code_generator exactly no longer matches these warnings, whose module is datamodel_code_generator._generation."
+refs = ["#7255"]
+kind = "warning"
+action = "none"
+source = "release-note"
+covers = [
+    "main/error_messages/dangling_local_ref_warns_and_preserves_generated_output.txt",
+    "main/main_yaml/deprecated_bool_auto_warns_at_inference_and_parse[ryaml].txt",
+]

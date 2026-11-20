@@ -16,7 +16,7 @@ from typing import (
 
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import snooper_to_methods
+from datamodel_code_generator._debug import snooper_to_methods
 from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import install_command

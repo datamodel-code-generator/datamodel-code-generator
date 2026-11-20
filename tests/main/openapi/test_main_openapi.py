@@ -2971,7 +2971,7 @@ def test_main_invalid_dotted_unsafe_retry_preserves_legacy(
     match retry_outcome:
         case "build_failure":
             original_build_parser = datamodel_code_generator_module._build_parser
-            probe = mocker.patch.object(datamodel_code_generator_module, "_build_parser", autospec=True)
+            probe = mocker.patch("datamodel_code_generator._generation._build_parser", autospec=True)
 
             def fail_retry(*args: Any, **kwargs: Any) -> Any:
                 match probe.call_count:

@@ -16,7 +16,7 @@ from contextlib import redirect_stderr
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator import _collect_model_metadata
+from datamodel_code_generator._generation import _collect_model_metadata
 from datamodel_code_generator._recommend._metrics import name_metrics, name_records, name_stability
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._source import enable_parsed_source_cache

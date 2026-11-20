@@ -2223,15 +2223,17 @@ def test_dangling_component_ref_warning_names_the_parse_caller(output_file: Path
 def debug_tracing(monkeypatch: pytest.MonkeyPatch) -> Iterator[ModuleType]:
     """Turn on the tracing of ``--debug`` and leave the process as it was found when the test ends.
 
-    The tracing state, and the namespaces of the package and of the parser's modules, whose functions the decoration
-    of ``snooper_to_methods`` wraps, come back afterwards, so no wrapper changes a frame a later test's warnings name.
+    The tracing state, and the namespaces of the package, of its tracing module and of the parser's modules, whose
+    functions the decoration of ``snooper_to_methods`` wraps, come back afterwards, so no wrapper changes a frame a
+    later test's warnings name.
     """
     pysnooper = pytest.importorskip("pysnooper")
     monkeypatch.setattr(pysnooper.tracer, "DISABLED", pysnooper.tracer.DISABLED)
     namespaces = [
         (vars(module), dict(vars(module)))
         for module_name, module in [*sys.modules.items()]
-        if module_name == "datamodel_code_generator" or module_name.startswith("datamodel_code_generator.parser._")
+        if module_name in {"datamodel_code_generator", "datamodel_code_generator._debug"}
+        or module_name.startswith("datamodel_code_generator.parser._")
     ]
     enable_debug_message()
     yield pysnooper

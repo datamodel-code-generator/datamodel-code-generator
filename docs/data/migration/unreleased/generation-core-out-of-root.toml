@@ -1,0 +1,20 @@
+[[change]]
+id = "generation-core-out-of-root"
+category = "internal"
+title = "Move the generation core out of the package root"
+summary = "The run pipeline, generate(), the option stages and the --debug tracer move from the package root to private modules that the root re-exports under their public names; the start-up module lists name the three modules the root now imports, and the where script's example of a definition in a conditional block names its new file. The package writes the same output."
+refs = ["#7255"]
+covers = [
+    "main/cli_fast_paths/fast_paths_load_these_modules[generate-prompt].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[help].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[import].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[install-skill].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-config-equals].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-config].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generate-prompt].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-generation].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-model-metadata].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[json-schema-structured-output].txt",
+    "main/cli_fast_paths/fast_paths_load_these_modules[version].txt",
+    "where_script/where_grammar[definition-in-a-conditional-block].txt",
+]

@@ -10,6 +10,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, TypeAlias
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._generation import _absolute_generation_path
 from datamodel_code_generator.model._compiled_template_runtime import render as render_compiled
 from datamodel_code_generator.python_literal import stable_repr
 
@@ -79,8 +80,6 @@ class TemplateOverlay:
         A relative directory resolves against the caller's working directory, as for the models, and overrides receive
         the `#all#` extra template data, as custom model templates do.
         """
-        from datamodel_code_generator import _absolute_generation_path  # noqa: PLC0415
-
         if (directory := _absolute_generation_path(model_config.custom_template_dir, cwd)) is None:
             return None
         from datamodel_code_generator.model.base import ALL_MODEL  # noqa: PLC0415

@@ -72,7 +72,6 @@ from typing_extensions import (
 )
 from typing_extensions import final as final
 
-from datamodel_code_generator import snooper_to_methods
 from datamodel_code_generator._alias_generators import generate_alias as generate_alias
 from datamodel_code_generator._constraint_applicability import (
     LENGTH_KEYWORD_ORDER,
@@ -113,6 +112,7 @@ from datamodel_code_generator._container_kinds import (
     SEQUENCES,
     ContainerSlot,
 )
+from datamodel_code_generator._debug import snooper_to_methods
 from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError as ArrayIndexOutOfRangeError
 from datamodel_code_generator._document_reader import (
     MergedRefSiteRecursionError,

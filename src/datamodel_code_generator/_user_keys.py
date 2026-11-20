@@ -38,7 +38,7 @@ defaults and serialization aliases, the forward schemas of allOf, ``Parser._appl
 
 A class key of the options read at L1 (``ConstructionKeys``) also names the model whose name in the output it is,
 where a rename after L2 (``GenerationStore.renames``) gave the model that name: L6 ``translate_final_name_keys``
-records the name by the path the model had at L2, ``__init__.py:_parse_generation_run`` parses the input once more,
+records the name by the path the model had at L2, ``_generation.py:_parse_generation_run`` parses the input once more,
 and every lookup of the model at that path compares the class part with that name after the name of its row
 (``ClassScope``, ``ModelResolver.class_scope``); the template data of the name joins that of the path, before the
 entry of the name of its row.
@@ -48,7 +48,7 @@ after names are final):
 
 * ``legacy-reparse-for-final-names`` (``ConstructionKeys``): the L1 rows read the name a model is created under, but a
   yielding name settles at L2. When a yielding name changed and a key of an L1 row names the created or the final
-  name, ``__init__.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
+  name, ``_generation.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
   leaves out ``--type-overrides`` and ``--enum-field-as-literal-map``.
 * ``type-overrides-first-dot``: the class part of a ``--type-overrides`` key is what precedes its first dot
   (``type_override_classes``), while a ``Class.field`` key of the other options names a class at each of its dots

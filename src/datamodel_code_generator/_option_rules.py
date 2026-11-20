@@ -7,10 +7,10 @@ The settings stage and the preset read every source option of the table. Each co
 ``BaseGenerateConfig`` the ``use_type_alias_type`` row (a frozen ``PresetConfig`` sets the other source options) and
 the command line's ``Config`` the ``use_annotated`` row (row ``validator-stage-rows``). ``get_data_model_types`` reads
 the ``use_type_alias_type`` row through ``implied_options`` for direct callers of the public function. Where an
-implied option was given off and is on, the resolution of the run's options warns (``__init__.py:_run_option_stages``,
-through ``enabled_implied_options``): an enabled option of the table replaced the value, or the command line's
-validator applied its row to the pyproject.toml values before an argument turned the option off, which the stage
-``implied-model`` undoes under ``--read-implied-options-from-merged-values``.
+implied option was given off and is on, the resolution of the run's options warns
+(``_option_stages.py:_run_option_stages``, through ``enabled_implied_options``): an enabled option of the table
+replaced the value, or the command line's validator applied its row to the pyproject.toml values before an argument
+turned the option off, which the stage ``implied-model`` undoes under ``--read-implied-options-from-merged-values``.
 
 ``OPTION_RELATIONS`` is every pair of options that a run refuses or warns of together, and what the CLI reference
 documents for it (``cli_options.CLI_OPTION_META``). ``check_option_relations`` runs the rows of one stage in table
@@ -26,9 +26,9 @@ order, each stage where it sees its values:
 - ``run-options``: a command's model or target run, its config resolved and the record of where its values came from,
   after the run's other checks and warnings (``__main__.py:_apply_model_run_options``).
 - ``sentinel``: the stage of ``generate()`` that gives ``--use-missing-sentinel`` its target pydantic version, which
-  every command runs too (``__init__.py:_missing_sentinel_updates``).
+  every command runs too (``_option_stages.py:_missing_sentinel_updates``).
 - ``parser-options``: ``generate()`` as it prepares the options of its parsers
-  (``__init__.py:_prepare_parser_common_options``).
+  (``_generation.py:_prepare_parser_common_options``).
 
 ``generate()`` checks the rows of ``base-validator``, ``sentinel`` and ``parser-options`` alone (row
 ``cli-only-refusals``). The options and the input kinds a server or client target requires
@@ -46,6 +46,7 @@ from datamodel_code_generator._requirements import REQUIREMENTS, python_target_m
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.enums import (
     _PYDANTIC_MODEL_TYPES,
+    AliasGenerator,
     AllExportsScope,
     DataModelType,
     InputFileType,
@@ -54,6 +55,8 @@ from datamodel_code_generator.enums import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+
+    from datamodel_code_generator._format_types import DatetimeClassType
 
 IMPLIED_OPTIONS: Final[dict[str, str]] = {
     "use_annotated": "field_constraints",
@@ -284,6 +287,30 @@ def check_option_relation(pair: tuple[str, str, str], config: Any) -> None:
     keep their names: each checks its row of the stage ``base-validator``, in the order the table lists them.
     """
     _check_relation(next(row for row in OPTION_RELATIONS if row.pair == pair), config, None)
+
+
+def _validate_output_datetime_class(
+    output_model_type: DataModelType, output_datetime_class: DatetimeClassType | None
+) -> None:
+    if output_datetime_class is None:
+        return
+
+    from datamodel_code_generator._format_types import DatetimeClassType  # noqa: PLC0415
+
+    if output_datetime_class is DatetimeClassType.Datetime:
+        return
+    if output_model_type in {DataModelType.DataclassesDataclass, DataModelType.TypingTypedDict}:
+        msg = f'`--output-datetime-class` only allows "datetime" for `--output-model-type` {output_model_type.value}'
+        raise Error(msg)
+
+
+def _validate_alias_generator(output_model_type: DataModelType, alias_generator: AliasGenerator | None) -> None:
+    if alias_generator is None:
+        return
+    if output_model_type is DataModelType.PydanticV2BaseModel:
+        return
+    msg = "`--alias-generator` is only supported for `--output-model-type pydantic_v2.BaseModel`"
+    raise Error(msg)
 
 
 __all__ = [
