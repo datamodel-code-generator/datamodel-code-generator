@@ -1,0 +1,3 @@
+records: 1 judged; differing cells accepted=30, violation=0
+covered: plain-note (output-text): 30 differing cells
+stored modules with no payloads (signatures and rule (b) only): main/jsonschema/plain.py

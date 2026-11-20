@@ -154,6 +154,8 @@ FIXTURE_DIRS = (
 )
 PR_TYPES = ("pydantic_v2.BaseModel", "msgspec.Struct")
 PR_SAMPLE = 300
+SELECTOR_CELL_LIMIT = 1500
+"""The most cells one `[[change.cells]]` selector may name; a whole PR run of the gate's own tier is about this size."""
 MODEL_OUTPUT_TYPES = {
     "pydantic_v2": "pydantic_v2.BaseModel",
     "pydantic_v2_dataclass": "pydantic_v2.dataclass",
@@ -191,14 +193,29 @@ PRESET_NAMES = "src/datamodel_code_generator/preset_names.py"
 PRESET_ALIAS = "PresetName"
 EXPECTED = "tests/data/expected/"
 ORACLE_FILES = (
-    "scripts/behaviour_diff.py",
-    "scripts/compare_release.py",
     "scripts/_behaviour_classify.py",
+    "scripts/_behaviour_report.py",
     "scripts/_behaviour_signature.py",
     "scripts/_change_records.py",
+    "scripts/_change_units.py",
+    "scripts/_source_model.py",
+    "scripts/_stored_module.py",
+    "scripts/_template_compiler/__init__.py",
+    "scripts/_template_compiler/compiler.py",
+    "scripts/_template_compiler/inventory.py",
+    "scripts/behaviour_diff.py",
+    "scripts/build_behaviour_docs.py",
+    "scripts/check_generation_store_usage.py",
+    "scripts/compare_release.py",
+    "scripts/compile_builtin_templates.py",
     "scripts/declared_changes.py",
+    "scripts/fact_tables.py",
+    "scripts/select_ci_test_shard.py",
 )
-"""The gate's own files: a change to one also runs the base's gate (`base_gate`)."""
+"""The gate's own files: a change to one also runs the base's gate (`base_gate`).
+
+Every `scripts` module the gate imports, directly or through another, or runs in a subprocess; a test keeps the list
+equal to them (`tests/test_pre_commit_hooks.py`)."""
 BASE_GATE_FILES = ("scripts", "tests/__init__.py", "tests/units.py")
 BASE_GATE_ENV = "BEHAVIOUR_DIFF_BASE_GATE"
 """Set in the environment of the base's gate, so that it does not run its own base's gate again."""
@@ -422,6 +439,8 @@ class Gate:
     payload_index: list[PayloadCase] | None = None
     head_inventory: dict[str, list[str] | None] | None = None
     signature_only: set[str] = field(default_factory=set)
+    refused_alike: set[str] = field(default_factory=set)
+    no_payloads: set[str] = field(default_factory=set)
 
 
 def latest_tag() -> str:
@@ -1214,7 +1233,10 @@ def payload_case_equal(gate: Gate, cell: Cell, case: PayloadCase) -> bool:
             gate.cache.put(probe.input, probe.args(), base, import_check=False)
         head = gate.candidate.generate(probe.args(), tmp)
         if not (base.ok and head.ok):
-            return compare_release.cell_facts(base) == compare_release.cell_facts(head)
+            if equal := compare_release.cell_facts(base) == compare_release.cell_facts(head):
+                with gate.lock:
+                    gate.refused_alike.add(case["case_id"])
+            return equal
         if (payloads := payloads_for(gate, probe)) is None:
             return False
         old, new = (
@@ -1391,6 +1413,8 @@ def stored_payload_problem(gate: Gate, label: str, targets: list[Path], backend:
     value one side newly accepts or newly refuses shows. A model neither side can draw from has no payloads.
     """
     drawn = [stored_side(gate, target, backend, None) for target in targets]
+    if not all(drawn):
+        return f"{label}: a side wrote no draws (the timeout or a crash stopped it), so no payload could be compared"
     models = set(drawn[0].get("models", [])) & set(drawn[1].get("models", []))
     union: dict[str, list[object]] = {}
     for key in sorted(models):
@@ -1400,6 +1424,8 @@ def stored_payload_problem(gate: Gate, label: str, targets: list[Path], backend:
         if values:
             union[key] = list(values.values())
     if not union:
+        with gate.lock:
+            gate.no_payloads.add(label)
         return None
     given = targets[0].parent.parent / "values.json"
     given.write_text(json.dumps(union), encoding="utf-8")
@@ -1575,12 +1601,15 @@ def build_cells(ns: argparse.Namespace, gate: Gate, inventory: dict[str, list[st
                 if _selected(name, ns.select) and any(_under(path, name) for path in changed)
                 for backend, options in nightly_sets(presets, compare_release.DEFAULT_TYPES)
             ]
-        cells += [
-            cell
-            for _, _, selector in plan.selectors()
-            for cell in selector_cells(selector, candidate.root, presets)
-            if _selected(cell.label, ns.select)
-        ]
+        for record, index, selector in plan.selectors():
+            named = selector_cells(selector, candidate.root, presets)
+            if len(named) > SELECTOR_CELL_LIMIT:
+                msg = (
+                    f"entry {record.id}: cells {index} names {len(named)} cells, more than the {SELECTOR_CELL_LIMIT} "
+                    "a run may take from one selector: narrow its input, backends or options"
+                )
+                raise SystemExit(msg)
+            cells += [cell for cell in named if _selected(cell.label, ns.select)]
     if ns.tier != "pr":
         cells += [
             Cell(candidate.root / name, name, file_type, backend, options, "preset")
@@ -1856,6 +1885,14 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace, run: Plac
             print(f"covered: {record.id} ({record.category}): {count} differing cells{decided}")
         if gate.signature_only:
             print(f"signature only (no payload case under the input): {', '.join(sorted(gate.signature_only))}")
+        if gate.refused_alike:
+            print(
+                f"payload cases both sides refused alike (no payload evidence): {', '.join(sorted(gate.refused_alike))}"
+            )
+        if gate.no_payloads:
+            print(
+                f"stored modules with no payloads (signatures and rule (b) only): {', '.join(sorted(gate.no_payloads))}"
+            )
         if block := cells_block(results):
             print("uncovered differing cells; a starting [[change.cells]] block for their record:")
             print("\n".join(block), end="")

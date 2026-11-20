@@ -2320,6 +2320,9 @@ def main(argv):
     if "fail" in spec and "fixed" not in effects:
         print(f"Error: {spec['fail']}")
         return 1
+    if "break" in effects:
+        print("Error: broken")
+        return 1
     if ("memory" in spec and "fixed" not in effects) or "memory" in effects:
         raise MemoryError
     for effect in effects:
@@ -2601,6 +2604,21 @@ CELLS_CASES: dict[str, CellsCase] = {
         | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
         | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
     ),
+    "pass: output-text whose payload cases both sides refuse alike": CellsCase(
+        "pass",
+        "output-text, payload cases refused alike",
+        _cells_src(("plain", None, "comment"), ("plain", "Payload", "break"))
+        | _record("plain-note", "output-text", _cells("plain.json")),
+        release=_cells_src(("plain", "Payload", "break")),
+    ),
+    "pass: output-text with a covered stored module that has no payloads": CellsCase(
+        "pass",
+        "output-text, covered stored module without payloads",
+        COMMENT_PLAIN
+        | {PLAIN_MODULE: "VALUE = 1  # note\n"}
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/plain.py",)),
+        release={PLAIN_MODULE: "VALUE = 1\n"},
+    ),
     "pass: output-text with an added stored module": CellsCase(
         "pass",
         "output-text, added module",
@@ -2829,6 +2847,18 @@ CELLS_CASES: dict[str, CellsCase] = {
         {"scripts/behaviour_diff.py": "import sys\n\nsys.exit(0)\n"},
         release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
     ),
+    "fail: a change to the stored-module side runs the base's gate, which fails": CellsCase(
+        "fail",
+        "stored-module side changed, the base's gate fails",
+        {"scripts/_stored_module.py": "# weakened\n"},
+        release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
+    ),
+    "fail: a change to the source model beside a covered change runs the base's gate": CellsCase(
+        "fail",
+        "source model changed beside covered cells, the base's gate fails",
+        COMMENT_OTHER | OUTPUT_TEXT_OTHER | {"scripts/_source_model.py": "# weakened\n"},
+        release={"scripts/behaviour_diff.py": "import sys\n\nsys.exit(1)\n"},
+    ),
     "fail: selectors added to a record of the base": CellsCase(
         "fail",
         "selectors added to a record of the base",
@@ -2958,6 +2988,7 @@ def _cells_exit(run: Callable[[], int], log: StringIO) -> int:
         with redirect_stdout(log), redirect_stderr(log):
             return run()
     except SystemExit as stopped:
+        log.write(f"{stopped.code}\n" * (not isinstance(stopped.code, int)))
         return stopped.code if isinstance(stopped.code, int) else 1
 
 
@@ -2996,6 +3027,9 @@ REPORT_LINES = (
     "    ",
     "records:",
     "covered:",
+    "signature only",
+    "payload cases both sides refused",
+    "stored modules with no payloads",
     "uncovered",
     "[[change.cells]]",
     "input",
@@ -3008,7 +3042,12 @@ REPORT_LINES = (
 @needs("posix")
 @pytest.mark.parametrize(
     "case",
-    ["fail: an uncovered differing cell", "pass: decided-change inside aspects and match"],
+    [
+        "fail: an uncovered differing cell",
+        "pass: decided-change inside aspects and match",
+        "pass: output-text whose payload cases both sides refuse alike",
+        "pass: output-text with a covered stored module that has no payloads",
+    ],
 )
 def test_cells_report(case: str, tmp_path: Path) -> None:
     """The gate reports each violation, the records that covered cells and a block for the cells none covers.
@@ -3018,6 +3057,39 @@ def test_cells_report(case: str, tmp_path: Path) -> None:
     _, log = cells_verdict(CELLS_CASES[case], tmp_path)
     lines = [line for line in log.splitlines() if line.startswith(REPORT_LINES)]
     assert_output("\n".join(sorted(set(lines), key=lines.index)) + "\n")
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+def test_cells_stored_side_that_draws_nothing_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stored module whose head side wrote no draws (the timeout, a crash) fails its proof; it is no empty pass."""
+    draw = behaviour_diff.stored_side
+
+    def stopped(
+        gate: behaviour_diff.Gate, target: Path, backend: str, values: Path | None
+    ) -> behaviour_diff.StoredSide:
+        return {} if values is None and target.parent.name == "head" else draw(gate, target, backend, values)
+
+    monkeypatch.setattr(behaviour_diff, "stored_side", stopped)
+    verdict, log = cells_verdict(CELLS_CASES["pass: output-text with a covered stored module"], tmp_path)
+    assert verdict == "fail", log
+    assert "wrote no draws" in log, log
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("posix")
+def test_cells_selector_over_the_cell_limit_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A selector that names more cells than the limit stops the gate with a message that names the record."""
+    case = CELLS_CASES["pass: options * covers the preset cells"]
+    monkeypatch.setattr(behaviour_diff, "SELECTOR_CELL_LIMIT", 10)
+    verdict, log = cells_verdict(case, tmp_path)
+    assert verdict == "fail", log
+    assert "entry preset-note: cells 1 names" in log, log
+    assert "narrow its input, backends or options" in log, log
 
 
 FACTS_BASE = (0, (("model.py", "a1"),), "w1", "o1")

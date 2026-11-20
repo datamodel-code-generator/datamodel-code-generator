@@ -8,3 +8,5 @@
 	pre_commit_hooks/gate_paths_without_an_imported_module_miss_it.txt
 [test_local_hooks_run_when_their_scripts_change]
 	pre_commit_hooks/local_hooks_run_when_their_scripts_change.txt
+[test_oracle_files_are_the_files_the_gate_runs]
+	pre_commit_hooks/oracle_files_are_the_files_the_gate_runs.txt
