@@ -341,8 +341,11 @@ def pytest_runtest_teardown() -> None:
     process and end only with it, after pytest-cov combined the data files: measured through
     `CHILD_COVERAGE_CONFIG_ENV`, such a helper would then leave its own data file behind.
     """
-    resource_tracker._resource_tracker._stop()
-    forkserver._forkserver._stop()
+    for helper in (resource_tracker._resource_tracker, forkserver._forkserver):
+        # `_stop` is the helpers' own private stop; typeshed does not list it, and a Python without it starts
+        # no such helper per test (the stray data file then shows in scripts/ci_coverage.py's duplicate check).
+        if (stop := getattr(helper, "_stop", None)) is not None:
+            stop()
 
 
 def _child_coverage_config(serialized: str) -> str:
