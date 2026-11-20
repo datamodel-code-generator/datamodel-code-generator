@@ -278,7 +278,11 @@ def get_typed_additional_properties_field(
 def flatten_additional_properties_all_of(
     parser: ObjectMapsHost, obj: JsonSchemaObject
 ) -> list[JsonSchemaObject] | None:
-    """Resolve and flatten an additionalProperties allOf schema."""
+    """Resolve and flatten an additionalProperties allOf schema.
+
+    None where a member is not one primitive value, such as a reference to a schema with a cycle, which the merge
+    leaves a reference.
+    """
     schemas: list[JsonSchemaObject] = []
     pending = [obj]
     while pending:
@@ -287,6 +291,8 @@ def flatten_additional_properties_all_of(
             if parser._load_ref_schema_object(schema.ref).is_boolean_schema_false:
                 return None
             schema = parser._merge_ref_with_schema(schema)
+            if schema.ref:
+                return None
         if schema.title:
             schema = parser._schema_object(schema.model_dump(exclude={"title"}, exclude_unset=True, by_alias=True))
         if schema.allOf:
