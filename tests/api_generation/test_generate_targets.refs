@@ -25,14 +25,14 @@ True-subpackage-name	main/generation_platform/generate/memory-written.txt
 basemodel	main/generation_platform/generate/implied.txt
 dataclass	main/generation_platform/generate/implied.txt
 [test_generate_server_lock]
-None	http/remote_lock_empty.txt
+None	api_generation/generate_targets/generate_server_lock[None].txt	= http/remote_lock_empty.txt
 None	main/generation_platform/generate/lock-memory.txt
-models.py	http/remote_lock_empty.txt
+models.py	api_generation/generate_targets/generate_server_lock[models.py].txt	= http/remote_lock_empty.txt
 models.py	main/generation_platform/generate/lock-write.txt
 [test_generate_server_lock_overlap]
 	main/generation_platform/generate/memory-written.txt
 [test_generate_server_options_without_selector]
-	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+	api_generation/generate_targets/generate_server_options_without_selector.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 	main/generation_platform/generate/unselected.txt
 [test_generate_server_unencodable_text]
 None	main/generation_platform/generate/nothing-written.txt

@@ -6,8 +6,7 @@ import json
 import operator
 from contextlib import nullcontext
 from decimal import Inexact, Rounded, localcontext
-from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -38,6 +37,9 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _CURRENT_PYTHON_VERSION = PythonVersion(CURRENT_PYTHON_VERSION)
 _SKIP_BLACK = pytest.mark.skipif(
@@ -104,8 +106,6 @@ def test_main_avro_constructs(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("constructs.py"),
         extra_args=get_current_version_args("--use-field-description"),
         force_exec_validation=True,
     )
@@ -117,8 +117,6 @@ def test_main_avro_fixed_reference_default(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "fixed_reference_default.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="fixed_reference_default.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -481,8 +479,6 @@ def test_main_avro_temporal_default_controls(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "temporal_default_controls.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="temporal_default_controls.py",
         extra_args=["--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
@@ -494,8 +490,6 @@ def test_main_avro_temporal_defaults_unused_by_typed_dict(output_file: Path) -> 
         input_path=AVRO_DATA_PATH / "invalid_temporal_default_nanos_precision.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="temporal_defaults_unused_typed_dict.py",
         extra_args=[
             "--output-model-type",
             DataModelType.TypingTypedDict.value,
@@ -723,8 +717,6 @@ def test_main_avro_decimal_defaults_unused_by_typed_dict(output_file: Path) -> N
         input_path=AVRO_DATA_PATH / "invalid_decimal_default_scale.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="invalid_decimal_default_scale.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -864,8 +856,6 @@ def test_main_avro_duration_default_controls(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "duration_default_controls.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="duration_default_controls.py",
         extra_args=["--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
@@ -877,8 +867,6 @@ def test_main_avro_duration_defaults_unused_by_typed_dict(output_file: Path) -> 
         input_path=AVRO_DATA_PATH / "invalid_duration_default_months.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file="invalid_duration_default_months.py",
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -927,8 +915,6 @@ def test_main_avro_output_model_types(
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/constructs_{expected_name}.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--output-model-type",
@@ -953,8 +939,6 @@ def test_main_avro_infer_input_file_type(output_file: Path) -> None:
     run_main_and_assert(
         input_path=AVRO_DATA_PATH / "constructs.avsc",
         output_path=output_file,
-        assert_func=assert_file_content,
-        expected_file=_expected_file("constructs.py"),
         extra_args=get_current_version_args("--use-field-description"),
         force_exec_validation=True,
     )
@@ -967,8 +951,6 @@ def test_main_avro_namespace_collisions(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "namespace_collisions.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("namespace_collisions.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )
@@ -1027,8 +1009,6 @@ def test_main_avro_official_spec_long_list(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "official_long_list.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("official_long_list.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )
@@ -1041,8 +1021,6 @@ def test_main_avro_single_value_enum_as_const_keeps_converted_enums(output_file:
         input_path=AVRO_DATA_PATH / "spec_matrix.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("spec_matrix.py"),
         extra_args=get_current_version_args("--use-field-description", "--use-single-value-enum-as-const"),
     )
 
@@ -1054,8 +1032,6 @@ def test_main_avro_spec_matrix(output_file: Path) -> None:
         input_path=AVRO_DATA_PATH / "spec_matrix.avsc",
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file("spec_matrix.py"),
         extra_args=get_current_version_args("--use-field-description"),
         force_exec_validation=True,
     )
@@ -1118,8 +1094,6 @@ def test_main_avro_schema_declaration_forms(output_file: Path, fixture_name: str
         input_path=AVRO_DATA_PATH / fixture_name,
         output_path=output_file,
         input_file_type="avro" if explicit_type else None,
-        assert_func=assert_file_content,
-        expected_file=_expected_file(f"schema_declaration_forms/{Path(fixture_name).stem}.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )
@@ -1136,8 +1110,6 @@ def test_main_avro_official_c_schema_pass_corpus(output_file: Path, fixture_path
         input_path=fixture_path,
         output_path=output_file,
         input_file_type="avro",
-        assert_func=assert_file_content,
-        expected_file=_expected_file(f"official_schema_pass/{fixture_path.stem}.py"),
         extra_args=get_current_version_args(),
         force_exec_validation=True,
     )

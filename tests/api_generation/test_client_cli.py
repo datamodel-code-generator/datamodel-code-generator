@@ -287,7 +287,6 @@ def test_client_cli_pyproject_paths(
     assert_output(
         notices.replace(project.as_posix(), "<project>")
         + "".join(_methods(path / "resources" / "pets" / "_sync.py", tmp_path) for path in packages),
-        EXPECTED / "cli" / "pyproject-paths.txt",
     )
 
 
@@ -302,7 +301,6 @@ def test_client_cli_pyproject_protocols_file(
     run_main_with_args([])
     assert_output(
         capsys.readouterr().err.replace(project.as_posix(), "<project>"),
-        EXPECTED / "cli" / "project-notice.txt",
     )
     assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/options/protocols/_helpers.py")
 
@@ -365,10 +363,10 @@ def test_client_cli_json_file_documents(
     run_main_with_args([argument.format(project=project) for argument in arguments])
     assert_output(
         capsys.readouterr().err.replace(project.as_posix(), "<project>"),
-        EXPECTED / "cli" / "json-files" / "notice.txt",
+        name="notice",
     )
     assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/json-files/_helpers.py")
-    assert_output(_methods(project / SYNC, tmp_path), EXPECTED / "cli" / "json-files" / "documents.txt")
+    assert_output(_methods(project / SYNC, tmp_path), name="documents")
 
 
 @pytest.mark.parametrize(
@@ -708,15 +706,15 @@ def test_client_cli_pydantic_dependency(
 
 @pytest.mark.parametrize("client", [[], CLIENT], ids=["models", "client"])
 @pytest.mark.parametrize(
-    ("options", "expected"),
+    "options",
     [
-        ([], "cli/missing-sentinel-models.py"),
-        (["--output-model-type", "pydantic_v2.dataclass"], "cli/dataclass-missing-sentinel-models.py"),
+        [],
+        ["--output-model-type", "pydantic_v2.dataclass"],
     ],
     ids=["missing-sentinel", "dataclass-missing-sentinel"],
 )
 def test_client_cli_missing_sentinel_models_as_given(
-    client: list[str], options: list[str], expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    client: list[str], options: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Write the models a model-only run writes when they use MISSING, which a client needs a 2.14 target for."""
     monkeypatch.chdir(tmp_path)
@@ -726,8 +724,6 @@ def test_client_cli_missing_sentinel_models_as_given(
         input_file_type="openapi",
         extra_args=[*OPTIONS, *MISSING, *options, *client],
         copy_files=_inputs(tmp_path),
-        assert_func=assert_file_content,
-        expected_file=expected,
     )
 
 
@@ -1001,7 +997,7 @@ def test_client_cli_shadowed_module(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         lines.extend(
             f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
         )
-    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-module.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
 @pytest.mark.parametrize(
@@ -1068,7 +1064,7 @@ def test_client_cli_leftover_files(
             for line in (captured.out + captured.err).splitlines()
             if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
         )
-    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
+    assert_output("\n".join(lines) + "\n")
 
 
 def test_client_cli_leftover_files_jobs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1089,7 +1085,6 @@ def test_client_cli_leftover_files_jobs(tmp_path: Path, monkeypatch: pytest.Monk
         run_main_with_args(["--all-jobs"])
     assert_output(
         "".join(f"{item.category.__name__}: {item.message}\n" for item in recorded),
-        EXPECTED / "cli" / "leftover-files-jobs.txt",
     )
 
 
@@ -1169,9 +1164,7 @@ def test_client_cli_jobs(
             lock=root / "client" / "py.typed",
         ),
     )
-    assert_output(
-        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-unwritten.txt"
-    )
+    assert_output("".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())))
 
 
 def test_client_cli_api_scope_required(
@@ -1351,7 +1344,7 @@ def test_client_cli_member_types(
     run_main_with_args(
         [] if form == "pyproject" else client_cli_arguments(CLI / "pyproject-types.toml"), expected_exit=Exit.ERROR
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / "types.txt")
+    assert_output(capsys.readouterr().err)
 
 
 @pytest.mark.parametrize(
