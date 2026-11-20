@@ -1,0 +1,10 @@
+[[change]]
+id = "decision-homes-as-data-2"
+category = "harness"
+refs = ["#7221"]
+title = "List the where-reads-scripts row among the tests of a script"
+summary = "Stored test output of the where command: the tests section of a script lists the new related-tests row that selects the where test for a change under scripts. The package writes the same output."
+covers = [
+    "where_script/where_grammar[path-with-no-rows].txt",
+    "where_script/where_grammar[users-through-a-reexport].txt",
+]
