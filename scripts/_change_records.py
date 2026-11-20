@@ -445,6 +445,7 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
     ("tests/parser/test_generation_store_usage.py::*", "*", Owner.INTERNAL),
     ("tests/parser/test_fact_finality.py::*", "*", Owner.INTERNAL),
     ("tests/main/test_generation_observation.py::*", "*", Owner.INTERNAL),
+    ("tests/main/test_cli_fast_paths.py::*", "*", Owner.INTERNAL),
     ("tests/checks/*", "*", Owner.INTERNAL),
     ("tests/test_architecture_boundaries.py::*", "*", Owner.INTERNAL),
     ("tests/test_source_rules.py::*", "*", Owner.INTERNAL),
@@ -470,10 +471,11 @@ OWNERS: tuple[tuple[str, str, Owner], ...] = (
 
 Warnings, standard error and error messages are notices; help, listings, documentation, prompts and recommender
 output are listings, and so are the outputs of the tests of the scripts that build documentation
-(`tests/test_build_*_script.py`, the changelog's); traces and reports of internals, and the checks and tools of the
-repository, are internal: the tests of every other repository script (`tests/test_*_script.py`), of the source model
-and the checks that read the repository's source, of the CI and release workflows and of the test harness. Every other
-stored output, the tests of the package's own modules included, is model output. This table and `RULES` judge the
+(`tests/test_build_*_script.py`, the changelog's); traces and reports of internals (the modules the CLI's fast paths
+import among them), and the checks and tools of the repository, are internal: the tests of every other repository
+script (`tests/test_*_script.py`), of the source model and the checks that read the repository's source, of the CI and
+release workflows and of the test harness. Every other stored output, the tests of the package's own modules
+included, is model output. This table and `RULES` judge the
 records, so a change to either is a change of the check.
 
 Notices are told from model output by their labels for now: a text output named for a warning, a refusal or an error

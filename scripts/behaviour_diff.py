@@ -2,7 +2,7 @@
 
 Usage:
   python scripts/behaviour_diff.py gate [BASE] [CANDIDATE] [--tier pr|nightly|release] [--types T1,T2]
-      [--shard I/N] [-j N] [--check] [--json OUT] [--identity]
+      [--shard I/N] [-j N] [--check] [--json OUT] [--verdicts OUT] [--identity]
 
 BASE is a released version (default: the latest tag) or a git revision of the candidate's repository (this
 repository for a candidate revision). CANDIDATE is a checkout path (default: this checkout; its `.venv` is used when
@@ -50,8 +50,9 @@ twice, and the records that cover it must admit every kind of its difference wit
 (`_behaviour_classify.judge`: payload cells, rule (b), companion cells). Every selector must match a differing cell
 (in a release run, staleness in a run of the whole nightly or release tier); the stored modules an `output-text`
 record covers, and the changed labels a `harness` record covers in a src PR, are proved by signatures, rule (b) and
-values drawn from their models' schemas (`_stored-module`). The report lists the uncovered cells with a starting
-`[[change.cells]]` block.
+values drawn from their models' schemas (`_stored-module`); `--verdicts OUT` writes the verdicts on those
+`harness` labels by their base and head contents, which `declared_changes.py check --verdicts OUT` reads. The
+report lists the uncovered cells with a starting `[[change.cells]]` block.
 
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
 `input` (a glob, or a list of globs), optional `backends`, `aspects` and `match` (regex on the change line), `reason`,
@@ -134,7 +135,6 @@ from scripts._behaviour_report import compare_records, redact, summarize_gate  #
 from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-of-file]
     PRESET_OPTION,
     Category,
-    Owner,
     owner_of,
     parse_entry,
     read_records,
@@ -229,6 +229,7 @@ HEAD_STOPPED = (
 )
 """Set in the environment of the base's gate, so that it does not run its own base's gate again."""
 UNCOVERED = "no record's [[change.cells]] covers the cell"
+VERDICTS_OPTION = "--verdicts"
 REGEX_SPECIAL = re.compile(r"[\\.^$*+?{}\[\]|()]")
 MSGSPEC_IMPORT = re.compile(r"^\s*(?:import msgspec|from msgspec\b)", re.MULTILINE)
 COMPANION_LINE = re.compile(r"^(?:valid: |invalid .*: rejected \()", re.MULTILINE)
@@ -450,6 +451,7 @@ class Gate:
     signature_only: set[str] = field(default_factory=set)
     refused_alike: set[str] = field(default_factory=set)
     no_payloads: set[str] = field(default_factory=set)
+    verdicts: list[dict[str, str | None]] = field(default_factory=list)
 
 
 def repository() -> Path:
@@ -1490,11 +1492,12 @@ def stored_label_problem(
     nothing. A changed one is proved as a module (`stored_module_problem`); a payload listing (`payloads/*`) is
     judged per reference, which fails where an existing reference's content changed; any other changed label fails:
     a payload companion holds verdicts, and the content of another kind of output changed with no step to tell a
-    changed call from a changed package. A `harness` label whose references are all internal is admitted (6.4).
+    changed call from a changed package. A `harness` label `declared_changes.needs_proof` does not name is admitted
+    (6.4): internal output, and a label that is unchanged or that one side lacks.
     """
     base, head = sides
     owners = {owner_of(reference.nodeid, label) for side in sides for reference in side.by_label.get(label, [])}
-    if category == Category.HARNESS and owners == {Owner.INTERNAL}:
+    if category == Category.HARNESS and not declared_changes.needs_proof(label, base, head):
         return None
     if label.startswith("payloads/"):
         changed = [
@@ -1525,7 +1528,8 @@ def stored_label_problem(
 def stored_problems(gate: Gate) -> list[str]:
     """Return the stored labels of a src PR whose proof fails: an `output-text` record's covers, a `harness` record's.
 
-    The labels are those of the PR's `output-text` records, and those a `harness` record adds to its covers.
+    The labels are those of the PR's `output-text` records, and those a `harness` record adds to its covers; the
+    verdict on each `harness` label that needs the proof goes to `Gate.verdicts` by its base and head contents.
     """
     plan, candidate = gate.plan, gate.candidate_info
     if plan is None or plan.release or not plan.src or plan.base is None:
@@ -1547,11 +1551,34 @@ def stored_problems(gate: Gate) -> list[str]:
         declared_changes.Side(candidate.repo, plan.base),
         declared_changes.Side(candidate.repo, candidate.revision),
     )
-    return [
-        problem
-        for label, category in dict.fromkeys(labels)
-        if (problem := stored_label_problem(gate, label, category, sides))
-    ]
+    problems = []
+    for label, category in dict.fromkeys(labels):
+        problem = stored_label_problem(gate, label, category, sides)
+        if category == Category.HARNESS and declared_changes.needs_proof(label, *sides):
+            digests = {"base": sides[0].digest(label), "head": sides[1].digest(label)}
+            gate.verdicts.append({"label": label, **digests, "problem": problem})
+        problems += [problem] if problem else []
+    return problems
+
+
+def write_verdicts(gate: Gate, ns: argparse.Namespace) -> None:
+    """Write the verdicts on the `harness` labels of a src PR to `--verdicts`, read by `declared_changes.py check`."""
+    if ns.verdicts:
+        ns.verdicts.parent.mkdir(parents=True, exist_ok=True)
+        ns.verdicts.write_text(json.dumps({"verdicts": gate.verdicts}, indent=1) + "\n", encoding="utf-8")
+
+
+def base_arguments(argv: list[str]) -> list[str]:
+    """Return the arguments of the head's gate without `--verdicts` (argparse also takes a unique prefix of it).
+
+    The base's verdicts judge nothing, and a base before the option refuses it.
+    """
+    dropped: set[int] = set()
+    for index, arg in enumerate(argv):
+        name, given, _ = arg.partition("=")
+        if len(name) > len("--") and VERDICTS_OPTION.startswith(name):
+            dropped |= {index, index + (not given)}
+    return [arg for index, arg in enumerate(argv) if index not in dropped]
 
 
 def base_gate(plan: Plan, ns: argparse.Namespace, repo: Path) -> int | None:
@@ -1560,7 +1587,7 @@ def base_gate(plan: Plan, ns: argparse.Namespace, repo: Path) -> int | None:
     The base's `scripts/` (and the test units it reads) are extracted with `git archive`, once under a lock as another
     run may share the cache; a base without the gate, and the base's own gate (`BASE_GATE_ENV`), run none. The base's
     gate runs for the same checkout (`REPOSITORY_ENV`), and writes its `--json` and `--evidence` files beside its
-    scripts, not over the head's. The step fails if either gate fails (S7).
+    scripts, not over the head's; it gets no `--verdicts` (`base_arguments`). The step fails if either gate fails (S7).
     """
     if plan.release or not plan.oracle or plan.base is None or os.environ.get(BASE_GATE_ENV):
         return None
@@ -1573,7 +1600,7 @@ def base_gate(plan: Plan, ns: argparse.Namespace, repo: Path) -> int | None:
     own = [arg for name, path in reports if path is not None for arg in (name, str(root / f"base-{name[2:]}.out"))]
     env = {**os.environ, BASE_GATE_ENV: "1", REPOSITORY_ENV: str(repo)}
     result = subprocess.run(
-        [sys.executable, str(root / "scripts" / "behaviour_diff.py"), *ns.argv, *own],
+        [sys.executable, str(root / "scripts" / "behaviour_diff.py"), *base_arguments(ns.argv), *own],
         capture_output=True,
         text=True,
         env=env,
@@ -1715,6 +1742,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     _gate_args(gate)
     gate.add_argument("--check", action="store_true", help="exit 1 on a violation or an invalid or stale allowlist")
     gate.add_argument("--json", type=Path, help="write every cell as one JSON line to this file (read by `guide`)")
+    gate.add_argument(
+        VERDICTS_OPTION,
+        type=Path,
+        help="write the verdicts on the harness labels of a src PR to this file (read by `declared_changes.py check`)",
+    )
     gate.add_argument(
         "--identity",
         action="store_true",
@@ -2021,6 +2053,7 @@ def gate_main(ns: argparse.Namespace) -> int:
     gate = build_gate(ns)
     plan = gate.plan
     if plan is not None and not plan.release and not plan.src:
+        write_verdicts(gate, ns)
         return shortcut(gate, plan, ns)
     inventory = option_inventory(gate.base.side.python, gate.base.env)
     offered = option_inventory(gate.candidate.side.python, gate.candidate.env) if gate.identity else inventory
@@ -2052,6 +2085,7 @@ def gate_main(ns: argparse.Namespace) -> int:
             gate.rerun.close()
     if plan is not None and ns.shard_index == 1:
         plan.problems += stored_problems(gate)
+    write_verdicts(gate, ns)
     if gate.identity:
         results = not_compared(results)
         if ns.shard_index == 1 and (surface := option_changes(inventory, offered)):

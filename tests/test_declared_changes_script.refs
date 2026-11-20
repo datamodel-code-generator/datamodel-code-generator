@@ -26,6 +26,10 @@ changed without a record	declared_changes_script/declared_changes_check[changed 
 every gap on main	declared_changes_script/declared_changes_check[every gap on main].txt
 flag and predicate changes	declared_changes_script/declared_changes_check[flag and predicate changes].txt
 harness on a src change	declared_changes_script/declared_changes_check[harness on a src change].txt
+harness on a src change covers internal and added outputs	declared_changes_script/declared_changes_check[harness on a src change covers internal and added outputs].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
+harness on a src change the gate admits	declared_changes_script/declared_changes_check[harness on a src change the gate admits].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt
+harness on a src change the gate judged for other contents	declared_changes_script/declared_changes_check[harness on a src change the gate judged for other contents].txt	= declared_changes_script/declared_changes_check[harness on a src change].txt
+harness on a src change the gate refuses	declared_changes_script/declared_changes_check[harness on a src change the gate refuses].txt
 kinds by test module and label	declared_changes_script/declared_changes_check[kinds by test module and label].txt
 lower layer record covers nothing here	declared_changes_script/declared_changes_check[lower layer record covers nothing here].txt
 main after a src change and a test-only rename	declared_changes_script/declared_changes_check[main after a src change and a test-only rename].txt	= declared_changes_script/declared_changes_check[a later layer extends the lower record].txt

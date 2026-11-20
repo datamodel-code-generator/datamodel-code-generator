@@ -126,6 +126,11 @@ RENAMED_OUTPUT = {
     f"{EXPECTED}/models/renamed.py": "N = 1\n",
 }
 COVERS_B = 'covers = [\n    "models/b.py",\n]\n'
+FAST_PATH = {
+    "tests/main/test_cli_fast_paths.refs": _sidecar({"test_modules": ["help\tmain/cli_fast_paths/modules[help].txt"]}),
+    f"{EXPECTED}/main/cli_fast_paths/modules[help].txt": "pkg\npkg.arguments\n",
+}
+"""A stored list of the modules a CLI fast path imports: internal output."""
 CASES: dict[str, dict[str, Any]] = {
     "changed without a record": {"head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}, "origin": True},
     "changed with a record": {
@@ -380,6 +385,26 @@ CASES: dict[str, dict[str, Any]] = {
     "harness on a src change": {
         "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
     },
+    "harness on a src change the gate admits": {
+        "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
+        "verdicts": {"models/b.py": None},
+    },
+    "harness on a src change the gate refuses": {
+        "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
+        "verdicts": {"models/b.py": "models/b.py: [type] B: int -> float"},
+    },
+    "harness on a src change the gate judged for other contents": {
+        "head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"} | _record("same-output", ["models/b.py"]),
+        "verdicts": {"models/b.py": None},
+        "verdicts_head": "0.1.0",
+    },
+    "harness on a src change covers internal and added outputs": {
+        "release": FAST_PATH,
+        "head": SRC
+        | NEW_OUTPUT
+        | {f"{EXPECTED}/main/cli_fast_paths/modules[help].txt": "pkg\n"}
+        | _record("same-output", ["main/cli_fast_paths/modules[help].txt", "models/new.py"]),
+    },
     "report only": {"head": SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}, "args": ["--report-only"]},
     "a test-only change adds an output after a src change": {
         "base": SRC,
@@ -468,10 +493,23 @@ CASES: dict[str, dict[str, Any]] = {
 
 @pytest.mark.parametrize("case", sorted(CASES))
 def test_declared_changes_check(case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """The static rules over references: changes, splits, moves, removals, additions, layers, records, the release."""
+    """The static rules over references: changes, splits, moves, removals, additions, layers, records, the release.
+
+    `verdicts` are the gate's on the labels a `harness` record covers in a src change, by the label's contents at the
+    base and at `verdicts_head` (default the head).
+    """
     spec = CASES[case]
     repository = _repository(tmp_path, spec)
-    code = declared_changes.main(["check", "--base", "base", "--head", "HEAD", *spec.get("args", [])], repository)
+    args = ["check", "--base", "base", "--head", "HEAD", *spec.get("args", [])]
+    if "verdicts" in spec:
+        base, head = (declared_changes.Side(repository, rev) for rev in ("base", spec.get("verdicts_head", "HEAD")))
+        rows = [
+            {"label": label, "base": base.digest(label), "head": head.digest(label), "problem": problem}
+            for label, problem in spec["verdicts"].items()
+        ]
+        (verdicts := tmp_path / "verdicts.json").write_text(json.dumps({"verdicts": rows}), encoding="utf-8")
+        args += ["--verdicts", str(verdicts)]
+    code = declared_changes.main(args, repository)
     assert_output(f"exit {code}\n{capsys.readouterr().out}")
 
 
@@ -716,6 +754,7 @@ def test_declared_changes_errors(tmp_path: Path, capsys: pytest.CaptureFixture[s
         _run(repository, capsys, ["check", "--base", "0.1.0", "--head", "base", "--tag", "base"]),
         _run(shallow, capsys, ["check", "--base", "HEAD", "--tag", "HEAD"]),
         _run(repository, capsys, ["status"]),
+        _run(repository, capsys, ["check", "--base", "base", "--verdicts", "no-verdicts.json"]),
     ]
     subprocess.run([*GIT, "tag", "-d", "0.1.0"], cwd=repository, check=True, capture_output=True)
     output.append(_run(repository, capsys, ["check", "--base", "base"]))

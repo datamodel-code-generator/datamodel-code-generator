@@ -1,12 +1,13 @@
 """Report stored-output changes that no change record covers.
 
 Usage:
-    python scripts/declared_changes.py status [--base REV]
+    python scripts/declared_changes.py status [--base REV] [--verdicts FILE]
     python scripts/declared_changes.py declare ID [--category C] [--title T] [--summary S] [--refs '#n' ...]
         [--decision '#n' ...] [--surface ITEM ...] [--extends ID] (--rest | --labels GLOB ... | --tests NODEID-GLOB ...)
         [--base REV]
     python scripts/declared_changes.py prune [--tag TAG]
     python scripts/declared_changes.py check --base REV [--head REV] [--tag TAG] [--main] [--report-only]
+        [--verdicts FILE]
 
 The unit is a reference: one `.refs` line (a test item and a label), whose value is the content of its stored unit,
 read by the rules of `tests/units.py`, with its environment predicate and its `?` flag. A reference changes when its
@@ -15,11 +16,14 @@ neither `src/` nor `uv.lock`, a removed reference whose content an added one has
 other removed reference needs its label in the `covers` of a change record (`docs/data/migration/unreleased/<id>.toml`,
 `scripts/_change_records.py`); so does every added reference when the change touches `src/` or `uv.lock`, until a
 replay can tell which ones the base package already writes. Coverage is per label, so it covers every reference to
-the label. A change's coverage is the labels it adds to `covers`: records of its base (a lower stack layer) do not
-cover its changes, and a label it covers must move in it or be a gap of its base (a backfill). A label whose
-references the change brings back to the tag's references and contents needs no record while no unreleased record
-covers it, and is stale while one does. Fragments the tag contains are released: they cover nothing and are not
-edited.
+the label. In a change that touches `src/` or `uv.lock`, a label a `harness` record adds to its covers says
+the package writes the same output: one whose content changed and that is not internal output (`needs_proof`) needs
+the gate's verdict (`behaviour_diff.py gate --verdicts FILE`, read with `--verdicts FILE`), and fails where the gate
+refused it or has no verdict for these contents. A change's coverage is the labels it adds to `covers`: records of
+its base (a lower stack layer) do not cover its changes, and a label it covers must move in it or be a gap of its base
+(a backfill). A label whose references the change brings back to the tag's references and contents needs no record
+while no unreleased record covers it, and is stale while one does. Fragments the tag contains are released: they
+cover nothing and are not edited.
 
 `check` also judges the release by the same rule, one step per change since the latest tag as main takes them (each
 first-parent commit up to the merge base with origin/main, the rest of the base, then the change): every label a step
@@ -107,6 +111,15 @@ SUBJECT_REF = re.compile(
 SLUG = re.compile(r"[^a-z0-9.:_-]+")
 RECORD_OPTIONS = ("category", "title", "summary", "extends", "refs", "decision", "surface")
 """The `declare` options that a new record takes as its keys, in the order it writes them."""
+NO_VERDICT = (
+    "the gate has no verdict for these contents: run "
+    "'python scripts/behaviour_diff.py gate BASE --tier pr --verdicts FILE' and pass --verdicts FILE"
+)
+"""Why a label that needs the gate's proof fails without a verdict of the gate for its base and head contents."""
+Proof = tuple[str, str, str]
+"""A label that needs the gate's proof, with the digests of its base and head contents."""
+Verdicts = dict[Proof, str | None]
+"""The gate's verdicts on the labels `harness` records cover: the problem, or None, by the label's proof."""
 SHOWN = 20
 """Labels a message lists one by one before it counts the rest."""
 Line = tuple[str, bool, str]
@@ -435,8 +448,18 @@ class Report:
     refs: list[str] = field(default_factory=list)
     main: bool = False
     returned: dict[str, list[str]] = field(default_factory=dict)
-    replay: list[str] = field(default_factory=list)
+    proofs: list[Proof] = field(default_factory=list)
+    verdicts: Verdicts = field(default_factory=dict)
     commands: list[str] = field(default_factory=list)
+
+    @property
+    def refused(self) -> list[str]:
+        """The problems of the labels that need the gate's proof: its refusal, or no verdict for their contents."""
+        return [
+            problem
+            for proof in self.proofs
+            if (problem := self.verdicts.get(proof, f"{proof[0]}: {NO_VERDICT}")) is not None
+        ]
 
     @property
     def failed(self) -> bool:
@@ -447,6 +470,7 @@ class Report:
             or self.problems
             or self.gaps
             or self.stale
+            or self.refused
             or (self.main and self.stamp)
         )
 
@@ -454,6 +478,26 @@ class Report:
 def _kinds(label: str, *sides: Side) -> set[Owner]:
     """Return the kinds of stored output the references of a label compare on any of the sides."""
     return {owner_of(reference.nodeid, label) for reference in _holders(label, *sides)}
+
+
+def needs_proof(label: str, base: Side, head: Side) -> bool:
+    """Return whether a label a `harness` record covers in a change of the generator needs the gate's verdict (6.4).
+
+    Internal output is admitted, and so are an unchanged label and one that a side lacks (an added or removed output
+    follows the rule for records); every other label needs the gate's proof that the package writes the same output.
+    """
+    old, new = base.digest(label), head.digest(label)
+    return old is not None and new is not None and old != new and _kinds(label, base, head) != {Owner.INTERNAL}
+
+
+def load_verdicts(path: Path) -> Verdicts:
+    """Return the verdicts a gate run wrote (`behaviour_diff.py gate --verdicts`)."""
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))["verdicts"]
+    except (OSError, ValueError, KeyError, TypeError):
+        msg = f"{path.as_posix()} holds no verdicts of the gate (behaviour_diff.py gate --verdicts writes them)"
+        raise CheckError(msg) from None
+    return {(row["label"], row["base"], row["head"]): row["problem"] for row in rows}
 
 
 def _refused(category: Category, surface: tuple[str, ...] | None, kinds: set[Owner], *, released: bool) -> set[Owner]:
@@ -604,7 +648,9 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
     """Return what the change from `base` to `head` moves and claims, and what the release since `tag` lacks.
 
     A label the change moves back to the tag's references and contents is free when no unreleased record covers it,
-    and stale when one does; a label a record adds to `covers` must move in the change or be a gap of the base.
+    and stale when one does; a label a record adds to `covers` must move in the change or be a gap of the base. In a
+    change of the generator, a label a `harness` record adds that `needs_proof` is refused unless `Report.verdicts`
+    hold the gate's admission of its base and head contents.
     """
     base_needs = _needs(_history(repo, tag, base))
     moved = diff(base, head)
@@ -646,12 +692,17 @@ def evaluate(repo: Path, base: Side, head: Side, tag: Side, *, main: bool = Fals
     report.older_gaps = len(head_gaps & older)
     report.stamp = stamp_pending(tag.name, head.released())
     if generator:
-        report.replay = sorted(
+        harness = {
             label
             for stem, labels in added.items()
             if (target := _target(head_records, stem)) is not None and target.category == Category.HARNESS
             for label in labels
-        )
+        }
+        report.proofs = [
+            (label, base.digest(label) or "", head.digest(label) or "")
+            for label in sorted(harness)
+            if needs_proof(label, base, head)
+        ]
     log = git(repo, "log", "--format=%B", f"{base.rev or 'HEAD'}..{head.rev or 'HEAD'}").decode()
     report.refs = list(dict.fromkeys(ref for match in SUBJECT_REF.finditer(log) for ref in match.groups() if ref))
     default = _merge_base(repo, head.rev) == _rev(repo, base.rev or "HEAD")
@@ -766,9 +817,9 @@ def format_report(report: Report) -> str:
             f"  {label}" + (f" (dropped from {', '.join(stems)})" if stems else "")
             for label, stems in list(report.returned.items())[:SHOWN]
         ] + _more(list(report.returned))
-    if report.replay:
-        lines.append(f"{len(report.replay)} stored outputs a harness record covers need the replay, as src/ changes:")
-        lines += [f"  {label}" for label in report.replay[:SHOWN]] + _more(report.replay)
+    if report.refused:
+        lines.append(f"{len(report.refused)} stored outputs a harness record covers are refused, as src/ changes:")
+        lines += [f"  {problem}" for problem in report.refused[:SHOWN]] + _more(report.refused)
     if report.older_gaps:
         lines.append(f"{report.older_gaps} stored outputs moved since {report.tag} with no record before this change")
     if report.stamp:
@@ -907,6 +958,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     check.add_argument("--head", help="the revision to judge (default: the working tree)")
     check.add_argument("--main", action="store_true", help="every gap of the release counts, and a pending stamp")
     check.add_argument("--report-only", action="store_true", help="print the report and exit 0")
+    for command in (status, check):
+        command.add_argument(
+            "--verdicts", type=Path, help="the gate's verdicts on harness labels (behaviour_diff.py gate --verdicts)"
+        )
     declare_parser.add_argument("id", help="the record's id, a lower-case slug (its file name)")
     declare_parser.add_argument("--category", choices=list(Category))
     declare_parser.add_argument("--title")
@@ -921,6 +976,13 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _judged(repo: Path, ns: argparse.Namespace) -> Report:
+    """Return the report of `status` or `check`, with the gate's verdicts `--verdicts` names."""
+    report = evaluate(repo, *_sides(repo, ns), main=getattr(ns, "main", False))
+    report.verdicts = load_verdicts(ns.verdicts) if ns.verdicts else {}
+    return report
+
+
 def main(argv: list[str] | None = None, repo: Path | None = None) -> int:
     """Script entrypoint."""
     ns = _parse_args(argv)
@@ -931,8 +993,7 @@ def main(argv: list[str] | None = None, repo: Path | None = None) -> int:
                 return declare(repo, ns)
             case "prune":
                 return prune(repo, ns)
-        base, head, tag = _sides(repo, ns)
-        report = evaluate(repo, base, head, tag, main=getattr(ns, "main", False))
+        report = _judged(repo, ns)
     except CheckError as error:
         print(f"{SCRIPT}: {error}", file=sys.stderr)
         return 2

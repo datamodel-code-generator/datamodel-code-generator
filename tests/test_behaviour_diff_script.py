@@ -2575,8 +2575,9 @@ class CellsCase:
     The release is tagged; `base` is main's next commit, `layer` a lower stack layer on it (the PR's base), `head` the
     PR; `main` is a commit main takes after the PR forked. `against` names the gate's base: the PR's `base` (the
     layer's tip), main's tip, the release tag, a commit no history has (`unknown`) or one of another history
-    (`orphan`). `records` also runs `declared_changes.py check` on the PR, which fails the harness labels the
-    gate refuses. `shape` names, in words, the rule the case pins or the passing shape it keeps.
+    (`orphan`). `records` also runs `declared_changes.py check` on the PR with the gate's verdicts (`--verdicts`),
+    which must give the gate's verdict: it fails the harness labels the gate refuses. `shape` names, in words, the rule
+    the case pins or the passing shape it keeps.
     """
 
     verdict: str
@@ -2599,6 +2600,14 @@ CHECKED = _cells_input("checked", type="int", validator=True)
 MEMORY = _cells_input("memory", type="int", memory=True)
 FAILS = _cells_input("fails", type="int", fail="boom")
 PLAIN_MODULE = f"{CELLS_EXPECTED}/main/jsonschema/plain.py"
+FAST_PATH_LIST = "main/cli_fast_paths/fast_paths_load_these_modules[help].txt"
+FAST_PATH_RELEASE = {
+    "tests/main/test_cli_fast_paths.refs": _cells_refs({
+        "test_fast_paths_load_these_modules": [f"help\t{FAST_PATH_LIST}"]
+    }),
+    f"{CELLS_EXPECTED}/{FAST_PATH_LIST}": '{"package": ["pkg", "pkg.arguments"]}\n',
+}
+"""The stored list of the modules a CLI fast path imports, an internal trace (#7155)."""
 BASE_GATE_PROBE = """import os
 import sys
 from pathlib import Path
@@ -2607,6 +2616,11 @@ checkout = Path(os.environ.get("BEHAVIOUR_DIFF_REPOSITORY", "/nonexistent"))
 sys.exit(0 if (checkout / "docs" / "notes.md").exists() else 1)
 """
 """A base's gate that passes only when it runs for the PR's checkout, which has `docs/notes.md`."""
+BASE_GATE_VERDICTS = """import sys
+
+sys.exit(any(arg.startswith("--verd") for arg in sys.argv))
+"""
+"""A base's gate from before `--verdicts`: it refuses the option."""
 CELLS_CASES: dict[str, CellsCase] = {
     "pass: no src change": CellsCase("pass", "no src change, the shortcut", {"docs/notes.md": "notes\n"}),
     "pass: a refactor, every cell equal": CellsCase(
@@ -2737,6 +2751,12 @@ CELLS_CASES: dict[str, CellsCase] = {
         | OUTPUT_TEXT_OTHER
         | _record("other-float", "decided-change", _cells("other.json", aspects=["type"], match=r"str -> float")),
     ),
+    "pass: the base's gate gets no --verdicts": CellsCase(
+        "pass",
+        "oracle files, the base's gate refuses --verdicts",
+        {"scripts/behaviour_diff.py": BASE_GATE_VERDICTS + "# changed\n"},
+        release={"scripts/behaviour_diff.py": BASE_GATE_VERDICTS},
+    ),
     "pass: an oracle-file change runs the base's gate, which passes": CellsCase(
         "pass",
         "oracle files, the base's gate passes",
@@ -2763,6 +2783,15 @@ CELLS_CASES: dict[str, CellsCase] = {
         CELLS_REFACTOR
         | {PLAIN_MODULE: CELLS_MODULE.format("int  # note")}
         | _record("plain-test", "harness", covers=("main/jsonschema/plain.py",)),
+        records=True,
+    ),
+    "pass: harness covers a changed module list of a CLI fast path": CellsCase(
+        "pass",
+        "harness, the modules a CLI fast path imports (#7155)",
+        CELLS_REFACTOR
+        | {f"{CELLS_EXPECTED}/{FAST_PATH_LIST}": '{"package": ["pkg"]}\n'}
+        | _record("fast-path-test", "harness", covers=(FAST_PATH_LIST,)),
+        release=FAST_PATH_RELEASE,
         records=True,
     ),
     "pass: harness covers an added label": CellsCase(
@@ -3044,7 +3073,10 @@ def _cells_exit(run: Callable[[], int], log: StringIO) -> int:
 
 
 def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
-    """Run the gate (and, for `records`, the records check) as CI runs it and return the verdict and the log."""
+    """Run the gate (and, for `records`, the records check) as CI runs it and return the verdict and the log.
+
+    The verdict is `split` where the records check and the gate disagree.
+    """
     repo = tmp_path / "repo"
     against = _cells_project(case, repo)[case.against]
     projects = tmp_path / "projects.json"
@@ -3053,12 +3085,14 @@ def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
     allowlist.write_text(f'base = "{CELLS_TAG}"\n', encoding="utf-8")
     argv = ["gate", against, str(repo), "--tier", case.tier, "--check", "--candidate-python", sys.executable]
     argv += ["--cache-dir", str(tmp_path / "cache"), "--projects", str(projects), "--allowlist", str(allowlist)]
+    argv += ["--verdicts", str(verdicts := tmp_path / "verdicts.json")]
     log = StringIO()
     codes = {"gate": _cells_exit(lambda: behaviour_diff.main([*argv, "-j", "2"]), log)}
     if case.records:
-        check = ["check", "--base", against, "--head", "HEAD", "--tag", CELLS_TAG]
+        check = ["check", "--base", against, "--head", "HEAD", "--tag", CELLS_TAG, "--verdicts", str(verdicts)]
         codes["records"] = _cells_exit(lambda: declared_changes.main(check, repo=repo), log)
-    verdict = "pass" if set(codes.values()) == {0} else "fail"
+    verdicts_given = {"pass" if code == 0 else "fail" for code in codes.values()}
+    verdict = verdicts_given.pop() if len(verdicts_given) == 1 else "split"
     return verdict, f"{codes}\n{log.getvalue()}"
 
 
