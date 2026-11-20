@@ -9,7 +9,7 @@ repository for a candidate revision). CANDIDATE is a checkout path (default: thi
 it has one) or a git revision of this repository. scripts/compare_release.py resolves both (`resolve_base`,
 `source_tree`): a revision is extracted with `git archive` and run from the candidate's interpreter through
 PYTHONPATH; a release is installed into a cached environment pinned to the candidate's dependency versions. The
-`[[base_skip]]` entries of the allowlist file apply to a release base only.
+`[[base_skip]]` entries of the allowlist file apply to a release base given as a version only (not `refs/tags/<tag>`).
 
 `--identity` compares without the allowlist and implies `--check`: any difference in a cell's output bytes, warnings
 (category, message, module), handled exceptions, messages (errors by class and message, without traceback frames),
@@ -27,7 +27,8 @@ the whole run. Every gate prints these input groups and the cells the candidate 
 single output file included). Refactoring steps use it against their base commit.
 
 A cell is one input x output model type x option set. Tiers:
-  pr       inputs changed since BASE and a fixed sample of 300 fixtures,
+  pr       inputs changed since BASE (with `--allowlist`, also the inputs its `[[accepted]]` entries name) and a
+           fixed sample of 300 fixtures,
            x {pydantic_v2.BaseModel, msgspec.Struct}, default options
   nightly  every fixture and payload case x 5 types (default options), every fixture x the released presets,
            every fixture x 5 types x each option set of OPTION_SETS, every `@pytest.mark.cli_doc` example, and the
@@ -59,8 +60,9 @@ entries: the records judge changes, see docs/development-contributing.md "Declar
 (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`, `reason`, `issue`) names an
 input a release is known to hang on: the release does not run for those cells, which are `base-skipped` once the
 candidate generated and imported (a candidate failure is a violation). `--check` also fails on a `[[base_skip]]` entry
-without those keys, and, in a run of the whole tier, on one that covers no cell, and on a table whose base is neither
-BASE nor an older release. The PR tier is a sample, so it never judges staleness.
+without those keys, and, in a run of the whole tier, on one that names BASE (`bases`) and covers no cell (an entry for
+another release is not judged), and, where the table has `[[accepted]]` entries, on a table whose base is neither BASE
+nor an older release. The PR tier is a sample, so it never judges staleness.
 `--shard I/N` runs the cells of shard I by input hash; the cells a `[[base_skip]]` entry covers all run in one shard
 with those of each entry that shares a cell with them, the shard of their first input. So the N shards report the
 stale entries the unsharded run reports: each shard the entries whose cells it runs, shard 1 also the entries that

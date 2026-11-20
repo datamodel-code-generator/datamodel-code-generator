@@ -368,14 +368,16 @@ options = "*"
 - `input_file_type` (optional): the input type the cells run with. Without it a selector covers the cells whose type
   is their folder's below `tests/data/`; a cell with another type (a `cli_doc` example) needs the type named.
 - `aspects` and `match` (optional): every change line of a covered cell must have one of the aspects and match the
-  regular expression (searched). A change line is `[aspect] ...` from the behaviour signature diff, plus
-  `[exit] <base> -> <head>`, `[warning] added|removed <text>` and `[message] added|removed <line>`. A decision
+  regular expression (searched) in at least one selector that covers the cell (not in every one); a `notice` record
+  applies this to the `[warning]` and `[message]` lines. A change line is `[aspect] ...` from the behaviour signature
+  diff, plus `[exit] <base> -> <head>`, `[warning] added|removed <text>` and `[message] added|removed <line>`. A decision
   category needs one of the two in every selector, a `notice` needs `match`.
 
 The gate prints a starting block for the uncovered cells: one selector per input, `options = "*"` where the cells span
 several option sets, and the first change line as a commented `match`. Write the selector narrow: one selector may name
 at most 1500 cells (about a whole PR-tier run), and every selector must match a differing cell of the run, so a
-selector that matches no cell, or only equal ones, fails (a stale one, in a run of the whole nightly or release tier).
+selector that matches no cell, or only equal ones, fails (a stale one, in a run of the whole nightly or release tier; `--select` judges no
+selector).
 A selector may not name unreleased surface: an option, option value, `--preset` date or input type the latest release
 lacks is judged by the stored outputs, so its cells never run. The schema is checked before anything generates:
 unknown keys, an empty `input`, an unknown backend, malformed `options`, an unknown aspect or a `match` that does not
@@ -394,7 +396,7 @@ records a PR adds must name cells.
 | category | cells | differences it covers | evidence on each covered differing cell |
 |---|---|---|---|
 | `output-text` | required | output | exit, warnings and messages equal; every differing file is a model module; class `no-behaviour`; rule (b); payload cells give equal verdicts and parsed values |
-| `crash-fix` | required | output, exit, messages | class `crash-fix`; an exit status going from a failure to 0 |
+| `crash-fix` | required | output, exit, messages | class `crash-fix`; where the exit status differs, it goes from a failure to 0 |
 | `default-fix`, `decided-change` | optional; `aspects` or `match` in every selector | any | every change line inside the selector's `aspects` and `match` |
 | `experimental` | optional | any | a feature of `affects.experimental` is in the cell (its option is set, or its input type is the feature's); the companion cell without the feature's options is equal |
 | `notice` | required; `match` in every selector | warnings, messages | output and exit equal; every `[warning]` and `[message]` line matches |
@@ -442,7 +444,7 @@ the records, and exits 1 under `--check`.
 | `<id> (<category>): <reason>` | the category's evidence does not hold on the cell (the table above): fix the code, or declare the change with the category it is (an `output-text` change that alters a type expression is a `decided-change`) |
 | `no covering record admits the cell's <kind> difference` | the category cannot cover that kind of difference (an `output-text` record covers no warning): add a record of a category that does |
 | `the cell without the feature's options differs too: it needs a record` | the change is not limited to the experimental feature: add a record for the companion cell |
-| `entry <id>: cells <n> matches no cell of the run` or `only equal cells` | the selector names no differing cell: narrow or drop it (a stale selector in a release run: edit the record) |
+| `entry <id>: cells <n> matches no cell of the run` or `only equal cells` | the selector names no differing cell: correct or widen it to the cell the change is on, or drop it if it is obsolete (a stale selector in a release run: edit the record) |
 | `entry <id>: cells <n> names <N> cells, more than the 1500 a run may take` | narrow its `input`, `backends` or `options` |
 | `entry <id>: cells <n> name <item>, which <tag> lacks` | unreleased surface is judged by the stored outputs, not by cells: drop the selector |
 | `entry <id>: a record of the base gains [[change.cells]]; add a record with extends instead` | move the new selectors to an `extends` record |
