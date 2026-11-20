@@ -1476,6 +1476,89 @@ def test_the_docstring_reader_sites_are_the_package_s() -> None:
     )
 
 
+PICKED = {
+    case: oracle.runs[1][0]
+    for case, oracle in ORACLES.items()
+    if len(oracle.runs) == 2 and oracle.runs[0] == ("incomplete", PLAIN) and oracle.runs[1][1] == REACHED
+}
+"""The oracle shapes only the reaching input runs, with the verdict a comparison of the cells it reaches gives."""
+CATALOG_ARGUMENTS = ORACLE_ARGUMENTS + 'arg_parser.add_argument("--input-file-type")\n'
+"""The stand-in's parser with the input file type a gate cell names (`behaviour_diff.Cell.args`)."""
+SHIFTED = "\n\nSHIFT = 1\n"
+"""A commit between the catalog and the base: it moves every line of `_case.py` below its top."""
+
+
+def _catalog_pick(tmp_path: Path, oracle: Oracle, *, shift: bool = False) -> tuple[Path, list[str], list[str]]:
+    """Record the catalog of the plain and the reaching input on the oracle's base commit and pick its change's cells.
+
+    With `shift`, a commit that moves the lines of `_case.py` comes between the catalog and the base of the change.
+    Return the repository, the comparison command of `_oracle_project` and the labels of the picked cells.
+    """
+    from scripts import _cell_catalog as cell_catalog
+    from scripts.behaviour_diff import Cell
+
+    repo, command = _oracle_project(tmp_path, Oracle({"arguments.py": CATALOG_ARGUMENTS, **oracle.base}, oracle.head))
+    catalog_commit = compare_release.git(repo, "rev-parse", "HEAD").stdout.strip()
+    python = Path(sys.executable)
+    cache = tmp_path / "cache"
+    catalog_side = compare_release.resolve_base(catalog_commit, python, cache, repo)
+    runner = compare_release.Runner(
+        compare_release.Side("catalog", python, catalog_side.package),
+        catalog_side.env(),
+        import_check=False,
+        timeout=60,
+    )
+    cells = [Cell(repo / "inputs" / name, name, "jsonschema", "pydantic_v2.BaseModel") for name in (*PLAIN, *REACHED)]
+    catalog = cell_catalog.record(runner, cells, catalog_commit, 1)
+    catalog.write(tmp_path / "catalog.json.gz")
+    base = catalog_side
+    if shift:
+        case = repo / "src" / "datamodel_code_generator" / "_case.py"
+        changed = case.read_text(encoding="utf-8")
+        case.write_text(SHIFTED + oracle.base["_case.py"], encoding="utf-8")
+        for args in (["add", "-A", "src"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "shift"]):
+            subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+        case.write_text(SHIFTED + changed, encoding="utf-8")
+        shifted = compare_release.git(repo, "rev-parse", "HEAD").stdout.strip()
+        base = compare_release.resolve_base(shifted, python, cache, repo)
+        command[command.index("--base") + 1] = shifted
+    units = compare_release.changed_units(python, repo, base, None, repo / "src")
+    chosen = cell_catalog.pick_change(
+        cell_catalog.Catalog.read(tmp_path / "catalog.json.gz"), repo, units, (base.revision or "", None)
+    )
+    return repo, command, [cell["label"] for cell in chosen.data()["cells"]]
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", sorted(PICKED))
+def test_cell_catalog_picks_the_cells_the_evidence_asks_for(case: str, tmp_path: Path) -> None:
+    """The cells a catalog picks for a change run what the comparison's evidence asks for.
+
+    For each oracle shape only the reaching input runs, a catalog of the plain and the reaching input on the base picks
+    the reaching one, and comparing the picked cells gives the verdict comparing that input gives.
+    """
+    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case])
+    assert "reached.json" in picked, picked
+    run = subprocess.run([*command, *picked], cwd=repo / "inputs", capture_output=True, text=True, check=False)
+    assert _verdict(run.returncode, run.stdout) == PICKED[case], f"picked {picked}\n{run.stdout}"
+
+
+@pytest.mark.allow_direct_assert(
+    "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
+)
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", ["f3_ternary_arm", "r2_p3_else_deleted", "r2_p1_function_level_lambda"])
+def test_cell_catalog_reads_lines_of_an_older_revision(case: str, tmp_path: Path) -> None:
+    """A catalog older than the change's base finds the change's lines where the commits between moved them."""
+    repo, command, picked = _catalog_pick(tmp_path, ORACLES[case], shift=True)
+    assert "reached.json" in picked, picked
+    run = subprocess.run([*command, *picked], cwd=repo / "inputs", capture_output=True, text=True, check=False)
+    assert _verdict(run.returncode, run.stdout) == "complete", f"picked {picked}\n{run.stdout}"
+
+
 FILE_MAP_CASES = {
     "an unchanged file": ((), [1, 7]),
     "a replaced line and the lines around it": (((3, 1, 3, 1),), [2, 3, 4]),
