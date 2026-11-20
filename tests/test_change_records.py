@@ -226,6 +226,9 @@ STAMPED_CASES = {
     "spaced header": FRAGMENT + CELLS_TABLE.replace("[[change.cells]]", "[[ change . cells ]]  # spaced"),
     "inline cells": FRAGMENT + 'cells = [{ input = ["a.json"], backends = "*", options = "*" }]\n',
     "a header-like line in a string": FRAGMENT.replace('summary = "s"', 'summary = """\n[[change.cells]]\n"""'),
+    "option sets at the start of their lines": FRAGMENT
+    + CELLS_TABLE.replace('options = "*"', 'options = [\n["--use-annotated"],\n[]\n]'),
+    "an indented header": FRAGMENT + CELLS_TABLE.replace("[[change.cells]]", "  [[change.cells]]"),
 }
 
 

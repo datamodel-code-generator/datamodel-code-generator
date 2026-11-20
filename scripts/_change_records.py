@@ -7,7 +7,9 @@ stored output its `covers` may list. Entries of released changes may lack a cate
 
 A record names the comparator cells its change moves with `[[change.cells]]` selectors (`CellSelector`); the `cells`
 of its category's rule (`CellRule`) say whether it must, may or must not name cells and which kinds of a cell's
-difference it admits, and `scripts/_behaviour_classify.py` judges a differing cell by them.
+difference it admits, and `scripts/_behaviour_classify.py` judges a differing cell by them. The behaviour gate
+(`scripts/behaviour_diff.py`) reads no cells yet: until it does, its allowlist decides its cells, and no caller asks
+`rule_problems` for the cells an added record must name.
 
 `scripts/build_migration_docs.py` reads every entry through `parse_entry`, and `scripts/declared_changes.py` reads the
 records of any revision the same way. Standard library only, so the static check needs no environment.
@@ -408,10 +410,10 @@ is in a function body, a decorator or a configuration key the signature does not
 
 Cells: an `output-text` record admits an output difference, a `crash-fix` one also an exit difference and messages, a
 `notice` warnings and messages, an `api` one an exit difference and messages (a removed option), and a decision
-(`default-fix`, `decided-change`) or `experimental` record any difference; the first three must name the cells they
-cover once they are added (the comparator checks that on the records a change adds, so released records need none),
-the others may. `new-surface` names none, as no comparator run judges surface the latest release lacks, nor do the
-categories without output (`docs-text`, `internal`, `harness`).
+(`default-fix`, `decided-change`) or `experimental` record any difference. An added `output-text`, `crash-fix` or
+`notice` record must name the cells it covers (`rule_problems` with `added`, for the records a change adds, so released
+records need none); the others may. `new-surface` names none, as no comparator run judges surface the latest release
+lacks, nor do the categories without output (`docs-text`, `internal`, `harness`).
 """
 
 
@@ -884,27 +886,33 @@ def with_covers(text: str, labels: Collection[str]) -> str:
     return next(candidate for candidate in candidates if tomllib.loads(candidate) == wanted)
 
 
+def _parses(text: str) -> bool:
+    try:
+        tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return False
+    return True
+
+
 def without_cells(text: str) -> str:
     """Return a fragment's text without its `[[change.cells]]` tables, as `--stamp` moves it to a release's changes.
 
-    Each table runs from its header to the next table header or the end. Raises ValueError where the text writes its
-    cells otherwise (an inline array, or a line of a multi-line string that looks like a header).
+    Each table runs from its header to the next table header or the end. A table header is a line that starts with
+    `[` where no value is open (the text before it parses), so neither an array element nor a line of a multi-line
+    string. Raises ValueError where the text writes its cells otherwise (an inline array).
     """
     wanted = tomllib.loads(text)
     for entry in wanted.get("change", []):
         entry.pop("cells", None)
+    lines = text.splitlines(keepends=True)
     kept, dropping = [], False
-    for line in text.splitlines(keepends=True):
-        if line.startswith("["):
+    for index, line in enumerate(lines):
+        if line.lstrip().startswith("[") and _parses("".join(lines[:index])):
             dropping = bool(CELLS_HEADER.fullmatch(line.strip()))
         if not dropping:
             kept.append(line)
     stripped = "".join(kept)
-    try:
-        written = tomllib.loads(stripped) == wanted
-    except tomllib.TOMLDecodeError:
-        written = False
-    if not written:
+    if not _parses(stripped) or tomllib.loads(stripped) != wanted:
         msg = "its cells are not written as [[change.cells]] tables"
         raise ValueError(msg)
     return stripped

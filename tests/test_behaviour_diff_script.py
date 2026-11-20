@@ -3073,6 +3073,7 @@ CHANGE_LINE_CASES: dict[str, tuple[list[Change], tuple[int, int], Warnings, tupl
     "the warnings in another order": ([], (0, 0), ([WARNING, OTHER_WARNING], [OTHER_WARNING, WARNING]), ("", "")),
     "a message line added": ([], (0, 0), ([], []), ("Error: one\n", "Error: one\nError: two\nhint\n")),
     "a message line removed": ([], (0, 0), ([], []), ("Error: one\nError: two\n", "Error: one\n")),
+    "a message line printed once more": ([], (0, 0), ([], []), ("Error: one\n", "Error: one\nError: one\n")),
     "the message lines in another order": ([], (0, 0), ([], []), ("a\nb\n", "b\na\n")),
 }
 
@@ -3187,6 +3188,34 @@ class Holder(BaseModel):
     b: Optional[int] = None
     c: list[int | str | None] = []
 """
+SWAP_MODEL = """
+
+@dataclass
+class Model:
+    a: list[int] = field(default_factory=lambda: [1])
+    b: list[int] = field(default_factory=lambda: [2])
+    c: Union[int, str] = 0
+    d: Union[str, int] = 0
+
+    @property
+    def e(self) -> int:
+        return 1
+
+    @e.setter
+    def e(self, value: int) -> None:
+        pass
+"""
+SWAP_OTHER = """
+
+@dataclass
+class Other:
+    f: int = 0
+"""
+SWAP_IMPORTS = "from dataclasses import dataclass, field\nfrom typing import Union\n"
+SWAP_TEXT = SWAP_IMPORTS + SWAP_MODEL + SWAP_OTHER
+ALIAS_X = "X = Union[int, str]\n"
+ALIAS_Y = "Y = Union[\n    str,\n    int,\n]\n"
+ALIAS_TEXT = "from typing import Union\n" + ALIAS_X + ALIAS_Y
 RULE_B_OLD = {
     "the members of a root model's union in another order": ROOT_UNION_TEXT,
     "the members of a field's union in another order": ROOT_UNION_TEXT,
@@ -3195,6 +3224,12 @@ RULE_B_OLD = {
     "an import moved past a statement it shadows": (
         "from pydantic import BaseModel\nField = 1\nfrom pydantic import Field\n"
     ),
+    "two fields' default factories traded": SWAP_TEXT,
+    "two fields' union orders traded": SWAP_TEXT,
+    "two classes in another order": SWAP_TEXT,
+    "two aliases' union orders traded": ALIAS_TEXT,
+    "two aliases in another order": ALIAS_TEXT,
+    "a getter's and a setter's bodies traded": SWAP_TEXT,
 }
 RULE_B_CASES: dict[str, tuple[str, bool]] = {
     "the members of a root model's union in another order": (
@@ -3215,6 +3250,30 @@ RULE_B_CASES: dict[str, tuple[str, bool]] = {
     "an import moved past a statement it shadows": (
         "from pydantic import BaseModel\nfrom pydantic import Field\nField = 1\n",
         False,
+    ),
+    "two fields' default factories traded": (
+        SWAP_TEXT.replace("lambda: [1]", "lambda: [0]").replace("lambda: [2]", "lambda: [1]").replace("[0]", "[2]"),
+        True,
+    ),
+    "two fields' union orders traded": (
+        SWAP_TEXT
+        .replace("Union[int, str]", "Union[0]")
+        .replace("Union[str, int]", "Union[int, str]")
+        .replace("Union[0]", "Union[str, int]"),
+        True,
+    ),
+    "two classes in another order": (SWAP_IMPORTS + SWAP_OTHER + SWAP_MODEL, True),
+    "two aliases' union orders traded": (
+        ALIAS_TEXT.replace("Union[int, str]", "Union[str, int]").replace("str,\n    int,", "int,\n    str,"),
+        True,
+    ),
+    "two aliases in another order": ("from typing import Union\n" + ALIAS_Y + ALIAS_X, True),
+    "a getter's and a setter's bodies traded": (
+        SWAP_TEXT
+        .replace("        return 1\n", "        pass0\n")
+        .replace("        pass\n", "        return 1\n")
+        .replace("pass0", "pass"),
+        True,
     ),
     "same text": (MODEL_TEXT, False),
     "docstrings and comments": (
@@ -3459,6 +3518,14 @@ JUDGE_CASES: dict[str, tuple[list[Record], set[CellKind], CellEvidence, behaviou
         [_judged("notice", _lines("tests/data/**", match="gap"))],
         {MESSAGES},
         CellEvidence("same", lines=("[message] mind the gap",)),
+        _cell(),
+    ),
+    "a notice matching only the last of the message lines added": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {MESSAGES},
+        CellEvidence(
+            "same", lines=change_lines([], messages=("Error: one\n", "Error: one\nError: two\nmind the gap\n"))
+        ),
         _cell(),
     ),
     "a notice when a signature could not be taken": (

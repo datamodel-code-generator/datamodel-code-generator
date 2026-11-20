@@ -37,6 +37,7 @@ versions	behaviour_diff_script/base_skip_problems[versions].txt	= main/generatio
 	behaviour_diff_script/candidate_payload_path_does_not_import_the_guide_builder.txt
 [test_change_lines]
 a message line added	behaviour_diff_script/change_lines[a message line added].txt
+a message line printed once more	behaviour_diff_script/change_lines[a message line printed once more].txt
 a message line removed	behaviour_diff_script/change_lines[a message line removed].txt
 a warning added and one removed	behaviour_diff_script/change_lines[a warning added and one removed].txt
 a warning removed	behaviour_diff_script/change_lines[a warning removed].txt
@@ -194,6 +195,7 @@ a harness record	behaviour_diff_script/judge[a harness record].txt
 a notice for a message line it matches	behaviour_diff_script/judge[a notice for a message line it matches].txt	= behaviour_diff_script/judge[notice inside its match].txt
 a notice for messages that show in no line	behaviour_diff_script/judge[a notice for messages that show in no line].txt
 a notice for warnings that show in no line	behaviour_diff_script/judge[a notice for warnings that show in no line].txt
+a notice matching only the last of the message lines added	behaviour_diff_script/judge[a notice matching only the last of the message lines added].txt
 a notice when a signature could not be taken	behaviour_diff_script/judge[a notice when a signature could not be taken].txt
 a record without a category	behaviour_diff_script/judge[a record without a category].txt	= behaviour_diff_script/judge[a harness record].txt
 api for a removed option it does not name	behaviour_diff_script/judge[api for a removed option it does not name].txt
@@ -296,6 +298,7 @@ a decorator, the signatures equal	behaviour_diff_script/rule_b[a decorator, the 
 a default factory's body, the signatures equal	behaviour_diff_script/rule_b[a default factory's body, the signatures equal].txt	= behaviour_diff_script/covers[an option set in another order].txt
 a field default spelled otherwise, the signatures equal	behaviour_diff_script/rule_b[a field default spelled otherwise, the signatures equal].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 a field type, the signatures differ	behaviour_diff_script/rule_b[a field type, the signatures differ].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a getter's and a setter's bodies traded	behaviour_diff_script/rule_b[a getter's and a setter's bodies traded].txt	= behaviour_diff_script/covers[an option set in another order].txt
 a nested union flattened	behaviour_diff_script/rule_b[a nested union flattened].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 a union spelled otherwise with the same members	behaviour_diff_script/rule_b[a union spelled otherwise with the same members].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 a validator's body, the signatures equal	behaviour_diff_script/rule_b[a validator's body, the signatures equal].txt	= behaviour_diff_script/covers[an option set in another order].txt
@@ -306,6 +309,11 @@ text that does not parse	behaviour_diff_script/rule_b[text that does not parse].
 the members of a field's union in another order	behaviour_diff_script/rule_b[the members of a field's union in another order].txt	= behaviour_diff_script/covers[an option set in another order].txt
 the members of a root model's union in another order	behaviour_diff_script/rule_b[the members of a root model's union in another order].txt	= behaviour_diff_script/covers[an option set in another order].txt
 the order of the imports	behaviour_diff_script/rule_b[the order of the imports].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+two aliases in another order	behaviour_diff_script/rule_b[two aliases in another order].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+two aliases' union orders traded	behaviour_diff_script/rule_b[two aliases' union orders traded].txt	= behaviour_diff_script/covers[an option set in another order].txt
+two classes in another order	behaviour_diff_script/rule_b[two classes in another order].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+two fields' default factories traded	behaviour_diff_script/rule_b[two fields' default factories traded].txt	= behaviour_diff_script/covers[an option set in another order].txt
+two fields' union orders traded	behaviour_diff_script/rule_b[two fields' union orders traded].txt	= behaviour_diff_script/covers[an option set in another order].txt
 [test_shard_argument_and_shard_part_records]
 	behaviour_diff_script/shard_argument_and_shard_part_records.txt
 [test_signature]

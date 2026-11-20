@@ -21,6 +21,8 @@
 The change records judge a cell whose facts differ (`kinds`): `covers` finds the records' `[[change.cells]]` selectors
 that name it, and `judge` decides whether the records that cover it admit every kind of its difference with the
 evidence of their categories (`CellEvidence`, its change lines from `change_lines`, `rule_b` for `output-text`).
+`scripts/behaviour_diff.py` does not call them yet: until it does, `classify_cell` with the allowlist decides the
+gate's cells.
 
 Pure functions only: no file system access apart from `Allowlist.load`.
 """
@@ -584,8 +586,9 @@ def change_lines(
 
     They are the behaviour changes of its signatures, then `[exit] <base> -> <head>`, a `[warning]` line for each
     warning (category, message, module) one side shows more often than the other and one where only their order
-    differs, and a `[message]` line with the last line of the head's messages the base's lack (else the last of the
-    base's the head's lack, else a note that only their order differs). A no-behaviour output difference has no lines.
+    differs, and the same for the lines of their messages: a `[message]` line for each line one side prints more
+    often than the other, so a selector's `match` is checked on every differing line, and one where only their order
+    differs. A no-behaviour output difference has no lines.
     """
     lines = [change.line() for change in changes if change.behaviour]
     if exits[0] != exits[1]:
@@ -595,12 +598,11 @@ def change_lines(
     lines += [f"[warning] added {_warning_text(item)}" for item in (new - old).elements()]
     if old == new and list(map(tuple, warnings[0])) != list(map(tuple, warnings[1])):
         lines.append("[warning] the same warnings in another order")
-    if messages[0] != messages[1]:
-        old_lines, new_lines = messages[0].splitlines(), messages[1].splitlines()
-        differing = [line for line in new_lines if line not in old_lines] or [
-            line for line in old_lines if line not in new_lines
-        ]
-        lines.append(f"[message] {differing[-1] if differing else 'the same lines in another order'}")
+    old_lines, new_lines = Counter(messages[0].splitlines()), Counter(messages[1].splitlines())
+    lines += [f"[message] removed {line}" for line in (old_lines - new_lines).elements()]
+    lines += [f"[message] added {line}" for line in (new_lines - old_lines).elements()]
+    if old_lines == new_lines and messages[0] != messages[1]:
+        lines.append("[message] the same lines in another order")
     return tuple(lines)
 
 
@@ -866,17 +868,6 @@ def _flat(node: ast.expr) -> list[ast.expr]:
     return _union_members(node) or [node]
 
 
-def _unions(node: ast.AST) -> Iterable[list[ast.expr]]:
-    """Yield the members of each union below a node (a union nested in a union is part of the outer one)."""
-    if (members := _union_members(node)) is not None:
-        yield members
-        for member in members:
-            yield from _unions(member)
-    else:
-        for child in ast.iter_child_nodes(node):
-            yield from _unions(child)
-
-
 def _keyword_values(keywords: Iterable[ast.keyword]) -> list[tuple[str, ast.AST]]:
     return [(keyword.arg or "**", keyword.value) for keyword in keywords]
 
@@ -903,25 +894,62 @@ def _config_values(scope: Scope) -> list[tuple[str, ast.AST]]:
     return found
 
 
+def _unions(node: ast.AST) -> Iterable[tuple[ast.AST, list[ast.expr]]]:
+    """Yield each union below a node with its members (a union nested in a union is part of the outer one)."""
+    if (members := _union_members(node)) is not None:
+        yield node, members
+        for member in members:
+            yield from _unions(member)
+    else:
+        for child in ast.iter_child_nodes(node):
+            yield from _unions(child)
+
+
+def _where(scope: Scope) -> str:
+    """Return where a scope is: its qualified name and its ordinal, as the source model pairs scopes across texts."""
+    return f"{scope.qualname}#{scope.ordinal}"
+
+
+def _union_parts(model: SourceModule) -> Iterable[str]:
+    """Yield the members of each union in their order, each with where it is.
+
+    A union is where the statement that holds it is: its scope and the names the statement binds there (a field's
+    name, a function's), and its index among the unions of statements that bind the same names in that scope.
+    """
+    bound: dict[tuple[int, int], list[str]] = {}
+    for binding in model.bindings():
+        bound.setdefault((id(binding.scope), id(model.statement_at(binding.line))), []).append(binding.name)
+    seen: Counter[str] = Counter()
+    for node, members in _unions(model.tree):
+        scope = model.scope_of(node)
+        statement = model.statement_at(getattr(node, "lineno", 0))
+        at = f"{_where(scope)} {','.join(sorted(bound.get((id(scope), id(statement)), [])))}"
+        yield f"union {at} {seen[at]} {' | '.join(map(ast.unparse, members))}"
+        seen[at] += 1
+
+
 def _unlisted_parts(model: SourceModule) -> Counter[str]:
-    """Return what a signature does not see, as a multiset of dumps.
+    """Return what a signature does not see, as a multiset of dumps, each with where it is.
 
     They are function bodies, lambdas, decorators, configuration keys and the members of each union in their order
-    (a signature sorts them, and validation tries them in order).
+    (a signature sorts them, and validation tries them in order). Each is where its scope is (`_where`: a field's
+    lambda by its index among the class's lambdas, a method by its index among the methods of its name), or a union
+    where its statement is (`_union_parts`), so two fields or methods never trade them unseen, and moving a class
+    keeps them.
 
     A configuration key counts unless the signature lists it (`_behaviour_signature`'s pydantic and msgspec keys).
     """
-    parts: Counter[str] = Counter(f"union {' | '.join(map(ast.unparse, members))}" for members in _unions(model.tree))
+    parts: Counter[str] = Counter(_union_parts(model))
     for scope in model.scopes:
-        node = scope.node
+        node, at = scope.node, _where(scope)
         if scope.kind == "function":
-            parts[f"body {scope.qualname} {ast.dump(ast.Module(body=getattr(node, 'body', []), type_ignores=[]))}"] += 1
+            parts[f"body {at} {ast.dump(ast.Module(body=getattr(node, 'body', []), type_ignores=[]))}"] += 1
         if scope.kind == "lambda":
-            parts[f"lambda {ast.dump(node)}"] += 1
-        parts.update(f"decorator {scope.qualname} {ast.dump(item)}" for item in getattr(node, "decorator_list", []))
+            parts[f"lambda {at} {ast.dump(node)}"] += 1
+        parts.update(f"decorator {at} {ast.dump(item)}" for item in getattr(node, "decorator_list", []))
         if scope.kind == "class":
             parts.update(
-                f"config {scope.qualname} {key} {ast.dump(value)}"
+                f"config {at} {key} {ast.dump(value)}"
                 for key, value in _config_values(scope)
                 if key not in SIGNATURE_CONFIG_KEYS
             )
@@ -933,8 +961,9 @@ def rule_b(old: str, new: str, *, signature_equal: bool) -> bool:
 
     Their syntax trees are equal apart from docstrings, comments and the order of the top-level imports within a run of
     consecutive imports; or else the signatures are equal (`signature_equal`) and no function body, lambda, decorator
-    or configuration key the signature does not list differs, nor the order of the members of a union, compared as
-    multisets of their dumps. A text that does not parse holds nothing.
+    or configuration key the signature does not list differs, nor the order of the members of a union, nor where one of
+    them is (the statement that holds it), compared as multisets of their dumps. A text that does not parse holds
+    nothing.
     """
     try:
         old_model, new_model = _read(old), _read(new)
