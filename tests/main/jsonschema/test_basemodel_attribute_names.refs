@@ -6,4 +6,4 @@ default-prefix	main/jsonschema/basemodel_attribute_names_default_prefix_fields.t
 empty-prefix	main/jsonschema/basemodel_attribute_names_empty_prefix.py
 empty-prefix	main/jsonschema/basemodel_attribute_names_empty_prefix_fields.txt
 [test_installed_basemodel_attribute_names_are_renamed]
-	main/jsonschema/basemodel_attribute_names_kept.txt
+	main/jsonschema/basemodel_attribute_names/installed_basemodel_attribute_names_are_renamed.txt

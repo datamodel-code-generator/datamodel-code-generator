@@ -146,15 +146,15 @@ siblings-siblings_dataclass-args10-target-unset	main/jsonschema/type_alias_looka
 siblings-siblings_dataclass-args10-target-unset	main/jsonschema/type_alias_lookaround/siblings_runtime.txt
 siblings-siblings_dataclass-args10-target-unset	main/jsonschema/type_alias_patterns/type_alias_lookaround[siblings-siblings_dataclass-args10-target-unset].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_type_alias_lookaround_reuse_scope_tree]
-target-2	main/jsonschema/type_alias_lookaround/target_2/tree//*.py
-target-2	main/jsonschema/type_alias_lookaround/tree_runtime.txt
+target-2	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2].tree_runtime.txt
 target-2	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2].warnings.txt
-target-2.12	main/jsonschema/type_alias_lookaround/tree//*.py
-target-2.12	main/jsonschema/type_alias_lookaround/tree_runtime.txt
+target-2	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2]/
+target-2.12	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2.12].tree_runtime.txt	= main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2].tree_runtime.txt
 target-2.12	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2.12].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-target-unset	main/jsonschema/type_alias_lookaround/tree//*.py
-target-unset	main/jsonschema/type_alias_lookaround/tree_runtime.txt
+target-2.12	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2.12]/
+target-unset	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-unset].tree_runtime.txt	= main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2].tree_runtime.txt
 target-unset	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-unset].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+target-unset	main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-unset]/	= main/jsonschema/type_alias_patterns/type_alias_lookaround_reuse_scope_tree[target-2.12]/
 [test_type_alias_pattern_inherited_by_a_dataclass_with_its_own_config]
 lone-surrogate	main/jsonschema/type_alias_patterns/type_alias_pattern_inherited_by_a_dataclass_with_its_own_config[lone-surrogate].py
 lookaround-target-2	main/jsonschema/type_alias_patterns/type_alias_pattern_inherited_by_a_dataclass_with_its_own_config[lookaround-target-2].py

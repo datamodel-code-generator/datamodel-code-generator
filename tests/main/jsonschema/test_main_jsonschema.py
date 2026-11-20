@@ -21922,20 +21922,17 @@ def test_main_jsonschema_reuse_scope_tree_shared_module_name(extra_args: list[st
 
 
 @pytest.mark.parametrize(
-    ("expected_name", "extra_args"),
+    "extra_args",
     [
-        pytest.param("reuse_scope_tree_cross_module_users", [], id="inherit"),
-        pytest.param("reuse_scope_tree_cross_module_users_collapsed", ["--collapse-reuse-models"], id="collapse"),
+        pytest.param([], id="inherit"),
+        pytest.param(["--collapse-reuse-models"], id="collapse"),
     ],
 )
-def test_main_jsonschema_reuse_scope_tree_cross_module_users(
-    expected_name: str, extra_args: list[str], output_dir: Path
-) -> None:
+def test_main_jsonschema_reuse_scope_tree_cross_module_users(extra_args: list[str], output_dir: Path) -> None:
     """Point users in other modules at the shared model when tree-scope reuse removes a duplicate."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_cross_module_users",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -21958,20 +21955,17 @@ def test_main_jsonschema_reuse_scope_tree_cross_module_users(
 
 
 @pytest.mark.parametrize(
-    ("expected_name", "extra_args"),
+    "extra_args",
     [
-        pytest.param("reuse_scope_tree_same_name_references", [], id="inherit"),
-        pytest.param("reuse_scope_tree_same_name_references_collapsed", ["--collapse-reuse-models"], id="collapse"),
+        pytest.param([], id="inherit"),
+        pytest.param(["--collapse-reuse-models"], id="collapse"),
     ],
 )
-def test_main_jsonschema_reuse_scope_tree_same_name_references(
-    expected_name: str, extra_args: list[str], output_dir: Path
-) -> None:
+def test_main_jsonschema_reuse_scope_tree_same_name_references(extra_args: list[str], output_dir: Path) -> None:
     """Keep models of different modules apart when their same-named references point at different models."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_same_name_references",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -21993,7 +21987,6 @@ def test_main_jsonschema_reuse_model_same_name_references(output_dir: Path) -> N
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_model_same_name_references",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_model_same_name_references",
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -22009,25 +22002,21 @@ def test_main_jsonschema_reuse_model_same_name_references(output_dir: Path) -> N
 
 
 @pytest.mark.parametrize(
-    ("expected_name", "extra_args"),
+    "extra_args",
     [
-        pytest.param("collapse_reuse_models_cross_module_users", [], id="module"),
-        pytest.param("collapse_reuse_models_cross_module_users_tree", ["--reuse-scope", "tree"], id="tree"),
+        pytest.param([], id="module"),
+        pytest.param(["--reuse-scope", "tree"], id="tree"),
         pytest.param(
-            "collapse_reuse_models_cross_module_users_tree",
             ["--reuse-scope", "tree", "--use-type-alias"],
             id="tree-type-alias",
         ),
     ],
 )
-def test_main_jsonschema_collapse_reuse_models_cross_module_users(
-    expected_name: str, extra_args: list[str], output_dir: Path
-) -> None:
+def test_main_jsonschema_collapse_reuse_models_cross_module_users(extra_args: list[str], output_dir: Path) -> None:
     """Point users in other modules at the kept model when a duplicate is collapsed within its module."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_reuse_models_cross_module_users",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -22048,7 +22037,6 @@ def test_main_jsonschema_reuse_scope_tree_enum(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_enum",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_enum",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree"],
     )
@@ -22091,7 +22079,6 @@ def test_main_jsonschema_reuse_scope_tree_no_dup(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_no_dup",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_no_dup",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree"],
     )
@@ -22102,33 +22089,29 @@ def test_main_jsonschema_reuse_scope_tree_self_ref(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_self_ref",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_self_ref",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree"],
     )
 
 
 @pytest.mark.parametrize(
-    ("collapse_args", "expected_directory"),
+    "collapse_args",
     [
-        pytest.param([], "reuse_type_overrides_tree", id="inherit"),
+        pytest.param([], id="inherit"),
         pytest.param(
             ["--collapse-reuse-models"],
-            "reuse_type_overrides_tree_collapsed",
             id="collapse",
         ),
     ],
 )
 def test_main_jsonschema_reuse_scope_tree_preserves_type_overrides(
     collapse_args: list[str],
-    expected_directory: str,
     output_dir: Path,
 ) -> None:
     """Keep scoped and model-level overrides outside tree reuse optimizations."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_type_overrides_tree",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_directory,
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -22178,7 +22161,6 @@ def test_main_jsonschema_reuse_scope_tree_no_conflict_dir(output_dir: Path) -> N
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_no_conflict_dir",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_no_conflict_dir",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree"],
     )
@@ -22189,7 +22171,6 @@ def test_main_jsonschema_reuse_scope_tree_multi(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_multi",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_multi",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree"],
     )
@@ -22200,7 +22181,6 @@ def test_main_jsonschema_reuse_scope_tree_branch(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_branch",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_branch",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree"],
     )
@@ -22211,7 +22191,6 @@ def test_main_jsonschema_reuse_scope_tree_dataclass(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_dataclass",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree", "--output-model-type", "dataclasses.dataclass"],
     )
@@ -22247,33 +22226,29 @@ def test_main_jsonschema_reuse_scope_tree_typeddict(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_typeddict",
         input_file_type="jsonschema",
         extra_args=["--reuse-model", "--reuse-scope", "tree", "--output-model-type", "typing.TypedDict"],
     )
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_directory"),
+    "output_model_type",
     [
         pytest.param(
             "pydantic_v2.dataclass",
-            "reuse_scope_tree_pydantic_dataclass",
             id="pydantic-dataclass",
         ),
-        pytest.param("msgspec.Struct", "reuse_scope_tree_msgspec", id="msgspec"),
+        pytest.param("msgspec.Struct", id="msgspec"),
     ],
 )
 def test_main_jsonschema_reuse_scope_tree_non_inheriting_outputs(
     output_model_type: str,
-    expected_directory: str,
     output_dir: Path,
 ) -> None:
     """Keep direct shared-model references for non-inheriting tree reuse outputs."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_directory,
         input_file_type="jsonschema",
         extra_args=[
             "--reuse-model",
@@ -24228,7 +24203,6 @@ def test_main_jsonschema_ref_with_additional_keywords(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "ref_with_additional_keywords",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "ref_with_additional_keywords",
         input_file_type="jsonschema",
         extra_args=[
             "--output-model-type",
@@ -27526,8 +27500,6 @@ def test_generate_refreshes_custom_template_directory_symlink(tmp_path: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="custom_template_refresh/first.py",
         **generate_kwargs,
     )
 
@@ -27536,8 +27508,6 @@ def test_generate_refreshes_custom_template_directory_symlink(tmp_path: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="custom_template_refresh/second.py",
         **generate_kwargs,
     )
 
@@ -27576,8 +27546,6 @@ def test_generate_refreshes_retargeted_custom_template_directory_symlink(tmp_pat
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="custom_template_refresh/first.py",
         **generate_kwargs,
     )
 
@@ -27587,8 +27555,6 @@ def test_generate_refreshes_retargeted_custom_template_directory_symlink(tmp_pat
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="custom_template_refresh/second.py",
         **generate_kwargs,
     )
 
@@ -27611,8 +27577,6 @@ def test_main_refreshes_modified_custom_template_between_calls(tmp_path: Path) -
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="custom_template_refresh/first.py",
         extra_args=extra_args,
     )
 
@@ -27621,8 +27585,6 @@ def test_main_refreshes_modified_custom_template_between_calls(tmp_path: Path) -
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="custom_template_refresh/second.py",
         extra_args=extra_args,
     )
 
@@ -27773,7 +27735,6 @@ def test_main_jsonschema_non_dict_files_in_directory(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "non_dict_files",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "non_dict_files",
         input_file_type="jsonschema",
     )
 
@@ -28174,7 +28135,6 @@ def test_x_python_type_late_import_collision(output_dir: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_late_import_collision.json",
         output_path=output_dir,
         input_file_type=None,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "x_python_type_late_import_collision",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -29752,7 +29712,6 @@ def test_main_jsonschema_property_count_cross_module_capabilities(output_dir: Pa
         input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_property_count_cross_module",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "schema_validators_property_count_cross_module",
         extra_args=[
             "--generate-schema-validators",
             "--output-model-type",
@@ -31210,7 +31169,6 @@ def test_main_allof_inheritance_late_local_base_custom_typed_dict_class_template
         output_path=output_dir,
         input_file_type="jsonschema",
         extra_args=[*TYPED_DICT_FLAT_CLASS_TEMPLATE_ARGS, "--reuse-model", "--reuse-scope", "tree"],
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "allof_inheritance_late_local_base_custom_typed_dict",
     )
 
 
@@ -31364,8 +31322,6 @@ def test_schema_reference_cycles_preserve_normal_output(output_file: Path, fixtu
         input_path=JSON_SCHEMA_DATA_PATH / "schema_reference_cycles" / f"{fixture}.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file=f"schema_reference_cycles/{fixture}.py",
         field_constraints=True,
         strict_refs=True,
         disable_timestamp=True,
@@ -31375,8 +31331,6 @@ def test_schema_reference_cycles_preserve_normal_output(output_file: Path, fixtu
         input_path=JSON_SCHEMA_DATA_PATH / "schema_reference_cycles" / f"{fixture}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"schema_reference_cycles/{fixture}.py",
         extra_args=["--field-constraints", "--strict-refs", "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
@@ -31975,7 +31929,6 @@ def test_main_jsonschema_dynamic_ref_shared_id(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_shared_id",
         output_path=output_dir,
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "dynamic_ref_shared_id",
         input_file_type="jsonschema",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
@@ -34105,7 +34058,6 @@ def test_main_exact_imports_collapse_root_models_module_class_collision(output_d
         input_path=JSON_SCHEMA_DATA_PATH / "exact_imports_collapse_root_models",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "exact_imports_collapse_root_models",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -34133,7 +34085,6 @@ def test_main_exact_imports_collapse_root_models_title_array(output_dir: Path) -
         input_path=JSON_SCHEMA_DATA_PATH / "exact_imports_collapse_root_models_title",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "exact_imports_collapse_root_models_title",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -34155,7 +34106,6 @@ def test_main_exact_imports_collapse_root_models_module_split_oneof_imports(outp
         input_path=JSON_SCHEMA_DATA_PATH / "exact_imports_collapse_root_models_module_split_oneof.json",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "exact_imports_collapse_root_models_module_split_oneof",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -36178,8 +36128,6 @@ def test_explicit_alias_names_valid(case: str, output_file: Path) -> None:
         output_model_type=backend,
         snake_case_field=True,
         disable_timestamp=True,
-        assert_func=assert_file_content,
-        expected_file=f"explicit_alias_names_{case}.py",
         unchanged_inputs={"aliases": EXPLICIT_ALIAS_ALIASES[case]},
     )
     run_main_and_assert(
@@ -36194,8 +36142,6 @@ def test_explicit_alias_names_valid(case: str, output_file: Path) -> None:
             backend.value,
             "--disable-timestamp",
         ],
-        assert_func=assert_file_content,
-        expected_file=f"explicit_alias_names_{case}.py",
         force_exec_validation=True,
     )
     fields = {
@@ -36251,8 +36197,6 @@ def test_explicit_alias_names_valid_shadows(
         output_model_type=backend,
         target_pydantic_version=target_version,
         disable_timestamp=True,
-        assert_func=assert_file_content,
-        expected_file=f"explicit_alias_names_{case}.py",
         unchanged_inputs={"aliases": EXPLICIT_ALIAS_ALIASES[case]},
     )
     run_main_and_assert(
@@ -36267,8 +36211,6 @@ def test_explicit_alias_names_valid_shadows(
             *(["--target-pydantic-version", target_version.value] if target_version else []),
             "--disable-timestamp",
         ],
-        assert_func=assert_file_content,
-        expected_file=f"explicit_alias_names_{case}.py",
         force_exec_validation=True,
     )
     name = {"keyword": "class_", "invalid": "not_valid", "empty": "field_", "msgspec_field": "field"}.get(
@@ -36279,7 +36221,7 @@ def test_explicit_alias_names_valid_shadows(
             parsed = msgspec.json.decode(b'{"a": "A", "b": 1}', type=model)
             assert_output(
                 json.dumps(msgspec.to_builtins(parsed), sort_keys=True) + "\n" + repr(parsed) + "\n",
-                JSON_SCHEMA_DATA_PATH.parent / "expected" / "payloads" / "explicit_alias_msgspec_field.txt",
+                name="explicit_alias_msgspec_field",
             )
             with pytest.raises(msgspec.ValidationError, match="missing required field `b`"):
                 msgspec.json.decode(b'{"a": "A"}', type=model)
@@ -36466,7 +36408,6 @@ def test_explicit_alias_names_configured_namespace_diamond(output_file: Path) ->
 @pytest.mark.parametrize("backend", list(DataModelType))
 def test_explicit_alias_names_unicode(backend: DataModelType, output_file: Path) -> None:
     """Preserve Unicode names alongside synthetic root and boolean-schema fields."""
-    expected_file = f"explicit_alias_names_unicode_{backend.name}.py"
     run_generate_file_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "explicit_alias_names_unicode.json",
         output_path=output_file,
@@ -36474,8 +36415,6 @@ def test_explicit_alias_names_unicode(backend: DataModelType, output_file: Path)
         aliases=EXPLICIT_ALIAS_ALIASES["unicode"],
         output_model_type=backend,
         disable_timestamp=True,
-        assert_func=assert_file_content,
-        expected_file=expected_file,
     )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "explicit_alias_names_unicode.json",
@@ -36488,8 +36427,6 @@ def test_explicit_alias_names_unicode(backend: DataModelType, output_file: Path)
             backend.value,
             "--disable-timestamp",
         ],
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         force_exec_validation=True,
     )
 
@@ -36560,7 +36497,6 @@ def test_explicit_alias_names_custom_namespace(
     )
     monkeypatch.syspath_prepend(str(JSON_SCHEMA_DATA_PATH.parent / "python"))
     base_class = "explicit_alias_base.NamespaceBase"
-    expected_file = f"explicit_alias_names_custom_{inherited}.py"
     run_generate_file_and_assert(
         input_path=input_path,
         output_path=output_file,
@@ -36568,16 +36504,12 @@ def test_explicit_alias_names_custom_namespace(
         aliases={"a": "model_validate"},
         base_class=base_class,
         disable_timestamp=True,
-        assert_func=assert_file_content,
-        expected_file=expected_file,
     )
     run_main_and_assert(
         input_path=input_path,
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--aliases", '{"a": "model_validate"}', "--base-class", base_class, "--disable-timestamp"],
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         force_exec_validation=True,
     )
     with pytest.warns(UserWarning, match="shadows an attribute"):
@@ -41526,7 +41458,6 @@ def test_main_jsonschema_read_schema_version_per_document_explicit_version(tmp_p
         output_path=output,
         input_file_type="jsonschema",
         extra_args=[*common, "--read-schema-version-per-document"],
-        expected_directory=expected,
     )
 
 

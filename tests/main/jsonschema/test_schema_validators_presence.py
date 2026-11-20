@@ -39,7 +39,6 @@ def test_schema_validators_presence(output_file: Path, tmp_path: Path, case_name
         input_=JSON_SCHEMA_DATA_PATH / f"{case_name}.json",
         input_file_type=InputFileType.JsonSchema,
         output=output_file,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "schema_validators_presence" / f"{case_name}.py",
         output_model_type=DataModelType.PydanticV2BaseModel,
         generate_schema_validators=True,
         disable_timestamp=True,
