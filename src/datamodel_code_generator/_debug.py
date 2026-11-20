@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from types import FunctionType
 
 
-_T = TypeVar("_T")
+T = TypeVar("T")
 
 
 def enable_debug_message() -> None:
@@ -73,7 +73,7 @@ def snooper_to_methods() -> Callable[..., Any]:
     (``--debug``) imported pysnooper and turned the tracing on.
     """
 
-    def inner(cls: type[_T]) -> type[_T]:
+    def inner(cls: type[T]) -> type[T]:
         if (snoop := _debug_snoop) is None:
             return cls
         import inspect  # noqa: PLC0415

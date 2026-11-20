@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import inspect
 import json
+import os
 import py_compile
 import re
 import shutil
+import subprocess
 import sys
 import warnings
 from pathlib import Path
@@ -2195,6 +2198,36 @@ def test_dangling_local_ref_warns_and_preserves_generated_output(
         "".join(
             f"{filename}\n" for filename in dict.fromkeys(Path(warning.filename).name for warning in dangling_warnings)
         ),
+    )
+
+
+def test_dangling_local_ref_warning_is_filtered_as_the_package(tmp_path: Path) -> None:
+    """`PYTHONWARNINGS=error:::datamodel_code_generator` makes the dangling `$ref` warning an error, as before."""
+    package = Path(inspect.getfile(generate)).parent
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "datamodel_code_generator",
+            "--input",
+            str(MALFORMED_DATA_PATH / "dangling_local_ref.json"),
+            "--input-file-type",
+            "jsonschema",
+            "--formatters",
+            "builtin",
+        ],
+        capture_output=True,
+        check=False,
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(package.parent), "PYTHONWARNINGS": "error:::datamodel_code_generator"},
+        text=True,
+        timeout=120,
+    )
+    assert_output(
+        f"exit status: {result.returncode}\n"
+        + "".join(
+            line[:60] + "\n" for line in result.stderr.splitlines() if line.startswith("datamodel_code_generator.")
+        )
     )
 
 

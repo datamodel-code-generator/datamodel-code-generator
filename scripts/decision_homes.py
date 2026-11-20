@@ -4863,6 +4863,18 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
     ),
     DecisionHome(
         decision=(
+            "which module the filters of a warning match, for code that moved out of a public module: the module "
+            "it came from, and the package for a frame in the generation core"
+        ),
+        homes=(Home("_warning_control.py", "warn_at_frame"),),
+        core="`_warning_control.py:warn_at_frame`",
+        adapters=(
+            "`_warning_control.py:warn_as_public`, `parser/_pipeline.py:warn_at_parse_caller`, "
+            "`parser/_passes/_warnings.py:warn_as_module`"
+        ),
+    ),
+    DecisionHome(
+        decision=(
             "how a message lists items in English: the conjunction before the last item, also after a serial comma "
             "from three items on, or between every two items; and the first items of a longer list followed by how "
             "many more there are"

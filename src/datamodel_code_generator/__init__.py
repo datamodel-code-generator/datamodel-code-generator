@@ -6,15 +6,11 @@ Python data models (Pydantic, dataclasses, TypedDict, msgspec) from various sche
 
 from __future__ import annotations
 
-import sys
-from typing import (
-    TYPE_CHECKING,
-    TypeAlias,
-    TypeVar,
-)
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator._caches import cached_path_exists as cached_path_exists
 from datamodel_code_generator._debug import DEFAULT_MAX_VARIABLE_LENGTH as DEFAULT_MAX_VARIABLE_LENGTH
+from datamodel_code_generator._debug import T as T
 from datamodel_code_generator._debug import enable_debug_message as enable_debug_message
 from datamodel_code_generator._debug import snooper_to_methods as snooper_to_methods
 from datamodel_code_generator._facade import generate as generate
@@ -25,6 +21,7 @@ from datamodel_code_generator._generation import _GC_YOUNG_THRESHOLD as _GC_YOUN
 from datamodel_code_generator._generation import _INPUT_TYPES as _INPUT_TYPES
 from datamodel_code_generator._generation import JSON_SCHEMA_URLS as JSON_SCHEMA_URLS
 from datamodel_code_generator._generation import RAW_DATA_TYPES as RAW_DATA_TYPES
+from datamodel_code_generator._generation import ParserConfigT as ParserConfigT
 from datamodel_code_generator._generation import _build_parser as _build_parser
 from datamodel_code_generator._generation import _create_parser_config as _create_parser_config
 from datamodel_code_generator._generation import _create_typed_parser_config as _create_typed_parser_config
@@ -64,6 +61,8 @@ from datamodel_code_generator._shared_types import NamingHintWarning as NamingHi
 from datamodel_code_generator._shared_types import SchemaFetchError as SchemaFetchError
 from datamodel_code_generator._shared_types import SchemaParseError as SchemaParseError
 from datamodel_code_generator._shared_types import SchemaResourceRefWarning as SchemaResourceRefWarning
+from datamodel_code_generator._shared_types import YamlScalar as YamlScalar
+from datamodel_code_generator._shared_types import YamlValue as YamlValue
 from datamodel_code_generator._shared_types import _InvalidConfigTomlError as _InvalidConfigTomlError
 from datamodel_code_generator._shared_types import (
     _StructuredOutputUnavailableError as _StructuredOutputUnavailableError,
@@ -145,13 +144,6 @@ from datamodel_code_generator.enums import (
 from datamodel_code_generator.enums import DataclassArguments as DataclassArguments
 from datamodel_code_generator.enums import DataModelType as DataModelType
 
-# Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
-if sys.version_info >= (3, 14):
-    from typing import TypeAliasType
-else:
-    from typing_extensions import TypeAliasType
-
-
 if TYPE_CHECKING:
     from datamodel_code_generator._format_types import (
         DEFAULT_FORMATTERS,
@@ -161,20 +153,10 @@ if TYPE_CHECKING:
         PythonVersionMin,
     )
     from datamodel_code_generator._project_config import load_pyproject_config
-    from datamodel_code_generator.config import (
-        GenerateConfig,
-        ParserConfig,
-    )
-
-T = TypeVar("T")
-ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
+    from datamodel_code_generator.config import GenerateConfig
 
 # Preserve the historical private facade identity for repr and pickling compatibility.
 _CollapseRootModelsRecursionError.__module__ = __name__
-
-YamlScalar: TypeAlias = str | int | float | bool | None
-YamlValue = TypeAliasType("YamlValue", "dict[str, YamlValue] | list[YamlValue] | YamlScalar")
-
 
 for _public_source_export in (
     enable_parsed_source_cache,

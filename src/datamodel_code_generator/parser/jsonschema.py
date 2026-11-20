@@ -357,7 +357,7 @@ from datamodel_code_generator.parser._passes._reference_users import (
     type_additional_properties_users,
     type_reference_users,
 )
-from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
+from datamodel_code_generator.parser._pipeline import warn_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
     Default,
     DispatchTable,
@@ -8004,13 +8004,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
             if (own_id := self.model_resolver.empty_fragment_id_target(resolved_ref)) is not None:
                 document, written_id = own_id
-                warn(
+                warn_at_parse_caller(
                     f"A $ref in {redact_reference(document)} to {stable_repr(redact_reference(resolved_ref))} loads "
                     "the document at that URL for compatibility, but JSON Schema resolves it to the document itself, "
                     f"whose $id {stable_repr(redact_reference(written_id))} names it with an empty fragment. Pass "
                     "--read-ids-with-empty-fragment to read it inside the document.",
                     SchemaResourceRefWarning,
-                    stacklevel=stacklevel_at_parse_caller(),
                 )
             return _schema_documents.prepare_schema_resources(
                 self, self._get_ref_body_from_url(resolved_ref), [resolved_ref]
@@ -9266,37 +9265,36 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         no schema where ``$defs`` is no keyword, which the parse left out (``_definition_entries_read``).
         """
         for message in sorted(self._resource_ref_warnings):
-            warn(message, SchemaResourceRefWarning, stacklevel=stacklevel_at_parse_caller())
+            warn_at_parse_caller(message, SchemaResourceRefWarning)
         self._resource_ref_warnings.clear()
         for document in sorted(self._unread_mapped_documents):
-            warn(
+            warn_at_parse_caller(
                 f"The document {stable_repr(redact_url(document))} that --external-ref-mapping maps does not exist, so "
                 "the models that inherit a class it maps are written from their own keywords only, without the "
                 "properties its schema declares. Add the document to read them.",
                 DanglingRefWarning,
-                stacklevel=stacklevel_at_parse_caller(),
             )
         self._unread_mapped_documents.clear()
         for where in sorted({named_location(location, "schema") for location in self._empty_enum_locations}):
-            warn(
+            warn_at_parse_caller(
                 f"The schema at {where} admits no value: its enum is empty. It is generated as if it had no enum.",
-                stacklevel=stacklevel_at_parse_caller(),
+                UserWarning,
             )
         self._empty_enum_locations.clear()
         for where in sorted(self._non_schema_defs_members):
-            warn(
+            warn_at_parse_caller(
                 f"The member {where} of $defs is not a schema, so it is skipped: $defs is no keyword of the JSON "
                 "Schema version the document is read by (draft 7 or older), which does not constrain its members.",
-                stacklevel=stacklevel_at_parse_caller(),
+                UserWarning,
             )
         self._non_schema_defs_members.clear()
         for where, pattern in sorted(
             (named_location(location, "schema"), pattern) for location, pattern in self._unread_patterns.items()
         ):
-            warn(
+            warn_at_parse_caller(
                 f"The pattern {stable_repr(pattern)} of the schema at {where} is left out: no regex engine of the "
                 "output compiles it, so the generated code does not check it.",
-                stacklevel=stacklevel_at_parse_caller(),
+                UserWarning,
             )
         self._unread_patterns.clear()
         if not self._dangling_refs:
@@ -9312,12 +9310,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             raise Error(msg)
 
         for source, ref in dangling_refs:
-            warn(
+            warn_at_parse_caller(
                 f"Unresolved local $ref {stable_repr(ref)} in {redact_url(source)}: JSON pointer was not found"
                 f"{self._unescaped_slash_hint(source, ref)}. Generated a fallback Any model; use --strict-refs to fail "
                 "instead.",
                 DanglingRefWarning,
-                stacklevel=stacklevel_at_parse_caller(),
             )
         self._dangling_refs.clear()
         self._unescaped_slash_pointers.clear()

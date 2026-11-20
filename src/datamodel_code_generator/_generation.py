@@ -14,7 +14,6 @@ import gc
 import os
 import sys
 import threading
-import warnings
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Mapping
 from functools import lru_cache as _lru_cache
@@ -62,7 +61,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._source import decoding_from as _decoding_from
 from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator._url_redaction import redact_url
-from datamodel_code_generator._warning_control import held, quiet
+from datamodel_code_generator._warning_control import held, quiet, warn_as_public
 from datamodel_code_generator.enums import (
     AsyncAPIVersion,
     CustomFileHeaderMode,
@@ -120,7 +119,7 @@ if TYPE_CHECKING:
     _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, tuple[str, ...], str]
 
 
-_ParserConfigT = TypeVar("_ParserConfigT", bound="ParserConfig")
+ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
 
 
 # Measured on 2026-09-02: threshold0=100_000 made warm runs 4% to 11% faster
@@ -772,12 +771,11 @@ def _warn_if_input_string_points_to_existing_path(
     if not path_exists:
         return
 
-    import warnings  # noqa: PLC0415
-
     with contextlib.suppress(Warning):
-        warnings.warn(
+        warn_as_public(
             "`input_` strings are treated as schema text. "
             "The value also resolves to an existing path; pass a `Path` object to read it as a file.",
+            UserWarning,
             stacklevel=3,
         )
 
@@ -805,11 +803,11 @@ def _create_parser_config(
 
 
 def _configure_parser_config_context(
-    parser_config: _ParserConfigT,
+    parser_config: ParserConfigT,
     values: Mapping[str, Any],
     generate_config: GenerateConfig,
     decoded_input: _DecodedInput | None = None,
-) -> _ParserConfigT:
+) -> ParserConfigT:
     """Attach neutral source and retry policies without importing typed config models."""
     from datamodel_code_generator._parser_context import ParserSourceContext  # noqa: PLC0415
 
@@ -830,10 +828,10 @@ def _configure_parser_config_context(
 
 def _create_typed_parser_config(
     generate_config: GenerateConfig,
-    parser_config_type: type[_ParserConfigT],
+    parser_config_type: type[ParserConfigT],
     additional_options: ParserConfigDict,
     decoded_input: _DecodedInput | None = None,
-) -> _ParserConfigT:
+) -> ParserConfigT:
     """Create a parser config from GenerateConfig with additional options.
 
     ``generate_config`` is already validated by the CLI or public generate()
@@ -2234,7 +2232,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
     if pydantic_floor is not None:
         from datamodel_code_generator._requirements import pydantic_floor_message  # noqa: PLC0415
 
-        warnings.warn(
+        warn_as_public(
             pydantic_floor_message(
                 pydantic_floor,
                 # Row `floor-target-from-by-value`: the source of the target is read from the values, so the
@@ -2249,7 +2247,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0914, PLR0915
     if refused_bytes_patterns:
         from datamodel_code_generator._requirements import refused_bytes_pattern_message  # noqa: PLC0415
 
-        warnings.warn(refused_bytes_pattern_message(refused_bytes_patterns), UserWarning, stacklevel=2)
+        warn_as_public(refused_bytes_pattern_message(refused_bytes_patterns), UserWarning, stacklevel=2)
     return (results, model_metadata, model_identities, models_not_found_hint), model_name_record
 
 

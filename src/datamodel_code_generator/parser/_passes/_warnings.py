@@ -11,11 +11,9 @@ for each frame the move put between the warning and the frame it names (a delega
 
 from __future__ import annotations
 
-import sys
 from typing import Final
-from warnings import warn_explicit
 
-from datamodel_code_generator._warning_control import is_tracer_frame
+from datamodel_code_generator._warning_control import frame_at, warn_at_frame
 
 __all__ = ["warn_as_module", "warn_as_parser_base"]
 
@@ -30,21 +28,7 @@ def warn_as_module(module: str, message: str, category: type[Warning], *, stackl
     ``--debug`` puts around the functions of the pass and concern modules (``snooper_to_methods``) are not counted, as
     ``parser/_pipeline.py:parse_caller`` does not count them: the wrappers stay once a parse traced them.
     """
-    depth = 1
-    for _ in range(stacklevel - 1):
-        depth += 1
-        while is_tracer_frame(sys._getframe(depth)):
-            depth += 1
-    frame = sys._getframe(depth)
-    warn_explicit(
-        message,
-        category,
-        frame.f_code.co_filename,
-        frame.f_lineno,
-        module=module,
-        registry=frame.f_globals.setdefault("__warningregistry__", {}),
-        module_globals=frame.f_globals,
-    )
+    warn_at_frame(frame_at(stacklevel), message, category, module=module)
 
 
 def warn_as_parser_base(message: str, category: type[Warning], *, stacklevel: int) -> None:

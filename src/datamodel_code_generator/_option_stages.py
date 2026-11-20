@@ -6,7 +6,6 @@ Each stage gives a config the values one source decides: a preset, a server or c
 
 from __future__ import annotations
 
-import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -17,6 +16,7 @@ from typing import (
 )
 
 from datamodel_code_generator._shared_types import Error
+from datamodel_code_generator._warning_control import warn_as_public
 from datamodel_code_generator.enums import (
     DataModelType,
     TargetPydanticVersion,
@@ -178,7 +178,7 @@ def _warn_of_replaced_options(config: BaseGenerateConfig, record: RunOptions, pr
                     if record.pyproject.get(option):
                         remedy = f"{key} = false in pyproject.toml turns both off"
             cause = f"{flag}{origin} turns it on; {remedy}"
-        warnings.warn(f"{option_flag(implied)} was turned off but stays on: {cause}", UserWarning, stacklevel=2)
+        warn_as_public(f"{option_flag(implied)} was turned off but stays on: {cause}", UserWarning, stacklevel=2)
 
 
 def _run_option_stages(

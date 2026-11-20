@@ -15,6 +15,7 @@ import it.
 
 from __future__ import annotations
 
+import sys
 import warnings
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -27,7 +28,16 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator
     from types import FrameType
 
-__all__ = ["first_report", "held", "is_tracer_frame", "quiet", "shown_once"]
+__all__ = [
+    "first_report",
+    "frame_at",
+    "held",
+    "is_tracer_frame",
+    "quiet",
+    "shown_once",
+    "warn_as_public",
+    "warn_at_frame",
+]
 
 ShownWarning = tuple[str, type[Warning], str, int]
 """The text, category, file and line of a shown warning."""
@@ -36,6 +46,14 @@ _ShowCall = tuple[Warning | str, type[Warning], str, int, TextIO | None, str | N
 
 _KeyT = TypeVar("_KeyT")
 _TRACER_MODULE_PREFIX: Final = "pysnooper"
+_PACKAGE_MODULE: Final = "datamodel_code_generator"
+_CORE_MODULES: Final = frozenset({
+    "datamodel_code_generator._debug",
+    "datamodel_code_generator._facade",
+    "datamodel_code_generator._generation",
+    "datamodel_code_generator._option_stages",
+})
+"""The modules the generation core moved to out of the package root: their warnings are filtered as the root's."""
 
 
 @contextmanager
@@ -167,3 +185,42 @@ def _first_record(seen: set[ShownWarning], call: _ShowCall) -> bool:
 def is_tracer_frame(frame: FrameType) -> bool:
     """Return whether ``frame`` runs in the tracer that ``--debug`` wraps around the functions it traces."""
     return frame.f_globals.get("__name__", "").startswith(_TRACER_MODULE_PREFIX)
+
+
+def frame_at(stacklevel: int) -> FrameType:
+    """Return the frame that ``warn(stacklevel=stacklevel)`` names in the function that calls the caller of this.
+
+    A function ``warn_x`` that calls ``frame_at`` and stands in for ``warn()`` takes ``stacklevel=1`` for the function
+    that called ``warn_x``. The frames of the wrappers that ``--debug`` puts around the functions it traces are not
+    counted past the first.
+    """
+    depth = 2
+    for _ in range(stacklevel - 1):
+        depth += 1
+        while is_tracer_frame(sys._getframe(depth)):  # noqa: SLF001
+            depth += 1
+    return sys._getframe(depth)  # noqa: SLF001
+
+
+def warn_at_frame(frame: FrameType, message: str, category: type[Warning], *, module: str | None = None) -> None:
+    """Warn as ``warn()`` does for ``frame``, with ``module`` (by default the frame's own, as the package's) matched.
+
+    The file, the line and the registry of the warnings shown once per location are those of ``frame``. A frame in a
+    module of the generation core (``_CORE_MODULES``) matches filters as ``datamodel_code_generator``, the module the
+    code of the core had before it moved out of the package root.
+    """
+    name = frame.f_globals.get("__name__", "<string>")
+    warnings.warn_explicit(
+        message,
+        category,
+        frame.f_code.co_filename,
+        frame.f_lineno,
+        module=module or (_PACKAGE_MODULE if name in _CORE_MODULES else name),
+        registry=frame.f_globals.setdefault("__warningregistry__", {}),
+        module_globals=frame.f_globals,
+    )
+
+
+def warn_as_public(message: str, category: type[Warning], *, stacklevel: int) -> None:
+    """Warn as ``warn(message, category, stacklevel=stacklevel)`` does, with the module ``warn_at_frame`` gives."""
+    warn_at_frame(frame_at(stacklevel), message, category)
