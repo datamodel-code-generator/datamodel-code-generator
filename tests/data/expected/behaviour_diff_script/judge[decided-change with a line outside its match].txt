@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "decided-change (decided-change): a change line is outside its aspects and match: [\"[default] Model:b: None -> '1'\"]"
+ ],
+ "accepted_by": []
+}

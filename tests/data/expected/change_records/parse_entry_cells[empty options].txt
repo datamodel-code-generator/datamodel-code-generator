@@ -1,0 +1,6 @@
+{
+ "cells": null,
+ "problems": [
+  "entry x: cells 1: options is neither '*' nor a non-empty list of option sets (lists of strings)"
+ ]
+}

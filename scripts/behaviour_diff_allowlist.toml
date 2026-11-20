@@ -5,10 +5,9 @@
 # A table whose base is a release before the gate's base accepts nothing and is no error, as that release contains
 # its changes; replace the whole table when the next accepted change of the new cycle is added.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
-# decision, migration (the id of the upgrade guide entry, docs/data/migration/unreleased/<id>.toml, whose title the
-# release notes and the release page use; `scripts/build_migration_docs.py --check` fails while an entry of the
-# current cycle names none). The aspect `generation` accepts a generation the owner decided to refuse; its change line
-# is `[generation] : now fails: <the error>`.
+# decision, migration (the id of the change record, docs/data/migration/unreleased/<id>.toml, whose title the
+# release notes and the release page use). The aspect `generation` accepts a generation the owner decided to refuse;
+# its change line is `[generation] : now fails: <the error>`.
 # `[[base_skip]]` names an input that releases are known to hang on, so they do not run for it (the cell is
 # `base-skipped` once the candidate generated and imported). Keys: input (glob), bases (releases, `["0.88.0"]`, or a
 # maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,

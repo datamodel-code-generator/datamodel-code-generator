@@ -1,0 +1,5 @@
+[
+ "entry x: cells 1 name --new-flag, which the latest release lacks; unreleased surface is judged by the stored outputs only",
+ "entry x: cells 1 name --output-model-type new.Type, which the latest release lacks; unreleased surface is judged by the stored outputs only",
+ "entry x: cells 1 name preset:20260301, which the latest release lacks; unreleased surface is judged by the stored outputs only"
+]

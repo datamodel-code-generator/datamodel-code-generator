@@ -1,0 +1,15 @@
+{
+ "cells": [
+  {
+   "input": [
+    "tests/data/jsonschema/plain.json"
+   ],
+   "backends": null,
+   "options": null,
+   "input_file_type": null,
+   "aspects": null,
+   "match": null
+  }
+ ],
+ "problems": []
+}

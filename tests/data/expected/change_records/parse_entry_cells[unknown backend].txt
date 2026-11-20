@@ -1,0 +1,6 @@
+{
+ "cells": null,
+ "problems": [
+  "entry x: cells 1: backend 'pydantic.BaseModel' is not one of pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct"
+ ]
+}

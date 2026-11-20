@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "crash-fix (crash-fix): the cell's class is no-behaviour, not crash-fix"
+ ],
+ "accepted_by": []
+}

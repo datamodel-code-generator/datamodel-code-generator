@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "output-text (output-text): a differing file is no model module"
+ ],
+ "accepted_by": []
+}

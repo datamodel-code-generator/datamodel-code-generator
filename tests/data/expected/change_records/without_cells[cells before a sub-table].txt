@@ -1,0 +1,8 @@
+[[change]]
+id = "x"
+category = "harness"
+title = "t"
+summary = "s"
+
+[change.verify]
+schema = "{}"
