@@ -383,19 +383,19 @@ text-unchanged	api_generation/fastapi_cli/check_read_only[text-unchanged].2.py	=
 text-unchanged	api_generation/fastapi_cli/check_read_only[text-unchanged].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-unchanged	main/generation_platform/fastapi/cli/check/unchanged.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_config_values]
-loaded	main/generation_platform/fastapi/cli/configured.txt
+loaded	api_generation/fastapi_cli/config_values[loaded].txt
 options	api_generation/fastapi_cli/config_values[options].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
-options	main/generation_platform/fastapi/cli/configured.txt
+options	api_generation/fastapi_cli/config_values[options].txt	= api_generation/fastapi_cli/config_values[loaded].txt
 pyproject	api_generation/fastapi_cli/config_values[pyproject].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
-pyproject	main/generation_platform/fastapi/cli/configured.txt
-python	main/generation_platform/fastapi/cli/configured.txt
+pyproject	api_generation/fastapi_cli/config_values[pyproject].txt	= api_generation/fastapi_cli/config_values[loaded].txt
+python	api_generation/fastapi_cli/config_values[python].txt	= api_generation/fastapi_cli/config_values[loaded].txt
 [test_fastapi_cli_conflicts]
-diff	main/generation_platform/fastapi/cli/kept/pyproject-target.toml.txt
-lock-in-server-output	main/generation_platform/fastapi/cli/kept/pyproject-target.toml.txt
-watch	main/generation_platform/fastapi/cli/kept/pyproject-target.toml.txt
+diff	api_generation/fastapi_cli/conflicts[diff].txt
+lock-in-server-output	api_generation/fastapi_cli/conflicts[lock-in-server-output].txt	= api_generation/fastapi_cli/conflicts[diff].txt
+watch	api_generation/fastapi_cli/conflicts[watch].txt	= api_generation/fastapi_cli/conflicts[diff].txt
 [test_fastapi_cli_disable_warnings]
-disabled	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-shown	main/formatter_policy/warning.txt	= main/migration_warnings/default.txt
+disabled	api_generation/fastapi_cli/disable_warnings[disabled].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+shown	api_generation/fastapi_cli/disable_warnings[shown].txt	= main/migration_warnings/default.txt
 [test_fastapi_cli_failures]
 	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 	main/generation_platform/fastapi/cli/unresolved.txt
@@ -527,7 +527,7 @@ warning	main/generation_platform/fastapi/cli/documentation-warning.txt	= main/js
 [test_fastapi_cli_ignore_pyproject]
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 [test_fastapi_cli_implementation_stubs]
-	main/generation_platform/fastapi/cli/implementation-stubs.txt
+	api_generation/fastapi_cli/implementation_stubs.txt
 [test_fastapi_cli_implied_notice]
 command-target	main/generation_platform/fastapi/cli/implied/notice-command-target.txt
 dotted-job	main/generation_platform/fastapi/cli/implied/notice-dotted-job.txt
@@ -538,7 +538,7 @@ specialized-enum	main/generation_platform/fastapi/cli/implied/notice-specialized
 specialized-enum-pyproject	main/generation_platform/fastapi/cli/implied/notice-specialized-enum-pyproject.txt
 [test_fastapi_cli_implied_notice_stdin]
 	api_generation/fastapi_cli/implied_notice_stdin.py	= main/generation_platform/fastapi/cli/stdin-models.py
-	main/generation_platform/fastapi/cli/implied/notice-stdin.txt
+	api_generation/fastapi_cli/implied_notice_stdin.txt
 [test_fastapi_cli_implied_settings]
 command	main/generation_platform/fastapi/cli/implied/command.txt
 dataclass	main/generation_platform/fastapi/cli/implied/dataclass.txt
@@ -549,8 +549,8 @@ pyproject	main/generation_platform/fastapi/cli/implied/pyproject.txt
 sentinel	main/generation_platform/fastapi/cli/implied/sentinel.txt
 [test_fastapi_cli_include_paths]
 	api_generation/fastapi_cli/include_paths.py
+	api_generation/fastapi_cli/include_paths.txt
 	main/generation_platform/fastapi/cli/dependencies-include-paths.txt
-	main/generation_platform/fastapi/cli/include-paths-routers.txt
 [test_fastapi_cli_information]
 	main/list_experimental.txt
 [test_fastapi_cli_input_diff]
@@ -561,34 +561,34 @@ text-changed	main/generation_platform/fastapi/cli/input-diff/changed.txt
 text-form-baseline	main/generation_platform/fastapi/cli/input-diff/form-baseline.txt
 text-unchanged	main/generation_platform/fastapi/cli/input-diff/unchanged.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_input_diff_model_name_map_warnings]
+	api_generation/fastapi_cli/input_diff_model_name_map_warnings.txt
 	main/generation_platform/fastapi/cli/input-diff/changed.txt
-	main/generation_platform/fastapi/cli/input-diff/model-name-map-warnings.txt
 [test_fastapi_cli_job]
 	main/generation_platform/fastapi/cli/check-model-readme.txt
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 [test_fastapi_cli_job_lockfile]
-	http/remote_lock_empty.txt
+	api_generation/fastapi_cli/job_lockfile.txt	= http/remote_lock_empty.txt
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 [test_fastapi_cli_job_precedence]
 cli-over-job-arguments1	main/generation_platform/fastapi/cli/precedence/cli-over-job.txt
 cli-table-over-job-arguments2	main/generation_platform/fastapi/cli/precedence/cli-table-over-job.txt
 job-arguments0	main/generation_platform/fastapi/cli/precedence/job.txt
 [test_fastapi_cli_jobs]
-differing-models	main/generation_platform/fastapi/cli/jobs-unwritten.txt
-later-job-fails	main/generation_platform/fastapi/cli/jobs-unwritten.txt
-lock-in-server-output	main/generation_platform/fastapi/cli/jobs-unwritten.txt
-model-job-server-option	main/generation_platform/fastapi/cli/jobs-unwritten.txt
-model-job-shares-output	main/generation_platform/fastapi/cli/jobs-unwritten.txt
-overlap	main/generation_platform/fastapi/cli/jobs-unwritten.txt
-watch	main/generation_platform/fastapi/cli/jobs-unwritten.txt
+differing-models	api_generation/fastapi_cli/jobs[differing-models].txt
+later-job-fails	api_generation/fastapi_cli/jobs[later-job-fails].txt	= api_generation/fastapi_cli/jobs[differing-models].txt
+lock-in-server-output	api_generation/fastapi_cli/jobs[lock-in-server-output].txt	= api_generation/fastapi_cli/jobs[differing-models].txt
+model-job-server-option	api_generation/fastapi_cli/jobs[model-job-server-option].txt	= api_generation/fastapi_cli/jobs[differing-models].txt
+model-job-shares-output	api_generation/fastapi_cli/jobs[model-job-shares-output].txt	= api_generation/fastapi_cli/jobs[differing-models].txt
+overlap	api_generation/fastapi_cli/jobs[overlap].txt	= api_generation/fastapi_cli/jobs[differing-models].txt
+watch	api_generation/fastapi_cli/jobs[watch].txt	= api_generation/fastapi_cli/jobs[differing-models].txt
 [test_fastapi_cli_jobs_json]
+	api_generation/fastapi_cli/jobs_json.txt
 	main/generation_platform/fastapi/cli/dependencies.txt
-	main/generation_platform/fastapi/cli/json/jobs.txt
 [test_fastapi_cli_jobs_json_paths]
+	api_generation/fastapi_cli/jobs_json_paths.txt
 	main/generation_platform/fastapi/cli/dependencies-layout-jobs.txt
 	main/generation_platform/fastapi/cli/json/check/jobs-unchanged.txt
-	main/generation_platform/fastapi/cli/json/check/jobs.txt
 [test_fastapi_cli_json_file_documents]
 option	main/generation_platform/fastapi/cli/dependencies-project.txt
 option	main/generation_platform/fastapi/cli/json-file-documents.txt
@@ -601,34 +601,34 @@ model-module-beside-package	main/generation_platform/fastapi/cli/layout-errors/m
 module-beside-package	main/generation_platform/fastapi/cli/layout-errors/module-beside-package.txt
 package-beside-module	main/generation_platform/fastapi/cli/layout-errors/package-beside-module.txt
 [test_fastapi_cli_leftover_files]
-	main/generation_platform/fastapi/cli/leftover-files.txt
+	api_generation/fastapi_cli/leftover_files.txt
 [test_fastapi_cli_lockfile]
-default	http/remote_lock_empty.txt
-default	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
-explicit	http/remote_lock_empty.txt
-explicit	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+default	api_generation/fastapi_cli/lockfile[default].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+default	api_generation/fastapi_cli/lockfile[default].remote_lock_empty.txt	= http/remote_lock_empty.txt
+explicit	api_generation/fastapi_cli/lockfile[explicit].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+explicit	api_generation/fastapi_cli/lockfile[explicit].remote_lock_empty.txt	= http/remote_lock_empty.txt
 [test_fastapi_cli_missing_sentinel_models_as_given]
-dataclass-missing-sentinel-models	main/generation_platform/fastapi/cli/dataclass-missing-sentinel-models.py
-dataclass-missing-sentinel-server	main/generation_platform/fastapi/cli/dataclass-missing-sentinel-models.py
-missing-sentinel-models	main/generation_platform/fastapi/cli/missing-sentinel-models.py
-missing-sentinel-server	main/generation_platform/fastapi/cli/missing-sentinel-models.py
+dataclass-missing-sentinel-models	api_generation/fastapi_cli/missing_sentinel_models_as_given[dataclass-missing-sentinel-models].py	= main/generation_platform/fastapi/cli/dataclass-missing-sentinel-models.py
+dataclass-missing-sentinel-server	api_generation/fastapi_cli/missing_sentinel_models_as_given[dataclass-missing-sentinel-server].py	= main/generation_platform/fastapi/cli/dataclass-missing-sentinel-models.py
+missing-sentinel-models	api_generation/fastapi_cli/missing_sentinel_models_as_given[missing-sentinel-models].py	= main/generation_platform/fastapi/cli/missing-sentinel-models.py
+missing-sentinel-server	api_generation/fastapi_cli/missing_sentinel_models_as_given[missing-sentinel-server].py	= main/generation_platform/fastapi/cli/missing-sentinel-models.py
 [test_fastapi_cli_mixed_jobs]
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 [test_fastapi_cli_model_and_form_dependencies]
 	api_generation/fastapi_cli/model_and_form_dependencies.py
-	main/generation_platform/fastapi/cli/model-dependencies.txt
+	api_generation/fastapi_cli/model_and_form_dependencies.txt
 [test_fastapi_cli_model_dependencies]
-additional-imports	main/generation_platform/fastapi/cli/model-dependencies/additional-imports.py
+additional-imports	api_generation/fastapi_cli/model_dependencies[additional-imports].py
 additional-imports	main/generation_platform/fastapi/cli/model-dependencies/formats.txt
-additional-modules	main/generation_platform/fastapi/cli/model-dependencies/additional-modules.py
+additional-modules	api_generation/fastapi_cli/model_dependencies[additional-modules].py
 additional-modules	main/generation_platform/fastapi/cli/model-dependencies/formats.txt
-formats	main/generation_platform/fastapi/cli/model-dependencies/formats.py
+formats	api_generation/fastapi_cli/model_dependencies[formats].py
 formats	main/generation_platform/fastapi/cli/model-dependencies/formats.txt
-header-text	main/generation_platform/fastapi/cli/model-dependencies/header-text.py
+header-text	api_generation/fastapi_cli/model_dependencies[header-text].py
 header-text	main/generation_platform/fastapi/cli/model-dependencies/header-text.txt
+type-aliases	api_generation/fastapi_cli/model_dependencies[type-aliases].py
 type-aliases	main/generation_platform/fastapi/cli/model-dependencies/formats.txt
-type-aliases	main/generation_platform/fastapi/cli/model-dependencies/type-aliases.py
 [test_fastapi_cli_model_error_context]
 json-class-name	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-class-name-check	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
@@ -638,13 +638,13 @@ json-lock	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsons
 json-output-parent	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-publication	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_model_option_warning]
-	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+	api_generation/fastapi_cli/model_option_warning.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 [test_fastapi_cli_models_as_given]
-no-timestamp-models	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
-no-timestamp-server	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
-timestamp-models	main/generation_platform/fastapi/cli/timestamp-models.py
-timestamp-server	main/generation_platform/fastapi/cli/timestamp-models.py
+no-timestamp-models	api_generation/fastapi_cli/models_as_given[no-timestamp-models].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+no-timestamp-server	api_generation/fastapi_cli/models_as_given[no-timestamp-server].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+timestamp-models	api_generation/fastapi_cli/models_as_given[timestamp-models].py	= main/generation_platform/fastapi/cli/timestamp-models.py
+timestamp-server	api_generation/fastapi_cli/models_as_given[timestamp-server].py	= main/generation_platform/fastapi/cli/timestamp-models.py
 [test_fastapi_cli_models_package_onto_a_file]
 check	api_generation/fastapi_cli/models_package_onto_a_file[check].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
 diff	api_generation/fastapi_cli/models_package_onto_a_file[diff].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
@@ -655,7 +655,7 @@ write	api_generation/fastapi_cli/models_package_onto_a_file[write].txt	= api_gen
 	main/generation_platform/fastapi/cli/check/extra-python.txt
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 [test_fastapi_cli_nested_models_example]
-	main/generation_platform/fastapi/cli/nested-models-example.txt
+	api_generation/fastapi_cli/nested_models_example.txt
 [test_fastapi_cli_options]
 generate-server	api_generation/fastapi_cli/options[generate-server].py
 generate-server	main/generation_platform/fastapi/cli/options/services.py
@@ -720,9 +720,9 @@ target-2.14-missing-arguments0	main/generation_platform/fastapi/cli/pydantic-dep
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 [test_fastapi_cli_pyproject_input_file_type]
-auto	main/generation_platform/generate/nothing-written.txt
-jsonschema	main/generation_platform/generate/nothing-written.txt
-omitted	main/generation_platform/generate/nothing-written.txt
+auto	api_generation/fastapi_cli/pyproject_input_file_type[auto].txt	= main/generation_platform/generate/nothing-written.txt
+jsonschema	api_generation/fastapi_cli/pyproject_input_file_type[jsonschema].txt	= main/generation_platform/generate/nothing-written.txt
+omitted	api_generation/fastapi_cli/pyproject_input_file_type[omitted].txt	= main/generation_platform/generate/nothing-written.txt
 [test_fastapi_cli_pyproject_paths]
 	main/generation_platform/fastapi/cli/dependencies-project.txt
 	main/generation_platform/fastapi/cli/dependencies-service.txt
@@ -730,8 +730,8 @@ omitted	main/generation_platform/generate/nothing-written.txt
 [test_fastapi_cli_quotes_text_alike_whatever_python_runs]
 	api_generation/fastapi_cli/quotes_text_alike_whatever_python_runs.txt
 [test_fastapi_cli_removed_options]
-dependency-format	main/generation_platform/fastapi/cli/removed-options/files.txt
-diagnostics-json	main/generation_platform/fastapi/cli/removed-options/files.txt
+dependency-format	api_generation/fastapi_cli/removed_options[dependency-format].txt
+diagnostics-json	api_generation/fastapi_cli/removed_options[diagnostics-json].txt	= api_generation/fastapi_cli/removed_options[dependency-format].txt
 [test_fastapi_cli_request_response_discriminated_enum]
 	main/generation_platform/fastapi/fastapi_cli_request_response_discriminated_enum.py
 [test_fastapi_cli_run_commands]
@@ -767,8 +767,8 @@ mixed-jobs	main/generation_platform/fastapi/cli/shadowed-modules/mixed-jobs.txt
 models	main/generation_platform/fastapi/cli/shadowed-modules/models.txt
 target-module	main/generation_platform/fastapi/cli/shadowed-modules/target-module.txt
 [test_fastapi_cli_shared_models_jobs]
+	api_generation/fastapi_cli/shared_models_jobs.txt
 	main/generation_platform/fastapi/cli/shared-models-dependencies.txt
-	main/generation_platform/fastapi/cli/shared-models.txt
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 [test_fastapi_cli_shared_models_timestamp]
@@ -776,21 +776,21 @@ target-module	main/generation_platform/fastapi/cli/shadowed-modules/target-modul
 	main/generation_platform/fastapi/cli/timestamp-models.py
 	main/generation_platform/fastapi/cli/timestamp-services.py
 [test_fastapi_cli_shared_parent_jobs]
-existing-stub	main/generation_platform/fastapi/cli/shared-parent-jobs-stub.txt
-other-document	main/generation_platform/fastapi/cli/shared-parent-documents.txt	= main/generation_platform/fastapi/cli/shared-parent-jobs.txt
-other-tags	main/generation_platform/fastapi/cli/shared-parent-tags.txt
-same-document	main/generation_platform/fastapi/cli/shared-parent-jobs.txt
+existing-stub	api_generation/fastapi_cli/shared_parent_jobs[existing-stub].txt
+other-document	api_generation/fastapi_cli/shared_parent_jobs[other-document].txt
+other-tags	api_generation/fastapi_cli/shared_parent_jobs[other-tags].txt
+same-document	api_generation/fastapi_cli/shared_parent_jobs[same-document].txt	= api_generation/fastapi_cli/shared_parent_jobs[other-document].txt
 [test_fastapi_cli_shared_parent_later_job]
-	main/generation_platform/fastapi/cli/shared-parent-later-job.txt
+	api_generation/fastapi_cli/shared_parent_later_job.txt
 [test_fastapi_cli_shared_parent_runs]
 nested	main/generation_platform/fastapi/cli/shared-parent-runs/pkg.server_a-generate.txt
 nested	main/generation_platform/fastapi/cli/shared-parent-runs/pkg.server_a.txt
 top-level	main/generation_platform/fastapi/cli/shared-parent-runs/server_a-generate.txt
 top-level	main/generation_platform/fastapi/cli/shared-parent-runs/server_a.txt
 [test_fastapi_cli_stdin]
+	api_generation/fastapi_cli/stdin.2.py	= main/generation_platform/fastapi/cli/stdin-models.py
 	api_generation/fastapi_cli/stdin.py	= main/generation_platform/fastapi/cli/stdin-models.py
-	main/generation_platform/fastapi/cli/stdin-models.py
 [test_fastapi_cli_target_python_pyproject]
-	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
+	api_generation/fastapi_cli/target_python_pyproject.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 [test_fastapi_cli_unselected_pyproject]
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py

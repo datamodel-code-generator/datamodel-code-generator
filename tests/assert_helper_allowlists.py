@@ -17,7 +17,6 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check-model.txt",
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check/foreign.json",
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check/foreign.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/configured.txt",
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/json/models-in-package.txt",
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/json/modular.txt",
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/json/package-in-models.txt",

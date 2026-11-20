@@ -164,8 +164,6 @@ def test_main(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="main/output.py",
     )
 
 
@@ -176,8 +174,6 @@ def test_main_base_class(output_file: Path, tmp_path: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_base_class" / "output.py",
         extra_args=["--base-class", "custom_module.Base"],
         copy_files=[(DATA_PATH / "pyproject.toml", tmp_path / "pyproject.toml")],
     )
@@ -190,8 +186,6 @@ def test_target_python_version(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "target_python_version" / "output.py",
         extra_args=["--target-python-version", f"3.{MIN_VERSION}"],
     )
 
@@ -370,8 +364,6 @@ def test_pyproject(output_file: Path, tmp_path: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="pyproject/output.py",
         copy_files=[(DATA_PATH / "project" / "pyproject.toml", tmp_path / "pyproject.toml")],
     )
 
@@ -449,8 +441,6 @@ strict-types = ["str"]
             input_path=(OPEN_API_DATA_PATH / "api.yaml").resolve(),
             output_path=output_file.resolve(),
             input_file_type=None,
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MAIN_KR_PATH / "pyproject" / "output.strictstr.py",
         )
 
 
@@ -463,7 +453,7 @@ schema definitions and adds it as a docstring to the generated class. This is
 useful for preserving documentation from your schema in the generated code.""",
     input_schema="openapi/api_multiline_docstrings.yaml",
     cli_args=["--use-schema-description"],
-    golden_output="main_kr/main_use_schema_description/output.py",
+    golden_output="main_kr/main_use_schema_description.py",
     related_options=["--use-field-description", "--use-inline-field-description"],
 )
 @freeze_time("2019-07-26")
@@ -478,8 +468,6 @@ def test_main_use_schema_description(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api_multiline_docstrings.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_schema_description" / "output.py",
         extra_args=["--use-schema-description"],
     )
 
@@ -496,8 +484,6 @@ def test_main_docstring_special_chars(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "docstring_special_chars.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_docstring_special_chars" / "output.py",
         extra_args=["--use-schema-description", "--use-field-description"],
     )
 
@@ -511,7 +497,7 @@ schema fields as the `description` parameter in Pydantic Field(). This
 provides documentation that is accessible via model schema and OpenAPI docs.""",
     input_schema="openapi/api_multiline_docstrings.yaml",
     cli_args=["--use-field-description"],
-    golden_output="main_kr/main_use_field_description/output.py",
+    golden_output="main_kr/main_use_field_description.py",
     related_options=["--use-schema-description", "--use-inline-field-description"],
 )
 @freeze_time("2022-11-11")
@@ -526,8 +512,6 @@ def test_main_use_field_description(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api_multiline_docstrings.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_field_description" / "output.py",
         extra_args=["--use-field-description"],
     )
 
@@ -541,7 +525,7 @@ schema fields as inline comments after each field definition. This provides
 documentation without using Field() wrappers.""",
     input_schema="openapi/api_multiline_docstrings.yaml",
     cli_args=["--use-inline-field-description"],
-    golden_output="main_kr/main_use_inline_field_description/output.py",
+    golden_output="main_kr/main_use_inline_field_description.py",
     related_options=["--use-field-description", "--use-schema-description"],
 )
 @freeze_time("2022-11-11")
@@ -556,8 +540,6 @@ def test_main_use_inline_field_description(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "api_multiline_docstrings.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_inline_field_description" / "output.py",
         extra_args=["--use-inline-field-description"],
     )
 
@@ -571,7 +553,7 @@ property from schema fields as docstrings. This provides documentation that
 is visible in IDE intellisense.""",
     input_schema="jsonschema/extras.json",
     cli_args=["--use-field-description-example"],
-    golden_output="main_kr/main_use_field_description_example/output.py",
+    golden_output="main_kr/main_use_field_description_example.py",
     related_options=["--use-field-description", "--use-inline-field-description"],
 )
 @freeze_time("2022-11-11")
@@ -586,8 +568,6 @@ def test_main_use_field_description_example(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "extras.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_field_description_example" / "output.py",
         extra_args=["--use-field-description-example"],
     )
 
@@ -599,8 +579,6 @@ def test_main_use_field_description_example_dataclass(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "single_line_description_with_example.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_field_description_example_dataclass" / "output.py",
         extra_args=["--use-field-description-example", "--output-model-type", "dataclasses.dataclass"],
     )
 
@@ -613,7 +591,7 @@ When both `--use-field-description` and `--use-field-description-example` are us
 the docstring includes both the description and example(s).""",
     input_schema="jsonschema/extras.json",
     cli_args=["--use-field-description", "--use-field-description-example"],
-    golden_output="main_kr/main_use_field_description_with_example/output.py",
+    golden_output="main_kr/main_use_field_description_with_example.py",
     related_options=["--use-inline-field-description"],
 )
 @freeze_time("2022-11-11")
@@ -627,8 +605,6 @@ def test_main_use_field_description_with_example(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "extras.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_field_description_with_example" / "output.py",
         extra_args=["--use-field-description", "--use-field-description-example"],
     )
 
@@ -641,7 +617,7 @@ When both `--use-inline-field-description` and `--use-field-description-example`
 multi-line descriptions and examples are included in the docstring.""",
     input_schema="jsonschema/multiline_description_with_example.json",
     cli_args=["--use-inline-field-description", "--use-field-description-example"],
-    golden_output="main_kr/main_use_inline_field_description_with_example/output.py",
+    golden_output="main_kr/main_use_inline_field_description_with_example.py",
     related_options=["--use-field-description"],
 )
 @freeze_time("2022-11-11")
@@ -655,8 +631,6 @@ def test_main_use_inline_field_description_with_example(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "multiline_description_with_example.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_inline_field_description_with_example" / "output.py",
         extra_args=["--use-inline-field-description", "--use-field-description-example"],
     )
 
@@ -672,8 +646,6 @@ def test_main_use_inline_field_description_example_only(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "single_line_description_with_example.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_inline_field_description_example_only" / "output.py",
         extra_args=["--use-inline-field-description", "--use-field-description-example"],
     )
 
@@ -688,8 +660,6 @@ def test_main_use_field_description_example_multiple(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "multiple_examples.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_use_field_description_example_multiple" / "output.py",
         extra_args=["--use-field-description-example"],
     )
 
@@ -1482,8 +1452,6 @@ snake-case-field = true
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "with_profile.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
 
@@ -1583,8 +1551,6 @@ enable-version-header = true
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "ignore_pyproject.py",
             extra_args=["--ignore-pyproject", "--disable-timestamp"],
         )
 
@@ -1726,8 +1692,6 @@ strict-types = ["bytes"]
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "shallow_merge.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
 
@@ -1824,8 +1788,8 @@ def test_pyproject_jobs_json_is_one_ordered_payload(tmp_path: Path, capsys: pyte
     output = capsys.readouterr().out
     payload = json.loads(output)
     relative_outputs = [Path(job["result"]["output"]).relative_to(tmp_path).as_posix() for job in payload["jobs"]]
-    assert_output("\n".join(relative_outputs) + "\n", EXPECTED_MAIN_KR_PATH / "jobs" / "ordered_outputs.txt")
-    assert_output(_batch_json_summary(output), EXPECTED_MAIN_KR_PATH / "jobs" / "json_generation.txt")
+    assert_output("\n".join(relative_outputs) + "\n", name="ordered_outputs")
+    assert_output(_batch_json_summary(output), name="json_generation")
 
 
 @pytest.mark.parametrize("separator", ["\u2028", "\u2029", "\u0085"], ids=["u2028", "u2029", "u0085"])
@@ -1863,7 +1827,7 @@ def test_pyproject_jobs_json_reports_check_results(
             ["--all-jobs", "--check", "--output-format", "json", "--formatters", "builtin"], expected_exit=Exit.DIFF
         )
 
-    assert_output(_batch_json_summary(capsys.readouterr().out), EXPECTED_MAIN_KR_PATH / "jobs" / "json_check.txt")
+    assert_output(_batch_json_summary(capsys.readouterr().out))
 
 
 @pytest.mark.parametrize(
@@ -2523,9 +2487,7 @@ output = "{reader_output.as_posix()}"
             expected_stderr_contains="overlaps input for job",
         )
 
-    assert_output(
-        protected_input.read_text(encoding="utf-8") + "\n", EXPECTED_MAIN_KR_PATH / "jobs" / "protected_schema.txt"
-    )
+    assert_output(protected_input.read_text(encoding="utf-8") + "\n")
     _assert_file_does_not_exist(reader_output)
 
 
@@ -2601,10 +2563,8 @@ output = "{(tmp_path / "invalid.py").as_posix()}"
         _assert_file_does_not_exist(good_output)
         _assert_file_does_not_exist(metadata_output)
     else:
-        assert_output(good_output.read_text(encoding="utf-8"), EXPECTED_MAIN_KR_PATH / "jobs" / "stale_output.txt")
-        assert_output(
-            metadata_output.read_text(encoding="utf-8"), EXPECTED_MAIN_KR_PATH / "jobs" / "stale_metadata.txt"
-        )
+        assert_output(good_output.read_text(encoding="utf-8"), name="stale_output")
+        assert_output(metadata_output.read_text(encoding="utf-8"), name="stale_metadata")
 
 
 def test_pyproject_jobs_publish_model_metadata(tmp_path: Path) -> None:
@@ -2740,9 +2700,7 @@ input-file-type = "jsonschema"
             expected_stderr_contains="generated file escapes its output path",
         )
 
-    assert_output(
-        protected_input.read_text(encoding="utf-8") + "\n", EXPECTED_MAIN_KR_PATH / "jobs" / "protected_schema.txt"
-    )
+    assert_output(protected_input.read_text(encoding="utf-8") + "\n")
     _assert_file_does_not_exist(reader_output)
 
 
@@ -3618,7 +3576,6 @@ emit-model-metadata = "{metadata_output.as_posix()}"
 
     assert_output(
         capsys.readouterr().err,
-        EXPECTED_MAIN_KR_PATH / "jobs" / "staging_anchor_cleanup_error.txt",
     )
     _assert_file_does_not_exist(first_output)
     _assert_file_does_not_exist(second_output)
@@ -3707,7 +3664,7 @@ output = "{output.as_posix()}"
     with chdir(tmp_path), pytest.raises(RuntimeError, match="simulated runner failure"):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"])
 
-    assert_output(capsys.readouterr().err, EXPECTED_MAIN_KR_PATH / "jobs" / "staging_cleanup_error.txt")
+    assert_output(capsys.readouterr().err)
     _assert_file_does_not_exist(output)
 
 
@@ -3955,7 +3912,7 @@ original-field-name-delimiter = "_"
 
 def test_help_shows_new_options() -> None:
     """Test that profile and job selection options appear in help."""
-    assert_output(arg_parser.format_help(), EXPECTED_MAIN_KR_PATH / "help_shows_new_options.txt")
+    assert_output(arg_parser.format_help())
 
 
 @pytest.mark.skipif(
@@ -3990,8 +3947,6 @@ target-python-version = "3.11"
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "inherits_base.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
 
@@ -4029,8 +3984,6 @@ target-python-version = "3.11"
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "cli_override.py",
             extra_args=[
                 "--profile",
                 "api",
@@ -4104,8 +4057,6 @@ def test_allof_with_description_generates_class_not_alias(output_file: Path) -> 
         input_path=OPEN_API_DATA_PATH / "allof_with_description_only.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "main_allof_with_description_only" / "output.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -4123,7 +4074,7 @@ types for numeric fields that have a `multipleOf` constraint. This ensures
 precise decimal arithmetic when validating values against the constraint.""",
     input_schema="jsonschema/use_decimal_for_multiple_of.json",
     cli_args=["--use-decimal-for-multiple-of"],
-    golden_output="main_kr/use_decimal_for_multiple_of/output.py",
+    golden_output="main_kr/use_decimal_for_multiple_of.py",
 )
 @LEGACY_BLACK_SKIP
 @freeze_time("2019-07-26")
@@ -4138,8 +4089,6 @@ def test_use_decimal_for_multiple_of(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_decimal_for_multiple_of.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "use_decimal_for_multiple_of" / "output.py",
         extra_args=["--use-decimal-for-multiple-of"],
     )
 
@@ -4156,7 +4105,7 @@ If you need a different datetime class for `date-time` fields, use
 [`--output-datetime-class`](#output-datetime-class).""",
     input_schema="jsonschema/use_pendulum.json",
     cli_args=["--use-pendulum"],
-    golden_output="main_kr/use_pendulum/output.py",
+    golden_output="main_kr/use_pendulum.py",
 )
 @freeze_time("2019-07-26")
 def test_use_pendulum(output_file: Path) -> None:
@@ -4174,8 +4123,6 @@ def test_use_pendulum(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_pendulum.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "use_pendulum" / "output.py",
         extra_args=["--use-pendulum"],
     )
 
@@ -4190,7 +4137,7 @@ types for fields with minimum: 0 or maximum: 0 constraints, instead of using
 conint/confloat with ge/le parameters.""",
     input_schema="jsonschema/use_non_positive_negative.json",
     cli_args=["--use-non-positive-negative-number-constrained-types"],
-    golden_output="main_kr/use_non_positive_negative/output.py",
+    golden_output="main_kr/use_non_positive_negative_number_constrained_types.py",
 )
 @freeze_time("2019-07-26")
 def test_use_non_positive_negative_number_constrained_types(output_file: Path) -> None:
@@ -4199,8 +4146,6 @@ def test_use_non_positive_negative_number_constrained_types(output_file: Path) -
         input_path=JSON_SCHEMA_DATA_PATH / "use_non_positive_negative.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "use_non_positive_negative" / "output.py",
         extra_args=["--use-non-positive-negative-number-constrained-types"],
     )
 
@@ -4212,8 +4157,6 @@ def test_use_non_positive_negative_number_constrained_types_with_use_annotated(o
         input_path=JSON_SCHEMA_DATA_PATH / "use_non_positive_negative.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "use_non_positive_negative_with_use_annotated" / "output.py",
         extra_args=["--use-non-positive-negative-number-constrained-types", "--use-annotated"],
     )
 
@@ -4228,7 +4171,7 @@ are included. Use this with `--openapi-scopes parameters` to generate parameter
 models that include both path and query parameters.""",
     input_schema="openapi/include_path_parameters.yaml",
     cli_args=["--include-path-parameters", "--openapi-scopes", "schemas", "paths", "parameters"],
-    golden_output="main_kr/include_path_parameters/output.py",
+    golden_output="main_kr/include_path_parameters.py",
 )
 @freeze_time("2019-07-26")
 def test_include_path_parameters(output_file: Path) -> None:
@@ -4243,8 +4186,6 @@ def test_include_path_parameters(output_file: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "include_path_parameters.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "include_path_parameters" / "output.py",
         extra_args=["--include-path-parameters", "--openapi-scopes", "schemas", "paths", "parameters"],
     )
 
@@ -4259,8 +4200,8 @@ fields are renamed to Python-safe names with `Field(alias='original-name')`.
 With this flag, only Python-safe names are used without aliases.""",
     input_schema="jsonschema/no_alias.json",
     cli_args=["--no-alias"],
-    golden_output="main_kr/no_alias/with_option.py",
-    comparison_output="main_kr/no_alias/without_option.py",
+    golden_output="main_kr/no_alias.py",
+    comparison_output="main_kr/no_alias_without_option.py",
 )
 @freeze_time("2019-07-26")
 def test_no_alias(output_file: Path) -> None:
@@ -4275,8 +4216,6 @@ def test_no_alias(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "no_alias.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "no_alias" / "with_option.py",
         extra_args=["--no-alias"],
     )
 
@@ -4290,8 +4229,8 @@ instead of `alias`. This allows setting values using the Pythonic field name whi
 serializing to the original JSON property name.""",
     input_schema="jsonschema/no_alias.json",
     cli_args=["--use-serialization-alias", "--output-model-type", "pydantic_v2.BaseModel"],
-    golden_output="main_kr/use_serialization_alias/output.py",
-    comparison_output="main_kr/no_alias/without_option.py",
+    golden_output="main_kr/use_serialization_alias.py",
+    comparison_output="main_kr/no_alias_without_option.py",
 )
 @freeze_time("2019-07-26")
 def test_use_serialization_alias(output_file: Path) -> None:
@@ -4305,8 +4244,6 @@ def test_use_serialization_alias(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "no_alias.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "use_serialization_alias" / "output.py",
         extra_args=["--use-serialization-alias", "--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -4320,8 +4257,8 @@ header with custom text. This is useful for adding copyright notices, license
 headers, or other metadata to generated files.""",
     input_schema="jsonschema/no_alias.json",
     cli_args=["--custom-file-header", "# Copyright 2024 MyCompany"],
-    golden_output="main_kr/custom_file_header/with_option.py",
-    comparison_output="main_kr/no_alias/without_option.py",
+    golden_output="main_kr/custom_file_header.py",
+    comparison_output="main_kr/no_alias_without_option.py",
 )
 @freeze_time("2019-07-26")
 def test_custom_file_header(output_file: Path) -> None:
@@ -4335,8 +4272,6 @@ def test_custom_file_header(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "no_alias.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "custom_file_header" / "with_option.py",
         extra_args=["--custom-file-header", "# Copyright 2024 MyCompany"],
     )
 
@@ -4348,8 +4283,6 @@ def test_no_alias_without_option(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "no_alias.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "no_alias" / "without_option.py",
     )
 
 
@@ -4480,7 +4413,7 @@ OpenAPI, GraphQL, etc.). Multiple input files can be specified to merge
 schemas. Required unless using `--url` to fetch schema from a URL.""",
     input_schema="jsonschema/pet_simple.json",
     cli_args=["--input", "pet_simple.json", "--output", "output.py"],
-    golden_output="main_kr/input_output/output.py",
+    golden_output="main_kr/custom_formatters_kwargs_inline_json_option.py",
 )
 @freeze_time("2019-07-26")
 def test_input_option(output_file: Path) -> None:
@@ -4494,8 +4427,6 @@ def test_input_option(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
     )
 
 
@@ -4509,7 +4440,7 @@ It can be either a file path (single-file output) or a directory path
 is written to stdout.""",
     input_schema="jsonschema/pet_simple.json",
     cli_args=["--input", "pet_simple.json", "--output", "output.py"],
-    golden_output="main_kr/input_output/output.py",
+    golden_output="main_kr/custom_formatters_kwargs_inline_json_option.py",
 )
 @freeze_time("2019-07-26")
 def test_output_option(output_file: Path) -> None:
@@ -4524,8 +4455,6 @@ def test_output_option(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
     )
 
 
@@ -4539,7 +4468,7 @@ for schemas containing non-ASCII characters (e.g., Japanese, Chinese).
 Default is UTF-8, which is the standard encoding for JSON and most modern text files.""",
     input_schema="jsonschema/encoding_test.json",
     cli_args=["--encoding", "utf-8"],
-    golden_output="main_kr/encoding/output.py",
+    golden_output="main_kr/encoding_option.py",
 )
 @freeze_time("2019-07-26")
 def test_encoding_option(output_file: Path) -> None:
@@ -4554,8 +4483,6 @@ def test_encoding_option(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "encoding_test.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "encoding" / "output.py",
         extra_args=["--encoding", "utf-8"],
     )
 
@@ -4574,7 +4501,7 @@ The future builtin default reduces installation dependencies and version constra
 See the formatter guides for installation and custom-template limitations.""",
     input_schema="jsonschema/pet_simple.json",
     cli_args=["--formatters", "isort"],
-    golden_output="main_kr/formatters/output.py",
+    golden_output="main_kr/formatters_option.py",
 )
 @freeze_time("2019-07-26")
 def test_formatters_option(output_file: Path) -> None:
@@ -4589,8 +4516,6 @@ def test_formatters_option(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "formatters" / "output.py",
         extra_args=["--formatters", "isort"],
     )
 
@@ -4635,7 +4560,7 @@ Note: This option is primarily used with --custom-formatters to pass
 configuration to user-defined formatter modules.""",
     input_schema="jsonschema/pet_simple.json",
     cli_args=["--custom-formatters-kwargs", "formatter_kwargs.json"],
-    golden_output="main_kr/input_output/output.py",
+    golden_output="main_kr/custom_formatters_kwargs_inline_json_option.py",
 )
 @freeze_time("2019-07-26")
 def test_custom_formatters_kwargs_option(output_file: Path) -> None:
@@ -4654,8 +4579,6 @@ def test_custom_formatters_kwargs_option(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
         extra_args=["--custom-formatters-kwargs", str(kwargs)],
     )
 
@@ -4667,8 +4590,6 @@ def test_custom_formatters_kwargs_inline_json_option(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
         extra_args=["--custom-formatters-kwargs", "{}"],
     )
 
@@ -4951,8 +4872,8 @@ when you want to override project defaults with CLI arguments, or when
 testing without project configuration.""",
     input_schema="jsonschema/ignore_pyproject_example.json",
     cli_args=["--ignore-pyproject"],
-    golden_output="main_kr/ignore_pyproject/output.py",
-    comparison_output="main_kr/pyproject_profile/with_profile.py",
+    golden_output="main_kr/ignore_pyproject_cli_doc.py",
+    comparison_output="main_kr/pyproject_with_profile.py",
 )
 @freeze_time("2019-07-26")
 def test_ignore_pyproject_cli_doc(output_file: Path, tmp_path: Path) -> None:
@@ -4987,8 +4908,6 @@ snake-case-field = true
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MAIN_KR_PATH / "ignore_pyproject" / "output.py",
             extra_args=["--ignore-pyproject", "--disable-timestamp"],
         )
 
@@ -5005,7 +4924,7 @@ deduplicated models that are referenced from multiple files. Default is
 Note: This option only affects modular output with tree-level model reuse.""",
     input_schema="jsonschema/pet_simple.json",
     cli_args=["--shared-module-name", "my_shared"],
-    golden_output="main_kr/input_output/output.py",
+    golden_output="main_kr/custom_formatters_kwargs_inline_json_option.py",
 )
 @freeze_time("2019-07-26")
 def test_shared_module_name(output_file: Path) -> None:
@@ -5023,8 +4942,6 @@ def test_shared_module_name(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
         extra_args=["--shared-module-name", "my_shared"],
     )
 
@@ -5042,7 +4959,7 @@ Note: This option primarily affects modular output where imports between
 modules are generated. For single-file output, the difference is minimal.""",
     input_schema="jsonschema/pet_simple.json",
     cli_args=["--use-exact-imports"],
-    golden_output="main_kr/input_output/output.py",
+    golden_output="main_kr/custom_formatters_kwargs_inline_json_option.py",
 )
 @freeze_time("2019-07-26")
 def test_use_exact_imports(output_file: Path) -> None:
@@ -5061,8 +4978,6 @@ def test_use_exact_imports(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
         extra_args=["--use-exact-imports"],
     )
 
@@ -5083,7 +4998,7 @@ This affects import statements and type annotation syntax in generated code.""",
     input_schema="jsonschema/person.json",
     cli_args=["--target-python-version", "3.10", "--use-standard-collections"],
     version_outputs={
-        "3.10": "main_kr/target_python_version/py310.py",
+        "3.10": "main_kr/target_python_version_outputs.py",
     },
     primary=True,
 )
@@ -5105,8 +5020,6 @@ def test_target_python_version_outputs(output_file: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
         output_path=output_file,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "target_python_version" / "py310.py",
         extra_args=["--target-python-version", "3.10", "--use-standard-collections"],
     )
 
@@ -5143,7 +5056,7 @@ See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) 
         "--output-model-type",
         "pydantic_v2.BaseModel",
     ],
-    golden_output="main_kr/target_pydantic_version/v2_11.py",
+    golden_output="main_kr/target_pydantic_version.py",
     primary=True,
 )
 @freeze_time("2019-07-26")
@@ -5156,8 +5069,6 @@ def test_target_pydantic_version(output_file: Path) -> None:
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
         output_path=output_file,
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_MAIN_KR_PATH / "target_pydantic_version" / "v2_11.py",
         extra_args=[
             "--target-pydantic-version",
             "2.11",
@@ -5337,8 +5248,6 @@ def test_output_format_json_schema_validates_model_metadata_json(
         input_path=JSON_SCHEMA_DATA_PATH / "model_metadata_base_model_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=DATA_PATH / "expected" / "main" / "jsonschema" / "model_metadata_base_model_name.py",
         extra_args=[
             "--emit-model-metadata",
             str(metadata_path),
@@ -5374,7 +5283,6 @@ def test_output_format_json_json_ready_values() -> None:
     })
     assert_output(
         f"{json.dumps(payload, indent=2, ensure_ascii=False)}\n",
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "json_ready_values.txt",
     )
 
 
@@ -5385,7 +5293,7 @@ def test_output_format_json_generation_mapping_payload() -> None:
             ("models", "user.py"): "class User:\n    pass\n",
         })
     )
-    assert_output(f"{output}\n", EXPECTED_OUTPUT_FORMAT_JSON_PATH / "generation_mapping_payload.txt")
+    assert_output(f"{output}\n")
 
 
 def test_output_format_json_normalizes_multiple_generation_output_paths(output_file: Path) -> None:
@@ -5399,7 +5307,7 @@ def test_output_format_json_normalizes_multiple_generation_output_paths(output_f
     })
     assert_output(
         _normalize_generation_json_output_path(disk_output, output_file, OUTPUT_FILE_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "generation_output_path_normalized.txt",
+        name="generation_output_path_normalized",
     )
     stdout_output = json.dumps({
         "output": None,
@@ -5410,30 +5318,30 @@ def test_output_format_json_normalizes_multiple_generation_output_paths(output_f
     })
     assert_output(
         _normalize_generation_json_output_path(stdout_output, output_file, OUTPUT_FILE_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "generation_stdout_path_normalized.txt",
+        name="generation_stdout_path_normalized",
     )
 
 
 @pytest.mark.parametrize(
     "payload_name",
     [
-        "generation_stdout.txt",
-        "generation_output_file.txt",
-        "generation_output_directory.txt",
-        "pyproject_config.txt",
-        "cli_command.txt",
-        "list_deprecations.txt",
-        "list_experimental.txt",
-        "check_success.txt",
-        "check_missing_output.txt",
-        "check_output_file_difference_json.txt",
-        "check_output_directory_differences_json.txt",
+        "output_format_json/generation_stdout.txt",
+        "output_format_json_generation_output_file.txt",
+        "output_format_json_generation_output_directory.txt",
+        "output_format_json/pyproject_config.txt",
+        "output_format_json/cli_command.txt",
+        "output_format_json/list_deprecations.txt",
+        "output_format_json/list_experimental.txt",
+        "output_format_json/check_success.txt",
+        "output_format_json/check_missing_output.txt",
+        "output_format_json_check_output_file_difference.txt",
+        "output_format_json_check_output_directory_differences.txt",
     ],
 )
 def test_output_format_json_schema_validates_structured_json(payload_name: str) -> None:
     """Test structured JSON outputs conform to their emitted JSON Schema."""
     schema = json.loads(stored_expected(EXPECTED_OUTPUT_FORMAT_JSON_PATH / "structured_output_schema.txt").read_text())
-    payload = json.loads(stored_expected(EXPECTED_OUTPUT_FORMAT_JSON_PATH / payload_name).read_text())
+    payload = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / payload_name).read_text())
 
     jsonschema.validate(instance=payload, schema=schema)
 
@@ -5507,7 +5415,6 @@ def test_generate_pyproject_config_helper_uses_default_formatter() -> None:
                 output_format_json_schema="structured-output",
             )
         ),
-        EXPECTED_GENERATE_PYPROJECT_CONFIG_PATH / "helper_default_formatter.txt",
     )
 
 
@@ -5585,7 +5492,6 @@ def test_output_format_json_generation_output_file(capsys: pytest.CaptureFixture
     assert_output(captured.err, EXPECTED_EMPTY_OUTPUT_PATH)
     assert_output(
         _normalize_generation_json_output_path(captured.out, output_file, OUTPUT_FILE_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "generation_output_file.txt",
     )
     assert_file_content(output_file, EXPECTED_MAIN_KR_PATH / "main_no_file" / "output.py")
 
@@ -5610,7 +5516,6 @@ def test_output_format_json_generation_output_directory(capsys: pytest.CaptureFi
     assert_output(captured.err, EXPECTED_EMPTY_OUTPUT_PATH)
     assert_output(
         _normalize_generation_json_output_path(captured.out, output_dir, OUTPUT_DIR_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "generation_output_directory.txt",
     )
     assert_directory_content(output_dir, EXPECTED_MAIN_KR_PATH / "main_modular")
 
@@ -5699,7 +5604,6 @@ def test_output_format_json_check_missing_output_file(tmp_path: Path, capsys: py
     captured = capsys.readouterr()
     assert_output(
         captured.out.replace((tmp_path / output_path).resolve().as_posix(), OUTPUT_FILE_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "check_missing_output_file.txt",
     )
     assert_output(captured.err, EXPECTED_EMPTY_OUTPUT_PATH)
 
@@ -5730,7 +5634,6 @@ def test_output_format_json_check_output_file_difference(
     captured = capsys.readouterr()
     assert_output(
         captured.out.replace((tmp_path / output_path).as_posix(), OUTPUT_FILE_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "check_output_file_difference_json.txt",
     )
     assert_output(captured.err, EXPECTED_EMPTY_OUTPUT_PATH)
 
@@ -5763,7 +5666,6 @@ def test_output_format_json_check_output_directory_differences(
     captured = capsys.readouterr()
     assert_output(
         captured.out.replace((tmp_path / output_dir).as_posix(), OUTPUT_DIR_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "check_output_directory_differences_json.txt",
     )
     assert_output(captured.err, EXPECTED_EMPTY_OUTPUT_PATH)
 
@@ -5792,7 +5694,6 @@ def test_output_format_json_check_text_reports_output_file_difference(
     captured = capsys.readouterr()
     assert_output(
         captured.out.replace((tmp_path / output_path).as_posix(), OUTPUT_FILE_PLACEHOLDER),
-        EXPECTED_OUTPUT_FORMAT_JSON_PATH / "check_output_file_difference_text.txt",
     )
     assert_output(captured.err, EXPECTED_EMPTY_OUTPUT_PATH)
 
@@ -5841,7 +5742,7 @@ def test_output_format_json_rejects_watch(capsys: pytest.CaptureFixture[str]) ->
     )
     captured = capsys.readouterr()
     assert_output(captured.out, EXPECTED_EMPTY_OUTPUT_PATH)
-    assert_output(captured.err, EXPECTED_OUTPUT_FORMAT_JSON_PATH / "watch_incompatible.txt")
+    assert_output(captured.err)
 
 
 @freeze_time("2019-07-26")
@@ -5868,8 +5769,6 @@ extends = "_base"
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "extends_single.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
 
@@ -5901,8 +5800,6 @@ extends = ["_snake", "_constraints"]
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "extends_multiple.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
 
@@ -5935,8 +5832,6 @@ extends = "_middle"
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "extends_chain.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
 
@@ -6038,8 +5933,6 @@ snake-case-field = false
         run_main_and_assert(
             input_path=input_file,
             output_path=output_file.resolve(),
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_PYPROJECT_PROFILE_PATH / "extends_override.py",
             extra_args=["--profile", "api", "--disable-timestamp"],
         )
 

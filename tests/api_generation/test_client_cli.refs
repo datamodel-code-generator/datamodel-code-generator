@@ -50,41 +50,41 @@ pydantic_v2.dataclass-given1	main/generation_platform/client/cli/implied/pydanti
 	main/generation_platform/client/cli/options/_sync.py
 	main/generation_platform/client/cli/options/models.py
 [test_client_cli_jobs]
-differing-models	main/generation_platform/client/cli/jobs-unwritten.txt
-lock-in-client-output	main/generation_platform/client/cli/jobs-unwritten.txt
-model-job-client-option	main/generation_platform/client/cli/jobs-unwritten.txt
-overlap	main/generation_platform/client/cli/jobs-unwritten.txt
-watch	main/generation_platform/client/cli/jobs-unwritten.txt
+differing-models	api_generation/client_cli/jobs[differing-models].txt
+lock-in-client-output	api_generation/client_cli/jobs[lock-in-client-output].txt	= api_generation/client_cli/jobs[differing-models].txt
+model-job-client-option	api_generation/client_cli/jobs[model-job-client-option].txt	= api_generation/client_cli/jobs[differing-models].txt
+overlap	api_generation/client_cli/jobs[overlap].txt	= api_generation/client_cli/jobs[differing-models].txt
+watch	api_generation/client_cli/jobs[watch].txt	= api_generation/client_cli/jobs[differing-models].txt
 [test_client_cli_json_file_documents]
+absolute	api_generation/client_cli/json_file_documents[absolute].documents.txt
+absolute	api_generation/client_cli/json_file_documents[absolute].notice.txt
 absolute	main/generation_platform/client/cli/json-files/_helpers.py
-absolute	main/generation_platform/client/cli/json-files/documents.txt
-absolute	main/generation_platform/client/cli/json-files/notice.txt
+job	api_generation/client_cli/json_file_documents[job].documents.txt	= api_generation/client_cli/json_file_documents[absolute].documents.txt
+job	api_generation/client_cli/json_file_documents[job].notice.txt	= api_generation/client_cli/json_file_documents[absolute].notice.txt
 job	main/generation_platform/client/cli/json-files/_helpers.py
-job	main/generation_platform/client/cli/json-files/documents.txt
-job	main/generation_platform/client/cli/json-files/notice.txt
+pyproject	api_generation/client_cli/json_file_documents[pyproject].documents.txt	= api_generation/client_cli/json_file_documents[absolute].documents.txt
+pyproject	api_generation/client_cli/json_file_documents[pyproject].notice.txt	= api_generation/client_cli/json_file_documents[absolute].notice.txt
 pyproject	main/generation_platform/client/cli/json-files/_helpers.py
-pyproject	main/generation_platform/client/cli/json-files/documents.txt
-pyproject	main/generation_platform/client/cli/json-files/notice.txt
+relative	api_generation/client_cli/json_file_documents[relative].documents.txt	= api_generation/client_cli/json_file_documents[absolute].documents.txt
+relative	api_generation/client_cli/json_file_documents[relative].notice.txt	= api_generation/client_cli/json_file_documents[absolute].notice.txt
 relative	main/generation_platform/client/cli/json-files/_helpers.py
-relative	main/generation_platform/client/cli/json-files/documents.txt
-relative	main/generation_platform/client/cli/json-files/notice.txt
 [test_client_cli_json_file_errors]
 absolute---client-protocols	main/generation_platform/client/cli/json-files/absolute.txt
 list---client-protocols	main/generation_platform/client/cli/json-files/list.txt
 unresolved---client-protocols	main/generation_platform/client/cli/json-files/unresolved.txt
 unresolved-operations---client-operations	main/generation_platform/client/cli/json-files/unresolved-operations.txt
 [test_client_cli_leftover_files]
-	main/generation_platform/client/cli/leftover-files.txt
+	api_generation/client_cli/leftover_files.txt
 [test_client_cli_leftover_files_jobs]
-	main/generation_platform/client/cli/leftover-files-jobs.txt
+	api_generation/client_cli/leftover_files_jobs.txt
 [test_client_cli_member_types]
-options	main/generation_platform/client/cli/setting-errors/types.txt
-pyproject	main/generation_platform/client/cli/setting-errors/types.txt
+options	api_generation/client_cli/member_types[options].txt
+pyproject	api_generation/client_cli/member_types[pyproject].txt	= api_generation/client_cli/member_types[options].txt
 [test_client_cli_missing_sentinel_models_as_given]
-dataclass-missing-sentinel-client	main/generation_platform/client/cli/dataclass-missing-sentinel-models.py
-dataclass-missing-sentinel-models	main/generation_platform/client/cli/dataclass-missing-sentinel-models.py
-missing-sentinel-client	main/generation_platform/client/cli/missing-sentinel-models.py
-missing-sentinel-models	main/generation_platform/client/cli/missing-sentinel-models.py
+dataclass-missing-sentinel-client	api_generation/client_cli/missing_sentinel_models_as_given[dataclass-missing-sentinel-client].py	= main/generation_platform/client/cli/dataclass-missing-sentinel-models.py
+dataclass-missing-sentinel-models	api_generation/client_cli/missing_sentinel_models_as_given[dataclass-missing-sentinel-models].py	= main/generation_platform/client/cli/dataclass-missing-sentinel-models.py
+missing-sentinel-client	api_generation/client_cli/missing_sentinel_models_as_given[missing-sentinel-client].py	= main/generation_platform/client/cli/missing-sentinel-models.py
+missing-sentinel-models	api_generation/client_cli/missing_sentinel_models_as_given[missing-sentinel-models].py	= main/generation_platform/client/cli/missing-sentinel-models.py
 [test_client_cli_models_package_onto_a_file]
 check	api_generation/client_cli/models_package_onto_a_file[check].txt
 diff	api_generation/client_cli/models_package_onto_a_file[diff].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
@@ -142,10 +142,10 @@ target-2.14-arguments1	main/generation_platform/client/cli/pydantic-dependency/t
 target-2.14-missing-arguments0	api_generation/client_cli/pydantic_dependency[target-2.14-missing-arguments0].py	= main/generation_platform/client/cli/missing-sentinel-models.py
 target-2.14-missing-arguments0	main/generation_platform/client/cli/pydantic-dependency/target-2.14-missing.txt
 [test_client_cli_pyproject_paths]
-	main/generation_platform/client/cli/pyproject-paths.txt
+	api_generation/client_cli/pyproject_paths.txt
 [test_client_cli_pyproject_protocols_file]
+	api_generation/client_cli/pyproject_protocols_file.txt
 	main/generation_platform/client/cli/options/protocols/_helpers.py
-	main/generation_platform/client/cli/project-notice.txt
 [test_client_cli_quotes_text_alike_whatever_python_runs]
 	api_generation/client_cli/quotes_text_alike_whatever_python_runs.txt
 [test_client_cli_selector_replaces_pyproject]
@@ -157,7 +157,7 @@ protocols-arguments2	main/generation_platform/client/cli/setting-errors/protocol
 references-arguments3	main/generation_platform/client/cli/setting-errors/references.txt
 values-arguments1	main/generation_platform/client/cli/setting-errors/values.txt
 [test_client_cli_shadowed_module]
-	main/generation_platform/client/cli/shadowed-module.txt
+	api_generation/client_cli/shadowed_module.txt
 [test_client_cli_shared_models_jobs]
 	main/generation_platform/client/cli/options/_sync.py
 	main/generation_platform/client/cli/options/models.py
