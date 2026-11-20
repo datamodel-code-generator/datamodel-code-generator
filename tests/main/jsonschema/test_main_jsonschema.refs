@@ -2949,8 +2949,10 @@ True-TargetPydanticVersion.V2_11	main/jsonschema/main_jsonschema/explicit_alias_
 [test_explicit_alias_names_configured_namespace_diamond]
 	main/jsonschema/main_jsonschema/explicit_alias_names_configured_namespace_diamond.py
 [test_explicit_alias_names_custom_namespace]
-False	main/jsonschema/explicit_alias_names_custom_False.py
-True	main/jsonschema/explicit_alias_names_custom_True.py
+False	main/jsonschema/main_jsonschema/explicit_alias_names_custom_namespace[False].2.py
+False	main/jsonschema/main_jsonschema/explicit_alias_names_custom_namespace[False].py	= main/jsonschema/main_jsonschema/explicit_alias_names_custom_namespace[False].2.py
+True	main/jsonschema/main_jsonschema/explicit_alias_names_custom_namespace[True].2.py
+True	main/jsonschema/main_jsonschema/explicit_alias_names_custom_namespace[True].py	= main/jsonschema/main_jsonschema/explicit_alias_names_custom_namespace[True].2.py
 [test_explicit_alias_names_external_namespace_precedence]
 external_indirect	main/jsonschema/explicit_alias_namespace_inheritance/external_indirect.py
 external_indirect	main/jsonschema/explicit_alias_namespace_inheritance/external_indirect_runtime.txt
@@ -3072,33 +3074,57 @@ namespace_warning-None-template_dir1-TargetPydanticVersion.V2	main/jsonschema/ex
 namespace_warning-None-template_dir1-TargetPydanticVersion.V2_11	main/jsonschema/explicit_alias_names_namespace_warning.py
 namespace_warning-None-template_dir1-TargetPydanticVersion.V2_11	main/jsonschema/explicit_alias_names_namespace_warning_runtime.txt	?
 [test_explicit_alias_names_unicode]
-DataModelType.DataclassesDataclass	main/jsonschema/explicit_alias_names_unicode_DataclassesDataclass.py
-DataModelType.MsgspecStruct	main/jsonschema/explicit_alias_names_unicode_MsgspecStruct.py
-DataModelType.PydanticV2BaseModel	main/jsonschema/explicit_alias_names_unicode_PydanticV2BaseModel.py
-DataModelType.PydanticV2Dataclass	main/jsonschema/explicit_alias_names_unicode_PydanticV2Dataclass.py
-DataModelType.TypingTypedDict	main/jsonschema/explicit_alias_names_unicode_TypingTypedDict.py
+DataModelType.DataclassesDataclass	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.DataclassesDataclass].2.py
+DataModelType.DataclassesDataclass	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.DataclassesDataclass].py	= main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.DataclassesDataclass].2.py
+DataModelType.MsgspecStruct	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.MsgspecStruct].2.py
+DataModelType.MsgspecStruct	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.MsgspecStruct].py	= main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.MsgspecStruct].2.py
+DataModelType.PydanticV2BaseModel	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.PydanticV2BaseModel].2.py
+DataModelType.PydanticV2BaseModel	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.PydanticV2BaseModel].py	= main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.PydanticV2BaseModel].2.py
+DataModelType.PydanticV2Dataclass	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.PydanticV2Dataclass].2.py
+DataModelType.PydanticV2Dataclass	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.PydanticV2Dataclass].py	= main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.PydanticV2Dataclass].2.py
+DataModelType.TypingTypedDict	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.TypingTypedDict].2.py
+DataModelType.TypingTypedDict	main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.TypingTypedDict].py	= main/jsonschema/main_jsonschema/explicit_alias_names_unicode[DataModelType.TypingTypedDict].2.py
 [test_explicit_alias_names_valid]
-choices	main/jsonschema/explicit_alias_names_choices.py
-global	main/jsonschema/explicit_alias_names_global.py
-neutral_reserved	main/jsonschema/explicit_alias_names_neutral_reserved.py
-normal	main/jsonschema/explicit_alias_names_normal.py
-scoped	main/jsonschema/explicit_alias_names_scoped.py
-scoped_empty_choices	main/jsonschema/explicit_alias_names_scoped_empty_choices.py
+choices	main/jsonschema/main_jsonschema/explicit_alias_names_valid[choices].2.py
+choices	main/jsonschema/main_jsonschema/explicit_alias_names_valid[choices].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid[choices].2.py
+global	main/jsonschema/main_jsonschema/explicit_alias_names_valid[global].2.py
+global	main/jsonschema/main_jsonschema/explicit_alias_names_valid[global].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid[global].2.py
+neutral_reserved	main/jsonschema/main_jsonschema/explicit_alias_names_valid[neutral_reserved].2.py
+neutral_reserved	main/jsonschema/main_jsonschema/explicit_alias_names_valid[neutral_reserved].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid[neutral_reserved].2.py
+normal	main/jsonschema/main_jsonschema/explicit_alias_names_valid[normal].2.py
+normal	main/jsonschema/main_jsonschema/explicit_alias_names_valid[normal].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid[normal].2.py
+scoped	main/jsonschema/main_jsonschema/explicit_alias_names_valid[scoped].2.py
+scoped	main/jsonschema/main_jsonschema/explicit_alias_names_valid[scoped].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid[scoped].2.py
+scoped_empty_choices	main/jsonschema/main_jsonschema/explicit_alias_names_valid[scoped_empty_choices].2.py
+scoped_empty_choices	main/jsonschema/main_jsonschema/explicit_alias_names_valid[scoped_empty_choices].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid[scoped_empty_choices].2.py
 [test_explicit_alias_names_valid_shadows]
-empty-None	main/jsonschema/explicit_alias_names_empty.py
-invalid-None	main/jsonschema/explicit_alias_names_invalid.py
-keyword-None	main/jsonschema/explicit_alias_names_keyword.py
-msgspec_field-None	main/jsonschema/explicit_alias_names_msgspec_field.py
-msgspec_field-None	payloads/explicit_alias_msgspec_field.txt
-namespace_warning-None	main/jsonschema/explicit_alias_names_namespace_warning.py
-shadow_copy-None	main/jsonschema/explicit_alias_names_shadow_copy.py
-shadow_dict-None	main/jsonschema/explicit_alias_names_shadow_dict.py
-shadow_json-None	main/jsonschema/explicit_alias_names_shadow_json.py
-shadow_model_fields-None	main/jsonschema/explicit_alias_names_shadow_model_fields.py
-shadow_model_fields-TargetPydanticVersion.V2_11	main/jsonschema/explicit_alias_names_shadow_model_fields.py
-shadow_model_fields-TargetPydanticVersion.V2_12	main/jsonschema/explicit_alias_names_shadow_model_fields.py
-shadow_schema-None	main/jsonschema/explicit_alias_names_shadow_schema.py
-shadow_validate-None	main/jsonschema/explicit_alias_names_shadow_validate.py
+empty-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[empty-None].2.py
+empty-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[empty-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[empty-None].2.py
+invalid-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[invalid-None].2.py
+invalid-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[invalid-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[invalid-None].2.py
+keyword-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[keyword-None].2.py
+keyword-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[keyword-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[keyword-None].2.py
+msgspec_field-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[msgspec_field-None].2.py
+msgspec_field-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[msgspec_field-None].explicit_alias_msgspec_field.txt
+msgspec_field-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[msgspec_field-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[msgspec_field-None].2.py
+namespace_warning-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[namespace_warning-None].2.py	= main/jsonschema/explicit_alias_names_namespace_warning.py
+namespace_warning-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[namespace_warning-None].py	= main/jsonschema/explicit_alias_names_namespace_warning.py
+shadow_copy-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_copy-None].2.py
+shadow_copy-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_copy-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_copy-None].2.py
+shadow_dict-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_dict-None].2.py
+shadow_dict-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_dict-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_dict-None].2.py
+shadow_json-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_json-None].2.py
+shadow_json-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_json-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_json-None].2.py
+shadow_model_fields-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-None].2.py
+shadow_model_fields-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-None].2.py
+shadow_model_fields-TargetPydanticVersion.V2_11	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-TargetPydanticVersion.V2_11].2.py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-None].2.py
+shadow_model_fields-TargetPydanticVersion.V2_11	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-TargetPydanticVersion.V2_11].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-None].2.py
+shadow_model_fields-TargetPydanticVersion.V2_12	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-TargetPydanticVersion.V2_12].2.py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-None].2.py
+shadow_model_fields-TargetPydanticVersion.V2_12	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-TargetPydanticVersion.V2_12].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_model_fields-None].2.py
+shadow_schema-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_schema-None].2.py
+shadow_schema-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_schema-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_schema-None].2.py
+shadow_validate-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_validate-None].2.py
+shadow_validate-None	main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_validate-None].py	= main/jsonschema/main_jsonschema/explicit_alias_names_valid_shadows[shadow_validate-None].2.py
 [test_explicit_frozen_set_hashes]
 additional_import-False-builtin-api	main/jsonschema/explicit_frozen_sets/additional_import.py
 additional_import-False-builtin-api	main/jsonschema/explicit_frozen_sets/opaque.runtime.txt
@@ -5242,8 +5268,8 @@ legacy-option-custom-template	main/jsonschema/main_jsonschema/generate_jsonschem
 	main/jsonschema/custom_template_refresh_default.py
 	main/jsonschema/custom_template_refresh_v1.py
 [test_generate_refreshes_custom_template_directory_symlink]
-	main/jsonschema/custom_template_refresh/first.py
-	main/jsonschema/custom_template_refresh/second.py
+	main/jsonschema/main_jsonschema/generate_refreshes_custom_template_directory_symlink.2.py	= main/jsonschema/custom_template_refresh/second.py
+	main/jsonschema/main_jsonschema/generate_refreshes_custom_template_directory_symlink.py	= main/jsonschema/custom_template_refresh/first.py
 [test_generate_refreshes_legacy_pydantic_template_detection_between_calls]
 	main/jsonschema/custom_template_refresh/legacy_pydantic_extra.py
 [test_generate_refreshes_mutable_custom_templates_between_calls]
@@ -5254,8 +5280,8 @@ legacy-option-custom-template	main/jsonschema/main_jsonschema/generate_jsonschem
 	main/jsonschema/custom_template_refresh/legacy.py
 	main/jsonschema/custom_template_refresh/second.py
 [test_generate_refreshes_retargeted_custom_template_directory_symlink]
-	main/jsonschema/custom_template_refresh/first.py
-	main/jsonschema/custom_template_refresh/second.py
+	main/jsonschema/main_jsonschema/generate_refreshes_retargeted_custom_template_directory_symlink.2.py	= main/jsonschema/custom_template_refresh/second.py
+	main/jsonschema/main_jsonschema/generate_refreshes_retargeted_custom_template_directory_symlink.py	= main/jsonschema/custom_template_refresh/first.py
 [test_generate_schema_validator_type_public_api]
 	main/jsonschema/main_jsonschema/generate_schema_validator_type_public_api.py	= main/jsonschema/schema_validators.py
 [test_generate_strict_dotted_custom_generator_nested]
@@ -5546,7 +5572,7 @@ pydantic_v2.BaseModel-extra_args1	main/jsonschema/all_of_value_site_keywords.py	
 [test_main_allof_inheritance_cycle_custom_typed_dict_class_template]
 	main/jsonschema/main_jsonschema/main_allof_inheritance_cycle_custom_typed_dict_class_template.py
 [test_main_allof_inheritance_late_local_base_custom_typed_dict_class_template]
-	main/jsonschema/allof_inheritance_late_local_base_custom_typed_dict//*.py
+	main/jsonschema/main_jsonschema/main_allof_inheritance_late_local_base_custom_typed_dict_class_template/
 [test_main_allof_inheritance_mro_conflict_msgspec]
 	main/jsonschema/allof_inheritance_mro_conflict_msgspec.py
 [test_main_allof_inheritance_mro_conflict_typed_dict]
@@ -5886,11 +5912,11 @@ use_annotated.py-cli_args1-options1-cli	main/jsonschema/entry_point_constraints/
 const	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_alias_modules[const]/
 discriminator	main/jsonschema/main_jsonschema/main_enum_literal_of_collapsed_alias_modules[discriminator]/
 [test_main_exact_imports_collapse_root_models_module_class_collision]
-	main/jsonschema/exact_imports_collapse_root_models//*.py
+	main/jsonschema/main_jsonschema/main_exact_imports_collapse_root_models_module_class_collision/	= main/jsonschema/exact_imports_collapse_root_models//*.py
 [test_main_exact_imports_collapse_root_models_module_split_oneof_imports]
-	main/jsonschema/exact_imports_collapse_root_models_module_split_oneof//*.py
+	main/jsonschema/main_jsonschema/main_exact_imports_collapse_root_models_module_split_oneof_imports/
 [test_main_exact_imports_collapse_root_models_title_array]
-	main/jsonschema/exact_imports_collapse_root_models_title//*.py
+	main/jsonschema/main_jsonschema/main_exact_imports_collapse_root_models_title_array/
 [test_main_external_definitions]
 	main/jsonschema/external_definitions.py
 [test_main_external_files_in_directory]
@@ -6256,9 +6282,9 @@ submodule-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_type_ove
 3.11-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-dataclasses.dataclass].payloads.txt
 3.11-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.11-pydantic_v2.BaseModel]/	= main/jsonschema/main_jsonschema/class_named_like_builtin_beside_submodule[3.10-pydantic_v2.BaseModel]/
 [test_main_jsonschema_collapse_reuse_models_cross_module_users]
-module	main/jsonschema/collapse_reuse_models_cross_module_users//*.py
-tree	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*.py
-tree-type-alias	main/jsonschema/collapse_reuse_models_cross_module_users_tree//*.py
+module	main/jsonschema/main_jsonschema/collapse_reuse_models_cross_module_users[module]/
+tree	main/jsonschema/main_jsonschema/collapse_reuse_models_cross_module_users[tree]/
+tree-type-alias	main/jsonschema/main_jsonschema/collapse_reuse_models_cross_module_users[tree-type-alias]/	= main/jsonschema/main_jsonschema/collapse_reuse_models_cross_module_users[tree]/
 [test_main_jsonschema_collapse_root_models_any_union]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].payloads.txt
 dataclasses.dataclass	main/jsonschema/main_jsonschema/collapse_root_models_any_union[dataclasses.dataclass].py
@@ -6591,7 +6617,7 @@ partial_binding	main/jsonschema/main_jsonschema/dynamic_ref_scope_bindings[parti
 root_generic	main/jsonschema/main_jsonschema/dynamic_ref_scope_bindings[root_generic].py
 tuple_additional_items	main/jsonschema/main_jsonschema/dynamic_ref_scope_bindings[tuple_additional_items].py
 [test_main_jsonschema_dynamic_ref_shared_id]
-	main/jsonschema/dynamic_ref_shared_id//*.py
+	main/jsonschema/main_jsonschema/dynamic_ref_shared_id/
 [test_main_jsonschema_empty_field_name]
 msgspec	main/jsonschema/main_jsonschema/empty_field_name[msgspec].py
 pydantic-v2	main/jsonschema/main_jsonschema/empty_field_name[pydantic-v2].empty_field_name_metadata.txt
@@ -7305,7 +7331,7 @@ typed-dict	main/jsonschema/output_model_types/msgspec_unset_fastpath_typing_Type
 [test_main_jsonschema_no_empty_collapsed_external_model]
 	main/jsonschema/main_jsonschema/no_empty_collapsed_external_model/
 [test_main_jsonschema_non_dict_files_in_directory]
-	main/jsonschema/non_dict_files//*.py
+	main/jsonschema/main_jsonschema/non_dict_files_in_directory/
 [test_main_jsonschema_non_finite_enum_members]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[dataclasses.dataclass].py
 dataclasses.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[dataclasses.dataclass].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
@@ -7467,7 +7493,7 @@ pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/prefix_items_unsat
 [test_main_jsonschema_property_count_constraints]
 	main/jsonschema/main_jsonschema/property_count_constraints.py
 [test_main_jsonschema_property_count_cross_module_capabilities]
-	main/jsonschema/schema_validators_property_count_cross_module//*.py
+	main/jsonschema/main_jsonschema/property_count_cross_module_capabilities/
 [test_main_jsonschema_property_count_cross_module_with_generic_base_class]
 	main/jsonschema/schema_validators_property_count_cross_module_generic_base/property_parent.py
 	main/jsonschema/schema_validators_property_count_cross_module_generic_base/required_parent.py
@@ -7593,6 +7619,7 @@ single-value-enum-as-const	main/jsonschema/main_jsonschema/read_schema_version_p
 [test_main_jsonschema_read_schema_version_per_document_dynamic_scope]
 	main/jsonschema/main_jsonschema/read_schema_version_per_document_dynamic_scope.py
 [test_main_jsonschema_read_schema_version_per_document_explicit_version]
+	main/jsonschema/main_jsonschema/read_schema_version_per_document_explicit_version.2/	= main/jsonschema/main_jsonschema/read_schema_version_per_document_explicit_version/
 	main/jsonschema/main_jsonschema/read_schema_version_per_document_explicit_version/
 [test_main_jsonschema_read_schema_version_per_document_external_recursive_anchor]
 first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_external_recursive_anchor[first-read].py
@@ -7632,7 +7659,7 @@ typing.TypedDict	main/jsonschema/main_jsonschema/ref_sibling_dialect_directory[t
 [test_main_jsonschema_ref_type_has_null]
 	main/jsonschema/main_jsonschema/ref_type_has_null.py
 [test_main_jsonschema_ref_with_additional_keywords]
-	main/jsonschema/ref_with_additional_keywords//*.py
+	main/jsonschema/main_jsonschema/ref_with_additional_keywords/
 [test_main_jsonschema_reference_edges_of_parser_hooks]
 key	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[key].txt
 target	main/jsonschema/main_jsonschema/reference_edges_of_parser_hooks[target].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
@@ -7671,54 +7698,54 @@ subclass-dataclasses.dataclass	main/jsonschema/main_jsonschema/reuse_model_merge
 subclass-msgspec.Struct	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[subclass-msgspec.Struct].py
 subclass-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[subclass-pydantic_v2.BaseModel].py
 [test_main_jsonschema_reuse_model_same_name_references]
-	main/jsonschema/reuse_model_same_name_references//*.py
+	main/jsonschema/main_jsonschema/reuse_model_same_name_references/
 [test_main_jsonschema_reuse_scope_tree]
 	main/jsonschema/main_jsonschema/reuse_scope_tree/
 [test_main_jsonschema_reuse_scope_tree_branch]
-	main/jsonschema/reuse_scope_tree_branch//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_branch/
 [test_main_jsonschema_reuse_scope_tree_cross_module_users]
-collapse	main/jsonschema/reuse_scope_tree_cross_module_users_collapsed//*.py
-inherit	main/jsonschema/reuse_scope_tree_cross_module_users//*.py
+collapse	main/jsonschema/main_jsonschema/reuse_scope_tree_cross_module_users[collapse]/
+inherit	main/jsonschema/main_jsonschema/reuse_scope_tree_cross_module_users[inherit]/
 [test_main_jsonschema_reuse_scope_tree_dataclass]
-	main/jsonschema/reuse_scope_tree_dataclass//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_dataclass/
 [test_main_jsonschema_reuse_scope_tree_dataclass_frozen]
 	main/jsonschema/reuse_scope_tree_dataclass_frozen/__init__.py
 	main/jsonschema/reuse_scope_tree_dataclass_frozen/schema_a.py
 	main/jsonschema/reuse_scope_tree_dataclass_frozen/schema_b.py
 	main/jsonschema/reuse_scope_tree_dataclass_frozen/shared.py
 [test_main_jsonschema_reuse_scope_tree_enum]
-	main/jsonschema/reuse_scope_tree_enum//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_enum/
 [test_main_jsonschema_reuse_scope_tree_exact_imports]
 	main/jsonschema/main_jsonschema/reuse_scope_tree_exact_imports/
 [test_main_jsonschema_reuse_scope_tree_merged_bases]
 msgspec.Struct	main/jsonschema/main_jsonschema/reuse_scope_tree_merged_bases[msgspec.Struct]/
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/reuse_scope_tree_merged_bases[pydantic_v2.dataclass]/
 [test_main_jsonschema_reuse_scope_tree_multi]
-	main/jsonschema/reuse_scope_tree_multi//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_multi/
 [test_main_jsonschema_reuse_scope_tree_no_conflict_dir]
-	main/jsonschema/reuse_scope_tree_no_conflict_dir//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_no_conflict_dir/
 [test_main_jsonschema_reuse_scope_tree_no_dup]
-	main/jsonschema/reuse_scope_tree_no_dup//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_no_dup/
 [test_main_jsonschema_reuse_scope_tree_non_inheriting_outputs]
-msgspec	main/jsonschema/reuse_scope_tree_msgspec//*.py
-pydantic-dataclass	main/jsonschema/reuse_scope_tree_pydantic_dataclass//*.py
+msgspec	main/jsonschema/main_jsonschema/reuse_scope_tree_non_inheriting_outputs[msgspec]/
+pydantic-dataclass	main/jsonschema/main_jsonschema/reuse_scope_tree_non_inheriting_outputs[pydantic-dataclass]/
 [test_main_jsonschema_reuse_scope_tree_preserves_type_overrides]
-collapse	main/jsonschema/reuse_type_overrides_tree_collapsed//*.py
-inherit	main/jsonschema/reuse_type_overrides_tree//*.py
+collapse	main/jsonschema/main_jsonschema/reuse_scope_tree_preserves_type_overrides[collapse]/
+inherit	main/jsonschema/main_jsonschema/reuse_scope_tree_preserves_type_overrides[inherit]/
 [test_main_jsonschema_reuse_scope_tree_relative_imports]
 	main/jsonschema/reuse_scope_tree_relative_import/external1.py
 [test_main_jsonschema_reuse_scope_tree_root_key]
 	main/jsonschema/main_jsonschema/reuse_scope_tree_root_key/
 [test_main_jsonschema_reuse_scope_tree_same_name_references]
-collapse	main/jsonschema/reuse_scope_tree_same_name_references_collapsed//*.py
-inherit	main/jsonschema/reuse_scope_tree_same_name_references//*.py
+collapse	main/jsonschema/main_jsonschema/reuse_scope_tree_same_name_references[collapse]/
+inherit	main/jsonschema/main_jsonschema/reuse_scope_tree_same_name_references[inherit]/
 [test_main_jsonschema_reuse_scope_tree_self_ref]
-	main/jsonschema/reuse_scope_tree_self_ref//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_self_ref/
 [test_main_jsonschema_reuse_scope_tree_shared_module_name]
 dotted	main/jsonschema/main_jsonschema/reuse_scope_tree_shared_module_name[dotted]/
 named	main/jsonschema/main_jsonschema/reuse_scope_tree_shared_module_name[named]/
 [test_main_jsonschema_reuse_scope_tree_typeddict]
-	main/jsonschema/reuse_scope_tree_typeddict//*.py
+	main/jsonschema/main_jsonschema/reuse_scope_tree_typeddict/
 [test_main_jsonschema_reuse_scope_tree_warning]
 	main/jsonschema/main_jsonschema/reuse_scope_tree_warning/
 [test_main_jsonschema_root_model_default_value]
@@ -8905,8 +8932,8 @@ openapi	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py	= main/jsonsc
 [test_main_ref_sibling_chain_with_schema_validators_one_model_per_site]
 	main/jsonschema/ref_sibling_chain_with_schema_validators_one_model_per_site.py
 [test_main_refreshes_modified_custom_template_between_calls]
-	main/jsonschema/custom_template_refresh/first.py
-	main/jsonschema/custom_template_refresh/second.py
+	main/jsonschema/main_jsonschema/main_refreshes_modified_custom_template_between_calls.2.py	= main/jsonschema/custom_template_refresh/second.py
+	main/jsonschema/main_jsonschema/main_refreshes_modified_custom_template_between_calls.py	= main/jsonschema/custom_template_refresh/first.py
 [test_main_remote_ref_allows_private_network_with_explicit_allow]
 	main/jsonschema/main_jsonschema/main_remote_ref_allows_private_network_with_explicit_allow.py
 [test_main_remote_ref_warns_without_explicit_allow]
@@ -13844,8 +13871,10 @@ api	main/jsonschema/schema_reference_cycles/instance_values.py
 api	main/jsonschema/schema_reference_cycles/instance_values_api.py
 cli	main/jsonschema/schema_reference_cycles/instance_values.py
 [test_schema_reference_cycles_preserve_normal_output]
-ordinary	main/jsonschema/schema_reference_cycles/ordinary.py
-schema_names	main/jsonschema/schema_reference_cycles/schema_names.py
+ordinary	main/jsonschema/main_jsonschema/schema_reference_cycles_preserve_normal_output[ordinary].2.py
+ordinary	main/jsonschema/main_jsonschema/schema_reference_cycles_preserve_normal_output[ordinary].py	= main/jsonschema/main_jsonschema/schema_reference_cycles_preserve_normal_output[ordinary].2.py
+schema_names	main/jsonschema/main_jsonschema/schema_reference_cycles_preserve_normal_output[schema_names].2.py	= main/jsonschema/schema_reference_cycles/schema_names.py
+schema_names	main/jsonschema/main_jsonschema/schema_reference_cycles_preserve_normal_output[schema_names].py	= main/jsonschema/schema_reference_cycles/schema_names.py
 [test_schema_resource_identifier_versions]
 draft4_id_metadata-auto-lenient-False-api	main/jsonschema/nested_resources/id_metadata.py
 draft4_id_metadata-auto-lenient-False-api	main/jsonschema/nested_resources/modern_id_scope_runtime.txt
@@ -15626,7 +15655,7 @@ typed-dict	main/jsonschema/main_jsonschema/x_python_type_binding_collisions[type
 [test_x_python_type_fqpath]
 	main/jsonschema/x_python_type_fqpath.py
 [test_x_python_type_late_import_collision]
-	main/jsonschema/x_python_type_late_import_collision//*.py
+	main/jsonschema/main_jsonschema/x_python_type_late_import_collision/
 [test_x_python_type_nested_imports]
 	main/jsonschema/x_python_type_nested_imports.py
 [test_x_python_type_nested_unknown_type]
