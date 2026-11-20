@@ -876,19 +876,26 @@ def _ruff_files(tally: Tally, root: Path, files: list[str]) -> None:
             tally.add(f"ruff-config:file:{path}", path)
 
 
+def _is_one_entry(value: ast.expr) -> bool:
+    """Return whether a dict value is a constant or a record built by a class (``Entry(...)``): one entry, not many."""
+    return isinstance(value, ast.Constant) or (
+        isinstance(value, ast.Call) and isinstance(value.func, ast.Name) and value.func.id[:1].isupper()
+    )
+
+
 def _entries(node: ast.expr) -> list[ast.expr] | None:
     """Return the entries of an allowlist literal, or None where it is not one this script can read.
 
     The entries are the elements, or the members of a dict's collection values, or the keys of a dict whose values are
-    all constants. A dict with any other value (``tuple([...])``, ``a + b``, a name) is not readable: its members
-    could be counted only by running it, and counting its keys would hide them.
+    all constants or records (``Entry(...)``). A dict with any other value (``tuple([...])``, ``a + b``, a name) is
+    not readable: its members could be counted only by running it, and counting its keys would hide them.
     """
     value = node.args[0] if isinstance(node, ast.Call) and node.args else node
     if isinstance(value, ast.Dict):
         groups = [item.elts for item in value.values if isinstance(item, (ast.Tuple, ast.List, ast.Set))]
         if len(groups) == len(value.values):
             return [entry for group in groups for entry in group]
-        if all(isinstance(item, ast.Constant) for item in value.values):
+        if all(_is_one_entry(item) for item in value.values):
             return [key for key in value.keys if key is not None]
         return None
     return list(value.elts) if isinstance(value, (ast.Tuple, ast.List, ast.Set)) else None
