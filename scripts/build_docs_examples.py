@@ -721,7 +721,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "model-reuse.use-type-alias.output",
             "model-reuse.md",
             language="python",
-            path=EXPECTED_JSON_SCHEMA / "reduce_duplicate_field_types.py",
+            path=EXPECTED_JSON_SCHEMA / "main_jsonschema/reduce_duplicate_field_types.py",
             strip_python_header=True,
         ),
         DocsExample(
