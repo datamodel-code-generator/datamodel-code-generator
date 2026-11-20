@@ -105,13 +105,19 @@ def test_main_protobuf_output_model_types(
             )
 
 
-def test_main_protobuf_infer_input_file_type(output_file: Path) -> None:
-    """Infer Protocol Buffers input and generate a model."""
+def test_main_protobuf_infer_input_file_type(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
+    """Infer Protocol Buffers input and generate a model, printing protoc's warning with the file's own name."""
     run_main_and_assert(
         input_path=PROTOBUF_DATA_PATH / "proto3_optional.proto",
         output_path=output_file,
         assert_func=assert_file_content,
         expected_file="proto3_optional.py",
+        capsys=capsys,
+        expected_stderr=(
+            "The input file type was determined to be: protobuf\n"
+            "This can be specified explicitly with the `--input-file-type` option.\n"
+            "input_0.proto:7:1: warning: Import common.proto is unused.\n"
+        ),
     )
 
 
@@ -356,7 +362,7 @@ def test_main_protobuf_parse_error(capsys: pytest.CaptureFixture[str], tmp_path:
         input_file_type="protobuf",
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="Invalid Protocol Buffers schema",
+        expected_stderr_contains="Invalid Protocol Buffers schema: invalid.proto:3:1: Expected",
         output_should_not_exist=True,
     )
 

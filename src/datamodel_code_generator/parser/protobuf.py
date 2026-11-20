@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import contextlib
 import io
+import os
 import re
+import sys
 import tempfile
 from copy import deepcopy
 from pathlib import Path
@@ -35,7 +37,7 @@ from datamodel_code_generator.util import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Sequence
+    from collections.abc import Generator, Iterable, Iterator, Sequence
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._types import ProtobufParserConfigDict
@@ -361,6 +363,28 @@ def _comment_map(file_descriptor: Any) -> dict[tuple[int, ...], str]:
     return comments
 
 
+@contextlib.contextmanager
+def _captured_stderr() -> Generator[io.StringIO, None, None]:
+    """Collect what the code in the block writes to the process's standard error, ``protoc``'s included.
+
+    ``protoc`` is C++ code that writes to file descriptor 2, so ``contextlib.redirect_stderr`` does not see it.
+    """
+    printed = io.StringIO()
+    sys.stderr.flush()
+    saved = os.dup(2)
+    try:
+        with tempfile.TemporaryFile() as sink:
+            os.dup2(sink.fileno(), 2)
+            try:
+                yield printed
+            finally:
+                os.dup2(saved, 2)
+            sink.seek(0)
+            printed.write(sink.read().decode("utf-8", errors="replace"))
+    finally:
+        os.close(saved)
+
+
 class _ProtoInputPreparer:
     def __init__(self, parser: ProtobufParser) -> None:
         self.parser = parser
@@ -399,6 +423,15 @@ class _ProtoInputPreparer:
     def __exit__(self, *args: object) -> None:
         assert self.temp_dir is not None
         self.temp_dir.cleanup()
+
+    def without_temp_dir(self, text: str) -> str:
+        """Return `text` without the run's temporary directory in its paths (`protoc` names files by disk path)."""
+        assert self.temp_dir is not None
+        root = Path(self.temp_dir.name)
+        for form in dict.fromkeys((str(root), os.path.realpath(root))):
+            for separator in dict.fromkeys((os.sep, "/")):
+                text = text.replace(form + separator, "")
+        return text
 
     def _input_files(self, temp_path: Path) -> list[Path]:
         source = self.parser.source
@@ -742,7 +775,8 @@ class ProtobufParser(JsonSchemaParser):
             raise Error(msg)
         protoc, well_known_include = _load_grpc_tools()
         descriptor_pb2 = _load_descriptor_pb2()
-        with _ProtoInputPreparer(self) as (input_files, include_paths, input_file_names):
+        preparer = _ProtoInputPreparer(self)
+        with preparer as (input_files, include_paths, input_file_names):
             if not input_files:
                 msg = "No .proto files found in input"
                 raise SchemaParseError(msg)
@@ -763,13 +797,14 @@ class ProtobufParser(JsonSchemaParser):
                     f"--descriptor_set_out={output_path}",
                     *(str(path) for path in input_files),
                 ]
-                stderr = io.StringIO()
-                with contextlib.redirect_stderr(stderr):
+                with _captured_stderr() as printed:
                     exit_code = protoc.main(args)
+                details = preparer.without_temp_dir(printed.getvalue()).strip()
                 if exit_code:
-                    details = stderr.getvalue().strip()
                     msg = f"Invalid Protocol Buffers schema: {details or f'protoc exited with {exit_code}'}"
                     raise SchemaParseError(msg)
+                if details:
+                    sys.stderr.write(f"{details}\n")
                 descriptor_set = descriptor_pb2.FileDescriptorSet()
                 descriptor_set.ParseFromString(output_path.read_bytes())
                 if collect_dependencies:

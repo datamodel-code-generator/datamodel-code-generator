@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, NoReturn
 import pytest
 
 from datamodel_code_generator import InputFileType, generate
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH
+from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, PROTOBUF_DATA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -90,7 +90,9 @@ def _assert_same_output(first: str, second: str, context: str) -> None:
     _fail_with_diff(first, second, context)  # pragma: no cover
 
 
-def _generate_output_with_hash_seed(input_path: Path, input_file_type: InputFileType, seed: str) -> str:
+def _generate_output_with_hash_seed(
+    input_path: Path, input_file_type: InputFileType, seed: str
+) -> subprocess.CompletedProcess[str]:
     env = {**os.environ, "PYTHONHASHSEED": seed}
     try:
         result = subprocess.run(
@@ -107,7 +109,7 @@ def _generate_output_with_hash_seed(input_path: Path, input_file_type: InputFile
             f"{input_path.as_posix()} with PYTHONHASHSEED={seed}"
         )
         raise AssertionError(message) from exc
-    return result.stdout
+    return result
 
 
 @pytest.mark.parametrize(
@@ -128,7 +130,32 @@ def test_generate_output_is_repeatable(case: DeterminismCase) -> None:
 )
 def test_generate_output_is_stable_across_hash_seeds(case: DeterminismCase) -> None:
     """Representative output should not depend on hash iteration order."""
-    seed_zero_output = _generate_output_with_hash_seed(case.input_path, case.input_file_type, "0")
-    seed_one_output = _generate_output_with_hash_seed(case.input_path, case.input_file_type, "1")
+    seed_zero_output = _generate_output_with_hash_seed(case.input_path, case.input_file_type, "0").stdout
+    seed_one_output = _generate_output_with_hash_seed(case.input_path, case.input_file_type, "1").stdout
 
     _assert_same_output(seed_zero_output, seed_one_output, f"{case.input_path.as_posix()} hash seeds")
+
+
+@pytest.mark.parametrize(
+    ("file_name", "expected_message"),
+    [
+        pytest.param(
+            "proto3_optional.proto",
+            "proto3_optional.proto:7:1: warning: Import common.proto is unused.\n",
+            id="protobuf-proto3-optional",
+        ),
+        pytest.param(
+            "complex_proto3.proto",
+            "complex_proto3.proto:7:1: warning: Import missing_weak.proto is unused.\n",
+            id="protobuf-complex-proto3",
+        ),
+    ],
+)
+def test_generate_messages_are_stable_across_hash_seeds(file_name: str, expected_message: str) -> None:
+    """The messages of a protobuf run name its files by their own paths, not by the run's temporary directory."""
+    input_path = PROTOBUF_DATA_PATH / file_name
+    seed_zero = _generate_output_with_hash_seed(input_path, InputFileType.Protobuf, "0")
+    seed_one = _generate_output_with_hash_seed(input_path, InputFileType.Protobuf, "1")
+
+    _assert_same_output(seed_zero.stderr, seed_one.stderr, f"{input_path.as_posix()} messages")
+    _assert_same_output(seed_zero.stderr, expected_message, f"{input_path.as_posix()} expected messages")
