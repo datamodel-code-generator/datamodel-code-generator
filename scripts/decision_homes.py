@@ -6774,9 +6774,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`_message_text.py:extra_requirement`, `_message_text.py:install_command`",
         adapters=(
             "the missing-extra errors and warnings (`__init__.py:enable_debug_message`, `http.py:_get_http_stack`, "
-            "`watch.py:_get_watchfiles`, `format.py:CodeFormatter._find_ruff_path`, `parser/openapi.py:OpenAPIParser.parse_raw` "
-            "(`--validation`), `parser/protobuf.py`, `parser/graphql.py`), the help of `--url`, `--formatters` and "
-            "`--debug` (`_option_table.py`), the `extra.httpx2` entry of `experimental.py`"
+            "`watch.py:_get_watchfiles`, `format.py:CodeFormatter._find_ruff_path`, "
+            "`parser/openapi.py:OpenAPIParser.parse_raw` (`--validation`), `parser/protobuf.py`, `parser/graphql.py`), "
+            "the help of `--url`, `--formatters` and `--debug` (`_option_table.py`), the `extra.httpx2` entry of "
+            "`experimental.py`"
         ),
         sites=(
             Home("__init__.py", "enable_debug_message"),

@@ -235,8 +235,10 @@ def test_decision_home_check_fails_on_seeded_records() -> None:
         "seeded: a home the core cell does not name...: the core cell does not name types.py:DataType.admits_none",
         "seeded: a home the core cell does not name...: the core cell does not name _json_schema.py",
         "seeded: a home the core cell does not name...: the adapters cell does not name types.py:DataType.admits_none",
-        "seeded: a whole-module site the cell qualifies...: the adapters cell names `NULL_SCHEMA` after parser/avro.py, "
-        "no whole-module site",
+        (
+            "seeded: a whole-module site the cell qualifies...: "
+            "the adapters cell names `NULL_SCHEMA` after parser/avro.py, no whole-module site"
+        ),
         "seeded: no home...: no home",
     ]
 
