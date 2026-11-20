@@ -887,13 +887,13 @@ client = [
 ]
 coverage = [
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
     { name = "diff-cover", specifier = ">=9.7.2" },
 ]
 dev = [
     { name = "check-wheel-contents", specifier = ">=0.6.1" },
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
     { name = "cryptography", specifier = ">=50" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
@@ -951,7 +951,7 @@ playground = [
 ]
 test = [
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
     { name = "cryptography", specifier = ">=50" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
@@ -973,7 +973,7 @@ test = [
 ]
 type = [
     { name = "covdefaults", specifier = ">=2.3" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.11.0" },
     { name = "cryptography", specifier = ">=50" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
