@@ -1,0 +1,189 @@
+=== module a6_lazy_exports
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+== references
+== imports
+=== module a6_lazy_exports._lazy_exports
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  module_hooks: def@4 [always]
+scope function module_hooks#0 'module_hooks': code yes; first line 4
+  opened by a node evaluated in <module>#0
+  module_name: param@4 [function:body@4]
+  table: param@4 [function:body@4]
+  module_getattr: def@5 [function:body@4]
+  module_dir: def@8 [function:body@4]
+scope function module_hooks.<locals>.module_getattr#0 'module_getattr': code yes; first line 5
+  opened by a node evaluated in module_hooks#0
+  name: param@5 [function:body@4|function:body@5]
+scope function module_hooks.<locals>.module_dir#0 'module_dir': code yes; first line 8
+  opened by a node evaluated in module_hooks#0
+== references
+6:15 table load in module_hooks.<locals>.module_getattr -> enclosing module_hooks @4
+6:21 name load in module_hooks.<locals>.module_getattr -> local module_hooks.<locals>.module_getattr @5
+9:15 sorted load in module_hooks.<locals>.module_dir -> builtin; origin builtins.sorted
+9:22 table load in module_hooks.<locals>.module_dir -> enclosing module_hooks @4
+11:11 module_getattr load in module_hooks -> local module_hooks @5
+11:27 module_dir load in module_hooks -> local module_hooks @8
+uses of module_hooks:table@4: read@6, argument@9
+uses of module_hooks:module_getattr@5: read@11
+uses of module_hooks:module_dir@8: read@11
+uses of module_hooks.<locals>.module_getattr:name@5: read@6
+== imports
+definition a6_lazy_exports._lazy_exports:module_hooks -> def a6_lazy_exports._lazy_exports:module_hooks@4 via a6_lazy_exports._lazy_exports [always]
+=== module a6_lazy_exports._values
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  module_hooks: import-from@3 [always]; origin a6_lazy_exports._lazy_exports.module_hooks
+  LIMIT: assign@5 [always]; value 16
+  Base: class@8 [always]
+  Other: class@12 [always]
+  Remote: class@16 [always]
+  __getattr__: assign@20 [always]
+  __dir__: assign@20 [always]
+scope class Base#0 'Base': code yes; first line 8
+  opened by a node evaluated in <module>#0
+  members: 
+scope class Other#0 'Other': code yes; first line 12
+  opened by a node evaluated in <module>#0
+  members: 
+scope class Remote#0 'Remote': code yes; first line 16
+  opened by a node evaluated in <module>#0
+  members: 
+== references
+5:0 LIMIT store in <module> -> local <module> @5
+20:0 __getattr__ store in <module> -> local <module> @20
+20:13 __dir__ store in <module> -> local <module> @20
+20:23 module_hooks load in <module> -> local <module> @3; origin a6_lazy_exports._lazy_exports.module_hooks
+20:36 __name__ load in <module> -> global <module>
+20:46 dict load in <module> -> builtin; origin builtins.dict
+uses of <module>:module_hooks@3: call@20
+== imports
+from@3 a6_lazy_exports._lazy_exports.module_hooks as module_hooks from a6_lazy_exports._lazy_exports in <module> [always]; level 1; unconditional
+definition a6_lazy_exports._values:Base -> class a6_lazy_exports._values:Base@8 via a6_lazy_exports._values [always]
+definition a6_lazy_exports._values:LIMIT -> assign a6_lazy_exports._values:LIMIT@5 via a6_lazy_exports._values [always]
+definition a6_lazy_exports._values:Other -> class a6_lazy_exports._values:Other@12 via a6_lazy_exports._values [always]
+definition a6_lazy_exports._values:Remote -> class a6_lazy_exports._values:Remote@16 via a6_lazy_exports._values [always]
+definition a6_lazy_exports._values:__dir__ -> assign a6_lazy_exports._values:__dir__@20 via a6_lazy_exports._values [always]
+definition a6_lazy_exports._values:__getattr__ -> assign a6_lazy_exports._values:__getattr__@20 via a6_lazy_exports._values [always]
+definition a6_lazy_exports._values:module_hooks -> def a6_lazy_exports._lazy_exports:module_hooks@4 via a6_lazy_exports._values [always] > a6_lazy_exports._lazy_exports [always]
+=== module a6_lazy_exports.table
+== bindings
+scope module <module>#0 '<module>': code yes; first line 1
+  TYPE_CHECKING: import-from@3 [always]; origin typing.TYPE_CHECKING
+  module_hooks: import-from@5 [always]; origin a6_lazy_exports._lazy_exports.module_hooks
+  LIMIT: import-from@6 [always]; origin a6_lazy_exports._values.LIMIT
+  Base: import-from@6 [always]; origin a6_lazy_exports._values.Base
+  Other: import-from@6 [always]; origin a6_lazy_exports._values.Other
+  Hidden: import-from@9 [type-checking:body@8]; origin json.JSONDecoder
+  __all__: assign@11 [always]; value ["Hidden", "Public", "made"]
+  _load_class: def@14 [always]
+  _load_module: def@27 [always]
+  _TABLE: assign@33 [always]; value { "made": _load_class, "values": _load_module, "Remote": "form.a6_lazy_exports._values", "Missing": "form.a6_lazy_exports._values", "alias": LIMIT, "computed": lambda: LIMIT * 2, "broken": len("x"), "dumps": "json", }
+  __getattr__: assign@43 [always]
+  __dir__: assign@43 [always]
+  Chosen: assign@46 [if:body@45]; value Base
+  Chosen: assign@48 [if:else@45]; value Other
+  Public: class@51 [always]
+scope function _load_class#0 '_load_class': code yes; first line 14
+  opened by a node evaluated in <module>#0
+  Built: class@15 [function:body@14]
+  helper: def@21 [function:body@14]
+scope class _load_class.<locals>.Built#0 'Built': code yes; first line 15
+  opened by a node evaluated in _load_class#0
+  size: annassign@16 [function:body@14]; value LIMIT
+  describe: def@18 [function:body@14]
+  members: describe, size
+scope function _load_class.<locals>.Built.describe#0 'describe': code yes; first line 18
+  opened by a node evaluated in _load_class.<locals>.Built#0
+  self: param@18 [function:body@14|function:body@18]
+  receiver: self@18
+scope function _load_class.<locals>.helper#0 'helper': code yes; first line 21
+  opened by a node evaluated in _load_class#0
+scope function _load_module#0 '_load_module': code yes; first line 27
+  opened by a node evaluated in <module>#0
+  values: import-from@28 [function:body@27]; origin a6_lazy_exports._values
+scope lambda <lambda>#0 '<lambda>': code yes; first line 39
+  opened by a node evaluated in <module>#0
+scope class Public#0 'Public': code yes; first line 51
+  opened by a node evaluated in <module>#0
+  members: 
+== references
+8:3 TYPE_CHECKING load in <module> -> local <module> @3; origin typing.TYPE_CHECKING
+11:0 __all__ store in <module> -> local <module> @11
+15:16 Base load in _load_class -> global <module> @6; origin a6_lazy_exports._values.Base
+16:8 size store in _load_class.<locals>.Built -> local _load_class.<locals>.Built @16, else unbound
+16:14 int load (evaluated annotation) in _load_class.<locals>.Built -> builtin; origin builtins.int
+16:20 LIMIT load in _load_class.<locals>.Built -> global <module> @6; origin a6_lazy_exports._values.LIMIT
+18:30 str load (evaluated annotation) in _load_class.<locals>.Built -> builtin; origin builtins.str
+22:15 Built load in _load_class.<locals>.helper -> enclosing _load_class @15
+24:11 helper load in _load_class -> local _load_class @21
+30:11 values load in _load_module -> local _load_module @28; origin a6_lazy_exports._values
+33:0 _TABLE store in <module> -> local <module> @33
+34:12 _load_class load in <module> -> local <module> @14; origin a6_lazy_exports.table._load_class
+35:14 _load_module load in <module> -> local <module> @27; origin a6_lazy_exports.table._load_module
+38:13 LIMIT load in <module> -> local <module> @6; origin a6_lazy_exports._values.LIMIT
+39:24 LIMIT load in <lambda> -> global <module> @6; origin a6_lazy_exports._values.LIMIT
+40:14 len load in <module> -> builtin; origin builtins.len
+43:0 __getattr__ store in <module> -> local <module> @43
+43:13 __dir__ store in <module> -> local <module> @43
+43:23 module_hooks load in <module> -> local <module> @5; origin a6_lazy_exports._lazy_exports.module_hooks
+43:36 __name__ load in <module> -> global <module>
+43:46 _TABLE load in <module> -> local <module> @33; origin a6_lazy_exports.table._TABLE
+45:3 LIMIT load in <module> -> local <module> @6; origin a6_lazy_exports._values.LIMIT
+46:4 Chosen store in <module> -> local <module> @46,48
+46:13 Base load in <module> -> local <module> @6; origin a6_lazy_exports._values.Base
+48:4 Chosen store in <module> -> local <module> @46,48
+48:13 Other load in <module> -> local <module> @6; origin a6_lazy_exports._values.Other
+51:13 Chosen load in <module> -> local <module> @46,48
+  may be a6_lazy_exports._values.Base [if:body@45]
+  may be a6_lazy_exports._values.Other [if:else@45]
+55:0 Public load in <module> -> local <module> @51; origin a6_lazy_exports.table.Public
+56:0 Other load in <module> -> local <module> @6; origin a6_lazy_exports._values.Other
+56:19 str load in <module> -> builtin; origin builtins.str
+56:23 LIMIT load in <module> -> local <module> @6; origin a6_lazy_exports._values.LIMIT
+uses of <module>:TYPE_CHECKING@3: read@8
+uses of <module>:module_hooks@5: call@43
+uses of <module>:LIMIT@6: read@16, read@38, read@39, read@45, argument@56
+uses of <module>:Base@6: read@15, read@46
+uses of <module>:Other@6: read@48, attribute-store@56
+uses of <module>:_load_class@14: read@34
+uses of <module>:_load_module@27: read@35
+uses of <module>:_TABLE@33: argument@43
+uses of <module>:Chosen@46: read@51
+uses of <module>:Chosen@48: read@51
+uses of <module>:Public@51: attribute-store@55
+uses of _load_class:Built@15: read@22
+uses of _load_class:helper@21: call@24
+uses of _load_module:values@28: read@30
+type positions @55: form; chains form.elsewhere = None
+type positions @16: int
+type positions @18: str
+== imports
+from@3 typing.TYPE_CHECKING as TYPE_CHECKING from typing in <module> [always]; unconditional
+from@5 a6_lazy_exports._lazy_exports.module_hooks as module_hooks from a6_lazy_exports._lazy_exports in <module> [always]; level 1; unconditional
+from@6 a6_lazy_exports._values.LIMIT as LIMIT from a6_lazy_exports._values in <module> [always]; level 1; unconditional
+from@6 a6_lazy_exports._values.Base as Base from a6_lazy_exports._values in <module> [always]; level 1; unconditional
+from@6 a6_lazy_exports._values.Other as Other from a6_lazy_exports._values in <module> [always]; level 1; unconditional
+from@9 json.JSONDecoder as Hidden from json in <module> [type-checking:body@8]; typing only
+from@28 a6_lazy_exports._values as values from a6_lazy_exports in _load_module [function:body@27]; level 1
+definition a6_lazy_exports.table:Base -> class a6_lazy_exports._values:Base@8 via a6_lazy_exports.table [always] > a6_lazy_exports._values [always]
+definition a6_lazy_exports.table:Chosen -> class a6_lazy_exports._values:Base@8 via a6_lazy_exports.table [if:body@45] > a6_lazy_exports._values [always]; class a6_lazy_exports._values:Other@12 via a6_lazy_exports.table [if:else@45] > a6_lazy_exports._values [always]
+definition a6_lazy_exports.table:Hidden -> outside json.JSONDecoder@9 via a6_lazy_exports.table [type-checking:body@8]
+definition a6_lazy_exports.table:LIMIT -> assign a6_lazy_exports._values:LIMIT@5 via a6_lazy_exports.table [always] > a6_lazy_exports._values [always]
+definition a6_lazy_exports.table:Other -> class a6_lazy_exports._values:Other@12 via a6_lazy_exports.table [always] > a6_lazy_exports._values [always]
+definition a6_lazy_exports.table:Public -> class a6_lazy_exports.table:Public@51 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:TYPE_CHECKING -> outside typing.TYPE_CHECKING@3 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:_TABLE -> assign a6_lazy_exports.table:_TABLE@33 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:__all__ -> assign a6_lazy_exports.table:__all__@11 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:__dir__ -> assign a6_lazy_exports.table:__dir__@43 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:__getattr__ -> assign a6_lazy_exports.table:__getattr__@43 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:_load_class -> def a6_lazy_exports.table:_load_class@14 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:_load_module -> def a6_lazy_exports.table:_load_module@27 via a6_lazy_exports.table [always]
+definition a6_lazy_exports.table:module_hooks -> def a6_lazy_exports._lazy_exports:module_hooks@4 via a6_lazy_exports.table [always] > a6_lazy_exports._lazy_exports [always]
+edge a6_lazy_exports._values -> a6_lazy_exports._lazy_exports @3 via from (module) [always]
+edge a6_lazy_exports.table -> a6_lazy_exports._lazy_exports @5 via from (module) [always]
+edge a6_lazy_exports.table -> a6_lazy_exports._values @6 via from (module) [always]
+edge a6_lazy_exports.table -> a6_lazy_exports._values @6 via from (module) [always]
+edge a6_lazy_exports.table -> a6_lazy_exports._values @6 via from (module) [always]
+edge a6_lazy_exports.table -> a6_lazy_exports._values @28 via submodule (function) [function:body@27]

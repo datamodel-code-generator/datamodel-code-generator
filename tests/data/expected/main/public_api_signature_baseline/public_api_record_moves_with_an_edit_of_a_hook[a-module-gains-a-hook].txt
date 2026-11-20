@@ -1,0 +1,4 @@
++def __getattr__(name: str) -> object
++    | if name == 'Legacy':
++    |     return VALUE
++    | raise AttributeError(name)

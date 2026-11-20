@@ -24,6 +24,10 @@ imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/__i
 imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/inner/deep.py runs scripts/submodule_and_parent_packages/__init__.py
 imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/inner/deep.py runs scripts/submodule_and_parent_packages/inner/__init__.py
 imports/submodule_and_parent_packages: scripts/submodule_and_parent_packages/inner/deep.py runs scripts/submodule_and_parent_packages/leaf.py
+references/a6_lazy_exports: scripts/a6_lazy_exports/_values.py runs scripts/a6_lazy_exports/_lazy_exports.py
+references/a6_lazy_exports: scripts/a6_lazy_exports/table.py runs scripts/a6_lazy_exports/__init__.py
+references/a6_lazy_exports: scripts/a6_lazy_exports/table.py runs scripts/a6_lazy_exports/_lazy_exports.py
+references/a6_lazy_exports: scripts/a6_lazy_exports/table.py runs scripts/a6_lazy_exports/_values.py
 references/legacy_row_reading_lines: scripts/legacy_row_reading_lines/reader.py runs scripts/legacy_row_reading_lines/__init__.py
 references/legacy_row_reading_lines: scripts/legacy_row_reading_lines/reader.py runs scripts/legacy_row_reading_lines/rows.py
 references/posix_only_across_modules: scripts/posix_only_across_modules/cases.py runs scripts/posix_only_across_modules/__init__.py

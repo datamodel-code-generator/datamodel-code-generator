@@ -95,6 +95,12 @@ imports/submodule_and_parent_packages: deep.py:6:9: type-checking
 imports/submodule_and_parent_packages: deep.py:6:10: type-checking
 imports/submodule_and_parent_packages: deep.py:6:12: type-checking
 imports/submodule_and_parent_packages: deep.py:6:19: type-checking
+references/a6_lazy_exports: table.py:9:4: type-checking
+references/a6_lazy_exports: table.py:9:9: type-checking
+references/a6_lazy_exports: table.py:9:14: type-checking
+references/a6_lazy_exports: table.py:9:21: type-checking
+references/a6_lazy_exports: table.py:9:33: type-checking
+references/a6_lazy_exports: table.py:9:36: type-checking
 references/annotation_modes: annotation_modes.py:16:11: local-annotation
 references/annotation_modes: annotation_modes.py:16:20: local-annotation
 references/annotation_modes: annotation_modes.py:16:21: local-annotation

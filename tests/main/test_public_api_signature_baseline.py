@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import ast
+import difflib
+import functools
 import importlib
 import inspect
 import subprocess
 import sys
 import types
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, ForwardRef, Union, get_args, get_origin
 
 import pytest
@@ -55,11 +58,11 @@ from datamodel_code_generator.parser import asyncapi, avro, jsonschema
 from datamodel_code_generator.parser import base as parser_base
 from datamodel_code_generator.parser.base import YamlValue, title_to_class_name
 from tests.conftest import assert_output
+from tests.main import public_api_record
 
 if TYPE_CHECKING:
     from collections import defaultdict
     from collections.abc import Callable, Iterable, Mapping, Sequence
-    from pathlib import Path
     from typing import Unpack
     from urllib.parse import ParseResult
 
@@ -76,302 +79,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.preset_names import PresetName
     from datamodel_code_generator.types import StrictTypes
     from datamodel_code_generator.validators import ModelValidators
-
-
-_PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
-    "datamodel_code_generator": frozenset({
-        "DEFAULT_FORMATTERS",
-        "DEFAULT_SHARED_MODULE_NAME",
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "AllExportsCollisionStrategy",
-        "AllExportsScope",
-        "AllOfClassHierarchy",
-        "AllOfMergeMode",
-        "AliasGenerator",
-        "AsyncAPIVersion",
-        "ClassNameAffixScope",
-        "ClientAsyncAPIPerspective",
-        "ClientBodyArguments",
-        "ClientSignatureStyle",
-        "ClientType",
-        "CollapseRootModelsNameStrategy",
-        "ConstructorFieldOrder",
-        "CustomFileHeaderMode",
-        "DanglingRefWarning",
-        "DateClassType",
-        "DatetimeClassType",
-        "DefaultValueType",
-        "DefaultValueTypeWarning",
-        "DefaultPutDict",
-        "DocumentationAnnotationWarning",
-        "DynamicModule",
-        "LeftoverFilesWarning",
-        "NamingHintWarning",
-        "Error",
-        "FieldTypeCollisionStrategy",
-        "GenerateConfig",
-        "GeneratedModules",
-        "load_pyproject_config",
-        "GraphQLScope",
-        "HTTPBackend",
-        "InputFileType",
-        "InputModelRefStrategy",
-        "InvalidClassNameError",
-        "InvalidFileFormatError",
-        "JsonSchemaVersion",
-        "LiteralType",
-        "ModuleSplitMode",
-        "NamingStrategy",
-        "OpenAPIAsDefinitions",
-        "OpenAPIScope",
-        "OpenAPIVersion",
-        "OpenEnums",
-        "ProtobufVersion",
-        "PythonVersion",
-        "PythonVersionMin",
-        "ReadOnlyWriteOnlyModelType",
-        "ReuseScope",
-        "SchemaValidatorType",
-        "SchemaParseError",
-        "SchemaResourceRefWarning",
-        "ServerBodyMode",
-        "ServerHandlerMode",
-        "ServerLayout",
-        "ServerType",
-        "TargetPydanticVersion",
-        "VersionMode",
-        "XMLSchemaVersion",
-        "clear_dynamic_models_cache",
-        "detect_jsonschema_version",
-        "detect_openapi_version",
-        "detect_xmlschema_version",
-        "enable_parsed_source_cache",
-        "generate",
-        "generate_dynamic_models",
-        "generate_dynamic_module",
-    }),
-    "datamodel_code_generator._types": frozenset({
-        "AsyncAPIParserConfigDict",
-        "AvroParserConfigDict",
-        "GenerateConfigDict",
-        "GraphQLParserConfigDict",
-        "JSONSchemaParserConfigDict",
-        "ModelDict",
-        "OpenAPIParserConfigDict",
-        "ParseConfigDict",
-        "ParserConfigDict",
-        "ProtobufParserConfigDict",
-        "XMLSchemaParserConfigDict",
-    }),
-    "datamodel_code_generator.arguments": frozenset({"DEFAULT_ENCODING", "arg_parser", "namespace"}),
-    "datamodel_code_generator.enums": frozenset({
-        "DEFAULT_SHARED_MODULE_NAME",
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "AllExportsCollisionStrategy",
-        "AllExportsScope",
-        "AllOfClassHierarchy",
-        "AllOfMergeMode",
-        "AliasGenerator",
-        "AsyncAPIVersion",
-        "ClassNameAffixScope",
-        "ClientAsyncAPIPerspective",
-        "ClientBodyArguments",
-        "ClientSignatureStyle",
-        "ClientType",
-        "CollapseRootModelsNameStrategy",
-        "ConstructorFieldOrder",
-        "CustomFileHeaderMode",
-        "DataModelType",
-        "DataclassArguments",
-        "DefaultValueType",
-        "FieldTypeCollisionStrategy",
-        "GraphQLScope",
-        "HTTPBackend",
-        "InputFileType",
-        "InputModelRefStrategy",
-        "JsonSchemaVersion",
-        "ModuleSplitMode",
-        "NamingStrategy",
-        "OpenAPIAsDefinitions",
-        "OpenAPIScope",
-        "OpenAPIVersion",
-        "OpenEnums",
-        "ProtobufVersion",
-        "ReadOnlyWriteOnlyModelType",
-        "ReuseScope",
-        "SchemaValidatorType",
-        "ServerBodyMode",
-        "ServerHandlerMode",
-        "ServerLayout",
-        "ServerType",
-        "StrictTypes",
-        "TargetPydanticVersion",
-        "UnionMode",
-        "VersionMode",
-        "XMLSchemaVersion",
-    }),
-    "datamodel_code_generator.model": frozenset({
-        "DEFAULT_TARGET_PYTHON_VERSION",
-        "UNDEFINED",
-        "ConstraintsBase",
-        "DataModel",
-        "DataModelFieldBase",
-        "DataModelSet",
-        "_rebuild_model_with_datamodel_namespace",
-        "get_data_model_types",
-    }),
-    "datamodel_code_generator.model.pydantic_v2": frozenset({
-        "BaseModel",
-        "DataModelField",
-        "DataTypeManager",
-        "RootModel",
-        "RootModelTypeAlias",
-        "UnionMode",
-        "dump_resolve_reference_action",
-    }),
-    "datamodel_code_generator.parser": frozenset({"DefaultPutDict", "LiteralType"}),
-    "datamodel_code_generator.parser.avro": frozenset({
-        "AvroParser",
-        "convert_avro_schema_data",
-        "is_avro_schema_data",
-    }),
-    "datamodel_code_generator.parser.protobuf": frozenset({"ProtobufParser", "convert_protobuf_schema_data"}),
-    "datamodel_code_generator.parser.schema_version": frozenset({
-        "DataFormatMapping",
-        "DocumentDialect",
-        "FeatureMetadata",
-        "JsonSchemaFeatures",
-        "OpenAPISchemaFeatures",
-        "SchemaFeaturesT",
-        "SchemaKind",
-        "detect_asyncapi_version",
-        "detect_jsonschema_version",
-        "detect_openapi_version",
-        "document_dialect",
-        "get_data_formats",
-    }),
-    "datamodel_code_generator.parser.xmlschema": frozenset({
-        "XMLSchemaParser",
-        "convert_xml_schema_data",
-        "detect_xmlschema_version",
-        "is_xml_schema_text",
-    }),
-}
-
-
-_DE_FACTO_PUBLIC_SYMBOLS: dict[str, frozenset[str]] = {
-    "datamodel_code_generator": frozenset({
-        "MAX_VERSION",
-        "MIN_VERSION",
-        "DataModelType",
-        "DatetimeClassType",
-        "DefaultPutDict",
-        "Error",
-        "GenerateConfig",
-        "GraphQLScope",
-        "InputFileType",
-        "InvalidClassNameError",
-        "LiteralType",
-        "OpenAPIScope",
-        "PythonVersion",
-        "chdir",
-        "generate",
-        "get_version",
-        "snooper_to_methods",
-    }),
-    "datamodel_code_generator.config": frozenset({"JSONSchemaParserConfig"}),
-    "datamodel_code_generator.enums": frozenset({"DataModelType", "InputFileType", "StrictTypes"}),
-    "datamodel_code_generator.format": frozenset({
-        "DEFAULT_FORMATTERS",
-        "CodeFormatter",
-        "CustomCodeFormatter",
-        "DatetimeClassType",
-        "Formatter",
-        "PythonVersion",
-        "PythonVersionMin",
-    }),
-    "datamodel_code_generator.imports": frozenset({
-        "IMPORT_ANNOTATIONS",
-        "Import",
-        "Imports",
-    }),
-    "datamodel_code_generator.model": frozenset({
-        "DataModel",
-        "DataModelFieldBase",
-        "get_data_model_types",
-        "pydantic_v2",
-    }),
-    "datamodel_code_generator.model.pydantic_v2": frozenset({
-        "BaseModel",
-        "DataModelField",
-        "DataTypeManager",
-        "RootModel",
-        "UnionMode",
-        "types",
-    }),
-    "datamodel_code_generator.model.pydantic_v2.types": frozenset({"IMPORT_SECRET_STR"}),
-    "datamodel_code_generator.parser": frozenset({"DefaultPutDict", "LiteralType"}),
-    "datamodel_code_generator.parser.base": frozenset({
-        "Parser",
-        "Result",
-        "SPECIAL_PATH_FORMAT",
-        "Source",
-        "YamlValue",
-        "title_to_class_name",
-    }),
-    "datamodel_code_generator.parser.graphql": frozenset({"GraphQLParser"}),
-    "datamodel_code_generator.parser.jsonschema": frozenset({
-        "JsonSchemaObject",
-        "JsonSchemaParser",
-        "get_model_by_path",
-        "get_special_path",
-    }),
-    "datamodel_code_generator.parser.openapi": frozenset({
-        "MediaObject",
-        "OpenAPIParser",
-        "Operation",
-        "ParameterLocation",
-        "ParameterObject",
-        "ReferenceObject",
-        "RequestBodyObject",
-        "ResponseObject",
-    }),
-    "datamodel_code_generator.reference": frozenset({
-        "ModelResolver",
-        "Reference",
-        "snake_to_upper_camel",
-    }),
-    "datamodel_code_generator.types": frozenset({
-        "DataType",
-        "DataTypeManager",
-        "StrictTypes",
-        "Types",
-    }),
-}
-
-
-_DE_FACTO_PUBLIC_ATTRIBUTES: dict[str, frozenset[str]] = {
-    "datamodel_code_generator.DataModelType": frozenset({
-        "DataclassesDataclass",
-        "PydanticV2BaseModel",
-        "TypingTypedDict",
-    }),
-    "datamodel_code_generator.DatetimeClassType": frozenset({"Awaredatetime", "Datetime"}),
-    "datamodel_code_generator.InputFileType": frozenset({"JsonSchema"}),
-    "datamodel_code_generator.LiteralType": frozenset({"All", "One", "Off"}),
-    "datamodel_code_generator.OpenAPIScope": frozenset({"Parameters", "Paths", "Schemas", "Tags"}),
-    "datamodel_code_generator.PythonVersion": frozenset({"PY_310", "PY_311", "PY_312"}),
-    "datamodel_code_generator.format.CustomCodeFormatter": frozenset({"apply"}),
-    "datamodel_code_generator.imports.Import": frozenset({"from_full_path"}),
-    "datamodel_code_generator.parser.jsonschema.JsonSchemaObject": frozenset({"model_validate"}),
-    "datamodel_code_generator.parser.jsonschema.JsonSchemaParser": frozenset({"parse"}),
-    "datamodel_code_generator.parser.openapi.OpenAPIParser": frozenset({"parse"}),
-    "datamodel_code_generator.parser.openapi.ParameterLocation": frozenset({"cookie", "header", "path", "query"}),
-    "datamodel_code_generator.types.StrictTypes": frozenset({"bool", "bytes", "float", "int", "str"}),
-    "datamodel_code_generator.types.Types": frozenset({"date_time", "uri", "uuid"}),
-}
 
 
 def _baseline_generate(
@@ -676,7 +383,7 @@ def _baseline_generate_runtime_signature(
 
 
 def _baseline_parser_parse_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     with_import: bool | None = True,
     format_: bool | None = True,
     settings_path: Path | None = None,
@@ -690,7 +397,7 @@ def _baseline_parser_parse_runtime_signature(
 
 
 def _baseline_process_single_module_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     module_: ModulePath,
     models: list[DataModel],
     results: dict[ModulePath, Result],
@@ -704,7 +411,7 @@ def _baseline_process_single_module_runtime_signature(
 
 
 def _baseline_openapi_parser_parse_runtime_signature(
-    self,  # noqa: ANN001
+    self,  # ruff: ignore[missing-type-function-argument]
     *args: Any,
     **kwargs: Any,
 ) -> str | dict[tuple[str, ...], Result]:
@@ -1050,7 +757,7 @@ def test_normalize_union_str_equivalence(type_a: str, type_b: str) -> None:
     assert _normalize_union_str(type_a) == _normalize_union_str(type_b)
 
 
-def _normalize_type(tp: Any) -> str:  # noqa: PLR0911  # pragma: no cover
+def _normalize_type(tp: Any) -> str:  # ruff: ignore[too-many-return-statements]  # pragma: no cover
     """Normalize type for comparison between Config and TypedDict."""
     if tp is None or tp is type(None):
         return "None"
@@ -1094,40 +801,172 @@ def _types_match(config_type: Any, dict_type: Any) -> bool:
     return _normalize_type(config_type) == _normalize_type(dict_type)
 
 
-@pytest.mark.parametrize(("module_name", "expected_exports"), _PUBLIC_MODULE_EXPORTS.items())
-def test_public_module_all_exports_match_baseline(module_name: str, expected_exports: frozenset[str]) -> None:
-    """Pin focused public module export surfaces used by compatibility shims."""
-    module = importlib.import_module(module_name)
-    module_exports = list(module.__all__)
-    actual_exports = set(module_exports)
-    missing_exports = [name for name in module_exports if not hasattr(module, name)]
+@functools.cache
+def _public_api() -> public_api_record.PublicApi:
+    """Read the public API of the package once for the tests that compare it."""
+    return public_api_record.read(Path(__file__).parents[2] / "src")
 
-    assert len(module_exports) == len(actual_exports), f"{module_name}.__all__ contains duplicate names"
-    assert actual_exports == expected_exports, (
-        f"{module_name}.__all__ changed:\n"
-        f"  removed: {sorted(expected_exports - actual_exports)}\n"
-        f"  added: {sorted(actual_exports - expected_exports)}"
+
+def test_public_api_record_matches_stored_output() -> None:
+    """Pin the public API: each public module's names, followed to their definitions and written from source.
+
+    The record imports nothing of the package, so it has the same bytes on every Python and platform and with or
+    without optional libraries (`tests/main/public_api_record.py` says what it writes and what it refuses).
+    """
+    assert_output(_public_api().text())
+
+
+def test_public_api_record_refuses_what_it_cannot_read(tmp_path: Path) -> None:
+    """A public name the record cannot follow stops the record with its module and line, instead of a silent gap."""
+    package = tmp_path / "package"
+    package.mkdir()
+    (package / "__init__.py").write_text(
+        "from importlib import import_module\n\n"
+        "__all__ = sorted(['loop'])\n"
+        "for loop in range(2):\n    pass\n"
+        "globals()['dynamic'] = import_module('json')\n",
+        encoding="utf-8",
     )
-    assert missing_exports == [], f"{module_name}.__all__ contains non-importable names: {missing_exports}"
+    (package / "hooked.py").write_text(
+        "def _serve(name):\n    return name\n\n\n__getattr__ = _serve\n", encoding="utf-8"
+    )
+    with pytest.raises(public_api_record.RecordError) as refused:
+        public_api_record.read(tmp_path, "package").text()
+
+    assert_output(f"{refused.value}\n")
 
 
-@pytest.mark.parametrize(("module_name", "expected_symbols"), _DE_FACTO_PUBLIC_SYMBOLS.items())
-def test_de_facto_public_symbols_remain_importable(module_name: str, expected_symbols: frozenset[str]) -> None:
-    """Pin importable symbols used downstream without requiring module __all__ changes."""
-    module = importlib.import_module(module_name)
-    missing_symbols = sorted(name for name in expected_symbols if not hasattr(module, name))
+_HOOK_PACKAGE = {
+    "_lazy_exports.py": (
+        "def module_hooks(module_name, table):\n    return (lambda name: table[name]), (lambda: sorted(table))\n"
+    ),
+    "_table.py": "class Served:\n    pass\n\n\nclass Other:\n    pass\n",
+    "__init__.py": (
+        "from ._lazy_exports import module_hooks\n"
+        "from ._table import Other, Served\n\n"
+        '_SERVED = frozenset({"Legacy"})\n'
+        "_REGISTERED = {}\n\n\n"
+        "def _load_loaded() -> object:\n"
+        '    _REGISTERED.setdefault("Loaded", Served)\n'
+        "    from ._table import Served as Loaded\n\n"
+        "    return Loaded\n\n\n"
+        '_LAZY = {"Pair": ("package._table", "Served"), "Loaded": _load_loaded}\n'
+        "_lazy_getattr, __dir__ = module_hooks(__name__, _LAZY)\n\n\n"
+        "def __getattr__(name: str) -> object:\n"
+        "    _REGISTERED.setdefault(name, Served)\n"
+        "    if name in _SERVED:\n"
+        "        return Served\n"
+        "    return _lazy_getattr(name)\n"
+    ),
+    "plain/__init__.py": "VALUE = 1\n",
+    "cyclic/__init__.py": "_a = lambda: _b\n_b = lambda: _a\n\n\ndef public(factory=_a):\n    pass\n",
+}
+_HOOK_EDITS = {
+    "the-hook-serves-another-class": ("__init__.py", "        return Served\n", "        return Other\n"),
+    "the-hook-registers-another-class": ("__init__.py", "setdefault(name, Served)", "setdefault(name, Other)"),
+    "the-loader-registers-another-class": ("__init__.py", '("Loaded", Served)', '("Loaded", Other)'),
+    "a-constant-the-hook-reads-gains-a-name": ("__init__.py", '{"Legacy"}', '{"Legacy", "Older"}'),
+    "the-pair-entry-names-another-attribute": (
+        "__init__.py",
+        '"package._table", "Served"',
+        '"package._table", "Other"',
+    ),
+    "a-module-gains-a-hook": (
+        "plain/__init__.py",
+        "VALUE = 1\n",
+        (
+            "VALUE = 1\n\n\ndef __getattr__(name: str) -> object:\n"
+            '    if name == "Legacy":\n        return VALUE\n'
+            "    raise AttributeError(name)\n"
+        ),
+    ),
+}
 
-    assert missing_symbols == [], f"{module_name} no longer exposes de facto public symbols: {missing_symbols}"
+
+def _hook_record(tmp_path: Path, edit: tuple[str, str, str] | None = None) -> str:
+    """Write the hook package under ``tmp_path``, with an optional edit (file, old, new), and read its record."""
+    package = tmp_path / "package"
+    for name, text in _HOOK_PACKAGE.items():
+        (package / name).parent.mkdir(parents=True, exist_ok=True)
+        (package / name).write_text(
+            text if edit is None or edit[0] != name else text.replace(*edit[1:]), encoding="utf-8"
+        )
+    return public_api_record.read(tmp_path, "package").text()
 
 
-@pytest.mark.parametrize(("object_path", "expected_attributes"), _DE_FACTO_PUBLIC_ATTRIBUTES.items())
-def test_de_facto_public_attributes_remain_available(object_path: str, expected_attributes: frozenset[str]) -> None:
-    """Pin the attributes downstream code reads from de facto public classes and enums."""
-    module_name, _, name = object_path.rpartition(".")
-    owner = getattr(importlib.import_module(module_name), name)
-    missing_attributes = sorted(attribute for attribute in expected_attributes if not hasattr(owner, attribute))
+def test_public_api_record_writes_the_hooks_a_module_defines(tmp_path: Path) -> None:
+    """Write a module's own ``__getattr__`` with the constants it reads, and a lazy ``(module, attribute)`` entry."""
+    assert_output(_hook_record(tmp_path))
 
-    assert missing_attributes == [], f"{object_path} no longer exposes de facto public attributes: {missing_attributes}"
+
+@pytest.mark.parametrize("edit", [pytest.param(edit, id=name) for name, edit in _HOOK_EDITS.items()])
+def test_public_api_record_moves_with_an_edit_of_a_hook(tmp_path: Path, edit: tuple[str, str, str]) -> None:
+    """Change the record when a hook, a constant it reads, a pair entry or the hooks a module defines change."""
+    before = _hook_record(tmp_path / "before")
+    after = _hook_record(tmp_path / "after", edit)
+    changed = difflib.unified_diff(before.splitlines(), after.splitlines(), lineterm="", n=0)
+    assert_output("\n".join(line for line in changed if not line.startswith(("---", "+++", "@@"))) + "\n")
+
+
+def _runtime_names(module: types.ModuleType, facts: public_api_record.ModuleFacts) -> set[str]:
+    """Return the public names ``dir()`` lists, less the submodules the import system attached and ``__future__``."""
+    names = {name for name in dir(module) if not name.startswith("_") and name.isidentifier()}
+    return {
+        name
+        for name in names
+        if name in facts.bound
+        or not (
+            type(value := getattr(module, name)).__module__ == "__future__"
+            or (isinstance(value, types.ModuleType) and value.__name__ == f"{module.__name__}.{name}")
+        )
+    }
+
+
+def _runtime_problems(module: types.ModuleType, facts: public_api_record.ModuleFacts) -> list[str]:
+    """Compare what the record reads of a public module with the module: names, lazy names, identities, ``__all__``."""
+    names = _runtime_names(module, facts)
+    listed = dir(module)
+    problems = [f"bound at run time, not read from source: {name}" for name in sorted(names - facts.bound)]
+    problems += [f"always bound in source, missing at run time: {name}" for name in sorted(facts.always - names)]
+    problems += [f"a lazy name dir() does not list: {name}" for name in sorted(set(facts.lazy) - set(listed))]
+    for name, identities in sorted(facts.identities.items()):
+        value = getattr(module, name)
+        found = (getattr(value, "__module__", None), getattr(value, "__qualname__", "").rpartition(".")[2])
+        problems += [f"{name} is {found[0]}.{found[1]}, read as {sorted(identities)}"] * (found not in identities)
+    if facts.computed_all:
+        exported = set(module.__all__) - (set(listed) - names)
+        problems += [f"__all__ differs: {sorted(exported ^ names)}"] * (exported != names)
+    return [f"{module.__name__}: {problem}" for problem in problems]
+
+
+@pytest.mark.allow_direct_assert("the run-time check of the record fails on its own, never through a stored output")
+def test_public_api_record_matches_runtime_namespaces(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check the record's reading of every public module against the imported module (it writes nothing).
+
+    The public names ``dir()`` lists are those the source binds; each name bound whichever branch runs resolves; each
+    lazy name is listed by ``dir()``; each class or function a public name leads to has the ``__module__`` and name the
+    record reads; a computed ``__all__`` lists the public names. The lazy names and the ``__all__`` that the reads
+    stored in a module are removed afterwards, so later tests still find them unread; nothing else is, since the import
+    system does not set a submodule attribute again. ``__main__`` is imported without command-line arguments.
+    """
+    api = _public_api()
+    monkeypatch.setattr(sys, "argv", ["datamodel-codegen"])
+    problems = []
+    for name in api.public:
+        module = importlib.import_module(name)
+        facts = api.facts[name]
+        before = set(vars(module))
+        try:
+            problems += _runtime_problems(module, facts)
+            problems += [
+                f"{name}: {item} does not resolve" for item in sorted(facts.always) if not hasattr(module, item)
+            ]
+        finally:
+            for added in {*facts.lazy, "__all__"} - before:
+                vars(module).pop(added, None)
+
+    assert not problems, "\n".join(problems)
+    assert_output(f"public modules: {len(api.public)}\nproblems: none\n")
 
 
 _LAZY_NAMES_PROBE = """

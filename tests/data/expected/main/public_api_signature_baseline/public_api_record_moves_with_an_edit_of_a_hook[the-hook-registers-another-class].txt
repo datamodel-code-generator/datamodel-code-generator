@@ -1,0 +1,2 @@
+-    | _REGISTERED.setdefault(name, Served)
++    | _REGISTERED.setdefault(name, Other)

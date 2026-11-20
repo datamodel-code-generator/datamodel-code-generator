@@ -43,6 +43,7 @@ from tests import test_generated_import_closure as import_closure
 from tests import test_pre_commit_hooks as pre_commit_hooks
 from tests.checks.template_assignments import field_lines
 from tests.conftest import assert_output
+from tests.main import public_api_record
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -1077,6 +1078,33 @@ def _legacy_row_reads(form: Path) -> list[Finding]:
         ]
 
 
+def _public_api_record(form: Path) -> list[Finding]:
+    """Return the lines the public API record writes for each public name of a form, and what it refuses.
+
+    The form stands as a module of the package ``form`` (a package form as its subpackage).
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        package = Path(folder) / "form"
+        package.mkdir()
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            target = package / (form.name / path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        (package / "__init__.py").touch()
+        api = public_api_record.read(Path(folder), "form")
+        recorded = [
+            Finding("recorded", _site(form, place, entry.line), f"{place}:{entry.line}: " + "\n    ".join(entry.lines))
+            for entry in api.entries
+            if entry.lines
+            for place in [api.place(entry.module)]
+        ]
+        return recorded + [
+            Finding("refused", _site(form, place, refusal.line), f"{place}:{refusal.line}: {refusal.reason}")
+            for refusal in api.refusals
+            for place in [api.place(refusal.module)]
+        ]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -1125,6 +1153,11 @@ RULES: dict[str, RuleRun] = {
     ),
     "change-units-typing-only": RuleRun(
         "scripts._change_units", frozenset({"references", "extents"}), _typing_only_parts
+    ),
+    "public-api-record": RuleRun(
+        "tests.main.public_api_record",
+        frozenset({"bindings", "references", "imports", "extents"}),
+        _public_api_record,
     ),
     "rule-b": RuleRun(
         "scripts._behaviour_classify", frozenset({"bindings", "imports", "references"}), _rule_b_of_unparsed_text
