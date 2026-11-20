@@ -168,8 +168,6 @@ def test_generate_warns_about_shadowed_single_file_output(update_lock: bool, out
         input_path=INPUT_PATH / "single.json",
         output_path=output_dir / "pets.py",
         input_file_type=InputFileType.OpenAPI,
-        assert_func=assert_file_content,
-        expected_file="single.py",
         expected_warnings=[_message(output_dir / "pets.py")],
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],

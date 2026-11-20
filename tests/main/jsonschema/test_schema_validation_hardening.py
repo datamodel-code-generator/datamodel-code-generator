@@ -23,8 +23,6 @@ def test_main_jsonschema_allof_type_list(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "allof_type_list.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="allof_type_list.py",
         extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
         force_exec_validation=True,
     )
@@ -36,8 +34,6 @@ def test_main_jsonschema_required_only_type_list_with_schema_validator(output_fi
         input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_required_type_list.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="schema_validators_required_type_list.py",
         extra_args=[
             "--disable-timestamp",
             "--target-python-version",
@@ -57,8 +53,6 @@ def test_main_jsonschema_required_only_object_type_list_with_schema_validator(ou
         input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_required_object_type_list.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="schema_validators_required_object_type_list.py",
         extra_args=[
             "--disable-timestamp",
             "--target-python-version",
@@ -78,8 +72,6 @@ def test_main_jsonschema_enum_names_allow_null_entries(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "enum_names_null.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="enum_names_null.py",
         extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
         force_exec_validation=True,
     )
@@ -135,8 +127,6 @@ def test_main_jsonschema_draft4_exclusive_bounds_without_bound(output_file: Path
         input_path=JSON_SCHEMA_DATA_PATH / "draft4_exclusive_without_bound.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="draft4_exclusive_without_bound.py",
         extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
         force_exec_validation=True,
     )

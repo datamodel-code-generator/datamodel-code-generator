@@ -7,4 +7,4 @@ JsonSchemaVersion.Draft4	main/schema_versions/nullable_definition.py
 JsonSchemaVersion.Draft6	main/schema_versions/nullable_definition.py
 JsonSchemaVersion.Draft7	main/schema_versions/nullable_definition.py
 [test_null_type_array_openapi_30_keeps_strict_warning]
-	main/schema_versions/nullable_definition.py
+	main/nullable_schema_versions/null_type_array_openapi_30_keeps_strict_warning.py	= main/schema_versions/nullable_definition.py

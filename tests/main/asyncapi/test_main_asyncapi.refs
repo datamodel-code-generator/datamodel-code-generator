@@ -3,13 +3,13 @@
 [test_asyncapi_parser_renders_non_finite_embedded_schemas]
 	parser/asyncapi/non_finite_embedded_schemas.py
 [test_generate_asyncapi]
-	main/asyncapi/user_events.py
+	main/asyncapi/main_asyncapi/generate_asyncapi.py
 [test_main_asyncapi_2_yaml]
-	main/asyncapi/user_events.py
+	main/asyncapi/main_asyncapi/2_yaml.py	= main/asyncapi/main_asyncapi/generate_asyncapi.py
 [test_main_asyncapi_3_json]
-	main/asyncapi/order_events.py
+	main/asyncapi/main_asyncapi/3_json.py
 [test_main_asyncapi_auto_inference]
-	main/asyncapi/user_events.py
+	main/asyncapi/main_asyncapi/auto_inference.py	= main/asyncapi/main_asyncapi/generate_asyncapi.py
 [test_main_asyncapi_avro_named_types]
 	main/asyncapi/main_asyncapi/avro_named_types.py
 [test_main_asyncapi_components_that_are_not_an_object]
@@ -18,11 +18,11 @@ null	main/asyncapi/main_asyncapi/components_that_are_not_an_object[null].py	= ma
 [test_main_asyncapi_discriminator_state_isolated_per_document]
 	main/asyncapi/discriminator_state_isolation//*.py
 [test_main_asyncapi_dynamic_ref]
-	main/asyncapi/dynamic_ref.py
+	main/asyncapi/main_asyncapi/dynamic_ref.py
 [test_main_asyncapi_edge_cases]
-	main/asyncapi/edge_cases.py
+	main/asyncapi/main_asyncapi/edge_cases.py
 [test_main_asyncapi_external_message_ref]
-	main/asyncapi/external_message_ref.py
+	main/asyncapi/main_asyncapi/external_message_ref.py
 [test_main_asyncapi_merge_message_trait_headers]
 null-merged	main/asyncapi/main_asyncapi/merge_message_trait_headers[null-merged].py
 v2-merged	main/asyncapi/main_asyncapi/merge_message_trait_headers[v2-merged].py
@@ -32,56 +32,56 @@ v3-released	main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-released]
 [test_main_asyncapi_merge_message_trait_headers_of_two_inline_traits]
 	main/asyncapi/main_asyncapi/merge_message_trait_headers_of_two_inline_traits.py
 [test_main_asyncapi_multi_format_schema_objects]
-	main/asyncapi/multi_format_schemas.py
+	main/asyncapi/main_asyncapi/multi_format_schema_objects.py
 [test_main_asyncapi_name_converted_payloads_by_message]
 by-message	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[by-message].py
 released	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[released].py
 title-as-name-by-message	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[title-as-name-by-message].py
 title-as-name-released	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[title-as-name-released].py
 [test_main_asyncapi_non_finite_embedded_schemas]
-	main/asyncapi/non_finite_embedded_schemas.py
+	main/asyncapi/main_asyncapi/non_finite_embedded_schemas.py
 [test_main_asyncapi_non_object_components]
-	main/asyncapi/non_object_components.py
+	main/asyncapi/main_asyncapi/non_object_components.py	= main/asyncapi/non_object_components.py
 [test_main_asyncapi_output_model_types]
-dataclass	main/asyncapi/output_model_types/order_events_dataclasses_dataclass.py
-msgspec	main/asyncapi/output_model_types/order_events_msgspec_Struct.py
-pydantic-v2	main/asyncapi/output_model_types/order_events_pydantic_v2_BaseModel.py	= main/asyncapi/order_events.py
-typed-dict	main/asyncapi/output_model_types/order_events_typing_TypedDict.py
+dataclass	main/asyncapi/main_asyncapi/output_model_types[dataclass].py
+msgspec	main/asyncapi/main_asyncapi/output_model_types[msgspec].py
+pydantic-v2	main/asyncapi/main_asyncapi/output_model_types[pydantic-v2].py	= main/asyncapi/main_asyncapi/3_json.py
+typed-dict	main/asyncapi/main_asyncapi/output_model_types[typed-dict].py
 [test_main_asyncapi_protobuf_schema_format]
-	main/asyncapi/protobuf_schema_format.py
+	main/asyncapi/main_asyncapi/protobuf_schema_format.py
 [test_main_asyncapi_protobuf_schema_format_local_import]
-	main/asyncapi/protobuf_local_import.py
+	main/asyncapi/main_asyncapi/protobuf_schema_format_local_import.py
 [test_main_asyncapi_read_schema_version_per_document_external_ref_siblings]
 first-read	main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[first-read].py
 per-document	main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[per-document].py	= main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[first-read].py
 [test_main_asyncapi_root_message_ref]
 	main/asyncapi/main_asyncapi/root_message_ref.py
 [test_main_asyncapi_schema_version]
-	main/asyncapi/order_events.py
+	main/asyncapi/main_asyncapi/schema_version.py	= main/asyncapi/main_asyncapi/3_json.py
 [test_main_asyncapi_single_value_enum_as_const]
-enum-v2	main/asyncapi/single_value_enum_as_const_v2.py
-enum-v3	main/asyncapi/single_value_enum_as_const_v3.py
-written-as-const-v2	main/asyncapi/single_value_enum_as_const_v2.py
-written-as-const-v3	main/asyncapi/single_value_enum_as_const_v3.py
+enum-v2	main/asyncapi/main_asyncapi/single_value_enum_as_const[enum-v2].py
+enum-v3	main/asyncapi/main_asyncapi/single_value_enum_as_const[enum-v3].py
+written-as-const-v2	main/asyncapi/main_asyncapi/single_value_enum_as_const[written-as-const-v2].py	= main/asyncapi/main_asyncapi/single_value_enum_as_const[enum-v2].py
+written-as-const-v3	main/asyncapi/main_asyncapi/single_value_enum_as_const[written-as-const-v3].py	= main/asyncapi/main_asyncapi/single_value_enum_as_const[enum-v3].py
 [test_main_asyncapi_single_value_enum_as_const_keeps_xml_schema]
 option	main/asyncapi/main_asyncapi/single_value_enum_as_const_keeps_xml_schema[option].py
 without-option	main/asyncapi/main_asyncapi/single_value_enum_as_const_keeps_xml_schema[without-option].py	= main/asyncapi/main_asyncapi/single_value_enum_as_const_keeps_xml_schema[option].py
 [test_main_asyncapi_stable_surface]
-	main/asyncapi/stable_surface.py
+	main/asyncapi/main_asyncapi/stable_surface.py
 [test_main_asyncapi_string_discriminator]
 v2	main/asyncapi/main_asyncapi/string_discriminator[v2].py
 v3	main/asyncapi/main_asyncapi/string_discriminator[v3].py
 [test_main_asyncapi_trait_headers_inline_and_ref_in_either_order]
 	main/asyncapi/main_asyncapi/trait_headers_inline_and_ref_in_either_order.py
 [test_main_asyncapi_unknown_version_falls_back_to_v3]
-	main/asyncapi/unknown_version.py
+	main/asyncapi/main_asyncapi/unknown_version_falls_back_to_v3.py
 [test_main_asyncapi_v2_converted_payload_ref_siblings]
 default	main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[default].py
 ignore-ref-siblings	main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[ignore-ref-siblings].py
 per-document	main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[per-document].py	= main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[ignore-ref-siblings].py
 [test_main_asyncapi_v2_message_schema_format]
-	main/asyncapi/schema_format_v2.py
+	main/asyncapi/main_asyncapi/v2_message_schema_format.py
 [test_main_asyncapi_validation_flag]
-	main/asyncapi/user_events.py
+	main/asyncapi/main_asyncapi/validation_flag.py	= main/asyncapi/main_asyncapi/generate_asyncapi.py
 [test_main_asyncapi_xml_schema_format]
-	main/asyncapi/xml_schema_format.py
+	main/asyncapi/main_asyncapi/xml_schema_format.py

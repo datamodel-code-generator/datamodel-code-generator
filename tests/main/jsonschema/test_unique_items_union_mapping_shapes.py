@@ -34,7 +34,6 @@ def test_main_jsonschema_unique_items_union_mapping_shapes(output_file: Path) ->
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_union_mapping_shapes.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)
@@ -89,7 +88,6 @@ def test_main_jsonschema_unique_items_union_mapping_root() -> None:
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_union_mapping_root.py",
         **generate_kwargs,
     )
 
@@ -107,7 +105,6 @@ def test_main_jsonschema_unique_items_union_ref_mapping(output_file: Path) -> No
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_union_ref_mapping.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)
@@ -141,7 +138,6 @@ def test_main_jsonschema_unique_items_union_ref_mapping_root(output_file: Path) 
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_union_ref_mapping_root.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)
@@ -216,7 +212,6 @@ def test_main_jsonschema_unique_items_union_const_root(output_file: Path) -> Non
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_union_const_root.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)
@@ -245,7 +240,6 @@ def test_main_jsonschema_unique_items_union_enum_root(output_file: Path) -> None
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_union_enum_root.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)

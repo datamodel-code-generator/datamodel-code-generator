@@ -85,8 +85,6 @@ def test_null_type_array_openapi_30_keeps_strict_warning(output_file: Path) -> N
             input_path=OPEN_API_DATA_PATH / "null_type_array_definition.json",
             output_path=output_file,
             input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=EXPECTED_MAIN_PATH / "schema_versions" / "nullable_definition.py",
             extra_args=[
                 "--schema-version-mode",
                 "strict",

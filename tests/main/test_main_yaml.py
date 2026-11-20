@@ -122,8 +122,6 @@ def test_main_yaml_root_list(output_file: Path) -> None:
         input_path=YAML_DATA_PATH / "root_list.yaml",
         output_path=output_file,
         input_file_type="yaml",
-        assert_func=assert_file_content,
-        expected_file="yaml/root_list.py",
     )
 
 
@@ -260,8 +258,6 @@ def test_main_yaml_scientific_notation(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
-        assert_func=assert_file_content,
-        expected_file="yaml/scientific_notation.py",
     )
 
 

@@ -47,8 +47,6 @@ def test_serialized_decimal_defaults_warn_without_changing_output(output_file: P
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/serialized.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -60,7 +58,7 @@ def test_serialized_decimal_defaults_warn_without_changing_output(output_file: P
 
     assert_output(
         "".join(f"{warning.message}\n" for warning in recorded_warnings if warning.category is DefaultValueTypeWarning),
-        EXPECTED_JSON_SCHEMA_PATH / "serialized_decimal_defaults" / "compatibility_warning.txt",
+        name="serialized_decimal_defaults",
     )
 
 
@@ -139,8 +137,6 @@ def test_serialized_decimal_defaults_disable_warnings(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="serialized_decimal_defaults/serialized.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--disable-timestamp",
@@ -160,8 +156,6 @@ def test_deserialize_decimal_defaults_respects_type_mapping(output_file: Path) -
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/type_mapping_string.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -190,8 +184,6 @@ def test_deserialize_decimal_defaults_respects_type_override(output_file: Path) 
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/type_override.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -224,8 +216,6 @@ def test_deserialize_decimal_defaults_scalar_scope(output_file: Path) -> None:
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_default_scope.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/scalar_scope.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -266,8 +256,6 @@ def test_deserialize_decimal_defaults_ignores_collapsed_root_models(
             input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_decimal_defaults.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/collapse_root_models.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -298,8 +286,6 @@ def test_deserialize_decimal_defaults_type_alias(output_file: Path) -> None:
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_default_alias.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/type_alias.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -327,8 +313,6 @@ def test_deserialize_decimal_defaults_condecimal_collision(output_file: Path) ->
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_default_condecimal_collision.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/condecimal_collision.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -357,8 +341,6 @@ def test_condecimal_constraints_alias_decimal_without_defaults(output_file: Path
         input_path=JSON_SCHEMA_DATA_PATH / "condecimal_decimal_collision_no_default.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="serialized_decimal_defaults/condecimal_collision_no_default.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--disable-timestamp",
@@ -378,8 +360,6 @@ def test_deserialize_decimal_defaults_with_decimal_multiple_of(output_file: Path
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_default_multiple_of.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/multiple_of.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -408,8 +388,6 @@ def test_deserialize_decimal_defaults_reuses_existing_alias(alias_source: str, o
             input_path=JSON_SCHEMA_DATA_PATH / f"serialized_decimal_default_alias_from_{alias_source}.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"serialized_decimal_defaults/alias_from_{alias_source}.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -440,8 +418,6 @@ def test_deserialize_decimal_defaults_preserves_python_decimal_override(output_f
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
             output_path=output_file,
             input_file_type=InputFileType.JsonSchema,
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/python_decimal_override.py",
             target_python_version=PythonVersion.PY_310,
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
@@ -476,8 +452,6 @@ def test_native_decimal_default_override_resolves_field_collision(
             input_path=JSON_SCHEMA_DATA_PATH / "native_decimal_default_constrained.json",
             output_path=output_file,
             input_file_type=InputFileType.JsonSchema,
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/native_override_constrained.py",
             target_python_version=PythonVersion.PY_310,
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
@@ -502,8 +476,6 @@ def test_deserialize_decimal_defaults_respects_import_override(output_file: Path
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/import_override.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -532,8 +504,6 @@ def test_deserialize_decimal_defaults_bounded_warning(output_file: Path) -> None
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_default_collision.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="serialized_decimal_defaults/bounded_warning.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",
@@ -556,17 +526,15 @@ def test_deserialize_decimal_defaults_bounded_warning(output_file: Path) -> None
 
 
 @pytest.mark.parametrize(
-    ("deserialize_args", "expected_name", "warning_fragment"),
+    ("deserialize_args", "warning_fragment"),
     [
         pytest.param(
             (),
-            "preset_standard",
             "1 Decimal default value could not be deserialized",
             id="preset",
         ),
         pytest.param(
             ("--no-deserialize-default-values",),
-            "preset_no_deserialize",
             "2 Decimal default values were emitted as serialized data instead of Decimal",
             id="explicit-no",
             marks=pytest.mark.cli_doc(
@@ -585,7 +553,7 @@ match the generated Python type.""",
                     "--formatters",
                     "builtin",
                 ],
-                golden_output="jsonschema/serialized_decimal_defaults/preset_no_deserialize.py",
+                golden_output="jsonschema/serialized_decimal_defaults/preset[explicit-no].py",
                 related_options=["--deserialize-default-values", "--preset"],
             ),
         ),
@@ -593,7 +561,6 @@ match the generated Python type.""",
 )
 def test_serialized_decimal_defaults_preset(
     deserialize_args: tuple[str, ...],
-    expected_name: str,
     warning_fragment: str,
     output_file: Path,
 ) -> None:
@@ -604,8 +571,6 @@ def test_serialized_decimal_defaults_preset(
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"serialized_decimal_defaults/{expected_name}.py",
             extra_args=[
                 "--preset",
                 "standard-py310-20260826",

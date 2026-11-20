@@ -13,7 +13,6 @@ from datamodel_code_generator import InputFileType, inferred_message
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.parser.asyncapi import AsyncAPIParser
 from tests.conftest import assert_output
-from tests.main.asyncapi.conftest import assert_file_content
 from tests.main.conftest import (
     ASYNC_API_DATA_PATH,
     BACKEND_GOLDEN_CASES,
@@ -83,8 +82,6 @@ def test_main_asyncapi_2_yaml(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
     )
 
 
@@ -104,8 +101,6 @@ def test_main_asyncapi_single_value_enum_as_const(
         input_path=ASYNC_API_DATA_PATH / directory / f"{version}.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file=f"single_value_enum_as_const_{version}.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
     )
 
@@ -127,8 +122,6 @@ def test_main_asyncapi_3_json(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "order-events.json",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="order_events.py",
     )
 
 
@@ -157,8 +150,6 @@ def test_main_asyncapi_output_model_types(
         input_path=ASYNC_API_DATA_PATH / "order-events.json",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/order_events_{expected_name}.py",
         extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
         force_exec_validation=True,
         importable_module_name=f"generated_asyncapi_{expected_name}",
@@ -199,8 +190,6 @@ def test_main_asyncapi_auto_inference(output_file: Path, capsys: pytest.CaptureF
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
         capsys=capsys,
         expected_stderr=inferred_message.format("asyncapi") + "\n",
     )
@@ -212,8 +201,6 @@ def test_generate_asyncapi(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type=InputFileType.AsyncAPI,
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
     )
 
 
@@ -223,8 +210,6 @@ def test_main_asyncapi_schema_version(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "order-events.json",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="order_events.py",
         extra_args=["--schema-version", "3.0"],
         expected_exit=Exit.OK,
     )
@@ -236,8 +221,6 @@ def test_main_asyncapi_unknown_version_falls_back_to_v3(output_file: Path) -> No
         input_path=ASYNC_API_DATA_PATH / "unknown-version.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="unknown_version.py",
         extra_args=[*PY310_TARGET_ARGS, "--schema-version-mode", "strict"],
     )
 
@@ -248,8 +231,6 @@ def test_main_asyncapi_edge_cases(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "edge-cases.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="edge_cases.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -260,8 +241,6 @@ def test_main_asyncapi_non_object_components(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "non-object-components.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="non_object_components.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -288,8 +267,6 @@ def test_main_asyncapi_external_message_ref(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "external-message-ref.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="external_message_ref.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -310,8 +287,6 @@ def test_main_asyncapi_dynamic_ref(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "dynamic_ref" / "events.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="dynamic_ref.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -322,8 +297,6 @@ def test_main_asyncapi_stable_surface(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "stable-surface.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="stable_surface.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -334,8 +307,6 @@ def test_main_asyncapi_multi_format_schema_objects(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "multi-format-schemas.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="multi_format_schemas.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -364,8 +335,6 @@ def test_main_asyncapi_v2_message_schema_format(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "schema-format-v2.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="schema_format_v2.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -376,8 +345,6 @@ def test_main_asyncapi_protobuf_schema_format(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "protobuf-schema-format.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="protobuf_schema_format.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -388,8 +355,6 @@ def test_main_asyncapi_protobuf_schema_format_local_import(output_file: Path) ->
         input_path=ASYNC_API_DATA_PATH / "protobuf-local-import.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="protobuf_local_import.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -400,8 +365,6 @@ def test_main_asyncapi_xml_schema_format(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "xml-schema-format.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="xml_schema_format.py",
         extra_args=PY310_TARGET_ARGS,
     )
 
@@ -412,8 +375,6 @@ def test_main_asyncapi_non_finite_embedded_schemas(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "non_finite_embedded_schemas.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="non_finite_embedded_schemas.py",
         force_exec_validation=True,
     )
 
@@ -492,8 +453,6 @@ def test_main_asyncapi_validation_flag(output_file: Path) -> None:
         input_path=ASYNC_API_DATA_PATH / "user-events.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
-        assert_func=assert_file_content,
-        expected_file="user_events.py",
         extra_args=["--validation"],
     )
 
