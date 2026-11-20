@@ -981,14 +981,19 @@ def never_run(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
 
 @cache
 def _checkout_table() -> dict[str, tuple[tuple[str, ...], str]]:
-    """Return the capability table of the checkout this script belongs to, empty where it cannot be read."""
-    return _table_of(Tree(Path(__file__).resolve().parents[1]))
+    """Return the capability table of the checkout this script belongs to, empty where it has none or cannot read it."""
+    return _own_table(Tree(Path(__file__).resolve().parents[1]))
 
 
 def _table_of(tree: Tree) -> dict[str, tuple[tuple[str, ...], str]]:
     """Return the capability table of a tree, else that of this checkout; empty where the table is unreadable."""
+    return _own_table(tree) if (tree.root / CAPABILITY_HOME).is_file() else _checkout_table()
+
+
+def _own_table(tree: Tree) -> dict[str, tuple[tuple[str, ...], str]]:
+    """Return the capability table a tree holds itself, empty where it has none or the table is unreadable."""
     if not (tree.root / CAPABILITY_HOME).is_file():
-        return _checkout_table()
+        return {}
     value = tree.module(CAPABILITY_HOME).model.constant(CAPABILITY_TABLE)
     if isinstance(value, Unreadable) or not isinstance(value, dict) or _table_shape(value) is not None:
         return {}
@@ -1419,9 +1424,9 @@ def _requires_python(root: Path) -> tuple[int, int] | None:
     return (int(match[1]), int(match[2])) if (match := _REQUIRES_PYTHON.search(requires)) else None
 
 
-def _floor(tree: Tree) -> tuple[int, int]:
-    """Return the oldest Python the tree supports: its ``requires-python``, else that of this checkout."""
-    return next(filter(None, map(_requires_python, (tree.root, Path(__file__).resolve().parents[1]))))
+def _floor(tree: Tree) -> tuple[int, int] | None:
+    """Return the oldest Python the tree supports: its ``requires-python``, else that of this checkout, else None."""
+    return next(filter(None, map(_requires_python, (tree.root, Path(__file__).resolve().parents[1]))), None)
 
 
 def floor_syntax(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
@@ -1432,11 +1437,13 @@ def floor_syntax(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     feature_version=<requires-python>)``: it refuses syntax that is newer (type statements and parameters, ``except``
     without parentheses, template strings) and not library features, and it does not know every newer form (PEP 701
     f-strings, PEP 810 ``lazy import``). A file this Python cannot parse at all holds no finding; the oldest Python,
-    which reads less, finds the same files or fewer, so a count never rises for another Python.
+    which reads less, finds the same files or fewer, so a count never rises for another Python. A tree that states no
+    ``requires-python``, in a checkout that states none either (a copy run outside a checkout), has no floor to break.
 
     Review class: a failure only the oldest Python's lane shows (#7030: a fixture with type parameters kept as ``.py``).
     """
-    floor = _floor(tree)
+    if (floor := _floor(tree)) is None:
+        return
     for module in tree.tests:
         text = (tree.root / module.rel).read_text(encoding="utf-8")
         try:
