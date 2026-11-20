@@ -383,12 +383,10 @@ class Oracle:
 
 
 def _edit(text: str, *changes: tuple[str, str]) -> str:
-    """Return `text` with each `(old, new)` change made once; an `old` the text does not hold is a broken case."""
+    """Return `text` with each `(old, new)` change made; an `old` the text holds other than once raises ValueError."""
     for old, new in changes:
-        if text.count(old) != 1:
-            msg = f"{old!r} occurs {text.count(old)} times"
-            raise ValueError(msg)
-        text = text.replace(old, new)
+        before, after = text.split(old)
+        text = before + new + after
     return text
 
 
@@ -1291,13 +1289,12 @@ def _oracle_project(tmp_path: Path, oracle: Oracle) -> tuple[Path, list[str]]:
 def _verdict(code: int, stdout: str) -> str:
     """Return the verdict a run gave: `complete`, `incomplete`, `differ`, or its exit status where it gave none."""
     lines = stdout.splitlines()
-    if code == 0 and "evidence: complete" in lines:
-        return "complete"
-    if code == 1 and any(line.startswith("summary:") and "differ=0," not in line for line in lines):
-        return "differ"
-    if code == 1 and any(line.startswith("evidence: incomplete") for line in lines):
-        return "incomplete"
-    return f"exit={code}"
+    shown = {
+        "complete": code == 0 and "evidence: complete" in lines,
+        "differ": code == 1 and any(line.startswith("summary:") and "differ=0," not in line for line in lines),
+        "incomplete": code == 1 and any(line.startswith("evidence: incomplete") for line in lines),
+    }
+    return next((verdict for verdict, holds in shown.items() if holds), f"exit={code}")
 
 
 @pytest.mark.allow_direct_assert(
