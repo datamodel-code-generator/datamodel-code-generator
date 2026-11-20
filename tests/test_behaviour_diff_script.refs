@@ -37,6 +37,7 @@ versions	behaviour_diff_script/base_skip_problems[versions].txt	= main/generatio
 	behaviour_diff_script/candidate_payload_path_does_not_import_the_guide_builder.txt
 [test_change_lines]
 a message line added	behaviour_diff_script/change_lines[a message line added].txt
+a message line printed once more	behaviour_diff_script/change_lines[a message line printed once more].txt
 a message line removed	behaviour_diff_script/change_lines[a message line removed].txt
 a warning added and one removed	behaviour_diff_script/change_lines[a warning added and one removed].txt
 a warning removed	behaviour_diff_script/change_lines[a warning removed].txt
@@ -194,6 +195,7 @@ a harness record	behaviour_diff_script/judge[a harness record].txt
 a notice for a message line it matches	behaviour_diff_script/judge[a notice for a message line it matches].txt	= behaviour_diff_script/judge[notice inside its match].txt
 a notice for messages that show in no line	behaviour_diff_script/judge[a notice for messages that show in no line].txt
 a notice for warnings that show in no line	behaviour_diff_script/judge[a notice for warnings that show in no line].txt
+a notice matching only the last of the message lines added	behaviour_diff_script/judge[a notice matching only the last of the message lines added].txt
 a notice when a signature could not be taken	behaviour_diff_script/judge[a notice when a signature could not be taken].txt
 a record without a category	behaviour_diff_script/judge[a record without a category].txt	= behaviour_diff_script/judge[a harness record].txt
 api for a removed option it does not name	behaviour_diff_script/judge[api for a removed option it does not name].txt

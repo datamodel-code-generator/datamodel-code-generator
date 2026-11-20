@@ -582,8 +582,9 @@ def change_lines(
 
     They are the behaviour changes of its signatures, then `[exit] <base> -> <head>`, a `[warning]` line for each
     warning (category, message, module) one side shows more often than the other and one where only their order
-    differs, and a `[message]` line with the last line of the head's messages the base's lack (else the last of the
-    base's the head's lack, else a note that only their order differs). A no-behaviour output difference has no lines.
+    differs, and the same for the lines of their messages: a `[message]` line for each line one side prints more
+    often than the other, so a selector's `match` is checked on every differing line, and one where only their order
+    differs. A no-behaviour output difference has no lines.
     """
     lines = [change.line() for change in changes if change.behaviour]
     if exits[0] != exits[1]:
@@ -593,12 +594,11 @@ def change_lines(
     lines += [f"[warning] added {_warning_text(item)}" for item in (new - old).elements()]
     if old == new and list(map(tuple, warnings[0])) != list(map(tuple, warnings[1])):
         lines.append("[warning] the same warnings in another order")
-    if messages[0] != messages[1]:
-        old_lines, new_lines = messages[0].splitlines(), messages[1].splitlines()
-        differing = [line for line in new_lines if line not in old_lines] or [
-            line for line in old_lines if line not in new_lines
-        ]
-        lines.append(f"[message] {differing[-1] if differing else 'the same lines in another order'}")
+    old_lines, new_lines = Counter(messages[0].splitlines()), Counter(messages[1].splitlines())
+    lines += [f"[message] removed {line}" for line in (old_lines - new_lines).elements()]
+    lines += [f"[message] added {line}" for line in (new_lines - old_lines).elements()]
+    if old_lines == new_lines and messages[0] != messages[1]:
+        lines.append("[message] the same lines in another order")
     return tuple(lines)
 
 

@@ -3073,6 +3073,7 @@ CHANGE_LINE_CASES: dict[str, tuple[list[Change], tuple[int, int], Warnings, tupl
     "the warnings in another order": ([], (0, 0), ([WARNING, OTHER_WARNING], [OTHER_WARNING, WARNING]), ("", "")),
     "a message line added": ([], (0, 0), ([], []), ("Error: one\n", "Error: one\nError: two\nhint\n")),
     "a message line removed": ([], (0, 0), ([], []), ("Error: one\nError: two\n", "Error: one\n")),
+    "a message line printed once more": ([], (0, 0), ([], []), ("Error: one\n", "Error: one\nError: one\n")),
     "the message lines in another order": ([], (0, 0), ([], []), ("a\nb\n", "b\na\n")),
 }
 
@@ -3507,6 +3508,14 @@ JUDGE_CASES: dict[str, tuple[list[Record], set[CellKind], CellEvidence, behaviou
         [_judged("notice", _lines("tests/data/**", match="gap"))],
         {MESSAGES},
         CellEvidence("same", lines=("[message] mind the gap",)),
+        _cell(),
+    ),
+    "a notice matching only the last of the message lines added": (
+        [_judged("notice", _lines("tests/data/**", match="gap"))],
+        {MESSAGES},
+        CellEvidence(
+            "same", lines=change_lines([], messages=("Error: one\n", "Error: one\nError: two\nmind the gap\n"))
+        ),
         _cell(),
     ),
     "a notice when a signature could not be taken": (

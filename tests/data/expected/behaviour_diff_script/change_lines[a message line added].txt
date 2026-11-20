@@ -1,3 +1,4 @@
 [
- "[message] hint"
+ "[message] added Error: two",
+ "[message] added hint"
 ]
