@@ -154,7 +154,7 @@ def _python_type_expr_from_runtime_cached(
     type_ref: _IdentityWeakRef,
     full_name: bool,  # noqa: FBT001
 ) -> PythonTypeExpr:
-    if (tp := type_ref()) is None:  # pragma: no cover
+    if (tp := type_ref()) is None:  # pragma: no cover - the type is collected between its cache key and this call
         msg = "Runtime type was released during annotation binding"
         raise RuntimeError(msg)
     return _runtime_expr(tp, full_name=full_name)

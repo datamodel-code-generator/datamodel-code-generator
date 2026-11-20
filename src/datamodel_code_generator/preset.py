@@ -412,7 +412,7 @@ class PresetOptionGroup:
 
 
 def _merge_preset_groups(groups: tuple[PresetOptionGroup, ...]) -> tuple[PresetConfigItem, ...]:
-    """Merge preset groups; output-model groups override shared groups, other conflicting updates are rejected."""
+    """Merge preset groups; output-model groups override shared groups, and the first of the others wins."""
     output_model_fields = {
         item.field_name for group in groups if group.output_model_types for item in group.config.items()
     }
