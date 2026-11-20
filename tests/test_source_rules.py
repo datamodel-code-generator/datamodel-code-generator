@@ -1070,7 +1070,7 @@ TREES: dict[str, dict[str, str]] = {
         """,
         "tests/test_reach.py": """
             import os
-            import unittest
+            from unittest import TestCase
 
             import pytest
 
@@ -1151,7 +1151,7 @@ TREES: dict[str, dict[str, str]] = {
                     self._spawn()
 
 
-            class TestUnittest(unittest.TestCase):
+            class TestUnittest(TestCase):
                 def test_base_of_another_module(self):
                     self.assertTrue(True)
 
@@ -1283,6 +1283,8 @@ TREES: dict[str, dict[str, str]] = {
                     (tmp_path / third).write_text("{}")
                 for left, right in ["lonely:bad.json"]:
                     (tmp_path / right).write_text("{}")
+                for name, text in fetch().items():
+                    (tmp_path / name).write_text(text)
         """,
     },
 }
