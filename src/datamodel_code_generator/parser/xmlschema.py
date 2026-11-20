@@ -20,11 +20,11 @@ from xml.etree import ElementTree as ET  # noqa: S405
 
 from typing_extensions import Unpack
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._json_schema import definition_ref, json_nodes
 from datamodel_code_generator._name_words import first_upper
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion

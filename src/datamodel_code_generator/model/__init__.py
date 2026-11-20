@@ -20,8 +20,7 @@ from .base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase, _re
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from datamodel_code_generator import DataModelType
-    from datamodel_code_generator.enums import TargetPydanticVersion
+    from datamodel_code_generator.enums import DataModelType, TargetPydanticVersion
     from datamodel_code_generator.types import DataTypeManager as DataTypeManagerABC
 
 try:
@@ -53,8 +52,7 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
     target_pydantic_version: TargetPydanticVersion | None = None,
 ) -> DataModelSet:
     """Get the model types for the output format, target Python version, and target Pydantic version."""
-    from datamodel_code_generator import DataModelType  # noqa: PLC0415
-    from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES  # noqa: PLC0415
+    from datamodel_code_generator.enums import _PYDANTIC_MODEL_TYPES, DataModelType  # noqa: PLC0415
 
     def get_auxiliary_model_types() -> tuple[type[DataModel], type[DataModel], type[DataModel]]:
         from . import scalar, type_alias, union  # noqa: PLC0415

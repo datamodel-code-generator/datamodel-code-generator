@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
-from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
+from datamodel_code_generator import _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._config_fields import (
     CLI_RESOLVED_PATH_FIELDS,
     DEFAULT_WATCH_DELAY,
@@ -19,6 +19,7 @@ from datamodel_code_generator._config_fields import (
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.validators import ModelValidators
 
     ValidatorsConfigValue: TypeAlias = Mapping[str, ModelValidators]
+    Config: TypeAlias = Any
 else:
     ValidatorsConfigValue: TypeAlias = Mapping[str, Any]
 

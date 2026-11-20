@@ -11,7 +11,6 @@ from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support
 
 from typing_extensions import Unpack, override
 
-from datamodel_code_generator import Error, OpenAPIScope, SchemaParseError
 from datamodel_code_generator._document_reader import descend, string_key
 from datamodel_code_generator._json_pointer import document_part
 from datamodel_code_generator._openapi_objects import COMPONENT_ROLES
@@ -24,11 +23,13 @@ from datamodel_code_generator._openapi_paths import (
     path_item_operations,
 )
 from datamodel_code_generator._records import record
+from datamodel_code_generator._shared_types import Error, SchemaParseError
 from datamodel_code_generator._site_facts import EMPTY_SITE, Projection, TypeUseRole, site_facts_of
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.config import OpenAPIParserConfig  # noqa: TC001 - Public annotations support get_type_hints().
+from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._api_reference import (
     ApiModelResolver,

@@ -12,11 +12,11 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import ReuseScope
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
 from datamodel_code_generator._user_keys import model_type_override
+from datamodel_code_generator.enums import ReuseScope
 from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _find_base_classes,
@@ -38,8 +38,8 @@ from datamodel_code_generator.parser._passes._state import RecursionFacts
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, field_namer, iter_union_sites, possible_tag_names
 
 if TYPE_CHECKING:
-    from datamodel_code_generator import CollapseRootModelsNameStrategy
     from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator.enums import CollapseRootModelsNameStrategy
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun, _KeptParentRoot

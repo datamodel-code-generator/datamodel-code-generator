@@ -197,8 +197,8 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
 
-    from datamodel_code_generator import _ParserSource
     from datamodel_code_generator._generation_contract import TargetParserFactory
+    from datamodel_code_generator._shared_types import ParserSource as _ParserSource
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_binding import BoundAttempt, TargetParser
     from datamodel_code_generator._target_contract import (

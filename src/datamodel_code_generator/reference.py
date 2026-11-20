@@ -37,7 +37,7 @@ from urllib.parse import ParseResult, urlparse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import TypeIs, override
 
-from datamodel_code_generator import Error, NamingStrategy, _model_keys
+from datamodel_code_generator import _model_keys
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._format_types import PythonVersion as PythonVersion
 from datamodel_code_generator._format_types import (
@@ -51,6 +51,7 @@ from datamodel_code_generator._message_text import printable_text
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._python_target_names import target_builtin_type_attributes
 from datamodel_code_generator._records import record
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_unicode import (
     is_identifier,
     is_nfkc,
@@ -71,7 +72,7 @@ from datamodel_code_generator._user_keys import (
     first_present,
     model_name_path_keys,
 )
-from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
+from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend, NamingStrategy
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import camel_to_snake, last_camel_word
 

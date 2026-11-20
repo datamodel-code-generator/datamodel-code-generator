@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from functools import lru_cache as _lru_cache
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from pathlib import Path
 
 __all__ = ["BoundedLru", "SeenKeys"]
 
@@ -50,3 +52,18 @@ class SeenKeys(BoundedLru[_K, None]):
         seen = key in self
         self.put(key, None, max_size)
         return seen
+
+
+@_lru_cache(maxsize=256)
+def cached_path_exists(path: Path) -> bool:
+    """Check if a path exists with LRU caching.
+
+    Caches the result of Path.exists() to reduce filesystem I/O
+    when checking the same path multiple times (e.g., custom template directories).
+
+    Note: This cache is safe for CLI usage where files don't change during execution.
+    """
+    return path.exists()
+
+
+cached_path_exists.__module__ = "datamodel_code_generator"

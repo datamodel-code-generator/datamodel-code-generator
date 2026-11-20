@@ -14,7 +14,6 @@ from datamodel_code_generator.__main__ import (
     Exit,
     OutputComparisonOptions,
     _compare_generated_outputs,
-    _output_comparison_policy,
     _write_comparison_output,
 )
 from tests.conftest import assert_output, create_assert_file_content, stored_expected
@@ -72,9 +71,31 @@ assert_file_content = create_assert_file_content(INPUT_DIFF_EXPECTED_PATH)
     ],
 )
 @pytest.mark.allow_direct_assert
-def test_output_comparison_policy(input_diff: bool, expected_policy: tuple[str, str, str, str, str]) -> None:
-    """Return an explicit policy for both normal and two-input comparisons."""
-    assert _output_comparison_policy(input_diff=input_diff) == expected_policy
+def test_output_comparison_policy(
+    tmp_path: Path, input_diff: bool, expected_policy: tuple[str, str, str, str, str]
+) -> None:
+    """Report missing and extra files with an explicit policy for both normal and two-input comparisons.
+
+    The policy reads from the reports: the kind and reason of a file only the generation has and of one only the
+    existing output has in a directory, and the reason of a missing single file.
+    """
+    generated, actual = tmp_path / "generated", tmp_path / "actual"
+    generated.mkdir()
+    actual.mkdir()
+    (generated / "new.py").write_text("", encoding="utf-8")
+    (actual / "old.py").write_text("", encoding="utf-8")
+    directory = _compare_generated_outputs(
+        generated, actual, "utf-8", OutputComparisonOptions(is_directory_output=True, input_diff=input_diff)
+    )
+    single = _compare_generated_outputs(
+        generated / "new.py", actual / "new.py", "utf-8", OutputComparisonOptions(False, input_diff=input_diff)
+    )
+    missing, extra = directory.differences
+    (missing_file,) = single.differences
+    missing_reason, missing_file_reason, extra_reason = (
+        str(difference.message).rpartition(" (")[2].removesuffix(")") for difference in (missing, missing_file, extra)
+    )
+    assert (missing.kind, missing_reason, missing_file_reason, extra.kind, extra_reason) == expected_policy
 
 
 def test_diff_against_identical_single_file_does_not_write_virtual_output(

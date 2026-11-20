@@ -81,7 +81,7 @@ def _validate_python_import_path(value: object, target: PythonVersion, *, relati
 
 def _validate_schema_python_import_path(value: Any, field_name: str, target: PythonVersion) -> str:
     """Return the dotted import path a schema keyword names, refusing one whose names are no names of the target."""
-    from datamodel_code_generator import Error  # noqa: PLC0415
+    from datamodel_code_generator._shared_types import Error  # noqa: PLC0415
 
     try:
         return _validate_dotted_python_identifier_path(value, target)

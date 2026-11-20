@@ -7,6 +7,7 @@ import difflib
 import functools
 import importlib
 import inspect
+import pickle
 import subprocess
 import sys
 import types
@@ -16,7 +17,23 @@ from typing import TYPE_CHECKING, Annotated, Any, ForwardRef, Union, get_args, g
 import pytest
 from typing_extensions import NotRequired
 
-from datamodel_code_generator import DEFAULT_SHARED_MODULE_NAME, generate, reference, util
+from datamodel_code_generator import (
+    DEFAULT_SHARED_MODULE_NAME,
+    DanglingRefWarning,
+    DefaultValueTypeWarning,
+    DocumentationAnnotationWarning,
+    Error,
+    InvalidClassNameError,
+    InvalidFileFormatError,
+    LeftoverFilesWarning,
+    NamingHintWarning,
+    SchemaFetchError,
+    SchemaParseError,
+    SchemaResourceRefWarning,
+    generate,
+    reference,
+    util,
+)
 from datamodel_code_generator import __main__ as main_module
 from datamodel_code_generator import types as types_module
 from datamodel_code_generator.enums import (
@@ -1030,6 +1047,41 @@ def test_lazy_public_names_are_listed_once_by_dir(module: types.ModuleType) -> N
         f"{result.stdout}in this process: dir lists each name once: {len(listed) == len(set(listed))}, "
         f"__all__ lists each name once: {len(exported) == len(set(exported))}\nmissing name: {missing.value}\n"
     )
+
+
+@pytest.mark.allow_direct_assert("pickling and repr are checked against the class itself, never a stored output")
+def test_errors_warnings_and_cli_records_pickle_and_repr_under_their_public_names() -> None:
+    """Pickle and repr each error, warning and CLI record under the module of its public name.
+
+    The classes live in leaf modules that other modules import without importing the package root or ``__main__``;
+    each keeps ``datamodel_code_generator`` or ``datamodel_code_generator.__main__`` as its module, so its repr reads
+    and its pickle loads as before.
+    """
+    samples = (
+        Error("message"),
+        InvalidClassNameError("1bad"),
+        InvalidFileFormatError(ValueError("boom"), InputFileType.JsonSchema, source="a.json"),
+        SchemaParseError("bad", ["a", "b"], ValueError("x")),
+        SchemaFetchError("message"),
+        DanglingRefWarning("message"),
+        SchemaResourceRefWarning("message"),
+        DefaultValueTypeWarning("message"),
+        DocumentationAnnotationWarning("message"),
+        LeftoverFilesWarning("message"),
+        NamingHintWarning("message"),
+        main_module.Exit.OK,
+        main_module.Exit.KeyboardInterrupt,
+        main_module.ComparisonDifference("changed", "a.py", diff="-x\n+y\n"),
+        main_module.OutputComparison([main_module.ComparisonDifference("missing", "b.py", "MISSING")], "content"),
+        main_module.OutputComparisonOptions(is_directory_output=True, input_diff=True),
+        main_module.DirectoryChangedFile("c.py", ["-a", "+b"]),
+    )
+    for sample in samples:
+        kind = type(sample)
+        loaded = pickle.loads(pickle.dumps(sample))
+        assert getattr(sys.modules[kind.__module__], kind.__qualname__) is kind
+        assert kind.__module__ in {"datamodel_code_generator", "datamodel_code_generator.__main__"}
+        assert (type(loaded), repr(loaded), str(loaded)) == (kind, repr(sample), str(sample))
 
 
 @pytest.mark.abnormal_path("downstream code assigns this module attribute, so the assignment is the contract pinned")

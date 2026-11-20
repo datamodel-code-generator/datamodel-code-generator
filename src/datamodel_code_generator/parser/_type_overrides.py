@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import (
     COUNT_KEYWORDS,
     ITEM_COUNT_KEYWORDS,
@@ -30,6 +29,7 @@ from datamodel_code_generator._graph_links import type_children
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_unicode import is_dotted_python_name
 from datamodel_code_generator._user_keys import model_type_override
 from datamodel_code_generator.enums import _pydantic_version_key

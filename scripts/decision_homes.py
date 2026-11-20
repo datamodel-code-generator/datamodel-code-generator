@@ -3998,11 +3998,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("__init__.py", "_replaced_options"),
             Home("__init__.py", "_warn_of_replaced_options"),
             Home("__init__.py", "_resolve_preset"),
-            Home("__init__.py", "Error"),
+            Home("_shared_types.py", "Error"),
         ),
         core=(
             "`__init__.py`: `_run_option_stages` (the stages: `_OPTION_STAGES`), `_replaced_options`, "
-            "`_warn_of_replaced_options`, `_resolve_preset` (the resolution and its `Error`)"
+            "`_warn_of_replaced_options`, `_resolve_preset` (the resolution and its `Error`, "
+            "`_shared_types.py`: `Error`)"
         ),
         adapters=(
             "the entry points: `__main__.py:_resolve_cli_config` (a command and each batch job: the record of the "

@@ -63,11 +63,11 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, final
 
 from typing_extensions import Protocol
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
 from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
 from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import EdgeKind
+from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.model._decisions.enum_kind import values_no_literal_holds
 from datamodel_code_generator.model._decisions.tag_value import (
     SCALAR_TAG_TYPES,

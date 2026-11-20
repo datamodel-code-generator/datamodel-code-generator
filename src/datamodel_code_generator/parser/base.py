@@ -38,18 +38,7 @@ from warnings import warn
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import Unpack, final
 
-from datamodel_code_generator import (
-    AllExportsCollisionStrategy,
-    AllExportsScope,
-    AllOfClassHierarchy,
-    AllOfMergeMode,
-    Error,
-    FieldTypeCollisionStrategy,
-    ModuleSplitMode,
-    ReadOnlyWriteOnlyModelType,
-    ReuseScope,
-)
-from datamodel_code_generator import cached_path_exists as cached_path_exists
+from datamodel_code_generator._caches import cached_path_exists as cached_path_exists
 from datamodel_code_generator._constraint_applicability import (
     overridden_declared_constraints as overridden_declared_constraints,
 )
@@ -90,6 +79,7 @@ from datamodel_code_generator._reference_graph import (
 from datamodel_code_generator._requirements import REQUIREMENTS as REQUIREMENTS
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
+    Error,
     LiteralType,
 )
 from datamodel_code_generator._source import YamlValue as YamlValue
@@ -118,9 +108,17 @@ from datamodel_code_generator._user_keys import TypeOverrideLookups as _TypeOver
 from datamodel_code_generator._user_keys import class_scope as _class_scope_of
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
+    AllExportsCollisionStrategy,
+    AllExportsScope,
+    AllOfClassHierarchy,
+    AllOfMergeMode,
     ConstructorFieldOrder,
     DefaultValueType,
+    FieldTypeCollisionStrategy,
+    ModuleSplitMode,
     NamingStrategy,
+    ReadOnlyWriteOnlyModelType,
+    ReuseScope,
     StrictTypes,
 )
 from datamodel_code_generator.imports import (

@@ -24,7 +24,6 @@ from urllib.parse import ParseResult
 from pydantic import ValidationError
 from typing_extensions import override
 
-from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._asyncapi_connections import ReadMember, Walk, WalkedMessage, read
 from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
@@ -46,6 +45,7 @@ from datamodel_code_generator._openapi_wire_plan import EVENT_STREAM, FORMS, mes
 from datamodel_code_generator._paths import file_uri
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
+from datamodel_code_generator._shared_types import Error, SchemaParseError
 from datamodel_code_generator._site_facts import ANNOTATION_KEYWORDS, site_facts_of
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,

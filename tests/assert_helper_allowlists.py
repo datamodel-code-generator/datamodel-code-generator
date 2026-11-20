@@ -418,7 +418,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/main/test_main_general.py::datamodel_code_generator._template_data",
         "private-import:tests/main/test_main_general.py::datamodel_code_generator.config._rebuild_config_model",
         "private-import:tests/main/test_main_input_diff.py::datamodel_code_generator.__main__._compare_generated_outputs",
-        "private-import:tests/main/test_main_input_diff.py::datamodel_code_generator.__main__._output_comparison_policy",
         "private-import:tests/main/test_main_input_diff.py::datamodel_code_generator.__main__._write_comparison_output",
         "private-import:tests/main/test_main_watch.py::datamodel_code_generator.__main__._main",
         "private-import:tests/main/test_main_watch.py::datamodel_code_generator.__main__._plan_jobs",

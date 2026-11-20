@@ -21,8 +21,8 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import Sentinel
 
-from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._json_pointer import is_array_index
+from datamodel_code_generator._shared_types import Error, SchemaParseError
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
