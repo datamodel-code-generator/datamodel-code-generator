@@ -22,7 +22,6 @@ from datetime import datetime, timezone
 from functools import cache, cached_property
 from importlib.util import find_spec
 from itertools import islice, starmap
-from multiprocessing import forkserver, resource_tracker
 from pathlib import Path, PurePosixPath
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, Protocol, TypedDict, cast
@@ -332,20 +331,6 @@ def pytest_sessionstart(session: pytest.Session) -> Generator[None, None, None]:
     yield
     if (serialized := os.environ.get(CHILD_COVERAGE_CONFIG_ENV)) is not None:
         os.environ[CHILD_COVERAGE_CONFIG_ENV] = _child_coverage_config(serialized)
-
-
-def pytest_runtest_teardown() -> None:
-    """Stop the multiprocessing helpers that a test started, so that no process it started outlives it.
-
-    A spawn or forkserver pool starts a resource tracker, and a forkserver pool a fork server, that serve the whole
-    process and end only with it, after pytest-cov combined the data files: measured through
-    `CHILD_COVERAGE_CONFIG_ENV`, such a helper would then leave its own data file behind.
-    """
-    for helper in (resource_tracker._resource_tracker, forkserver._forkserver):
-        # `_stop` is the helpers' own private stop; typeshed does not list it, and a Python without it starts
-        # no such helper per test (the stray data file then shows in scripts/ci_coverage.py's duplicate check).
-        if (stop := getattr(helper, "_stop", None)) is not None:
-            stop()
 
 
 def _child_coverage_config(serialized: str) -> str:
