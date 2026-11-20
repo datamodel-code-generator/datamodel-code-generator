@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "output-text (output-text): the cell's class is violation, not no-behaviour"
+ ],
+ "accepted_by": []
+}

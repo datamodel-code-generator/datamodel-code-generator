@@ -13,6 +13,7 @@ from itertools import pairwise
 from typing import TYPE_CHECKING, Any
 
 from scripts._behaviour_classify import Allowlist, Side, classify_cell
+from scripts._change_records import version_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -28,11 +29,6 @@ CHANGED = frozenset({"crash-fix", "behaviour-change", "now-fails"})
 GATE_ORDER = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in", "base-skipped")
 MAX_EXAMPLES = 3
 MAX_DETAIL = 160
-
-
-def version_key(version: str) -> tuple[int, ...]:
-    """Return a sort key for a release version such as 0.86.0."""
-    return tuple(int(part) for part in re.findall(r"\d+", version))
 
 
 def redact(text: str) -> str:

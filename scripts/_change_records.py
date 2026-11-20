@@ -5,6 +5,10 @@ Its `category` says why the stored output changed and decides what the record mu
 and `action` it may have, the facts it names (`refs`, `decision`, `surface`, `affects.experimental`) and the kinds of
 stored output its `covers` may list. Entries of released changes may lack a category; they are guide entries.
 
+A record names the comparator cells its change moves with `[[change.cells]]` selectors (`CellSelector`); the `cells`
+of its category's rule (`CellRule`) say whether it must, may or must not name cells and which kinds of a cell's
+difference it admits, and `scripts/_behaviour_classify.py` judges a differing cell by them.
+
 `scripts/build_migration_docs.py` reads every entry through `parse_entry`, and `scripts/declared_changes.py` reads the
 records of any revision the same way. Standard library only, so the static check needs no environment.
 """
@@ -17,14 +21,15 @@ import re
 from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 import tomllib
 
-from scripts._behaviour_report import version_key
+from scripts.compare_release import DEFAULT_TYPES
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Mapping
+    from pathlib import Path
 
 
 class Category(StrEnum):
@@ -88,6 +93,61 @@ class Owner(StrEnum):
     INTERNAL = "internal"
 
 
+class CellKind(StrEnum):
+    """What a comparator cell's difference is in: its output (files, or outputs elsewhere), exit, warnings, messages."""
+
+    OUTPUT = "output"
+    EXIT = "exit"
+    WARNINGS = "warnings"
+    MESSAGES = "messages"
+
+
+class Need(StrEnum):
+    """Whether a record of a category must, may or must not name cells."""
+
+    REQUIRED = "required"
+    OPTIONAL = "optional"
+    FORBIDDEN = "forbidden"
+
+
+ASPECTS = frozenset({
+    "alias",
+    "bases",
+    "config",
+    "constraints",
+    "constructor-order",
+    "default",
+    "enum-base",
+    "enum-member-added",
+    "enum-member-removed",
+    "enum-value",
+    "exit",
+    "field-added",
+    "field-removed",
+    "generation",
+    "import-path-removed",
+    "kind",
+    "message",
+    "module-added",
+    "module-removed",
+    "name-added",
+    "name-removed",
+    "numbered-name-removed",
+    "parsed-value",
+    "payload-verdict",
+    "probe",
+    "readonly",
+    "required",
+    "serialization_alias",
+    "type",
+    "validation_alias",
+    "warning",
+})
+"""The aspects of a cell's change lines: those of the behaviour classifier's changes (`_behaviour_classify.Change`,
+which refuses any other) and `exit`, `warning` and `message` for the other kinds of a cell's difference."""
+SELECTOR_KEYS = frozenset({"input", "backends", "options", "input_file_type", "aspects", "match"})
+EVERY = "*"
+"""A selector's `backends` or `options` that names every output model type or option set of its inputs' cells."""
 AFFECTS_KEYS = ("output_model_types", "input_file_types", "options", "python_api", "templates", "experimental")
 GUIDE_TEXT_KEYS = ("title", "summary", "before", "after", "migrate", "reverts")
 RECORD_TEXT_KEYS = ("extends",)
@@ -105,7 +165,18 @@ GUIDE_KEYS = frozenset({
     "verify",
 })
 """The keys only a guide entry has; a record of a category without a guide entry holds none of them."""
-RECORD_KEYS = frozenset({"id", "category", "title", "summary", "refs", "covers", "decision", "surface", "extends"})
+RECORD_KEYS = frozenset({
+    "id",
+    "category",
+    "title",
+    "summary",
+    "refs",
+    "covers",
+    "decision",
+    "surface",
+    "extends",
+    "cells",
+})
 LIST_KEYS = ("refs", "supersedes", "covers", "decision", "surface")
 REF_KEYS = ("refs", "decision")
 REQUIRED_KEYS = ("kind", "action", "title", "summary", "source")
@@ -115,7 +186,9 @@ REF_PATTERN = re.compile(r"#[1-9]\d*")
 ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9.:_-]*")
 DERIVED_PREFIXES = ("deprecation:", "removal:", "experimental:", "preset:", "option:")
 PRESET_SURFACE = "preset:"
+PRESET_OPTION = "--preset"
 CHANGE_HEADER = re.compile(r"\[\[\s*change\s*\]\]\s*(#.*)?")
+CELLS_HEADER = re.compile(r"\[\[\s*change\s*\.\s*cells\s*\]\]\s*(#.*)?")
 CLIENT_SERVER_FEATURES = frozenset({"cli-option.generate-client", "cli-option.generate-server"})
 """Experimental features whose output changes need no owner decision (owner, 2026-10-19)."""
 COVERS_INDENT = "    "
@@ -135,6 +208,25 @@ class Verify:
 
     schema: str | None = None
     args: tuple[Any, ...] | None = None
+
+
+@dataclass(frozen=True)
+class CellSelector:
+    """One `[[change.cells]]` table: the comparator cells a record names.
+
+    `input`: globs over the head tree's paths (`*` within a path part, `**` across parts), each naming input files or
+    directories; `backends`: output model types, None for every one (`"*"`); `options`: option sets, None for every
+    option set the run has for the inputs (`"*"`); `input_file_type`: the input type the cells run with, None for the
+    folder under `tests/data/`; `aspects` and `match`: what every change line of a covered cell must have, the aspect
+    and a regular expression it holds (searched).
+    """
+
+    input: tuple[str, ...]
+    backends: tuple[str, ...] | None = None
+    options: tuple[tuple[str, ...], ...] | None = None
+    input_file_type: str | None = None
+    aspects: tuple[str, ...] | None = None
+    match: str | None = None
 
 
 @dataclass(frozen=True)
@@ -162,6 +254,7 @@ class Record:
     supersedes: tuple[str, ...] = ()
     reverts: str | None = None
     verify: Verify | None = None
+    cells: tuple[CellSelector, ...] = ()
 
     @property
     def derived(self) -> bool:
@@ -211,18 +304,36 @@ class Record:
 
 
 @dataclass(frozen=True)
+class CellRule:
+    """The cells of a category's records.
+
+    `need`: whether a record names cells; `kinds`: the kinds of a cell's difference it admits; `selector_needs`: the
+    keys each of its selectors needs one of (`aspects` or `match` for a decision, `match` for a notice).
+    """
+
+    need: Need
+    kinds: frozenset[CellKind] = frozenset()
+    selector_needs: tuple[str, ...] = ()
+
+
+NO_CELLS = CellRule(Need.FORBIDDEN)
+DECISION_CELLS = CellRule(Need.OPTIONAL, frozenset(CellKind), ("aspects", "match"))
+
+
+@dataclass(frozen=True)
 class Rule:
     """What a record of one category holds.
 
     `requires`: fields that must not be empty (`affects.experimental` is the experimental features); `guide`: the
     (kind, action) pairs its guide entry may have, or None for a record without a guide entry, which then holds no
-    guide key; `owners`: the kinds of stored output its `covers` may list, None for any; `surface`: whether it may name
-    `surface` items.
+    guide key; `owners`: the kinds of stored output its `covers` may list, None for any; `cells`: the cells it names;
+    `surface`: whether it may name `surface` items.
     """
 
     requires: frozenset[str]
     guide: frozenset[tuple[Kind, Action]] | None
     owners: frozenset[Owner] | None
+    cells: CellRule = NO_CELLS
     surface: bool = False
 
 
@@ -238,34 +349,43 @@ RULES: Mapping[Category, Rule] = MappingProxyType({
         frozenset({"refs", "decision", "affects.experimental"}),
         _pairs([Kind.EXPERIMENTAL], [Action.REQUIRED, Action.REVIEW, Action.NONE]),
         None,
+        CellRule(Need.OPTIONAL, frozenset(CellKind)),
     ),
     Category.CRASH_FIX: Rule(
         frozenset({"refs"}),
         _pairs([Kind.DEFAULT_OUTPUT, Kind.EXPERIMENTAL], [Action.NONE]),
         frozenset({Owner.MODELS, Owner.NOTICE}),
+        CellRule(Need.REQUIRED, frozenset({CellKind.OUTPUT, CellKind.EXIT, CellKind.MESSAGES})),
     ),
     Category.OUTPUT_TEXT: Rule(
-        frozenset({"refs"}), _pairs([Kind.OUTPUT_TEXT], [Action.NONE]), frozenset({Owner.MODELS})
+        frozenset({"refs"}),
+        _pairs([Kind.OUTPUT_TEXT], [Action.NONE]),
+        frozenset({Owner.MODELS}),
+        CellRule(Need.REQUIRED, frozenset({CellKind.OUTPUT})),
     ),
     Category.DEFAULT_FIX: Rule(
         frozenset({"refs", "decision"}),
         _pairs([Kind.DEFAULT_OUTPUT], [Action.REVIEW, Action.KEEP]),
         frozenset({Owner.MODELS}),
+        DECISION_CELLS,
     ),
     Category.DECIDED_CHANGE: Rule(
         frozenset({"refs", "decision", "keep"}),
         _pairs([Kind.DEFAULT_OUTPUT, Kind.TEMPLATE], [Action.KEEP, Action.REVIEW, Action.REQUIRED]),
         None,
+        DECISION_CELLS,
     ),
     Category.NOTICE: Rule(
         frozenset({"refs"}),
         _pairs([Kind.WARNING, Kind.ERROR], [Action.WARN, Action.NONE, Action.REQUIRED]),
         frozenset({Owner.NOTICE}),
+        CellRule(Need.REQUIRED, frozenset({CellKind.WARNINGS, CellKind.MESSAGES}), ("match",)),
     ),
     Category.API: Rule(
         frozenset({"refs", "decision"}),
         _pairs([Kind.REMOVAL, Kind.CLI, Kind.PYTHON_API, Kind.RUNTIME], [Action.REQUIRED, Action.REVIEW]),
         frozenset({Owner.API, Owner.LISTING}),
+        CellRule(Need.OPTIONAL, frozenset({CellKind.EXIT, CellKind.MESSAGES})),
     ),
     Category.DOCS_TEXT: Rule(frozenset({"title"}), None, frozenset({Owner.LISTING})),
     Category.INTERNAL: Rule(frozenset({"title"}), None, frozenset({Owner.INTERNAL})),
@@ -285,6 +405,13 @@ previous package fails to generate it or writes a unit the behaviour classifier 
 calls unusable. `output-text`: the text changes and the models behave the same, that is the modules' syntax trees are
 equal apart from docstrings, comments and the order of imports, or else their signatures are equal and no changed node
 is in a function body, a decorator or a configuration key the signature does not list.
+
+Cells: an `output-text` record admits an output difference, a `crash-fix` one also an exit difference and messages, a
+`notice` warnings and messages, an `api` one an exit difference and messages (a removed option), and a decision
+(`default-fix`, `decided-change`) or `experimental` record any difference; the first three must name the cells they
+cover once they are added (the comparator checks that on the records a change adds, so released records need none),
+the others may. `new-surface` names none, as no comparator run judges surface the latest release lacks, nor do the
+categories without output (`docs-text`, `internal`, `harness`).
 """
 
 
@@ -382,7 +509,7 @@ class Facts:
     surface: frozenset[str] = frozenset()
 
 
-def _strings(value: object) -> bool:
+def _strings(value: object) -> TypeGuard[list[str]]:
     return isinstance(value, list) and all(isinstance(item, str) for item in value)
 
 
@@ -435,7 +562,54 @@ def _shape_problems(where: str, entry: Mapping[str, Any]) -> list[str]:
         for ref in values
         if not REF_PATTERN.fullmatch(str(ref))
     )
+    cells = entry.get("cells", [])
+    if not isinstance(cells, list) or not all(isinstance(cell, dict) for cell in cells):
+        return [*problems, f"{where}: cells are not [[change.cells]] tables"]
+    for index, cell in enumerate(cells, 1):
+        problems += _selector_problems(f"{where}: cells {index}", cell)
     return problems
+
+
+def _selector_problems(where: str, cell: Mapping[str, object]) -> list[str]:
+    """Return why a `[[change.cells]]` table is not a selector: its keys, input globs, backends, options and match."""
+    problems = [f"{where}: unknown key {key}" for key in sorted(set(cell) - SELECTOR_KEYS)]
+    problems += [f"{where}: missing {key}" for key in ("input", "backends", "options") if key not in cell]
+    if "input" in cell and not (_strings(globs := cell["input"]) and globs):
+        problems.append(f"{where}: input is not a non-empty list of path globs")
+    if _strings(backends := cell.get("backends", EVERY)) and backends:
+        problems += [
+            f"{where}: backend {name!r} is not one of {', '.join(DEFAULT_TYPES)}"
+            for name in backends
+            if name not in DEFAULT_TYPES
+        ]
+    elif backends != EVERY:
+        problems.append(f"{where}: backends is neither {EVERY!r} nor a non-empty list of output model types")
+    options = cell.get("options", EVERY)
+    if options != EVERY and not (isinstance(options, list) and options and all(map(_strings, options))):
+        problems.append(f"{where}: options is neither {EVERY!r} nor a non-empty list of option sets (lists of strings)")
+    if "input_file_type" in cell and not isinstance(cell["input_file_type"], str):
+        problems.append(f"{where}: input_file_type is not a string")
+    if _strings(aspects := cell.get("aspects")) and aspects:
+        problems += [
+            f"{where}: aspect {aspect!r} is not an aspect of a change line"
+            for aspect in aspects
+            if aspect not in ASPECTS
+        ]
+    elif "aspects" in cell:
+        problems.append(f"{where}: aspects is not a non-empty list of strings")
+    if "match" in cell:
+        problems += _match_problems(where, cell["match"])
+    return problems
+
+
+def _match_problems(where: str, match: object) -> list[str]:
+    if not isinstance(match, str):
+        return [f"{where}: match is not a string"]
+    try:
+        re.compile(match)
+    except re.error as error:
+        return [f"{where}: match {match!r} does not compile: {error}"]
+    return []
 
 
 def entry_table(entry: Mapping[str, Any], key: str) -> dict[str, Any]:
@@ -481,8 +655,23 @@ def parse_entry(entry: Mapping[str, Any], where: str) -> tuple[Record | None, li
             if "verify" in entry
             else None
         ),
+        cells=tuple(_selector(cell) for cell in entry.get("cells", ())),
     )
     return record, []
+
+
+def _selector(cell: Mapping[str, object]) -> CellSelector:
+    """Return the selector of a `[[change.cells]]` table that `_selector_problems` accepts: `"*"` reads None."""
+    globs, backends, options, aspects = (cell.get(key) for key in ("input", "backends", "options", "aspects"))
+    file_type, match = cell.get("input_file_type"), cell.get("match")
+    return CellSelector(
+        input=tuple(globs) if _strings(globs) else (),
+        backends=tuple(backends) if _strings(backends) else None,
+        options=tuple(tuple(item) for item in options if _strings(item)) if isinstance(options, list) else None,
+        input_file_type=file_type if isinstance(file_type, str) else None,
+        aspects=tuple(aspects) if _strings(aspects) else None,
+        match=match if isinstance(match, str) else None,
+    )
 
 
 def _filled(record: Record, name: str) -> bool:
@@ -504,27 +693,23 @@ def _decision_needed(record: Record, facts: Facts | None) -> bool:
     return True
 
 
-def rule_problems(record: Record, *, fragment: bool, facts: Facts | None = None) -> list[str]:
+def rule_problems(record: Record, *, fragment: bool, facts: Facts | None = None, added: bool = False) -> list[str]:
     """Return how a record breaks the rule of its category; `fragment` for an unreleased fragment.
 
     Every fragment has a category except one that extends a derived entry (it only adds text to the registry's entry)
-    or another record (`extends`: the same change, more covers). Released entries without a category are guide
-    entries that need `refs`. The facts, when given, check the features, surface items and scheduled removals the
-    record names.
+    or another record (`extends`: the same change, more covers and cells). Released entries without a category are
+    guide entries that need `refs`; no released entry names cells, as the stamp drops them. The facts, when given,
+    check the features, surface items and scheduled removals the record names, and that its cells name no surface the
+    latest release lacks. `added` for a record the change adds: a category whose cells are required needs them.
     """
     where = f"entry {record.id}"
-    if record.extends is not None:
-        if extra := sorted(record.keys - {"extends", "covers", "refs"}):
-            return [f"{where}: an extending record holds only extends, covers and refs, not {', '.join(extra)}"]
-        return []
-    if record.derived:
-        return [f"{where}: an entry that extends a derived entry has no category"] if record.category else []
-    if record.category is None:
-        if fragment:
-            return [f"{where}: a fragment needs a category ({', '.join(Category)})"]
-        return [] if record.refs else [f"{where} has no refs"]
+    if record.cells and not fragment:
+        return [f"{where}: a released entry names no cells; the stamp drops them"]
+    if record.extends is not None or record.derived or record.category is None:
+        return _uncategorized_problems(record, fragment=fragment, facts=facts)
     rule = RULES[record.category]
     problems = [f"{where} has no {name}" for name in sorted(rule.requires - {"decision"}) if not _filled(record, name)]
+    problems += _cells_problems(record, rule.cells, added=added)
     if "decision" in rule.requires and not record.decision and _decision_needed(record, facts):
         problems.append(f"{where} has no decision")
     if rule.guide is None:
@@ -542,6 +727,21 @@ def rule_problems(record: Record, *, fragment: bool, facts: Facts | None = None)
     return problems
 
 
+def _uncategorized_problems(record: Record, *, fragment: bool, facts: Facts | None) -> list[str]:
+    """Return how a record without a category of its own breaks its rule: an extending, derived or released entry."""
+    where = f"entry {record.id}"
+    if record.extends is not None:
+        if extra := sorted(record.keys - {"extends", "covers", "refs", "cells"}):
+            return [f"{where}: an extending record holds only extends, covers, refs and cells, not {', '.join(extra)}"]
+        return _surface_problems(record, facts) if facts is not None else []
+    if record.derived:
+        extending = record.category or record.cells
+        return [f"{where}: an entry that extends a derived entry has no category and no cells"] if extending else []
+    if fragment:
+        return [f"{where}: a fragment needs a category ({', '.join(Category)})"]
+    return [] if record.refs else [f"{where} has no refs"]
+
+
 def _fact_problems(record: Record, facts: Facts) -> list[str]:
     where = f"entry {record.id}"
     problems = []
@@ -555,7 +755,55 @@ def _fact_problems(record: Record, facts: Facts) -> list[str]:
             problems.append(f"{where}: surface item {item} is not in this source tree")
         elif item not in facts.new_surface:
             problems.append(f"{where}: surface item {item} is not new: the latest release has it")
-    return problems
+    return problems + _surface_problems(record, facts)
+
+
+def _cells_problems(record: Record, rule: CellRule, *, added: bool) -> list[str]:
+    """Return how a record's cells break its category's: none where forbidden, some where required, the keys needed."""
+    where = f"entry {record.id}"
+    if rule.need == Need.FORBIDDEN:
+        return [f"{where}: category {record.category} names no cells"] if record.cells else []
+    if added and rule.need == Need.REQUIRED and not record.cells:
+        return [f"{where}: category {record.category} names the cells it covers ([[change.cells]])"]
+    needs = " or ".join(rule.selector_needs)
+    return [
+        f"{where}: cells {index} of category {record.category} needs {needs}"
+        for index, selector in enumerate(record.cells, 1)
+        if rule.selector_needs and all(getattr(selector, key) is None for key in rule.selector_needs)
+    ]
+
+
+def selector_surface(selector: CellSelector) -> list[str]:
+    """Return the surface items a selector's option sets name: each option, each option value and each preset date.
+
+    An option is `--name`, a value `--name value` (written as the next item or as `--name=value`), and a `--preset`
+    value also names its date as `preset:<date>`.
+    """
+    items: list[str] = []
+    for option_set in selector.options or ():
+        for index, item in enumerate(option_set):
+            if not item.startswith("--"):
+                continue
+            name, equals, value = item.partition("=")
+            if not equals and index + 1 < len(option_set) and not option_set[index + 1].startswith("--"):
+                value = option_set[index + 1]
+            items.append(name)
+            if value:
+                items.append(f"{name} {value}")
+                if name == PRESET_OPTION:
+                    items.append(f"{PRESET_SURFACE}{value.rpartition('-')[2]}")
+    return items
+
+
+def _surface_problems(record: Record, facts: Facts) -> list[str]:
+    """Return the surface items a record's cells name that the latest release lacks: R2's stored outputs judge them."""
+    return [
+        f"entry {record.id}: cells {index} name {item}, which the latest release lacks; unreleased surface is judged "
+        "by the stored outputs only"
+        for index, selector in enumerate(record.cells, 1)
+        for item in dict.fromkeys(selector_surface(selector))
+        if item in facts.new_surface
+    ]
 
 
 def guide_problems(entry: Mapping[str, Any]) -> list[str]:
@@ -575,6 +823,11 @@ def guide_problems(entry: Mapping[str, Any]) -> list[str]:
     ):
         problems.append(f"{where}: source run needs verify.schema and verify.args")
     return problems
+
+
+def version_key(version: str) -> tuple[int, ...]:
+    """Return a sort key for a release version such as 0.86.0."""
+    return tuple(int(part) for part in re.findall(r"\d+", version))
 
 
 def stamp_pending(latest_tag: str, released: Collection[str]) -> str | None:
@@ -631,27 +884,93 @@ def with_covers(text: str, labels: Collection[str]) -> str:
     return next(candidate for candidate in candidates if tomllib.loads(candidate) == wanted)
 
 
+def without_cells(text: str) -> str:
+    """Return a fragment's text without its `[[change.cells]]` tables, as `--stamp` moves it to a release's changes.
+
+    Each table runs from its header to the next table header or the end. Raises ValueError where the text writes its
+    cells otherwise (an inline array, or a line of a multi-line string that looks like a header).
+    """
+    wanted = tomllib.loads(text)
+    for entry in wanted.get("change", []):
+        entry.pop("cells", None)
+    kept, dropping = [], False
+    for line in text.splitlines(keepends=True):
+        if line.startswith("["):
+            dropping = bool(CELLS_HEADER.fullmatch(line.strip()))
+        if not dropping:
+            kept.append(line)
+    stripped = "".join(kept)
+    try:
+        written = tomllib.loads(stripped) == wanted
+    except tomllib.TOMLDecodeError:
+        written = False
+    if not written:
+        msg = "its cells are not written as [[change.cells]] tables"
+        raise ValueError(msg)
+    return stripped
+
+
+def cells_written(text: str) -> bool:
+    """Return whether a fragment writes its cells, if any, as `[[change.cells]]` tables that `without_cells` drops."""
+    try:
+        without_cells(text)
+    except ValueError:
+        return False
+    return True
+
+
+def read_records(data: Path) -> list[Record]:
+    """Return the records of a migration data folder (`docs/data/migration`): the releases' changes, then the fragments.
+
+    Raises ValueError with every problem of a table that holds no record; `scripts/build_migration_docs.py --check`
+    reports the rest.
+    """
+    found: list[Record] = []
+    problems: list[str] = []
+    for path in [*sorted(data.glob("changes/*.toml")), *sorted(data.glob("unreleased/*.toml"))]:
+        where = f"{path.parent.name}/{path.name}"
+        for entry in tomllib.loads(path.read_text(encoding="utf-8")).get("change", []):
+            record, entry_problems = parse_entry(entry, where)
+            problems += entry_problems
+            found += [record] if record is not None else []
+    if problems:
+        raise ValueError("\n".join(problems))
+    return found
+
+
 __all__ = [
     "AFFECTS_KEYS",
+    "ASPECTS",
+    "EVERY",
     "OWNERS",
+    "PRESET_OPTION",
     "PRESET_SURFACE",
     "RULES",
     "Action",
     "Category",
+    "CellKind",
+    "CellRule",
+    "CellSelector",
     "Facts",
     "Keep",
     "Kind",
+    "Need",
     "Owner",
     "Record",
     "Rule",
     "Source",
     "Verify",
+    "cells_written",
     "covers_block",
     "covers_written",
     "guide_problems",
     "owner_of",
     "parse_entry",
+    "read_records",
     "rule_problems",
+    "selector_surface",
     "stamp_pending",
+    "version_key",
     "with_covers",
+    "without_cells",
 ]

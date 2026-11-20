@@ -125,14 +125,14 @@ RELEASED_SURFACE = {
 """The surface of 0.4.0: the rules changed since, with a new revision, and 20260301 is the one unreleased date."""
 RELEASES = [("0.1.0", "2026-01-01"), ("0.2.0", "2026-02-01"), ("0.3.0", "2026-03-01"), ("0.4.0", "2026-04-01")]
 DERIVED = '[presets]\n"20260101" = "0.2.0"\n"20260201" = "0.3.0"\n\n[options]\n"--released-flag" = "0.3.0"\n'
-ALLOWLIST = """base = "0.4.0"
-
-[[accepted]]
-input = "*"
-reason = "r"
-decision = "#5001"
-migration = "custom-template-root"
+CELLS_TABLE = """
+[[change.cells]]
+input = ["tests/data/jsonschema/template.json"]
+backends = "*"
+options = "*"
+match = "fields"
 """
+"""A `[[change.cells]]` table of a decision record."""
 CHANGES = {
     "0.2.0": """
 [[change]]
@@ -320,7 +320,6 @@ def _write_data(
     releases: str | None = None,
     derived: str = DERIVED,
     surface: dict[str, Any] | None = RELEASED_SURFACE,
-    allowlist: str = ALLOWLIST,
 ) -> Path:
     data = root / "data"
     (data / "changes").mkdir(parents=True)
@@ -328,7 +327,6 @@ def _write_data(
     rows = "".join(f'\n[[release]]\nversion = "{version}"\ndate = "{date}"\n' for version, date in RELEASES)
     (data / "releases.toml").write_text(rows if releases is None else releases, encoding="utf-8")
     (data / "derived.toml").write_text(derived, encoding="utf-8")
-    (root / "allowlist.toml").write_text(allowlist, encoding="utf-8")
     if surface is not None:
         (data / "surface.json").write_text(json.dumps(surface), encoding="utf-8")
     for version, text in changes.items():
@@ -346,8 +344,6 @@ def _args(root: Path) -> list[str]:
         str(root / "docs" / "migration"),
         "--json",
         str(root / "docs" / "data" / "migration.json"),
-        "--allowlist",
-        str(root / "allowlist.toml"),
     ]
 
 
@@ -461,10 +457,10 @@ def test_build_migration_docs_outputs(tmp_path: Path, capsys: pytest.CaptureFixt
     assert_output("\n".join(output))
 
 
-UNCHANGED = {"surface": REGISTRIES.surface, "allowlist": ALLOWLIST.replace("0.4.0", "0.3.0")}
+UNCHANGED = {"surface": REGISTRIES.surface}
 INVALID_SURFACES = {
-    "surface and allowlist": {"surface": RELEASED_SURFACE, "allowlist": ALLOWLIST},
-    "no surface": {"surface": None, "allowlist": ALLOWLIST},
+    "surface of the latest release": {"surface": RELEASED_SURFACE},
+    "no surface": {"surface": None},
     "surface without released facts": {"surface": {key: RELEASED_SURFACE[key] for key in ("options", "templates")}},
     "released facts changed": {
         "surface": RELEASED_SURFACE
@@ -476,7 +472,7 @@ INVALID_SURFACES = {
     },
 }
 INVALID_CASES = {
-    "surface and allowlist": (
+    "surface of the latest release": (
         {},
         {
             "other-flag": """
@@ -489,7 +485,23 @@ summary = "s"
 affects = { options = ["--other-flag"] }
 refs = ["#1"]
 source = "release-note"
-"""
+""",
+            "cells-unreleased-flag": """
+[[change]]
+id = "cells-unreleased-flag"
+category = "output-text"
+kind = "output-text"
+action = "none"
+title = "t"
+summary = "s"
+refs = ["#1"]
+source = "release-note"
+
+[[change.cells]]
+input = ["tests/data/jsonschema/a.json"]
+backends = ["msgspec.Struct"]
+options = [["--new-flag"], ["--output-model-type", "c"], ["--output-model-type", "b"]]
+""",
         },
         None,
         DERIVED,
@@ -721,6 +733,15 @@ refs = ["#1"]
 source = "run"
 """,
             "bad-decision": '[[change]]\nid = "bad-decision"\ncategory = "internal"\ntitle = "t"\ndecision = ["5"]\n',
+            "cells-of-harness": (
+                '[[change]]\nid = "cells-of-harness"\ncategory = "harness"\ntitle = "t"\nsummary = "s"\n' + CELLS_TABLE
+            ),
+            "cells-unknown-key": '[[change]]\nid = "cells-unknown-key"\ncategory = "internal"\ntitle = "t"\n'
+            + CELLS_TABLE.replace("match", "colour"),
+            "cells-inline": (
+                '[[change]]\nid = "cells-inline"\ncategory = "docs-text"\ntitle = "t"\n'
+                'cells = [{ input = ["a.json"], backends = "*", options = "*" }]\n'
+            ),
         },
         None,
         DERIVED,
@@ -854,15 +875,16 @@ def _tag_registries(data: Path, package: Path) -> Registries:
 def test_build_migration_docs_stamp(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A stamp moves the fragments the tag contains, adds the release and the preset dates the tag first ships.
 
-    A moved entry loses its covers; records without a guide entry and records that extend another are deleted. A tag
-    tree whose fragment differs from the branch's, whose surface cannot be read, or that lacks an experimental feature
-    whose `since_version` is the stamped release is refused before anything is written, so the stamp runs again once
-    the tree is right.
+    A moved entry loses its covers and cells; records without a guide entry and records that extend another are
+    deleted. A tag tree whose fragment differs from the branch's, whose surface cannot be read, or that lacks an
+    experimental feature whose `since_version` is the stamped release is refused before anything is written, so the
+    stamp runs again once the tree is right.
     """
     shipped = {
         "covered-template-root": UNRELEASED["custom-template-root"]
         .replace("custom-template-root", "covered-template-root")
-        .replace('source = "release-note"\n', 'source = "release-note"\ncovers = [\n    "main/template.py",\n]\n'),
+        .replace('source = "release-note"\n', 'source = "release-note"\ncovers = [\n    "main/template.py",\n]\n')
+        + CELLS_TABLE,
         "new-flag": RECORDS["new-flag"],
         "more-new-flag-outputs": RECORDS["more-new-flag-outputs"],
     }

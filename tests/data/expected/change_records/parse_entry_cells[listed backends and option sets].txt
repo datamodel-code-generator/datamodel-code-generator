@@ -1,0 +1,26 @@
+{
+ "cells": [
+  {
+   "input": [
+    "tests/data/jsonschema/plain.json"
+   ],
+   "backends": [
+    "msgspec.Struct",
+    "pydantic_v2.BaseModel"
+   ],
+   "options": [
+    [],
+    [
+     "--use-annotated"
+    ]
+   ],
+   "input_file_type": "openapi",
+   "aspects": [
+    "type",
+    "exit"
+   ],
+   "match": "^\\[type\\]"
+  }
+ ],
+ "problems": []
+}

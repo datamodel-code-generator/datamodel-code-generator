@@ -1,0 +1,3 @@
+[
+ "entry x: a released entry names no cells; the stamp drops them"
+]

@@ -1,0 +1,6 @@
+{
+ "cells": null,
+ "problems": [
+  "entry x: cells 1: aspects is not a non-empty list of strings"
+ ]
+}

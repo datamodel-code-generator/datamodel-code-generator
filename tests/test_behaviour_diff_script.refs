@@ -35,6 +35,18 @@ valid	behaviour_diff_script/base_skip_problems[valid].txt	= main/generation_plat
 versions	behaviour_diff_script/base_skip_problems[versions].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 [test_candidate_payload_path_does_not_import_the_guide_builder]
 	behaviour_diff_script/candidate_payload_path_does_not_import_the_guide_builder.txt
+[test_change_lines]
+a message line added	behaviour_diff_script/change_lines[a message line added].txt
+a message line removed	behaviour_diff_script/change_lines[a message line removed].txt
+a warning added and one removed	behaviour_diff_script/change_lines[a warning added and one removed].txt
+a warning removed	behaviour_diff_script/change_lines[a warning removed].txt
+behaviour changes, a new name left out	behaviour_diff_script/change_lines[behaviour changes, a new name left out].txt
+nothing differs	behaviour_diff_script/change_lines[nothing differs].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+the exit status	behaviour_diff_script/change_lines[the exit status].txt
+the message lines in another order	behaviour_diff_script/change_lines[the message lines in another order].txt
+the warnings in another order	behaviour_diff_script/change_lines[the warnings in another order].txt
+[test_change_refuses_an_aspect_the_records_cannot_name]
+	behaviour_diff_script/change_refuses_an_aspect_the_records_cannot_name.txt
 [test_classify_base_skipped]
 generated	behaviour_diff_script/classify_base_skipped[generated].txt
 generation_fails	behaviour_diff_script/classify_base_skipped[generation_fails].txt
@@ -100,6 +112,22 @@ ge-class	behaviour_diff_script/constraint_spellings[ge-class].txt
 interval	behaviour_diff_script/constraint_spellings[interval].txt
 len	behaviour_diff_script/constraint_spellings[len].txt
 string-constraints	behaviour_diff_script/constraint_spellings[string-constraints].txt
+[test_covers]
+a file below a folder by **	behaviour_diff_script/covers[a file below a folder by __].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+a folder's file by *	behaviour_diff_script/covers[a folder's file by _].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+a listed backend	behaviour_diff_script/covers[a listed backend].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+a listed option set	behaviour_diff_script/covers[a listed option set].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+a part by a pattern	behaviour_diff_script/covers[a part by a pattern].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+an option set in another order	behaviour_diff_script/covers[an option set in another order].txt
+an unlisted backend	behaviour_diff_script/covers[an unlisted backend].txt	= behaviour_diff_script/covers[an option set in another order].txt
+another input file	behaviour_diff_script/covers[another input file].txt	= behaviour_diff_script/covers[an option set in another order].txt
+another input file type	behaviour_diff_script/covers[another input file type].txt	= behaviour_diff_script/covers[an option set in another order].txt
+every option set	behaviour_diff_script/covers[every option set].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+not a file below a folder by *	behaviour_diff_script/covers[not a file below a folder by _].txt	= behaviour_diff_script/covers[an option set in another order].txt
+the default option set	behaviour_diff_script/covers[the default option set].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+the folder itself by **	behaviour_diff_script/covers[the folder itself by __].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+the input file	behaviour_diff_script/covers[the input file].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+the input file type	behaviour_diff_script/covers[the input file type].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 [test_example_value]
 all_of_merged	behaviour_diff_script/example_value[all_of_merged].txt
 any	behaviour_diff_script/example_value[any].txt
@@ -140,8 +168,8 @@ identity_keeps_a_moved_warning_and_error	behaviour_diff_script/gate_against_a_gi
 	behaviour_diff_script/gate_shards_judge_the_stale_entries_of_an_unsharded_run.txt
 [test_gate_skips_the_release_on_a_listed_input]
 	behaviour_diff_script/gate_skips_the_release_on_a_listed_input.txt
-[test_guide_changes_are_built_not_read_from_the_repository]
-	behaviour_diff_script/guide_changes_are_built_not_read_from_the_repository.txt
+[test_guide_names_accepted_changes_by_the_records]
+	behaviour_diff_script/guide_names_accepted_changes_by_the_records.txt
 [test_guide_writes_the_page_of_gate_cells]
 	behaviour_diff_script/guide_writes_the_page_of_gate_cells.txt
 [test_identity_compares_the_output_of_runs_that_fail_alike]
@@ -152,6 +180,46 @@ changed_branch_no_cell_takes	behaviour_diff_script/identity_evidence_oracle[chan
 no_input_matches_the_selection	behaviour_diff_script/identity_evidence_oracle[no_input_matches_the_selection].txt
 [test_identity_refuses_a_shard]
 	behaviour_diff_script/identity_refuses_a_shard.txt
+[test_judge]
+a decision beside a failing output-text record	behaviour_diff_script/judge[a decision beside a failing output-text record].txt
+a failing output-text record beside a notice that admits nothing of the cell	behaviour_diff_script/judge[a failing output-text record beside a notice that admits nothing of the cell].txt
+a harness record	behaviour_diff_script/judge[a harness record].txt
+a record without a category	behaviour_diff_script/judge[a record without a category].txt	= behaviour_diff_script/judge[a harness record].txt
+api for a removed option it does not name	behaviour_diff_script/judge[api for a removed option it does not name].txt
+api for a removed option it names	behaviour_diff_script/judge[api for a removed option it names].txt
+crash-fix holds	behaviour_diff_script/judge[crash-fix holds].txt
+crash-fix on a cell that now fails	behaviour_diff_script/judge[crash-fix on a cell that now fails].txt
+crash-fix on a cell that was no crash	behaviour_diff_script/judge[crash-fix on a cell that was no crash].txt
+decided-change inside its aspects and match	behaviour_diff_script/judge[decided-change inside its aspects and match].txt	= behaviour_diff_script/judge[a decision beside a failing output-text record].txt
+decided-change on a no-behaviour cell	behaviour_diff_script/judge[decided-change on a no-behaviour cell].txt	= behaviour_diff_script/judge[a decision beside a failing output-text record].txt
+decided-change with a line outside its aspects	behaviour_diff_script/judge[decided-change with a line outside its aspects].txt
+decided-change with a line outside its match	behaviour_diff_script/judge[decided-change with a line outside its match].txt
+decided-change with lines its two selectors match	behaviour_diff_script/judge[decided-change with lines its two selectors match].txt	= behaviour_diff_script/judge[a decision beside a failing output-text record].txt
+experimental by its input type	behaviour_diff_script/judge[experimental by its input type].txt
+experimental by its option, an equal companion	behaviour_diff_script/judge[experimental by its option, an equal companion].txt	= behaviour_diff_script/judge[experimental by its input type].txt
+experimental whose companion differs	behaviour_diff_script/judge[experimental whose companion differs].txt
+experimental without its feature in the cell	behaviour_diff_script/judge[experimental without its feature in the cell].txt
+no record	behaviour_diff_script/judge[no record].txt
+no selector covers the cell	behaviour_diff_script/judge[no selector covers the cell].txt	= behaviour_diff_script/judge[no record].txt
+notice inside its match	behaviour_diff_script/judge[notice inside its match].txt
+notice on an exit difference too	behaviour_diff_script/judge[notice on an exit difference too].txt
+notice outside its match	behaviour_diff_script/judge[notice outside its match].txt
+output-text against rule (b)	behaviour_diff_script/judge[output-text against rule (b)].txt
+output-text and notice on a text change with a warning	behaviour_diff_script/judge[output-text and notice on a text change with a warning].txt
+output-text holds	behaviour_diff_script/judge[output-text holds].txt
+output-text on a behaviour change	behaviour_diff_script/judge[output-text on a behaviour change].txt	= behaviour_diff_script/judge[a failing output-text record beside a notice that admits nothing of the cell].txt
+output-text on a non-model file	behaviour_diff_script/judge[output-text on a non-model file].txt
+output-text on a warning too	behaviour_diff_script/judge[output-text on a warning too].txt
+output-text with differing payload cells	behaviour_diff_script/judge[output-text with differing payload cells].txt
+output-text without a signature	behaviour_diff_script/judge[output-text without a signature].txt
+[test_kinds]
+a file's hash	behaviour_diff_script/kinds[a file's hash].txt
+equal	behaviour_diff_script/kinds[equal].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+everything	behaviour_diff_script/kinds[everything].txt
+the exit status	behaviour_diff_script/kinds[the exit status].txt
+the file set	behaviour_diff_script/kinds[the file set].txt	= behaviour_diff_script/kinds[a file's hash].txt
+the other facts	behaviour_diff_script/kinds[the other facts].txt
+the warnings	behaviour_diff_script/kinds[the warnings].txt
 [test_meta_items_drop_memory_addresses]
 builtin	behaviour_diff_script/meta_items_drop_memory_addresses[builtin].txt
 dataclass-address-dropped	behaviour_diff_script/meta_items_drop_memory_addresses[dataclass-address-dropped].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
@@ -201,6 +269,23 @@ shard_1_holds_the_entries	behaviour_diff_script/report_stale_entries_of_a_shard[
 shard_1_without_the_entries	behaviour_diff_script/report_stale_entries_of_a_shard[shard_1_without_the_entries].txt
 shard_2_entries_cover_no_cell	behaviour_diff_script/report_stale_entries_of_a_shard[shard_2_entries_cover_no_cell].txt
 shard_2_holds_the_entries	behaviour_diff_script/report_stale_entries_of_a_shard[shard_2_holds_the_entries].txt
+[test_rule_b]
+a Config class key	behaviour_diff_script/rule_b[a Config class key].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a class keyword the signature does not list	behaviour_diff_script/rule_b[a class keyword the signature does not list].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a configuration dictionary	behaviour_diff_script/rule_b[a configuration dictionary].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a configuration dictionary that unpacks another	behaviour_diff_script/rule_b[a configuration dictionary that unpacks another].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a configuration key the signature does not list	behaviour_diff_script/rule_b[a configuration key the signature does not list].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a configuration key the signature lists	behaviour_diff_script/rule_b[a configuration key the signature lists].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+a configuration of a name	behaviour_diff_script/rule_b[a configuration of a name].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a decorator, the signatures equal	behaviour_diff_script/rule_b[a decorator, the signatures equal].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a default factory's body, the signatures equal	behaviour_diff_script/rule_b[a default factory's body, the signatures equal].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a field default spelled otherwise, the signatures equal	behaviour_diff_script/rule_b[a field default spelled otherwise, the signatures equal].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+a field type, the signatures differ	behaviour_diff_script/rule_b[a field type, the signatures differ].txt	= behaviour_diff_script/covers[an option set in another order].txt
+a validator's body, the signatures equal	behaviour_diff_script/rule_b[a validator's body, the signatures equal].txt	= behaviour_diff_script/covers[an option set in another order].txt
+docstrings and comments	behaviour_diff_script/rule_b[docstrings and comments].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+same text	behaviour_diff_script/rule_b[same text].txt	= main/generation_platform/api_scope/leaf-mapping.txt
+text that does not parse	behaviour_diff_script/rule_b[text that does not parse].txt	= behaviour_diff_script/covers[an option set in another order].txt
+the order of the imports	behaviour_diff_script/rule_b[the order of the imports].txt	= main/generation_platform/api_scope/leaf-mapping.txt
 [test_shard_argument_and_shard_part_records]
 	behaviour_diff_script/shard_argument_and_shard_part_records.txt
 [test_signature]

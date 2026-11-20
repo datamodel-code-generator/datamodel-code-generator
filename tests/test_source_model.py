@@ -22,6 +22,7 @@ import tomllib
 from coverage.config import DEFAULT_EXCLUDE
 from coverage.python import PythonParser
 
+from scripts import _behaviour_classify as behaviour_classify
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import (
@@ -1023,6 +1024,18 @@ def _defined_tests(form: Path) -> list[Finding]:
     ]
 
 
+def _rule_b_of_unparsed_text(form: Path) -> list[Finding]:
+    """Return the modules of a form that rule (b) does not hold between: the text and its unparsed form.
+
+    Unparsing drops the comments and the layout and keeps the tree, so rule (b) holds by its first clause.
+    """
+    return [
+        Finding("rule-b", _site(form, name, 1), f"{name}: rule (b) refuses the module's unparsed text")
+        for name, text in _form_files(form)
+        if not behaviour_classify.rule_b(text, ast.unparse(ast.parse(text)), signature_equal=False)
+    ]
+
+
 def _typing_only_parts(form: Path) -> list[Finding]:
     """Return the code tokens of a form that `scripts/_change_units.py` gives no unit: those only type checkers read.
 
@@ -1112,6 +1125,9 @@ RULES: dict[str, RuleRun] = {
     ),
     "change-units-typing-only": RuleRun(
         "scripts._change_units", frozenset({"references", "extents"}), _typing_only_parts
+    ),
+    "rule-b": RuleRun(
+        "scripts._behaviour_classify", frozenset({"bindings", "imports", "references"}), _rule_b_of_unparsed_text
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""

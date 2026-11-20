@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "notice (notice): a warning or message line is outside its match: ['[warning] added UserWarning: other']"
+ ],
+ "accepted_by": []
+}
