@@ -383,12 +383,10 @@ class Oracle:
 
 
 def _edit(text: str, *changes: tuple[str, str]) -> str:
-    """Return `text` with each `(old, new)` change made once; an `old` the text does not hold is a broken case."""
+    """Return `text` with each `(old, new)` change made; an `old` the text holds other than once raises ValueError."""
     for old, new in changes:
-        if text.count(old) != 1:
-            msg = f"{old!r} occurs {text.count(old)} times"
-            raise ValueError(msg)
-        text = text.replace(old, new)
+        before, after = text.split(old)
+        text = before + new + after
     return text
 
 
@@ -1016,6 +1014,87 @@ def f3(value):
 def f4(value):
     return value + "4"
 """
+LAMBDAS_ON_ONE_LINE = """def run(spec):
+    first, second = (lambda value: value.lower()), (lambda value: value.lower())
+    return second(spec["value"]) if spec.get("reach") else first(spec["value"])
+"""
+LABELLED = """LABEL = "a"
+
+
+def other(value):
+    return value if LABEL else ""
+
+
+def render(value):
+    return LABEL + value
+"""
+CALLS_RENDER = """import datamodel_code_generator._b
+from datamodel_code_generator import _a
+
+
+def run(spec):
+    if spec.get("reach"):
+        return _a.render(spec["value"])
+    return _a.other(spec["value"]) if callable(_a.render) else ""
+"""
+READ_BY_ANOTHER_CALL = """class Base:
+    LIMIT = 1
+
+    def render(self, read):
+        return str(self.LIMIT) if read else ""
+
+
+class Child(Base):
+    LIMIT = 3
+
+
+def run(spec):
+    Base().render(False)
+    Child().render(True)
+    if spec.get("reach"):
+        return Base().render(True) + spec["value"]
+    return spec["value"]
+"""
+IMPORTS_TWO_IN_ONE_STATEMENT = """def run(spec):
+    if spec.get("fail"):
+        from datamodel_code_generator import _lazy, _other
+    else:
+        from datamodel_code_generator import _other
+    return spec["value"]
+"""
+TABLE_AT_IMPORT = """import json
+from pathlib import Path
+
+TABLE = json.loads(Path(__file__).with_name("resources").joinpath("table.json").read_text(encoding="utf-8"))
+"""
+IMPORTS_TABLE = """def run(spec):
+    if spec.get("reach"):
+        from datamodel_code_generator import _table
+
+        return str(_table.TABLE["a"]) + spec["value"]
+    return spec["value"]
+"""
+DOCUMENTED_AND_READ = (
+    DOCUMENTED
+    + """
+
+def doc():
+    import pydoc
+
+    return pydoc.getdoc(unused)
+"""
+)
+READ_BY_TYPE_CHECKERS = """from typing import TYPE_CHECKING, Literal
+
+LIMIT = 1
+
+if TYPE_CHECKING:
+    Alias = Literal[LIMIT]
+
+
+def run(spec):
+    return spec["value"]
+"""
 EVERY_ORDER = (("complete", ("failed.json", "plain.json")), ("complete", ("plain.json", "failed.json")))
 """Both orders of a compared run and a run that fails on both sides, which runs the change first in one of them."""
 ORACLES: dict[str, Oracle] = {
@@ -1243,8 +1322,38 @@ ORACLES: dict[str, Oracle] = {
     "r3_s3_docstring_of_a_function_no_run_calls": _changed(
         DOCUMENTED, ("Return the value.", "Return the given value."), runs=NO_UNIT
     ),
+    "r4_lambdas_on_one_line": _changed(
+        LAMBDAS_ON_ONE_LINE, ("(lambda value: value.lower())\n", "(lambda value: value.casefold())\n")
+    ),
+    "r4_moved_function_reads_another_module_s_binding": Oracle(
+        {"_a.py": LABELLED, "_b.py": 'LABEL = "b"\n', "_case.py": CALLS_RENDER},
+        {
+            "_a.py": "from datamodel_code_generator._b import render  # noqa: F401\n\n"
+            + _edit(LABELLED[: LABELLED.index("def render")].rstrip() + "\n", ('"a"', '"c"')),
+            "_b.py": 'LABEL = "b"\n\n\n' + LABELLED[LABELLED.index("def render") :],
+        },
+        (("incomplete", PLAIN), ("differ", REACHED)),
+    ),
+    "r4_receiver_of_another_call": _changed(
+        READ_BY_ANOTHER_CALL, ("    LIMIT = 1\n", "    LIMIT = 2\n"), runs=(("incomplete", PLAIN), ("differ", REACHED))
+    ),
+    "r4_sibling_imported_by_the_same_statement": Oracle(
+        {"_lazy.py": LAZY, "_other.py": 'VALUE = "y"\n', "_case.py": IMPORTS_TWO_IN_ONE_STATEMENT},
+        {"_lazy.py": _edit(LAZY, ('a="x"', 'a=str("x")'))},
+        (("incomplete", ("failed.json", "plain.json")),),
+    ),
+    "r4_resource_read_by_a_module_s_import": Oracle(
+        {"resources/table.json": '{"a": 1}\n', "_table.py": TABLE_AT_IMPORT, "_case.py": IMPORTS_TABLE},
+        {"resources/table.json": '{"a": 1, "b": 2}\n'},
+    ),
+    "r4_docstring_reader_called_on_its_module": _changed(
+        DOCUMENTED_AND_READ, ("Return the value.", "Return the given value.")
+    ),
+    "r4_binding_read_only_by_type_checkers": _changed(
+        READ_BY_TYPE_CHECKERS, ("LIMIT = 1", "LIMIT = 2"), runs=(("complete", PLAIN),)
+    ),
 }
-"""The shapes of the four oracle reviews of C3 and of its design, each with the verdict it must give."""
+"""The shapes of the oracle reviews of C3 and of its design, each with the verdict it must give."""
 
 
 def _oracle_project(tmp_path: Path, oracle: Oracle) -> tuple[Path, list[str]]:
@@ -1291,13 +1400,12 @@ def _oracle_project(tmp_path: Path, oracle: Oracle) -> tuple[Path, list[str]]:
 def _verdict(code: int, stdout: str) -> str:
     """Return the verdict a run gave: `complete`, `incomplete`, `differ`, or its exit status where it gave none."""
     lines = stdout.splitlines()
-    if code == 0 and "evidence: complete" in lines:
-        return "complete"
-    if code == 1 and any(line.startswith("summary:") and "differ=0," not in line for line in lines):
-        return "differ"
-    if code == 1 and any(line.startswith("evidence: incomplete") for line in lines):
-        return "incomplete"
-    return f"exit={code}"
+    shown = {
+        "complete": code == 0 and "evidence: complete" in lines,
+        "differ": code == 1 and any(line.startswith("summary:") and "differ=0," not in line for line in lines),
+        "incomplete": code == 1 and any(line.startswith("evidence: incomplete") for line in lines),
+    }
+    return next((verdict for verdict, holds in shown.items() if holds), f"exit={code}")
 
 
 @pytest.mark.allow_direct_assert(

@@ -653,21 +653,23 @@ token, so a comment, a blank line or a reformatted line changes nothing, and a c
 it runs: an arm of a conditional expression, an operand of `and`/`or`, a part of a comprehension, a `case` after the
 first (or the alternative of a pattern) that a run tried. A change of a signature, a decorator or a default needs the
 function to start; a change of a module- or class-level value needs a read of the name it binds (through any import or
-re-export; `kind.LIMIT` on a variable counts where the object it names finds `LIMIT` in that class, and a read on a
-receiver no run can tell never counts), or, for a name nothing reads, the import; a change of a class as a whole (its
-header, the order of its fields) needs a read of the class name; a removed private function nothing in the base
-package names needs nothing (`removed, unreferenced on base`). Code only type checkers read (`if TYPE_CHECKING:`
-bodies, `@overload` stubs, `@override`/`@final`, local and postponed function annotations) and a function's docstring
-give no code object to run, a statement moved unchanged (with every name it reads leading to the same place, and in a
-class body with its place among the fields kept) gives none either, and a
-changed `resources/*.json`, a template without a compiled renderer or a file of `_runtime/` has to be read by a
-compared run. What a module's import ran counts for every cell that imports the module, and a `functools` cache
-whose computation in another cell ran changed code is computed again, so the order of the cells does not decide what
-ran. The workers of both sides measure (Python 3.12 or later). Evidence that compared nothing never reads as
-identical: the comparison fails where the inputs matched nothing, an input group compared nothing, or a changed code
-object ran in no compared run on its side, is unmeasurable or could not be measured, and names each with the probes
-that did not run; pass the test suite's coverage data file with `--test-coverage` to tell those the tests ran.
-Identity judges the whole run, so it refuses `--shard`.
+re-export; `kind.LIMIT` or `self.LIMIT` counts where the object it is read on finds `LIMIT` in that class, a read on a
+receiver no run can tell never counts, and a read only type checkers run is none), or, for a name nothing reads, the
+import; a change of a class as a whole (its header, the order of its fields) needs a read of the class name; a removed
+private function nothing in the base package names needs nothing (`removed, unreferenced on base`). Code only type
+checkers read (`if TYPE_CHECKING:` bodies, `@overload` stubs, `@override`/`@final`, local function annotations) gives no
+code object to run, and neither do postponed function annotations and a function's docstring while the package reads
+them nowhere but at the sites `READER_SITES` and `DOC_READER_SITES` list (otherwise the run prints where, and they
+count); a statement moved unchanged (with every name it reads leading to the same place, and in a class body with its
+place among the fields kept) gives none either, and a changed `resources/*.json`, a template without a compiled renderer
+or a file of `_runtime/` has to be read by a compared run (a read that a module's import runs counts too). What a
+module's import ran counts for every cell that imports the module, and a `functools` cache whose computation in another
+cell ran changed code is computed again, so the order of the cells does not decide what ran. The workers of both sides
+measure (Python 3.12 or later). Evidence that compared nothing never reads as identical: the comparison fails where the
+inputs matched nothing, an input group compared nothing, or a changed code object ran in no compared run on its side, is
+unmeasurable or could not be measured, and names each with the probes that did not run; pass the test suite's coverage
+data file with `--test-coverage` to tell those whose probes lie on lines the tests ran (line coverage, which does not
+tell which part of a line ran). Identity judges the whole run, so it refuses `--shard`.
 
 ## Calibrating the option recommender
 

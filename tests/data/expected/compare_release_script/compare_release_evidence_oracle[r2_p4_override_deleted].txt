@@ -2,7 +2,7 @@ plain.json: exit=1
 summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 1
 evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
-evidence: changed code objects: head 0, base 2; run by a compared cell 1/2; run by a test only 0; not run 1/2; unmeasurable 0
+evidence: changed code objects: head 0, base 2; run by a compared cell 1/2; on lines a test ran 0; not run 1/2; unmeasurable 0
 evidence: not run: base _case.py Child.label: start 10:4-10:4; instr 11:8-11:25; instr 11:15-11:18; instr 11:15-11:25; instr 11:19-11:24
 evidence: incomplete: changed code objects no compared cell ran: 1
 
@@ -10,5 +10,5 @@ reached.json: exit=0
 summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 1
 evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
-evidence: changed code objects: head 0, base 2; run by a compared cell 2/2; run by a test only 0; not run 0/2; unmeasurable 0
+evidence: changed code objects: head 0, base 2; run by a compared cell 2/2; on lines a test ran 0; not run 0/2; unmeasurable 0
 evidence: complete

@@ -185,9 +185,9 @@ class Probe:
     """What must run, on its side, for a unit to count: one of its kinds.
 
     ``start`` (the code object starts), ``instr`` (one of ``offsets`` of the code object runs), ``read`` (the file is
-    opened outside the import system), ``readers`` (one of ``readers`` runs, each an ``instr`` probe that may also need
-    its method to start with a receiver whose class finds the attribute in a class, ``receiver``, or with ``chain``
-    its instruction to run while the object that name and attribute chain names finds it there), ``unmeasurable``.
+    opened outside the import system), ``readers`` (one of ``readers`` runs, each an ``instr`` probe that may also need,
+    with ``chain``, its instruction to run while the object that name and attribute chain names finds the attribute
+    in the class ``receiver``), ``unmeasurable``.
     ``code`` keys a code object: path below the package, ``co_qualname``, ``co_firstlineno`` and the position of its
     first instruction. ``where`` is the source span the probe stands for.
     """
@@ -505,11 +505,8 @@ class Moves:
         if before[0] != "package":
             return False
         statement = self.by_line.get(("base", before[1], int(before[3])))
-        return statement is not None and self.pairs.get(id(statement)) is self.by_line.get((
-            "head",
-            after[1],
-            int(after[3]),
-        ))
+        partner = self.pairs.get(id(statement)) if statement is not None else None
+        return partner is not None and partner is self.by_line.get(("head", after[1], int(after[3])))
 
     def moved_lines(self, side: str) -> dict[str, set[int]]:
         """Return the lines of the paired statements of a side, by path."""
@@ -738,9 +735,21 @@ def _same_probe(one: Probe, other: Probe) -> bool:
 
 
 def first_position(code: CodeType) -> tuple[int, int]:
-    """Return the line and column of a code object's first positioned instruction, which tells apart two lambdas."""
+    """Return where a code object's first instruction with a source span starts, which tells apart two lambdas.
+
+    The instructions before it (``RESUME``, a generator's setup) have no span or an empty one at column 0, alike for
+    every code object that starts on the line; the first span lies in the code object's own source.
+    """
     return next(
-        ((line, column) for line, _, column, _ in code.co_positions() if line is not None and column is not None),
+        (
+            (line, column)
+            for line, last, column, end in code.co_positions()
+            if line is not None
+            and last is not None
+            and column is not None
+            and end is not None
+            and (last, end) > (line, column)
+        ),
         (0, 0),
     )
 
@@ -937,8 +946,13 @@ def _attribute_chain(node: ast.expr, references: dict[int, Reference]) -> list[s
 
 
 def _run_time(reference: Reference) -> bool:
-    """Whether a read runs: not one of a name in a string, a postponed or a never evaluated annotation."""
-    return reference.annotation in {"", "evaluated"}
+    """Whether a read runs: not one of a name in a string, a postponed or a never evaluated annotation.
+
+    Nor one only type checkers run (in the body of a ``TYPE_CHECKING`` test, `Import.typing_only`'s rule).
+    """
+    return reference.annotation in {"", "evaluated"} and not any(
+        condition.kind == "type-checking" and condition.branch == "body" for condition in reference.guard
+    )
 
 
 class Readers:
@@ -947,10 +961,9 @@ class Readers:
     A reader is a load of the name the binding defines, followed through imports and re-exports to it
     (`SourceTree.definition`): in its own scope, in any module or function that imports it (``from m import NAME``,
     under any name a re-export gives it), as an attribute ``m.NAME`` or ``C.X``. A class attribute is also read as
-    ``self.X``/``cls.X`` in a method, which counts where the method starts with a receiver whose class finds ``X`` in
-    that class, and as ``v.X`` on any other name or attribute chain ``v``, which counts where the instruction runs while
-    the object ``v`` names finds ``X`` in that class. A read of ``X`` on any other receiver (a call, a subscript) is
-    a reader no run credits.
+    ``v.X`` on a name or attribute chain ``v`` (``self.X``/``cls.X`` in a method too), which counts where the
+    instruction runs while the object ``v`` names finds ``X`` in that class. A read of ``X`` on any other receiver (a
+    call, a subscript) is a reader no run credits.
     """
 
     def __init__(self, side: Side) -> None:
@@ -1053,7 +1066,7 @@ class Readers:
                 if (origin := other_model.origin(node)) is not None and dotted in self.canonical(origin):
                     loads.append((other, node, None))
                 elif scope.kind == "class" and (check := self._check(other_model, node, references)) is not None:
-                    reader = self._reader(other, node, [module, scope.qualname, name], check or None)
+                    reader = self._reader(other, node, [module, scope.qualname, name], check)
                     found += reader
                     unknown += not reader
         for where, node, reference in loads:
@@ -1066,15 +1079,10 @@ class Readers:
     def _check(self, model: SourceModule, node: ast.Attribute, references: dict[int, Reference]) -> list[str] | None:
         """Return how a run tells that an attribute read reads a class attribute; None where it reads no class's.
 
-        ``[]``: the method's receiver (``self``/``cls``) at its start. A name or attribute chain: the object it names
-        where the read runs. ``["?"]``: no run can tell (a call, a subscript). None: the receiver is a module or
-        something outside the package.
+        A name or attribute chain (a method's ``self``/``cls`` too): the object it names where the read runs, so the
+        read that runs is the one checked. ``["?"]``: no run can tell (a call, a subscript). None: the receiver is a
+        module or something outside the package.
         """
-        reference = references.get(id(node.value))
-        if reference is not None and (resolved := model.resolve(reference.node)).scope is not None:
-            receiver = model.receiver(resolved.scope)
-            if receiver is not None and any(binding is receiver for binding in resolved.bindings):
-                return []
         origin = model.origin(node.value)
         if origin is not None and any(
             lead in self.side.tree.paths or lead.partition(".")[0] != PACKAGE for lead in self.canonical(origin)
@@ -1284,7 +1292,8 @@ def doc_readers(side: Side) -> list[str]:
 def reader_sites(side: Side, kind: Sites | None = None) -> dict[tuple[str, str], list[int]]:
     """Return the code of a side's package that may read annotations (or `kind`) at run time, by path and qualname.
 
-    A site is a reference to a reader (`ANNOTATION_READERS`, ``annotationlib``), a read of a name the reader reads
+    A site is a reference to a reader (`ANNOTATION_READERS`, anything of ``annotationlib``), by its name or as an
+    attribute of its module (``annotationlib.get_annotations``), a read of a name the reader reads
     (``__annotations__``/``__annotate__``: a name, an attribute or a string, as ``getattr`` takes it). Each site has
     its lines.
     """
@@ -1311,7 +1320,11 @@ def reader_sites(side: Side, kind: Sites | None = None) -> dict[tuple[str, str],
             if (
                 isinstance(node, ast.Attribute)
                 and isinstance(node.ctx, ast.Load)
-                and (node.attr in kind.names or (model.origin(node) or "") in kind.readers)
+                and (
+                    node.attr in kind.names
+                    or (origin := model.origin(node) or "") in kind.readers
+                    or origin.startswith(kind.modules)
+                )
             )
             or (isinstance(node, ast.Constant) and node.value in kind.names)
         ]

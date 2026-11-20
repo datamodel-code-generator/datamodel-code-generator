@@ -1,0 +1,17 @@
+plain.json: exit=1
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: changed code objects: head 3, base 2; run by a compared cell 3/5; on lines a test ran 0; not run 2/5; unmeasurable 0
+evidence: not run: base _a.py render: start 8:0-8:0; instr 9:4-9:24; instr 9:11-9:16; instr 9:11-9:24; instr 9:19-9:24
+evidence: not run: head _b.py render: start 4:0-4:0; instr 5:4-5:24; instr 5:11-5:16; instr 5:11-5:24; instr 5:19-5:24
+evidence: incomplete: changed code objects no compared cell ran: 2
+
+reached.json: exit=1
+differ: reached.json | pydantic_v2.BaseModel | default
+summary: identical=0, differ=1, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
+evidence: changed code objects: head 3, base 2; run by a compared cell 4/5; on lines a test ran 0; not run 1/5; unmeasurable 0
+evidence: not run: head _a.py <module>: readers 3:0-3:11
+evidence: incomplete: changed code objects no compared cell ran: 1

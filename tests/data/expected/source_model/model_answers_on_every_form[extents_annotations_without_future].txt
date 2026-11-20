@@ -14,13 +14,13 @@ line 7: FunctionDef@7; owner convert#0; tokens convert#0:header
 line 8: AnnAssign@8; owner convert#0; tokens convert#0:body
 line 9: Return@9; owner convert#0; tokens convert#0:body
 header convert: 7
-source @1: """C3 (scripts/_change_units.py): without the future import a function's annotations run; a local one never does.
+source @1: """C3 (scripts/_change_units.py): without the future import a function's annotations may run; a local one never does.
 
 segments: yes
 """
 source @8: local: int = value
 source @9: return local
-token 1:0 '"""C3 (scripts/_change_units.py): without the future import a function\'s annotations run; a local one never does.\n\nsegments: yes\n"""': statement 1:0-4:3; header -; node Constant 1:0-4:3; typing-only -
+token 1:0 '"""C3 (scripts/_change_units.py): without the future import a function\'s annotations may run; a local one never does.\n\nsegments: yes\n"""': statement 1:0-4:3; header -; node Constant 1:0-4:3; typing-only -
 token 7:0 'def': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
 token 7:4 'convert': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
 token 7:11 '(': statement 7:0-9:16; header convert#0; node FunctionDef 7:0-9:16; typing-only -
