@@ -19534,8 +19534,6 @@ def test_main_jsonschema_openapi_keyword_only_msgspec_with_extra_data(tmp_path: 
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_literals.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="discriminator_literals_msgspec_keyword_only_omit_defaults.py",
         output_model_type=DataModelType.MsgspecStruct,
         keyword_only=True,
         target_python_version=PythonVersionMin,
@@ -19553,8 +19551,6 @@ def test_main_msgspec_discriminator_with_type_string(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_with_type_string.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="discriminator_with_type_string_msgspec.py",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -19570,8 +19566,6 @@ def test_main_msgspec_discriminator_mapping_tags(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_msgspec_tags.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="discriminator_mapping_msgspec_tags.py",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -19591,8 +19585,6 @@ def test_main_msgspec_discriminator_const_enum(output_file: Path, extra_args: li
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_const_enum_msgspec.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="discriminator_const_enum_msgspec.py",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -19718,18 +19710,17 @@ def test_main_msgspec_nullable_enum(output_file: Path, extra_args: list[str], ex
 
 
 @pytest.mark.parametrize(
-    ("extra_args", "expected_file"),
+    ("extra_args"),
     [
-        pytest.param([], "default.py", id="default"),
-        pytest.param(["--use-subclass-enum"], "subclass.py", id="subclass"),
+        pytest.param([], id="default"),
+        pytest.param(["--use-subclass-enum"], id="subclass"),
         pytest.param(
             ["--use-subclass-enum", "--no-use-specialized-enum"],
-            "subclass_no_specialized.py",
             id="subclass-no-specialized",
         ),
     ],
 )
-def test_main_jsonschema_value_base_enum_null(output_file: Path, extra_args: list[str], expected_file: str) -> None:
+def test_main_jsonschema_value_base_enum_null(output_file: Path, extra_args: list[str]) -> None:
     """Write an enum whose class has a value type base without the null it lists, and nullable only where null is valid.
 
     An IntEnum or an (int, Enum) or (float, Enum) class cannot hold a None member, and its one `type` rejects null
@@ -19739,8 +19730,6 @@ def test_main_jsonschema_value_base_enum_null(output_file: Path, extra_args: lis
         input_path=JSON_SCHEMA_DATA_PATH / "integer_enum_null.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"integer_enum_null/{expected_file}",
         extra_args=["--target-python-version", "3.10", "--disable-timestamp", *extra_args],
         force_exec_validation=True,
     )
@@ -19753,8 +19742,6 @@ def test_main_msgspec_discriminator_with_meta(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_with_meta_msgspec.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="discriminator_with_meta_msgspec.py",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -19771,8 +19758,6 @@ def test_main_msgspec_discriminator_without_annotated(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_with_type_string.json",
         output_path=output_file,
         input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="discriminator_with_type_string_msgspec_no_annotated.py",
         output_model_type=DataModelType.MsgspecStruct,
         target_python_version=PythonVersion.PY_310,
         use_annotated=False,
@@ -19814,8 +19799,6 @@ def test_main_msgspec_boolean_enum_literal(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "msgspec_boolean_enum_literal.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="msgspec_boolean_enum_literal.py",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -19839,8 +19822,6 @@ def test_main_msgspec_non_dict_base_class_kwargs(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="msgspec_non_dict_base_class_kwargs.py",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -19903,8 +19884,6 @@ def test_main_jsonschema_field_has_same_name(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "field_has_same_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="field_has_same_name_v2.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -19915,8 +19894,6 @@ def test_main_jsonschema_field_has_same_name_rename_type(output_file: Path) -> N
         input_path=JSON_SCHEMA_DATA_PATH / "field_has_same_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="field_has_same_name_rename_type.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -19940,7 +19917,7 @@ to preserve the original field name, instead of renaming the field and adding an
         "--field-type-collision-strategy",
         "rename-type",
     ],
-    golden_output="jsonschema/field_has_same_name_rename_type.py",
+    golden_output="jsonschema/main_jsonschema/field_has_same_name_rename_type.py",
 )
 def test_main_jsonschema_field_has_same_name_rename_type_cli_doc(output_file: Path) -> None:
     """Rename type class instead of field when names collide (Pydantic v2 only).
@@ -19953,8 +19930,6 @@ def test_main_jsonschema_field_has_same_name_rename_type_cli_doc(output_file: Pa
         input_path=JSON_SCHEMA_DATA_PATH / "field_has_same_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="field_has_same_name_rename_type.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -19970,8 +19945,6 @@ def test_main_jsonschema_field_type_collision_rename_type_double(output_file: Pa
         input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_rename_type_double.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="field_type_collision_rename_type_double.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -19987,8 +19960,6 @@ def test_main_jsonschema_read_only_write_only_compositions(output_file: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_compositions.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="read_only_write_only_compositions.py",
         extra_args=[
             "--disable-timestamp",
             "--output-model-type",
@@ -20027,8 +19998,6 @@ def test_main_jsonschema_required_and_any_of_required(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "required_and_any_of_required.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="required_and_any_of_required.py",
     )
 
 
@@ -20194,33 +20163,28 @@ def test_main_ref_fragment_opened_by_an_encoded_slash(
 
 
 @pytest.mark.parametrize(
-    ("extra_fields", "output_model", "expected_output"),
+    ("extra_fields", "output_model"),
     [
         (
             "allow",
             "pydantic_v2.BaseModel",
-            "extra_fields_v2_allow.py",
         ),
         (
             "forbid",
             "pydantic_v2.BaseModel",
-            "extra_fields_v2_forbid.py",
         ),
         (
             "ignore",
             "pydantic_v2.BaseModel",
-            "extra_fields_v2_ignore.py",
         ),
     ],
 )
-def test_main_extra_fields(extra_fields: str, output_model: str, expected_output: str, output_file: Path) -> None:
+def test_main_extra_fields(extra_fields: str, output_model: str, output_file: Path) -> None:
     """Test extra fields configuration."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "extra_fields.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_output,
         extra_args=["--extra-fields", extra_fields, "--output-model-type", output_model],
     )
 
@@ -20230,7 +20194,7 @@ def test_main_extra_fields(extra_fields: str, output_model: str, expected_output
     option_description="""Generate a shared base class with model configuration to avoid repetition (DRY).""",
     input_schema="jsonschema/extra_fields.json",
     cli_args=["--extra-fields", "forbid", "--output-model-type", "pydantic_v2.BaseModel", "--use-generic-base-class"],
-    golden_output="jsonschema/use_generic_base_class.py",
+    golden_output="jsonschema/main_jsonschema/main_use_generic_base_class.py",
 )
 def test_main_use_generic_base_class(output_file: Path) -> None:
     """Generate a shared base class with model configuration to avoid repetition (DRY)."""
@@ -20238,8 +20202,6 @@ def test_main_use_generic_base_class(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "extra_fields.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class.py",
         extra_args=[
             "--extra-fields",
             "forbid",
@@ -20256,8 +20218,6 @@ def test_main_use_generic_base_class_populate_by_name(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_populate_by_name.py",
         extra_args=[
             "--allow-population-by-field-name",
             "--output-model-type",
@@ -20273,8 +20233,6 @@ def test_main_use_generic_base_class_alias_generator(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="alias_generator_generic_base.py",
         extra_args=[
             "--snake-case-field",
             "--alias-generator",
@@ -20295,8 +20253,6 @@ def test_main_use_generic_base_class_target_pydantic_v2_11_or_later(
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_target_pydantic_v2_11.py",
         extra_args=[
             "--allow-population-by-field-name",
             "--output-model-type",
@@ -20314,8 +20270,6 @@ def test_main_allof_list_any_inheritance(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "allof_list_any_inheritance.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="allof_list_any_inheritance.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -20329,8 +20283,6 @@ def test_main_use_generic_base_class_allow_extra(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_allow_extra.py",
         extra_args=[
             "--allow-extra-fields",
             "--output-model-type",
@@ -20346,8 +20298,6 @@ def test_main_use_generic_base_class_frozen(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_frozen.py",
         extra_args=[
             "--enable-faux-immutability",
             "--output-model-type",
@@ -20363,8 +20313,6 @@ def test_main_use_generic_base_class_attr_docstrings(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_attr_docstrings.py",
         extra_args=[
             "--use-attribute-docstrings",
             "--output-model-type",
@@ -20380,8 +20328,6 @@ def test_main_use_generic_base_class_dataclass(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_dataclass.py",
         extra_args=[
             "--extra-fields",
             "forbid",
@@ -20398,8 +20344,6 @@ def test_main_use_generic_base_class_enum_only(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_enum_only.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_enum_only.py",
         extra_args=[
             "--extra-fields",
             "forbid",
@@ -20416,8 +20360,6 @@ def test_main_use_generic_base_class_with_inheritance(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_with_inheritance.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_with_inheritance.py",
         extra_args=[
             "--extra-fields",
             "forbid",
@@ -20510,8 +20452,6 @@ def test_main_use_generic_base_class_msgspec(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_msgspec.py",
         extra_args=[
             "--allow-population-by-field-name",
             "--enable-faux-immutability",
@@ -20528,8 +20468,6 @@ def test_main_use_generic_base_class_msgspec_forbid(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_generic_base_class_msgspec_forbid.py",
         extra_args=[
             "--enable-faux-immutability",
             "--extra-fields",
@@ -20547,8 +20485,6 @@ def test_main_jsonschema_same_name_objects(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "same_name_objects.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="same_name_objects.py",
     )
 
 
@@ -20570,7 +20506,7 @@ def test_main_jsonschema_forwarding_reference_collapse_root(output_dir: Path) ->
 The `--use-type-alias` flag configures the code generation behavior.""",
     input_schema="jsonschema/type_alias.json",
     cli_args=["--use-type-alias"],
-    golden_output="jsonschema/type_alias.py",
+    golden_output="jsonschema/main_jsonschema/type_alias.py",
 )
 def test_main_jsonschema_type_alias(output_file: Path) -> None:
     """Generate TypeAlias for root models instead of wrapper classes.
@@ -20581,8 +20517,6 @@ def test_main_jsonschema_type_alias(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias.py",
         extra_args=["--use-type-alias"],
     )
 
@@ -20597,8 +20531,6 @@ def test_main_jsonschema_type_alias_py312(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_py312.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -20614,73 +20546,64 @@ def test_main_jsonschema_type_alias_py312(output_file: Path) -> None:
     reason="Installed black doesn't support the new 'type' statement",
 )
 @pytest.mark.parametrize(
-    ("input_file", "output_model_type", "target_python_version", "options", "expected_file"),
+    ("input_file", "output_model_type", "target_python_version", "options"),
     [
-        ("container", "pydantic_v2.BaseModel", "3.10", (), "type_alias_recursive_container.py"),
-        ("container", "pydantic_v2.BaseModel", "3.12", (), "type_alias_recursive_container_py312.py"),
+        ("container", "pydantic_v2.BaseModel", "3.10", ()),
+        ("container", "pydantic_v2.BaseModel", "3.12", ()),
         (
             "container",
             "pydantic_v2.BaseModel",
             "3.11",
             ("--no-use-standard-collections",),
-            "type_alias_recursive_container_typing_collections.py",
         ),
         (
             "container",
             "pydantic_v2.BaseModel",
             "3.11",
             ("--target-pydantic-version", "2"),
-            "type_alias_recursive_container_pydantic_2_0.py",
         ),
         (
             "container",
             "pydantic_v2.BaseModel",
             "3.11",
             ("--formatters", "ruff-check", "ruff-format"),
-            "type_alias_recursive_container_ruff.py",
         ),
-        ("container", "pydantic_v2.dataclass", "3.11", (), "type_alias_recursive_container_pydantic_dataclass.py"),
+        ("container", "pydantic_v2.dataclass", "3.11", ()),
         (
             "container",
             "dataclasses.dataclass",
             "3.11",
             ("--use-type-alias-type",),
-            "type_alias_recursive_container_dataclass.py",
         ),
         (
             "container",
             "typing.TypedDict",
             "3.11",
             ("--use-type-alias-type",),
-            "type_alias_recursive_container_typed_dict.py",
         ),
         (
             "container",
             "msgspec.Struct",
             "3.11",
             ("--use-type-alias-type",),
-            "type_alias_recursive_container_msgspec.py",
         ),
         (
             "collapse",
             "pydantic_v2.BaseModel",
             "3.11",
             ("--collapse-root-models",),
-            "type_alias_recursive_container_collapse.py",
         ),
         (
             "collapse",
             "pydantic_v2.BaseModel",
             "3.11",
             ("--collapse-root-models", "--disable-future-imports"),
-            "type_alias_recursive_container_collapse_no_future.py",
         ),
         (
             "collapse",
             "dataclasses.dataclass",
             "3.11",
             ("--use-type-alias-type", "--collapse-root-models", "--disable-future-imports"),
-            "type_alias_recursive_container_collapse_dataclass.py",
         ),
     ],
 )
@@ -20690,7 +20613,6 @@ def test_main_jsonschema_type_alias_recursive_container(
     output_model_type: str,
     target_python_version: str,
     options: tuple[str, ...],
-    expected_file: str,
 ) -> None:
     """Quote the containers of a TypeAliasType value that recurse into its own alias cycle.
 
@@ -20721,8 +20643,6 @@ def test_main_jsonschema_type_alias_recursive_container(
             input_path=JSON_SCHEMA_DATA_PATH / f"type_alias_recursive_{input_file}.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--use-type-alias",
                 *options,
@@ -20898,23 +20818,22 @@ continues to use native `type` statements.""",
         "3.10",
     ],
     version_outputs={
-        "3.10": "jsonschema/type_alias_type_typeddict.py",
-        "3.12": "jsonschema/type_alias_type_typeddict_py312.py",
+        "3.10": "jsonschema/main_jsonschema/type_alias_type_non_pydantic[typing.TypedDict].py",
+        "3.12": "jsonschema/main_jsonschema/type_alias_type_typeddict_py312.py",
     },
     primary=True,
 )
 @pytest.mark.parametrize(
-    ("output_model", "expected_file"),
+    ("output_model"),
     [
-        ("typing.TypedDict", "type_alias_type_typeddict.py"),
-        ("dataclasses.dataclass", "type_alias_type_dataclass.py"),
-        ("msgspec.Struct", "type_alias_type_msgspec.py"),
+        ("typing.TypedDict"),
+        ("dataclasses.dataclass"),
+        ("msgspec.Struct"),
     ],
 )
 def test_main_jsonschema_type_alias_type_non_pydantic(
     output_file: Path,
     output_model: str,
-    expected_file: str,
 ) -> None:
     """Force TypeAliasType for Python 3.10 non-Pydantic output.
 
@@ -20930,8 +20849,6 @@ def test_main_jsonschema_type_alias_type_non_pydantic(
             input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
             output_path=output_file,
             input_file_type=None,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--use-type-alias-type",
                 "--target-python-version",
@@ -20952,8 +20869,6 @@ def test_main_jsonschema_type_alias_type_typeddict_py312(output_file: Path) -> N
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_type_typeddict_py312.py",
         extra_args=[
             "--use-type-alias-type",
             "--target-python-version",
@@ -20965,24 +20880,21 @@ def test_main_jsonschema_type_alias_type_typeddict_py312(output_file: Path) -> N
 
 
 @pytest.mark.parametrize(
-    ("input_name", "expected_file"),
+    ("input_name"),
     [
-        ("type_alias_forward_ref.json", "type_alias_type_forward_ref.py"),
-        ("type_alias_cycle.json", "type_alias_type_cycle.py"),
+        ("type_alias_forward_ref.json"),
+        ("type_alias_cycle.json"),
     ],
 )
 def test_main_jsonschema_type_alias_type_executes_forward_references(
     output_file: Path,
     input_name: str,
-    expected_file: str,
 ) -> None:
     """Generate executable runtime aliases for forward and cyclic references."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--use-type-alias-type",
             "--target-python-version",
@@ -21033,7 +20945,7 @@ schema fields and includes them as docstrings or Field descriptions in the
 generated models, preserving documentation from the original schema.""",
     input_schema="jsonschema/type_alias.json",
     cli_args=["--use-type-alias", "--use-field-description"],
-    golden_output="jsonschema/type_alias_with_field_description.py",
+    golden_output="jsonschema/main_jsonschema/type_alias_with_field_description.py",
 )
 def test_main_jsonschema_type_alias_with_field_description(output_file: Path) -> None:
     """Include schema descriptions as Field docstrings.
@@ -21046,8 +20958,6 @@ def test_main_jsonschema_type_alias_with_field_description(output_file: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_with_field_description.py",
         extra_args=["--use-type-alias", "--use-field-description"],
     )
 
@@ -21062,8 +20972,6 @@ def test_main_jsonschema_type_alias_with_field_description_py312(output_file: Pa
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_with_field_description_py312.py",
         extra_args=[
             "--use-type-alias",
             "--use-field-description",
@@ -21085,8 +20993,6 @@ def test_main_jsonschema_enum_literal_type_alias_default(output_file: Path) -> N
         input_path=JSON_SCHEMA_DATA_PATH / "enum_literal_type_alias_default.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="enum_literal_type_alias_default.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21110,8 +21016,6 @@ def test_main_jsonschema_type_alias_union_default_object_ref(output_file: Path) 
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_union_default_object_ref.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_union_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21132,8 +21036,6 @@ def test_main_jsonschema_type_alias_model_default_object_ref(output_file: Path) 
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_model_default_object_ref.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_model_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21154,8 +21056,6 @@ def test_main_jsonschema_type_alias_chain_model_default_object_ref(output_file: 
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_chain_model_default_object_ref.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_chain_model_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21176,8 +21076,6 @@ def test_main_jsonschema_type_alias_list_model_default_object_ref(output_file: P
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_list_model_default_object_ref.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_list_model_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21198,8 +21096,6 @@ def test_main_jsonschema_type_alias_nullable_model_default_object_ref(output_fil
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_nullable_model_default_object_ref.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_nullable_model_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21220,8 +21116,6 @@ def test_main_jsonschema_type_alias_nullable_list_model_default_object_ref(outpu
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_nullable_list_model_default_object_ref.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_nullable_list_model_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21242,8 +21136,6 @@ def test_main_jsonschema_type_alias_recursive_default_list(output_file: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_recursive_default_list.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_recursive_default_list.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21260,8 +21152,6 @@ def test_main_jsonschema_type_alias_recursive_default_list_pydantic_v2_dataclass
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_recursive_default_list.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_recursive_default_list_pydantic_v2_dataclass.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21285,8 +21175,6 @@ def test_main_jsonschema_type_alias_inline_union_default_object(output_file: Pat
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object.json",
         output_path=output_file,
         input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="type_alias_inline_union_default_object.py",
         extra_args=[
             "--use-type-alias",
             "--target-python-version",
@@ -21309,8 +21197,6 @@ def test_main_jsonschema_type_alias_union_default_object_ref_any_of_relevant_fla
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_union_default_object_ref_any_of.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_union_default_object_ref_any_of.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21336,8 +21222,6 @@ def test_main_jsonschema_type_alias_chain_union_default_object_ref_relevant_flag
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_chain_union_default_object_ref.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_chain_union_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21363,8 +21247,6 @@ def test_main_jsonschema_type_alias_union_default_object_ref_one_of_relevant_fla
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_union_default_object_ref_one_of.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_union_default_object_ref_one_of.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21390,8 +21272,6 @@ def test_main_jsonschema_type_alias_inline_union_default_object_one_of_relevant_
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object_one_of.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_inline_union_default_object_one_of.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21418,8 +21298,6 @@ def test_main_jsonschema_type_alias_inline_union_default_object_import_collision
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object_import_collision.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_inline_union_default_object_import_collision.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21451,8 +21329,6 @@ def test_main_jsonschema_type_alias_inline_union_default_object_type_override_re
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_inline_union_default_object_type_override.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21483,8 +21359,6 @@ def test_main_jsonschema_type_alias_inline_union_default_object_silent_wrong_bra
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object_silent_wrong_branch.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_inline_union_default_object_silent_wrong_branch.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21510,8 +21384,6 @@ def test_main_jsonschema_type_alias_inline_list_union_default_object_relevant_fl
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_list_union_default_object.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_inline_list_union_default_object.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21537,8 +21409,6 @@ def test_main_jsonschema_type_alias_list_union_default_object_ref_relevant_flags
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_list_union_default_object_ref.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_list_union_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21564,8 +21434,6 @@ def test_main_jsonschema_type_alias_inline_dict_union_default_object_relevant_fl
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_dict_union_default_object.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_inline_dict_union_default_object.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21591,8 +21459,6 @@ def test_main_jsonschema_type_alias_dict_union_default_object_ref_relevant_flags
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_dict_union_default_object_ref.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_dict_union_default_object_ref.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21618,8 +21484,6 @@ def test_main_jsonschema_type_alias_union_default_object_ref_dict_alias_branch_r
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_union_default_object_ref_dict_alias_branch.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_union_default_object_ref_dict_alias_branch.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21645,8 +21509,6 @@ def test_main_jsonschema_type_alias_union_default_object_ref_mixed_scalar_releva
         input_path=JSON_SCHEMA_DATA_PATH / "type_alias_union_default_object_ref_mixed_scalar.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_union_default_object_ref_mixed_scalar.py",
         extra_args=[
             "--use-type-alias",
             "--use-annotated",
@@ -21667,7 +21529,7 @@ def test_main_jsonschema_type_alias_union_default_object_ref_mixed_scalar_releva
 The `--type-mappings` flag configures the code generation behavior.""",
     input_schema="jsonschema/type_mappings.json",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--type-mappings", "binary=string"],
-    golden_output="jsonschema/type_mappings.py",
+    golden_output="jsonschema/main_jsonschema/type_mappings.py",
 )
 def test_main_jsonschema_type_mappings(output_file: Path) -> None:
     """Override default type mappings for schema formats.
@@ -21678,8 +21540,6 @@ def test_main_jsonschema_type_mappings(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_mappings.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_mappings.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -21695,8 +21555,6 @@ def test_main_jsonschema_type_mappings_with_type_prefix(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "type_mappings.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_mappings.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -21712,8 +21570,6 @@ def test_main_jsonschema_type_mappings_to_type_default(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "type_mappings.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_mappings_to_integer.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -21729,8 +21585,6 @@ def test_main_jsonschema_type_mappings_to_boolean(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "type_mappings.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_mappings_to_boolean.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -21741,25 +21595,20 @@ def test_main_jsonschema_type_mappings_to_boolean(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("expected_file", "extra_args"),
+    "extra_args",
     [
-        ("default.py", []),
-        ("field_constraints.py", ["--field-constraints"]),
-        ("use_annotated.py", ["--use-annotated"]),
-        ("strict_bytes.py", ["--strict-types", "bytes"]),
-        ("strict_bytes_field_constraints.py", ["--strict-types", "bytes", "--field-constraints"]),
-        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--strict-types", "bytes"]),
-        ("target_pydantic_2.py", ["--field-constraints", "--target-pydantic-version", "2"]),
-        ("collapse_field_constraints.py", ["--field-constraints", "--collapse-root-models"]),
-        (
-            "collapse_use_annotated_dataclass.py",
-            ["--output-model-type", "pydantic_v2.dataclass", "--use-annotated", "--collapse-root-models"],
-        ),
+        [],
+        ["--field-constraints"],
+        ["--use-annotated"],
+        ["--strict-types", "bytes"],
+        ["--strict-types", "bytes", "--field-constraints"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--strict-types", "bytes"],
+        ["--field-constraints", "--target-pydantic-version", "2"],
+        ["--field-constraints", "--collapse-root-models"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--use-annotated", "--collapse-root-models"],
     ],
 )
-def test_main_jsonschema_type_mappings_byte_to_binary(
-    output_file: Path, expected_file: str, extra_args: list[str]
-) -> None:
+def test_main_jsonschema_type_mappings_byte_to_binary(output_file: Path, extra_args: list[str]) -> None:
     """Test bytes mapped from base64 text decode it and check its lengths on the text, as the schema counts them.
 
     The lengths hold on required, optional and nullable fields, with strict bytes, in unions, items and mapping values,
@@ -21767,15 +21616,12 @@ def test_main_jsonschema_type_mappings_byte_to_binary(
     checks them on the text only from then on, warns.
     """
     name = "type_mappings_byte_to_binary"
-    stem = expected_file.removesuffix(".py")
     with warnings.catch_warnings(record=True) as recorded_warnings:
         warnings.simplefilter("always")
         run_main_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"{name}/{expected_file}",
             extra_args=[
                 *extra_args,
                 *("--type-mappings", "string+byte=binary", "--formatters", "builtin"),
@@ -21785,7 +21631,7 @@ def test_main_jsonschema_type_mappings_byte_to_binary(
         )
     assert_output(
         "".join(f"{warning.message}\n" for warning in recorded_warnings if "base64 text" in str(warning.message)),
-        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+        name="_warnings",
     )
     valid = {
         "plain": "aGk=",
@@ -21821,7 +21667,7 @@ def test_main_jsonschema_type_mappings_byte_to_binary(
     assert_output(
         "".join(f"{field}: {getattr(instance, field)!r}\n" for field in valid)
         + "".join(f"rejected: {field_name}\n" for field_name in rejected),
-        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_validated.txt",
+        name="_validated",
     )
 
 
@@ -22522,8 +22368,6 @@ def test_main_jsonschema_items_false_array(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "items_false_array.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="items_false_array.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22534,8 +22378,6 @@ def test_main_jsonschema_items_array_with_false_schema(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "items_array_with_false_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="items_array_with_false_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22546,8 +22388,6 @@ def test_main_jsonschema_items_array_with_true_schema(output_file: Path) -> None
         input_path=JSON_SCHEMA_DATA_PATH / "items_array_with_true_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="items_array_with_true_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22558,8 +22398,6 @@ def test_main_jsonschema_additional_items_false_empty_tuple(output_file: Path) -
         input_path=JSON_SCHEMA_DATA_PATH / "additional_items_false_empty_tuple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="additional_items_false_empty_tuple.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22570,8 +22408,6 @@ def test_main_jsonschema_additional_items_schema_tuple(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "additional_items_schema_tuple.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="additional_items_schema_tuple.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22582,8 +22418,6 @@ def test_main_jsonschema_prefix_items_with_true_schema(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_with_true_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="prefix_items_with_true_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22594,8 +22428,6 @@ def test_main_jsonschema_prefix_items_with_false_schema(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_with_false_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="prefix_items_with_false_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22606,8 +22438,6 @@ def test_main_jsonschema_prefix_items_items_false(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_items_false.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="prefix_items_items_false.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
 
@@ -22618,8 +22448,6 @@ def test_main_jsonschema_unevaluated_items_false_prefix(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "unevaluated_items_false_prefix.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="unevaluated_items_false_prefix.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22641,8 +22469,6 @@ def test_main_jsonschema_unevaluated_items_false_array(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "unevaluated_items_false_array.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="unevaluated_items_false_array.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22664,8 +22490,6 @@ def test_main_jsonschema_unevaluated_items_schema_array(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "unevaluated_items_schema_array.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="unevaluated_items_schema_array.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22687,8 +22511,6 @@ def test_main_jsonschema_prefix_items_items_schema(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_items_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="prefix_items_items_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22700,8 +22522,6 @@ def test_main_jsonschema_prefix_items_fixed_tail_schema(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_fixed_tail_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="prefix_items_fixed_tail_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22723,8 +22543,6 @@ def test_main_jsonschema_prefix_items_fixed_any_tail_schema(output_file: Path) -
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_fixed_any_tail_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="prefix_items_fixed_any_tail_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22736,8 +22554,6 @@ def test_main_jsonschema_prefix_items_fixed_unevaluated_tail_schema(output_file:
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_fixed_unevaluated_tail_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="prefix_items_fixed_unevaluated_tail_schema.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22759,8 +22575,6 @@ def test_main_jsonschema_contains_true_max_contains_zero(output_file: Path) -> N
         input_path=JSON_SCHEMA_DATA_PATH / "contains_true_max_contains_zero.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="contains_true_max_contains_zero.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22782,8 +22596,6 @@ def test_main_jsonschema_contains_true_default_min_contains(output_file: Path) -
         input_path=JSON_SCHEMA_DATA_PATH / "contains_true_default_min_contains.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="contains_true_default_min_contains.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22809,8 +22621,6 @@ def test_main_jsonschema_contains_true_count_constraints(output_file: Path) -> N
         input_path=JSON_SCHEMA_DATA_PATH / "contains_true_count_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="contains_true_count_constraints.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22934,8 +22744,6 @@ def test_main_jsonschema_contains_empty_schema_count_constraints(output_file: Pa
         input_path=JSON_SCHEMA_DATA_PATH / "contains_empty_schema_count_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="contains_empty_schema_count_constraints.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22967,8 +22775,6 @@ def test_main_jsonschema_contains_false_default(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "contains_false_default.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="contains_false_default.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -22994,8 +22800,6 @@ def test_main_jsonschema_contains_false_min_contains_zero(output_file: Path) -> 
         input_path=JSON_SCHEMA_DATA_PATH / "contains_false_min_contains_zero.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="contains_false_min_contains_zero.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
@@ -23042,8 +22846,6 @@ def test_main_jsonschema_hierarchical_aliases_inline_json(output_file: Path) -> 
         input_path=JSON_SCHEMA_DATA_PATH / "hierarchical_aliases.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="jsonschema_hierarchical_aliases_scoped.py",
         extra_args=[
             "--aliases",
             '{"Root.name": "root_name", "User.name": "user_name", "Address.name": "address_name"}',
@@ -23080,8 +22882,6 @@ def test_main_jsonschema_multiple_aliases_serialization_alias_pydantic_v2(output
         input_path=JSON_SCHEMA_DATA_PATH / "multiple_aliases.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        expected_file="jsonschema_multiple_aliases_serialization_alias_pydantic_v2.py",
-        assert_func=assert_file_content,
         extra_args=[
             "--aliases",
             str(ALIASES_DATA_PATH / "multiple_aliases.json"),
@@ -23098,8 +22898,6 @@ def test_main_jsonschema_array_combined_types(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "array_combined.py.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="array_combined.py",
     )
 
 
@@ -23109,8 +22907,6 @@ def test_main_jsonschema_recursive_array(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "recursive_array.py.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="recursive_array.py",
     )
 
 
@@ -23120,8 +22916,6 @@ def test_main_jsonschema_serialization_alias_same_name_pydantic_v2(output_file: 
         input_path=JSON_SCHEMA_DATA_PATH / "serialization_alias_same_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="serialization_alias_same_name.py",
         extra_args=[
             "--aliases",
             str(ALIASES_DATA_PATH / "same_alias.json"),
@@ -23147,7 +22941,7 @@ or validation aliases while using separate output-only names for serialization."
         "--output-model-type",
         "pydantic_v2.BaseModel",
     ],
-    golden_output="jsonschema/serialization_aliases.py",
+    golden_output="jsonschema/main_jsonschema/serialization_aliases_inline_json_pydantic_v2.py",
 )
 def test_main_jsonschema_serialization_aliases_pydantic_v2(output_file: Path) -> None:
     """Test explicit serialization aliases with independent validation aliases."""
@@ -23155,8 +22949,6 @@ def test_main_jsonschema_serialization_aliases_pydantic_v2(output_file: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "serialization_aliases.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="serialization_aliases.py",
         extra_args=[
             "--aliases",
             str(ALIASES_DATA_PATH / "serialization_aliases.json"),
@@ -23174,8 +22966,6 @@ def test_main_jsonschema_serialization_aliases_inline_json_pydantic_v2(output_fi
         input_path=JSON_SCHEMA_DATA_PATH / "serialization_aliases.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="serialization_aliases.py",
         extra_args=[
             "--aliases",
             (ALIASES_DATA_PATH / "serialization_aliases.json").read_text(encoding="utf-8"),
@@ -23217,8 +23007,6 @@ def test_main_jsonschema_serialization_aliases_with_use_serialization_alias_pyda
         input_path=JSON_SCHEMA_DATA_PATH / "serialization_aliases.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="serialization_aliases_with_use_serialization_alias.py",
         extra_args=[
             "--aliases",
             str(ALIASES_DATA_PATH / "serialization_aliases.json"),
@@ -23249,8 +23037,6 @@ def test_main_jsonschema_use_serialization_alias_alias_generator(
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"alias_generator_serialization_alias/{alias_generator}_{field_names}.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -23266,7 +23052,7 @@ def test_main_jsonschema_use_serialization_alias_alias_generator(
     with _generated_model(output_file, "alias_generator_serialization_alias", "AliasGeneratorModel") as model:
         assert_output(
             model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
-            EXPECTED_JSON_SCHEMA_PATH / "alias_generator_serialization_alias" / "round_trip.txt",
+            name="alias_generator_serialization_alias",
         )
 
 
@@ -23276,8 +23062,6 @@ def test_main_jsonschema_use_serialization_alias_alias_generator_target_pydantic
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="alias_generator_serialization_alias/to_camel_snake_case_field_target_2.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -23298,8 +23082,6 @@ def test_main_jsonschema_use_serialization_alias_alias_generator_template_data_d
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="alias_generator_serialization_alias/template_data_dataclass.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.dataclass",
@@ -23311,20 +23093,16 @@ def test_main_jsonschema_use_serialization_alias_alias_generator_template_data_d
 
 
 @pytest.mark.parametrize(
-    ("alias_mode", "alias_args"),
-    [("alias", []), ("serialization_alias", ["--use-serialization-alias"]), ("no_alias", ["--no-alias"])],
+    ("alias_args"),
+    [([]), (["--use-serialization-alias"]), (["--no-alias"])],
     ids=["alias", "serialization_alias", "no_alias"],
 )
-def test_main_jsonschema_serialization_aliases_alias_generator(
-    output_file: Path, alias_mode: str, alias_args: list[str]
-) -> None:
+def test_main_jsonschema_serialization_aliases_alias_generator(output_file: Path, alias_args: list[str]) -> None:
     """Keep an explicit serialization alias equal to the field name when the alias generator would rename it."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"alias_generator_serialization_aliases/{alias_mode}.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -23342,7 +23120,7 @@ def test_main_jsonschema_serialization_aliases_alias_generator(
     with _generated_model(output_file, "alias_generator_serialization_aliases", "AliasGeneratorModel") as model:
         assert_output(
             model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
-            EXPECTED_JSON_SCHEMA_PATH / "alias_generator_serialization_aliases" / "round_trip.txt",
+            name="alias_generator_serialization_aliases",
         )
 
 
@@ -23412,8 +23190,6 @@ def test_main_msgspec_nested_unions(output_file: Path) -> None:
             input_path=JSON_SCHEMA_DATA_PATH / "msgspec_nested_unions.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="msgspec_nested_unions.py",
             extra_args=[
                 "--output-model-type",
                 "msgspec.Struct",
@@ -23427,7 +23203,7 @@ def test_main_msgspec_nested_unions(output_file: Path) -> None:
         )
     assert_output(
         "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
-        EXPECTED_JSON_SCHEMA_PATH / "msgspec_nested_unions_warnings.txt",
+        name="msgspec_nested_unions_warnings",
     )
 
 
@@ -23440,8 +23216,6 @@ def test_main_jsonschema_type_alias_with_circular_ref_to_class_msgspec(min_versi
             input_path=JSON_SCHEMA_DATA_PATH / "type_alias_with_circular_ref_to_class.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="type_alias_with_circular_ref_to_class_msgspec.py",
             extra_args=[
                 "--output-model-type",
                 "msgspec.Struct",
@@ -23454,7 +23228,7 @@ def test_main_jsonschema_type_alias_with_circular_ref_to_class_msgspec(min_versi
             f"{message}\n"
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
-        EXPECTED_JSON_SCHEMA_PATH / "type_alias_with_circular_ref_to_class_msgspec_warnings.txt",
+        name="type_alias_with_circular_ref_to_class_msgspec_warnings",
     )
 
 
@@ -23713,8 +23487,6 @@ def test_main_jsonschema_collapse_root_models_container_constraints(output_file:
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_container_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="collapse_root_models_container_constraints.py",
         extra_args=[
             "--collapse-root-models",
             "--disable-timestamp",
@@ -23731,8 +23503,6 @@ def test_main_jsonschema_collapse_root_models_container_field_constraints(output
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_container_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="collapse_root_models_container_field_constraints.py",
         extra_args=[
             "--collapse-root-models",
             "--field-constraints",
@@ -23871,8 +23641,6 @@ def test_main_jsonschema_collapse_root_models_array_item_union_self_reference(ou
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_array_item_union_self_reference.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="collapse_root_models_array_item_union_self_reference.py",
         extra_args=[
             "--collapse-root-models",
             "--use-annotated",
@@ -23902,8 +23670,6 @@ def test_main_jsonschema_collapse_root_models_property_names_reference(output_fi
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_property_names_reference.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="collapse_root_models_property_names_reference.py",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -23960,8 +23726,6 @@ def test_main_jsonschema_collapse_root_models_lookaround(
         input_path=JSON_SCHEMA_DATA_PATH / f"{schema_name}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"{schema_name}.py",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -23989,8 +23753,6 @@ def test_main_jsonschema_rename_preserves_source_alias(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "rename_preserve_source_alias.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="rename_preserve_source_alias.py",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -24018,8 +23780,6 @@ def test_main_jsonschema_nullable_root_reuse_keeps_class_base(output_file: Path)
         input_path=JSON_SCHEMA_DATA_PATH / "nullable_reuse.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="nullable_reuse.py",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -24043,8 +23803,6 @@ def test_main_jsonschema_collapse_root_models_dict_key_self_reference_retries_on
             input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_dict_key_self_reference.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="collapse_root_models_dict_key_self_reference.py",
             extra_args=["--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
             force_exec_validation=True,
         )
@@ -24064,8 +23822,6 @@ def test_main_jsonschema_collapse_root_models_parse_warning_emitted_once(output_
             input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_parse_warning.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="collapse_root_models_parse_warning.py",
             extra_args=[
                 "--collapse-root-models",
                 "--schema-version-mode",
@@ -24091,8 +23847,6 @@ def test_main_jsonschema_collapse_root_models_dict_key_self_reference_preserves_
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_dict_key_self_reference_legacy.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="collapse_root_models_dict_key_self_reference_legacy.py",
         extra_args=["--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
@@ -24318,8 +24072,6 @@ def test_main_jsonschema_collapse_root_models_name_strategy_nested_wrappers_chil
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_nested_wrappers.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="jsonschema_collapse_root_models_name_strategy_nested_wrappers_child.py",
         extra_args=[
             "--collapse-root-models",
             "--collapse-root-models-name-strategy",
@@ -24337,8 +24089,6 @@ def test_main_jsonschema_collapse_root_models_name_strategy_nested_wrappers_pare
             input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_nested_wrappers.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="jsonschema_collapse_root_models_name_strategy_nested_wrappers_parent_v2.py",
             extra_args=[
                 "--collapse-root-models",
                 "--collapse-root-models-name-strategy",
@@ -24355,8 +24105,6 @@ def test_main_jsonschema_collapse_root_models_name_strategy_complex_child(output
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_complex.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="jsonschema_collapse_root_models_name_strategy_complex_child.py",
         extra_args=[
             "--collapse-root-models",
             "--collapse-root-models-name-strategy",
@@ -24373,8 +24121,6 @@ def test_main_jsonschema_collapse_root_models_name_strategy_complex_parent(outpu
         input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_complex.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="jsonschema_collapse_root_models_name_strategy_complex_parent.py",
         extra_args=[
             "--collapse-root-models",
             "--collapse-root-models-name-strategy",
@@ -24474,8 +24220,6 @@ def test_main_jsonschema_root_model_default_value(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "root_model_default_value.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="root_model_default_value.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -24492,8 +24236,6 @@ def test_main_jsonschema_root_model_default_value_no_annotated(output_file: Path
         input_path=JSON_SCHEMA_DATA_PATH / "root_model_default_value.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="root_model_default_value_no_annotated.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -24509,8 +24251,6 @@ def test_main_jsonschema_root_model_default_value_branches(output_file: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "root_model_default_value_branches.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="root_model_default_value_branches.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -24526,8 +24266,6 @@ def test_main_jsonschema_root_model_default_value_non_root(output_file: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "root_model_default_value_non_root.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="root_model_default_value_non_root.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -24543,8 +24281,6 @@ def test_main_jsonschema_extras_in_oneof(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "extras_in_oneof.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="extras_in_oneof.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -24573,8 +24309,6 @@ def test_main_jsonschema_merged_ref_targets(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "merged_ref_targets" / "holder.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="merged_ref_targets.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     assert_generated_model_json_validation(
@@ -24588,20 +24322,18 @@ def test_main_jsonschema_merged_ref_targets(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("mapping", "expected_file"),
+    ("mapping"),
     [
-        ("sub/things.json=mypkg.things", "merged_ref_targets_mapped.py"),
-        ("things.json=mypkg.things", "merged_ref_targets.py"),
+        ("sub/things.json=mypkg.things"),
+        ("things.json=mypkg.things"),
     ],
 )
-def test_main_jsonschema_merged_ref_target_mappings(output_file: Path, mapping: str, expected_file: str) -> None:
+def test_main_jsonschema_merged_ref_target_mappings(output_file: Path, mapping: str) -> None:
     """Match external reference mappings against the documents that merged $ref targets come from."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "merged_ref_targets" / "holder.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--external-ref-mapping", mapping],
     )
 
@@ -24814,8 +24546,6 @@ def test_main_jsonschema_merged_recursive_ref(
         input_path=JSON_SCHEMA_DATA_PATH / "merged_recursive_ref" / f"{name}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"merged_recursive_ref_{name}.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     assert_generated_model_json_validation(
@@ -24857,8 +24587,6 @@ def test_main_jsonschema_recursive_ref_resources(
         input_path=JSON_SCHEMA_DATA_PATH / "recursive_ref_resources" / f"{name}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"recursive_ref_resources_{name}.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     assert_generated_model_json_validation(
@@ -24896,8 +24624,6 @@ def test_main_jsonschema_merged_copy_duplicates(
         input_path=input_path,
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", *extra_args],
     )
     assert_generated_model_json_validation(
@@ -24916,8 +24642,6 @@ def test_main_jsonschema_merged_copy_field_names(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "merged_copy_duplicates" / "field_names" / "holder.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="merged_copy_field_names.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     assert_generated_model_json_validation(
@@ -24938,8 +24662,6 @@ def test_main_jsonschema_external_root_refs(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "external_root_refs" / "holder.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="external_root_refs.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     assert_generated_model_json_validation(
@@ -24953,12 +24675,12 @@ def test_main_jsonschema_external_root_refs(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("output_model", "expected_file"),
+    ("output_model"),
     [
-        ("typing.TypedDict", "reserved_field_name_schema_typed_dict.py"),
-        ("dataclasses.dataclass", "reserved_field_name_schema_dataclass.py"),
-        ("pydantic_v2.dataclass", "reserved_field_name_schema_pydantic_dataclass.py"),
-        ("pydantic_v2.BaseModel", "reserved_field_name_schema_pydantic.py"),
+        ("typing.TypedDict"),
+        ("dataclasses.dataclass"),
+        ("pydantic_v2.dataclass"),
+        ("pydantic_v2.BaseModel"),
     ],
 )
 @pytest.mark.cli_doc(
@@ -24972,15 +24694,15 @@ TypedDict and dataclass preserve the name, while Pydantic renames with alias."""
     input_schema="jsonschema/reserved_field_name_schema.json",
     cli_args=["--target-python-version", "3.11"],
     model_outputs={
-        "typeddict": "main/jsonschema/reserved_field_name_schema_typed_dict.py",
-        "dataclass": "main/jsonschema/reserved_field_name_schema_dataclass.py",
-        "pydantic_v2.dataclass": "main/jsonschema/reserved_field_name_schema_pydantic_dataclass.py",
-        "pydantic_v2": "main/jsonschema/reserved_field_name_schema_pydantic.py",
+        "typeddict": "main/jsonschema/main_jsonschema/reserved_field_name[typing.TypedDict].py",
+        "dataclass": "main/jsonschema/main_jsonschema/reserved_field_name[dataclasses.dataclass].py",
+        "pydantic_v2.dataclass": "main/jsonschema/main_jsonschema/reserved_field_name[pydantic_v2.dataclass].py",
+        "pydantic_v2": "main/jsonschema/main_jsonschema/reserved_field_name[pydantic_v2.BaseModel].py",
     },
 )
 @pytest.mark.benchmark
 @LEGACY_BLACK_SKIP
-def test_main_jsonschema_reserved_field_name(output_model: str, expected_file: str, output_file: Path) -> None:
+def test_main_jsonschema_reserved_field_name(output_model: str, output_file: Path) -> None:
     """Test reserved field name handling across model types (Issue #1833).
 
     This demonstrates how 'schema' field is handled:
@@ -24993,8 +24715,6 @@ def test_main_jsonschema_reserved_field_name(output_model: str, expected_file: s
         input_path=JSON_SCHEMA_DATA_PATH / "reserved_field_name_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             output_model,
@@ -25012,8 +24732,6 @@ def test_main_bundled_schema_with_id_local_file(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "bundled_schema_with_id.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="bundled_schema_with_id.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -25054,10 +24772,10 @@ def test_main_bundled_schema_with_id_url(mock_httpx_get: HttpxGetMockFactory, ou
 
 
 @pytest.mark.parametrize(
-    ("output_model", "expected_file"),
+    ("output_model"),
     [
-        ("pydantic_v2.BaseModel", "use_frozen_field_v2.py"),
-        ("dataclasses.dataclass", "use_frozen_field_dataclass.py"),
+        ("pydantic_v2.BaseModel"),
+        ("dataclasses.dataclass"),
     ],
 )
 @pytest.mark.cli_doc(
@@ -25070,13 +24788,13 @@ The `--use-frozen-field` flag generates frozen field definitions:
     input_schema="jsonschema/use_frozen_field.json",
     cli_args=["--use-frozen-field"],
     model_outputs={
-        "pydantic_v2": "main/jsonschema/use_frozen_field_v2.py",
-        "dataclass": "main/jsonschema/use_frozen_field_dataclass.py",
+        "pydantic_v2": "main/jsonschema/main_jsonschema/main_use_frozen_field[pydantic_v2.BaseModel].py",
+        "dataclass": "main/jsonschema/main_jsonschema/main_use_frozen_field[dataclasses.dataclass].py",
     },
 )
 @pytest.mark.benchmark
 @LEGACY_BLACK_SKIP
-def test_main_use_frozen_field(output_model: str, expected_file: str, output_file: Path) -> None:
+def test_main_use_frozen_field(output_model: str, output_file: Path) -> None:
     """Generate frozen (immutable) field definitions for readOnly properties.
 
     The `--use-frozen-field` flag generates frozen field definitions:
@@ -25087,8 +24805,6 @@ def test_main_use_frozen_field(output_model: str, expected_file: str, output_fil
         input_path=JSON_SCHEMA_DATA_PATH / "use_frozen_field.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=["--output-model-type", output_model, "--use-frozen-field"],
     )
 
@@ -25101,18 +24817,16 @@ def test_main_use_frozen_field_no_readonly(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "user.json",  # Has no readOnly fields
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="use_frozen_field_no_readonly.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-frozen-field"],
     )
 
 
 @pytest.mark.parametrize(
-    ("target_python_version", "expected_file"),
+    ("target_python_version"),
     [
-        pytest.param("3.13", "use_frozen_field_typed_dict.py", marks=BLACK_PY313_SKIP),
-        ("3.11", "use_frozen_field_typed_dict_py311.py"),
-        ("3.10", "use_frozen_field_typed_dict_py310.py"),
+        pytest.param("3.13", marks=BLACK_PY313_SKIP),
+        ("3.11"),
+        ("3.10"),
     ],
 )
 @pytest.mark.cli_doc(
@@ -25126,12 +24840,12 @@ The `--use-frozen-field` flag generates ReadOnly type hints for TypedDict:
     input_schema="jsonschema/use_frozen_field.json",
     cli_args=["--output-model-type", "typing.TypedDict", "--use-frozen-field"],
     model_outputs={
-        "typeddict": "main/jsonschema/use_frozen_field_typed_dict.py",
+        "typeddict": "main/jsonschema/main_jsonschema/main_use_frozen_field_typed_dict[3.13].py",
     },
 )
 @pytest.mark.benchmark
 @LEGACY_BLACK_SKIP
-def test_main_use_frozen_field_typed_dict(target_python_version: str, expected_file: str, output_file: Path) -> None:
+def test_main_use_frozen_field_typed_dict(target_python_version: str, output_file: Path) -> None:
     """Generate ReadOnly type hints for readOnly properties in TypedDict.
 
     The `--use-frozen-field` flag generates ReadOnly type hints for TypedDict:
@@ -25143,8 +24857,6 @@ def test_main_use_frozen_field_typed_dict(target_python_version: str, expected_f
         input_path=JSON_SCHEMA_DATA_PATH / "use_frozen_field.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             "typing.TypedDict",
@@ -25156,12 +24868,12 @@ def test_main_use_frozen_field_typed_dict(target_python_version: str, expected_f
 
 
 @pytest.mark.parametrize(
-    ("output_model", "expected_file"),
+    ("output_model"),
     [
-        ("dataclasses.dataclass", "default_factory_nested_model_dataclass.py"),
-        ("pydantic_v2.BaseModel", "default_factory_nested_model_pydantic_v2.py"),
-        ("pydantic_v2.dataclass", "default_factory_nested_model_pydantic_v2_dataclass.py"),
-        ("msgspec.Struct", "default_factory_nested_model_msgspec.py"),
+        ("dataclasses.dataclass"),
+        ("pydantic_v2.BaseModel"),
+        ("pydantic_v2.dataclass"),
+        ("msgspec.Struct"),
     ],
 )
 @pytest.mark.cli_doc(
@@ -25185,16 +24897,20 @@ not executed to determine whether a factory is usable.""",
     input_schema="jsonschema/default_factory_nested_model.json",
     cli_args=["--use-default-factory-for-optional-nested-models"],
     model_outputs={
-        "dataclass": "main/jsonschema/default_factory_nested_model_dataclass.py",
-        "pydantic_v2": "main/jsonschema/default_factory_nested_model_pydantic_v2.py",
-        "msgspec": "main/jsonschema/default_factory_nested_model_msgspec.py",
+        "dataclass": (
+            "main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models[dataclasses.dataclass].py"
+        ),
+        "pydantic_v2": (
+            "main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models[pydantic_v2.BaseModel].py"
+        ),
+        "msgspec": (
+            "main/jsonschema/main_jsonschema/main_use_default_factory_for_optional_nested_models[msgspec.Struct].py"
+        ),
     },
 )
 @pytest.mark.benchmark
 @LEGACY_BLACK_SKIP
-def test_main_use_default_factory_for_optional_nested_models(
-    output_model: str, expected_file: str, output_file: Path
-) -> None:
+def test_main_use_default_factory_for_optional_nested_models(output_model: str, output_file: Path) -> None:
     """Generate default_factory for optional nested model fields.
 
     The `--use-default-factory-for-optional-nested-models` flag generates default_factory
@@ -25207,8 +24923,6 @@ def test_main_use_default_factory_for_optional_nested_models(
         input_path=JSON_SCHEMA_DATA_PATH / "default_factory_nested_model.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             output_model,
@@ -25336,8 +25050,6 @@ def test_main_defer_forward_nested_model_default_factories(
         input_path=JSON_SCHEMA_DATA_PATH / "default_factory_forward_nested_models.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--disable-timestamp",
             "--output-model-type",
@@ -25420,18 +25132,16 @@ def test_main_nested_model_cycle_factories_strip_default_none(output_model: str,
 
 
 @pytest.mark.parametrize(
-    ("output_model", "expected_file"),
+    ("output_model"),
     [
-        ("dataclasses.dataclass", "default_factory_nested_model_with_dict_dataclass.py"),
-        ("pydantic_v2.BaseModel", "default_factory_nested_model_with_dict_pydantic_v2.py"),
-        ("msgspec.Struct", "default_factory_nested_model_with_dict_msgspec.py"),
+        ("dataclasses.dataclass"),
+        ("pydantic_v2.BaseModel"),
+        ("msgspec.Struct"),
     ],
 )
 @pytest.mark.benchmark
 @LEGACY_BLACK_SKIP
-def test_main_use_default_factory_for_optional_nested_models_with_dict(
-    output_model: str, expected_file: str, output_file: Path
-) -> None:
+def test_main_use_default_factory_for_optional_nested_models_with_dict(output_model: str, output_file: Path) -> None:
     """Test --use-default-factory-for-optional-nested-models with dict union skips dict types.
 
     msgspec decodes no union of a dict and a Struct, so msgspec output warns about it.
@@ -25445,8 +25155,6 @@ def test_main_use_default_factory_for_optional_nested_models_with_dict(
             input_path=JSON_SCHEMA_DATA_PATH / "default_factory_nested_model_with_dict.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[
                 "--output-model-type",
                 output_model,
@@ -25481,7 +25189,7 @@ other properties separate.""",
     input_schema="jsonschema/allof_root_model_constraints.json",
     cli_args=["--allof-merge-mode", "constraints"],
     golden_output="main/jsonschema/allof_root_model_constraints_merge.py",
-    comparison_output="main/jsonschema/allof_root_model_constraints.py",
+    comparison_output="main/jsonschema/main_jsonschema/main_allof_root_model_constraints_none.py",
 )
 @pytest.mark.benchmark
 def test_main_allof_root_model_constraints_merge(output_file: Path) -> None:
@@ -25496,8 +25204,6 @@ def test_main_allof_root_model_constraints_merge(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "allof_root_model_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="allof_root_model_constraints_merge.py",
         extra_args=["--allof-merge-mode", "constraints"],
     )
 
@@ -25514,8 +25220,8 @@ msgspec.Struct output declares the fields of parent classes whose layouts msgspe
 inheriting from them.""",
     input_schema="jsonschema/allof_root_model_constraints.json",
     cli_args=["--allof-class-hierarchy", "always"],
-    golden_output="main/jsonschema/allof_class_hierarchy.py",
-    comparison_output="main/jsonschema/allof_class_hierarchy_ref.py",
+    golden_output="main/jsonschema/main_jsonschema/main_allof_class_hierarchy.py",
+    comparison_output="main/jsonschema/main_jsonschema/main_allof_class_hierarchy_default.py",
 )
 @pytest.mark.benchmark
 def test_main_allof_class_hierarchy(output_file: Path) -> None:
@@ -25529,8 +25235,6 @@ def test_main_allof_class_hierarchy(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "allof_class_hierarchy.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="allof_class_hierarchy.py",
         extra_args=["--allof-class-hierarchy", "always"],
         force_exec_validation=True,
     )
@@ -25560,8 +25264,6 @@ def test_main_allof_class_hierarchy_default(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "allof_class_hierarchy.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="allof_class_hierarchy_ref.py",
     )
 
 
@@ -25572,8 +25274,6 @@ def test_main_allof_root_model_constraints_none(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "allof_root_model_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="allof_root_model_constraints.py",
         extra_args=["--allof-merge-mode", "none"],
     )
 
@@ -25654,8 +25354,6 @@ def test_main_allof_root_model_constraints_merge_pydantic_v2(output_file: Path) 
         input_path=JSON_SCHEMA_DATA_PATH / "allof_root_model_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="allof_root_model_constraints_merge_pydantic_v2.py",
         extra_args=[
             "--allof-merge-mode",
             "constraints",
@@ -25678,8 +25376,6 @@ def test_main_nested_lookaround_array_pydantic_v2(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "nested_lookaround_array.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="nested_lookaround_array_pydantic_v2.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -25694,8 +25390,6 @@ def test_main_lookaround_anyof_nullable_pydantic_v2(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_anyof_nullable_pydantic_v2.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -25716,8 +25410,6 @@ def test_main_lookaround_anyof_nullable_pydantic_v2_dataclass(output_file: Path)
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_anyof_nullable_pydantic_v2_dataclass.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.dataclass",
@@ -25761,12 +25453,11 @@ _TARGET_2_12_RUNTIME = pytest.mark.skipif(
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "target_pydantic_version", "expected_file", "attribute_path"),
+    ("output_model_type", "target_pydantic_version", "attribute_path"),
     [
         pytest.param(
             "pydantic_v2.BaseModel",
             "2",
-            "lookaround_anyof_nullable_pydantic_v2.py",
             ("value", "root"),
             id="base-model-target-2",
             marks=_STRING_PATTERN_TARGET_RUNTIME,
@@ -25774,7 +25465,6 @@ _TARGET_2_12_RUNTIME = pytest.mark.skipif(
         pytest.param(
             "pydantic_v2.BaseModel",
             "2.12",
-            "lookaround_anyof_nullable_pydantic_v2.py",
             ("value", "root"),
             id="base-model-target-2.12",
             marks=_TARGET_2_12_RUNTIME,
@@ -25782,7 +25472,6 @@ _TARGET_2_12_RUNTIME = pytest.mark.skipif(
         pytest.param(
             "pydantic_v2.dataclass",
             "2",
-            "lookaround_anyof_nullable_pydantic_v2_dataclass_target_2.py",
             ("value",),
             id="dataclass-target-2",
             marks=_STRING_PATTERN_TARGET_RUNTIME,
@@ -25790,7 +25479,6 @@ _TARGET_2_12_RUNTIME = pytest.mark.skipif(
         pytest.param(
             "pydantic_v2.dataclass",
             "2.12",
-            "lookaround_anyof_nullable_pydantic_v2_dataclass.py",
             ("value",),
             id="dataclass-target-2.12",
             marks=_TARGET_2_12_RUNTIME,
@@ -25800,7 +25488,6 @@ _TARGET_2_12_RUNTIME = pytest.mark.skipif(
 def test_main_lookaround_anyof_nullable_target_pydantic_version(
     output_model_type: str,
     target_pydantic_version: str,
-    expected_file: str,
     attribute_path: tuple[str, ...],
     output_file: Path,
 ) -> None:
@@ -25817,8 +25504,6 @@ def test_main_lookaround_anyof_nullable_target_pydantic_version(
             input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=["--output-model-type", output_model_type, *target_pydantic_args(target_pydantic_version)],
             force_exec_validation=True,
         )
@@ -25849,8 +25534,6 @@ def test_main_lookaround_mixed_constraints_pydantic_v2(output_file: Path) -> Non
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_mixed_constraints.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_mixed_constraints_pydantic_v2.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -25865,8 +25548,6 @@ def test_main_lookaround_dict_pydantic_v2(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_dict.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_dict_pydantic_v2.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -25881,8 +25562,6 @@ def test_main_lookaround_union_types_pydantic_v2(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_union_types.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_union_types_pydantic_v2.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -25892,33 +25571,27 @@ def test_main_lookaround_union_types_pydantic_v2(output_file: Path) -> None:
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    ("args", "expected_file", "doubled_path"),
+    ("args", "doubled_path"),
     [
         (
             ["--output-model-type", "pydantic_v2.BaseModel"],
-            "rust_unsupported_pattern_pydantic_v2.py",
             ("doubled", "root"),
         ),
         (
             ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
-            "rust_unsupported_pattern_pydantic_v2_annotated.py",
             ("doubled", "root"),
         ),
         (
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
-            "rust_unsupported_pattern_pydantic_v2_field_constraints.py",
             ("doubled", "root"),
         ),
         (
             ["--output-model-type", "pydantic_v2.dataclass"],
-            "rust_unsupported_pattern_pydantic_v2_dataclass.py",
             ("doubled",),
         ),
     ],
 )
-def test_main_rust_unsupported_pattern(
-    args: list[str], expected_file: str, doubled_path: tuple[str, ...], output_file: Path
-) -> None:
+def test_main_rust_unsupported_pattern(args: list[str], doubled_path: tuple[str, ...], output_file: Path) -> None:
     """Patterns pydantic-core's Rust engine rejects, such as backreferences, select Python's regex engine.
 
     Lookaround and plain patterns keep their existing output.
@@ -25927,8 +25600,6 @@ def test_main_rust_unsupported_pattern(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=args,
         force_exec_validation=True,
     )
@@ -25947,13 +25618,13 @@ def test_main_rust_unsupported_pattern(
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    ("args", "expected_file"),
+    ("args"),
     [
-        ([], "rust_unsupported_pattern_non_string_pydantic_v2.py"),
-        (["--use-annotated"], "rust_unsupported_pattern_non_string_pydantic_v2_annotated.py"),
+        ([]),
+        (["--use-annotated"]),
     ],
 )
-def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file: str, output_file: Path) -> None:
+def test_main_rust_unsupported_pattern_non_string(args: list[str], output_file: Path) -> None:
     """Patterns pydantic never compiles as string patterns keep pydantic-core's default regex engine.
 
     The ``uri`` pattern is dropped for ``AnyUrl``, with a warning where ``Field()`` arguments would hold it, so the
@@ -25968,8 +25639,6 @@ def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file
             input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_non_string.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
             force_exec_validation=True,
         )
@@ -26037,118 +25706,102 @@ _BYTES_PATTERN_PYTHON_ENGINE = ('{"blob": "aa"}', '{"blob": "ab"}', ("blob",), "
 
 
 @pytest.mark.parametrize(
-    ("schema", "args", "target_pydantic_version", "expected_file", "payloads"),
+    ("schema", "args", "target_pydantic_version", "payloads"),
     [
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
             None,
-            "rust_unsupported_pattern_bytes_pydantic_v2_annotated.py",
             _BYTES_PATTERN_RUST_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
             None,
-            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_RUST_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
             "2",
-            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_RUST_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
             "2.12",
-            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_RUST_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"],
             None,
-            "rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints.py",
             _BYTES_PATTERN_RUST_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes_unicode.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
             None,
-            "rust_unsupported_pattern_bytes_unicode_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_RUST_ONLY_SYNTAX,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
             "2.14",
-            "rust_unsupported_pattern_bytes_pydantic_v2_annotated_target_2_14.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
             "2.14",
-            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_target_2_14.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"],
             "2.14",
-            "rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints_target_2_14.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes_alias.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--field-constraints"],
             None,
-            "rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_RUST_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes_alias.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--field-constraints"],
             "2.14",
-            "rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints_target_2_14.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes_nullable.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
             None,
-            "rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_RUST_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes_nullable.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
             "2.14",
-            "rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints_target_2_14.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints", "--strict-types", "bytes"],
             "2.14",
-            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_strict_target_2_14.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes_union.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--field-constraints"],
             None,
-            "rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
         (
             "rust_unsupported_pattern_bytes_union.json",
             ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--field-constraints"],
             "2.14",
-            "rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
     ],
@@ -26157,7 +25810,6 @@ def test_main_rust_unsupported_pattern_bytes(
     schema: str,
     args: list[str],
     target_pydantic_version: str | None,
-    expected_file: str,
     payloads: tuple[str, str, tuple[str, ...], Any],
     output_file: Path,
 ) -> None:
@@ -26178,8 +25830,6 @@ def test_main_rust_unsupported_pattern_bytes(
             input_path=JSON_SCHEMA_DATA_PATH / schema,
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
             extra_args=[*args, *target_pydantic_args(target_pydantic_version)],
             force_exec_validation=True,
             skip_code_validation=not runs,
@@ -26214,8 +25864,6 @@ def test_main_rust_unsupported_pattern_bytes_without_constraints(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_bytes.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="rust_unsupported_pattern_bytes_pydantic_v2.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", *target_pydantic_args(target_pydantic_version)],
         force_exec_validation=True,
     )
@@ -26235,8 +25883,6 @@ def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file:
             input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_syntax.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="rust_unsupported_syntax_pydantic_v2.py",
             extra_args=[
                 "--output-model-type",
                 "pydantic_v2.BaseModel",
@@ -26297,8 +25943,6 @@ def test_main_rust_only_syntax(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "rust_only_syntax.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="rust_only_syntax_pydantic_v2.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
     for model_name, valid, invalid in (
@@ -26328,12 +25972,11 @@ _IMPORTS_FROM_PARSING_PYTHON = pytest.mark.imports_from_newer_python(
 
 
 @pytest.mark.parametrize(
-    ("fixture", "target_python_version", "expected_file", "parses_from"),
+    ("fixture", "target_python_version", "parses_from"),
     [
         pytest.param(
             "rust_unsupported_atomic_group",
             "3.10",
-            "rust_unsupported_atomic_group_py310.py",
             (3, 11),
             marks=_IMPORTS_FROM_PARSING_PYTHON,
             id="atomic-group-3.10",
@@ -26341,14 +25984,12 @@ _IMPORTS_FROM_PARSING_PYTHON = pytest.mark.imports_from_newer_python(
         pytest.param(
             "rust_unsupported_atomic_group",
             "3.11",
-            "rust_unsupported_atomic_group_py311.py",
             (3, 11),
             id="atomic-group-3.11",
         ),
         pytest.param(
             "rust_unsupported_end_of_string",
             "3.13",
-            "rust_unsupported_end_of_string_py313.py",
             (3, 14),
             marks=(BLACK_PY313_SKIP, _IMPORTS_FROM_PARSING_PYTHON),
             id="end-of-string-3.13",
@@ -26356,7 +25997,6 @@ _IMPORTS_FROM_PARSING_PYTHON = pytest.mark.imports_from_newer_python(
         pytest.param(
             "rust_unsupported_end_of_string",
             "3.14",
-            "rust_unsupported_end_of_string_py314.py",
             (3, 14),
             marks=BLACK_PY314_SKIP,
             id="end-of-string-3.14",
@@ -26364,7 +26004,7 @@ _IMPORTS_FROM_PARSING_PYTHON = pytest.mark.imports_from_newer_python(
     ],
 )
 def test_main_rust_unsupported_target_python(
-    fixture: str, target_python_version: str, expected_file: str, parses_from: tuple[int, int], output_file: Path
+    fixture: str, target_python_version: str, parses_from: tuple[int, int], output_file: Path
 ) -> None:
     r"""Select Python's regex engine for Python-only regex syntax whichever Python the module targets.
 
@@ -26377,8 +26017,6 @@ def test_main_rust_unsupported_target_python(
         input_path=JSON_SCHEMA_DATA_PATH / f"{fixture}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26391,22 +26029,19 @@ def test_main_rust_unsupported_target_python(
 
 
 @pytest.mark.parametrize(
-    ("target_python_version", "collapse_args", "expected_file"),
+    ("target_python_version", "collapse_args"),
     [
-        pytest.param(
-            "3.10", [], "rust_unsupported_typed_extra_py310.py", marks=_IMPORTS_FROM_PARSING_PYTHON, id="python-3.10"
-        ),
-        pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", id="python-3.11"),
+        pytest.param("3.10", [], marks=_IMPORTS_FROM_PARSING_PYTHON, id="python-3.10"),
+        pytest.param("3.11", [], id="python-3.11"),
         pytest.param(
             "3.11",
             ["--collapse-root-models"],
-            "rust_unsupported_typed_extra_py311.py",
             id="python-3.11-collapse-root-models",
         ),
     ],
 )
 def test_main_rust_unsupported_typed_extra_target_python(
-    target_python_version: str, collapse_args: list[str], expected_file: str, output_file: Path
+    target_python_version: str, collapse_args: list[str], output_file: Path
 ) -> None:
     """Select Python's regex engine for a pattern of typed extra values whichever Python is targeted, as for fields.
 
@@ -26417,8 +26052,6 @@ def test_main_rust_unsupported_typed_extra_target_python(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_typed_extra.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26447,8 +26080,6 @@ def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
             input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file="rust_unsupported_python_rejected_pydantic_v2.py",
             extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"],
         )
 
@@ -26460,8 +26091,6 @@ def test_main_nested_lookaround_array_generic_container(output_file: Path) -> No
         input_path=JSON_SCHEMA_DATA_PATH / "nested_lookaround_array.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="nested_lookaround_array_generic_container.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26477,8 +26106,6 @@ def test_main_lookaround_dict_generic_container(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_dict.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_dict_generic_container.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26494,8 +26121,6 @@ def test_main_nested_lookaround_array_standard_collections(output_file: Path) ->
         input_path=JSON_SCHEMA_DATA_PATH / "nested_lookaround_array.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="nested_lookaround_array_standard_collections.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26511,8 +26136,6 @@ def test_main_lookaround_dict_standard_collections(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_dict.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_dict_standard_collections.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26528,8 +26151,6 @@ def test_main_lookaround_dict_key_pydantic_v2(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_dict_key.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="lookaround_dict_key_pydantic_v2.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26544,8 +26165,6 @@ def test_main_nullable_array_items_strict_nullable(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "nullable_array_items.yaml",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="nullable_array_items_strict_nullable.py",
         extra_args=[
             "--strict-nullable",
             "--output-model-type",
@@ -26566,8 +26185,6 @@ def test_main_builtin_field_names(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "builtin_field_names.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="builtin_field_names.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26582,8 +26199,6 @@ def test_main_builtin_field_names_snake_case(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "builtin_field_names_snake_case.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="builtin_field_names_snake_case.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26599,8 +26214,6 @@ def test_main_builtin_field_names_container_types(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "builtin_field_names_container_types.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="builtin_field_names_container_types.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26617,8 +26230,6 @@ def test_main_builtin_field_names_container_types_no_use_standard_collections(ou
         input_path=JSON_SCHEMA_DATA_PATH / "builtin_field_names_container_types.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="builtin_field_names_container_types_no_use_standard_collections.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -26631,22 +26242,18 @@ def test_main_builtin_field_names_container_types_no_use_standard_collections(ou
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    ("target_python_version", "expected_file"),
+    ("target_python_version"),
     [
-        ("3.10", "builtin_field_names_target_python_version_310.py"),
-        pytest.param("3.13", "builtin_field_names_target_python_version_313.py", marks=BLACK_PY313_SKIP),
+        ("3.10"),
+        pytest.param("3.13", marks=BLACK_PY313_SKIP),
     ],
 )
-def test_main_builtin_field_names_target_python_version(
-    output_file: Path, target_python_version: str, expected_file: str
-) -> None:
+def test_main_builtin_field_names_target_python_version(output_file: Path, target_python_version: str) -> None:
     """Test builtin field renaming follows target Python version instead of runtime builtins."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "builtin_field_names_target_python_version.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         skip_code_validation=True,
         extra_args=[
             "--output-model-type",
@@ -26658,22 +26265,18 @@ def test_main_builtin_field_names_target_python_version(
 
 
 @pytest.mark.parametrize(
-    ("target_python_version", "expected_file"),
+    ("target_python_version"),
     [
-        pytest.param("3.14", "builtin_field_names_python_315_builtins_314.py", id="python-3.14"),
-        pytest.param("3.15", "builtin_field_names_python_315_builtins_315.py", id="python-3.15"),
+        pytest.param("3.14", id="python-3.14"),
+        pytest.param("3.15", id="python-3.15"),
     ],
 )
-def test_main_builtin_field_names_python_315_builtins(
-    output_file: Path, target_python_version: str, expected_file: str
-) -> None:
+def test_main_builtin_field_names_python_315_builtins(output_file: Path, target_python_version: str) -> None:
     """Rename fields named like Python 3.15 builtins only for targets that have them."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "builtin_field_names_python_315_builtins.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         skip_code_validation=True,
         extra_args=[
             "--output-model-type",
@@ -26688,26 +26291,18 @@ def test_main_builtin_field_names_python_315_builtins(
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "target_python_version", "expected_file"),
+    ("output_model_type", "target_python_version"),
     [
-        pytest.param(
-            "dataclasses.dataclass", "3.12", "identifier_unicode_target_dataclass_312.py", id="dataclass-3.12"
-        ),
-        pytest.param(
-            "dataclasses.dataclass", "3.13", "identifier_unicode_target_dataclass_313.py", id="dataclass-3.13"
-        ),
-        pytest.param(
-            "dataclasses.dataclass", "3.14", "identifier_unicode_target_dataclass_314.py", id="dataclass-3.14"
-        ),
-        pytest.param(
-            "dataclasses.dataclass", "3.15", "identifier_unicode_target_dataclass_315.py", id="dataclass-3.15"
-        ),
-        pytest.param("typing.TypedDict", "3.14", "identifier_unicode_target_typed_dict_314.py", id="typed-dict-3.14"),
-        pytest.param("pydantic_v2.BaseModel", "3.15", "identifier_unicode_target_pydantic_315.py", id="pydantic-3.15"),
+        pytest.param("dataclasses.dataclass", "3.12", id="dataclass-3.12"),
+        pytest.param("dataclasses.dataclass", "3.13", id="dataclass-3.13"),
+        pytest.param("dataclasses.dataclass", "3.14", id="dataclass-3.14"),
+        pytest.param("dataclasses.dataclass", "3.15", id="dataclass-3.15"),
+        pytest.param("typing.TypedDict", "3.14", id="typed-dict-3.14"),
+        pytest.param("pydantic_v2.BaseModel", "3.15", id="pydantic-3.15"),
     ],
 )
 def test_main_identifier_unicode_follows_target(
-    output_file: Path, output_model_type: str, target_python_version: str, expected_file: str
+    output_file: Path, output_model_type: str, target_python_version: str
 ) -> None:
     """Name fields by the Unicode version of the target Python, whatever Python generates them.
 
@@ -26717,8 +26312,6 @@ def test_main_identifier_unicode_follows_target(
         input_path=JSON_SCHEMA_DATA_PATH / "identifier_unicode_target.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             output_model_type,
@@ -27263,22 +26856,18 @@ def test_generate_refuses_names_by_the_target_python(
 
 
 @pytest.mark.parametrize(
-    ("target_python_version", "expected_file"),
+    ("target_python_version"),
     [
-        pytest.param("3.13", "identifier_case_target_313.py", id="python-3.13"),
-        pytest.param("3.14", "identifier_case_target_314.py", id="python-3.14"),
+        pytest.param("3.13", id="python-3.13"),
+        pytest.param("3.14", id="python-3.14"),
     ],
 )
-def test_main_capitalised_enum_members_follow_target(
-    output_file: Path, target_python_version: str, expected_file: str
-) -> None:
+def test_main_capitalised_enum_members_follow_target(output_file: Path, target_python_version: str) -> None:
     """Uppercase enum members by the case mappings of the target Python: U+0264 has an uppercase from 3.14 on."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "identifier_case_target.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
         extra_args=[
             "--capitalise-enum-members",
             "--target-python-version",
