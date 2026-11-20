@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from functools import cache, cached_property
 from importlib.util import find_spec
 from itertools import islice, starmap
+from multiprocessing import forkserver, resource_tracker
 from pathlib import Path, PurePosixPath
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, Protocol, TypedDict, cast
@@ -29,6 +30,7 @@ from urllib.parse import urlparse
 
 import pytest
 import time_machine
+from coverage.config import CoverageConfig
 from inline_snapshot._core._global_state import state as inline_snapshot_state
 from typing_extensions import Required
 
@@ -118,8 +120,10 @@ CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer")
 From Python 3.14 the default core, ``sysmon``, works out the branches of each code object the first time it runs, which
 costs a fresh process seconds before its first generation; ``ctrace`` measures the same lines and branches without that.
 A coverage without its C extension, such as the pure Python wheel a Python without a compiled one installs, keeps its
-default.
+default. Every other Python a test starts gets the same core through `CHILD_COVERAGE_CONFIG_ENV`.
 """
+CHILD_COVERAGE_CONFIG_ENV = "COVERAGE_PROCESS_CONFIG"
+"""The configuration that coverage's ``run.patch = ["subprocess"]`` hands every Python started by a measured process."""
 BUILTIN_FORMATTER_VALUE = "builtin"
 _VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 _MOCK_PUBLIC_IP = "93.184.216.34"
@@ -313,6 +317,50 @@ def pytest_configure(config: pytest.Config) -> None:
     ledger = config.stash[_LEDGER] = _Ledger(config)
     config.pluginmanager.register(_LedgerPlugin(ledger), "expected-ledger")
     config.pluginmanager.register(SlowTestOrdering(), "slow-test-ordering")
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_sessionstart(session: pytest.Session) -> Generator[None, None, None]:
+    """Measure in a started Python what this process measures, and leave the xdist workers to pytest-cov.
+
+    ``run.patch = ["subprocess"]`` puts the configuration of each process that starts coverage into
+    `CHILD_COVERAGE_CONFIG_ENV`. The xdist controller sets it before it starts the workers, which pytest-cov measures
+    itself: a worker that inherited it would start a second coverage at startup. A worker's own coverage sets it again.
+    """
+    if session.config.pluginmanager.has_plugin("dsession"):
+        os.environ.pop(CHILD_COVERAGE_CONFIG_ENV, None)
+    yield
+    if (serialized := os.environ.get(CHILD_COVERAGE_CONFIG_ENV)) is not None:
+        os.environ[CHILD_COVERAGE_CONFIG_ENV] = _child_coverage_config(serialized)
+
+
+def pytest_runtest_teardown() -> None:
+    """Stop the multiprocessing helpers that a test started, so that no process it started outlives it.
+
+    A spawn or forkserver pool starts a resource tracker, and a forkserver pool a fork server, that serve the whole
+    process and end only with it, after pytest-cov combined the data files: measured through
+    `CHILD_COVERAGE_CONFIG_ENV`, such a helper would then leave its own data file behind.
+    """
+    resource_tracker._resource_tracker._stop()
+    forkserver._forkserver._stop()
+
+
+def _child_coverage_config(serialized: str) -> str:
+    """Resolve the coverage configuration `serialized` the way this process reads it, for a Python a test starts.
+
+    A started Python reads the configuration in its own working directory and on its own ``sys.path``: an omit pattern
+    relative to the project would no longer match, and a module source such as ``scripts._source_model`` would measure
+    whatever module of that name the Python imports, such as the copies of the repository that tests run. So a relative
+    pattern is anchored at this process's working directory as coverage anchors it here, only directory sources are
+    kept, and the core is the one of `CHILD_COVERAGE_ENV`.
+    """
+    config = CoverageConfig.deserialize(serialized)
+    config.source = [source for source in config.source or [] if Path(source).is_dir()]
+    config.run_omit = [
+        pattern if pattern.startswith(("*", "?")) else str(Path.cwd() / pattern) for pattern in config.run_omit
+    ]
+    config.core = CHILD_COVERAGE_ENV.get("COVERAGE_CORE", config.core)
+    return config.serialize()
 
 
 def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  # noqa: ARG001, PLR0912, PLR0914  # pragma: no cover

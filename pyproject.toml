@@ -494,6 +494,7 @@ run.parallel = true
 run.plugins = [
   "covdefaults",
 ]
+run.patch = [ "subprocess" ]
 paths.other = [
   ".",
   "*/datamodel-code-generator",
