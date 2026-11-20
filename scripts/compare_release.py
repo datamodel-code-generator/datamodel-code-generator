@@ -908,8 +908,12 @@ def _generate_recorded(job: Record, main: Callable[[list[str]], object]) -> int:
         warnings.simplefilter("default", DeprecationWarning)
         warnings.filters.insert(0, ("always", None, Warning, recorder, 0))
         warnings.showwarning = recorder.show
-        with _memory_cap(job.get("memory_mb", 0)):
-            code = _exit_code(main, job["args"])
+        with _memory_cap(job.get("memory_mb", 0)) as over_cap:
+            if over_cap:
+                sys.stderr.write("MemoryError\n")
+                code = OUT_OF_MEMORY
+            else:
+                code = _exit_code(main, job["args"])
         for tracer in (*_TRACER, *_RECORDER):
             tracer.end()
         handled = [f"{type(exception).__module__}.{type(exception).__qualname__}" for exception in caught]
@@ -923,24 +927,39 @@ def _generate_recorded(job: Record, main: Callable[[list[str]], object]) -> int:
 
 
 @contextlib.contextmanager
-def _memory_cap(limit_mb: int) -> Generator[None, None, None]:
+def _memory_cap(limit_mb: int) -> Generator[bool, None, None]:
     """Cap the data memory of this process (`RLIMIT_DATA`) at `limit_mb` while the block runs (0: no cap).
 
     The cap counts the whole worker, which recycling bounds; where the platform refuses it (macOS), the run goes
-    uncapped.
+    uncapped. The block gets whether the worker already holds more than the cap (`VmData`, the number the kernel checks
+    a new mapping against): its allocations then fail wherever the freed memory of its heap does not cover them, so
+    the run would end in a MemoryError, a SystemError of some C call or a crash, by chance. Such a run is stopped
+    where it would start.
     """
     if not limit_mb:
-        yield
+        yield False
         return
     import resource  # ruff: ignore[import-outside-top-level] - POSIX only, like the fork of an import check
 
     limits = resource.getrlimit(resource.RLIMIT_DATA)
-    with contextlib.suppress(ValueError, OSError):
-        resource.setrlimit(resource.RLIMIT_DATA, (limit_mb << 20, limits[1]))
+    held = True
     try:
-        yield
+        resource.setrlimit(resource.RLIMIT_DATA, (limit_mb << 20, limits[1]))
+    except (ValueError, OSError):
+        held = False
+    try:
+        yield held and (data_kb := _data_kb()) is not None and data_kb > limit_mb << 10
     finally:
         resource.setrlimit(resource.RLIMIT_DATA, limits)
+
+
+def _data_kb() -> int | None:
+    """Return the data memory this process holds in kB, as `VmData` shows it (None where there is no `/proc`)."""
+    try:
+        text = Path("/proc/self/status").read_text(encoding="ascii")
+    except OSError:
+        return None
+    return next((int(line.split()[1]) for line in text.splitlines() if line.startswith("VmData:")), None)
 
 
 @contextlib.contextmanager
