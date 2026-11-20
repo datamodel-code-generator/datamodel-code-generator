@@ -65,9 +65,11 @@ default options	change_records/selector_surface[default options].txt	= main/json
 every option set	change_records/selector_surface[every option set].txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 flags	change_records/selector_surface[flags].txt
 [test_without_cells]
-a header-like line in a string	change_records/without_cells[a header-like line in a string].txt	= change_records/without_cells[inline cells].txt
+a header-like line in a string	change_records/without_cells[a header-like line in a string].txt
+an indented header	change_records/without_cells[an indented header].txt	= change_records/without_cells[spaced header].txt
 cells before a sub-table	change_records/without_cells[cells before a sub-table].txt
 inline cells	change_records/without_cells[inline cells].txt
 no cells	change_records/without_cells[no cells].txt
+option sets at the start of their lines	change_records/without_cells[option sets at the start of their lines].txt	= change_records/without_cells[spaced header].txt
 spaced header	change_records/without_cells[spaced header].txt
 two cells tables	change_records/without_cells[two cells tables].txt	= change_records/without_cells[spaced header].txt

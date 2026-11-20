@@ -884,27 +884,33 @@ def with_covers(text: str, labels: Collection[str]) -> str:
     return next(candidate for candidate in candidates if tomllib.loads(candidate) == wanted)
 
 
+def _parses(text: str) -> bool:
+    try:
+        tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return False
+    return True
+
+
 def without_cells(text: str) -> str:
     """Return a fragment's text without its `[[change.cells]]` tables, as `--stamp` moves it to a release's changes.
 
-    Each table runs from its header to the next table header or the end. Raises ValueError where the text writes its
-    cells otherwise (an inline array, or a line of a multi-line string that looks like a header).
+    Each table runs from its header to the next table header or the end. A table header is a line that starts with
+    `[` where no value is open (the text before it parses), so neither an array element nor a line of a multi-line
+    string. Raises ValueError where the text writes its cells otherwise (an inline array).
     """
     wanted = tomllib.loads(text)
     for entry in wanted.get("change", []):
         entry.pop("cells", None)
+    lines = text.splitlines(keepends=True)
     kept, dropping = [], False
-    for line in text.splitlines(keepends=True):
-        if line.startswith("["):
+    for index, line in enumerate(lines):
+        if line.lstrip().startswith("[") and _parses("".join(lines[:index])):
             dropping = bool(CELLS_HEADER.fullmatch(line.strip()))
         if not dropping:
             kept.append(line)
     stripped = "".join(kept)
-    try:
-        written = tomllib.loads(stripped) == wanted
-    except tomllib.TOMLDecodeError:
-        written = False
-    if not written:
+    if not _parses(stripped) or tomllib.loads(stripped) != wanted:
         msg = "its cells are not written as [[change.cells]] tables"
         raise ValueError(msg)
     return stripped
