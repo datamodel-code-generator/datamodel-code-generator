@@ -2,7 +2,7 @@ plain.json: exit=1
 summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 1
 evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
-evidence: changed code objects: head 2, base 2; run by a compared cell 2/4; run by a test only 0; not run 2/4; unmeasurable 0
+evidence: changed code objects: head 2, base 2; run by a compared cell 2/4; on lines a test ran 0; not run 2/4; unmeasurable 0
 evidence: not run: base _case.py A.moved: start 5:4-5:4; instr 6:8-6:20; instr 6:15-6:20
 evidence: not run: head _case.py B.moved: start 10:4-10:4; instr 11:8-11:20; instr 11:15-11:20
 evidence: incomplete: changed code objects no compared cell ran: 2
@@ -11,5 +11,5 @@ reached.json: exit=0
 summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 1
 evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
-evidence: changed code objects: head 2, base 2; run by a compared cell 4/4; run by a test only 0; not run 0/4; unmeasurable 0
+evidence: changed code objects: head 2, base 2; run by a compared cell 4/4; on lines a test ran 0; not run 0/4; unmeasurable 0
 evidence: complete

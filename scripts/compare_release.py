@@ -1541,9 +1541,13 @@ Facts = tuple[int, tuple[tuple[str, str], ...], str, str]
 
 
 def _facts(outcome: Outcome) -> Facts:
-    """Return what a cell's run proved: its exit status, each file's hash, its warnings' hash, its other facts' hash."""
+    """Return what a cell's run proved: its exit status, each file's hash, its warnings' hash, its other facts' hash.
+
+    The other facts are the exceptions it handled, its messages, the single output file's refusal and the error of
+    its import check (empty where it passed or `--import-check` is off, which holds for every cell of a run).
+    """
     files = tuple((sys.intern(name), _digest(text)) for name, text in sorted(outcome.tree.items()))
-    other = json.dumps([outcome.handled, outcome.messages, outcome.first], sort_keys=True)
+    other = json.dumps([outcome.handled, outcome.messages, outcome.first, outcome.import_error], sort_keys=True)
     return outcome.code, files, _digest(json.dumps(outcome.warnings)), _digest(other)
 
 
@@ -1701,10 +1705,10 @@ class Evidence:
         run = sum(not missing[unit["index"]] for unit in units)
         print(
             f"evidence: changed code objects: head {counts['head']}, base {counts['base']}; run by a compared cell "
-            f"{run}/{len(units)}; run by a test only {len(tested)}; not run {len(unrun)}/{len(units)}; unmeasurable "
+            f"{run}/{len(units)}; on lines a test ran {len(tested)}; not run {len(unrun)}/{len(units)}; unmeasurable "
             f"{len(unmeasurable)}"
         )
-        for label, found in (("run by a test only", tested), ("not run", unrun), ("unmeasurable", unmeasurable)):
+        for label, found in (("on lines a test ran", tested), ("not run", unrun), ("unmeasurable", unmeasurable)):
             for unit in found:
                 probes = "; ".join(f"{probe['kind']} {probe['where']}" for probe in missing[unit["index"]])
                 print(f"evidence: {label}: {unit['side']} {unit['path']} {unit['qualname']}: {probes}")
@@ -1733,12 +1737,13 @@ class Evidence:
 
 
 def add_evidence_args(parser: argparse.ArgumentParser) -> None:
-    """Add `--test-coverage`, which tells changed code run by a test only, and `--evidence` (`Evidence.write`)."""
+    """Add `--test-coverage`, which tells changed code on lines a test ran, and `--evidence` (`Evidence.write`)."""
     parser.add_argument(
         "--test-coverage",
         type=Path,
-        help="coverage.py data file of the test suite: changed code objects it ran and no compared run ran are 'run "
-        "by a test only' (default: 'not run')",
+        help="coverage.py data file of the test suite: changed code objects no compared run ran whose probes all lie "
+        "on lines it ran are 'on lines a test ran' (line coverage: it does not tell which part of a line ran; default: "
+        "'not run')",
     )
     parser.add_argument(
         "--evidence",

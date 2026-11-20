@@ -21,7 +21,7 @@ compared too little (`compare_release.Evidence`): no input group, an input group
 directories, output model type and option set; a cli-doc example, payload case or project job by its kind) none of
 whose cells compared (generated on both sides with all output in the run's directory), and, against a git revision, a
 changed code object (`scripts/_change_units.py`: what the candidate adds on its side, what it removes on the base's)
-that no compared cell ran on its side (it is run by a test only, by `--test-coverage`, or not run), that is
+that no compared cell ran on its side (on lines a test ran, by `--test-coverage`, or not run), that is
 unmeasurable, or that the Python (before 3.12) cannot measure. A sharded identity run is refused: a shard cannot judge
 the whole run. Every gate prints these input groups and the cells the candidate refuses and the base generated (the
 single output file included). Refactoring steps use it against their base commit.

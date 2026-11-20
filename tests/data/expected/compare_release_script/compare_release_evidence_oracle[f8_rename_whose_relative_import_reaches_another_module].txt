@@ -2,7 +2,7 @@ plain.json: exit=1
 summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
 cached base outputs: 0 of 1
 evidence: input group inputs files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
-evidence: changed code objects: head 2, base 0; run by a compared cell 0/2; run by a test only 0; not run 2/2; unmeasurable 0
+evidence: changed code objects: head 2, base 0; run by a compared cell 0/2; on lines a test ran 0; not run 2/2; unmeasurable 0
 evidence: not run: head b/mod.py <module>: instr 4:0-5:20
 evidence: not run: head b/mod.py f: start 4:0-4:0; instr 5:4-5:20; instr 5:11-5:16; instr 5:11-5:20; instr 5:19-5:20
 evidence: incomplete: changed code objects no compared cell ran: 2

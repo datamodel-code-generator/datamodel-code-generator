@@ -2,6 +2,6 @@ exit=1
 summary: same=1, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=0
 cells: 1 (tier pr, shard 1/1), cached base outputs: 0
 evidence: input group tests/data/jsonschema files | pydantic_v2.BaseModel | default: 1 compared, 0 failed on both sides
-evidence: changed code objects: head 1, base 0; run by a compared cell 0/1; run by a test only 0; not run 1/1; unmeasurable 0
+evidence: changed code objects: head 1, base 0; run by a compared cell 0/1; on lines a test ran 0; not run 1/1; unmeasurable 0
 evidence: not run: head __main__.py main: instr 23:8-23:80; instr 23:22-23:25; instr 23:22-23:45
 evidence: incomplete: changed code objects no compared cell ran: 1

@@ -1,4 +1,4 @@
-"""C3 (scripts/_change_units.py): without the future import a function's annotations run; a local one never does.
+"""C3 (scripts/_change_units.py): without the future import a function's annotations may run; a local one never does.
 
 segments: yes
 """
