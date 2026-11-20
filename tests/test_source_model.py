@@ -172,14 +172,14 @@ def _bases_and_annotations(model: source_model.SourceModule) -> list[str]:
 
 
 def _assignments(model: source_model.SourceModule) -> list[str]:
-    """Render what each target of the module takes: the item it pairs with, and the whole value."""
+    """Render what each target of the module takes: the item it pairs with, the whole value, its place in an unpacking."""
     targets = sorted(
         (node for node in ast.walk(model.tree) if model.assignment(node) is not None),
         key=lambda node: (getattr(node, "lineno", 0), getattr(node, "col_offset", 0)),
     )
     return [
         f"{model.source(node)} @{node.lineno}:{node.col_offset} takes ({found.kind}) {model.source(found.element)}"
-        f" of {model.source(found.value)}"
+        f" of {model.source(found.value)}{f' at {found.position}' if found.position else ''}"
         for node in targets
         if (found := model.assignment(node)) is not None
     ]

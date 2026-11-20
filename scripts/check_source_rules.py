@@ -1058,15 +1058,15 @@ def _chains(module: Module, heads: dict[ast.AST, Reference]) -> Iterator[tuple[a
             yield reference.node, reference
 
 
-def _presence_names(expression: ast.expr) -> Iterator[ast.Name]:
-    """Yield the names an expression only tests for: ``x``, ``not x``, ``x is None``, ``and``/``or`` of those."""
-    if isinstance(expression, ast.Name):
-        yield expression
+def _presence_reads(expression: ast.expr, heads: dict[ast.AST, Reference]) -> Iterator[Reference]:
+    """Yield the name reads an expression only tests for: ``x``, ``not x``, ``x is None``, ``and``/``or`` of these."""
+    if (reference := heads.get(expression)) is not None:
+        yield reference
     elif isinstance(expression, ast.UnaryOp) and isinstance(expression.op, ast.Not):
-        yield from _presence_names(expression.operand)
+        yield from _presence_reads(expression.operand, heads)
     elif isinstance(expression, ast.BoolOp):
         for value in expression.values:
-            yield from _presence_names(value)
+            yield from _presence_reads(value, heads)
     elif (
         isinstance(expression, ast.Compare)
         and len(expression.ops) == 1
@@ -1074,7 +1074,7 @@ def _presence_names(expression: ast.expr) -> Iterator[ast.Name]:
     ):
         sides = [expression.left, *expression.comparators]
         if any(isinstance(side, ast.Constant) and side.value is None for side in sides):
-            yield from (side for side in sides if isinstance(side, ast.Name))
+            yield from (reference for side in sides if (reference := heads.get(side)) is not None)
 
 
 def _tested(condition: Condition) -> ast.expr | None:
@@ -1085,22 +1085,22 @@ def _tested(condition: Condition) -> ast.expr | None:
     return node if isinstance(node, ast.expr) else None
 
 
-def _presence_tests(module: Module) -> set[ast.Name]:
-    """Return the names the module's tests only check for presence (``if fcntl is None``, ``fcntl and ...``)."""
+def _presence_tests(module: Module, heads: dict[ast.AST, Reference]) -> set[ast.AST]:
+    """Return the name reads the module's tests only check for presence (``if fcntl is None``, ``fcntl and ...``)."""
     tests: list[ast.expr] = []
     for node in module.nodes:
         if isinstance(node, (ast.If, ast.IfExp, ast.Assert)):
             tests.append(node.test)
         elif isinstance(node, ast.BoolOp):
             tests += node.values[:-1]
-    return {name for test in tests for name in _presence_names(test)}
+    return {reference.node for test in tests for reference in _presence_reads(test, heads)}
 
 
-def _decided_by_name(reference: Reference) -> bool:
+def _decided_by_name(reference: Reference, heads: dict[ast.AST, Reference]) -> bool:
     """Return whether a test of the name's presence (``if fcntl is not None:``) stands between a read and the module."""
     return any(
         (tested := _tested(condition)) is not None
-        and any(name.id == reference.name for name in _presence_names(tested))
+        and any(read.name == reference.name for read in _presence_reads(tested, heads))
         for condition in reference.guard
     )
 
@@ -1139,13 +1139,14 @@ def _posix_uses(module: Module) -> list[_PosixUse]:
         and item.source.split(".")[0] in POSIX_ONLY_MODULES
         and not _decided_by_platform(item.guard)
     ]
-    presence = _presence_tests(module)
-    longest: dict[ast.Name, tuple[str, int, Scope]] = {}
-    for node, reference in _chains(module, _heads(module)):
+    heads = _heads(module)
+    presence = _presence_tests(module, heads)
+    longest: dict[ast.AST, tuple[str, int, Scope]] = {}
+    for node, reference in _chains(module, heads):
         if (
             (origin := _posix_origin(model, node)) is None
             or _decided_by_platform(reference.guard)
-            or _decided_by_name(reference)
+            or _decided_by_name(reference, heads)
             or node in presence
         ):
             continue
@@ -1269,19 +1270,17 @@ def _usefixtures(model: SourceModule, scope: Scope) -> list[str]:
     ]
 
 
-def _class_chain(model: SourceModule, scope: Scope, seen: frozenset[Scope] = frozenset()) -> Iterator[Scope]:
+def _class_chain(module: Module, scope: Scope, seen: frozenset[Scope] = frozenset()) -> Iterator[Scope]:
     """Yield a class scope and the classes of the same module its bases name, each once."""
     if scope in seen:
         return
     yield scope
+    heads = _heads(module)
     for base in bases(scope):
-        head = base
-        while isinstance(head, ast.Attribute):
-            head = head.value
-        if isinstance(head, ast.Name) and head is base:
-            for binding in model.resolve(head).bindings:
+        if (reference := heads.get(base)) is not None:
+            for binding in module.model.resolve(reference.node).bindings:
                 if binding.kind == "class":
-                    yield from _class_chain(model, model.scope_defined_by(binding.node), seen | {scope})
+                    yield from _class_chain(module, module.model.scope_defined_by(binding.node), seen | {scope})
 
 
 def _self_calls(module: Module, scope: Scope) -> Iterator[Scope]:
@@ -1291,18 +1290,14 @@ def _self_calls(module: Module, scope: Scope) -> Iterator[Scope]:
     if receiver is None or scope.parent is None:
         return
     members: dict[str, list[ast.AST]] = {}
-    for owner in _class_chain(model, scope.parent):
+    for owner in _class_chain(module, scope.parent):
         for name, nodes in model.class_members(owner, spelled=True).items():
             members.setdefault(name, nodes)
+    receivers = {use.reference.node for use in model.uses(receiver)}
     for node in ast.walk(scope.node):
-        if (
-            isinstance(node, ast.Attribute)
-            and isinstance(node.ctx, ast.Load)
-            and isinstance(node.value, ast.Name)
-            and node.value.id == receiver.name
-        ):
+        if isinstance(node, ast.Attribute) and node.value in receivers:
             for target in members.get(node.attr, []):
-                if isinstance(target, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if (method := model.binding_at(target)) is not None and method.kind == "def":
                     yield model.scope_defined_by(target)
 
 
@@ -1518,33 +1513,35 @@ class _Names:
     A name holds the value of each assignment to it, the values of the ``parametrize`` that gives a test its parameter
     (the matching element of each ``pytest.param`` or tuple), and the item a ``for`` loop or a comprehension takes from
     a literal list, tuple, set or dict (``items()``, ``keys()`` and ``values()`` too) at the name's position in the
-    target. Names bound to names are followed, each once. What a call, a subscript or an argument makes is not known.
+    target (`Assignment.position`). Names bound to names are followed, each once. What a call, a subscript or an
+    argument makes is not known.
     """
 
     def __init__(self, module: Module) -> None:
         self.model = module.model
-        self.targets: dict[ast.AST, tuple[ast.expr, ast.expr]] = {}
-        for node in module.nodes:
-            if isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
-                self.targets.update(
-                    (part, (node.target, node.iter)) for part in ast.walk(node.target) if isinstance(part, ast.Name)
-                )
+        self.heads = _heads(module)
 
-    def expressions(self, name: ast.Name) -> list[ast.expr]:
+    def _loaded(self, node: ast.expr) -> Reference | None:
+        """Return the reference of a name read, None for any other expression."""
+        reference = self.heads.get(node)
+        return reference if reference is not None and reference.context == "load" else None
+
+    def expressions(self, name: ast.expr) -> list[ast.expr]:
         """Return the expressions a name may hold, one step: its assigned values, parameter values and loop items."""
+        if (reference := self._loaded(name)) is None:
+            return []
         found: list[ast.expr] = []
-        for binding in self.model.resolve(name).bindings:
+        for binding in self.model.resolve(reference.node).bindings:
+            assigned = self.model.assignment(binding.node)
             if binding.kind in {"assign", "annassign"} and binding.value is not None:
                 found.append(binding.value)
             elif binding.kind == "param":
                 found += self._parametrized(binding)
-            elif binding.kind in {"for", "comprehension"} and binding.node in self.targets:
-                target, iterable = self.targets[binding.node]
-                path = _target_path(target, binding.node)
+            elif binding.kind in {"for", "comprehension"} and assigned is not None:
                 found += [
                     element
-                    for item in self.items(iterable)
-                    if path is not None and (element := _element(item, path)) is not None
+                    for item in self.items(assigned.value)
+                    if (element := _element(item, assigned.position)) is not None
                 ]
         return found
 
@@ -1554,7 +1551,7 @@ class _Names:
             return list(iterable.elts)
         if isinstance(iterable, ast.Dict):
             return [key for key in iterable.keys if key is not None]
-        if isinstance(iterable, ast.Name) and iterable not in seen:
+        if self._loaded(iterable) is not None and iterable not in seen:
             return [item for value in self.expressions(iterable) for item in self.items(value, seen | {iterable})]
         if (
             isinstance(iterable, ast.Call)
@@ -1564,9 +1561,7 @@ class _Names:
         ):
             found: list[ast.expr] = []
             for mapping in self.mappings(iterable.func.value):
-                pairs = [
-                    (key, value) for key, value in zip(mapping.keys, mapping.values, strict=True) if key is not None
-                ]
+                pairs = [(key, value) for key, value in zip(mapping.keys, mapping.values, strict=True) if key]
                 found += {
                     "items": [ast.Tuple([key, value], ast.Load()) for key, value in pairs],
                     "keys": [key for key, _ in pairs],
@@ -1579,7 +1574,7 @@ class _Names:
         """Return the dict displays an expression may be: itself, or those its name may hold."""
         if isinstance(node, ast.Dict):
             return [node]
-        if isinstance(node, ast.Name) and node not in seen:
+        if self._loaded(node) is not None and node not in seen:
             return [m for value in self.expressions(node) for m in self.mappings(value, seen | {node})]
         return []
 
@@ -1589,14 +1584,12 @@ class _Names:
         for decorator in getattr(binding.scope.node, "decorator_list", []):
             if not (isinstance(decorator, ast.Call) and self.model.origin(decorator.func) == "pytest.mark.parametrize"):
                 continue
-            arguments = {
-                "argnames": None,
-                "argvalues": None,
-                **dict(zip(("argnames", "argvalues"), decorator.args, strict=False)),
-            }
+            empty = ast.Tuple([], ast.Load())
+            arguments = {"argnames": empty, "argvalues": empty}
+            arguments.update(zip(arguments, decorator.args, strict=False))
             arguments.update((keyword.arg, keyword.value) for keyword in decorator.keywords if keyword.arg in arguments)
             names = _argnames(arguments["argnames"])
-            if binding.name not in names or arguments["argvalues"] is None:
+            if binding.name not in names:
                 continue
             position = names.index(binding.name)
             for item in self.items(arguments["argvalues"]):
@@ -1605,7 +1598,7 @@ class _Names:
                     if isinstance(item, ast.Call) and self.model.origin(item.func) == "pytest.param"
                     else item
                 )
-                if (element := _element(values, [position] if len(names) > 1 else [])) is not None:
+                if (element := _element(values, (position,) if len(names) > 1 else ())) is not None:
                     found.append(element)
         return found
 
@@ -1615,12 +1608,12 @@ class _Names:
             return [node.value] if isinstance(node.value, str) else []
         if isinstance(node, ast.IfExp):
             return [*self.strings(node.body, seen), *self.strings(node.orelse, seen)]
-        if isinstance(node, ast.Name) and node not in seen:
+        if self._loaded(node) is not None and node not in seen:
             return [text for value in self.expressions(node) for text in self.strings(value, seen | {node})]
         return []
 
 
-def _argnames(node: ast.expr | None) -> list[str]:
+def _argnames(node: ast.expr) -> list[str]:
     """Return the parameter names a ``parametrize`` call lists: ``"a, b"``, or a list or tuple of strings."""
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return [part.strip() for part in node.value.split(",")]
@@ -1629,23 +1622,12 @@ def _argnames(node: ast.expr | None) -> list[str]:
     return []
 
 
-def _target_path(target: ast.expr, name: ast.AST) -> list[int] | None:
-    """Return the positions that lead from a ``for`` target to a name in it (``a, (b, c)`` leads to ``c`` by 1, 1)."""
-    if target is name:
-        return []
-    if isinstance(target, (ast.Tuple, ast.List)) and not any(isinstance(item, ast.Starred) for item in target.elts):
-        for position, item in enumerate(target.elts):
-            if (rest := _target_path(item, name)) is not None:
-                return [position, *rest]
-    return None
-
-
-def _element(item: ast.expr, path: list[int]) -> ast.expr | None:
-    """Return the part of an item that a path of positions leads to, None where the item is no tuple or list there."""
-    for position in path:
-        if not isinstance(item, (ast.Tuple, ast.List)) or position >= len(item.elts):
+def _element(item: ast.expr, position: tuple[int, ...]) -> ast.expr | None:
+    """Return the part of an item that a position leads to, None where the item is no tuple or list there."""
+    for index in position:
+        if not isinstance(item, (ast.Tuple, ast.List)) or index >= len(item.elts):
             return None
-        item = item.elts[position]
+        item = item.elts[index]
     return item
 
 
@@ -1723,7 +1705,6 @@ def _file_name_keys(module: Module) -> Iterator[tuple[int, str]]:
     if not writers:
         return
     names = _Names(module)
-    heads = {reference.node: reference for reference in model.references}
     pending: list[ast.AST] = [
         argument
         for node in module.nodes
@@ -1739,11 +1720,7 @@ def _file_name_keys(module: Module) -> Iterator[tuple[int, str]]:
             seen.add(id(part))
             if isinstance(part, ast.Dict):
                 yield from ((key.lineno, text) for key in part.keys if key is not None for text in names.strings(key))
-            elif (
-                isinstance(part, ast.Name)
-                and (reference := heads.get(part)) is not None
-                and reference.context == "load"
-            ):
+            else:
                 pending += names.expressions(part)
 
 

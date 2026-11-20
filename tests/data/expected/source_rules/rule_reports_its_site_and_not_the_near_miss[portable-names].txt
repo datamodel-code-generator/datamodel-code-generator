@@ -18,6 +18,10 @@ tests/test_names.py:39: portable-names: key 'var:key' names a file: Windows refu
 tests/test_names.py:45: portable-names: 'param:bad.json': Windows refuses ':' in a file name
 tests/test_names.py:45: portable-names: 'nul.json': Windows reserves the name for a device
 tests/test_names.py:50: portable-names: 'pair:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:65: portable-names: 'list:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:75: portable-names: 'cond:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:78: portable-names: 'key:bad.json': Windows refuses ':' in a file name
+tests/test_names.py:80: portable-names: 'key:bad.json': Windows refuses ':' in a file name
 
 rule counts:
-  portable-names: 19 (absolute); fix: rename the file or the name (no `<>:"|?*`, no trailing dot or space, no device name, no two paths that differ only in case)
+  portable-names: 23 (absolute); fix: rename the file or the name (no `<>:"|?*`, no trailing dot or space, no device name, no two paths that differ only in case)

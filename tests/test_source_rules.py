@@ -1070,6 +1070,7 @@ TREES: dict[str, dict[str, str]] = {
         """,
         "tests/test_reach.py": """
             import os
+            import unittest
 
             import pytest
 
@@ -1139,6 +1140,39 @@ TREES: dict[str, dict[str, str]] = {
 
                 def test_after_the_autouse_fixture(self):
                     pass
+
+
+            class TestShadow(TestSelf):
+                pass
+
+
+            class TestShadow(TestShadow):
+                def test_inherited_spawn_through_a_rebound_name(self):
+                    self._spawn()
+
+
+            class TestUnittest(unittest.TestCase):
+                def test_base_of_another_module(self):
+                    self.assertTrue(True)
+
+
+            @pytest.fixture
+            def base():
+                return 1
+
+
+            @pytest.fixture
+            def left(base):
+                return base
+
+
+            @pytest.fixture
+            def right(base):
+                return base
+
+
+            def test_two_fixtures_share_a_portable_one(left, right):
+                pass
         """,
     },
     "portable-names": {
@@ -1216,6 +1250,39 @@ TREES: dict[str, dict[str, str]] = {
 
             def test_unknown_name(tmp_path: Path, anything: str):
                 (tmp_path / anything).write_text("{}")
+
+
+            CASE = ("tuple:bad.json", "x")
+            ARGNAMES = ("name", "text")
+
+
+            @pytest.mark.slow
+            @pytest.mark.timeout(5)
+            @pytest.mark.parametrize(["name", "text"], [CASE, ("list:bad.json", "y")])
+            def test_decorators_and_a_name_as_the_item(tmp_path: Path, name: str, text: str, other: str):
+                (tmp_path / name).write_text(text)
+                (tmp_path / other).write_text(text)
+
+
+            @pytest.mark.parametrize(ARGNAMES, [("named:bad.json", "z")])
+            def test_names_of_a_name(tmp_path: Path, name: str, text: str):
+                (tmp_path / name).write_text(text)
+
+
+            def test_other_ways_to_name_a_file(tmp_path: Path, flag: bool):
+                (tmp_path / ("cond:bad.json" if flag else "fine.json")).write_text("{}")
+                mapping = {"key:bad.json": "{}"}
+                for key in mapping:
+                    (tmp_path / key).write_text("{}")
+                for key in sorted(mapping):
+                    (tmp_path / key).write_text("{}")
+                with open(tmp_path / "log.txt", "w") as handle:
+                    (tmp_path / handle.name).write_text("{}")
+                    (tmp_path / handle).write_text("{}")
+                for first, second, third in [("one:bad.json", "ok.json")]:
+                    (tmp_path / third).write_text("{}")
+                for left, right in ["lonely:bad.json"]:
+                    (tmp_path / right).write_text("{}")
         """,
     },
 }

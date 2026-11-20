@@ -809,13 +809,16 @@ class Assignment:
     ``value`` is the expression the statement evaluates for it: the assigned value, the iterable, the context
     expression. ``element`` is the part of it the target takes: where the target and the value are tuples or lists of
     one length, each item takes the item at its position (at every level of unpacking, a starred item too), else the
-    whole value. ``kind`` is ``assign``, ``annassign``, ``for``, ``comprehension``, ``with`` or ``walrus``. An
+    whole value. ``position`` is where the target sits in the unpacking target it belongs to: the index at each level
+    (``c`` of ``a, (b, c)`` is ``(1, 1)``, a starred item its own index), empty for the whole target. ``kind`` is
+    ``assign``, ``annassign``, ``for``, ``comprehension``, ``with`` or ``walrus``. An
     augmented assignment, a deletion and an annotation without a value assign nothing.
     """
 
     kind: str
     value: ast.expr = field(repr=False)
     element: ast.expr = field(repr=False)
+    position: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, eq=False, slots=True)
@@ -2541,13 +2544,19 @@ def _assigned(node: ast.AST) -> list[tuple[str, ast.expr, ast.expr]]:
 
 def _pair(found: dict[ast.AST, Assignment], kind: str, target: ast.expr, value: ast.expr, element: ast.expr) -> None:
     """Record what a target takes, and pair the items of an unpacking target with the items of a value as long."""
-    found[target] = Assignment(kind, value, element)
+    _record(found, target, Assignment(kind, value, element))
+
+
+def _record(found: dict[ast.AST, Assignment], target: ast.expr, assignment: Assignment) -> None:
+    found[target] = assignment
     if isinstance(target, ast.Starred):
-        _pair(found, kind, target.value, value, element)
+        _record(found, target.value, assignment)
     elif isinstance(target, (ast.Tuple, ast.List)):
+        element = assignment.element
         same = isinstance(element, (ast.Tuple, ast.List)) and len(element.elts) == len(target.elts)
-        for item, part in zip(target.elts, element.elts if same else [element] * len(target.elts), strict=True):
-            _pair(found, kind, item, value, part)
+        parts = element.elts if same else [element] * len(target.elts)
+        for index, (item, part) in enumerate(zip(target.elts, parts, strict=True)):
+            _record(found, item, replace(assignment, element=part, position=(*assignment.position, index)))
 
 
 def string_type(node: ast.Constant) -> ast.expr | None:
