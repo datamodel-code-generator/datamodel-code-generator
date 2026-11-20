@@ -159,6 +159,12 @@ VARIANTS_B = {
     ),
 }
 """The output of `b` is its own file under one Python and the stored file of `a` under another."""
+TWO_UNITS_A = {
+    "tests/test_models.refs": _sidecar(REFS | {"test_model": [*REFS["test_model"], "e\tmodels/a.py\t= models/b.py"]})
+}
+"""A second test item compares the label `models/a.py` with the stored file of `b`, under the same predicate."""
+SWAPPED_A_B = {f"{EXPECTED}/models/a.py": "B = 1\n", f"{EXPECTED}/models/b.py": "A = 1\n"}
+"""The stored files of `a` and `b` swap their contents: each test item of `models/a.py` compares the other one."""
 FAST_PATHS = "main/cli_fast_paths"
 FAST_PATH_LIST = f"{FAST_PATHS}/fast_paths_load_these_modules[help].txt"
 FAST_PATH_REFUSAL = f"{FAST_PATHS}/parsed_fast_paths_refuse_the_options_of_the_skill_installer.result.txt"
@@ -471,6 +477,11 @@ CASES: dict[str, dict[str, Any]] = {
     "harness on a src change that gives a label several stored outputs, the gate admits": {
         "head": SRC | VARIANTS_B | _record("same-output", ["models/b.py"]),
         "verdicts": {"models/b.py": None},
+    },
+    "harness on a src change that swaps the stored outputs of one label's test items": {
+        "release": TWO_UNITS_A,
+        "head": SRC | SWAPPED_A_B | _record("same-output", ["models/a.py", "models/b.py", "models/c.py"]),
+        "verdicts": {"models/b.py": None, "models/c.py": None},
     },
     "harness on a src change that gives a shared label its own output": {
         "head": SRC | OWN_C | _record("same-output", ["models/c.py"]),

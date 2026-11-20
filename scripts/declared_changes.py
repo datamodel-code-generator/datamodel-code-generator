@@ -255,19 +255,20 @@ class Side:
     def content(self, label: str) -> str | None:
         """Return the digest of the content a label's references compare, None when no reference has stored output.
 
-        The digest of one stored unit when every reference compares it, else one of the units by predicate, so a
-        label that starts or stops sharing another's stored file changes content as its own file does.
+        The digest of one stored unit when every reference compares it, else one of the units by test item and
+        predicate, so a label that starts or stops sharing another's stored file changes content as its own file does,
+        and so do test items that swap their units.
         """
         if not self.by_label.get(label):
             return self.digest(label)
         lines = {
-            (predicate, conditional, digest)
+            (reference.sidecar, reference.function, reference.param, predicate, conditional, digest)
             for reference in self.by_label[label]
             for predicate, conditional, storage in self.references[reference]
             if (digest := self.digest(storage)) is not None
         }
         if len({digest for *_, digest in lines}) <= 1:
-            return next(iter(lines))[2] if lines else None
+            return next(iter(lines))[-1] if lines else None
         return hashlib.sha256(json.dumps(sorted(lines)).encode()).hexdigest()
 
     @cached_property
