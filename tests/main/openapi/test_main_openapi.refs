@@ -365,7 +365,7 @@ parent_first-cli	main/openapi/external_discriminator_base/parent_first.py
 parent_first-cli	payloads/external_discriminator_outputs/local_cat.txt
 parent_first-cli	payloads/external_discriminator_outputs/local_dog.txt
 [test_external_relative_ref]
-	main/openapi/external_relative_ref//*.py
+	main/openapi/main_openapi/external_relative_ref/
 [test_force_optional]
 	main/openapi/force_optional.py
 [test_generate_inline_openapi_relative_ref_uses_caller_base]
@@ -457,7 +457,7 @@ True	main/openapi/custom_file_header_with_docstring_and_import.py
 [test_main_invalid_dotted_relative_import_stdout]
 	main/openapi/invalid_dotted_relative_import_stdout.py
 [test_main_invalid_dotted_schema_name_default_directory]
-	main/openapi/invalid_dotted_schema_name_default//*.py
+	main/openapi/main_openapi/main_invalid_dotted_schema_name_default_directory/	= main/openapi/invalid_dotted_schema_name_default//*.py
 [test_main_invalid_dotted_schema_name_json_stdout]
 	main/openapi/invalid_dotted_schema_name_json_stdout.txt
 [test_main_invalid_dotted_schema_name_stdout]
@@ -476,16 +476,16 @@ extra_args3	main/openapi/main_openapi/main_literal_fields_keep_model_named_liter
 extra_args4	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args4]/	= main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args0]/
 extra_args5	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args5]/	= main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args0]/
 [test_main_modular]
-	main/openapi/modular//*.py
+	main/openapi/main_openapi/main_modular/	= main/openapi/modular//*.py
 [test_main_modular_allof_inheritance_import_override]
-	main/openapi/allof_inheritance_modular_import_override//*.py
+	main/openapi/main_openapi/main_modular_allof_inheritance_import_override/
 [test_main_modular_reuse_model]
-	main/openapi/modular_reuse_model//*.py
+	main/openapi/main_openapi/main_modular_reuse_model/
 [test_main_modular_treat_dot_as_module_keeps_subpackage_initializer]
 	main/openapi/main_openapi/main_modular_treat_dot_as_module_keeps_subpackage_initializer.txt
 	main/openapi/modular_treat_dot_as_module/foo_init.py
 [test_main_modular_typed_dict]
-	main/openapi/modular_typed_dict//*.py
+	main/openapi/main_openapi/main_modular_typed_dict/
 [test_main_msgspec_nullable]
 	main/openapi/main_openapi/main_msgspec_nullable.py
 [test_main_multiple_aliases_parameters_pydantic_v2]
@@ -495,11 +495,11 @@ extra_args5	main/openapi/main_openapi/main_literal_fields_keep_model_named_liter
 [test_main_nested_enum]
 	main/openapi/nested_enum.py
 [test_main_nested_package_enum_default]
-	main/openapi/nested_package_enum_default//*.py
+	main/openapi/main_openapi/main_nested_package_enum_default/
 [test_main_no_strict_dotted_module_names_from_pyproject_stdout]
 	main/openapi/invalid_dotted_schema_name_stdout_no_timestamp.py
 [test_main_no_strict_dotted_module_names_overrides_pyproject]
-	main/openapi/invalid_dotted_schema_name_default//*.py
+	main/openapi/main_openapi/main_no_strict_dotted_module_names_overrides_pyproject/	= main/openapi/invalid_dotted_schema_name_default//*.py
 [test_main_no_strict_dotted_module_names_stdout]
 	main/openapi/invalid_dotted_schema_name_stdout_no_timestamp.py
 [test_main_openapi_all_exports_scope_package_cycle]
@@ -753,11 +753,11 @@ extra_args8-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_al
 extra_args9-api-scope	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args9-api-scope].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
 extra_args9-use-type-alias	main/openapi/main_openapi/api_scope_parameter_type_aliases[extra_args9-use-type-alias].py	= main/openapi/api_scope_parameter_type_aliases/pydantic_v2.py
 [test_main_openapi_api_scope_parameter_type_aliases_modules]
-collapse-extra_args3	main/openapi/api_scope_parameter_type_aliases_mixed/collapse//*.py
-collapse_reuse_tree-extra_args2	main/openapi/api_scope_parameter_type_aliases_mixed/collapse_reuse_tree//*.py
-default-extra_args0	main/openapi/api_scope_parameter_type_aliases_mixed/default//*.py
-frozen_reuse-extra_args4	main/openapi/api_scope_parameter_type_aliases_mixed/frozen_reuse//*.py
-reuse_tree-extra_args1	main/openapi/api_scope_parameter_type_aliases_mixed/reuse_tree//*.py
+extra_args0	main/openapi/main_openapi/api_scope_parameter_type_aliases_modules[extra_args0]/
+extra_args1	main/openapi/main_openapi/api_scope_parameter_type_aliases_modules[extra_args1]/
+extra_args2	main/openapi/main_openapi/api_scope_parameter_type_aliases_modules[extra_args2]/
+extra_args3	main/openapi/main_openapi/api_scope_parameter_type_aliases_modules[extra_args3]/
+extra_args4	main/openapi/main_openapi/api_scope_parameter_type_aliases_modules[extra_args4]/
 [test_main_openapi_api_scope_path_names]
 extra_args0	main/openapi/main_openapi/api_scope_path_names[extra_args0].py
 extra_args1	main/openapi/main_openapi/api_scope_path_names[extra_args1].py
@@ -888,27 +888,27 @@ typing.TypedDict	main/openapi/main_openapi/builtin_property_beside_root_models[t
 [test_main_openapi_byte_format]
 	main/openapi/main_openapi/byte_format.py
 [test_main_openapi_circular_imports_acyclic]
-	main/openapi/circular_imports_acyclic//*.py
+	main/openapi/main_openapi/circular_imports_acyclic/
 [test_main_openapi_circular_imports_class_conflict]
-	main/openapi/circular_imports_class_conflict//*.py
+	main/openapi/main_openapi/circular_imports_class_conflict/
 [test_main_openapi_circular_imports_class_conflict_suffix_taken]
 	main/openapi/main_openapi/circular_imports_class_conflict_suffix_taken/
 [test_main_openapi_circular_imports_different_prefixes]
-	main/openapi/circular_imports_different_prefixes//*.py
+	main/openapi/main_openapi/circular_imports_different_prefixes/
 [test_main_openapi_circular_imports_mixed_prefixes]
-	main/openapi/circular_imports_mixed_prefixes//*.py
+	main/openapi/main_openapi/circular_imports_mixed_prefixes/
 [test_main_openapi_circular_imports_pattern_properties_ref]
-	main/openapi/circular_imports_pattern_properties_ref//*.py
+	main/openapi/main_openapi/circular_imports_pattern_properties_ref/
 [test_main_openapi_circular_imports_small_cycle]
-	main/openapi/circular_imports_small_cycle//*.py
+	main/openapi/main_openapi/circular_imports_small_cycle/
 [test_main_openapi_circular_imports_stripe_like]
-	main/openapi/circular_imports_stripe_like//*.py
+	main/openapi/main_openapi/circular_imports_stripe_like/
 [test_main_openapi_circular_imports_with_inheritance]
-	main/openapi/circular_imports_with_inheritance//*.py
+	main/openapi/main_openapi/circular_imports_with_inheritance/
 [test_main_openapi_collapse_root_models_child_reused_inner_in_tree_scope]
 	main/openapi/main_openapi/collapse_root_models_child_reused_inner_in_tree_scope/
 [test_main_openapi_collapse_root_models_module_named_field]
-	main/openapi/collapse_root_models_module_named_field//*.py
+	main/openapi/main_openapi/collapse_root_models_module_named_field/
 [test_main_openapi_collapse_root_models_name_strategy_modular]
 holder-in-other-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-other-module-child]/
 holder-in-other-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-other-module-parent]/
@@ -1013,8 +1013,8 @@ request-response-no-dedupe-read_only_numbered_variants_by_direction	main/openapi
 request-response-read_only_numbered_variants	main/openapi/main_openapi/dedupe_numbered_request_response_variants[request-response-read_only_numbered_variants].py	= main/openapi/main_openapi/dedupe_numbered_request_response_variants[request-response-no-dedupe-read_only_numbered_variants].py
 request-response-read_only_numbered_variants_by_direction	main/openapi/main_openapi/dedupe_numbered_request_response_variants[request-response-read_only_numbered_variants_by_direction].py	= main/openapi/main_openapi/dedupe_numbered_request_response_variants[request-response-no-dedupe-read_only_numbered_variants_by_direction].py
 [test_main_openapi_default_object]
-msgspec.Struct-msgspec_default_object	main/openapi/msgspec_default_object//*.py
-pydantic_v2.BaseModel-pydantic_v2_default_object	main/openapi/pydantic_v2_default_object//*.py
+msgspec.Struct	main/openapi/main_openapi/default_object[msgspec.Struct]/
+pydantic_v2.BaseModel	main/openapi/main_openapi/default_object[pydantic_v2.BaseModel]/
 [test_main_openapi_deprecated_field]
 	main/openapi/main_openapi/deprecated_field.py
 [test_main_openapi_deprecated_field_pydantic26]
@@ -1081,8 +1081,8 @@ discriminator_enum_tag_variants-pydantic_v2.dataclass-extra_args7	main/openapi/m
 [test_main_openapi_discriminator_enum_use_enum_values]
 	main/openapi/main_openapi/discriminator_enum_use_enum_values.py
 [test_main_openapi_discriminator_enum_use_enum_values_across_modules]
-split_args0-enum_use_enum_values_modules-pets-validation_data0	main/openapi/discriminator/enum_use_enum_values_modules//*.py
-split_args1-enum_use_enum_values_module_split-pets.pet-validation_data1	main/openapi/discriminator/enum_use_enum_values_module_split//*.py
+split_args0-pets-validation_data0	main/openapi/main_openapi/discriminator_enum_use_enum_values_across_modules[split_args0-pets-validation_data0]/
+split_args1-pets.pet-validation_data1	main/openapi/main_openapi/discriminator_enum_use_enum_values_across_modules[split_args1-pets.pet-validation_data1]/
 [test_main_openapi_discriminator_enum_use_enum_values_sanitized]
 	main/openapi/main_openapi/discriminator_enum_use_enum_values_sanitized.py
 [test_main_openapi_discriminator_enum_use_values_force_optional]
@@ -1259,10 +1259,10 @@ untyped	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[untyp
 untyped-pydantic-dataclass	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[untyped-pydantic-dataclass].payloads.txt	= main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[string].payloads.txt
 untyped-pydantic-dataclass	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[untyped-pydantic-dataclass].py
 [test_main_openapi_discriminator_reuse_tree_mappings]
-discriminator_reuse_tree_mappings	main/openapi/discriminator_reuse_tree_mappings//*.py
 discriminator_reuse_tree_mappings	main/openapi/main_openapi/discriminator_reuse_tree_mappings[discriminator_reuse_tree_mappings].txt
-discriminator_reuse_tree_same_tags	main/openapi/discriminator_reuse_tree_same_tags//*.py
+discriminator_reuse_tree_mappings	main/openapi/main_openapi/discriminator_reuse_tree_mappings[discriminator_reuse_tree_mappings]/
 discriminator_reuse_tree_same_tags	main/openapi/main_openapi/discriminator_reuse_tree_mappings[discriminator_reuse_tree_same_tags].txt
+discriminator_reuse_tree_same_tags	main/openapi/main_openapi/discriminator_reuse_tree_mappings[discriminator_reuse_tree_same_tags]/
 [test_main_openapi_discriminator_reuse_variant_mapping]
 discriminator_collapsed_union_tags-extra_args6	main/openapi/main_openapi/discriminator_reuse_variant_mapping[discriminator_collapsed_union_tags-extra_args6]._decoded.txt
 discriminator_collapsed_union_tags-extra_args6	main/openapi/main_openapi/discriminator_reuse_variant_mapping[discriminator_collapsed_union_tags-extra_args6]._warnings.txt
@@ -1315,7 +1315,7 @@ extra_args1	main/openapi/main_openapi/discriminator_reuse_variant_module_base_fi
 [test_main_openapi_discriminator_short_mapping_names]
 	main/openapi/main_openapi/discriminator_short_mapping_names.py
 [test_main_openapi_discriminator_state_isolated_per_document]
-	main/openapi/discriminator_state_isolation//*.py
+	main/openapi/main_openapi/discriminator_state_isolated_per_document/
 [test_main_openapi_discriminator_typed_mapping_keys]
 	main/openapi/main_openapi/discriminator_typed_mapping_keys.py
 [test_main_openapi_discriminator_typed_mapping_keys_msgspec]
@@ -1340,14 +1340,14 @@ discriminator_shared_variant_tags-pydantic_v2.BaseModel-extra_args0	main/openapi
 [test_main_openapi_discriminator_with_properties]
 	main/openapi/main_openapi/discriminator_with_properties.py
 [test_main_openapi_dot_notation_collapse_reuse_models]
-module	main/openapi/dot_notation_collapse_reuse_models//*.py
-tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
+module	main/openapi/main_openapi/dot_notation_collapse_reuse_models[module]/
+tree-type-alias	main/openapi/main_openapi/dot_notation_collapse_reuse_models[tree-type-alias]/
 [test_main_openapi_dot_notation_deep_inheritance]
-	main/openapi/dot_notation_deep_inheritance//*.py
+	main/openapi/main_openapi/dot_notation_deep_inheritance/
 [test_main_openapi_dot_notation_inheritance]
-	main/openapi/dot_notation_inheritance//*.py
+	main/openapi/main_openapi/dot_notation_inheritance/
 [test_main_openapi_dot_notation_root_package_inheritance]
-	main/openapi/dot_notation_root_package_inheritance//*.py
+	main/openapi/main_openapi/dot_notation_root_package_inheritance/
 [test_main_openapi_dynamic_anchor_declared_once]
 read	main/openapi/main_openapi/dynamic_anchor_declared_once[read].py
 released	main/openapi/main_openapi/dynamic_anchor_declared_once[released].py	= main/openapi/main_openapi/dynamic_anchor_declared_once[read].py
@@ -1402,7 +1402,7 @@ enum_const_unsatisfiable-pydantic_v2.BaseModel	main/openapi/main_openapi/enum_co
 [test_main_openapi_enum_models_as_literal_one]
 	main/openapi/main_openapi/enum_models_as_literal_one.py
 [test_main_openapi_exact_imports_ancestor_package]
-	main/openapi/exact_imports_ancestor_package//*.py
+	main/openapi/main_openapi/exact_imports_ancestor_package/
 [test_main_openapi_external_ref_mapping_absolute_path_ref]
 	main/openapi/external_ref_mapping_absolute_path.py
 [test_main_openapi_external_ref_mapping_basic]
@@ -1557,13 +1557,13 @@ same-name-documents-with-class-name-prefix	main/openapi/openapi_model_name_map_k
 same-name-documents-with-class-name-prefix-of-all-names	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[same-name-documents-with-class-name-prefix-of-all-names].py
 value-is-another-key	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[value-is-another-key].py
 [test_main_openapi_module_class_name_collision_deep_exact_imports_pydantic_v2]
-	main/openapi/module_class_name_collision_deep_exact_imports//*.py
+	main/openapi/main_openapi/module_class_name_collision_deep_exact_imports_pydantic_v2/
 [test_main_openapi_module_class_name_collision_deep_pydantic_v2]
-	main/openapi/module_class_name_collision_deep//*.py
+	main/openapi/main_openapi/module_class_name_collision_deep_pydantic_v2/
 [test_main_openapi_module_class_name_collision_exact_imports_pydantic_v2]
-	main/openapi/module_class_name_collision_exact_imports//*.py
+	main/openapi/main_openapi/module_class_name_collision_exact_imports_pydantic_v2/
 [test_main_openapi_module_class_name_collision_pydantic_v2]
-	main/openapi/module_class_name_collision//*.py
+	main/openapi/main_openapi/module_class_name_collision_pydantic_v2/
 [test_main_openapi_msgspec_anyof]
 	main/openapi/main_openapi/msgspec_anyof.msgspec_anyof_warnings.txt
 	main/openapi/main_openapi/msgspec_anyof.py
@@ -1608,11 +1608,11 @@ union-operator	main/openapi/main_openapi/msgspec_ref_nullable_strict_nullable[un
 [test_main_openapi_msgspec_struct_snake_case]
 	main/openapi/main_openapi/msgspec_struct_snake_case.py
 [test_main_openapi_msgspec_tagged_base_redefined_field]
-	main/openapi/discriminator/msgspec_tagged_base_redefined_field//*.py
 	main/openapi/main_openapi/msgspec_tagged_base_redefined_field._decoded.txt
 	main/openapi/main_openapi/msgspec_tagged_base_redefined_field._warnings.txt
+	main/openapi/main_openapi/msgspec_tagged_base_redefined_field/
 [test_main_openapi_msgspec_tagged_base_subclass_modules]
-	main/openapi/discriminator/msgspec_tagged_base_subclass_modules//*.py
+	main/openapi/main_openapi/msgspec_tagged_base_subclass_modules/
 [test_main_openapi_msgspec_tagged_unions_declaration_order]
 base_earlier	main/openapi/main_openapi/msgspec_tagged_unions_declaration_order[base_earlier].py
 base_later	main/openapi/main_openapi/msgspec_tagged_unions_declaration_order[base_later].py
@@ -1622,8 +1622,8 @@ base_later	main/openapi/main_openapi/msgspec_tagged_unions_declaration_order[bas
 api	main/openapi/discriminator/msgspec_tagged_unions_inherited.py
 cli	main/openapi/discriminator/msgspec_tagged_unions_inherited.py
 [test_main_openapi_msgspec_tagged_unions_modules]
-msgspec_tagged_unions_modules	main/openapi/discriminator/msgspec_tagged_unions_modules//*.py
-msgspec_tagged_unions_modules_variants_first	main/openapi/discriminator/msgspec_tagged_unions_modules_variants_first//*.py
+msgspec_tagged_unions_modules	main/openapi/main_openapi/msgspec_tagged_unions_modules[msgspec_tagged_unions_modules]/
+msgspec_tagged_unions_modules_variants_first	main/openapi/main_openapi/msgspec_tagged_unions_modules[msgspec_tagged_unions_modules_variants_first]/
 [test_main_openapi_msgspec_union_tag_clashes]
 	main/openapi/main_openapi/msgspec_union_tag_clashes.msgspec_union_tag_clashes_warnings.txt
 	main/openapi/main_openapi/msgspec_union_tag_clashes.py
@@ -1649,7 +1649,7 @@ typed_dict-members-infer	main/openapi/main_openapi/name_allof_union_members_afte
 mapped-member	main/openapi/main_openapi/name_allof_union_members_after_branches_nested[mapped-member].py
 members	main/openapi/main_openapi/name_allof_union_members_after_branches_nested[members].py
 [test_main_openapi_namespace_subns_ref]
-	main/openapi/namespace_subns_ref//*.py
+	main/openapi/main_openapi/namespace_subns_ref/
 [test_main_openapi_naming_strategy_definitions_first]
 dataclass-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[dataclass-definitions-first].py
 pydantic_v2	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py
@@ -1690,28 +1690,28 @@ Tags1	main/openapi/main_openapi/nullable_map_value_class_keyed_options[Tags1].py
 [test_main_openapi_nullable_map_value_dotted_field_keys]
 	main/openapi/openapi_nullable_map_value_dotted_field_keys.py
 [test_main_openapi_nullable_map_value_import_cycle]
-	main/openapi/nullable_map_value_cycle/pydantic_v2//*.py
+	main/openapi/main_openapi/nullable_map_value_import_cycle/
 [test_main_openapi_nullable_map_value_import_cycle_reuse_model]
-cycle-reuse	main/openapi/nullable_map_value_cycle_reuse/pydantic_v2//*.py
-layout-typed-dict	main/openapi/nullable_map_value_layout/typed_dict_reuse_model//*.py
+cycle-reuse	main/openapi/main_openapi/nullable_map_value_import_cycle_reuse_model[cycle-reuse]/
+layout-typed-dict	main/openapi/main_openapi/nullable_map_value_import_cycle_reuse_model[layout-typed-dict]/
 [test_main_openapi_nullable_map_value_import_cycle_warnings]
 	main/openapi/main_openapi/nullable_map_value_import_cycle_warnings.txt
-	main/openapi/nullable_map_value_cycle/pydantic_v2_dataclass//*.py
+	main/openapi/main_openapi/nullable_map_value_import_cycle_warnings/
 [test_main_openapi_nullable_map_value_layout_collapse_root_models]
 	main/openapi/main_openapi/nullable_map_value_layout_collapse_root_models.py
 [test_main_openapi_nullable_map_value_layout_modules]
-	main/openapi/nullable_map_value_layout/modules//*.py
+	main/openapi/main_openapi/nullable_map_value_layout_modules/
 [test_main_openapi_nullable_map_value_model_name_map]
 schema-name	main/openapi/main_openapi/nullable_map_value_model_name_map[schema-name].py
 value-name	main/openapi/main_openapi/nullable_map_value_model_name_map[value-name].py
 [test_main_openapi_nullable_map_value_module_names]
-	main/openapi/nullable_map_value_module_names//*.py
+	main/openapi/main_openapi/nullable_map_value_module_names/
 [test_main_openapi_nullable_map_value_names]
-dataclass	main/openapi/nullable_map_value_names/dataclass//*.py
-msgspec	main/openapi/nullable_map_value_names/msgspec//*.py
-pydantic-v2	main/openapi/nullable_map_value_names/pydantic_v2//*.py
-pydantic-v2-dataclass	main/openapi/nullable_map_value_names/pydantic_v2_dataclass//*.py
-typed-dict	main/openapi/nullable_map_value_names/typed_dict//*.py
+dataclass	main/openapi/main_openapi/nullable_map_value_names[dataclass]/
+msgspec	main/openapi/main_openapi/nullable_map_value_names[msgspec]/
+pydantic-v2	main/openapi/main_openapi/nullable_map_value_names[pydantic-v2]/
+pydantic-v2-dataclass	main/openapi/main_openapi/nullable_map_value_names[pydantic-v2-dataclass]/
+typed-dict	main/openapi/main_openapi/nullable_map_value_names[typed-dict]/
 [test_main_openapi_nullable_map_value_primary_first]
 	main/openapi/main_openapi/nullable_map_value_primary_first.py
 [test_main_openapi_nullable_map_value_read_write_models]
@@ -1719,8 +1719,8 @@ typed-dict	main/openapi/nullable_map_value_names/typed_dict//*.py
 [test_main_openapi_nullable_map_value_recursive_collapse_root_models]
 	main/openapi/main_openapi/nullable_map_value_recursive_collapse_root_models.py
 [test_main_openapi_nullable_map_value_reuse_across_modules]
-collapse-reuse-models	main/openapi/nullable_map_value_reuse_modules/collapse_reuse_models//*.py
-reuse-model	main/openapi/nullable_map_value_reuse_modules/reuse_model//*.py
+collapse-reuse-models	main/openapi/main_openapi/nullable_map_value_reuse_across_modules[collapse-reuse-models]/
+reuse-model	main/openapi/main_openapi/nullable_map_value_reuse_across_modules[reuse-model]/
 [test_main_openapi_nullable_map_value_reuse_model]
 collapse-reuse-models	main/openapi/main_openapi/nullable_map_value_reuse_model[collapse-reuse-models].py
 reuse-model	main/openapi/main_openapi/nullable_map_value_reuse_model[reuse-model].py
@@ -1754,13 +1754,13 @@ types	main/openapi/main_openapi/nullable_map_values_untyped[types].py
 types-reuse-model	main/openapi/main_openapi/nullable_map_values_untyped[types-reuse-model].py
 types-typed-dict-reuse-model	main/openapi/main_openapi/nullable_map_values_untyped[types-typed-dict-reuse-model].py
 [test_main_openapi_nullable_map_values_untyped_modules]
-cycle-collapse-root-models-reuse-tree	main/openapi/nullable_map_untyped/cycle_collapse_root_models_reuse_tree//*.py
-cycle-reuse	main/openapi/nullable_map_untyped/cycle_reuse//*.py
-cycle-reuse-collapse-reuse-models	main/openapi/nullable_map_untyped/cycle_reuse_collapse_reuse_models//*.py
-layout-typed-dict-reuse-model	main/openapi/nullable_map_untyped/layout_typed_dict_reuse_model//*.py
+cycle-collapse-root-models-reuse-tree	main/openapi/main_openapi/nullable_map_values_untyped_modules[cycle-collapse-root-models-reuse-tree]/
+cycle-reuse	main/openapi/main_openapi/nullable_map_values_untyped_modules[cycle-reuse]/
+cycle-reuse-collapse-reuse-models	main/openapi/main_openapi/nullable_map_values_untyped_modules[cycle-reuse-collapse-reuse-models]/
+layout-typed-dict-reuse-model	main/openapi/main_openapi/nullable_map_values_untyped_modules[layout-typed-dict-reuse-model]/
 [test_main_openapi_nullable_map_values_untyped_parameter_layout]
-typed-falls-back	main/openapi/nullable_map_untyped/parameter_layout//*.py
-untyped	main/openapi/nullable_map_untyped/parameter_layout//*.py
+typed-falls-back	main/openapi/main_openapi/nullable_map_values_untyped_parameter_layout[typed-falls-back]/
+untyped	main/openapi/main_openapi/nullable_map_values_untyped_parameter_layout[untyped]/	= main/openapi/main_openapi/nullable_map_values_untyped_parameter_layout[typed-falls-back]/
 [test_main_openapi_nullable_required_annotated]
 	main/openapi/main_openapi/nullable_required_annotated.py
 [test_main_openapi_nullable_reuse_collapse]
@@ -1987,12 +1987,12 @@ paths	main/openapi/main_openapi/responses_object_extensions_are_no_responses[pat
 [test_main_openapi_reuse_model_collapsed_alias_enum]
 	main/openapi/main_openapi/reuse_model_collapsed_alias_enum/
 [test_main_openapi_reuse_model_cross_module_users]
-layout-collapse-dataclasses	main/openapi/reuse_model_cross_module_users/layout_collapse_dataclasses//*.py
-layout-collapse-pydantic_v2	main/openapi/reuse_model_cross_module_users/layout_collapse_pydantic_v2//*.py
-modules-collapse-dataclasses	main/openapi/reuse_model_cross_module_users/modules_collapse_dataclasses//*.py
-modules-collapse-pydantic_v2	main/openapi/reuse_model_cross_module_users/modules_collapse_pydantic_v2//*.py
-modules-dataclasses	main/openapi/reuse_model_cross_module_users/modules_dataclasses//*.py
-modules-pydantic_v2	main/openapi/reuse_model_cross_module_users/modules_pydantic_v2//*.py
+layout-collapse-dataclasses	main/openapi/main_openapi/reuse_model_cross_module_users[layout-collapse-dataclasses]/
+layout-collapse-pydantic_v2	main/openapi/main_openapi/reuse_model_cross_module_users[layout-collapse-pydantic_v2]/
+modules-collapse-dataclasses	main/openapi/main_openapi/reuse_model_cross_module_users[modules-collapse-dataclasses]/
+modules-collapse-pydantic_v2	main/openapi/main_openapi/reuse_model_cross_module_users[modules-collapse-pydantic_v2]/
+modules-dataclasses	main/openapi/main_openapi/reuse_model_cross_module_users[modules-dataclasses]/
+modules-pydantic_v2	main/openapi/main_openapi/reuse_model_cross_module_users[modules-pydantic_v2]/
 [test_main_openapi_reuse_scope_tree_imports]
 cross-module-users-dataclasses	main/openapi/main_openapi/reuse_scope_tree_imports[cross-module-users-dataclasses]/
 cross-module-users-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[cross-module-users-pydantic_v2]/
@@ -2020,7 +2020,7 @@ pydantic_v2-single	main/openapi/main_openapi/reuse_scope_tree_shared_class_names
 [test_main_openapi_serialization_aliases_parameters_pydantic_v2]
 	main/openapi/main_openapi/serialization_aliases_parameters_pydantic_v2.py
 [test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2]
-	main/openapi/serialize_as_any_module_import_alias//*.py
+	main/openapi/main_openapi/serialize_as_any_module_import_alias_pydantic_v2/
 [test_main_openapi_serialize_as_any_module_qualified]
 every-subclass	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass].dump.txt
 every-subclass	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass]/
@@ -2250,13 +2250,13 @@ without-tags	main/openapi/openapi_use_tag_as_union_variant_name_parent_prefix.py
 [test_main_strict_dotted_module_names]
 	main/openapi/main_openapi/main_strict_dotted_module_names.py	= main/openapi/main_openapi/generate_strict_dotted_module_names.py
 [test_main_strict_dotted_module_names_explicit_module]
-	main/openapi/invalid_dotted_schema_name_default//*.py
+	main/openapi/main_openapi/main_strict_dotted_module_names_explicit_module/	= main/openapi/invalid_dotted_schema_name_default//*.py
 [test_main_strict_dotted_module_names_explicit_no_module]
 	main/openapi/main_openapi/main_strict_dotted_module_names_explicit_no_module.py	= main/openapi/main_openapi/generate_strict_dotted_module_names.py
 [test_main_strict_dotted_module_names_from_pyproject]
 	main/openapi/main_openapi/main_strict_dotted_module_names_from_pyproject.py	= main/openapi/main_openapi/generate_strict_dotted_module_names.py
 [test_main_strict_dotted_module_names_keeps_valid_modules]
-	main/openapi/modular//*.py
+	main/openapi/main_openapi/main_strict_dotted_module_names_keeps_valid_modules/	= main/openapi/modular//*.py
 [test_main_subclass_enum]
 	main/openapi/subclass_enum.py
 [test_main_treat_dot_as_module_preserves_modular_stdout]
@@ -2282,18 +2282,18 @@ pydantic_v2.BaseModel	main/openapi/main_openapi/main_unique_items_default_set[py
 [test_main_usable_converging_invalid_dotted_models_stdout]
 	main/openapi/usable_converging_invalid_dotted_models_stdout.py
 [test_main_usable_discriminator_invalid_dotted_models_reuse]
-additional_imports-extra_args5	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
-additional_imports-extra_args5	main/openapi/usable_discriminator_invalid_dotted_models_reuse/additional_imports//*.py
-dataclasses.dataclass-extra_args2	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[dataclasses.dataclass-extra_args2].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
-dataclasses.dataclass-extra_args2	main/openapi/usable_discriminator_invalid_dotted_models_reuse/dataclasses.dataclass//*.py
-msgspec.Struct-extra_args3	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[msgspec.Struct-extra_args3].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
-msgspec.Struct-extra_args3	main/openapi/usable_discriminator_invalid_dotted_models_reuse/msgspec.Struct//*.py
-pydantic_v2.BaseModel-extra_args0	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[pydantic_v2.BaseModel-extra_args0].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
-pydantic_v2.BaseModel-extra_args0	main/openapi/usable_discriminator_invalid_dotted_models_reuse/pydantic_v2.BaseModel//*.py
-pydantic_v2.dataclass-extra_args1	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[pydantic_v2.dataclass-extra_args1].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
-pydantic_v2.dataclass-extra_args1	main/openapi/usable_discriminator_invalid_dotted_models_reuse/pydantic_v2.dataclass//*.py
-reuse_scope_tree-extra_args4	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[reuse_scope_tree-extra_args4].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
-reuse_scope_tree-extra_args4	main/openapi/usable_discriminator_invalid_dotted_models_reuse/reuse_scope_tree//*.py
+extra_args0	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args0].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
+extra_args0	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args0]/
+extra_args1	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args1].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
+extra_args1	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args1]/
+extra_args2	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args2].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
+extra_args2	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args2]/
+extra_args3	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args3].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
+extra_args3	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args3]/
+extra_args4	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args4].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
+extra_args4	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args4]/
+extra_args5	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args5].txt	= main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[additional_imports-extra_args5].txt
+extra_args5	main/openapi/main_openapi/main_usable_discriminator_invalid_dotted_models_reuse[extra_args5]/
 [test_main_usable_discriminator_invalid_dotted_models_stdout]
 	main/openapi/usable_discriminator_invalid_dotted_models_stdout.py
 [test_main_usable_identical_invalid_dotted_models_stdout]
@@ -2309,11 +2309,11 @@ reuse_scope_tree-extra_args4	main/openapi/usable_discriminator_invalid_dotted_mo
 [test_main_use_default_kwarg]
 	main/openapi/use_default_kwarg.py
 [test_main_use_generic_container_types]
-	main/openapi/use_generic_container_types//*.py
+	main/openapi/main_openapi/main_use_generic_container_types/
 [test_main_use_generic_container_types_standard_collections]
-	main/openapi/use_generic_container_types_standard_collections//*.py	= main/openapi/use_generic_container_types//*.py
+	main/openapi/main_openapi/main_use_generic_container_types_standard_collections/	= main/openapi/main_openapi/main_use_generic_container_types/
 [test_main_use_standard_collections]
-	main/openapi/use_standard_collections//*.py	= main/openapi/modular//*.py
+	main/openapi/main_openapi/main_use_standard_collections/	= main/openapi/modular//*.py
 [test_main_with_aliases]
 msgspec.Struct	main/openapi/main_openapi/main_with_aliases[msgspec.Struct].py
 [test_main_with_exclusive]

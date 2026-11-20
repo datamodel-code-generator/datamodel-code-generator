@@ -81,6 +81,10 @@ SPAN = re.compile(r"`([^`]+)`")
 CELL_SPLIT = re.compile(r" \| (?=(?:[^`]*`[^`]*`)*[^`]*$)")
 BULLET_KEY = re.compile(r"#(\d+)")
 NOTE_MARKUP = re.compile(r"\*\*|\[(#\d+)\]\([^)]*\)")
+_IMPORT_LIST = re.compile(r"\bimport\b((?:[\s\w,()\\]|#[^\n]*\n)*)")
+_COMMENT = re.compile(r"#[^\n]*\n")
+_WORD = re.compile(r"\w+")
+_ATTRIBUTE = re.compile(r"\.\s*(\w+)")
 DOC_LINE = re.compile(r'\s*[rRuU]?"""\s*(.*?)\s*(?:"""\s*)?$')
 HEADING = re.compile(r"^#{2,4} ")
 SCOPES = {"module", "class", "function"}
@@ -211,14 +215,14 @@ def _reads(model: SourceModule, binding: Binding) -> tuple[str, str]:
     return source, name
 
 
-def read_through(names: Iterable[str]) -> re.Pattern[str]:
-    """Return the pattern of the text by which a module reads a name of another: an import of it or ``.name``.
+def read_words(text: str) -> frozenset[str]:
+    """Return the names by which a module's text can read a name of another: in an import list or after ``.``.
 
-    Between ``import`` and the name only the characters of an import list (names, ``as``, commas, parentheses, line
-    breaks and comments) may stand.
+    An import list is what follows ``import``: names, ``as``, commas, parentheses, line breaks and comments, the words
+    of the comments left out.
     """
-    alternatives = "|".join(map(re.escape, sorted(names)))
-    return re.compile(rf"\bimport\b(?:[\s\w,()\\]|#[^\n]*\n)*?\b(?:{alternatives})\b|\.\s*(?:{alternatives})\b")
+    lists = (_COMMENT.sub(" ", items) for items in _IMPORT_LIST.findall(text))
+    return frozenset(word for items in lists for word in _WORD.findall(items)) | frozenset(_ATTRIBUTE.findall(text))
 
 
 def clip(line: str) -> str:
@@ -384,7 +388,8 @@ def _option_of(query: str) -> OptionInfo | None:
     return None
 
 
-def _scope_name(scope: Scope) -> str:
+def scope_name(scope: Scope) -> str:
+    """Return the qualified name of the module, class or function a scope belongs to, ``<module>`` for the module."""
     current = scope
     while current.kind not in SCOPES and current.parent is not None:
         current = current.parent
@@ -400,6 +405,8 @@ class Repo:
         self.page = page
         self.everything = everything
         self.names: dict[str, tuple[SourceTree, str]] = {}
+        self._words: dict[str, frozenset[str]] = {}
+        self._chains: dict[str, dict[ast.expr, ast.Attribute]] = {}
         for tree in _trees(root):
             for name, path in tree.paths.items():
                 self.names[path.relative_to(root).as_posix()] = (tree, name)
@@ -473,7 +480,14 @@ class Repo:
         return [site for site in self.definitions(name.rpartition(".")[2]) if (site.path, site.line) not in known]
 
     def module_users(self, found: Found, *, everywhere: bool = False) -> dict[str, set[str]]:
-        """Return the scopes by file that read a module-level definition, by the binding the name leads to.
+        """Return the scopes by file that read a module-level definition, as `module_reads` finds the reads."""
+        return {
+            rel: {scope_name(reference.scope) for reference in references}
+            for rel, references in self.module_reads(found, everywhere=everywhere).items()
+        }
+
+    def module_reads(self, found: Found, *, everywhere: bool = False) -> dict[str, list[Reference]]:
+        """Return the references by file that read a module-level definition, by the binding the name leads to.
 
         A name leads to the definition when its binding reads it or a module-level name that does (a re-export or an
         alias, found until no new one appears), as the model gives what each binding reads. Outside the defining file
@@ -486,7 +500,7 @@ class Repo:
         while more := {name for rel in files for name in self._reexports(rel, names)} - names:
             names |= more
             files = self._spelling(names, found.path, everywhere=everywhere)
-        users: dict[str, set[str]] = {}
+        reads: dict[str, list[Reference]] = {}
         for rel in files:
             model = self.model(rel)
             imports = [binding for binding in model.bindings() if binding.kind in IMPORTS]
@@ -497,18 +511,32 @@ class Repo:
                 if named == self.names[rel][1]
                 for binding in model.module_scope.bindings.get(name, [])
             ]
-            chains = {node.value: node for node in ast.walk(model.tree) if isinstance(node, ast.Attribute)}
-            users[rel] = {
-                _scope_name(reference.scope)
-                for reference in model.references
-                if _reaches(model, reference, direct, names, chains)
-            }
-        return {rel: scopes for rel, scopes in users.items() if scopes}
+            chains = self.chains(rel)
+            if found_reads := [
+                reference for reference in model.references if _reaches(model, reference, direct, names, chains)
+            ]:
+                reads[rel] = found_reads
+        return reads
 
     def _spelling(self, names: set[tuple[str, str]], path: str, *, everywhere: bool) -> list[str]:
         """Return the defining file and the files that import one of the names or read it as an attribute, or all."""
-        pattern = read_through({name for _, name in names})
-        return [rel for rel in self.names if everywhere or rel == path or pattern.search(self.text(rel))]
+        wanted = {name for _, name in names}
+        return [rel for rel in self.names if everywhere or rel == path or not wanted.isdisjoint(self.words_of(rel))]
+
+    def chains(self, path: str) -> dict[ast.expr, ast.Attribute]:
+        """Return each expression of a module path that an attribute reads, with that attribute, found once."""
+        if (chains := self._chains.get(path)) is None:
+            tree = self.model(path).tree
+            chains = self._chains[path] = {
+                node.value: node for node in ast.walk(tree) if isinstance(node, ast.Attribute)
+            }
+        return chains
+
+    def words_of(self, path: str) -> frozenset[str]:
+        """Return `read_words` of a module path's text, read once."""
+        if (words := self._words.get(path)) is None:
+            words = self._words[path] = read_words(self.text(path))
+        return words
 
     def _reexports(self, path: str, names: set[tuple[str, str]]) -> set[tuple[str, str]]:
         """Return the module-level names of a file whose binding reads one of the names."""
@@ -914,7 +942,7 @@ def legacy_block(repo: Repo, row: Row) -> Block:
         model = repo.model(rel)
         for number, text in enumerate(repo.text(rel).splitlines(), 1):
             if key in text:
-                sites.append(f"{rel}:{number} {_scope_name(model.owner(number, len(text) - len(text.lstrip())))}")
+                sites.append(f"{rel}:{number} {scope_name(model.owner(number, len(text) - len(text.lstrip())))}")
     summary = [f"option {option.flag} (config field {option.dest}): {_option_lines(option)[0]}"] if option else []
     sections = [
         Section(None, [f"fix: {row.cells[2]}; keeps: {short(row.cells[1], 120)}", *summary], cap=2),

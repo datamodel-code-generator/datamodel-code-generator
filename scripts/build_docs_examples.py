@@ -366,7 +366,7 @@ def directory_tree(path: Path, *, root_name: str) -> str:
 
 def render_reuse_scope_tree_example() -> str:
     """Render tested reuse-scope tree output with representative files."""
-    output_path = EXPECTED_MAIN / "jsonschema" / "reuse_scope_tree"
+    output_path = EXPECTED_MAIN / "jsonschema" / "main_jsonschema" / "reuse_scope_tree"
     lines = [
         "",
         "**Output with `--reuse-scope tree`:**",

@@ -5335,7 +5335,7 @@ exports from direct child modules. This improves IDE autocomplete and explicit e
 Use 'recursive' to include all descendant exports with collision handling.""",
     input_schema="openapi/modular.yaml",
     cli_args=["--all-exports-scope", "children"],
-    golden_output="openapi/modular_all_exports_children",
+    golden_output="main_general/all_exports_scope_children",
     related_options=["--all-exports-collision-strategy"],
 )
 def test_all_exports_scope_children(output_dir: Path) -> None:
@@ -5350,7 +5350,6 @@ def test_all_exports_scope_children(output_dir: Path) -> None:
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--all-exports-scope", "children"],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_children",
     )
 
 
@@ -5364,7 +5363,7 @@ minimum module path prefix needed to disambiguate colliding names, while 'full-p
 uses the complete module path. Requires `--all-exports-scope=recursive`.""",
     input_schema="openapi/modular.yaml",
     cli_args=["--all-exports-scope", "recursive", "--all-exports-collision-strategy", "minimal-prefix"],
-    golden_output="openapi/modular_all_exports_recursive",
+    golden_output="main_general/all_exports_scope_recursive_with_collision",
     related_options=["--all-exports-scope"],
 )
 def test_all_exports_scope_recursive_with_collision(output_dir: Path) -> None:
@@ -5386,7 +5385,6 @@ def test_all_exports_scope_recursive_with_collision(output_dir: Path) -> None:
             "--all-exports-collision-strategy",
             "minimal-prefix",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_recursive",
     )
 
 
@@ -5402,7 +5400,6 @@ def test_all_exports_scope_children_with_docstring_header(output_dir: Path) -> N
             "--custom-file-header-path",
             str(DATA_PATH / "custom_file_header_docstring.txt"),
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_children_docstring",
     )
 
 
@@ -5417,7 +5414,6 @@ def test_all_exports_scope_recursive_collision_avoided_by_renaming(output_dir: P
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--all-exports-scope", "recursive"],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_scope_recursive_collision_avoided_by_renaming",
     )
 
 
@@ -5454,7 +5450,6 @@ def test_all_exports_scope_recursive_with_full_prefix(output_dir: Path) -> None:
             "--all-exports-collision-strategy",
             "full-prefix",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "modular_all_exports_recursive_full_prefix",
     )
 
 
@@ -5471,7 +5466,6 @@ def test_all_exports_collision_resolved_successfully(output_dir: Path) -> None:
             "--all-exports-collision-strategy",
             "minimal-prefix",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_collision_success",
     )
 
 
@@ -5552,7 +5546,6 @@ def test_all_exports_scope_recursive_jsonschema_multi_file(output_dir: Path) -> 
             "--all-exports-scope",
             "recursive",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_multi_file",
     )
 
 
@@ -5642,7 +5635,6 @@ def test_all_exports_scope_children_no_child_exports(output_dir: Path) -> None:
             "--all-exports-scope",
             "children",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_no_child",
     )
 
 
@@ -5657,7 +5649,6 @@ def test_all_exports_scope_children_with_local_models(output_dir: Path) -> None:
             "--all-exports-scope",
             "children",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "openapi" / "all_exports_with_local_models",
     )
 
 
@@ -5672,7 +5663,6 @@ def test_all_exports_scope_children_jsonschema_hyphenated_package(output_dir: Pa
             "--all-exports-scope",
             "children",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_hyphenated_directory",
     )
 
 
@@ -6023,7 +6013,7 @@ named after the class in snake_case. Use with `--all-exports-scope=recursive` to
 create an __init__.py that re-exports all models for convenient imports.""",
     input_schema="jsonschema/module_split_single/input.json",
     cli_args=["--module-split-mode", "single", "--all-exports-scope", "recursive", "--use-exact-imports"],
-    golden_output="jsonschema/module_split_single",
+    golden_output="main_general/generate_builtin_string_normalization_module_split",
     related_options=["--all-exports-scope", "--use-exact-imports"],
 )
 def test_module_split_mode_single(output_dir: Path) -> None:
@@ -6045,7 +6035,6 @@ def test_module_split_mode_single(output_dir: Path) -> None:
             "recursive",
             "--use-exact-imports",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "module_split_single",
     )
 
 
@@ -6262,7 +6251,6 @@ def test_ruff_batch_formatting_directory(output_dir: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "all_exports_multi_file",
         output_path=output_dir,
         extra_args=["--formatters", "ruff-check", "ruff-format", "--disable-timestamp"],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "all_exports_multi_file_ruff",
         skip_code_validation=True,
     )
 
@@ -7107,7 +7095,6 @@ def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.Monk
     source_dir = JSON_SCHEMA_DATA_PATH / "multiple_files"
     list_api_expected_dir = EXPECTED_MAIN_PATH / "jsonschema" / "path_list_inputs_api"
     list_file_expected_dir = EXPECTED_MAIN_PATH / "jsonschema" / "path_list_inputs"
-    directory_expected_dir = EXPECTED_MAIN_PATH / "jsonschema" / "multiple_files"
     source_names = ("file_d.json", "file_b.json", "file_a.json", "file_c.json")
     absolute_paths = [source_dir / name for name in source_names]
     formatters = [Formatter.BLACK, Formatter.ISORT]
@@ -7122,14 +7109,12 @@ def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.Monk
     run_generate_and_assert(
         input_=Path("file_b.json"),
         input_file_type=InputFileType.Auto,
-        expected_file=EXPECTED_MAIN_PATH / "jsonschema" / "path_list_single" / "file_b.py",
         formatters=formatters,
     )
     run_generate_and_assert(
         input_=(source_dir / "file_b.json").read_text(encoding="utf-8"),
         input_file_type=InputFileType.Auto,
         input_filename="file_b.json",
-        expected_file=EXPECTED_MAIN_PATH / "jsonschema" / "path_list_single" / "file_b.py",
         formatters=formatters,
     )
 
@@ -7158,7 +7143,6 @@ def test_generate_path_lists_keep_caller_or_common_base(monkeypatch: pytest.Monk
         input_path=source_dir,
         output_path=tmp_path / "cli",
         input_file_type="jsonschema",
-        expected_directory=directory_expected_dir,
     )
 
 
@@ -7260,7 +7244,6 @@ def test_generate_builtin_string_normalization_module_split(output_dir: Path) ->
             "recursive",
             "--use-exact-imports",
         ],
-        expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "module_split_single",
     )
 
 

@@ -3,8 +3,10 @@
 One ``DecisionHome`` per row of the table under "One home per decision" in ``docs/architecture.md``, in its order;
 ``scripts/build_architecture_docs.py`` writes that table from ``DECISION_HOMES``. The three cells stay the Markdown the
 page shows; ``homes`` is what checks read: every definition of the pure core that the core cell names, where it is
-defined (never where it is imported). ``tests/test_decision_homes.py`` fails for a home that ``src/`` does not define
-and for a home its own core cell does not name.
+defined (never where it is imported), and ``sites``: the defs, classes and modules of the adapters cell, the scopes
+besides the home modules that may call a home. ``tests/test_decision_homes.py`` fails for a home or site that ``src/``
+does not define, for one its own cell does not name, and for a caller of a home outside them that
+``tests/decision_home_allowlist.py`` does not list.
 """
 
 from __future__ import annotations
@@ -34,6 +36,9 @@ class DecisionHome(NamedTuple):
     """The Markdown of the pure core cell."""
     adapters: str
     """The Markdown of the adapters cell: the sites that read the facts and call the core."""
+    sites: tuple[Home, ...]
+    """Every def or class the adapters cell names, in its order, or a module it names without naming one of its
+    definitions: the scopes, besides the home modules, that may call a home (``tests/test_decision_homes.py``)."""
 
 
 DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
@@ -128,6 +133,51 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`--distribute-allof-over-unions`) and `all_of_value_variants` (the value branches beside object branches "
             "there), unless `legacy-value-union-members-unread`"
         ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._legacy_intersection"),
+            Home("parser/_schema_reading.py", "_intersect_dumps"),
+            Home("parser/_schema_reading.py", "_json_value_admitted"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._combined_branch_row"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._combined_schema_members"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_combined_schema"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._value_ref_branch_with_site"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_ref_branch_model"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_all_of"),
+            Home("parser/jsonschema.py", "_expanded_variants"),
+            Home("parser/_origins.py", "with_subtype_ref"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_all_of_union_parts"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._all_of_union_combinations"),
+            Home("parser/_schema_refs.py", "intersect_ref_siblings_schema"),
+            Home("parser/_passes/_shared.py", "_FieldTagFacts.const"),
+            Home("parser/_schema_refs.py", "merge_ref_with_schema"),
+            Home("parser/_inherited_schemas.py", "resolve_inherited_parent_property"),
+            Home("parser/_schema_refs.py", "intersect_ref_siblings"),
+            Home("parser/_rw_split.py", "overlay_inherited_field"),
+            Home("parser/_passes/_shared.py", "inherited_default_source"),
+            Home("parser/_inherited_schemas.py", "merge_properties_with_parent_constraints"),
+            Home("parser/_inherited_schemas.py", "inherited_override_schema"),
+            Home("parser/_inherited_schemas.py", "merge_inherited_type_shape_dict"),
+            Home("parser/_inherited_schemas.py", "get_inherited_type_shape"),
+            Home("parser/_inherited_schemas.py", "override_row"),
+            Home("parser/_inherited_schemas.py", "get_deferred_inherited_property_names"),
+            Home("parser/_inherited_schemas.py", "copy_carries_override"),
+            Home("parser/_inherited_schemas.py", "all_of_members"),
+            Home("parser/_inherited_schemas.py", "alias_target"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_all_of_item"),
+            Home("parser/_inherited_schemas.py", "iter_allof_refs"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._typed_model_children"),
+            Home("parser/_inherited_schemas.py", "_read_through_members"),
+            Home("parser/_all_of_values.py", "holds_union_member"),
+            Home("parser/_inherited_schemas.py", "property_conjunctions"),
+            Home("parser/_inherited_schemas.py", "with_conjoined_properties"),
+            Home("parser/_inherited_schemas.py", "checked_declarations"),
+            Home("parser/_inherited_schemas.py", "union_model_properties"),
+            Home("parser/_inherited_schemas.py", "model_declarations"),
+            Home("parser/_lightweight_types.py", "_intersect_constraint"),
+            Home("parser/_all_of_values.py", "all_of_value_union_site"),
+            Home("parser/_all_of_values.py", "all_of_value_variants"),
+            Home("parser/_schema_validators.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -185,7 +235,52 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_all_of_values.py`: `merge_all_of_root_schema`, `all_of_root_value_schema`; "
             "`parser/_object_maps.py:object_map_admits_null`; `parser/graphql.py:GraphQLParser.parse_field` "
             "(`GraphQLParser._null_mode`); the converters `parser/avro.py` (`NULL_SCHEMA`), `parser/protobuf.py` "
-            "(`WELL_KNOWN_SCHEMAS`) and `parser/xmlschema.py` (`nillable`)"
+            "(`WELL_KNOWN_SCHEMAS`) and `parser/xmlschema.py:_XMLSchemaConverter._apply_common_element_metadata` "
+            "(`nillable`)"
+        ),
+        sites=(
+            Home("parser/_intersection.py", "inherited_override_row"),
+            Home("parser/jsonschema.py", "_null_sources"),
+            Home("parser/_schema_object.py", "_read_type"),
+            Home("parser/_schema_object.py", "_type_null_sources"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._null_mode"),
+            Home("parser/openapi.py", "OpenAPIParser._null_mode"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._null_facts"),
+            Home("parser/_schema_object.py", "JsonSchemaObject.type_has_null"),
+            Home("parser/jsonschema.py", "_excluded_null_members"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_combined_schema"),
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.get_object_field"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_data_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_python_type_override"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._object_nullable"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._create_registered_root_model"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.get_ref_data_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._cache_ref_data_type_facts"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_ref_nullable_only_item"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._build_constrained_type_union"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_array_fields"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_root_type_with_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_multiple_types_with_properties"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_enum"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._literal_values_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._add_nullable_combined_schema_branches"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._enforced_value_keywords"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._reads_enum_as_const"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._all_of_part_admits_null"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_all_of"),
+            Home("parser/_schema_documents.py", "document_as_written"),
+            Home("parser/_inherited_schemas.py", "merge_inherited_type_shape_dict"),
+            Home("parser/_inherited_schemas.py", "mark_partial_inherited_fields"),
+            Home("parser/_inherited_schemas.py", "get_inherited_schema_types"),
+            Home("parser/_value_keywords.py", "resolve_array_field_required_nullable"),
+            Home("parser/_value_keywords.py", "extract_const_enum_from_combined"),
+            Home("parser/_all_of_values.py", "merge_all_of_root_schema"),
+            Home("parser/_all_of_values.py", "all_of_root_value_schema"),
+            Home("parser/_object_maps.py", "object_map_admits_null"),
+            Home("parser/graphql.py", "GraphQLParser.parse_field"),
+            Home("parser/graphql.py", "GraphQLParser._null_mode"),
+            Home("parser/xmlschema.py", "_XMLSchemaConverter._apply_common_element_metadata"),
         ),
     ),
     DecisionHome(
@@ -227,6 +322,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "wire, `_Models.wire_null` over `_Models.preexisting_null` (rows `legacy-wire-null-ignores-nullable-false` "
             "and `legacy-wire-null-unknown-type`)"
         ),
+        sites=(
+            Home("types.py", "DataType.admits_none"),
+            Home("types.py", "DataType.names_nullable_model"),
+            Home("types.py", "DataType.adds_reference_null"),
+            Home("model/_field_imports.py", "field_none_source"),
+            Home("model/base.py", "DataModelFieldBase._field_null_source"),
+            Home("model/_field_imports.py", "field_admits_none"),
+            Home("types.py", "DataType._materialize_render_state"),
+            Home("types.py", "DataType._update_type_null"),
+            Home("parser/generation.py", "GenerationStore"),
+            Home("_target_binding.py", "_Projector._admits_none"),
+            Home("_target_binding.py", "_Models.field_facts"),
+            Home("_target_binding.py", "_Models.alias_nullable"),
+            Home("_target_binding.py", "_Models.wire_null"),
+            Home("_target_binding.py", "_Models.preexisting_null"),
+        ),
     ),
     DecisionHome(
         decision="whether a member of a union is the None it adds: the type None without members of its own",
@@ -238,6 +349,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "enforces (`parser/_value_keywords.py:_enforcing_leaves`), and the None members an override drops from an "
             "inherited union (`parser/_field_copies.py:_without_null_members`); left out: the bare None a hint writes "
             "(`types.py:DataType._is_bare_none`), which has no alias, reference or callable either"
+        ),
+        sites=(
+            Home("types.py", "DataType._gives_member_null"),
+            Home("types.py", "DataTypeManager.constraint_keywords"),
+            Home("parser/_value_keywords.py", "_enforcing_leaves"),
+            Home("parser/_field_copies.py", "_without_null_members"),
+            Home("types.py", "DataType._is_bare_none"),
         ),
     ),
     DecisionHome(
@@ -257,6 +375,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`types.py:DataType.type_hint` and `base_type_hint`; the expression frozen with each field render plan is "
             "checked against the type hint when the modules are written (`DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS`)"
         ),
+        sites=(
+            Home("types.py", "DataType.type_hint"),
+            Home("types.py", "DataType.base_type_hint"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -275,6 +397,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`const` branches and those of the converted formats); "
             "`parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`; "
             "`parser/_passes/modules.py:extract_inherited_enum` (L5); classes: `model/enum.py:_enum_class`"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_enum_model_class"),
+            Home("parser/graphql.py", "GraphQLParser.parse_enum_as_enum_class"),
+            Home("parser/_passes/modules.py", "extract_inherited_enum"),
+            Home("model/enum.py", "_enum_class"),
         ),
     ),
     DecisionHome(
@@ -300,6 +428,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_msgspec_mixed_enum_message`, `_msgspec_wide_int_enum_message`; "
             "`parser/_passes/modules.py:extract_inherited_enum` and its L1 prediction "
             "`parser/_all_of_values.py:merged_enum_fails`"
+        ),
+        sites=(
+            Home("model/enum.py", "Enum.value_base"),
+            Home("types.py", "DataTypeManager._constraint_keywords"),
+            Home("parser/_tag_plan.py", "_member_choice_keys"),
+            Home("parser/_tag_plan.py", "_written_enum_member_keys"),
+            Home("parser/_tag_plan.py", "settle_site"),
+            Home("parser/_tag_plan.py", "writes_member_values"),
+            Home("parser/base.py", "Parser._create_discriminator_data_type"),
+            Home("parser/_passes/imports.py", "_msgspec_mixed_enum_message"),
+            Home("parser/_passes/imports.py", "_msgspec_wide_int_enum_message"),
+            Home("parser/_passes/modules.py", "extract_inherited_enum"),
+            Home("parser/_all_of_values.py", "merged_enum_fails"),
         ),
     ),
     DecisionHome(
@@ -327,6 +468,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/openapi.py:OpenAPIParser._operation_literal_enum_applies`; "
             "`parser/_all_of_values.py:merged_enum_fails`"
         ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/graphql.py", "GraphQLParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._enum_site_form"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_enum_item"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_array_fields"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_root_type_with_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._definition_enum_applies"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_all_of_merged_root"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_combined_const_enum"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._should_create_type_alias_for_title"),
+            Home("parser/openapi.py", "OpenAPIParser._operation_literal_enum_applies"),
+            Home("parser/_all_of_values.py", "merged_enum_fails"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -353,6 +508,27 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_passes/modules.py:_merged_open_enum_base` (`extract_inherited_enum`: the base of the first "
             "merged enum when every one has one); the stdlib import a base replaces is left out by "
             "`model/enum.py:Enum._default_imports`"
+        ),
+        sites=(
+            Home("parser/base.py", "Parser"),
+            Home("parser/base.py", "Parser._enum_is_open"),
+            Home("parser/base.py", "Parser._open_enum_base"),
+            Home("model/enum.py", "enum_class_base"),
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._schema_enum_is_open"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_enum"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._open_enum_without_base"),
+            Home("parser/_value_keywords.py", "enum_as_literal_under"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._with_open_enum_type"),
+            Home("parser/_value_keywords.py", "enum_literal"),
+            Home("parser/_object_maps.py", "parse_property_name_key_schema"),
+            Home("parser/graphql.py", "GraphQLParser._graphql_enum_is_open"),
+            Home("parser/graphql.py", "GraphQLParser.parse_enum_as_enum_class"),
+            Home("parser/_value_keywords.py", "should_parse_enum_as_literal"),
+            Home("parser/graphql.py", "GraphQLParser.parse_enum_as_literal"),
+            Home("parser/_passes/modules.py", "_merged_open_enum_base"),
+            Home("parser/_passes/modules.py", "extract_inherited_enum"),
+            Home("model/enum.py", "Enum._default_imports"),
         ),
     ),
     DecisionHome(
@@ -480,6 +656,49 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "builder's own assembly (`JsonSchemaParser.parse_array_fields`: `get_array_constraints` and the lengths of "
             "a fixed tuple)"
         ),
+        sites=(
+            Home("types.py", "DataTypeManager.constraint_keywords"),
+            Home("types.py", "DataTypeManager.member_constraint_keywords"),
+            Home("types.py", "DataTypeManager._constraint_keywords"),
+            Home("types.py", "DataTypeManager.model_value_constraint_keywords"),
+            Home("types.py", "DataTypeManager.type_constraint_keywords"),
+            Home("parser/_value_keywords.py", "split_constraint_values"),
+            Home("parser/_value_keywords.py", "keywords_taken"),
+            Home("parser/_value_keywords.py", "declared_kinds"),
+            Home("parser/_value_keywords.py", "schema_kinds"),
+            Home("parser/_value_keywords.py", "type_list_keywords"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_array_fields"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._assemble_field_constraints"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._mark_assembled_constraints"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.get_object_field"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_root_type_with_context"),
+            Home("parser/_inherited_schemas.py", "drop_incompatible_inherited_constraints"),
+            Home("parser/_all_of_values.py", "handle_allof_root_model_with_constraints"),
+            Home("parser/_type_overrides.py", "decide_overridden_constraints"),
+            Home("parser/_type_overrides.py", "_untaken_container_counts"),
+            Home("parser/_type_overrides.py", "mark_untaken_constraints"),
+            Home("parser/_passes/modules.py", "_discriminator_tag_constraints"),
+            Home("model/msgspec.py", "DataModelField._meta_keywords"),
+            Home("model/msgspec.py", "DataModelField._dropped_meta_keywords"),
+            Home("model/msgspec.py", "DataModelField._literal_decided_meta_keywords"),
+            Home("types.py", "DataTypeManager.constraint_options"),
+            Home("types.py", "DataTypeManager.encodes_constrained_base64"),
+            Home("parser/_value_keywords.py", "type_enforced_keywords"),
+            Home("parser/_value_keywords.py", "_enforcing_leaves"),
+            Home("parser/_value_keywords.py", "can_hold_array"),
+            Home("parser/_value_keywords.py", "const_literal_enforces_constraints"),
+            Home("parser/_value_keywords.py", "literal_written"),
+            Home("model/pydantic_v2/types.py", "DataTypeManager._field_form_kwargs"),
+            Home("model/pydantic_v2/types.py", "DataTypeManager.get_data_type"),
+            Home("model/pydantic_v2/types.py", "DataTypeManager.get_data_float_type"),
+            Home("model/base.py", "DataModelFieldBase._constraints_blocked_by"),
+            Home("model/pydantic_base.py", "DataModelField._warned_omissions"),
+            Home("model/pydantic_base.py", "DataModelField._normalized_constraint_arguments"),
+            Home("model/pydantic_base.py", "DataModelField._untaken_beside_models"),
+            Home("model/pydantic_v2/base_model.py", "_pattern_data_type"),
+            Home("parser/_value_keywords.py", "has_effective_constraints"),
+            Home("parser/_value_keywords.py", "get_array_constraints"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -533,6 +752,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_stdout_repair.py:model_inventory` (behind `Parser.generated_model_inventory`); not yet: L4 "
             "`find_possible_reuse_duplicates` predicts with the first model of a candidate key, without the yield"
         ),
+        sites=(
+            Home("parser/base.py", "_ModelShapeSource"),
+            Home("model/base.py", "DataModel._fresh_dedup_key"),
+            Home("model/base.py", "DataModel.get_dedup_key"),
+            Home("parser/_passes/_shared.py", "compared_models"),
+            Home("parser/_stdout_repair.py", "stdout_model_fingerprint"),
+            Home("parser/base.py", "Parser._stdout_model_fingerprint"),
+            Home("parser/_passes/settle.py", "settle_yielding_names"),
+            Home("parser/_passes/modules.py", "reuse_model"),
+            Home("parser/_passes/plans.py", "find_possible_reuse_duplicates"),
+            Home("parser/_passes/structure.py", "delete_duplicate_models"),
+            Home("parser/_passes/structure.py", "renders_as_duplicate"),
+            Home("parser/_passes/structure.py", "replace_duplicate_name_in_module"),
+            Home("parser/_passes/structure.py", "find_duplicate_models_across_modules"),
+            Home("parser/_passes/structure.py", "replace_typed_map_value_duplicates"),
+            Home("parser/_passes/imports.py", "record_model_placement"),
+            Home("parser/_stdout_repair.py", "model_inventory"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -577,6 +814,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "names the model of its own name (`_drop_duplicate_root_model`: its users name what its root names, "
             "without a merge)"
         ),
+        sites=(
+            Home("parser/_passes/structure.py", "delete_duplicate_models"),
+            Home("parser/_passes/structure.py", "replace_typed_map_value_duplicates"),
+            Home("parser/_passes/structure.py", "create_shared_module_from_duplicates"),
+            Home("parser/_passes/modules.py", "reuse_model"),
+            Home("parser/_passes/modules.py", "redirect_removed_reuse_users"),
+            Home("parser/_passes/structure.py", "_drop_duplicate_root_model"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -599,6 +844,23 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/msgspec.py:DataModelField._literal_decided_meta_keywords`; not yet: `pattern` (G01's static "
             "pattern scanner) and the literals of `_build_lightweight_type`"
         ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._literal_view"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_enum"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_enum_as_literal"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._admitted_or_warn"),
+            Home("parser/_value_keywords.py", "check_literal_const"),
+            Home("parser/_value_keywords.py", "get_const_data_type"),
+            Home("parser/_value_keywords.py", "combined_values_admitted"),
+            Home("parser/_value_keywords.py", "extract_const_enum_from_combined"),
+            Home("parser/_value_keywords.py", "literal_written"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_data_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_root_type_with_context"),
+            Home("parser/_intersection.py", "warn_unsatisfiable"),
+            Home("model/msgspec.py", "DataModelField._literal_decided_meta_keywords"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._build_lightweight_type"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -617,6 +879,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`_json_schema.py:literal_value_kind`, which the JSON equality of a number reads), as the constraint leaf "
             "does not import that leaf"
         ),
+        sites=(
+            Home("_constraint_applicability.py", "_meets"),
+            Home("_recommend/_signals.py", "_redundant_constraint"),
+            Home("_recommend/_signals.py", "_Walker.count_validation_keywords"),
+            Home("_client/protocols.py", "_Validator.seconds"),
+            Home("_constraint_applicability.py", "json_integer"),
+            Home("_option_names.py", "toml_text"),
+            Home("_json_schema.py", "literal_value_kind"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -632,6 +903,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`_builtin_formatter.py:_is_valid_builtin_line_length`); left out: an int of exactly the `int` class "
             "(`type(value) is int`: `_client/protocols.py`, `_client/config.py`, `parser/avro.py`, "
             "`python_literal.py`, `_target_binding.py`), which refuses the subclasses of `int` too"
+        ),
+        sites=(
+            Home("parser/_value_keywords.py", "get_contains_count_constraints"),
+            Home("parser/_value_keywords.py", "contains_false_requires_match"),
+            Home("types.py", "_preserve_float_constraint_precision"),
+            Home("_builtin_formatter.py", "_is_valid_builtin_line_length"),
+            Home("_client/protocols.py"),
+            Home("_client/config.py"),
+            Home("parser/avro.py"),
+            Home("python_literal.py"),
+            Home("_target_binding.py"),
         ),
     ),
     DecisionHome(
@@ -654,6 +936,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "together, `DataModelField._union_meta_constraints`; the options reach "
             "`DataModelField.unconstrain_union_members` from "
             "`parser/_passes/plans.py:unconstrain_union_members_in_modules`)"
+        ),
+        sites=(
+            Home("types.py", "normalize_integer_constraint"),
+            Home("model/msgspec.py", "_integer_bounds"),
+            Home("model/msgspec.py", "_UnionLeaf.read"),
+            Home("model/msgspec.py", "DataModelField._union_meta_constraints"),
+            Home("model/msgspec.py", "DataModelField.unconstrain_union_members"),
+            Home("parser/_passes/plans.py", "unconstrain_union_members_in_modules"),
         ),
     ),
     DecisionHome(
@@ -703,6 +993,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "hashes by identity; Pydantic v2 `BaseModel`: `_validated_value_hashes`) and "
             "`DataModel._DICT_KEYS_TAKE_ROOT_TYPE` (Pydantic v2 `RootModel`)"
         ),
+        sites=(
+            Home("parser/_passes/_shared.py", "_set_item_facts"),
+            Home("parser/_passes/_shared.py", "unique_items_plan"),
+            Home("parser/_passes/_shared.py", "unhashable_unique_sets"),
+            Home("model/base.py", "set_item_models_keeping_builtin_hash"),
+            Home("parser/_passes/render_prep.py", "mark_set_item_models_hashable"),
+            Home("model/base.py", "DataModel._keys_take_root_type"),
+            Home("parser/_passes/modules.py", "type_dict_keys_by_root_types"),
+            Home("model/base.py", "DataModel._hash_class_facts"),
+            Home("model/base.py", "DataModel._instances_never_hash"),
+            Home("model/typed_dict.py", "TypedDict"),
+            Home("model/pydantic_v2/root_model_type_alias.py", "RootModelTypeAlias"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel._hash_class_facts"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel._uses_builtin_hash_implementation"),
+            Home("model/pydantic_v2/base_model.py", "_validated_value_hashes"),
+            Home("model/pydantic_v2/base_model.py", "DataModelField"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -739,6 +1047,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`settle_kept_parent_roots`; capability `Parser._collapses_list_item_root_models` (False in "
             "`parser/graphql.py`)"
         ),
+        sites=(
+            Home("parser/_passes/modules.py", "collapse_site_facts"),
+            Home("parser/_passes/modules.py", "collapse_root_models_in_scope"),
+            Home("parser/_passes/modules.py", "annotated_member_type"),
+            Home("parser/_passes/_shared.py", "takes_hashable_value"),
+            Home("parser/_passes/modules.py", "first_holder_facts"),
+            Home("parser/_passes/modules.py", "settle_kept_parent_roots"),
+            Home("parser/graphql.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -751,6 +1068,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`parser/_field_copies.py:_copy_resolved_inherited_field`; "
             "`parser/_passes/modules.py:collapse_root_models_in_scope` through `ConstraintsBase.merge_constraints`"
+        ),
+        sites=(
+            Home("parser/_field_copies.py", "_copy_resolved_inherited_field"),
+            Home("parser/_passes/modules.py", "collapse_root_models_in_scope"),
         ),
     ),
     DecisionHome(
@@ -771,6 +1092,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`--use-site-models-for-constrained-refs`); another rule: the constraints but `uniqueItems` a root field "
             "writes (`parser/_passes/modules.py:_root_constraint_keywords`, "
             "`model/pydantic_v2/root_model_type_alias.py:_constrained_root_model`)"
+        ),
+        sites=(
+            Home("parser/_passes/modules.py", "collapse_site_facts"),
+            Home("_target_binding.py", "_Binder.constrains"),
+            Home("parser/base.py", "Parser._get_duplicate_root_reference"),
+            Home("model/pydantic_v2/root_model_type_alias.py", "_constrained_root_model"),
         ),
     ),
     DecisionHome(
@@ -795,6 +1122,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "of a protocol helper (`json_type`: `_client/pagination.py:_Pages` `ends` and `bindings`, "
             "`_client/polling.py:_Polls.states`); not yet: `_constraint_applicability.py` (`json_number`, "
             "`json_integer`, the rows above)"
+        ),
+        sites=(
+            Home("_json_schema.py", "literal_value_kind"),
+            Home("_json_schema.py", "json_type"),
+            Home("_json_schema.py", "json_value_key"),
+            Home("parser/_schema_reading.py", "_get_json_value_type"),
+            Home("_json_schema.py", "json_value_type"),
+            Home("_target_binding.py", "_Models.symbols"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._with_open_enum_type"),
+            Home("_client/pagination.py", "_Pages"),
+            Home("_client/pagination.py", "_Pages.ends"),
+            Home("_client/pagination.py", "_Pages.bindings"),
+            Home("_client/polling.py", "_Polls.states"),
+            Home("_constraint_applicability.py", "json_number"),
+            Home("_constraint_applicability.py", "json_integer"),
+            Home("model/_decisions/enum_kind.py"),
         ),
     ),
     DecisionHome(
@@ -823,6 +1166,23 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/_decisions/tag_value.py` (`field_tag`, `enum_tag_literal`, `union_tag_values`); the type of a "
             "const through `model/_decisions/literal_default.py:const_type`"
         ),
+        sites=(
+            Home("parser/_value_keywords.py", "partition_enum_values"),
+            Home("parser/_value_keywords.py", "get_const_data_type"),
+            Home("parser/_value_keywords.py", "extract_const_enum_from_combined"),
+            Home("parser/_value_keywords.py", "get_scalar_data_type_from_json_value"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._widened"),
+            Home("parser/_passes/imports.py", "widened_values_warning"),
+            Home("parser/_passes/imports.py", "_msgspec_enum_kinds"),
+            Home("parser/_passes/imports.py", "_msgspec_enum_clashes"),
+            Home("parser/_passes/imports.py", "_msgspec_member_slots"),
+            Home("parser/_passes/imports.py", "_msgspec_null_enum_message"),
+            Home("parser/_passes/imports.py", "_msgspec_mixed_enum_message"),
+            Home("model/_decisions/tag_value.py", "field_tag"),
+            Home("model/_decisions/tag_value.py", "enum_tag_literal"),
+            Home("model/_decisions/tag_value.py", "union_tag_values"),
+            Home("model/_decisions/literal_default.py", "const_type"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -850,6 +1210,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "a generated root model carries writes its own key "
             "(`model/pydantic_v2/root_model.py:RootModel.add_literal_validation`), as generated code cannot import "
             "this module"
+        ),
+        sites=(
+            Home("model/enum.py", "Enum"),
+            Home("model/enum.py", "Enum.find_member"),
+            Home("model/enum.py", "Enum._index_members"),
+            Home("parser/_intersection.py", "_retained_indices"),
+            Home("parser/_intersection.py", "enum_metadata"),
+            Home("parser/_intersection.py", "_Reconciler._const"),
+            Home("parser/_all_of_values.py", "_enum_narrowed_by_part_consts"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._enum_positions_outside_const"),
+            Home("model/pydantic_v2/root_model.py", "RootModel.add_literal_validation"),
+            Home("parser/_inherited_schemas.py"),
+            Home("parser/_schema_validators.py"),
         ),
     ),
     DecisionHome(
@@ -919,6 +1292,39 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`set_tagged_union_discriminator` (L1); `model/msgspec.py:Struct._tag_options`, "
             "`Struct.discriminator_tag`; not here: tag defaults and nullability (next row) and tag patterns "
             "(`_drop_discriminator_tag_patterns`)"
+        ),
+        sites=(
+            Home("parser/_passes/_shared.py", "_get_discriminator_field_value"),
+            Home("parser/_passes/_shared.py", "_FieldTagFacts"),
+            Home("parser/_passes/_shared.py", "_FieldTagFacts.values"),
+            Home("parser/_passes/_shared.py", "_tag_field_matches"),
+            Home("parser/_passes/_shared.py", "_keeps_instance_field"),
+            Home("parser/_passes/_shared.py", "_get_mapping_discriminator_values"),
+            Home("parser/_passes/_shared.py", "enum_discriminator_literal"),
+            Home("parser/base.py", "Parser._get_enum_discriminator_literal"),
+            Home("parser/_passes/_shared.py", "enum_discriminator_members"),
+            Home("parser/_passes/cross_module.py", "write_enum_member_tags_as_values"),
+            Home("parser/_tag_plan.py", "tags_of_variant"),
+            Home("parser/_tag_plan.py", "_VariantTagFacts"),
+            Home("parser/_tag_plan.py", "UnionView.tags"),
+            Home("parser/_tag_plan.py", "site_tag_values"),
+            Home("parser/_tag_plan.py", "declared_union_tags"),
+            Home("parser/_tag_plan.py", "possible_tag_names"),
+            Home("parser/_tag_plan.py", "site_validity"),
+            Home("parser/_tag_plan.py", "iter_tag_field_decisions"),
+            Home("parser/_tag_plan.py", "tag_msgspec_unions"),
+            Home("parser/_passes/modules.py", "apply_discriminator_type"),
+            Home("parser/_tag_plan.py", "iter_struct_tag_decisions"),
+            Home("parser/_passes/cross_module.py", "tag_fields_of_tagged_bases"),
+            Home("parser/_passes/imports.py", "_msgspec_refused_structs"),
+            Home("parser/_union_tags.py", "get_single_literal_value"),
+            Home("parser/_union_tags.py", "_SchemaTagFacts"),
+            Home("parser/_union_tags.py", "get_union_variant_literal_values"),
+            Home("parser/_union_tags.py", "get_tagged_union_field_values"),
+            Home("parser/_union_tags.py", "set_tagged_union_discriminator"),
+            Home("model/msgspec.py", "Struct._tag_options"),
+            Home("model/msgspec.py", "Struct.discriminator_tag"),
+            Home("parser/_passes/modules.py", "_drop_discriminator_tag_patterns"),
         ),
     ),
     DecisionHome(
@@ -1035,6 +1441,26 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "parser method through which the client and server targets ask the tags of a variant after the last pass "
             "(`tags_of_variant` with the reading of the finished `TagPlan`), which waits for its first caller"
         ),
+        sites=(
+            Home("parser/_passes/structure.py", "snapshot_union_tags"),
+            Home("parser/_passes/plans.py", "reset_per_run_state"),
+            Home("parser/_passes/plans.py", "flatten_conflicting_base_layouts"),
+            Home("parser/_passes/modules.py", "tag_reading"),
+            Home("parser/_passes/modules.py", "collapse_root_models_in_scope"),
+            Home("parser/_passes/modules.py", "apply_discriminator_type"),
+            Home("parser/_passes/modules.py", "_tag_discriminator_unions"),
+            Home("parser/_passes/modules.py", "settle_discriminated_unions"),
+            Home("parser/_passes/modules.py", "process_each_module"),
+            Home("parser/_passes/cross_module.py", "tag_fields_of_tagged_bases"),
+            Home("parser/_passes/render_prep.py", "fix_tag_opt_out_field_ordering"),
+            Home("parser/_passes/imports.py", "warn_about_variant_discriminator_tags"),
+            Home("parser/_passes/imports.py", "alias_reused_variant_literal"),
+            Home("parser/base.py", "Parser._model_shapes"),
+            Home("parser/base.py", "Parser._tag_capabilities"),
+            Home("parser/_passes/modules.py", "get_collapsed_unions"),
+            Home("parser/_passes/imports.py", "warn_about_msgspec_decoding"),
+            Home("parser/_passes/_tables.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1063,6 +1489,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`type` list or `nullable` adds); writes: `model/base.py:_apply_literal_default`; not routed: the tag "
             "field `apply_discriminator_type` appends is built required and takes no default under `--force-optional`, "
             "where a tag whose type it writes does"
+        ),
+        sites=(
+            Home("model/base.py", "DataModelFieldBase._process_const_as_literal"),
+            Home("model/base.py", "DataModelFieldBase.process_const"),
+            Home("parser/_passes/modules.py", "collapse_root_models"),
+            Home("model/msgspec.py", "DataModelField.process_const"),
+            Home("parser/_passes/modules.py", "set_one_literal_on_default"),
+            Home("parser/_passes/modules.py", "set_tag_literal_default"),
+            Home("parser/_passes/modules.py", "apply_discriminator_type"),
+            Home("parser/_passes/modules.py", "_get_single_discriminator_default"),
+            Home("parser/_value_keywords.py", "get_const_data_type"),
+            Home("model/base.py", "DataModel.nullable"),
+            Home("model/base.py", "_apply_literal_default"),
         ),
     ),
     DecisionHome(
@@ -1108,6 +1547,26 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "yet: msgspec's decode view (`model/msgspec.py:DataModelField._union_leaves`) spreads alias unions by its "
             "own rule"
         ),
+        sites=(
+            Home("types.py", "build_union"),
+            Home("model/msgspec.py", "DataModelField._ordered_union_data_type"),
+            Home("types.py", "DataType.__init__"),
+            Home("parser/generation.py", "GenerationStore.replace_nested_data_type"),
+            Home("parser/graphql.py", "GraphQLParser.parse_union"),
+            Home("types.py", "render_type_expr"),
+            Home("types.py", "_render_union"),
+            Home("_target_binding.py", "_ordered_union"),
+            Home("model/pydantic_v2/base_model.py", "DataModelField._type_hint_with_missing_sentinel"),
+            Home("parser/_passes/render_prep.py", "_flatten_union_members"),
+            Home("types.py", "union_members"),
+            Home("types.py", "written_union_members"),
+            Home("parser/_passes/_shared.py", "_iter_discriminator_data_types"),
+            Home("model/_decisions/nullability.py", "takes_member_null"),
+            Home("model/msgspec.py", "DataModelField._union_leaves"),
+            Home("parser/jsonschema.py"),
+            Home("parser/openapi.py"),
+            Home("parser/_passes/imports.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1135,6 +1594,21 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`--use-typed-nullable-map-values` and `--use-typed-map-values-beside-other-types` type; "
             "`parser/_object_maps.py:object_map_key_type` gives the key type of every map position (rows "
             "`pattern-map`, `property-names-map`, `extra-field`)"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_root_type_with_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_object"),
+            Home("parser/_object_maps.py", "get_additional_properties_root_field"),
+            Home("parser/_object_maps.py", "parse_pattern_properties"),
+            Home("parser/_object_maps.py", "parse_property_names"),
+            Home("parser/_object_maps.py", "parse_additional_properties_map"),
+            Home("parser/_object_maps.py", "parse_nullable_map"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_data_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_type_array_data_type"),
+            Home("parser/_object_maps.py", "legacy_object_maps"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._legacy_object_maps"),
+            Home("parser/_object_maps.py", "typed_nullable_map_value_schema"),
+            Home("parser/_object_maps.py", "object_map_key_type"),
         ),
     ),
     DecisionHome(
@@ -1196,6 +1670,33 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/dataclass.py` and the declared factory of `model/pydantic_base.py`; not routed: "
             "`model/dataclass.py:_has_constructor_default` (nested mapping defaults, which skips rendering structured "
             "values) and the nested-factory metadata (`_set_nested_model_default_factory_metadata`)"
+        ),
+        sites=(
+            Home("model/base.py", "DataModel._field_assignment_facts"),
+            Home("model/base.py", "_assignment_inputs"),
+            Home("model/base.py", "DataModelFieldBase._written_assignment"),
+            Home("_target_binding.py", "_field_facts"),
+            Home("parser/_passes/render_prep.py", "fix_constructor_field_ordering"),
+            Home("parser/_passes/render_prep.py", "fix_tag_opt_out_field_ordering"),
+            Home("model/base.py", "DataModel.field_binds_class_attribute"),
+            Home("parser/_passes/modules.py", "hides_named_type"),
+            Home("model/base.py", "_is_hidden_by_earlier_field"),
+            Home("parser/_passes/render_prep.py", "warn_required_assignments_after_defaults"),
+            Home("model/base.py", "DataModelFieldBase._get_constructor_default_info"),
+            Home("parser/_passes/render_prep.py", "_applies_default"),
+            Home("model/base.py", "_default_state"),
+            Home("model/base.py", "_model_written"),
+            Home("_target_binding.py", "_emitted_default"),
+            Home("model/dataclass.py", "DataClass.prepare_required_inherited_field"),
+            Home("model/dataclass.py", "DataClass.restore_required_inherited_field_state"),
+            Home("model/base.py", "DataModelFieldBase.has_default_factory"),
+            Home("model/base.py", "DataModel.prepare_required_inherited_field"),
+            Home("model/dataclass.py", "_has_constructor_default"),
+            Home("model/pydantic_base.py"),
+            Home("model/pydantic_v2/dataclass.py"),
+            Home("model/msgspec.py"),
+            Home("parser/_passes/_shared.py"),
+            Home("model/pydantic_v2/base_model.py"),
         ),
     ),
     DecisionHome(
@@ -1263,6 +1764,39 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/base.py:DataModel.__init__` (template data keys); `model/scalar.py:_DataTypeScalarBase.__init__`; "
             "`_target_naming.py:TargetNames.alias`"
         ),
+        sites=(
+            Home("_generation.py", "_parse_generation"),
+            Home("reference.py", "ModelResolver._get_model_name_map_value"),
+            Home("reference.py", "ModelResolver.apply_model_name_keys"),
+            Home("parser/_passes/imports.py", "record_generated_class_names"),
+            Home("parser/_passes/imports.py", "translate_final_name_keys"),
+            Home("_generation.py", "_parse_generation_run"),
+            Home("reference.py", "ModelResolver.class_scope"),
+            Home("reference.py", "FieldNameResolver.prepare_explicit_field_aliases"),
+            Home("reference.py", "FieldNameResolver.get_valid_field_name_and_alias"),
+            Home("reference.py", "ModelResolver.resolve_default_value"),
+            Home("parser/base.py", "Parser.get_serialization_alias"),
+            Home("parser/base.py", "Parser._apply_final_class_field_aliases"),
+            Home("parser/base.py", "Parser._resolve_base_class"),
+            Home("parser/_passes/settle.py", "settle_yielding_names"),
+            Home("parser/_passes/modules.py", "apply_field_type_overrides"),
+            Home("parser/_passes/modules.py", "remove_overridden_models"),
+            Home("parser/_passes/modules.py", "derived_override_import"),
+            Home("parser/_passes/_shared.py", "_ReuseOptimizationContext.from_type_overrides"),
+            Home("parser/_passes/_shared.py", "enum_site_override_import"),
+            Home("parser/_type_overrides.py", "apply_override_to_data_type"),
+            Home("parser/openapi.py", "OpenAPIParser.parse_all_parameters"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._extra_template_data_for_reference"),
+            Home("parser/_inherited_schemas.py", "parse_inherited_schema_fields"),
+            Home("model/base.py", "DataModel.__init__"),
+            Home("model/scalar.py", "_DataTypeScalarBase.__init__"),
+            Home("_target_naming.py", "TargetNames.alias"),
+            Home("parser/_passes/plans.py"),
+            Home("parser/_tag_plan.py"),
+            Home("parser/avro.py"),
+            Home("parser/graphql.py"),
+            Home("parser/_rw_split.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1282,8 +1816,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_lock_plan.py`: `default_lock_parent`, `remote_lock_plan`, `owns_lock_update`, `models_lockfile`",
         adapters=(
-            "`__main__.py`: `_remote_lock_plan`; `_target_cli.py`: `_run`; `_generation.py`: "
+            "`__main__.py`: `_watch_remote_lock_setup`, `_recommend_lock_observer`, `_run_jobs`, `_run_watched_jobs`, "
+            "`_run_config` (each calls `_remote_lock_plan`); `_target_cli.py`: `_run`; `_generation.py`: "
             "`_resolve_generation_remote_lock`, `_prepare_atomic_generation_remote_lock`"
+        ),
+        sites=(
+            Home("__main__.py", "_watch_remote_lock_setup"),
+            Home("__main__.py", "_recommend_lock_observer"),
+            Home("__main__.py", "_run_jobs"),
+            Home("__main__.py", "_run_watched_jobs"),
+            Home("__main__.py", "_run_config"),
+            Home("_target_cli.py", "_run"),
+            Home("_generation.py", "_resolve_generation_remote_lock"),
+            Home("_generation.py", "_prepare_atomic_generation_remote_lock"),
         ),
     ),
     DecisionHome(
@@ -1299,6 +1844,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_generation.py:_generate_with_atomic_remote_update`, `__main__.py:_RemoteLockTransaction`, "
             "`_api_generation.py:_stage`, `remote_lock.py:RemoteReferenceLock.commit`"
+        ),
+        sites=(
+            Home("_generation.py", "_generate_with_atomic_remote_update"),
+            Home("__main__.py", "_RemoteLockTransaction"),
+            Home("_api_generation.py", "_stage"),
+            Home("remote_lock.py", "RemoteReferenceLock.commit"),
         ),
     ),
     DecisionHome(
@@ -1325,6 +1876,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_single_job_plan`, "
             "`_stage_job_plan`"
         ),
+        sites=(
+            Home("_generation.py", "_generate_with_atomic_remote_update"),
+            Home("__main__.py", "_get_job_config"),
+            Home("__main__.py", "_single_job_plan"),
+            Home("__main__.py", "_stage_job_plan"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1340,6 +1897,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`publication_anchor` holds) and `_target_selection.py:_render` (a render directory under the working "
             "directory)"
         ),
+        sites=(
+            Home("_publication.py", "stage_artifact"),
+            Home("_api_generation.py", "_staging"),
+            Home("_api_generation.py", "_stage"),
+            Home("_publication.py", "publication_anchor"),
+            Home("_target_selection.py", "_render"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1352,6 +1916,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_publication.py:stage_artifact` (the output and model metadata of the command line and `generate()`), "
             "`_api_generation.py:_generate_models` (the models of a target and their model metadata)"
+        ),
+        sites=(
+            Home("_publication.py", "stage_artifact"),
+            Home("_api_generation.py", "_generate_models"),
         ),
     ),
     DecisionHome(
@@ -1369,6 +1937,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_api_generation.py:_Planner.encoding`; `_target_cli.py`: `_target_json`, `_compare_target` (the files a "
             "directory comparison compares one by one); `_target_selection.py:_render`"
         ),
+        sites=(
+            Home("_api_generation.py", "_Planner.encoding"),
+            Home("_target_cli.py", "_target_json"),
+            Home("_target_cli.py", "_compare_target"),
+            Home("_target_selection.py", "_render"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1383,6 +1957,16 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`CodeFormatter.apply_ruff_check_and_format`, `CodeFormatter._ruff_check`, "
             "`CodeFormatter._run_ruff_command` (its messages), `_held_as_utf8`; `_api_generation.py:_Planner.defer`; "
             "left out: `format.py:_read_by_ruff` (reads `utf-8-sig`, as Ruff skips a byte order mark)"
+        ),
+        sites=(
+            Home("format.py", "CodeFormatter.apply_ruff_lint"),
+            Home("format.py", "CodeFormatter.apply_ruff_formatter"),
+            Home("format.py", "CodeFormatter.apply_ruff_check_and_format"),
+            Home("format.py", "CodeFormatter._ruff_check"),
+            Home("format.py", "CodeFormatter._run_ruff_command"),
+            Home("format.py", "_held_as_utf8"),
+            Home("_api_generation.py", "_Planner.defer"),
+            Home("format.py", "_read_by_ruff"),
         ),
     ),
     DecisionHome(
@@ -1407,6 +1991,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`staging_directory_for`, `_create_target_parent`; `remote_lock.py:_nearest_existing_directory`; "
             "`watch_dependencies.py:_nearest_existing_directory`"
         ),
+        sites=(
+            Home("_generation.py", "_refuse_uncreatable_paths"),
+            Home("_publication.py", "publication_anchor"),
+            Home("_publication.py", "staging_directory_for"),
+            Home("_publication.py", "_create_target_parent"),
+            Home("remote_lock.py", "_nearest_existing_directory"),
+            Home("watch_dependencies.py", "_nearest_existing_directory"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1428,6 +2020,18 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_publication.py:artifact_roots`; `_generation.py:_prepare_directory_input`; left out: "
             "`_target_cli.py:_stage_implementations` (resolves an existing services directory to compare it with the "
             "output root)"
+        ),
+        sites=(
+            Home("_publication.py", "_planned_staged_file"),
+            Home("_publication.py", "_validate_planned_target"),
+            Home("remote_lock.py", "RemoteReferenceLock.commit"),
+            Home("watch_dependencies.py", "_path_variants"),
+            Home("_api_generation.py", "_Planner.check_collisions"),
+            Home("_api_generation.py", "_stage"),
+            Home("_api_generation.py", "_unshared"),
+            Home("_publication.py", "artifact_roots"),
+            Home("_generation.py", "_prepare_directory_input"),
+            Home("_target_cli.py", "_stage_implementations"),
         ),
     ),
     DecisionHome(
@@ -1453,6 +2057,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`watch_dependencies.py`: `_path_variants`, `_symlink_event_paths`, `_resolved_path`; `_cli_config.py` "
             "(the path validator of the command-line config); `_project_config.py:load_pyproject_config`"
         ),
+        sites=(
+            Home("_generation.py", "_validate_generation_path_conflicts"),
+            Home("_generation.py", "_prepare_generation_input"),
+            Home("__main__.py", "_config_artifacts"),
+            Home("__main__.py", "_preflight_job_plans"),
+            Home("__main__.py", "_validate_staged_job_plans"),
+            Home("_api_generation.py", "_root_input"),
+            Home("_api_generation.py", "_remote_lock"),
+            Home("_api_generation.py", "_Planner"),
+            Home("_publication.py", "staging_directory_for"),
+            Home("_publication.py", "artifact_roots"),
+            Home("_lock_plan.py", "remote_lock_plan"),
+            Home("watch_dependencies.py", "_path_variants"),
+            Home("watch_dependencies.py", "_symlink_event_paths"),
+            Home("watch_dependencies.py", "_resolved_path"),
+            Home("_project_config.py", "load_pyproject_config"),
+            Home("_cli_config.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1474,6 +2096,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "lock checks); `_api_generation.py:_remote_lock`; `_publication.py:_restore_backup`; "
             "`watch_dependencies.py:_logical_working_directory`"
         ),
+        sites=(
+            Home("_generation.py", "_validate_generation_path_conflicts"),
+            Home("__main__.py", "_paths_overlap_or_samefile"),
+            Home("_api_generation.py", "_remote_lock"),
+            Home("_publication.py", "_restore_backup"),
+            Home("watch_dependencies.py", "_logical_working_directory"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1493,9 +2122,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`_paths.py`: `output_layout`, `output_files`, `layout_refusal`",
         adapters=(
             "`__main__.py`: `_run_config` (the refusal and the single-file switch of `--check`), "
-            "`_compare_directories`, `_copy_generated_output`, `_generated_files_from_output`; `_generation.py`: "
-            "`_write_results_to_output`, `_generate_with_atomic_remote_update`; `_facade.py:generate`; "
-            "`_publication.py:StagedArtifact.files`; `_api_generation.py`: `_staged_models`, `_generate_models`"
+            "`_copy_generated_output`, `_generated_files_from_output`; `_output_comparison.py:_compare_directories`; "
+            "`_generation.py`: `_write_results_to_output`, `_generate_with_atomic_remote_update`; "
+            "`_facade.py:generate`; `_publication.py:StagedArtifact.files`; `_api_generation.py`: `_staged_models`, "
+            "`_generate_models`"
+        ),
+        sites=(
+            Home("__main__.py", "_run_config"),
+            Home("_output_comparison.py", "_compare_directories"),
+            Home("__main__.py", "_copy_generated_output"),
+            Home("__main__.py", "_generated_files_from_output"),
+            Home("_generation.py", "_write_results_to_output"),
+            Home("_facade.py", "generate"),
+            Home("_generation.py", "_generate_with_atomic_remote_update"),
+            Home("_publication.py", "StagedArtifact.files"),
+            Home("_api_generation.py", "_staged_models"),
+            Home("_api_generation.py", "_generate_models"),
         ),
     ),
     DecisionHome(
@@ -1519,6 +2161,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_rendered_config_items` (`_PydanticV2Model`, `RootModel`), the items the renderer, the imports and the "
             "alias decisions read too; record: `parser/_passes/imports.py:record_pydantic_floor` at the end of L6, "
             "into `pydantic_floors_recorded`; statement: `_generation.py:_parse_generation`, for the parse it keeps"
+        ),
+        sites=(
+            Home("model/base.py", "DataModel"),
+            Home("model/base.py", "DataModelFieldBase"),
+            Home("model/pydantic_v2/base_model.py", "DataModelField"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel"),
+            Home("model/pydantic_v2/base_model.py", "_PydanticV2Model"),
+            Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._rendered_config_items"),
+            Home("parser/_passes/imports.py", "record_pydantic_floor"),
+            Home("_generation.py", "_parse_generation"),
+            Home("model/type_alias.py"),
         ),
     ),
     DecisionHome(
@@ -1556,6 +2209,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/pydantic_v2/base_model.py:_PydanticV2Model._select_python_regex_engine` (the config a model or "
             "dataclass writes)"
         ),
+        sites=(
+            Home("model/pydantic_v2/base_model.py", "_model_pattern_engine"),
+            Home("model/pydantic_v2/base_model.py", "_pattern_needs_holder_engine"),
+            Home("parser/_all_of_values.py", "patterns_need_holder_engine"),
+            Home("model/pydantic_v2/base_model.py", "_select_surrogate_regex_engines"),
+            Home("model/runtime_validation.py", "_adapter_pattern_engines"),
+            Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._select_python_regex_engine"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1571,6 +2232,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_schema_object.py:JsonSchemaObject.read_pattern_as_the_engines_compile_it`, reported by "
             "`parser/jsonschema.py:JsonSchemaParser._report_parse_diagnostics`"
         ),
+        sites=(
+            Home("parser/_schema_object.py", "JsonSchemaObject.read_pattern_as_the_engines_compile_it"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._report_parse_diagnostics"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1583,6 +2248,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("_regex_syntax.py", "control_escapes_keep_meaning"),),
         core="`_regex_syntax.py`: `control_escapes_keep_meaning`",
         adapters="`model/pydantic_v2/types.py:_get_regex_literal`",
+        sites=(Home("model/pydantic_v2/types.py", "_get_regex_literal"),),
     ),
     DecisionHome(
         decision=(
@@ -1614,6 +2280,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/pydantic_v2/root_model.py`: `RootModel._decide_config_items` stores a root model's items again "
             "once its literal values and neutral `extra` are final, which no reader before it reads"
         ),
+        sites=(
+            Home("model/pydantic_v2/dataclass.py", "DataClass._apply_lookaround_regex_engine"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass.imports"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass.render"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass.__init__"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass._takes_config_of"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass._bases_without_inherited_config"),
+            Home("model/pydantic_v2/root_model.py", "RootModel._decide_config_items"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1635,6 +2310,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "messages, recorded by `_target_binding.py:TargetAsyncAPIParser`); planned: `_target_walk.py`"
         ),
         adapters="`_fastapi/source_document.py` (copies the source as written, #4534)",
+        sites=(Home("_fastapi/source_document.py"),),
     ),
     DecisionHome(
         decision=(
@@ -1648,6 +2324,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`parser/_schema_graph.py`, `parser/_api_reference.py`, `parser/openapi_scope.py`",
         adapters="`_target_documents.py`",
+        sites=(Home("_target_documents.py"),),
     ),
     DecisionHome(
         decision=(
@@ -1731,6 +2408,42 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/jsonschema.py` (the array of an `allOf` root), `parser/_passes/modules.py:collapse_site_facts` "
             "(`holder_has_container`)"
         ),
+        sites=(
+            Home("types.py", "_container_name"),
+            Home("types.py", "_render_form"),
+            Home("_target_binding.py", "_Projector"),
+            Home("_target_binding.py", "_Projector._container"),
+            Home("_target_binding.py", "_Projector._structural"),
+            Home("parser/_passes/_shared.py", "_set_item_facts"),
+            Home("parser/_passes/modules.py", "_is_builtin_type_collision"),
+            Home("types.py", "DataType._is_container"),
+            Home("types.py", "DataTypeManager._shape_constraint_keywords"),
+            Home("types.py", "_build_type_expr"),
+            Home("model/msgspec.py", "DataModelField._shape_meta_keywords"),
+            Home("model/dataclass.py", "_mapping_annotation"),
+            Home("model/pydantic_v2/base_model.py", "_value_hash_facts"),
+            Home("parser/_sites.py", "position_step"),
+            Home("parser/_value_keywords.py", "dropped_property_counts"),
+            Home("parser/_schema_validators.py", "get_executable_unique_items_paths"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_root_model_sequence_type"),
+            Home("parser/_passes/modules.py", "collapse_site_facts"),
+            Home("parser/_passes/modules.py", "root_key_data_type"),
+            Home("parser/_passes/render_prep.py", "_is_generic_class_container"),
+            Home("parser/_passes/render_prep.py", "collect_set_item_references"),
+            Home("parser/_passes/_shared.py", "_unique_items_arrays"),
+            Home("parser/base.py", "Parser._get_duplicate_root_reference"),
+            Home("model/pydantic_v2/root_model.py", "RootModel.finalize_sequence_interface"),
+            Home("_target_types.py", "container_slot"),
+            Home("_target_types.py", "TypeTables.contained"),
+            Home("_client/codec_plan.py", "_Planner.shape"),
+            Home("_target_types.py", "TypeTables.json_kinds"),
+            Home("_target_module.py", "TargetModule.generic"),
+            Home("model/_field_imports.py", "data_type_import_key"),
+            Home("parser/_value_keywords.py", "_carried_constraint_keywords"),
+            Home("parser/_value_keywords.py", "_enforcing_leaves"),
+            Home("parser/_schema_validators.py", "data_type_may_accept_array"),
+            Home("parser/_field_copies.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1750,6 +2463,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`types.py:DataTypeManager.copy_data_type` (a leaf prototype takes a node copy, a nested one a deep copy), "
             "`parser/base.py:Parser._copy_model_type`, `model/msgspec.py:DataModelField._copy_data_type`"
         ),
+        sites=(Home("types.py", "DataTypeManager.copy_data_type"),),
     ),
     DecisionHome(
         decision=(
@@ -1781,6 +2495,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "view of `model/typed_dict.py:TypedDict.all_fields`, and the field "
             "`parser/openapi.py:OpenAPIParser.parse_object_fields` rebuilds from a field's `__dict__`"
         ),
+        sites=(
+            Home("model/base.py", "DataModelFieldBase.copy_deep"),
+            Home("parser/_field_copies.py", "_copy_resolved_inherited_field"),
+            Home("parser/_passes/_shared.py", "override_required_field"),
+            Home("parser/_inherited_schemas.py", "build_missing_required_field"),
+            Home("parser/_passes/plans.py", "flatten_base_layouts"),
+            Home("parser/_passes/render_prep.py", "copy_inherited_conflicts"),
+            Home("parser/_rw_split.py", "copy_unregistered_fields"),
+            Home("parser/_rw_split.py", "prepare_rw_model_variant"),
+            Home("parser/graphql.py", "GraphQLParser"),
+            Home("_target_binding.py", "_TargetRecording._copy_model_field"),
+            Home("model/typed_dict.py", "TypedDict.all_fields"),
+            Home("parser/openapi.py", "OpenAPIParser.parse_object_fields"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1802,6 +2530,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`collect_inherited_fields_for_request_response`, `get_raw_inherited_fields` (the inherited fields of the "
             "request and response variants), `parser/_passes/plans.py:flatten_base_layouts` (a field a model adopts "
             "from a flattened base); a copy takes `required` when it is made (`FieldCopyFacts`)"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_common_part"),
+            Home("parser/_rw_split.py", "collect_inherited_fields_for_request_response"),
+            Home("parser/_rw_split.py", "get_raw_inherited_fields"),
+            Home("parser/_passes/plans.py", "flatten_base_layouts"),
         ),
     ),
     DecisionHome(
@@ -1840,6 +2574,30 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_replace_data_type_reference`), `model/pydantic_v2/types.py:_writes_serialize_as_any` (whether "
             "`--use-serialize-as-any` wraps a type naming the reference, which "
             "`PydanticV2DataType._should_wrap_with_serialize_as_any` and `_target_binding.py:_Binder.reference` ask)"
+        ),
+        sites=(
+            Home("types.py", "DataType"),
+            Home("types.py", "DataType.__init__"),
+            Home("types.py", "DataType.replace_reference"),
+            Home("types.py", "DataType.register_reference"),
+            Home("types.py", "DataType.unregister_reference"),
+            Home("parser/_rw_split.py", "unregister_temporary_type"),
+            Home("_target_binding.py", "_Models.lightweight"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel.create_typed_extra_field"),
+            Home("model/base.py", "DataModel"),
+            Home("model/base.py", "DataModel.__init__"),
+            Home("model/base.py", "DataModel.replace_children_in_models"),
+            Home("reference.py", "Reference.replace_children_references"),
+            Home("parser/generation.py", "GenerationStore"),
+            Home("parser/generation.py", "GenerationStore._dispose"),
+            Home("parser/generation.py", "GenerationStore.redirect_reference_users"),
+            Home("parser/generation.py", "GenerationStore.has_users_in_other_modules"),
+            Home("parser/generation.py", "GenerationStore.redirect_model_reference_users"),
+            Home("parser/generation.py", "GenerationStore.collapse_root_data_type"),
+            Home("parser/generation.py", "GenerationStore._replace_data_type_reference"),
+            Home("model/pydantic_v2/types.py", "_writes_serialize_as_any"),
+            Home("model/pydantic_v2/types.py", "PydanticV2DataType._should_wrap_with_serialize_as_any"),
+            Home("_target_binding.py", "_Binder.reference"),
         ),
     ),
     DecisionHome(
@@ -1887,6 +2645,35 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/generation.py:_walk_tree` (labels the role and position of each child) and `DataType.all_imports` "
             "(the members only)"
         ),
+        sites=(
+            Home("types.py", "DataType.walk"),
+            Home("types.py", "_link_parts"),
+            Home("_parse_memo.py", "ParseMemo._references"),
+            Home("parser/_origins.py", "with_type_origin"),
+            Home("parser/generation.py", "_tree_nodes"),
+            Home("parser/generation.py", "GenerationIndex.inlined_holders_of"),
+            Home("parser/_passes/render_prep.py", "_contains_model_reference"),
+            Home("parser/_passes/render_prep.py", "_iter_alias_references"),
+            Home("parser/_passes/modules.py", "_value_positions"),
+            Home("parser/_type_overrides.py", "apply_override_to_data_type"),
+            Home("model/_field_imports.py", "write_pre_render_nullability"),
+            Home("parser/_held_null.py", "_types"),
+            Home("model/pydantic_base.py", "DataModelField._has_anyurl_outside_container"),
+            Home("_parse_memo.py", "ParseMemo.bump_node"),
+            Home("types.py", "_copy_data_type"),
+            Home("model/msgspec.py", "DataModelField._unconstrained_members"),
+            Home("model/msgspec.py", "DataModelField._written_type"),
+            Home("model/pydantic_base.py", "DataModelField._written_type"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel.create_typed_extra_field"),
+            Home("parser/_passes/_shared.py", "_detach_deferred_inherited_field_parents"),
+            Home("parser/generation.py", "GenerationStore._cache_owners_for_data_type"),
+            Home("model/base.py", "DataModel.replace_children_in_models"),
+            Home("_internal_utils.py", "get_most_of_parent"),
+            Home("types.py", "DataType.all_data_types"),
+            Home("parser/generation.py", "_walk_tree"),
+            Home("types.py", "DataType.all_imports"),
+            Home("parser/base.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1916,6 +2703,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "appended models and the slots of the changed ones, whose sites it replaces); only the key order of the "
             "base owners differs between the two, and nothing reads it"
         ),
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -1967,6 +2755,26 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "field-name resolver's keyword escape (`reference.py:FieldNameResolver.get_valid_name`) and the decorator "
             "matcher's tokens (`_python_decorator.py:_parse_direct_target`) are other decisions"
         ),
+        sites=(
+            Home("model/base.py", "_directory_module_name"),
+            Home("parser/_passes/imports.py", "reject_unimportable_imports"),
+            Home("python_literal.py", "_normalized_safe_python_name"),
+            Home("validators.py", "ValidatorDefinition"),
+            Home("parser/_schema_object.py", "JsonSchemaObject.validate_custom_base_path"),
+            Home("validators.py", "normalize_validators"),
+            Home("_target_config.py", "TargetConfig"),
+            Home("_target_config.py", "TargetConfig.check_target"),
+            Home("model/base.py", "_build_for_target"),
+            Home("_python_type_runtime.py", "_runtime_symbol"),
+            Home("_target_unicode.py", "host_identifiers"),
+            Home("_python_decorator.py", "python_decorator_path"),
+            Home("_python_decorator.py", "is_named_python_decorator"),
+            Home("parser/_type_overrides.py", "_override_expression"),
+            Home("base_config.py", "_type_override_class_paths"),
+            Home("reference.py", "FieldNameResolver.get_valid_name"),
+            Home("_python_decorator.py", "_parse_direct_target"),
+            Home("_python_type_annotation.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -1986,6 +2794,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "every caller calls the core; the order of the server entrypoint's imports "
             "(`_fastapi/render.py:ServerRenderer.main`) sorts case-folded and is another decision"
         ),
+        sites=(Home("_fastapi/render.py", "ServerRenderer.main"),),
     ),
     DecisionHome(
         decision=(
@@ -2015,6 +2824,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`reference.py:EnumFieldNameResolver` reads the attributes of its target, or of the oldest supported "
             "target (`PythonVersionMin`) without one (API only)"
         ),
+        sites=(
+            Home("_python_type_import_registry.py", "is_python_builtin_type_name"),
+            Home("_python_type_import_registry.py", "get_qualified_python_type_import_path"),
+            Home("parser/base.py", "Parser"),
+            Home("parser/_passes/imports.py", "_alias_builtin_shadowing_module_imports"),
+            Home("parser/_passes/imports.py", "_alias_builtins_hidden_by_submodules"),
+            Home("parser/_passes/imports.py", "_bind_module_field_names"),
+            Home("reference.py", "EnumFieldNameResolver"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2027,6 +2845,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_builtin_formatter.py:_import_category` (the standard-library import section); "
             "`parser/_type_overrides.py:bind_python_type` (a two-part `Literal` value whose first name is such a "
             "module names one of its symbols, never a member of a class of the same name)"
+        ),
+        sites=(
+            Home("_builtin_formatter.py", "_import_category"),
+            Home("parser/_type_overrides.py", "bind_python_type"),
         ),
     ),
     DecisionHome(
@@ -2065,6 +2887,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "bytes, which is ASCII, and the keys that compare values only "
             "(`parser/_all_of_values.py:schema_signature`, `parser/avro.py`, `_recommend/_signals.py`)"
         ),
+        sites=(
+            Home("python_literal.py", "represent_python_value"),
+            Home("python_literal.py", "represent_untrusted_python_value"),
+            Home("python_literal.py", "message_repr"),
+            Home("model/_compiled_template_runtime.py", "filter_repr"),
+            Home("model/_compiled_template_runtime.py", "filter_pprint"),
+            Home("_builtin_line_split.py", "_string_split"),
+            Home("parser/_all_of_values.py", "schema_signature"),
+            Home("validators.py"),
+            Home("parser/_type_overrides.py"),
+            Home("model/base.py"),
+            Home("imports.py"),
+            Home("_requirements.py"),
+            Home("parser/avro.py"),
+            Home("_recommend/_signals.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2087,6 +2925,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`enums.py:_pydantic_version_key`, `_requirements.py` (the minimum keys of the rows), `model/__init__.py` "
             "(`DEFAULT_TARGET_PYTHON_VERSION`), `_target_unicode.py` (the identifier rules of the newest target)"
         ),
+        sites=(
+            Home("enums.py", "_pydantic_version_key"),
+            Home("_requirements.py"),
+            Home("_target_unicode.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2099,6 +2942,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_option_rules.py:OPTION_RELATIONS` (the `--keyword-only` and `--use-specialized-enum` relations), "
             "`base_config.py:implied_target_settings` (the target a target implies for `StrEnum`), "
             "`parser/_type_overrides.py:_base_class_refusal` (the target that can subclass `typing.Any`)"
+        ),
+        sites=(
+            Home("base_config.py", "implied_target_settings"),
+            Home("parser/_type_overrides.py", "_base_class_refusal"),
         ),
     ),
     DecisionHome(
@@ -2138,6 +2985,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`reference.py:FieldNameResolver.get_valid_name`) makes a name valid and numbers the name before its case "
             "is changed"
         ),
+        sites=(
+            Home("_target_naming.py", "TargetNames.of"),
+            Home("reference.py", "ModelResolver._naming_rows"),
+            Home("reference.py", "FieldNameResolver.get_valid_name"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2159,6 +3011,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_convert_common.py:_namespace_name`, `parser/mcp.py:_to_definition_name`, "
             "`parser/asyncapi.py:_make_model_name`, `_recommend/_rules.py:pascal_case_input_stem`, the Avro and XML "
             "Schema titlers"
+        ),
+        sites=(
+            Home("parser/base.py", "title_to_class_name"),
+            Home("parser/_convert_common.py", "_namespace_name"),
+            Home("parser/mcp.py", "_to_definition_name"),
+            Home("parser/asyncapi.py", "_make_model_name"),
+            Home("_recommend/_rules.py", "pascal_case_input_stem"),
         ),
     ),
     DecisionHome(
@@ -2186,6 +3045,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_schema_validators.py:collect_pattern_property_validators`, "
             "`parser/openapi.py:OpenAPIParser.parse_responses`, `parser/_rw_split.py:get_rw_model_variant_reference`, "
             "`parser/_union_tags.py:parse_combined_schema_items`"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_all_of_root_value"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_additional_properties_value"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._build_constrained_type_union"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_array_union_constrained_branch"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_enum"),
+            Home("parser/_object_maps.py", "get_typed_additional_properties_field"),
+            Home("parser/_schema_validators.py", "collect_pattern_property_validators"),
+            Home("parser/openapi.py", "OpenAPIParser.parse_responses"),
+            Home("parser/_rw_split.py", "get_rw_model_variant_reference"),
+            Home("parser/_union_tags.py", "parse_combined_schema_items"),
         ),
     ),
     DecisionHome(
@@ -2226,6 +3098,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_union_tags.py:parse_combined_schema_items`, `JsonSchemaParser.parse_all_of`, "
             "`reference.py:ModelResolver` (`add`, `_add_ref_at`); `tests/checks/model_graph.py:check_model_owners` "
             "reads the records"
+        ),
+        sites=(
+            Home("parser/base.py", "Parser._start_naming_frames"),
+            Home("parser/base.py", "Parser._records_naming_claims"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._model_frame"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_file"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._detached_naming_frames"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._record_schema_location"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._is_definition_location"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_rw_model_variant_reference"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_enum"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._claiming"),
+            Home("parser/_object_maps.py", "get_typed_additional_properties_field"),
+            Home("parser/_union_tags.py", "parse_combined_schema_items"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_all_of"),
+            Home("reference.py", "ModelResolver"),
+            Home("reference.py", "ModelResolver.add"),
+            Home("reference.py", "ModelResolver._add_ref_at"),
         ),
     ),
     DecisionHome(
@@ -2280,6 +3170,23 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/jsonschema.py:JsonSchemaParser._parse_all_of_union_model`; `tests/checks/naming.py` replays the "
             "resolver's naming calls of a parse and requires the names it ends with"
         ),
+        sites=(
+            Home("parser/_passes/naming.py", "name_models"),
+            Home("parser/base.py", "_naming_rules_of"),
+            Home("parser/base.py", "_ModelShapeSource.own_class_name"),
+            Home("reference.py", "ModelResolver"),
+            Home("reference.py", "ModelResolver.add"),
+            Home("reference.py", "ModelResolver._add_ref_at"),
+            Home("_generation.py", "_parse_generation"),
+            Home("parser/_passes/structure.py", "delete_duplicate_models"),
+            Home("parser/_passes/structure.py", "replace_duplicate_name_in_module"),
+            Home("reference.py", "ModelResolver.get_class_name"),
+            Home("reference.py", "ModelResolver._get_unique_name"),
+            Home("reference.py", "ModelResolver._rename_external_ref_with_same_name"),
+            Home("reference.py", "ModelResolver._find_parent_reference"),
+            Home("reference.py", "ModelResolver._is_primary_definition"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_all_of_union_model"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2297,6 +3204,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "every converter calls the core with its rows: "
             "`parser/avro.py:_AvroSchemaConverter._prepare_definition_names`, "
             "`parser/xmlschema.py:_XMLSchemaConverter._prepare_definition_names`"
+        ),
+        sites=(
+            Home("parser/avro.py", "_AvroSchemaConverter._prepare_definition_names"),
+            Home("parser/xmlschema.py", "_XMLSchemaConverter._prepare_definition_names"),
         ),
     ),
     DecisionHome(
@@ -2318,6 +3229,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "timedelta defaults import `timedelta` directly), XML Schema's temporal defaults "
             "(`parser/_xmlschema_literals.py`)"
         ),
+        sites=(
+            Home("parser/avro.py", "_logical_default_expression"),
+            Home("parser/_xmlschema_literals.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2331,6 +3246,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/_passes/_shared.py:normalize_default_value_constraints`), compiled patterns "
             "(`model/pydantic_v2/base_model.py:_compiled_python_pattern`); Avro's `Decimal` defaults keep the call as "
             "their value (`parser/avro.py:_logical_default_expression`)"
+        ),
+        sites=(
+            Home("parser/_passes/render_prep.py", "deserialize_decimal_default"),
+            Home("parser/_passes/_shared.py", "normalize_default_value_constraints"),
+            Home("model/pydantic_v2/base_model.py", "_compiled_python_pattern"),
+            Home("parser/avro.py", "_logical_default_expression"),
         ),
     ),
     DecisionHome(
@@ -2349,6 +3270,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the converters' float literals, each with its grammar's non-finite forms: "
             "`parser/protobuf.py:_ProtobufDescriptorConverter._parse_default`, "
             "`parser/_xmlschema_literals.py:_safe_float`"
+        ),
+        sites=(
+            Home("parser/protobuf.py", "_ProtobufDescriptorConverter._parse_default"),
+            Home("parser/_xmlschema_literals.py", "_safe_float"),
         ),
     ),
     DecisionHome(
@@ -2382,6 +3307,16 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the packages of the import cycles (`parser/_passes/_import_edges.py`) and the targets' result keys "
             "(`_target_binding.py`); left out: option and config keys and the alias generators"
         ),
+        sites=(
+            Home("parser/_passes/imports.py", "render_modules"),
+            Home("model/base.py", "_directory_module_name"),
+            Home("parser/_passes/_import_binding.py", "reference_import_target"),
+            Home("parser/base.py"),
+            Home("parser/_stdout_repair.py"),
+            Home("parser/_init_exports.py"),
+            Home("parser/_passes/_import_edges.py"),
+            Home("_target_binding.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2404,6 +3339,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "tests of the target CLI, the API generation and the source filter; left out: the files on disk beside a "
             "written module (`_shadowed_modules.py`)"
         ),
+        sites=(
+            Home("parser/_passes/imports.py", "_package_submodule_names"),
+            Home("_openapi_codec_plan.py", "artifact_module"),
+            Home("parser/_passes/_import_binding.py", "generic_base_class_import"),
+            Home("parser/base.py"),
+            Home("parser/_passes/plans.py"),
+            Home("parser/_init_exports.py"),
+            Home("dynamic.py"),
+            Home("__init__.py"),
+            Home("_shadowed_modules.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2425,6 +3371,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`types.py`, `parser/_value_keywords.py`, `parser/_type_overrides.py`, `_target_binding.py`, "
             "`_client/model_facts.py`), runtime symbols (`_python_type_annotation.py`) and the server packages beside "
             "a server package (`_fastapi/packages.py`); left out: Avro full names"
+        ),
+        sites=(
+            Home("types.py", "DataType.full_name"),
+            Home("parser/_passes/_shared.py", "_get_data_type_target_full_name"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_object_fields"),
+            Home("parser/_passes/cross_module.py"),
+            Home("parser/_passes/modules.py"),
+            Home("parser/_passes/imports.py"),
+            Home("parser/_value_keywords.py"),
+            Home("parser/_type_overrides.py"),
+            Home("_target_binding.py"),
+            Home("_client/model_facts.py"),
+            Home("_python_type_annotation.py"),
+            Home("_fastapi/packages.py"),
         ),
     ),
     DecisionHome(
@@ -2459,6 +3419,25 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/_decisions/hashability.py:_python_type_hashes`); a `Literal` told by its import "
             "(`written_annotation_null`) or by its path (`types.py:DataTypeManager._annotation_constraint_keywords`)"
         ),
+        sites=(
+            Home("_python_type_annotation_codec.py", "_python_type_expr_from_ast"),
+            Home("_python_type_annotation.py", "_iter_names"),
+            Home("_python_type_annotation.py", "iter_python_type_expr_names"),
+            Home("_python_type_annotation.py", "iter_python_type_expr_qualified_names"),
+            Home("_python_type_annotation.py", "iter_python_type_expr_head_names"),
+            Home("_python_type_annotation.py", "rewrite_python_type_expr"),
+            Home("_python_type_annotation.py", "write_refused_literal_values"),
+            Home("_python_type_annotation.py", "bytes_and_str_literal"),
+            Home("_python_type_annotation.py", "literal_values_as_text"),
+            Home("_python_type_annotation.py", "read_literal_enum_members"),
+            Home("_python_type_annotation.py", "iter_literal_members"),
+            Home("types.py", "DataTypeManager._literal_value_paths"),
+            Home("_python_type_annotation.py", "render_python_type_expr"),
+            Home("_python_type_annotation.py", "python_type_expr_arguments"),
+            Home("model/_decisions/nullability.py", "written_annotation_null"),
+            Home("model/_decisions/hashability.py", "_python_type_hashes"),
+            Home("types.py", "DataTypeManager._annotation_constraint_keywords"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2477,6 +3456,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/_imports_plan.py:ModuleImportLedger.rendered`, which returns the live imports when no entry "
             "changed) and the nested values of an inherited schema "
             "(`parser/_inherited_schemas.py:normalize_inherited_nested_schema_value`)"
+        ),
+        sites=(
+            Home("_python_type_annotation.py", "_with_children"),
+            Home("python_literal.py", "rewrite_runtime_expressions"),
+            Home("python_literal.py", "_rewrite_runtime_mapping"),
+            Home("python_literal.py", "_safe_non_finite_value"),
+            Home("parser/_imports_plan.py", "ModuleImportLedger.rendered"),
+            Home("parser/_inherited_schemas.py", "normalize_inherited_nested_schema_value"),
         ),
     ),
     DecisionHome(
@@ -2506,6 +3493,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`_client/protocols.py:_collides`); left out: a schema path below a definitions container "
             "(`parser/jsonschema.py:JsonSchemaParser._is_named_schema_definition_path`)"
         ),
+        sites=(
+            Home("_module_paths.py", "is_ancestor_package_reference"),
+            Home("parser/_init_exports.py", "collect_exports_for_init"),
+            Home("parser/_passes/imports.py", "submodules_hidden_by_packages"),
+            Home("format.py", "_local_package_modules"),
+            Home("format.py", "_package_modules"),
+            Home("format.py", "_WatchSourceFinder"),
+            Home("reference.py", "_import_inflect_without_typeguard_instrumentation"),
+            Home("_target_render.py", "model_dependencies"),
+            Home("_client/protocols.py", "_collides"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._is_named_schema_definition_path"),
+            Home("parser/base.py"),
+            Home("parser/_passes/_import_edges.py"),
+            Home("parser/_stdout_repair.py"),
+            Home("__init__.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2529,6 +3532,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/_passes/imports.py:reject_class_named_like_submodule`, which adds the imports of the forwarders) "
             "and the packages whose `__init__.py` a module writes (the aliases of `parser/_passes/imports.py` for the "
             "names a package's submodules hide)"
+        ),
+        sites=(
+            Home("parser/_passes/imports.py", "_loaded_modules"),
+            Home("parser/_passes/imports.py", "reject_unimportable_imports"),
+            Home("parser/_passes/imports.py", "reject_class_named_like_submodule"),
+            Home("__init__.py"),
         ),
     ),
     DecisionHome(
@@ -2559,6 +3568,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_passes/_import_edges.py:generic_base_class_module`, and the models reuse makes canonical, "
             "`parser/_passes/modules.py`), which no merge reads, are checked on the written modules instead (next row)"
         ),
+        sites=(
+            Home("parser/_passes/structure.py", "_module_merges"),
+            Home("parser/_passes/structure.py", "resolve_circular_imports"),
+            Home("parser/_passes/cross_module.py", "apply_generic_base_class"),
+            Home("parser/_passes/_import_edges.py", "generic_base_class_module"),
+            Home("parser/_passes/modules.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2587,6 +3603,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "definition reads from the final facts (`_definition_reads`) and maps each written module back to the "
             "modules of the module structure; `parser/_passes/structure.py:_module_merges` joins the seeded merges"
         ),
+        sites=(
+            Home("parser/_passes/imports.py", "check_import_reads"),
+            Home("parser/_passes/imports.py", "_definition_reads"),
+            Home("parser/_passes/structure.py", "_module_merges"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2608,6 +3629,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/_passes/modules.py:_keep_model_order_deps`) and the root models that name themselves "
             "(`parser/_passes/imports.py:reject_alias_cycles_without_schema`); not yet: the module merges "
             "(`parser/_passes/_import_edges.py:module_dependency_graph`), which read every reference"
+        ),
+        sites=(
+            Home("parser/_passes/render_prep.py", "update_type_aliases"),
+            Home("parser/_passes/_shared.py", "_sort_models_by_class_body_references"),
+            Home("parser/_passes/settle.py", "sort_data_models"),
+            Home("parser/_passes/modules.py", "_keep_model_order_deps"),
+            Home("parser/_passes/imports.py", "reject_alias_cycles_without_schema"),
+            Home("parser/_passes/_import_edges.py", "module_dependency_graph"),
         ),
     ),
     DecisionHome(
@@ -2631,6 +3660,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "through the modules a package re-exports (`parser/_passes/_import_edges.py:_failing_import_cycles`, "
             "`parser/_passes/structure.py:_module_merges`, which counts only the modules with a name to export)"
         ),
+        sites=(
+            Home("parser/_init_exports.py", "collect_exports_for_init"),
+            Home("parser/_passes/_import_edges.py", "module_import_edges"),
+            Home("parser/_passes/imports.py", "_loaded_modules"),
+            Home("parser/_passes/_import_edges.py", "_failing_import_cycles"),
+            Home("parser/_passes/structure.py", "_module_merges"),
+            Home("parser/base.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2648,6 +3685,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/_passes/modules.py:hides_named_type`); left out: the fields a target before Pydantic 2.11 writes "
             "by assignment (`model/pydantic_v2/base_model.py:assigns_forward_reference_field`), a public hook that "
             "reads the positions by path (`_ModelPositions.paths`) and leaves a reference to the model itself out"
+        ),
+        sites=(
+            Home("parser/_passes/_shared.py", "_forward_enum_member_literals"),
+            Home("parser/_passes/modules.py", "hides_named_type"),
+            Home("model/pydantic_v2/base_model.py", "assigns_forward_reference_field"),
+            Home("parser/_passes/render_prep.py"),
+            Home("parser/base.py"),
         ),
     ),
     DecisionHome(
@@ -2678,6 +3722,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "server renderer (`_fastapi/render.py`) and the services checks of the API generation "
             "(`_api_generation.py`); left out: the module `services.py` inside the server package, which holds the "
             "Protocols"
+        ),
+        sites=(
+            Home("_fastapi/render.py"),
+            Home("_api_generation.py"),
+            Home("_fastapi/_compiled_templates/services.py"),
         ),
     ),
     DecisionHome(
@@ -2712,6 +3761,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/_signals.py:_local_tokens`; left out: a text that is already decoded (`fragment_tokens`: "
             "`parser/base.py:_source_path_from_reference_path`, `_recommend/_metrics.py:_identity_steps`)"
         ),
+        sites=(
+            Home("parser/_schema_graph.py", "pointer_ref_spelling"),
+            Home("parser/_schema_graph.py", "canonical_ref_spelling"),
+            Home("parser/_schema_documents.py", "rewrite_schema_resource_refs"),
+            Home("parser/_api_reference.py", "pointer_tokens"),
+            Home("parser/_schema_reading.py", "unescape_json_pointer_segment"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._schema_reference_location"),
+            Home("_target_binding.py", "_pointer_tokens"),
+            Home("_fastapi/source_document.py", "SourceDocument.resolve"),
+            Home("_recommend/_signals.py", "_local_tokens"),
+            Home("parser/base.py", "_source_path_from_reference_path"),
+            Home("_recommend/_metrics.py", "_identity_steps"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2733,6 +3795,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_schema_refs.py`), `parser/_schema_documents.py:resolve_schema_resource_ref`, "
             "`_json_pointer.py:uri_entry`"
         ),
+        sites=(
+            Home("_json_pointer.py", "reference_tokens"),
+            Home("_json_pointer.py", "fragment_tokens"),
+            Home("parser/_api_reference.py", "check_pointer_interpretation"),
+            Home("parser/_schema_graph.py", "pointer_ref_spelling"),
+            Home("reference.py", "ModelResolver.resolve_ref"),
+            Home("parser/_schema_reading.py", "_is_plain_name_fragment"),
+            Home("parser/_schema_documents.py", "resolve_schema_resource_ref"),
+            Home("_json_pointer.py", "uri_entry"),
+            Home("parser/_schema_refs.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2745,6 +3818,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`parser/_schema_graph.py:ResourceRegistry.location`, `_fastapi/source_document.py:SourceDocument.resolve` "
             "(over the registry's URIs the source lease carries)"
+        ),
+        sites=(
+            Home("parser/_schema_graph.py", "ResourceRegistry.location"),
+            Home("_fastapi/source_document.py", "SourceDocument.resolve"),
         ),
     ),
     DecisionHome(
@@ -2794,6 +3871,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "their names, and the Jinja filters `escape_docstring` and `format_docstring`)"
         ),
         adapters="the docstring of a client codec (`_client/codec_render.py:_description`)",
+        sites=(Home("_client/codec_render.py", "_description"),),
     ),
     DecisionHome(
         decision="the line endings of a text read as Python's universal newlines read a file: CRLF and a lone CR as LF",
@@ -2802,9 +3880,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_python_syntax.py:comment_safe`; `_generation.py`: `_is_comment_only_source`, `_prepare_directory_input` "
             "(the headers that mark a generated file); `_source.py:DirectoryInputFilter.iter_files`; "
-            "`parser/base.py:Source.from_path`; `__main__.py`: `_read_existing_output` and the generated files "
+            "`parser/base.py:Source.from_path`; `_output_comparison.py:_read_existing_output` and the generated files "
             "`--check` compares; `_api_generation.py:_normalized` (then one final newline); "
             "`_builtin_formatter.py:_split_python_lines`"
+        ),
+        sites=(
+            Home("_python_syntax.py", "comment_safe"),
+            Home("_generation.py", "_is_comment_only_source"),
+            Home("_generation.py", "_prepare_directory_input"),
+            Home("_source.py", "DirectoryInputFilter.iter_files"),
+            Home("parser/base.py", "Source.from_path"),
+            Home("_output_comparison.py", "_read_existing_output"),
+            Home("_api_generation.py", "_normalized"),
+            Home("_builtin_formatter.py", "_split_python_lines"),
         ),
     ),
     DecisionHome(
@@ -2819,6 +3907,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "run, which pins one before it generates its models (`_api_generation.py:plan_target`; each later target "
             "of a batch takes the first one's), and the two runs of `--diff-against`, which pin one for both "
             "(`__main__.py:_run_config`)"
+        ),
+        sites=(
+            Home("_generation.py", "_build_file_header_parts"),
+            Home("_api_generation.py", "plan_target"),
+            Home("__main__.py", "_run_config"),
         ),
     ),
     DecisionHome(
@@ -2848,6 +3941,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_openapi_generation.py:SourceLease.exists`, the schema sites of "
             "`parser/openapi_scope.py:ApiOpenAPIParser._located_site`, the `borrow` reader of `_target_binding.py`, "
             "`_fastapi/source_document.py`, `_recommend/_signals.py:_resolve_local`"
+        ),
+        sites=(
+            Home("parser/_schema_reading.py", "_get_model_by_decoded_path"),
+            Home("parser/_schema_reading.py", "_split_json_pointer"),
+            Home("_openapi_generation.py", "SourceLease.exists"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._located_site"),
+            Home("_target_binding.py", "_Documents.borrow"),
+            Home("_recommend/_signals.py", "_resolve_local"),
+            Home("_fastapi/source_document.py"),
         ),
     ),
     DecisionHome(
@@ -2879,6 +3981,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "warnings show only where it succeeds) and `_parse_again` (the reading of each parse again); "
             "`parser/base.py:Parser.parse` (the option for a parser used alone)"
         ),
+        sites=(
+            Home("_source.py", "_load_pyyaml"),
+            Home("_generation.py", "_run_generation_with_metadata"),
+            Home("_generation.py", "_collect_model_metadata"),
+            Home("_generation.py", "_parse_yaml_numbers_again"),
+            Home("_generation.py", "_parse_first"),
+            Home("_generation.py", "_parse_again"),
+            Home("parser/base.py", "Parser.parse"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2896,6 +4007,21 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`OpenAPIParser._definition_entry_prefixes`, `_process_path_items`; `parser/asyncapi.py`: "
             "`_iter_converted_schema_schemas`, `_iter_asyncapi_schemas`) and the `#` path of "
             "`parser/openapi_scope.py:ApiOpenAPIParser.parse_json_pointer`"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_pointer_target"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_json_pointer"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_base_stand_in"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_pointer_ref"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_reserved_targets"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_file"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._resolve_asyncapi_ref"),
+            Home("parser/openapi.py", "OpenAPIParser._definition_entry_prefixes"),
+            Home("parser/openapi.py", "OpenAPIParser._process_path_items"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._iter_converted_schema_schemas"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._iter_asyncapi_schemas"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser.parse_json_pointer"),
         ),
     ),
     DecisionHome(
@@ -2915,6 +4041,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(template data) and `remote_lock.py:_read_entries`; "
             "`parser/_passes/modules.py:collapse_root_models_in_scope` keeps its own guard while routing it would move "
             "the line a warning of its file names"
+        ),
+        sites=(
+            Home("_fastapi/plan.py", "_member"),
+            Home("_recommend/_metrics.py", "_component_names"),
+            Home("parser/_value_keywords.py", "_validation_keywords"),
+            Home("parser/asyncapi.py", "_iter_mapping_items"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._iter_asyncapi_schemas"),
+            Home("model/msgspec.py", "_user_struct_options"),
+            Home("model/pydantic_v2/base_model.py", "_config_dict_items"),
+            Home("remote_lock.py", "_read_entries"),
+            Home("parser/_passes/modules.py", "collapse_root_models_in_scope"),
+            Home("_target_binding.py"),
+            Home("_fastapi/source_document.py"),
+            Home("_recommend/_signals.py"),
         ),
     ),
     DecisionHome(
@@ -2942,6 +4082,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_binding.py:_Models.variant_exclusions` (the name of what the split left out), "
             "`_client/fields.py:_Fields.model` (request), `_client/plan.py:Planner._received` (response)"
         ),
+        sites=(
+            Home("parser/_rw_split.py", "get_rw_model_variant_reference"),
+            Home("_target_binding.py", "_Binder._variant"),
+            Home("_target_binding.py", "_TargetRecording._create_variant_model"),
+            Home("reference.py", "_source_path"),
+            Home("_target_binding.py", "_Binder.source"),
+            Home("parser/_passes/_shared.py", "_get_schema_path"),
+            Home("parser/_rw_split.py", "ref_schema_generates_variant"),
+            Home("parser/_rw_split.py", "request_response_ref_schema_generates_variant"),
+            Home("_target_binding.py", "_Models.__init__"),
+            Home("_target_binding.py", "_Models.variant_direction"),
+            Home("parser/_rw_split.py", "_rw_facts_need_variant"),
+            Home("parser/_rw_split.py", "_rw_variant_fields"),
+            Home("parser/_rw_split.py", "create_request_response_models"),
+            Home("_target_binding.py", "_Models.variant_exclusions"),
+            Home("_client/fields.py", "_Fields.model"),
+            Home("_client/plan.py", "Planner._received"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -2961,6 +4119,16 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_api_reference.py:ApiModelResolver`, `reference.py:ModelResolver.resolve_ref`, "
             "`_target_binding.py:_SchemaUses.schema_uses`, and the identity steps of `_recommend/_metrics.py` "
             "(keywords of word characters only)"
+        ),
+        sites=(
+            Home("parser/_api_reference.py", "ApiModelResolver"),
+            Home("reference.py", "ModelResolver.resolve_ref"),
+            Home("_target_binding.py", "_SchemaUses.schema_uses"),
+            Home("parser/_inherited_schemas.py"),
+            Home("parser/_rw_split.py"),
+            Home("parser/_all_of_values.py"),
+            Home("parser/_tag_plan.py"),
+            Home("_recommend/_metrics.py"),
         ),
     ),
     DecisionHome(
@@ -3017,6 +4185,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "refused: `bodyless`), `_client/plan.py:Planner.response` and `_fastapi/plan.py:Planner.response`, "
             "`_primary` (the answers of `response_bodyless`)"
         ),
+        sites=(
+            Home("_target_binding.py", "_Contracts.operation"),
+            Home("_document_reader.py", "document_statuses"),
+            Home("_client/naming.py", "token"),
+            Home("_target_operations.py", "response_bodyless"),
+            Home("_client/caching.py", "_Caches.responses"),
+            Home("_client/plan.py", "success_response"),
+            Home("_client/plan.py", "Planner.response"),
+            Home("_fastapi/plan.py", "Planner.response"),
+            Home("_fastapi/plan.py", "_primary"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3039,6 +4218,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the sites that raise their own errors from the condition: "
             "`_runtime/protocols/streams.py:_Events._decoded`, `_runtime/protocols/websocket.py:_Sockets._message`, "
             "`_runtime/protocols/webhook_events.py:EventDecoder.decode`"
+        ),
+        sites=(
+            Home("_runtime/protocols/streams.py", "_Events._decoded"),
+            Home("_runtime/protocols/websocket.py", "_Sockets._message"),
+            Home("_runtime/protocols/webhook_events.py", "EventDecoder.decode"),
         ),
     ),
     DecisionHome(
@@ -3079,6 +4263,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_runtime/protocols/uploads.py:_Upload._offered`, `_runtime/protocols/caches.py`, "
             "`_runtime/client/timing.py:usable_seconds`"
         ),
+        sites=(
+            Home("_runtime/protocols/records.py", "plain_copy"),
+            Home("_runtime/protocols/webhook_events.py", "_parsed"),
+            Home("_runtime/protocols/streams.py", "_json"),
+            Home("_runtime/protocols/pagination.py", "_exact"),
+            Home("_runtime/client/operations.py", "ParameterSpec.restored"),
+            Home("_runtime/client/operations.py", "BodyMedia.restored"),
+            Home("_runtime/server/responses.py", "_content"),
+            Home("_runtime/protocols/pagination.py", "_integer"),
+            Home("_runtime/protocols/pagination.py", "_restored"),
+            Home("_runtime/protocols/resume.py", "state_count"),
+            Home("_runtime/protocols/sources.py", "_count"),
+            Home("_runtime/protocols/uploads.py", "_Upload._offered"),
+            Home("_runtime/client/timing.py", "usable_seconds"),
+            Home("_runtime/protocols/caches.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3103,6 +4303,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_runtime/client/multipart_responses.py`: `_part_value`, `_part_text` (a part's text failure as the "
             "body's), `_decoded`"
         ),
+        sites=(
+            Home("_runtime/client/operations.py", "_pairs"),
+            Home("_runtime/model_codecs/media.py", "decode_form"),
+            Home("_runtime/client/multipart_responses.py", "_part_value"),
+            Home("_runtime/client/multipart_responses.py", "_part_text"),
+            Home("_runtime/client/multipart_responses.py", "_decoded"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3122,6 +4329,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_runtime/model_codecs/pydantic_adapters.py:adapter`, "
             "`_runtime/model_codecs/pydantic_extras.py:extras_serializer`, "
             "`_runtime/client/body_sources.py:BodyBindings.bind`, `_runtime/client/client.py:Core._base`"
+        ),
+        sites=(
+            Home("_runtime/model_codecs/msgspec_structs.py", "_decoder"),
+            Home("_runtime/model_codecs/pydantic_adapters.py", "adapter"),
+            Home("_runtime/model_codecs/pydantic_extras.py", "extras_serializer"),
+            Home("_runtime/client/body_sources.py", "BodyBindings.bind"),
+            Home("_runtime/client/client.py", "Core._base"),
         ),
     ),
     DecisionHome(
@@ -3143,6 +4357,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the codec classes that build on them: `_runtime/model_codecs/msgspec_structs.py:MsgspecCodec`, "
             "`_runtime/model_codecs/pydantic_adapters.py:AdapterCodec`, the stdlib codecs of "
             "`_runtime/model_codecs/stdlib.py.jinja2`"
+        ),
+        sites=(
+            Home("_runtime/model_codecs/msgspec_structs.py", "MsgspecCodec"),
+            Home("_runtime/model_codecs/pydantic_adapters.py", "AdapterCodec"),
         ),
     ),
     DecisionHome(
@@ -3180,6 +4398,27 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_operations.py:placeholder_problems`; the `parameter_names` settings: "
             "`_client/config.py:_parameter_name`, `_fastapi/config.py:_parameter_key`; `_runtime/protocols/`: "
             "`writes.position`, `writes.targeted`, `pagination._started`, `uploads.UploadPlan.__post_init__`"
+        ),
+        sites=(
+            Home("parser/openapi.py", "_parameter_identity"),
+            Home("parser/openapi.py", "OpenAPIParser._process_path_items"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._parameter_declarations"),
+            Home("_openapi_wire_plan.py", "_claimed"),
+            Home("_openapi_wire_plan.py", "parameter_collisions"),
+            Home("_openapi_wire_plan.py", "_parameters"),
+            Home("_openapi_wire_plan.py", "_parameter"),
+            Home("_client/security.py", "SecurityPlanner.binding"),
+            Home("_client/security.py", "_scheme"),
+            Home("_client/protocol_plan.py", "_target_problem"),
+            Home("_client/plan.py", "Planner._idempotency_header"),
+            Home("_client/plan.py", "Planner.parameters"),
+            Home("_client/pagination.py", "_target_key"),
+            Home("_fastapi/plan.py", "Planner.parameter"),
+            Home("_fastapi/plan.py", "_scheme"),
+            Home("_openapi_wire_plan.py", "auth_names"),
+            Home("_target_operations.py", "placeholder_problems"),
+            Home("_client/config.py", "_parameter_name"),
+            Home("_fastapi/config.py", "_parameter_key"),
         ),
     ),
     DecisionHome(
@@ -3239,6 +4478,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "operations of the api scope's walk, and in the other scopes the methods of every key of `paths`, a key "
             "that is no string included, for the size note)"
         ),
+        sites=(
+            Home("parser/openapi.py", "OpenAPIParser._normalize_path"),
+            Home("parser/openapi.py", "OpenAPIParser._matches_path_pattern"),
+            Home("parser/openapi.py", "OpenAPIParser._process_path_items"),
+            Home("parser/openapi.py", "OpenAPIParser._declared_identity"),
+            Home("parser/openapi.py", "Operation"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._api_operations"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._walk_api_operation"),
+            Home("parser/openapi.py", "_parameter_identity"),
+            Home("_target_binding.py", "_Contracts.operation"),
+            Home("_recommend/_signals.py", "_path_operations"),
+            Home("_recommend/_signals.py", "_count_operations"),
+            Home("parser/_schema_reading.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3270,6 +4523,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/openapi_scope.py`) and the served document (`_fastapi/source_document.py`: the members it "
             "copies; what the schemas of a document declare it reads from the parser's registry)"
         ),
+        sites=(
+            Home("parser/_schema_documents.py", "implicit_schema_resources"),
+            Home("parser/_schema_refs.py", "hold_document_root"),
+            Home("parser/openapi.py", "OpenAPIParser.get_ref_model"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._reference_target"),
+            Home("_fastapi/source_document.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3299,6 +4559,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_fastapi/plan.py`: `Planner.security`, `Planner.scheme` and `_scheme`; "
             "`_openapi_wire_plan.py:auth_names` (the apiKey credentials of the view)"
         ),
+        sites=(
+            Home("_client/security.py", "SecurityPlanner"),
+            Home("_client/security.py", "SecurityPlanner.binding"),
+            Home("_client/security.py", "_scheme"),
+            Home("_fastapi/plan.py", "Planner.security"),
+            Home("_fastapi/plan.py", "Planner.scheme"),
+            Home("_fastapi/plan.py", "_scheme"),
+            Home("_openapi_wire_plan.py", "auth_names"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3313,6 +4582,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "field's `Literal` (`_client/codec_plan.py:_Planner.discriminator`), the operation a server link names "
             "(`_fastapi/plan.py:_link_operation_problem`) and the member names of a documentation mapping "
             "(`_fastapi/plan.py:json_literal`)"
+        ),
+        sites=(
+            Home("_target_operations.py", "tags"),
+            Home("_target_contract.py", "_texts"),
+            Home("_client/codec_plan.py", "_Planner.discriminator"),
+            Home("_fastapi/plan.py", "_link_operation_problem"),
+            Home("_fastapi/plan.py", "json_literal"),
         ),
     ),
     DecisionHome(
@@ -3335,6 +4611,21 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the models of an acyclic order (`_reference_graph.py:ReferenceGraph.acyclic_order`); left out: the "
             "literal patterns of the lookaheads (`_regex_syntax.py:lookahead_patterns`; the regex leaf imports only "
             "the standard library and `_records`)"
+        ),
+        sites=(
+            Home("_target_contract.py", "_texts"),
+            Home("_target_contract.py", "security_requirements"),
+            Home("_fastapi/plan.py", "json_literal"),
+            Home("_fastapi/plan.py", "_literal"),
+            Home("_client/plan.py", "_servers"),
+            Home("_client/plan.py", "_variables"),
+            Home("_client/webhooks.py", "webhook_uses"),
+            Home("_target_types.py", "_joined"),
+            Home("input_model.py", "_exported_generic_expression"),
+            Home("http.py", "_parse_legacy_ipv4_address"),
+            Home("_mro.py", "linearize"),
+            Home("_reference_graph.py", "ReferenceGraph.acyclic_order"),
+            Home("_regex_syntax.py", "lookahead_patterns"),
         ),
     ),
     DecisionHome(
@@ -3373,6 +4664,23 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "reserved characters), `_target_naming.py:PATH_PLACEHOLDER` (the generator's routes, names and server "
             "URLs), `_client/render.py:_sent_path`"
         ),
+        sites=(
+            Home("_client/plan.py", "Planner.servers"),
+            Home("_runtime/client/client.py", "_query"),
+            Home("_runtime/client/client.py", "_server_url"),
+            Home("_runtime/client/client.py", "Core._prepare"),
+            Home("_runtime/client/positions.py", "credentialed"),
+            Home("_runtime/client/auth.py", "_place"),
+            Home("_runtime/client/urls.py", "_origin"),
+            Home("_runtime/client/urls.py", "strip_query"),
+            Home("_runtime/protocols/client.py", "CacheRequest.identity"),
+            Home("_runtime/protocols/pagination.py", "_Walk.sent"),
+            Home("_runtime/server/requests.py", "RawPath"),
+            Home("_runtime/server/requests.py", "_encoded"),
+            Home("_runtime/server/requests.py", "ParameterAdapter._path"),
+            Home("_runtime/model_codecs/parameters.py", "_percent"),
+            Home("_client/render.py", "_sent_path"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3397,6 +4705,16 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_runtime/client/oauth.py`: `_secret`, `_Provider._notify`, `_Provider._request`, `_Provider.atoken`; "
             "`_runtime/model_codecs/parameters.py:_encode_cookie`"
         ),
+        sites=(
+            Home("_runtime/client/auth.py", "_called"),
+            Home("_runtime/client/auth.py", "_text"),
+            Home("_runtime/client/auth.py", "_place"),
+            Home("_runtime/client/oauth.py", "_secret"),
+            Home("_runtime/client/oauth.py", "_Provider._notify"),
+            Home("_runtime/client/oauth.py", "_Provider._request"),
+            Home("_runtime/client/oauth.py", "_Provider.atoken"),
+            Home("_runtime/model_codecs/parameters.py", "_encode_cookie"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3415,6 +4733,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the sites that call application code: `_runtime/client/auth.py:_called`; `_runtime/client/oauth.py`: "
             "`_secret`, `_Provider._notify`, `_Provider.atoken`; `_runtime/protocols/cache.py`: `_run`, `_arun` (a "
             "store's `get`, `set` and `delete`, with `store_failed`)"
+        ),
+        sites=(
+            Home("_runtime/client/auth.py", "_called"),
+            Home("_runtime/client/oauth.py", "_secret"),
+            Home("_runtime/client/oauth.py", "_Provider._notify"),
+            Home("_runtime/client/oauth.py", "_Provider.atoken"),
+            Home("_runtime/protocols/cache.py", "_run"),
+            Home("_runtime/protocols/cache.py", "_arun"),
         ),
     ),
     DecisionHome(
@@ -3435,6 +4761,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_client/render.py:_helper_options` (keyword and class of a method's options), the readers of the label: "
             "`_client/render.py` (`_helper_noun`, `ClientRenderer.stream_label`), "
             "`_client/streams.py:_Streams.helper`, `_client/polling.py:_Polls.required` (body refusals)"
+        ),
+        sites=(
+            Home("_client/render.py", "_helper_options"),
+            Home("_client/render.py", "_helper_noun"),
+            Home("_client/render.py", "ClientRenderer.stream_label"),
+            Home("_client/streams.py", "_Streams.helper"),
+            Home("_client/polling.py", "_Polls.required"),
         ),
     ),
     DecisionHome(
@@ -3459,6 +4792,19 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_client/render.py:_Helpers` (`selector`, `target`, `continuation`, `message_types`), the counted "
             "pagination a client's runtime reference describes "
             "(`_client/render.py:ClientRenderer.runtime_documentation`)"
+        ),
+        sites=(
+            Home("_client/protocols.py", "_Validator"),
+            Home("_client/protocols.py", "_Validator.selector"),
+            Home("_client/protocols.py", "_Validator.target"),
+            Home("_client/protocols.py", "_Validator.message"),
+            Home("_client/protocols.py", "_Validator.continuation"),
+            Home("_client/render.py", "_Helpers"),
+            Home("_client/render.py", "_Helpers.selector"),
+            Home("_client/render.py", "_Helpers.target"),
+            Home("_client/render.py", "_Helpers.continuation"),
+            Home("_client/render.py", "_Helpers.message_types"),
+            Home("_client/render.py", "ClientRenderer.runtime_documentation"),
         ),
     ),
     DecisionHome(
@@ -3487,6 +4833,23 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "an operation's servers and their variables, its idempotency key header and its field arguments), "
             "`_client/render.py:_Security.source` (the security schemes and each operation's security binding)"
         ),
+        sites=(
+            Home("_target_render.py", "parameter_plan"),
+            Home("_client/render.py", "_Registry"),
+            Home("_client/render.py", "_Registry.form"),
+            Home("_client/render.py", "_Registry.multipart_members"),
+            Home("_client/render.py", "_Registry.branches"),
+            Home("_fastapi/render.py", "_body_media"),
+            Home("_client/render.py", "_Registry.sent_plan"),
+            Home("_client/render.py", "_Helpers"),
+            Home("_client/render.py", "_Helpers.selector"),
+            Home("_client/render.py", "_Helpers.target"),
+            Home("_client/render.py", "_Helpers.continuation"),
+            Home("_client/render.py", "_Registry.servers"),
+            Home("_client/render.py", "_Registry.retry_metadata"),
+            Home("_client/render.py", "_Registry.field_arguments"),
+            Home("_client/render.py", "_Security.source"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3507,6 +4870,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "schemas of pagination, polling and upload helpers), `_client/streams.py:_Streams.locations` (stream and "
             "WebSocket schemas), `_client/webhooks.py:webhook_uses` (event schemas)"
         ),
+        sites=(
+            Home("_client/pagination.py", "_Pages.schema"),
+            Home("_client/streams.py", "_Streams.locations"),
+            Home("_client/webhooks.py", "webhook_uses"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3523,6 +4891,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_client/streams.py` (`_events`, `_Streams.terminal`, `_discriminated`), `_client/render.py:_Helpers` "
             "(`event_type`, `stream_plan`), `_client/webhooks.py:_Webhooks.event`"
+        ),
+        sites=(
+            Home("_client/streams.py", "_events"),
+            Home("_client/streams.py", "_Streams.terminal"),
+            Home("_client/streams.py", "_discriminated"),
+            Home("_client/render.py", "_Helpers"),
+            Home("_client/render.py", "_Helpers.event_type"),
+            Home("_client/render.py", "_Helpers.stream_plan"),
+            Home("_client/webhooks.py", "_Webhooks.event"),
         ),
     ),
     DecisionHome(
@@ -3562,6 +4939,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_client/codec_render.py:UseAccessors.reference`; the resource names and types of the client plan "
             "(`_client/plan.py`) and the helper classes of the protocol plan (`_client/protocol_plan.py`)"
         ),
+        sites=(
+            Home("_client/render.py", "_response_type"),
+            Home("_client/render.py", "_operation_plan"),
+            Home("_client/render.py", "_helper_plan"),
+            Home("_client/render.py", "_Helpers.module"),
+            Home("_client/codec_render.py", "UseAccessors.reference"),
+            Home("_client/plan.py"),
+            Home("_client/protocol_plan.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3584,6 +4970,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_pages`, `_follows`, `_caches`"
         ),
         adapters="-",
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -3599,6 +4986,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`_target_templates.py:roles`, `_api_generation.py:runtime_files`",
         adapters="-",
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -3622,6 +5010,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the sites that read or restore binding values: `_runtime/protocols/pagination.py`: `targeted_values`, "
             "`_Walk.bound`, `_Walk.dotted`; `_runtime/protocols/streams.py`: `_bound`, `_restore`; "
             "`_runtime/protocols/polling.py:_Operation._restore`, `_runtime/protocols/uploads.py:_resume_start`"
+        ),
+        sites=(
+            Home("_runtime/protocols/pagination.py", "targeted_values"),
+            Home("_runtime/protocols/pagination.py", "_Walk.bound"),
+            Home("_runtime/protocols/pagination.py", "_Walk.dotted"),
+            Home("_runtime/protocols/streams.py", "_bound"),
+            Home("_runtime/protocols/streams.py", "_restore"),
+            Home("_runtime/protocols/polling.py", "_Operation._restore"),
+            Home("_runtime/protocols/uploads.py", "_resume_start"),
         ),
     ),
     DecisionHome(
@@ -3654,6 +5051,16 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`PollingPlan.__post_init__`; `_runtime/protocols/uploads.py:UploadPlan.__post_init__`; "
             "`_runtime/protocols/streams.py`: `StreamResumePlan.__post_init__`, `_unpatched`"
         ),
+        sites=(
+            Home("_runtime/protocols/pagination.py", "PaginationPlan.__post_init__"),
+            Home("_runtime/protocols/pagination.py", "_first"),
+            Home("_runtime/protocols/pagination.py", "_limits"),
+            Home("_runtime/protocols/polling.py", "CancelPlan.__post_init__"),
+            Home("_runtime/protocols/polling.py", "PollingPlan.__post_init__"),
+            Home("_runtime/protocols/uploads.py", "UploadPlan.__post_init__"),
+            Home("_runtime/protocols/streams.py", "StreamResumePlan.__post_init__"),
+            Home("_runtime/protocols/streams.py", "_unpatched"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3682,6 +5089,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_Operation._created`, `_Operation._succeeded`; `_runtime/protocols/streams.py:_Events._advance` (a "
             "missing or null cursor is kept or cleared by its plan's rows), `_runtime/protocols/webhook_events.py`"
         ),
+        sites=(
+            Home("_runtime/protocols/pagination.py", "_Walk.build"),
+            Home("_runtime/protocols/pagination.py", "_selected"),
+            Home("_runtime/protocols/pagination.py", "_ended"),
+            Home("_runtime/protocols/polling.py", "_Operation._created"),
+            Home("_runtime/protocols/polling.py", "_Operation._succeeded"),
+            Home("_runtime/protocols/streams.py", "_Events._advance"),
+            Home("_runtime/protocols/webhook_events.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3698,6 +5114,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "keeps the expiry), `_runtime/protocols/streams.py:_restored`, "
             "`_runtime/protocols/uploads.py:_resume_start`; a pager's checkpoint is its server continuation, kept as "
             "the caller gives it (`_runtime/protocols/pagination.py:_restored`)"
+        ),
+        sites=(
+            Home("_runtime/protocols/polling.py", "_restored"),
+            Home("_runtime/protocols/streams.py", "_restored"),
+            Home("_runtime/protocols/uploads.py", "_resume_start"),
+            Home("_runtime/protocols/pagination.py", "_restored"),
         ),
     ),
     DecisionHome(
@@ -3737,6 +5159,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_runtime/protocols/websocket.py:_Sockets._decode_error` (through `bounded_body`), "
             "`_runtime/protocols/errors.py:MAX_RAW_PREFIX` (a re-export); `_runtime/protocols/uploads.py:_Content.read`"
         ),
+        sites=(
+            Home("_runtime/client/raw.py", "RawResponse.stream_to"),
+            Home("_runtime/client/raw.py", "RawResponse._write"),
+            Home("_runtime/client/raw.py", "AsyncRawResponse.stream_to"),
+            Home("_runtime/client/raw.py", "AsyncRawResponse._download"),
+            Home("_runtime/client/raw.py", "AsyncRawResponse._iterate"),
+            Home("_runtime/client/raw.py", "ReceivedBody.add"),
+            Home("_runtime/client/raw.py", "_Raw._saved_failure"),
+            Home("_runtime/client/compression.py", "_gzipped"),
+            Home("_runtime/client/compression.py", "gzipped_attempt"),
+            Home("_runtime/client/compression.py", "_AsyncGzipAttempt.aiter_bytes"),
+            Home("_runtime/client/bodies.py", "BinarySource.chunks"),
+            Home("_runtime/protocols/streams.py", "_Events._decode_error"),
+            Home("_runtime/protocols/websocket.py", "_Sockets._decode_error"),
+            Home("_runtime/protocols/uploads.py", "_Content.read"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3749,6 +5187,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_runtime/client/native.py`: `delivery` (the send it leaves NOT_SENT), `transport_retry_reason` (the "
             "reason of an `APIConnectionError`'s cause)"
+        ),
+        sites=(
+            Home("_runtime/client/native.py", "delivery"),
+            Home("_runtime/client/native.py", "transport_retry_reason"),
         ),
     ),
     DecisionHome(
@@ -3777,6 +5219,18 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_SessionCall.__init__`, `_SocketCall.timeout`, `_SessionWait.__init__`; "
             "`_runtime/protocols/streams.py:_limits`, `_runtime/protocols/websocket.py:_Sockets._wait`"
         ),
+        sites=(
+            Home("_runtime/client/options.py", "phases"),
+            Home("_runtime/client/native.py", "native_client"),
+            Home("_runtime/client/native.py", "native_async_client"),
+            Home("_runtime/client/logical.py", "OperationSession.__init__"),
+            Home("_runtime/client/logical.py", "LogicalCallContext.__init__"),
+            Home("_runtime/protocols/client.py", "_SessionCall.__init__"),
+            Home("_runtime/protocols/client.py", "_SocketCall.timeout"),
+            Home("_runtime/protocols/client.py", "_SessionWait.__init__"),
+            Home("_runtime/protocols/streams.py", "_limits"),
+            Home("_runtime/protocols/websocket.py", "_Sockets._wait"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -3803,6 +5257,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the `_limits` of `_runtime/protocols/`: `pagination.py`, `polling.py`, `uploads.py`, `streams.py` (with "
             "`_unpatched`), `websocket.py`, `cache.py`"
+        ),
+        sites=(
+            Home("_runtime/protocols/websocket.py", "_limits"),
+            Home("_runtime/protocols/cache.py"),
         ),
     ),
     DecisionHome(
@@ -3831,6 +5289,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_settings`, `_refresh_settings`, `_expiry`; `_runtime/client/auth.py:SchemeCredentials.__init__`; "
             "`_runtime/client/timing.py:Clock.__post_init__`; `_runtime/protocols/webhook_events.py:local_arguments`; "
             "`_runtime/protocols/caches.py:CacheEntry.__post_init__`; `_runtime/protocols/resume.py:state_expiry`"
+        ),
+        sites=(
+            Home("_runtime/client/timing.py", "seconds"),
+            Home("_runtime/client/timing.py", "checked_seconds"),
+            Home("_runtime/client/options.py", "RetryOptions.__post_init__"),
+            Home("_runtime/client/oauth.py", "_aware"),
+            Home("_runtime/client/oauth.py", "_settings"),
+            Home("_runtime/client/oauth.py", "_refresh_settings"),
+            Home("_runtime/client/oauth.py", "_expiry"),
+            Home("_runtime/client/auth.py", "SchemeCredentials.__init__"),
+            Home("_runtime/client/timing.py", "Clock.__post_init__"),
+            Home("_runtime/protocols/webhook_events.py", "local_arguments"),
+            Home("_runtime/protocols/caches.py", "CacheEntry.__post_init__"),
+            Home("_runtime/protocols/resume.py", "state_expiry"),
         ),
     ),
     DecisionHome(
@@ -3868,7 +5340,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`watch_dependencies.py`: `WatchDependencies._add_config`, `_configured_path`; `__main__.py`: "
             "`_record_raw_job_config_dependencies`, `_target_usage_errors`; `base_config.py:_selected_target`; the "
             "defaults: `_option_table.py` (the `--encoding` and `--watch-delay` help), `arguments.py` "
-            "(`DEFAULT_ENCODING`), `json_config.py` (`DEFAULT_ENCODING`, `json_file`), "
+            "(`DEFAULT_ENCODING`), `json_config.py:document_base` and `_read_json_or_inline` (`DEFAULT_ENCODING`, "
+            "`json_file`), "
             "`base_config.py:BaseGenerateConfig.encoding`, `config.py:ParserConfig.encoding`, "
             "`_parser_context.py:ParserSourceContext.encoding`, `_cli_config.py:Config.watch_delay`, "
             "`__main__.py:_batch_outer_settings` (the `Config` field defaults); left out: the `encoding` parameter "
@@ -3877,6 +5350,28 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(the "
             "model outputs the lock is checked against) and `_target_selection.py` (the settings file and "
             "`http_local_ref_path` of a target render)"
+        ),
+        sites=(
+            Home("_project_config.py", "_resolve_pyproject_relative_paths"),
+            Home("_project_config.py", "_resolve_relative_paths_from"),
+            Home("_project_config.py", "load_pyproject_config"),
+            Home("config.py", "GenerateConfig.expand_output_paths"),
+            Home("_generation.py", "_prepare_generation_config"),
+            Home("watch_dependencies.py", "WatchDependencies._add_config"),
+            Home("watch_dependencies.py", "_configured_path"),
+            Home("__main__.py", "_record_raw_job_config_dependencies"),
+            Home("__main__.py", "_target_usage_errors"),
+            Home("base_config.py", "_selected_target"),
+            Home("__main__.py", "_batch_outer_settings"),
+            Home("http.py", "_FetchSettings.encoding"),
+            Home("format.py", "CodeFormatter"),
+            Home("_generation.py", "_prepare_atomic_generation_remote_lock"),
+            Home("_option_table.py"),
+            Home("json_config.py", "document_base"),
+            Home("json_config.py", "_read_json_or_inline"),
+            Home("parser/protobuf.py"),
+            Home("parser/xmlschema.py"),
+            Home("_target_selection.py"),
         ),
     ),
     DecisionHome(
@@ -3891,6 +5386,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_project_config.py`: `_resolve_profile_extends`, `_get_pyproject_toml_config_with_path`; `__main__.py`: "
             "`_get_job_config`, `_record_raw_profile_dependencies`, `_plan_jobs_unchecked`, `_run_config` (the "
             "selector and table of the recommendation); `_target_cli.py:_implied_notice`"
+        ),
+        sites=(
+            Home("_project_config.py", "_resolve_profile_extends"),
+            Home("_project_config.py", "_get_pyproject_toml_config_with_path"),
+            Home("__main__.py", "_get_job_config"),
+            Home("__main__.py", "_record_raw_profile_dependencies"),
+            Home("__main__.py", "_plan_jobs_unchecked"),
+            Home("__main__.py", "_run_config"),
+            Home("_target_cli.py", "_implied_notice"),
         ),
     ),
     DecisionHome(
@@ -3925,6 +5429,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "for "
             "`_implied_model_updates` under `--read-implied-options-from-merged-values`); "
             "`cli_options.py:_documented_options` (the `implies` relations of `CLI_OPTION_META`)"
+        ),
+        sites=(
+            Home("_cli_config.py", "_prepare_cli_config_args"),
+            Home("preset.py", "PresetConfig"),
+            Home("base_config.py", "BaseGenerateConfig.normalize_use_type_alias_type"),
+            Home("base_config.py", "implied_model_settings"),
+            Home("preset.py", "ResolvedPresetConfig.updates"),
+            Home("model/__init__.py", "get_data_model_types"),
+            Home("_option_stages.py", "_replaced_options"),
+            Home("_option_stages.py", "_implied_model_updates"),
+            Home("cli_options.py", "_documented_options"),
         ),
     ),
     DecisionHome(
@@ -3972,6 +5487,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_option_rules.py`: `_validate_output_datetime_class`, `_validate_alias_generator` (each with its own "
             "relation "
             "in `CLI_OPTION_META` or none)"
+        ),
+        sites=(
+            Home("base_config.py", "BaseGenerateConfig.validate_remote_lock_mode"),
+            Home("base_config.py", "BaseGenerateConfig.validate_target_selection"),
+            Home("__main__.py", "_resolve_cli_config"),
+            Home("__main__.py", "_apply_model_run_options"),
+            Home("_option_stages.py", "_missing_sentinel_updates"),
+            Home("_generation.py", "_prepare_parser_common_options"),
+            Home("cli_options.py", "_with_relation_rows"),
+            Home("cli_options.py", "_documented_options"),
+            Home("base_config.py", "_target_options_error"),
+            Home("__main__.py", "_diff_against_validation_error"),
+            Home("__main__.py", "_reject_batch_input_diff"),
+            Home("__main__.py", "_generation_option_errors"),
+            Home("__main__.py", "_target_usage_errors"),
+            Home("__main__.py", "_run_config"),
+            Home("_option_rules.py", "_validate_output_datetime_class"),
+            Home("_option_rules.py", "_validate_alias_generator"),
         ),
     ),
     DecisionHome(
@@ -4039,6 +5572,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "later refusal comes before the facade's warnings); `_recommend/__init__.py:_plan` (`_resolve_preset` once "
             "for each preset it compares; the plan keeps the config updates it makes for the trial)"
         ),
+        sites=(
+            Home("__main__.py", "_resolve_cli_config"),
+            Home("__main__.py", "_imply_target_settings"),
+            Home("_project_config.py", "load_pyproject_config"),
+            Home("_option_stages.py", "_resolve_run_options"),
+            Home("_generation.py", "_prepare_generate_facade_config"),
+            Home("_api_generation.py", "prepare_target"),
+            Home("dynamic.py", "_without_default_formatting"),
+            Home("_recommend/__init__.py", "_plan"),
+            Home("_option_stages.py", "_resolve_preset"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4086,8 +5630,34 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "out: `_generation.py:_parse_generation_run` (the Pydantic floor warning names `--use-missing-sentinel` as "
             "the source of a 2.12 target from the values, also where an option gave the target, row "
             "`floor-target-from-by-value`), `_cli_config.py:Config.merge_args` and `__main__.py`: "
-            "`_plan_jobs_unchecked`, `_recommend_options_conflict`, `_batch_outer_settings` and `_cli_config_values`, "
+            "`_plan_jobs_unchecked` and `_batch_outer_settings`, `_cli_messages.py:_recommend_options_conflict` and "
+            "`_config_export.py:_cli_config_values`, "
             "with `prompt.py:_current_options` (the arguments of a command, read from the namespace)"
+        ),
+        sites=(
+            Home("_option_stages.py", "_run_option_stages"),
+            Home("_option_stages.py", "_replaced_options"),
+            Home("_option_stages.py", "_warn_of_replaced_options"),
+            Home("_option_stages.py", "_resolve_run_options"),
+            Home("__main__.py", "_main"),
+            Home("__main__.py", "_rerun_copy"),
+            Home("__main__.py", "_get_job_config"),
+            Home("__main__.py", "_run_watched_jobs"),
+            Home("__main__.py", "_apply_model_run_options"),
+            Home("__main__.py", "_collect_naming_hint"),
+            Home("__main__.py", "_target_usage_errors"),
+            Home("__main__.py", "_run_recommend_options"),
+            Home("_target_cli.py", "_implied"),
+            Home("_target_cli.py", "_implied_notice"),
+            Home("_target_cli.py", "_base"),
+            Home("_api_generation.py", "implied_conflict"),
+            Home("_project_config.py", "load_pyproject_config"),
+            Home("_generation.py", "_parse_generation_run"),
+            Home("__main__.py", "_plan_jobs_unchecked"),
+            Home("_cli_messages.py", "_recommend_options_conflict"),
+            Home("__main__.py", "_batch_outer_settings"),
+            Home("_config_export.py", "_cli_config_values"),
+            Home("prompt.py", "_current_options"),
         ),
     ),
     DecisionHome(
@@ -4114,6 +5684,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_binding.py:_DATACLASS_PARAMETERS`; left out: `_openapi_codec_plan.py:PydanticBackend`, a "
             "`Literal` type of the same values that `_fastapi/target.py:_BACKENDS` (the server's backends) maps them to"
         ),
+        sites=(
+            Home("enums.py", "_get_output_model_family"),
+            Home("__main__.py", "_apply_model_run_options"),
+            Home("base_config.py", "implied_target_settings"),
+            Home("model/__init__.py", "get_data_model_types"),
+            Home("_target_render.py", "pydantic_target_problem"),
+            Home("_client/target.py", "_backend_dependencies"),
+            Home("model/base.py", "_safe_dataclass_arguments"),
+            Home("_option_table.py", "_dataclass_arguments"),
+            Home("preset.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4128,6 +5709,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`--install-skill`, `--skill-scope`, `--preset`, `--output-format-json-schema`, `--list-deprecations` and "
             "`--list-experimental`)"
         ),
+        sites=(Home("_option_table.py"),),
     ),
     DecisionHome(
         decision=(
@@ -4145,6 +5727,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`tests/cli_doc/test_cli_options_sync.py:test_option_table_matches_the_config_models` (every row against "
             "the CLI `Config` and `GenerateConfig` fields, with the fields no option sets)"
         ),
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -4160,6 +5743,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "rows); not routed: the warnings an option emits when it is used, by registry id (`_cli_config.py`, "
             "`warn_deprecated`)"
         ),
+        sites=(
+            Home("_option_table.py", "deprecated"),
+            Home("cli_options.py", "_documented_options"),
+            Home("_cli_config.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4172,14 +5760,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`arguments.py` (the shared `namespace` when the module loads); `__main__.py`: the fast path of the prompt "
             "helper outputs and `_main`; `_agent_skill_cli.py:run_agent_skill_installer`"
         ),
+        sites=(
+            Home("__main__.py", "_main"),
+            Home("_agent_skill_cli.py", "run_agent_skill_installer"),
+            Home("arguments.py"),
+        ),
     ),
     DecisionHome(
         decision="which command-line arguments set a config field to a value",
         homes=(Home("_option_names.py", "option_arguments"),),
         core="`_option_names.py:option_arguments`",
         adapters=(
-            "`cli_options._negative_option`, the writers' spellings: `__main__.py:generate_cli_command`, "
+            "`cli_options._negative_option`, the writers' spellings: `_config_export.py:generate_cli_command`, "
             "`_option_names.py:values_arguments`, `cli_options.py:_option_arguments`"
+        ),
+        sites=(
+            Home("_config_export.py", "generate_cli_command"),
+            Home("_option_names.py", "values_arguments"),
+            Home("cli_options.py", "_option_arguments"),
         ),
     ),
     DecisionHome(
@@ -4192,6 +5790,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the readers of a preset's values: `_recommend/__init__.py:_plan`, `_recommend/_rules.py:_rule_values`, "
             "`preset.py:_copyable_config_data`; `scripts/recommender_calibrate.py`"
+        ),
+        sites=(
+            Home("_recommend/__init__.py", "_plan"),
+            Home("_recommend/_rules.py", "_rule_values"),
+            Home("preset.py", "_copyable_config_data"),
         ),
     ),
     DecisionHome(
@@ -4206,8 +5809,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`str`), `cli_options.py:_values_arguments` (the recommender's options and trial candidates: "
             "`_recommend/__init__.py:_option`, `_recommend/_report.py:_candidate_payload`), "
             "`_target_cli.py:_implied_notice` (the command that sets the settings a target implied); not this "
-            "decision: one value's arguments (`__main__.py:generate_cli_command`, which writes a list as one argument, "
-            "and whether an option expresses a value, `_recommend/__init__.py:_plan`)"
+            "decision: one value's arguments (`_config_export.py:generate_cli_command`, which writes a list as one "
+            "argument, and whether an option expresses a value, `_recommend/__init__.py:_plan`)"
+        ),
+        sites=(
+            Home("__main__.py", "_cli_arguments"),
+            Home("cli_options.py", "_values_arguments"),
+            Home("_recommend/__init__.py", "_option"),
+            Home("_recommend/_report.py", "_candidate_payload"),
+            Home("_target_cli.py", "_implied_notice"),
+            Home("_config_export.py", "generate_cli_command"),
+            Home("_recommend/__init__.py", "_plan"),
         ),
     ),
     DecisionHome(
@@ -4221,6 +5833,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/__init__.py`: `_plan` (the baseline a preset leaves), `_disagreements`; "
             "`_recommend/_rules.py:_rule_values` (an optional rule's values)"
         ),
+        sites=(
+            Home("_recommend/__init__.py", "_plan"),
+            Home("_recommend/__init__.py", "_disagreements"),
+            Home("_recommend/_rules.py", "_rule_values"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4232,6 +5849,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_recommend/__init__.py`: `_applied` (a candidate's generation config), `_trial_candidates` (the options "
             "a candidate adds), `_set_command` (the command and pyproject.toml keys of the recommendation)"
+        ),
+        sites=(
+            Home("_recommend/__init__.py", "_applied"),
+            Home("_recommend/__init__.py", "_trial_candidates"),
+            Home("_recommend/__init__.py", "_set_command"),
         ),
     ),
     DecisionHome(
@@ -4246,6 +5868,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/_metrics.py`: `location_changes` (by identity path, with the keys only one side holds), "
             "`name_stability` (by field names)"
         ),
+        sites=(
+            Home("_recommend/_metrics.py", "location_changes"),
+            Home("_recommend/_metrics.py", "name_stability"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4259,6 +5885,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/__init__.py`: `_candidates` (the recommendation with or without one option), `_remeasure` "
             "(the selected candidate with or without one option)"
         ),
+        sites=(
+            Home("_recommend/__init__.py", "_candidates"),
+            Home("_recommend/__init__.py", "_remeasure"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4271,6 +5901,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/_report.py`: the rule texts of an option (reason, caveats) and the rows of the schema summary "
             "(`_signal_lines`); `_recommend/_report.py:_option_payload` (JSON)"
         ),
+        sites=(
+            Home("_recommend/_report.py", "_signal_lines"),
+            Home("_recommend/_report.py", "_option_payload"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4282,6 +5916,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_recommend/_report.py` (the rule texts, trial effects and footnotes, the changes of a migration, the "
             "notes), `_registry_render.py:_render_registry_table` (the notes of `--list-experimental`)"
+        ),
+        sites=(
+            Home("_registry_render.py", "_render_registry_table"),
+            Home("_recommend/_report.py"),
         ),
     ),
     DecisionHome(
@@ -4308,6 +5946,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "none: the callers pass their row; `scripts/build_model_metadata_schema.py` builds the static model "
             "metadata schema through `schema_document`"
         ),
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -4329,6 +5968,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/_report.py:recommendation_payload`), and `__main__.py:_write_batch_json_spool` writes the "
             "head of the batch document from it through `write_streamed_json`"
         ),
+        sites=(
+            Home("_structured_output.py", "generation_output_json"),
+            Home("_structured_output.py", "command_output_json"),
+            Home("_structured_output.py", "check_output_json"),
+            Home("prompt.py", "_generate_prompt_json"),
+            Home("_recommend/_report.py", "recommendation_payload"),
+            Home("__main__.py", "_write_batch_json_spool"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4342,6 +5989,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`model_metadata.py:model_metadata_payload` (typed by `ModelMetadata`)",
         adapters=(
             "none: `parser/base.py:Parser._build_model_metadata` and `model_metadata.py:dump_model_metadata` call it"
+        ),
+        sites=(
+            Home("parser/base.py", "Parser._build_model_metadata"),
+            Home("model_metadata.py", "dump_model_metadata"),
         ),
     ),
     DecisionHome(
@@ -4370,6 +6021,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "page; `__main__.py:_print_registry` (the `--list-*` output); `preset.py:render_presets_json` writes its "
             "own entries through `_render_registry_json`"
         ),
+        sites=(
+            Home("__main__.py", "_print_registry"),
+            Home("preset.py", "render_presets_json"),
+            Home("deprecations.py"),
+            Home("experimental.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4392,6 +6049,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_option_table.py` (the option's choices and metavar), `prompt.py:PROMPT_GUIDANCE_SECTIONS` (the list of "
             "names)"
         ),
+        sites=(
+            Home("__main__.py", "_skill_options_given"),
+            Home("__main__.py", "_command_output"),
+            Home("_option_table.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4409,6 +6071,25 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_UseFacts.holder`) read the model a type holds by), `_target_binding.py:_Binder.schema_null` (the null a "
             "merged schema's use keeps), `types.py:DataType.admits_none`, `types.py:reference_names_nullable`, "
             "`model/base.py:DataModelFieldBase._field_null_source`"
+        ),
+        sites=(
+            Home("_target_types.py", "admits_none"),
+            Home("_target_types.py", "present"),
+            Home("_target_types.py", "without_none"),
+            Home("_target_types.py", "TypeTables.takes_null"),
+            Home("_target_types.py", "sole_present"),
+            Home("_target_types.py", "TypeTables.unwrapped"),
+            Home("_client/model_facts.py", "ModelFacts.unwrapped"),
+            Home("_client/model_facts.py", "ModelFacts.model"),
+            Home("_client/model_facts.py", "ModelFacts.present"),
+            Home("_fastapi/plan.py", "Planner.member"),
+            Home("_fastapi/plan.py", "_constrained"),
+            Home("_target_binding.py", "_SchemaUses.held"),
+            Home("_target_binding.py", "_UseFacts.holder"),
+            Home("_target_binding.py", "_Binder.schema_null"),
+            Home("types.py", "DataType.admits_none"),
+            Home("types.py", "reference_names_nullable"),
+            Home("model/base.py", "DataModelFieldBase._field_null_source"),
         ),
     ),
     DecisionHome(
@@ -4436,6 +6117,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_types.py:TypeTables.member_kind`), `_client/model_facts.py:ModelFacts.field_types` and the "
             "pagination and socket readers of the `schema` vocabulary, `_client/codec_plan.py:_Planner.union` (the "
             "`codec` vocabulary)"
+        ),
+        sites=(
+            Home("_target_binding.py", "_UseFacts"),
+            Home("_openapi_wire_plan.py", "LexicalKinds"),
+            Home("_target_types.py", "TypeTables.member_kind"),
+            Home("_client/model_facts.py", "ModelFacts.field_types"),
+            Home("_client/codec_plan.py", "_Planner.union"),
         ),
     ),
     DecisionHome(
@@ -4510,6 +6198,37 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`OpenAPIParser.parse_object_fields` rebuilds from a field's `__dict__`, and the typed extra field of "
             "`model/pydantic_v2/base_model.py:BaseModel.create_typed_extra_field`"
         ),
+        sites=(
+            Home("parser/_field_copies.py", "_copy_resolved_inherited_field"),
+            Home("parser/base.py", "Parser._apply_final_class_field_aliases"),
+            Home("parser/_passes/_shared.py", "override_required_field"),
+            Home("parser/_inherited_schemas.py", "build_missing_required_field"),
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.get_object_field"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_object_fields"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_array_fields"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_array"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_root_type_with_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_multiple_types_with_properties"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_enum"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._build_all_of_ref_root_model"),
+            Home("parser/graphql.py", "GraphQLParser"),
+            Home("parser/graphql.py", "GraphQLParser.parse_field"),
+            Home("parser/graphql.py", "GraphQLParser._typename_field"),
+            Home("parser/graphql.py", "GraphQLParser.parse_enum_as_enum_class"),
+            Home("parser/graphql.py", "GraphQLParser._parse_enum_as_root"),
+            Home("parser/graphql.py", "GraphQLParser.parse_union"),
+            Home("parser/graphql.py", "GraphQLParser._resolve_typename_collisions"),
+            Home("parser/_passes/modules.py", "apply_discriminator_type"),
+            Home("parser/_passes/modules.py", "DiscriminatorHost"),
+            Home("parser/base.py", "Parser._effective_default_state"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_common_part"),
+            Home("parser/_rw_split.py", "collect_inherited_fields_for_request_response"),
+            Home("parser/_rw_split.py", "get_raw_inherited_fields"),
+            Home("parser/_passes/_shared.py", "apply_inherited_field_default"),
+            Home("parser/_passes/plans.py", "flatten_base_layouts"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel.create_typed_extra_field"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4545,6 +6264,18 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "rule `python`: `parser/_inheritance_check.py:check_model_inheritance` (behind "
             "`Parser._check_model_inheritance`), `_target_binding.py:_Models.field_bindings`"
         ),
+        sites=(
+            Home("model/base.py", "_effective_field_owners"),
+            Home("model/base.py", "python_base_classes"),
+            Home("model/base.py", "DataModel.iter_all_fields"),
+            Home("model/base.py", "sort_data_models_for_mro"),
+            Home("parser/_passes/_shared.py", "takes_positional_place"),
+            Home("parser/_passes/settle.py", "sort_base_classes_for_mro"),
+            Home("parser/_inherited_schemas.py", "linearize_inherited_schema_refs"),
+            Home("parser/_inherited_schemas.py", "sort_inherited_base_classes_for_mro"),
+            Home("parser/_inheritance_check.py", "check_model_inheritance"),
+            Home("_target_binding.py", "_Models.field_bindings"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4577,6 +6308,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "for each name the first schema whose own fields hold it, also one that only requires the property or "
             "whose fields are enum members, where the property map names the schema that declares it"
         ),
+        sites=(
+            Home("parser/_inherited_schemas.py", "get_inherited_property_map"),
+            Home("parser/_inherited_schemas.py", "model_declarations"),
+            Home("parser/_inherited_schemas.py", "get_inherited_property_order"),
+            Home("parser/_inherited_schemas.py", "get_inherited_field_schema"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._inherited_declaration_row"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_inherited_field_type"),
+            Home("parser/_rw_split.py", "join_rw_model_property_flags"),
+            Home("parser/_schema_validators.py", "get_input_names_by_property"),
+            Home("parser/_rw_split.py", "collect_inherited_fields_for_request_response"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4598,6 +6340,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`TextShape.additional`, `EncodingFacts.declared` and `PartFacts.extra`; a reader that keeps the parts "
             "itself reads the schema's `PartFacts.loose`)"
         ),
+        sites=(
+            Home("_target_binding.py", "_applied_configuration"),
+            Home("_openapi_codec_plan.py", "extras_symbols"),
+            Home("_target_binding.py", "_held"),
+            Home("_fastapi/plan.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4610,6 +6358,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         core="`types.py`: `type_expr_of`, `render_type_expr`; planned: `freeze_type` in `_target_types.py`",
         adapters="`_target_module.py:TargetModule`, `_target_module.py:TypeComposer` (text of support compositions)",
+        sites=(
+            Home("_target_module.py", "TargetModule"),
+            Home("_target_module.py", "TypeComposer"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4623,6 +6375,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_target_binding.py:_BUILTINS` (the `BuiltinType` of each), `_target_module.py:_BUILTINS` (the names "
             "`TargetModule` reserves)"
         ),
+        sites=(Home("_target_module.py", "TargetModule"),),
     ),
     DecisionHome(
         decision=(
@@ -4661,6 +6414,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_client/plan.py:Planner.resolved`, `_fastapi/plan.py:Planner.selected` (each target keeps only its own "
             "forms and its own rules where they differ)"
         ),
+        sites=(
+            Home("_client/plan.py", "Planner.resolved"),
+            Home("_fastapi/plan.py", "Planner.selected"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4681,6 +6438,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_client/codec_plan.py:CodecRuntime.modules`, `_client/codec_render.py` (the model bindings' import and "
             "codec arguments), `_client/runtime.py:Capabilities.modules`, `_fastapi/render.py` "
             "(`ServerRenderer.runtime`, `_declared`)"
+        ),
+        sites=(
+            Home("_client/codec_plan.py", "CodecRuntime.modules"),
+            Home("_client/runtime.py", "Capabilities.modules"),
+            Home("_fastapi/render.py", "ServerRenderer.runtime"),
+            Home("_fastapi/render.py", "_declared"),
+            Home("_client/codec_render.py"),
         ),
     ),
     DecisionHome(
@@ -4719,6 +6483,26 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "and the `through` row (`is_wrapper`, `is_alias`), for every recursive reader of `_target_types.py`, "
             "`_client/model_facts.py`, `_client/codec_plan.py`, `_client/pagination.py` and `_fastapi/plan.py`)"
         ),
+        sites=(
+            Home("_openapi_wire_plan.py", "_WirePlanner"),
+            Home("_openapi_wire_plan.py", "_parameter"),
+            Home("_client/plan.py", "Planner"),
+            Home("_client/security.py", "_scheme"),
+            Home("_fastapi/plan.py", "Planner"),
+            Home("_fastapi/plan.py", "_unresolved"),
+            Home("_target_types.py", "TypeTables"),
+            Home("_target_types.py", "TypeTables.of"),
+            Home("_openapi_wire_plan.py", "BatchTables"),
+            Home("_client/model_facts.py", "ModelFacts"),
+            Home("_target_binding.py", "_SchemaUses.schema_uses"),
+            Home("_client/security.py", "SecurityPlanner"),
+            Home("_target_binding.py", "_Models"),
+            Home("_target_types.py", "TypeTables.wrapped"),
+            Home("_target_types.py", "is_wrapper"),
+            Home("_target_types.py", "is_alias"),
+            Home("_client/codec_plan.py"),
+            Home("_client/pagination.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4732,6 +6516,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_target_binding.py:_SchemaUses.use` (every use it binds), `_SchemaUses.own_use` (the lookups of "
             "`_SchemaUses.extras` and `_SchemaUses.helper_uses`)"
+        ),
+        sites=(
+            Home("_target_binding.py", "_SchemaUses.use"),
+            Home("_target_binding.py", "_SchemaUses.own_use"),
+            Home("_target_binding.py", "_SchemaUses.extras"),
+            Home("_target_binding.py", "_SchemaUses.helper_uses"),
         ),
     ),
     DecisionHome(
@@ -4756,6 +6546,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "parameter, its first child (`_openapi_wire_plan.py:_content_parameter`), and the encodings of a media "
             "that need a header only parts carry, which read every child of the media (`_client/plan.py:Planner.media`)"
         ),
+        sites=(
+            Home("_openapi_wire_plan.py", "_headers"),
+            Home("_client/plan.py", "Planner.part_media"),
+            Home("_client/plan.py", "Planner._headers"),
+            Home("_client/plan.py", "Planner.media_list"),
+            Home("_client/plan.py", "_encoded"),
+            Home("_client/plan.py", "encoding_header_uses"),
+            Home("_client/plan.py", "style_uses"),
+            Home("_client/plan.py", "form_uses"),
+            Home("_fastapi/plan.py", "invalid_links"),
+            Home("_fastapi/plan.py", "Planner.body"),
+            Home("_fastapi/plan.py", "Planner.response"),
+            Home("_openapi_wire_plan.py", "operation_uses"),
+            Home("_openapi_wire_plan.py", "_content_parameter"),
+            Home("_client/plan.py", "Planner.media"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4770,6 +6576,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "is a query parameter, whose cookie style the plan refuses); left out: whether an encoding's written facts "
             "differ from the defaults (`_fastapi/plan.py:_planned`, `_client/plan.py:_encoded`: the first encoding of "
             "a multipart response no builtin reader applies)"
+        ),
+        sites=(
+            Home("_openapi_wire_plan.py", "_parameter"),
+            Home("_openapi_wire_plan.py", "_encoding"),
+            Home("_fastapi/plan.py", "_planned"),
+            Home("_client/plan.py", "_encoded"),
         ),
     ),
     DecisionHome(
@@ -4808,7 +6620,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`REF_PRE_PASS_POSITIONS`"
         ),
         adapters=(
-            "the walkers of `parser/jsonschema.py` (`_walk_schema_objects`, `_iter_referencing_schemas`), "
+            "the walkers of `parser/jsonschema.py` (`_walk_schema_objects`, `_version_checked_subschemas`), "
             "`parser/_schema_refs.py:walk_ref_cycle` and `parser/_schema_documents.py` "
             "(`iter_schema_resource_children`, and `_searched` of row `legacy-external-anchor-search`, through "
             "`subschema_entries`), `parser/_schema_graph.py:walk_schema_resources` (the schemas it passes over, "
@@ -4821,6 +6633,25 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_schema_object.py:_locate_dump`, `parser/_intersection.py`, "
             "`_fastapi/source_document.py:SourceDocument.schema_member`, `input_model.py`, `_recommend/_signals.py`, "
             "`_recommend/_metrics.py`, `_generation.py:is_schema`"
+        ),
+        sites=(
+            Home("parser/_schema_refs.py", "walk_ref_cycle"),
+            Home("parser/_schema_documents.py", "iter_schema_resource_children"),
+            Home("parser/_schema_documents.py", "_searched"),
+            Home("parser/_schema_graph.py", "walk_schema_resources"),
+            Home("parser/xmlschema.py", "_schema_dicts"),
+            Home("_client/protocols.py", "_literal_problem"),
+            Home("_recommend/_metrics.py", "_collect_words"),
+            Home("parser/_schema_object.py", "_locate_dump"),
+            Home("_fastapi/source_document.py", "SourceDocument.schema_member"),
+            Home("_generation.py", "is_schema"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._walk_schema_objects"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._version_checked_subschemas"),
+            Home("_input_model_transport.py"),
+            Home("input_model_result.py"),
+            Home("parser/_intersection.py"),
+            Home("input_model.py"),
+            Home("_recommend/_signals.py"),
         ),
     ),
     DecisionHome(
@@ -4837,6 +6668,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/_trial.py:_run_candidate`, `parser/jsonschema.py:JsonSchemaParser._typed_model_children` (the "
             "extra items type of a key model)"
         ),
+        sites=(
+            Home("parser/base.py", "Parser._run_with_suppressed_warnings"),
+            Home("_generation.py", "_parse_again"),
+            Home("_recommend/_trial.py", "_run_candidate"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._typed_model_children"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4851,6 +6688,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/jsonschema.py`: `JsonSchemaParser._warn_unsatisfiable`, `_warn_untaken_patterns`, "
             "`_warn_closed_pattern_properties`, `_warn_inexact_object_map`, `_enum_positions_outside_const`"
         ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._warn_unsatisfiable"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._warn_untaken_patterns"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._warn_closed_pattern_properties"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._warn_inexact_object_map"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._enum_positions_outside_const"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4860,6 +6704,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("_warning_control.py", "is_tracer_frame"),),
         core="`_warning_control.py:is_tracer_frame`",
         adapters="`parser/_pipeline.py:parse_caller`, `parser/_passes/_warnings.py:warn_as_module`",
+        sites=(
+            Home("parser/_pipeline.py", "parse_caller"),
+            Home("parser/_passes/_warnings.py", "warn_as_module"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4871,6 +6719,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_warning_control.py:warn_as_public`, `parser/_pipeline.py:warn_at_parse_caller`, "
             "`parser/_passes/_warnings.py:warn_as_module`"
+        ),
+        sites=(
+            Home("_warning_control.py", "warn_as_public"),
+            Home("parser/_pipeline.py", "warn_at_parse_caller"),
+            Home("parser/_passes/_warnings.py", "warn_as_module"),
         ),
     ),
     DecisionHome(
@@ -4892,6 +6745,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_passes/imports.py:warn_about_decimal_defaults`), and `parser/jsonschema.py` (the shifted enum "
             "entries, the inexact object maps)"
         ),
+        sites=(
+            Home("_requirements.py", "pydantic_floor_message"),
+            Home("parser/_passes/imports.py", "warn_about_decimal_defaults"),
+            Home("_client/pagination.py"),
+            Home("_client/protocols.py"),
+            Home("_client/codec_plan.py"),
+            Home("base_config.py"),
+            Home("__main__.py"),
+            Home("_api_generation.py"),
+            Home("_target_render.py"),
+            Home("_client/render.py"),
+            Home("prompt.py"),
+            Home("parser/jsonschema.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4910,6 +6777,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_passes/settle.py:warn_about_unmatched_model_name_keys`, `parser/jsonschema.py` (the shifted enum "
             "entries)"
         ),
+        sites=(
+            Home("parser/_passes/imports.py", "warn_about_decimal_defaults"),
+            Home("parser/_passes/settle.py", "warn_about_unmatched_model_name_keys"),
+            Home("__main__.py"),
+            Home("_client/protocol_plan.py"),
+            Home("_recommend/__init__.py"),
+            Home("_recommend/_report.py"),
+            Home("model/base.py"),
+            Home("model/pydantic_v2/base_model.py"),
+            Home("parser/jsonschema.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -4924,9 +6802,21 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         core="`_message_text.py:extra_requirement`, `_message_text.py:install_command`",
         adapters=(
             "the missing-extra errors and warnings (`_debug.py:enable_debug_message`, `http.py:_get_http_stack`, "
-            "`watch.py:_get_watchfiles`, `format.py:CodeFormatter._find_ruff_path`, `parser/openapi.py` "
-            "(`--validation`), `parser/protobuf.py`, `parser/graphql.py`), the help of `--url`, `--formatters` and "
-            "`--debug` (`_option_table.py`), the `extra.httpx2` entry of `experimental.py`"
+            "`watch.py:_get_watchfiles`, `format.py:CodeFormatter._find_ruff_path`, "
+            "`parser/openapi.py:OpenAPIParser.parse_raw` (`--validation`), `parser/protobuf.py`, `parser/graphql.py`), "
+            "the help of `--url`, `--formatters` and `--debug` (`_option_table.py`), the `extra.httpx2` entry of "
+            "`experimental.py`"
+        ),
+        sites=(
+            Home("_debug.py", "enable_debug_message"),
+            Home("http.py", "_get_http_stack"),
+            Home("watch.py", "_get_watchfiles"),
+            Home("format.py", "CodeFormatter._find_ruff_path"),
+            Home("parser/openapi.py", "OpenAPIParser.parse_raw"),
+            Home("parser/protobuf.py"),
+            Home("parser/graphql.py"),
+            Home("_option_table.py"),
+            Home("experimental.py"),
         ),
     ),
     DecisionHome(
@@ -4944,6 +6834,18 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`watch_dependencies.py:WatchDependencies.generation`; `parser/base.py`: `Parser.parse` (the schema graph, "
             "the render plans, the memo and the caller frame of a parse) and `Parser._finalize_modules` (those of them "
             "no parse has set); `model/base.py` (the constructor-ordering flags)"
+        ),
+        sites=(
+            Home("deprecations.py", "cli_migration_warning_scope"),
+            Home("_naming_hint.py", "naming_hint_scope"),
+            Home("reference.py", "unmatched_model_name_keys_unreported"),
+            Home("parser/base.py", "dropped_constraints_recorded"),
+            Home("parser/_passes/_state.py", "pydantic_floors_recorded"),
+            Home("_parse_memo.py", "rendering_memo"),
+            Home("watch_dependencies.py", "WatchDependencies.generation"),
+            Home("parser/base.py", "Parser.parse"),
+            Home("parser/base.py", "Parser._finalize_modules"),
+            Home("model/base.py"),
         ),
     ),
     DecisionHome(
@@ -4965,6 +6867,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "none: the field plans of `model/base.py`, `model/dataclass.py`, `model/msgspec.py`, "
             "`model/pydantic_base.py`, `model/pydantic_v2/base_model.py` and `model/pydantic_v2/dataclass.py` import "
             "them"
+        ),
+        sites=(
+            Home("model/base.py"),
+            Home("model/dataclass.py"),
+            Home("model/msgspec.py"),
+            Home("model/pydantic_base.py"),
+            Home("model/pydantic_v2/base_model.py"),
+            Home("model/pydantic_v2/dataclass.py"),
         ),
     ),
     DecisionHome(
@@ -4990,6 +6900,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "refusals (`model/msgspec.py:Struct._validate_renamed_field_names`, "
             "`parser/_passes/imports.py:reject_lone_surrogates_pydantic_reads`)"
         ),
+        sites=(
+            Home("parser/_passes/settle.py", "_named_model_path"),
+            Home("parser/base.py", "Parser._model_metadata"),
+            Home("model/msgspec.py", "Struct._validate_renamed_field_names"),
+            Home("parser/_passes/imports.py", "reject_lone_surrogates_pydantic_reads"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5008,6 +6924,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/_schema_documents.py:parse_converted_sources`), OpenAPI and its `api` scope, Protocol Buffers, "
             "AsyncAPI"
         ),
+        sites=(Home("parser/_schema_documents.py", "parse_converted_sources"),),
     ),
     DecisionHome(
         decision=(
@@ -5032,6 +6949,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "drops); left out: `_runtime/protocols/cache_stores.py:_Entries`, which generated packages copy and which "
             "never imports the generator"
         ),
+        sites=(
+            Home("_source.py", "_load_parser_source_data_from_path_bytes"),
+            Home("_source.py", "_load_cached_parser_source_data"),
+            Home("_source.py", "_store_parser_source_data"),
+            Home("parser/xmlschema.py", "_load_xml_schema_data_from_path"),
+            Home("http.py", "_HTTPFetchSession"),
+            Home("http.py", "_HTTPFetchSession.get_ips_from_host"),
+            Home("http.py", "_HTTPFetchSession.get_response"),
+            Home("model/base.py", "_refresh_custom_template_paths"),
+            Home("_runtime/protocols/cache_stores.py", "_Entries"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5051,6 +6979,18 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`model/pydantic_v2/base_model.py:has_lookaround_pattern` (the models whose patterns a Pydantic dataclass "
             "reads, row `legacy-dataclass-follows-every-reference`)"
         ),
+        sites=(
+            Home("_reference_graph.py", "ReferenceGraph.reached"),
+            Home("_reference_graph.py", "ReferenceGraph.preorder"),
+            Home("_reference_graph.py", "walk_graph"),
+            Home("_recommend/_signals.py", "_reachable"),
+            Home("_recommend/_signals.py", "_walk_components"),
+            Home("parser/_passes/plans.py", "flatten_conflicting_base_layouts"),
+            Home("parser/graphql.py", "GraphQLParser._resolve_typename_collisions"),
+            Home("_client/target.py", "_HelperDigests.contract"),
+            Home("input_model.py", "_native_generic_field_paths"),
+            Home("model/pydantic_v2/base_model.py", "has_lookaround_pattern"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5066,6 +7006,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/base.py:Parser.__get_resolve_reference_action_parts` (the models a rebuild call names: those with "
             "a forward reference and the models below them)"
         ),
+        sites=(
+            Home("model/pydantic_v2/base_model.py", "models_reaching_string_pattern_aliases"),
+            Home("_openapi_codec_plan.py", "extras_symbols"),
+            Home("parser/base.py", "Parser.__get_resolve_reference_action_parts"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5079,6 +7024,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_schema_refs.py:read_ref_value` (the value a reference key names, the row below); "
             "`parser/jsonschema.py:JsonSchemaParser._ref_document_context`; "
             "`parser/openapi_scope.py:ApiOpenAPIParser._reference_target`"
+        ),
+        sites=(
+            Home("parser/_schema_refs.py", "read_ref_value"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._ref_document_context"),
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._reference_target"),
         ),
     ),
     DecisionHome(
@@ -5116,6 +7066,28 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_schema_refs.py:recursive_ref_target` (tokens only); the `api` scope (`parser/openapi_scope.py`, "
             "canonical tokens)"
         ),
+        sites=(
+            Home("parser/_schema_refs.py", "key_node"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_ref_raw_schema"),
+            Home("parser/_schema_refs.py", "ref_schema_exists"),
+            Home("parser/_schema_refs.py", "ref_cycle_document"),
+            Home("parser/openapi.py", "OpenAPIParser.get_ref_model"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._resolve_asyncapi_ref"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_all_of_single_ref"),
+            Home("parser/_schema_refs.py", "read_ref_value"),
+            Home("parser/_schema_refs.py", "dynamic_ref_edges"),
+            Home("parser/_schema_refs.py", "parse_dynamic_specialization"),
+            Home("parser/_schema_documents.py", "lenient_pointer_exists"),
+            Home("parser/_schema_documents.py", "reserved_targets"),
+            Home("parser/_schema_documents.py", "ref_pointer_parts"),
+            Home("parser/jsonschema.py", "JsonSchemaParser"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_pointer_ref"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_base_stand_in"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.resolve_ref"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_file"),
+            Home("parser/_schema_refs.py", "recursive_ref_target"),
+            Home("parser/openapi_scope.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5140,6 +7112,22 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`OpenAPIParser._load_references_of_parameter_models`; not this rule: the public "
             "`ModelResolver.current_base_path_context`, which resolves its argument on every call"
         ),
+        sites=(
+            Home("parser/_schema_refs.py", "schema_document_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._ref_document_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._ref_file_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.resolve_ref"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._home_context"),
+            Home("parser/_schema_documents.py", "source_context"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._resolve_asyncapi_ref"),
+            Home("parser/openapi.py", "OpenAPIParser._process_path_items"),
+            Home("parser/_schema_documents.py", "base_path_context"),
+            Home("parser/_schema_refs.py", "parse_ref_sites"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._asyncapi_context"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_common_part"),
+            Home("parser/openapi.py", "OpenAPIParser._get_discriminator_union_type"),
+            Home("parser/openapi.py", "OpenAPIParser._load_references_of_parameter_models"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5159,6 +7147,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_transform_single_model_to_inheritance`, `_InputModelDefinitions.normalize`, `_load_model_schema`; "
             "`parser/jsonschema.py:JsonSchemaParser._resolve_type_import_from_defs`"
         ),
+        sites=(
+            Home("parser/avro.py", "_AvroSchemaConverter._ref"),
+            Home("parser/protobuf.py", "_ProtobufDescriptorConverter._reference_schema"),
+            Home("parser/xmlschema.py", "_XMLSchemaConverter"),
+            Home("parser/xmlschema.py", "_XMLSchemaConverter._ref"),
+            Home("parser/xmlschema.py", "_XMLSchemaConverter._inherited_content_restriction"),
+            Home("parser/asyncapi.py", "_move_json_schema_definitions_to_components"),
+            Home("_json_schema.py", "_local_definition_ref_name"),
+            Home("_json_schema.py", "_rewrite_local_definition_ref"),
+            Home("input_model.py", "_transform_single_model_to_inheritance"),
+            Home("input_model.py", "_InputModelDefinitions.normalize"),
+            Home("input_model.py", "_load_model_schema"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._resolve_type_import_from_defs"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5175,6 +7177,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "integer); `parser/_intersection.py`: `intersect_types`, `common_types`; `_client/pagination.py:_fits`; "
             "left out: `_runtime/model_codecs/media.py`, which generated packages copy and which never imports the "
             "generator"
+        ),
+        sites=(
+            Home("parser/_schema_reading.py", "_numeric_type_domain"),
+            Home("parser/_inherited_schemas.py", "is_inherited_type_narrowing"),
+            Home("parser/_schema_validators.py", "_get_conditional_property_values"),
+            Home("parser/_intersection.py", "intersect_types"),
+            Home("parser/_intersection.py", "common_types"),
+            Home("_client/pagination.py", "_fits"),
+            Home("_runtime/model_codecs/media.py"),
         ),
     ),
     DecisionHome(
@@ -5199,6 +7210,25 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "parent's types (`parser/_inherited_schemas.py`), which read no order; `_client/pagination.py`, which "
             "keeps `null` where the value writes it"
         ),
+        sites=(
+            Home("parser/_schema_object.py", "JsonSchemaObject.has_multiple_types"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_data_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._build_constrained_type_union"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_array_union_non_array_types"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._should_skip_root_field_constraints_for_multiple_types"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._iter_non_object_union_types"),
+            Home("parser/_all_of_values.py", "_non_null_types"),
+            Home("parser/_all_of_values.py", "handle_allof_root_model_with_constraints"),
+            Home("parser/_all_of_values.py", "all_of_site_schema"),
+            Home("parser/_inherited_schemas.py", "merge_inherited_type_shape_dict"),
+            Home("parser/_intersection.py", "_Reconciler._type"),
+            Home("parser/_value_keywords.py", "extract_const_enum_from_combined"),
+            Home("parser/_value_keywords.py", "has_effective_constraints"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._has_shared_numeric_union_constraints"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_type_array_data_type"),
+            Home("parser/_schema_reading.py", "_object_map_other_types"),
+            Home("_client/pagination.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5216,6 +7246,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "members of a type list that take annotated aliases, but an object with `propertyNames` or "
             "`patternProperties`); left out: the members beside an object map that keep their constraints "
             "(`_get_constrained_data_type`, as `get_data_type` maps the members of a type list)"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._iter_non_object_union_types"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._add_array_union_non_array_types"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._build_constrained_type_union"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_constrained_data_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.get_data_type"),
         ),
     ),
     DecisionHome(
@@ -5238,6 +7275,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`collect_live_models`, `prepare_type_alias_fields`, `decide_nested_model_default_factories`; "
             "`parser/_passes/imports.py:remove_unused_models`"
         ),
+        sites=(
+            Home("parser/_passes/decide.py", "decide"),
+            Home("parser/_passes/modules.py", "name_inner_models_in_rules"),
+            Home("parser/_passes/modules.py", "write_rule_aliases_as_classes"),
+            Home("parser/_passes/render_prep.py", "collect_live_models"),
+            Home("parser/_passes/render_prep.py", "prepare_type_alias_fields"),
+            Home("parser/_passes/render_prep.py", "decide_nested_model_default_factories"),
+            Home("parser/_passes/imports.py", "remove_unused_models"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5250,6 +7296,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`_runtime/client/operations.py:_text` (a text response), `_runtime/client/raw.py:_Raw._text` (a raw "
             "response's text), `_runtime/client/multipart_responses.py:_typed_text` (a form-data part read as text)"
+        ),
+        sites=(
+            Home("_runtime/client/operations.py", "_text"),
+            Home("_runtime/client/raw.py", "_Raw._text"),
+            Home("_runtime/client/multipart_responses.py", "_typed_text"),
         ),
     ),
     DecisionHome(
@@ -5267,6 +7318,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_recommend/__init__.py:_read_input` (the `--url` input of `--recommend-options`), "
             "`parser/base.py:Parser._get_text_from_url` (a remote reference, through the parser's session and the "
             "remote text cache)"
+        ),
+        sites=(
+            Home("_generation.py", "_prepare_generation_input"),
+            Home("_recommend/__init__.py", "_read_input"),
+            Home("parser/base.py", "Parser._get_text_from_url"),
         ),
     ),
     DecisionHome(
@@ -5287,6 +7343,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "parent package attribute a failed formatter refresh puts back with `setattr` "
             "(`format.py:_restore_watch_package`)"
         ),
+        sites=(
+            Home("dynamic.py", "_execute_multi_module"),
+            Home("input_model.py", "_restore_path_module"),
+            Home("input_model.py", "_cwd_import_scope"),
+            Home("dynamic.py", "_execute_single_module"),
+            Home("format.py", "_restore_watch_package"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5299,6 +7362,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the walks of `input_model.py` over annotations: `_reached_classes`, `_imported_python_type_expr`, "
             "`_pydantic_generic_metadata`, `_native_generic_field_paths` and `_exported_runtime_symbol`; not routed: "
             "the checks that take any class (`isinstance(tp, type)` alone, for an enum, a model or a TypedDict)"
+        ),
+        sites=(
+            Home("input_model.py", "_reached_classes"),
+            Home("input_model.py", "_imported_python_type_expr"),
+            Home("input_model.py", "_pydantic_generic_metadata"),
+            Home("input_model.py", "_native_generic_field_paths"),
+            Home("input_model.py", "_exported_runtime_symbol"),
         ),
     ),
     DecisionHome(
@@ -5315,6 +7385,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_load_single_model_schema`); not routed: the models of a generated module (`dynamic.py`), which are "
             "classes already"
         ),
+        sites=(Home("dynamic.py"),),
     ),
     DecisionHome(
         decision=(
@@ -5336,6 +7407,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "msgspec Struct, for which Pydantic has no schema, and reads the classes with typed fields, so that an "
             "enum with a dataclass mixin loads as its dataclass does)"
         ),
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -5360,6 +7432,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "inheritance a load rewrites (`_partition_inherited_fields`, `_transform_single_model_to_inheritance`), "
             "which are Pydantic models already"
         ),
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -5381,6 +7454,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "specialization (`_has_annotated_generic_argument`, `_exported_generic_expression`) and the type "
             "expressions built over an annotation (`_preserved_python_type_expr`)"
         ),
+        sites=(Home("_graph.py", "reach"),),
     ),
     DecisionHome(
         decision=(
@@ -5394,6 +7468,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "reference (`named_document`); the file the parser reads for a `file:` reference "
             "(`parser/jsonschema.py:JsonSchemaParser._get_ref_body_from_url`) and the path of a schema resource's file "
             "URI (`parser/_schema_documents.py:resolve_schema_resource_ref`)"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_ref_body_from_url"),
+            Home("parser/_schema_documents.py", "resolve_schema_resource_ref"),
         ),
     ),
     DecisionHome(
@@ -5409,6 +7487,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "its fast path) and a JSON Schema printed on a fast path returns (`__main__.py:_print_json_schema`); not "
             "routed: the `sys.exit(0)` of the module-level fast paths of `__main__.py` (`--version`, `--help`, the "
             "prompt), which run before its import block"
+        ),
+        sites=(
+            Home("_target_cli.py", "run_target"),
+            Home("_target_cli.py", "_run"),
+            Home("_agent_skill_cli.py", "install_agent_skill_command"),
+            Home("__main__.py", "_print_json_schema"),
         ),
     ),
     DecisionHome(
@@ -5429,6 +7513,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/jsonschema.py:JsonSchemaParser.get_object_field`, "
             "`parser/_field_copies.py:_copy_resolved_inherited_field`)"
         ),
+        sites=(
+            Home("parser/_passes/_shared.py", "apply_inherited_field_default"),
+            Home("parser/_passes/_shared.py", "inherited_default_source"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.get_object_field"),
+            Home("parser/_field_copies.py", "_copy_resolved_inherited_field"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5444,6 +7534,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`parser/jsonschema.py:JsonSchemaParser._register_root_model_as`), which records each variant after "
             "preparing it"
         ),
+        sites=(Home("parser/jsonschema.py", "JsonSchemaParser._register_root_model_as"),),
     ),
     DecisionHome(
         decision=(
@@ -5457,6 +7548,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_inherited_schemas.py`, `_schema_validators.py`, `_value_keywords.py`, `jsonschema.py`), whose values "
             "the schema object has validated as strings; the types a schema declares to the recommender "
             "(`_recommend/_signals.py:_types`)"
+        ),
+        sites=(
+            Home("_recommend/_signals.py", "_types"),
+            Home("parser/_intersection.py"),
+            Home("parser/_all_of_values.py"),
+            Home("parser/_inherited_schemas.py"),
+            Home("parser/_schema_validators.py"),
+            Home("parser/_value_keywords.py"),
+            Home("parser/jsonschema.py"),
         ),
     ),
     DecisionHome(
@@ -5473,6 +7573,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`model/_render_plan.py:_package_class`), a built-in Pydantic v2 model (`model/pydantic_v2/version.py`) "
             "and the backend modules the inheritance check names (`parser/_inheritance_check.py`)"
         ),
+        sites=(
+            Home("parser/base.py", "Parser.__init__"),
+            Home("model/base.py", "_builtin_renderer"),
+            Home("model/_render_plan.py", "_package_class"),
+            Home("model/pydantic_v2/version.py"),
+            Home("parser/_inheritance_check.py"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5488,6 +7595,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "of a module, whose custom template directory is the first one among its models); left out: the Jinja "
             "template a custom directory selects (`DataModel.template`)"
         ),
+        sites=(Home("model/pydantic_v2/base_model.py", "BaseModel._render_core_schema_runtime_validation_helpers"),),
     ),
     DecisionHome(
         decision=(
@@ -5506,6 +7614,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "optional where the field it replaces is); not this rule: the import aliases a bound type takes later "
             "(`parser/_passes/_import_aliases.py:_alias_data_type_structured_imports` rewrites the type through the "
             "store)"
+        ),
+        sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._get_python_type_override"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.get_ref_data_type"),
+            Home("parser/_type_overrides.py", "override_annotation"),
+            Home("parser/_passes/_import_aliases.py", "_alias_data_type_structured_imports"),
         ),
     ),
     DecisionHome(
@@ -5526,6 +7640,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "each constructs the formatter itself and adds the settings path, the third-party packages and deferred "
             "formatting, and the formatter of a parse and of a client or server package also the formatter directory"
         ),
+        sites=(
+            Home("parser/base.py", "Parser._build_code_formatter"),
+            Home("_generation.py", "_format_deferred_output"),
+            Home("_api_generation.py", "_Planner.finish"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5540,6 +7659,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`generate()` and the parser config (`config.py:validate_schema_validator_base_class_name`, which raises "
             "`ValueError`); for the run's target, `Parser.__init__`, which raises `Error`"
         ),
+        sites=(Home("config.py", "validate_schema_validator_base_class_name"),),
     ),
     DecisionHome(
         decision=(
@@ -5553,6 +7673,15 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "it refuses (`__main__.py`), the references the resolver fetches (`reference.py:ModelResolver`) and the "
             "parsers' remote references (`parser/_schema_documents.py`, `_schema_object.py`, `_schema_refs.py`, "
             "`jsonschema.py`, `openapi.py`, `asyncapi.py`)"
+        ),
+        sites=(
+            Home("reference.py", "ModelResolver"),
+            Home("__main__.py"),
+            Home("parser/_schema_documents.py"),
+            Home("parser/_schema_object.py"),
+            Home("parser/_schema_refs.py"),
+            Home("parser/jsonschema.py"),
+            Home("parser/asyncapi.py"),
         ),
     ),
     DecisionHome(
@@ -5570,6 +7699,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "overrides) and the inherited placeholders a pass replaces "
             "(`parser/_passes/_shared.py:override_required_field`); not this rule: an override whose own field defers "
             "the inherited default, which takes the inherited field's"
+        ),
+        sites=(
+            Home("parser/_rw_split.py", "merge_inherited_field_overrides"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_common_part"),
+            Home("parser/_passes/_shared.py", "override_required_field"),
         ),
     ),
     DecisionHome(
@@ -5606,6 +7740,20 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`_recommend/_signals.py:_dialect`); the version the AsyncAPI client reads channels by and the OpenAPI "
             "client's root version (`_target_binding.py:_recorded_version`)"
         ),
+        sites=(
+            Home("parser/_schema_documents.py", "record_document_dialect"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._read_dialect"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.schema_features"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._ref_sibling_keywords_enabled"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._ref_siblings_are_parts"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._features_at"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._ref_siblings_apply_to"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._dialect_at"),
+            Home("parser/_schema_object.py", "JsonSchemaObject.read_ref_alone_where_its_siblings_are_ignored"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._ignores_ref_siblings_at"),
+            Home("_recommend/_signals.py", "_dialect"),
+            Home("_target_binding.py", "_recorded_version"),
+        ),
     ),
     DecisionHome(
         decision="which fields of an AsyncAPI 2 channel hold an operation, in order: `publish`, then `subscribe`",
@@ -5617,6 +7765,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`_recommend/_signals.py`: `_message_schemas`, `_count_operations`), and the AsyncAPI client's reading of "
             "a channel's messages (`_asyncapi_connections.py:_Reader.v2_messages`); not this rule: the AsyncAPI 3 "
             "`operations` map, which the recommender counts by its keys"
+        ),
+        sites=(
+            Home("parser/asyncapi.py", "AsyncAPIParser._iter_channel_schemas"),
+            Home("_recommend/_signals.py", "_message_schemas"),
+            Home("_recommend/_signals.py", "_count_operations"),
+            Home("_asyncapi_connections.py", "_Reader.v2_messages"),
         ),
     ),
     DecisionHome(
@@ -5630,6 +7784,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the parse of generation (`parser/_passes/settle.py:parse_raw`) and the signals of the recommender "
             "(`_recommend/__init__.py:_measure`)"
+        ),
+        sites=(
+            Home("parser/_passes/settle.py", "parse_raw"),
+            Home("_recommend/__init__.py", "_measure"),
         ),
     ),
     DecisionHome(
@@ -5645,6 +7803,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "operation, a content parameter) and the raw media reader (`OpenAPIParser._get_raw_media_schema`: the "
             "request-bodies scope and the API walk of `parser/openapi_scope.py`)"
         ),
+        sites=(Home("parser/openapi_scope.py"),),
     ),
     DecisionHome(
         decision=(
@@ -5656,6 +7815,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(Home("_document_reader.py", "is_multi_format_schema_object"),),
         core="`_document_reader.py:is_multi_format_schema_object`",
         adapters="the schema and format a wrapper holds (`_document_reader.py:held_schema`)",
+        sites=(Home("_document_reader.py", "held_schema"),),
     ),
     DecisionHome(
         decision=(
@@ -5673,6 +7833,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "headers of its messages), and the `schemaFormat` of the payload a client codes "
             "(`_asyncapi_connections.py:_Reader.message`; where its schema is, the walk records)"
         ),
+        sites=(
+            Home("parser/asyncapi.py", "AsyncAPIParser._iter_schema_format_schemas"),
+            Home("parser/asyncapi.py", "_check_multi_format_schema_object"),
+            Home("_recommend/_signals.py", "_unwrap"),
+            Home("_asyncapi_connections.py", "_Reader.message"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5688,6 +7854,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the HTTP bindings by `_bound` and for the merged fields by `_traited`) and the merged message headers of "
             "`--merge-message-trait-headers` (`parser/asyncapi.py:AsyncAPIParser._message_headers`)"
         ),
+        sites=(
+            Home("_asyncapi_connections.py", "_layers"),
+            Home("_asyncapi_connections.py", "_bound"),
+            Home("_asyncapi_connections.py", "_traited"),
+            Home("parser/asyncapi.py", "AsyncAPIParser._message_headers"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5700,6 +7872,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the kind of a `schemaFormat` (`parser/asyncapi.py:schema_format_kind`) and the essence of a client "
             "message's `contentType` (`_asyncapi_connections.py:_media`, `_streams`)"
+        ),
+        sites=(
+            Home("parser/asyncapi.py", "schema_format_kind"),
+            Home("_asyncapi_connections.py", "_media"),
+            Home("_asyncapi_connections.py", "_streams"),
         ),
     ),
     DecisionHome(
@@ -5716,6 +7893,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "converts (`_recommend/_signals.py:_unwrap`), and for a client the format of a message's payload, whose "
             "kind is coded only where generation reads its schema in place (`_asyncapi_connections.py:_CODED_FORMATS`)"
         ),
+        sites=(
+            Home("parser/asyncapi.py", "AsyncAPIParser._iter_schema_format_schemas"),
+            Home("_recommend/_signals.py", "_unwrap"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5730,6 +7911,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "request-bodies scope and the API walk of `parser/openapi_scope.py` read); not routed: "
             "`_acquire_item_schema` of `parser/openapi_scope.py` and `_target_binding.py`, which project the stream "
             "array over a generated item declaration"
+        ),
+        sites=(
+            Home("parser/openapi.py", "OpenAPIParser._array_schema_from_media_item_schema"),
+            Home("parser/openapi.py", "OpenAPIParser._get_media_schema"),
+            Home("parser/openapi.py", "OpenAPIParser._get_raw_media_schema"),
+            Home("parser/openapi_scope.py"),
+            Home("_target_binding.py"),
         ),
     ),
     DecisionHome(
@@ -5746,6 +7934,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`OpenAPIParser.parse_responses`) of an operation; not routed: the content of a parameter "
             "(`OpenAPIParser.parse_all_parameters`), which takes the schema as the field's own and parses it as an item"
         ),
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -5758,6 +7947,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/openapi_scope.py`: `ApiDeclarationFrame.projection`, `ApiOpenAPIParser._schema_frame`; "
             "`_target_contract.py:TypeUseId.projection`; `_target_binding.py` (the acquisitions and schema uses by "
             "location)"
+        ),
+        sites=(
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._schema_frame"),
+            Home("_target_binding.py"),
         ),
     ),
     DecisionHome(
@@ -5776,6 +7969,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`TargetApiOpenAPIParser._schema_record`, and the role of each use by location); not this rule: "
             "`_json_schema.py:SchemaRole`, what a subschema keyword does"
         ),
+        sites=(
+            Home("parser/openapi_scope.py", "ApiOpenAPIParser._schema_frame"),
+            Home("_target_binding.py", "TargetApiOpenAPIParser._schema_record"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5790,6 +7987,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_discriminator_mapping_ref`; AsyncAPI inherits them) and the document a FastAPI server serves "
             "(`_fastapi/source_document.py:SourceDocument.discriminator_target`, which keeps the name of the component "
             "a schema name takes there)"
+        ),
+        sites=(
+            Home("parser/openapi.py", "OpenAPIParser._normalize_discriminator"),
+            Home("parser/openapi.py", "OpenAPIParser._discriminator_mapping_ref"),
+            Home("_fastapi/source_document.py", "SourceDocument.discriminator_target"),
         ),
     ),
     DecisionHome(
@@ -5808,6 +8010,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "not this rule: a config given to `generate()` without a project file, whose documents resolve against the "
             "caller's working directory"
         ),
+        sites=(
+            Home("_target_cli.py", "_base"),
+            Home("_target_selection.py", "target_of"),
+            Home("_project_config.py", "load_pyproject_config"),
+            Home("_target_selection.py", "generate_selected_target"),
+        ),
     ),
     DecisionHome(
         decision=(
@@ -5821,6 +8029,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "report (`_target_json`, a `GeneratedTargetPayload`, which adds the README, the entrypoint, the "
             "implementations and the usage)"
         ),
+        sites=(),
     ),
     DecisionHome(
         decision=(
@@ -5837,6 +8046,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "option gives), and the `generate()` field the playground names for an option "
             "(`scripts/build_playground_assets.py`: `config_dest`)"
         ),
+        sites=(
+            Home("_project_config.py", "load_pyproject_config"),
+            Home("__main__.py", "_generation_config"),
+        ),
     ),
     DecisionHome(
         decision="whether a `--url` input allows the remote references it names: an unset `--allow-remote-refs` is on",
@@ -5845,6 +8058,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "the command-line run (`__main__.py:_run_config`) and the trial configurations of `--recommend-options` "
             "(`__main__.py:_recommend_generation_config`)"
+        ),
+        sites=(
+            Home("__main__.py", "_run_config"),
+            Home("__main__.py", "_recommend_generation_config"),
         ),
     ),
     DecisionHome(
@@ -5868,6 +8085,17 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "outside `_recommend/`, as importing the report would run the recommender's modules (13% of printing the "
             "JSON Schema of the structured output); left out: the modes the argument parser accepts "
             "(`_option_table.py:_recommend_mode`, which keeps its own copy)"
+        ),
+        sites=(
+            Home("_structured_output.py", "RecommendInputPayload"),
+            Home("_structured_output.py", "RecommendOptionsPayload"),
+            Home("_structured_output.py", "RecommendCandidatePayload"),
+            Home("_structured_output.py", "RecommendOptionPayload"),
+            Home("_structured_output.py", "RecommendDisagreementPayload"),
+            Home("_option_table.py", "_recommend_mode"),
+            Home("_recommend/__init__.py"),
+            Home("_recommend/_rules.py"),
+            Home("_recommend/_trial.py"),
         ),
     ),
 )

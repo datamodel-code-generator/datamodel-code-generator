@@ -12,7 +12,7 @@ null	main/main_general/a_deep_copied_type_keeps_what_its_site_recorded[null].war
 [test_a_deep_copied_union_leaves_out_what_its_members_hold]
 	main/main_general/a_deep_copied_union_leaves_out_what_its_members_hold.txt
 [test_all_exports_collision_resolved_successfully]
-	main/openapi/all_exports_collision_success//*.py
+	main/main_general/all_exports_collision_resolved_successfully/
 [test_all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name]
 equal-prefixes-added	main/main_general/all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name[equal-prefixes-added]/
 equal-prefixes-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name[equal-prefixes-kept]/	= main/main_general/all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name[equal-prefixes-added]/
@@ -21,23 +21,23 @@ full-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_take
 minimal-added	main/main_general/all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name[minimal-added]/	= main/main_general/all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name[full-added]/
 minimal-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name[minimal-kept]/	= main/main_general/all_exports_export_displaced_by_a_prefixed_name_takes_the_next_free_name[full-added]/
 [test_all_exports_scope_children]
-	main/openapi/modular_all_exports_children//*.py
+	main/main_general/all_exports_scope_children/
 [test_all_exports_scope_children_jsonschema_hyphenated_package]
-	main/jsonschema/all_exports_hyphenated_directory//*.py
+	main/main_general/all_exports_scope_children_jsonschema_hyphenated_package/
 [test_all_exports_scope_children_no_child_exports]
-	main/openapi/all_exports_no_child//*.py
+	main/main_general/all_exports_scope_children_no_child_exports/
 [test_all_exports_scope_children_with_docstring_header]
-	main/openapi/modular_all_exports_children_docstring//*.py
+	main/main_general/all_exports_scope_children_with_docstring_header/
 [test_all_exports_scope_children_with_local_models]
-	main/openapi/all_exports_with_local_models//*.py
+	main/main_general/all_exports_scope_children_with_local_models/
 [test_all_exports_scope_recursive_collision_avoided_by_renaming]
-	main/openapi/all_exports_scope_recursive_collision_avoided_by_renaming//*.py	= main/openapi/modular_all_exports_children//*.py
+	main/main_general/all_exports_scope_recursive_collision_avoided_by_renaming/	= main/main_general/all_exports_scope_children/
 [test_all_exports_scope_recursive_jsonschema_multi_file]
-	main/jsonschema/all_exports_multi_file//*.py
+	main/main_general/all_exports_scope_recursive_jsonschema_multi_file/	= main/jsonschema/all_exports_multi_file//*.py
 [test_all_exports_scope_recursive_with_collision]
-	main/openapi/modular_all_exports_recursive//*.py	= main/openapi/modular_all_exports_children//*.py
+	main/main_general/all_exports_scope_recursive_with_collision/	= main/main_general/all_exports_scope_children/
 [test_all_exports_scope_recursive_with_full_prefix]
-	main/openapi/modular_all_exports_recursive_full_prefix//*.py	= main/openapi/modular_all_exports_children//*.py
+	main/main_general/all_exports_scope_recursive_with_full_prefix/	= main/main_general/all_exports_scope_children/
 [test_builtin_preset_formatter_selection]
 20260909-practical-310-formatters15	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20260909-practical-310-formatters15	main/formatter_policy/practical-310-builtin.py	= main/formatter_policy/practical-310-black.py
@@ -840,7 +840,7 @@ utf-8-\n-True	main/jsonschema/path_list_inputs_api//*.py
 [test_generate_builtin_string_normalization_matches_fixture]
 	main/main_general/generate_builtin_string_normalization_matches_fixture.py	= main/jsonschema/person_use_double_quotes.py
 [test_generate_builtin_string_normalization_module_split]
-	main/jsonschema/module_split_single//*.py
+	main/main_general/generate_builtin_string_normalization_module_split/
 [test_generate_builtin_template_data_is_non_executing]
 	main/template_data/api_builtin_config.py
 [test_generate_cli_command_with_false_boolean]
@@ -902,11 +902,12 @@ replace	main/main_general/generate_custom_file_header_line_breaks_end_as_file_li
 [test_generate_parent_scoped_naming_backward_compat]
 	main/generate_parent_scoped_naming_backward_compat.py
 [test_generate_path_lists_keep_caller_or_common_base]
-	main/jsonschema/multiple_files//*.py
 	main/jsonschema/path_list_inputs//*.py
 	main/jsonschema/path_list_inputs_api//*.py
 	main/jsonschema/path_list_single//*.py
-	main/jsonschema/path_list_single/file_b.py
+	main/main_general/generate_path_lists_keep_caller_or_common_base.2.py
+	main/main_general/generate_path_lists_keep_caller_or_common_base.3/	= main/jsonschema/main_jsonschema/multiple_files/
+	main/main_general/generate_path_lists_keep_caller_or_common_base.py	= main/main_general/generate_path_lists_keep_caller_or_common_base.2.py
 [test_generate_pyproject_config_json_mapping_option_preserves_value]
 	main/generate_pyproject_config/json_mapping_option.txt
 [test_generate_resolves_relative_custom_template_dir_from_caller_cwd]
@@ -1109,7 +1110,7 @@ off	main/main_general/module_imports_written_outside_the_import_ledger[off].txt
 report	main/main_general/module_imports_written_outside_the_import_ledger[report].report.txt
 report	main/main_general/module_imports_written_outside_the_import_ledger[report].txt	= main/main_general/module_imports_written_outside_the_import_ledger[off].txt
 [test_module_split_mode_single]
-	main/jsonschema/module_split_single//*.py
+	main/main_general/module_split_mode_single/	= main/main_general/generate_builtin_string_normalization_module_split/
 [test_msgspec_constraints_on_a_graphql_scalar]
 	main/main_general/msgspec_constraints_on_a_graphql_scalar.txt
 [test_no_use_type_checking_imports]
@@ -1198,7 +1199,7 @@ off	main/main_general/render_plan_whose_field_changes_after_render_preparation[o
 report	main/main_general/render_plan_whose_field_changes_after_render_preparation[report].report.txt
 report	main/main_general/render_plan_whose_field_changes_after_render_preparation[report].txt	= main/main_general/render_plan_whose_field_changes_after_render_preparation[off].txt
 [test_ruff_batch_formatting_directory]
-	main/jsonschema/all_exports_multi_file_ruff//*.py
+	main/main_general/ruff_batch_formatting_directory/
 [test_ruff_check_and_format_combined]
 	main/main_general/ruff_check_and_format_combined.py	= main/jsonschema/simple_string.py
 [test_ruff_check_only]

@@ -1,0 +1,20 @@
+verdict problems: none
+undeclared questions: none
+imports/modules_in_written_order: modules_in_written_order/__init__.py:<module>:6: calls modules_in_written_order/views.py:show
+references/a6_lazy_exports: a6_lazy_exports/_values.py:<module>:20: calls a6_lazy_exports/_lazy_exports.py:module_hooks
+references/a6_lazy_exports: a6_lazy_exports/table.py:<module>:43: calls a6_lazy_exports/_lazy_exports.py:module_hooks
+references/a6_lazy_exports: a6_lazy_exports/table.py:<module>:46: calls a6_lazy_exports/_values.py:Base
+references/a6_lazy_exports: a6_lazy_exports/table.py:<module>:51: calls a6_lazy_exports/_values.py:Base
+references/a6_lazy_exports: a6_lazy_exports/table.py:_load_class:15: calls a6_lazy_exports/_values.py:Base
+references/a6_lazy_exports: a6_lazy_exports/table.py:<module>:48: calls a6_lazy_exports/_values.py:Other
+references/a6_lazy_exports: a6_lazy_exports/table.py:<module>:51: calls a6_lazy_exports/_values.py:Other
+references/a6_lazy_exports: a6_lazy_exports/table.py:<module>:56: calls a6_lazy_exports/_values.py:Other
+references/posix_only_across_modules: posix_only_across_modules/cases.py:test_through_a_class:19: calls posix_only_across_modules/script.py:Runner
+references/posix_only_across_modules: posix_only_across_modules/cases.py:test_marked:36: calls posix_only_across_modules/script.py:main
+references/posix_only_across_modules: posix_only_across_modules/cases.py:test_through_a_from_import:15: calls posix_only_across_modules/script.py:main
+references/posix_only_across_modules: posix_only_across_modules/cases.py:test_through_the_module:11: calls posix_only_across_modules/script.py:main
+references/posix_only_across_modules: posix_only_across_modules/cases.py:test_portable_function:27: calls posix_only_across_modules/script.py:portable
+references/posix_only_across_modules: posix_only_across_modules/cases.py:test_passed_on:23: calls posix_only_across_modules/script.py:run
+references/reexport_chain_across_modules: reexport_chain_across_modules/__init__.py:<module>:11: calls reexport_chain_across_modules/_format_types.py:LiteralType
+references/reexport_chain_across_modules: reexport_chain_across_modules/format.py:<module>:9: calls reexport_chain_across_modules/_format_types.py:LiteralType
+references/reexport_chain_across_modules: reexport_chain_across_modules/format.py:<module>:15: calls reexport_chain_across_modules/_format_types.py:LiteralType

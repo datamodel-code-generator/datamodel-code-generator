@@ -359,12 +359,11 @@ def test_main_openapi_discriminator_float_enum_use_enum_values(output_file: Path
 
 
 @pytest.mark.parametrize(
-    ("split_args", "expected_directory", "validation_module", "validation_data"),
+    ("split_args", "validation_module", "validation_data"),
     [
-        ([], "enum_use_enum_values_modules", "pets", {"kind": "cat", "purr": "soft"}),
+        ([], "pets", {"kind": "cat", "purr": "soft"}),
         (
             ["--module-split-mode", "single"],
-            "enum_use_enum_values_module_split",
             "pets.pet",
             {"kind": "dog", "bark": "woof"},
         ),
@@ -372,7 +371,6 @@ def test_main_openapi_discriminator_float_enum_use_enum_values(output_file: Path
 )
 def test_main_openapi_discriminator_enum_use_enum_values_across_modules(
     split_args: list[str],
-    expected_directory: str,
     validation_module: str,
     validation_data: dict[str, str],
     output_dir: Path,
@@ -382,7 +380,6 @@ def test_main_openapi_discriminator_enum_use_enum_values_across_modules(
         input_path=OPEN_API_DATA_PATH / "discriminator_enum_modules.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "discriminator" / expected_directory,
         extra_args=[
             "--target-python-version",
             "3.10",
@@ -1000,12 +997,10 @@ def test_main_openapi_discriminator_reuse_tree_mappings(output_dir: Path, name: 
     The wrappers render alike and reference unions that render alike, so tree-scope reuse compares the tags the
     discriminators of the unions they reference give each variant as well, whatever schemas their mappings name.
     """
-    expected = EXPECTED_OPENAPI_PATH / name
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=expected,
         extra_args=[
             "--reuse-model",
             "--reuse-scope",
@@ -1517,7 +1512,6 @@ def test_main_openapi_msgspec_tagged_unions_modules(name: str, output_dir: Path)
         input_path=OPEN_API_DATA_PATH / f"discriminator_{name}.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "discriminator" / name,
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -1536,7 +1530,6 @@ def test_main_openapi_msgspec_tagged_base_subclass_modules(output_dir: Path) -> 
         input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_base_subclass_modules.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_base_subclass_modules",
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
@@ -1556,14 +1549,12 @@ def test_main_openapi_msgspec_tagged_base_redefined_field(output_dir: Path) -> N
     import msgspec
 
     name = "discriminator_msgspec_tagged_base_redefined_field"
-    expected = EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_base_redefined_field"
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
             output_path=output_dir,
             input_file_type="openapi",
-            expected_directory=expected,
             extra_args=[
                 "--output-model-type",
                 "msgspec.Struct",
@@ -1985,7 +1976,6 @@ def test_main_openapi_discriminator_state_isolated_per_document(output_dir: Path
         input_path=OPEN_API_DATA_PATH / "discriminator_state_isolation",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "discriminator_state_isolation",
         extra_args=["--disable-timestamp"],
         runtime_validation_module="b",
         runtime_validation_model_name="Holder",
@@ -2174,7 +2164,6 @@ def test_main_modular(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "modular.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "modular",
         )
 
 
@@ -2184,7 +2173,6 @@ def test_main_modular_reuse_model(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "modular.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "modular_reuse_model",
             extra_args=["--reuse-model"],
         )
 
@@ -2214,7 +2202,6 @@ def test_main_modular_allof_inheritance_import_override(output_dir: Path) -> Non
         output_path=output_dir,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--import-overrides", '{"D": "external.models"}'],
-        expected_directory=EXPECTED_OPENAPI_PATH / "allof_inheritance_modular_import_override",
         skip_code_validation=True,
     )
 
@@ -2580,41 +2567,33 @@ def test_main_usable_discriminator_invalid_dotted_models_stdout(capsys: pytest.C
 
 @pytest.mark.isolate_builtin_formatter_config
 @pytest.mark.parametrize(
-    ("expected_name", "extra_args"),
+    "extra_args",
     [
-        ("pydantic_v2.BaseModel", []),
-        ("pydantic_v2.dataclass", ["--output-model-type", "pydantic_v2.dataclass"]),
-        ("dataclasses.dataclass", ["--output-model-type", "dataclasses.dataclass"]),
+        [],
+        ["--output-model-type", "pydantic_v2.dataclass"],
+        ["--output-model-type", "dataclasses.dataclass"],
         pytest.param(
-            "msgspec.Struct",
             ["--output-model-type", "msgspec.Struct"],
             marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the discriminated union PetOwner.pet"),
         ),
-        ("reuse_scope_tree", ["--reuse-scope", "tree"]),
-        (
-            "additional_imports",
-            [
-                "--additional-imports",
-                "tests.data.python.x_python_type_symbols.Literal_aliased",
-                "--class-decorators",
-                "Literal_aliased",
-            ],
-        ),
+        ["--reuse-scope", "tree"],
+        [
+            "--additional-imports",
+            "tests.data.python.x_python_type_symbols.Literal_aliased",
+            "--class-decorators",
+            "Literal_aliased",
+        ],
     ],
 )
-def test_main_usable_discriminator_invalid_dotted_models_reuse(
-    output_dir: Path, expected_name: str, extra_args: list[str]
-) -> None:
+def test_main_usable_discriminator_invalid_dotted_models_reuse(output_dir: Path, extra_args: list[str]) -> None:
     """Keep a model named Literal when the tags that reused variants get import typing.Literal, under an alias.
 
     The alias takes no name that an additional import binds or a class decorator names.
     """
-    expected = EXPECTED_OPENAPI_PATH / "usable_discriminator_invalid_dotted_models_reuse"
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "usable_discriminator_invalid_dotted_models.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=expected / expected_name,
         extra_args=[
             "--reuse-model",
             *extra_args,
@@ -2748,7 +2727,6 @@ def test_main_invalid_dotted_schema_name_default_directory(output_dir: Path) -> 
             input_path=OPEN_API_DATA_PATH / "invalid_dotted_schema_name.yaml",
             output_path=output_dir,
             input_file_type="openapi",
-            expected_directory=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_default",
             importable_module_name="generated_invalid_dotted_name",
             importable_module_file="__init__.py",
         )
@@ -2785,7 +2763,6 @@ def test_main_strict_dotted_module_names_explicit_module(output_dir: Path) -> No
             input_path=OPEN_API_DATA_PATH / "invalid_dotted_schema_name.yaml",
             output_path=output_dir,
             input_file_type="openapi",
-            expected_directory=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_default",
             extra_args=["--strict-dotted-module-names", "--treat-dot-as-module"],
         )
 
@@ -2808,7 +2785,6 @@ def test_main_strict_dotted_module_names_keeps_valid_modules(output_dir: Path) -
             input_path=OPEN_API_DATA_PATH / "modular.yaml",
             output_path=output_dir,
             input_file_type="openapi",
-            expected_directory=EXPECTED_OPENAPI_PATH / "modular",
             extra_args=["--strict-dotted-module-names"],
         )
 
@@ -2820,7 +2796,6 @@ def test_main_no_strict_dotted_module_names_overrides_pyproject(output_dir: Path
             input_path=OPEN_API_DATA_PATH / "invalid_dotted_schema_name.yaml",
             output_path=output_dir,
             input_file_type="openapi",
-            expected_directory=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_default",
             extra_args=["--no-strict-dotted-module-names"],
             copy_files=[
                 (
@@ -4412,7 +4387,6 @@ def test_main_use_standard_collections(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "modular.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "use_standard_collections",
             extra_args=["--use-standard-collections"],
         )
 
@@ -4424,7 +4398,6 @@ def test_main_use_generic_container_types(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "modular.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "use_generic_container_types",
             extra_args=["--use-generic-container-types"],
         )
 
@@ -4439,7 +4412,6 @@ def test_main_use_generic_container_types_standard_collections(
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "modular.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "use_generic_container_types_standard_collections",
             extra_args=["--use-generic-container-types", "--use-standard-collections"],
         )
 
@@ -5088,24 +5060,21 @@ def test_main_openapi_nullable_map_value_types_parameters_scope(output_file: Pat
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_directory"),
+    "output_model_type",
     [
-        pytest.param(DataModelType.PydanticV2BaseModel.value, "pydantic_v2", id="pydantic-v2"),
-        pytest.param(DataModelType.PydanticV2Dataclass.value, "pydantic_v2_dataclass", id="pydantic-v2-dataclass"),
-        pytest.param(DataModelType.DataclassesDataclass.value, "dataclass", id="dataclass"),
-        pytest.param(DataModelType.TypingTypedDict.value, "typed_dict", id="typed-dict"),
-        pytest.param(DataModelType.MsgspecStruct.value, "msgspec", id="msgspec"),
+        pytest.param(DataModelType.PydanticV2BaseModel.value, id="pydantic-v2"),
+        pytest.param(DataModelType.PydanticV2Dataclass.value, id="pydantic-v2-dataclass"),
+        pytest.param(DataModelType.DataclassesDataclass.value, id="dataclass"),
+        pytest.param(DataModelType.TypingTypedDict.value, id="typed-dict"),
+        pytest.param(DataModelType.MsgspecStruct.value, id="msgspec"),
     ],
 )
-def test_main_openapi_nullable_map_value_names(
-    output_dir: Path, output_model_type: str, expected_directory: str
-) -> None:
+def test_main_openapi_nullable_map_value_names(output_dir: Path, output_model_type: str) -> None:
     """Keep the names of nullable maps and of later models, and name the map value models after them."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "nullable_map_value_names.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_value_names" / expected_directory,
         extra_args=[
             "--output-model-type",
             output_model_type,
@@ -5143,7 +5112,6 @@ def test_main_openapi_nullable_map_value_layout_modules(output_dir: Path) -> Non
         input_path=OPEN_API_DATA_PATH / "nullable_map_value_layout.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_value_layout" / "modules",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -5262,21 +5230,18 @@ def test_main_openapi_nullable_map_value_reuse_model(output_file: Path, reuse_ar
 
 
 @pytest.mark.parametrize(
-    ("reuse_args", "expected_name"),
+    "reuse_args",
     [
-        pytest.param(["--reuse-model"], "reuse_model", id="reuse-model"),
-        pytest.param(["--reuse-model", "--collapse-reuse-models"], "collapse_reuse_models", id="collapse-reuse-models"),
+        pytest.param(["--reuse-model"], id="reuse-model"),
+        pytest.param(["--reuse-model", "--collapse-reuse-models"], id="collapse-reuse-models"),
     ],
 )
-def test_main_openapi_nullable_map_value_reuse_across_modules(
-    output_dir: Path, reuse_args: list[str], expected_name: str
-) -> None:
+def test_main_openapi_nullable_map_value_reuse_across_modules(output_dir: Path, reuse_args: list[str]) -> None:
     """Keep a map value that a module written earlier names, which a collapsed root model's field does."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "nullable_map_value_reuse_modules.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_value_reuse_modules" / expected_name,
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -5297,7 +5262,6 @@ def test_main_openapi_nullable_map_value_import_cycle(output_dir: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "nullable_map_value_cycle.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_value_cycle" / "pydantic_v2",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -5318,7 +5282,6 @@ def test_main_openapi_nullable_map_value_import_cycle_warnings(output_dir: Path)
             input_path=OPEN_API_DATA_PATH / "nullable_map_value_cycle.yaml",
             output_path=output_dir,
             input_file_type="openapi",
-            expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_value_cycle" / "pydantic_v2_dataclass",
             extra_args=[
                 "--output-model-type",
                 DataModelType.PydanticV2Dataclass.value,
@@ -5382,7 +5345,6 @@ def test_main_openapi_nullable_map_value_module_names(output_dir: Path) -> None:
         input_path=OPEN_API_DATA_PATH / "nullable_map_value_module_names.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_value_module_names",
         extra_args=[
             "--output-model-type",
             DataModelType.PydanticV2BaseModel.value,
@@ -5871,31 +5833,28 @@ def test_main_openapi_nullable_map_values_untyped(output_file: Path, input_file:
 
 
 @pytest.mark.parametrize(
-    ("input_file", "extra_args", "expected_directory"),
+    ("input_file", "extra_args"),
     [
-        pytest.param("nullable_map_value_cycle_reuse.yaml", ["--reuse-model"], "cycle_reuse", id="cycle-reuse"),
+        pytest.param("nullable_map_value_cycle_reuse.yaml", ["--reuse-model"], id="cycle-reuse"),
         pytest.param(
             "nullable_map_value_cycle_reuse.yaml",
             ["--reuse-model", "--collapse-reuse-models"],
-            "cycle_reuse_collapse_reuse_models",
             id="cycle-reuse-collapse-reuse-models",
         ),
         pytest.param(
             "nullable_map_value_layout.yaml",
             ["--output-model-type", DataModelType.TypingTypedDict.value, "--reuse-model"],
-            "layout_typed_dict_reuse_model",
             id="layout-typed-dict-reuse-model",
         ),
         pytest.param(
             "nullable_map_value_cycle.yaml",
             ["--collapse-root-models", "--reuse-model", "--reuse-scope", "tree"],
-            "cycle_collapse_root_models_reuse_tree",
             id="cycle-collapse-root-models-reuse-tree",
         ),
     ],
 )
 def test_main_openapi_nullable_map_values_untyped_modules(
-    output_dir: Path, input_file: str, extra_args: list[str], expected_directory: str
+    output_dir: Path, input_file: str, extra_args: list[str]
 ) -> None:
     """Keep the 0.83.0 modules and models of nullable maps without --use-typed-nullable-map-values.
 
@@ -5905,7 +5864,6 @@ def test_main_openapi_nullable_map_values_untyped_modules(
         input_path=OPEN_API_DATA_PATH / input_file,
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_untyped" / expected_directory,
         extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
     )
 
@@ -5927,7 +5885,6 @@ def test_main_openapi_nullable_map_values_untyped_parameter_layout(output_dir: P
         input_path=OPEN_API_DATA_PATH / "nullable_map_value_parameter_layout.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_untyped" / "parameter_layout",
         extra_args=[
             "--openapi-scopes",
             "paths",
@@ -5943,31 +5900,28 @@ def test_main_openapi_nullable_map_values_untyped_parameter_layout(output_dir: P
 
 
 @pytest.mark.parametrize(
-    ("input_file", "output_model_type", "expected_directory"),
+    ("input_file", "output_model_type"),
     [
         pytest.param(
             "nullable_map_value_cycle_reuse.yaml",
             DataModelType.PydanticV2BaseModel.value,
-            "nullable_map_value_cycle_reuse/pydantic_v2",
             id="cycle-reuse",
         ),
         pytest.param(
             "nullable_map_value_layout.yaml",
             DataModelType.TypingTypedDict.value,
-            "nullable_map_value_layout/typed_dict_reuse_model",
             id="layout-typed-dict",
         ),
     ],
 )
 def test_main_openapi_nullable_map_value_import_cycle_reuse_model(
-    output_dir: Path, input_file: str, output_model_type: str, expected_directory: str
+    output_dir: Path, input_file: str, output_model_type: str
 ) -> None:
     """Re-export from an import cycle's internal module only the models reuse left there, so every module imports."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / input_file,
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / expected_directory,
         extra_args=[
             "--output-model-type",
             output_model_type,
@@ -6435,7 +6389,6 @@ def test_external_relative_ref(tmp_path: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "external_relative_ref" / "model_b",
             output_path=tmp_path,
-            expected_directory=EXPECTED_OPENAPI_PATH / "external_relative_ref",
         )
 
 
@@ -9504,24 +9457,17 @@ def test_main_openapi_discriminator_in_array_snake_case(output_file: Path) -> No
 
 
 @pytest.mark.parametrize(
-    ("output_model", "expected_output"),
+    "output_model",
     [
-        (
-            "pydantic_v2.BaseModel",
-            "pydantic_v2_default_object",
-        ),
-        (
-            "msgspec.Struct",
-            "msgspec_default_object",
-        ),
+        "pydantic_v2.BaseModel",
+        "msgspec.Struct",
     ],
 )
-def test_main_openapi_default_object(output_model: str, expected_output: str, tmp_path: Path) -> None:
+def test_main_openapi_default_object(output_model: str, tmp_path: Path) -> None:
     """Test OpenAPI generation with default object values."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "default_object.yaml",
         output_path=tmp_path,
-        expected_directory=EXPECTED_OPENAPI_PATH / expected_output,
         input_file_type="openapi",
         extra_args=["--output-model-type", output_model, "--target-python-version", "3.10"],
     )
@@ -9822,7 +9768,6 @@ def test_main_modular_typed_dict(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "modular.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "modular_typed_dict",
             extra_args=["--output-model-type", "typing.TypedDict", "--target-python-version", "3.11"],
         )
 
@@ -10126,7 +10071,6 @@ def test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2(output_di
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "serialize_as_any_module_import_alias" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "serialize_as_any_module_import_alias",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -12272,7 +12216,6 @@ def test_main_openapi_namespace_subns_ref(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "namespace_subns_ref.json",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "namespace_subns_ref",
         )
 
 
@@ -13304,7 +13247,6 @@ def test_main_openapi_dot_notation_inheritance(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "dot_notation_inheritance.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "dot_notation_inheritance",
         input_file_type="openapi",
     )
 
@@ -13355,24 +13297,20 @@ def test_main_openapi_all_exports_scope_package_cycle_output_model_types(
 
 
 @pytest.mark.parametrize(
-    ("expected_name", "extra_args"),
+    "extra_args",
     [
-        pytest.param("dot_notation_collapse_reuse_models", [], id="module"),
+        pytest.param([], id="module"),
         pytest.param(
-            "dot_notation_collapse_reuse_models_tree",
             ["--reuse-scope", "tree", "--use-type-alias"],
             id="tree-type-alias",
         ),
     ],
 )
-def test_main_openapi_dot_notation_collapse_reuse_models(
-    expected_name: str, extra_args: list[str], output_dir: Path
-) -> None:
+def test_main_openapi_dot_notation_collapse_reuse_models(extra_args: list[str], output_dir: Path) -> None:
     """Point users in other dotted modules at the kept model when a duplicate is collapsed within its module."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "dot_notation_collapse_reuse_models.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / expected_name,
         input_file_type="openapi",
         extra_args=[
             "--output-model-type",
@@ -13393,7 +13331,6 @@ def test_main_openapi_collapse_root_models_module_named_field(output_dir: Path) 
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "collapse_root_models_module_named_field.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "collapse_root_models_module_named_field",
         input_file_type="openapi",
         extra_args=[
             "--output-model-type",
@@ -13930,31 +13867,25 @@ def test_main_openapi_collapse_root_models_name_strategy_as_direct_reference(
     ],
 )
 @pytest.mark.parametrize(
-    ("input_file", "reuse_args", "expected_name"),
+    ("input_file", "reuse_args"),
     [
-        pytest.param(
-            "nullable_map_value_layout.yaml", ["--collapse-reuse-models"], "layout_collapse", id="layout-collapse"
-        ),
+        pytest.param("nullable_map_value_layout.yaml", ["--collapse-reuse-models"], id="layout-collapse"),
         pytest.param(
             "reuse_model_cross_module_users.yaml",
             ["--collapse-reuse-models"],
-            "modules_collapse",
             id="modules-collapse",
         ),
-        pytest.param("reuse_model_cross_module_users.yaml", [], "modules", id="modules"),
+        pytest.param("reuse_model_cross_module_users.yaml", [], id="modules"),
     ],
 )
 def test_main_openapi_reuse_model_cross_module_users(
-    input_file: str, reuse_args: list[str], expected_name: str, output_model_type: str, output_dir: Path
+    input_file: str, reuse_args: list[str], output_model_type: str, output_dir: Path
 ) -> None:
     """Point users in other modules, written before or after, at the kept model when reuse removes a duplicate."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / input_file,
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH
-        / "reuse_model_cross_module_users"
-        / f"{expected_name}_{output_model_type.partition('.')[0]}",
         extra_args=[
             "--output-model-type",
             output_model_type,
@@ -14132,7 +14063,6 @@ def test_main_openapi_dot_notation_deep_inheritance(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "dot_notation_deep_inheritance.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "dot_notation_deep_inheritance",
         input_file_type="openapi",
     )
 
@@ -14146,7 +14076,6 @@ def test_main_openapi_dot_notation_root_package_inheritance(output_dir: Path) ->
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "dot_notation_root_package_inheritance.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "dot_notation_root_package_inheritance",
         input_file_type="openapi",
         extra_args=["--disable-timestamp"],
         force_exec_validation=True,
@@ -14166,7 +14095,6 @@ def test_main_openapi_exact_imports_ancestor_package(output_dir: Path) -> None:
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "exact_imports_ancestor_package.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "exact_imports_ancestor_package",
         input_file_type="openapi",
         extra_args=[
             "--output-model-type",
@@ -14232,7 +14160,6 @@ def test_main_openapi_circular_imports_stripe_like(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_stripe_like.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_stripe_like",
             input_file_type="openapi",
         )
 
@@ -14243,7 +14170,6 @@ def test_main_openapi_circular_imports_acyclic(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_acyclic.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_acyclic",
             input_file_type="openapi",
         )
 
@@ -14254,7 +14180,6 @@ def test_main_openapi_circular_imports_class_conflict(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_class_conflict.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_class_conflict",
             input_file_type="openapi",
         )
 
@@ -14289,7 +14214,6 @@ def test_main_openapi_circular_imports_pattern_properties_ref(output_dir: Path) 
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "circular_imports_pattern_properties_ref.yaml",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_pattern_properties_ref",
         input_file_type="openapi",
         extra_args=[
             "--generate-schema-validators",
@@ -14312,7 +14236,6 @@ def test_main_openapi_circular_imports_with_inheritance(output_dir: Path) -> Non
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_with_inheritance.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_with_inheritance",
             input_file_type="openapi",
         )
 
@@ -14323,7 +14246,6 @@ def test_main_openapi_circular_imports_small_cycle(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_small_cycle.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_small_cycle",
             input_file_type="openapi",
         )
 
@@ -14334,7 +14256,6 @@ def test_main_openapi_circular_imports_different_prefixes(output_dir: Path) -> N
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_different_prefixes.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_different_prefixes",
             input_file_type="openapi",
         )
 
@@ -14345,7 +14266,6 @@ def test_main_openapi_circular_imports_mixed_prefixes(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "circular_imports_mixed_prefixes.yaml",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_mixed_prefixes",
             input_file_type="openapi",
         )
 
@@ -14400,7 +14320,6 @@ def test_main_openapi_module_class_name_collision_pydantic_v2(output_dir: Path) 
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14417,7 +14336,6 @@ def test_main_openapi_module_class_name_collision_deep_pydantic_v2(output_dir: P
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision_deep" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision_deep",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14434,7 +14352,6 @@ def test_main_openapi_module_class_name_collision_exact_imports_pydantic_v2(outp
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision_exact_imports",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14453,7 +14370,6 @@ def test_main_openapi_module_class_name_collision_deep_exact_imports_pydantic_v2
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "module_class_name_collision_deep" / "openapi.json",
         output_path=output_dir,
-        expected_directory=EXPECTED_OPENAPI_PATH / "module_class_name_collision_deep_exact_imports",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -14473,7 +14389,6 @@ def test_main_nested_package_enum_default(output_dir: Path) -> None:
         run_main_and_assert(
             input_path=OPEN_API_DATA_PATH / "nested_package_enum_default.json",
             output_path=output_dir,
-            expected_directory=EXPECTED_OPENAPI_PATH / "nested_package_enum_default",
             extra_args=[
                 "--output-model-type",
                 "dataclasses.dataclass",
@@ -16176,24 +16091,21 @@ def test_main_openapi_api_scope_parameter_type_aliases(
 
 
 @pytest.mark.parametrize(
-    ("expected_directory", "extra_args"),
+    "extra_args",
     [
-        ("default", []),
-        ("reuse_tree", ["--reuse-model", "--reuse-scope", "tree"]),
-        ("collapse_reuse_tree", ["--reuse-model", "--reuse-scope", "tree", "--collapse-reuse-models"]),
-        ("collapse", ["--collapse-root-models"]),
-        ("frozen_reuse", ["--reuse-model", "--enable-faux-immutability"]),
+        [],
+        ["--reuse-model", "--reuse-scope", "tree"],
+        ["--reuse-model", "--reuse-scope", "tree", "--collapse-reuse-models"],
+        ["--collapse-root-models"],
+        ["--reuse-model", "--enable-faux-immutability"],
     ],
 )
-def test_main_openapi_api_scope_parameter_type_aliases_modules(
-    output_dir: Path, expected_directory: str, extra_args: list[str]
-) -> None:
+def test_main_openapi_api_scope_parameter_type_aliases_modules(output_dir: Path, extra_args: list[str]) -> None:
     """Keep component root models while parameter schemas and their users follow the type alias form."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "api_scope_parameter_type_aliases_mixed.yaml",
         output_path=output_dir,
         input_file_type="openapi",
-        expected_directory=EXPECTED_OPENAPI_PATH / "api_scope_parameter_type_aliases_mixed" / expected_directory,
         extra_args=[
             "--openapi-scopes",
             "api",

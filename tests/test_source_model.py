@@ -35,10 +35,12 @@ from scripts import (
     legacy_row_reads,
     where,
 )
+from scripts.decision_homes import DecisionHome, Home
 from tests import expected_access
 from tests import test_assert_helper_usage as assert_helper_usage
 from tests import test_checks_are_run as checks_are_run
 from tests import test_ci_workflow as ci_workflow
+from tests import test_decision_homes as home_callers
 from tests import test_generated_import_closure as import_closure
 from tests import test_pre_commit_hooks as pre_commit_hooks
 from tests.checks.template_assignments import field_lines
@@ -1105,6 +1107,47 @@ def _public_api_record(form: Path) -> list[Finding]:
         ]
 
 
+def _decision_home_callers(form: Path) -> list[Finding]:
+    """Return the callers the decision-home guard finds when each module-level def or class of a form is a home.
+
+    The form keeps its layout under ``scripts/`` (as `_where_disagreements` places it), which stands as the package:
+    each module is a row of its own definitions with no adapter site, so a read of a definition from another module of
+    the form is a caller and one from its own module is none.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        root = Path(folder)
+        (root / "src" / where.PACKAGE).mkdir(parents=True)
+        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+            target = (
+                root
+                / "scripts"
+                / (form.name / path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+            )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        repo = where.Repo(root, where.Page([], [], [], []))
+        records = [
+            DecisionHome(
+                place,
+                homes=tuple(
+                    Home(place, scope.qualname)
+                    for scope in repo.model(path).scopes
+                    if scope.kind in where.DEFS and scope.parent is not None and scope.parent.kind == "module"
+                ),
+                core="",
+                adapters="",
+                sites=(),
+            )
+            for path in sorted(repo.names)
+            for place in [path.removeprefix("scripts/")]
+        ]
+        return [
+            Finding("caller", _site(form, module, caller.line), f"{caller.caller}:{caller.line}: calls {caller.home}")
+            for caller in home_callers.unlisted_callers(repo, records, "scripts/")
+            for module in [caller.caller.partition(":")[0]]
+        ]
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -1161,6 +1204,11 @@ RULES: dict[str, RuleRun] = {
     ),
     "rule-b": RuleRun(
         "scripts._behaviour_classify", frozenset({"bindings", "imports", "references"}), _rule_b_of_unparsed_text
+    ),
+    "decision-home-callers": RuleRun(
+        "tests.test_decision_homes",
+        frozenset({"bindings", "references", "imports", "extents"}),
+        _decision_home_callers,
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
