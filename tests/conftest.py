@@ -309,7 +309,7 @@ def pytest_configure(config: pytest.Config) -> None:
         "Either golden_output, version_outputs, model_outputs, or expected_stdout is required. "
         "aliases: list of alternative option names (e.g., ['--capitalise-enum-members']).",
     )
-    config._cli_doc_items: list[dict[str, Any]] = []
+    config.stash[CLI_DOC_ITEMS] = []
     ledger = config.stash[_LEDGER] = _Ledger(config)
     config.pluginmanager.register(_LedgerPlugin(ledger), "expected-ledger")
     config.pluginmanager.register(SlowTestOrdering(), "slow-test-ordering")
@@ -638,7 +638,7 @@ def pytest_collection_modifyitems(
         # Get option_description from marker kwargs (required field)
         option_description = marker.kwargs.get("option_description", "")
 
-        config._cli_doc_items.append({
+        config.stash[CLI_DOC_ITEMS].append({
             "node_id": item.nodeid,
             "marker_kwargs": _stored_cli_doc_paths(config, item, marker.kwargs) if collect_cli_docs else marker.kwargs,
             "option_description": option_description,
@@ -665,7 +665,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:  # n
     if not config.getoption("--collect-cli-docs"):
         return
 
-    items = getattr(config, "_cli_doc_items", [])
+    items = config.stash.get(CLI_DOC_ITEMS, [])
 
     output = {
         "schema_version": CLI_DOC_SCHEMA_VERSION,
@@ -709,7 +709,7 @@ _validation_stats = CodeValidationStats()
 def pytest_terminal_summary(terminalreporter: Any, exitstatus: int, config: pytest.Config) -> None:  # noqa: ARG001  # pragma: no cover
     """Print code validation and CLI doc collection summary at the end of test run."""
     if config.getoption("--collect-cli-docs", default=False):
-        items = getattr(config, "_cli_doc_items", [])
+        items = config.stash.get(CLI_DOC_ITEMS, [])
         terminalreporter.write_sep("=", "CLI Documentation Collection")
         terminalreporter.write_line(f"Collected {len(items)} CLI doc items -> {CLI_DOC_COLLECTION_OUTPUT}")
 
@@ -832,6 +832,7 @@ SIBLING_RERUN_SECONDS = 5.0
 _REFS_ITEM = "expected_refs"
 _CURRENT_ITEMS: list[pytest.Item] = []
 _LEDGER = pytest.StashKey["_Ledger"]()
+CLI_DOC_ITEMS = pytest.StashKey[list[dict[str, Any]]]()
 _UPDATE_CATEGORIES = frozenset({"create", "fix", "fix-assert", "trim", "update"})
 _PLATFORMS = ("linux", "darwin", "win32")
 
@@ -1369,9 +1370,10 @@ class _Ledger:
             verb = "which no longer exists" if len(nodeids) == 1 else "which no longer exist"
             return f"{refs} has lines for {names}, {verb}.\nFix: {command}"
         encoded = [self.encode({"item": nodeid, "stale": True}) for nodeid in nodeids]
+        printable = [payload for payload in encoded if payload is not None]
         fix = (
             [f"Fix: {self.apply_command(encoded)}", "It keeps them for the environments that have them, or drops them."]
-            if None not in encoded and sum(map(len, encoded)) <= EXPECTED_PAYLOAD_LIMIT
+            if len(printable) == len(encoded) and sum(map(len, printable)) <= EXPECTED_PAYLOAD_LIMIT
             else [f"Fix, if they were renamed or deleted: {command}"]
         )
         return "\n".join([
@@ -2454,7 +2456,7 @@ def assert_runtime_result_model(output_dir: Path) -> None:
     sys.path.insert(0, str(output_dir.parent))
     importlib.invalidate_caches()
     try:
-        from model._internal import Result
+        from model._internal import Result  # ty: ignore[import-not-found]
 
         result = Result.model_validate({"event": {"id": "abc"}})
         assert result.event is not None

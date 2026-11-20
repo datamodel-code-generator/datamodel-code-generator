@@ -204,7 +204,7 @@ def encode_value(suffix: str, value: object) -> str:
     return str(value)
 
 
-def _tree_files(directory: Path, pattern: str) -> dict[str, str]:
+def _tree_files(directory: Path, pattern: str) -> dict[str, object]:
     if not directory.is_dir():
         return {}
     return {

@@ -869,6 +869,7 @@ def declare(repo: Path, ns: argparse.Namespace) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8", newline="\n")
     record, _ = parse_entry(tomllib.loads(text)["change"][0], path.name)
+    assert record is not None, "_new_fragment writes an entry that parses"
     print(f"{path.relative_to(repo).as_posix()} covers {len(labels)} more stored outputs")
     print("".join(f"  still needed: {problem}\n" for problem in rule_problems(record, fragment=True)), end="")
     return 0

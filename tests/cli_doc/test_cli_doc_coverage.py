@@ -8,8 +8,6 @@ This ensures that every CLI option has corresponding test documentation.
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from datamodel_code_generator.cli_options import (
@@ -18,15 +16,16 @@ from datamodel_code_generator.cli_options import (
     get_all_canonical_options,
     get_canonical_option,
 )
+from tests.conftest import CLI_DOC_ITEMS
 
 
 @pytest.fixture(scope="module")
 def collected_options(request: pytest.FixtureRequest) -> set[str]:
     """Extract canonical options from collected cli_doc markers.
 
-    Uses config._cli_doc_items populated by conftest.py during test collection.
+    Uses the CLI_DOC_ITEMS stash entry populated by conftest.py during test collection.
     """
-    items: list[dict[str, Any]] = getattr(request.config, "_cli_doc_items", [])
+    items = request.config.stash.get(CLI_DOC_ITEMS, [])
     options: set[str] = set()
     for item in items:
         marker_options = item.get("marker_kwargs", {}).get("options", [])

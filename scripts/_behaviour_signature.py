@@ -39,6 +39,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from _typeshed import DataclassInstance
+
 PYDANTIC_CONFIG_KEYS = (
     "extra",
     "frozen",
@@ -536,7 +538,7 @@ def _struct_item(cls: type, ctx: Context) -> dict[str, Any]:
     }
 
 
-def _dataclass_item(cls: type, ctx: Context) -> dict[str, Any]:
+def _dataclass_item(cls: type[DataclassInstance], ctx: Context) -> dict[str, Any]:
     annotations = _annotations(cls)
     fields = {}
     for field in dataclasses.fields(cls):
@@ -846,7 +848,7 @@ def fingerprint(value: object) -> object:  # ruff: ignore[too-many-return-statem
     return [type(value).__name__, repr(value)]
 
 
-def _payload_type(module: types.ModuleType) -> object:
+def _payload_type(module: types.ModuleType) -> type:
     if PAYLOAD_CLASS_NAME in module.__dict__:
         return module.__dict__[PAYLOAD_CLASS_NAME]
     generated = [v for v in module.__dict__.values() if isinstance(v, type) and v.__module__ == module.__name__]
@@ -875,9 +877,7 @@ def payload_verdicts(
     return {"verdicts": verdicts, "values": values}
 
 
-def _validator(
-    target: object, output_model_type: str
-) -> tuple[Callable[[object], object], tuple[type[Exception], ...]]:
+def _validator(target: type, output_model_type: str) -> tuple[Callable[[object], object], tuple[type[Exception], ...]]:
     if output_model_type == "msgspec.Struct":
         import msgspec  # ruff: ignore[import-outside-top-level]
 

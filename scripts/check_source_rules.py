@@ -386,7 +386,7 @@ def globals_registry(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
     for module in (*tree.package, *tree.scripts):
         model = module.model
         calls = {site.node: site.scope for site in model.dynamic_sites if site.kind == "globals"}
-        opened = {
+        opened: dict[ast.expr, Scope] = {
             reference.node: reference.scope
             for reference in model.references
             if module.star_reads.get(reference.node) == "globals"
@@ -448,7 +448,7 @@ def unused_private_global(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
                 and not binding.name.startswith("__")
                 and not any(use.kind != "augassign" for use in model.uses(binding))
             ):
-                unread.setdefault((module.name, binding.name), (module, binding.node.lineno))
+                unread.setdefault((module.name, binding.name), (module, binding.line))
     names = {name for _, name in unread}
     for rel, words in tree.words.items():
         if names & words:
@@ -677,7 +677,7 @@ def lost_last_caller(tree: Tree, base: Tree | None) -> Iterator[Finding]:
     Review class: a branch only CI's combined coverage found (a public method whose internal callers were routed away).
     Report only: whether tests reach every branch needs coverage data, so each site names the command that shows it.
     """
-    assert base is not None  # Rule.needs_base: run() calls this rule only with a base
+    assert base is not None, "Rule.needs_base: run() calls this rule only with a base"
     _, before = _callers(base.package)
     callables, after = _callers(tree.package)
     for (rel, qualname), (module, start, _) in sorted(callables.items()):
@@ -699,7 +699,7 @@ def _retry_form(node: ast.AST, model: SourceModule, hits: frozenset[ast.AST], lo
     """
     if isinstance(node, ast.Attribute) and node.attr == "flaky":
         return "flaky marker" if model.origin(node) == "pytest.mark.flaky" else None
-    if node in loads:
+    if isinstance(node, ast.expr) and node in loads:
         return "flaky marker" if (model.origin(node) or "").split(".")[0] == "flaky" else None
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return "rerun plugin or option" if _RERUN_OPTION.fullmatch(node.value.strip()) else None
@@ -734,7 +734,7 @@ def flaky_test_workarounds(tree: Tree, _base: Tree | None) -> Iterator[Finding]:
         )
         loads = frozenset(reference.node for reference in model.references if reference.context == "load")
         for node in module.nodes:
-            if form := _retry_form(node, model, hits, loads):
+            if isinstance(node, ast.expr | ast.stmt) and (form := _retry_form(node, model, hits, loads)):
                 yield Finding(module.rel, node.lineno, "flaky-test-workarounds", form)
             elif isinstance(node, ast.Call) and model.origin(node.func) == "time.sleep":
                 found[module.rel] += 1

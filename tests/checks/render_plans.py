@@ -8,12 +8,25 @@ then, and the type expression of the field's type hint, kept with the plan, rend
 from __future__ import annotations
 
 from functools import wraps
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from tests.checks.areas import Area, Mode, mode
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from datamodel_code_generator.model._render_plan import FieldRenderPlan
+
+
+@runtime_checkable
+class _CheckedPlannedField(Protocol):
+    """A field that renders from a render plan: the members ``PlannedField`` names that the check calls."""
+
+    def _build_frozen_render_plan(self) -> FieldRenderPlan | None:
+        """Build the plan the parse freezes for the field."""
+
+    def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
+        """Return what the field writes from ``plan``."""
 
 
 def _violation(plans_mode: Mode, message: str) -> None:
@@ -43,7 +56,9 @@ def freeze_field_render_plans(original: Callable[[Any], None]) -> Callable[[Any]
             return
         from datamodel_code_generator.model._render_plan import RENDER_READY
 
-        plans = RENDER_READY.get()._plans
+        ready = RENDER_READY.get()
+        assert ready is not None, "a parse that freezes plans has installed its RenderReady"
+        plans = ready._plans
         for model in state.all_models:
             if not model._FREEZES_FIELD_RENDER_PLANS:
                 continue
@@ -84,11 +99,15 @@ def check_frozen_render_plans() -> None:
         return
     from datamodel_code_generator._parse_memo import rendering_memo
     from datamodel_code_generator.model._render_plan import RENDER_READY
-    from datamodel_code_generator.types import render_type_expr
+    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.types import TypeExpr, render_type_expr
 
     ready = RENDER_READY.get()
+    assert ready is not None, "the checks run inside a parse, which has installed its RenderReady"
     for entry in ready._plans.values():
         field = entry.field
+        assert isinstance(field, DataModelFieldBase), "the plans are frozen for the fields of the parse's models"
+        assert isinstance(entry.hint, TypeExpr), "the hint is the field's type expression, frozen with its plan"
         with rendering_memo():
             hint = field.data_type.type_hint
             frozen_hint = render_type_expr(entry.hint)
@@ -96,8 +115,11 @@ def check_frozen_render_plans() -> None:
             _violation(
                 plans_mode, f"the type expression frozen for field {field.name} renders {frozen_hint}, now {hint}"
             )
+        assert isinstance(field, _CheckedPlannedField), "every field the parse freezes a plan for renders from it"
         with ready.rebuilding():
-            rebuilt_text = field._render_plan_text(field._build_frozen_render_plan())
+            rebuilt_plan = field._build_frozen_render_plan()
+            assert rebuilt_plan is not None, "the field froze a plan, so its facts still give one"
+            rebuilt_text = field._render_plan_text(rebuilt_plan)
         if (frozen_text := field._render_plan_text(entry.plan)) != rebuilt_text:
             _violation(
                 plans_mode,

@@ -292,9 +292,10 @@ def _schema(entry: object, index: int, problems: list[str]) -> Schema | None:
         where = f"schema {entry['id']!r}"
     if unknown := sorted(set(entry) - SCHEMA_KEYS):
         problems.append(f"{where}: unknown keys {', '.join(unknown)}")
-    url = entry.get("url")
-    parts = urllib.parse.urlsplit(url) if isinstance(url, str) else None
-    if parts is None or parts.scheme not in URL_SCHEMES or "{ref}" not in url:
+    raw_url = entry.get("url")
+    url = raw_url if isinstance(raw_url, str) else ""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme not in URL_SCHEMES or "{ref}" not in url:
         problems.append(f"{where}: url must be an https:// or file:// URL containing {{ref}}")
         url = ""
     elif not BASENAME_PATTERN.fullmatch(parts.path.rsplit("/", 1)[-1]):
@@ -804,13 +805,13 @@ def _best(run: Run, indexes: Iterable[int]) -> int | None:
     return min(candidates, key=lambda index: _order(run.grid[index])) if candidates else None
 
 
-def _best_rank(run: Run, indexes: Iterable[int]) -> tuple[int, int, int, int] | None:
+def _best_rank(run: Run, indexes: Iterable[int]) -> tuple[int, int, int, int, int] | None:
     best = _best(run, indexes)
     return None if best is None else _rank(run.grid[best])
 
 
 def _split(
-    points: list[dict[str, dict[str, Any]]], decision: str, value: Mapping[str, Any]
+    points: Sequence[Mapping[str, Mapping[str, Any]]], decision: str, value: Mapping[str, Any]
 ) -> tuple[list[int], list[int]]:
     inside = [index for index, point in enumerate(points) if point[decision] == value]
     return inside, [index for index in range(len(points)) if index not in inside]
@@ -1041,7 +1042,9 @@ def _rule_rows(
     return rows, proposals
 
 
-def _preset_value(run: Run, points: list[dict[str, dict[str, Any]]], decision: str, value: Mapping[str, Any]) -> bool:
+def _preset_value(
+    run: Run, points: Sequence[Mapping[str, Mapping[str, Any]]], decision: str, value: Mapping[str, Any]
+) -> bool:
     """Return whether a grid value is what the preset gives a run's input kind, from the delta of its configurations."""
     index = _split(points, decision, value)[0][0]
     return not any(name in run.grid[index]["delta"] for name in value)
@@ -1049,7 +1052,7 @@ def _preset_value(run: Run, points: list[dict[str, dict[str, Any]]], decision: s
 
 def _preset_point(
     run: Run,
-    points: list[dict[str, dict[str, Any]]],
+    points: Sequence[Mapping[str, Mapping[str, Any]]],
     grid: Mapping[str, tuple[dict[str, Any], ...]],
     decision: str,
     value: Mapping[str, Any],

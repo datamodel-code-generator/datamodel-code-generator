@@ -1503,7 +1503,11 @@ def test_ledger_resolves_cli_doc_paths(ledger: LedgerProject) -> None:
     session = pytest.Session.from_config(config)
     config.hook.pytest_sessionstart(session=session)
     session.perform_collect()
-    kwargs = next(item["marker_kwargs"] for item in config._cli_doc_items if item["node_id"].endswith("test_doc"))
+    kwargs = next(
+        item["marker_kwargs"]
+        for item in config.stash[shared_conftest.CLI_DOC_ITEMS]
+        if item["node_id"].endswith("test_doc")
+    )
     assert kwargs | {"options": None, "option_description": None, "cli_args": None} == {
         "options": None,
         "option_description": None,

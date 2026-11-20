@@ -357,7 +357,7 @@ class Allowlist:
             for index, entry in enumerate(self.entries)
             if (decision := entry.get("decision")) and not DECISION.fullmatch(decision)
         ]
-        if self.entries and self.base != version and not _released_before(self.base, version):
+        if self.entries and self.base != version and (self.base is None or not _released_before(self.base, version)):
             found.append(f"allowlist base {self.base} is not {version}: replace the table when the base moves")
         return found + self._skip_problems()
 

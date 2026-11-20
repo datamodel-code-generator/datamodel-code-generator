@@ -95,7 +95,7 @@ def field_lines(rendered: str) -> list[Binding] | None:
 
 def line_name(model: DataModel, field: DataModelFieldBase) -> str:
     """Return the name with which the class body of ``model`` writes ``field``: ``root`` for a root model's field."""
-    return "root" if model.IS_ROOT_MODEL else field.name
+    return "root" if model.IS_ROOT_MODEL else field.name or ""
 
 
 def assignment_facts(model: DataModel, field: DataModelFieldBase) -> AssignmentFacts:

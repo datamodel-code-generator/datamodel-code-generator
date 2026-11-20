@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator import InputFileType, generate
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Generator
     from types import ModuleType
 
 
@@ -25,7 +25,7 @@ def iter_schema_paths(schema_pass_root: Path) -> list[Path]:
 
 
 @contextmanager
-def generated_module_path(module_code: str, module_name: str) -> Iterable[Path]:
+def generated_module_path(module_code: str, module_name: str) -> Generator[Path]:
     """Write generated code to a temporary importable module."""
     with tempfile.TemporaryDirectory(prefix="dcg-apache-avro-") as temporary_directory:
         module_path = Path(temporary_directory) / f"{module_name}.py"

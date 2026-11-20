@@ -271,7 +271,8 @@ def repair(sidecar: str, root: Path = ROOT) -> int:
     if not functions:
         print(f"{sidecar} is in the form pytest writes.")
         return 0
-    selection = [module] if None in functions else [f"{module}::{function}" for function in sorted(functions)]
+    named = sorted(function for function in functions if function is not None)
+    selection = [module] if None in functions else [f"{module}::{function}" for function in named]
     command = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-p", "no:xdist", "-q", *selection]
     result = subprocess.run(command, cwd=root, check=False)
     return 0 if result.returncode in {0, 5} else result.returncode
