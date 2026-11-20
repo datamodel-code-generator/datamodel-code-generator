@@ -1474,3 +1474,44 @@ def test_the_docstring_reader_sites_are_the_package_s() -> None:
     assert_output(
         "".join(f"{path} {name}: {change_units.DOC_READER_SITES[path, name]}\n" for path, name in sorted(found))
     )
+
+
+FILE_MAP_CASES = {
+    "an unchanged file": ((), [1, 7]),
+    "a replaced line and the lines around it": (((3, 1, 3, 1),), [2, 3, 4]),
+    "a line added to a replaced one": (((3, 1, 3, 2),), [3, 4, 5]),
+    "a pure insertion": (((3, 0, 4, 2),), [3, 4, 5, 6]),
+    "an insertion at the top": (((0, 0, 1, 2),), [1, 2, 3]),
+    "a deletion": (((3, 2, 2, 0),), [2, 3]),
+    "two hunks": (((0, 0, 1, 2), (5, 1, 7, 1)), [3, 6, 7, 8, 9]),
+}
+"""Hunks of `git diff -U0` between a catalog's revision and a side's, and side lines to place on the catalog's."""
+
+
+@pytest.mark.parametrize("case", sorted(FILE_MAP_CASES))
+def test_file_map_places_a_side_line_on_the_catalog(case: str) -> None:
+    """A side's line lies on the catalog's revision by its offset, or on the lines its hunk replaced or surrounds."""
+    from scripts._cell_catalog import FileMap
+
+    hunks, lines = FILE_MAP_CASES[case]
+    found = FileMap("module.py", hunks)
+    assert_output("".join(f"{line} -> {found.lines(line)}\n" for line in lines))
+
+
+CELL_SET_CASES = {
+    "no cell": ([], 4),
+    "fewer than half": ([2, 5], 8),
+    "more than half": ([0, 1, 2, 4, 5, 6, 7], 8),
+    "every cell": ([0, 1, 2], 3),
+}
+"""Sets of cell indexes of a catalog of so many cells."""
+
+
+@pytest.mark.parametrize("case", sorted(CELL_SET_CASES))
+def test_cell_sets_are_stored_by_the_shorter_side(case: str) -> None:
+    """A catalog stores a set of cells as its cells or the cells it lacks, the shorter list, and reads it back."""
+    from scripts._cell_catalog import decode, encode
+
+    cells, total = CELL_SET_CASES[case]
+    encoded = encode(cells, total)
+    assert_output(f"{json.dumps(encoded)} -> {sorted(decode(encoded, total))}\n")

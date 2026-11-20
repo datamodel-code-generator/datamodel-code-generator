@@ -4,6 +4,11 @@
 	compare_release_script/a_run_out_of_memory_closes_its_worker.txt
 [test_a_worker_runs_each_job_as_a_fresh_process]
 	compare_release_script/a_worker_runs_each_job_as_a_fresh_process.txt
+[test_cell_sets_are_stored_by_the_shorter_side]
+every cell	compare_release_script/cell_sets_are_stored_by_the_shorter_side[every cell].txt
+fewer than half	compare_release_script/cell_sets_are_stored_by_the_shorter_side[fewer than half].txt
+more than half	compare_release_script/cell_sets_are_stored_by_the_shorter_side[more than half].txt
+no cell	compare_release_script/cell_sets_are_stored_by_the_shorter_side[no cell].txt
 [test_compare_release]
 directory-args1	compare_release/directory.txt
 fail_both-args3	compare_release/fail_both.txt
@@ -90,6 +95,14 @@ v2_reindented_block	compare_release_script/compare_release_evidence_oracle[v2_re
 	compare_release_script/compare_release_resolves_the_base.txt
 [test_compare_release_tracks_referenced_files]
 	compare_release/referenced_files.txt
+[test_file_map_places_a_side_line_on_the_catalog]
+a deletion	compare_release_script/file_map_places_a_side_line_on_the_catalog[a deletion].txt
+a line added to a replaced one	compare_release_script/file_map_places_a_side_line_on_the_catalog[a line added to a replaced one].txt
+a pure insertion	compare_release_script/file_map_places_a_side_line_on_the_catalog[a pure insertion].txt
+a replaced line and the lines around it	compare_release_script/file_map_places_a_side_line_on_the_catalog[a replaced line and the lines around it].txt
+an insertion at the top	compare_release_script/file_map_places_a_side_line_on_the_catalog[an insertion at the top].txt
+an unchanged file	compare_release_script/file_map_places_a_side_line_on_the_catalog[an unchanged file].txt
+two hunks	compare_release_script/file_map_places_a_side_line_on_the_catalog[two hunks].txt
 [test_handled_exceptions_are_tracked]
 	compare_release_script/handled_exceptions_are_tracked.txt
 [test_ran_out_of_memory]

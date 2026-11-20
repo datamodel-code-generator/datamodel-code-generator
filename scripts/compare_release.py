@@ -1562,7 +1562,7 @@ ALWAYS_COUNTED = (True, True, False, False)
 SIDE_NAMES = {"base": "base", "head": "head"}
 
 
-def _lines_of(where: str) -> set[int]:
+def lines_of(where: str) -> set[int]:
     """Return the lines a probe's source span (`L:C-L:C,...`) covers."""
     found: set[int] = set()
     for span in where.split(","):
@@ -1688,7 +1688,7 @@ class Evidence:
             and missing[unit["index"]]
             and unit not in unmeasurable
             and all(
-                _lines_of(probe["where"]) & (tests or {}).get(unit["path"], set()) for probe in missing[unit["index"]]
+                lines_of(probe["where"]) & (tests or {}).get(unit["path"], set()) for probe in missing[unit["index"]]
             )
         ]
         unrun = [unit for unit in units if missing[unit["index"]] and unit not in tested and unit not in unmeasurable]
