@@ -13,7 +13,6 @@ from tests.main.conftest import (
     run_generate_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -32,7 +31,6 @@ def test_main_jsonschema_unique_items_allof_mapping(output_file: Path) -> None:
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_allof_mapping.py",
         **generate_kwargs,
     )
     generate(input_=schema, output=output_file, **generate_kwargs)

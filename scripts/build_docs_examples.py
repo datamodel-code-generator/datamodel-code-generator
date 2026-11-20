@@ -660,7 +660,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             "openapi.read-only-write-only.output",
             "openapi.md",
             language="python",
-            path=EXPECTED_OPENAPI / "read_only_write_only_all.py",
+            path=EXPECTED_OPENAPI / "main_openapi/read_only_write_only_all.py",
             strip_python_header=True,
         ),
         _file_example(

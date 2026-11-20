@@ -8,4 +8,4 @@ strict-extra_args1	main/jsonschema/type_alias_annotated/strict.py
 strict-extra_args1	main/jsonschema/type_alias_annotated/strict_runtime.txt
 strict-extra_args1	main/jsonschema/type_alias_constraints/match_con_types[strict-extra_args1].py
 [test_type_alias_constraints_with_shadowed_imports]
-	main/jsonschema/type_alias_annotated/shadowed_imports.py
+	main/jsonschema/type_alias_constraints/with_shadowed_imports.py

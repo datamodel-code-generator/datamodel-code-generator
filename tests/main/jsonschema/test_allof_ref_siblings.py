@@ -391,8 +391,6 @@ def test_allof_ref_siblings_pattern_properties(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "allof_ref_siblings/items_pattern.json",
         output_path=output_file,
         extra_args=["--disable-timestamp", "--generate-schema-validators"],
-        assert_func=assert_file_content,
-        expected_file="allof_ref_siblings/items_pattern.py",
         force_exec_validation=True,
     )
 
