@@ -1,0 +1,7 @@
+{
+ "cls": "violation",
+ "notes": [
+  "crash-fix (crash-fix): the exit status went 0 -> 1, not from a failure to 0"
+ ],
+ "accepted_by": []
+}

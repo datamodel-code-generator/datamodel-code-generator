@@ -1,0 +1,6 @@
+{
+ "cells": null,
+ "problems": [
+  "entry x: cells 1: aspect 'colour' is not an aspect of a change line"
+ ]
+}

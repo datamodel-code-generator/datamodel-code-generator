@@ -1,0 +1,3 @@
+[
+ "entry x: category crash-fix names the cells it covers ([[change.cells]])"
+]

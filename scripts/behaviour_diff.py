@@ -43,7 +43,7 @@ that uses an option, value or input type BASE does not have is `opt-in` and is n
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
 `input` (a glob, or a list of globs), optional `backends`, `aspects` and `match` (regex on the change line), `reason`,
 `decision` (the public PR or issue references of the owner decision, `#1234, #1235`) and `migration` (the id of the
-upgrade guide entry whose title the release page and its notes use; scripts/build_migration_docs.py checks it).
+change record in docs/data/migration whose title the release page and its notes use).
 A `[[base_skip]]` entry (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`,
 `reason`, `issue`) names an input a release is known to hang on: the release does not run for those cells, which are
 `base-skipped` once the candidate generated and imported (a candidate failure is a violation). `--check` also fails
@@ -84,7 +84,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Iterable
+
+    from scripts._change_records import Record
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -101,10 +103,12 @@ from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-t
     classify_cell,
     diff,
 )
-from scripts._behaviour_report import compare_records, redact, summarize_gate, version_key  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._behaviour_report import compare_records, redact, summarize_gate  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._change_records import read_records, version_key  # ruff: ignore[module-import-not-at-top-of-file]
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
 DEFAULT_ALLOWLIST = Path(__file__).with_name("behaviour_diff_allowlist.toml")
+MIGRATION_DATA = ROOT / "docs" / "data" / "migration"
 FIXTURE_DIRS = (
     ("jsonschema", (".json", ".yaml", ".yml"), True),
     ("openapi", (".json", ".yaml", ".yml"), True),
@@ -1501,23 +1505,11 @@ def render_notes(data: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def name_accepted_changes(data: dict[str, Any], changes: Iterable[Mapping[str, object]]) -> None:
-    """Give each accepted change of a release page the title of its upgrade guide entry, or its reason without one."""
-    titles = {entry["id"]: entry["title"] for entry in changes}
+def name_accepted_changes(data: dict[str, Any], records: Iterable[Record]) -> None:
+    """Give each accepted change of a release page the title of the change record it names, or else its reason."""
+    titles = {record.id: record.title for record in records if record.title}
     for group in data["accepted"]:
         group["release_note"] = titles.get(group["migration"], group["reason"])
-
-
-def guide_changes() -> list[dict[str, object]]:
-    """Return the upgrade guide's entries from a fresh build of its data file by the builder script."""
-    with tempfile.TemporaryDirectory() as directory:
-        data = Path(directory) / "migration.json"
-        subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "build_migration_docs.py"), "--write-data", str(data)],
-            check=True,
-            cwd=ROOT,
-        )
-        return json.loads(data.read_text(encoding="utf-8"))["changes"]
 
 
 def guide_main(ns: argparse.Namespace) -> int:
@@ -1531,7 +1523,7 @@ def guide_main(ns: argparse.Namespace) -> int:
         rows = [json.loads(line) for path in ns.cells for line in path.read_text(encoding="utf-8").splitlines()]
         data = summarize_gate(rows, gate.loaded_allowlist.entries)
         data = {"version": ns.version, "previous": ns.base, "tier": ns.tier, **data}
-        name_accepted_changes(data, guide_changes())
+        name_accepted_changes(data, read_records(MIGRATION_DATA))
         enrich_accepted(gate, rows, data, ns)
         enrich_opt_in(gate, rows, data)
     finally:

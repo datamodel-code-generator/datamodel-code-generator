@@ -1,11 +1,28 @@
-"""Tests for the pure helpers of the change records: the stamp-pending rule and the `covers` block of a fragment."""
+"""Tests for the pure helpers of the change records: the stamp-pending rule, the `covers` block and the cells."""
 
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
+from typing import TYPE_CHECKING
 
-from scripts._change_records import stamp_pending, with_covers
+import pytest
+
+from scripts._change_records import (
+    CellSelector,
+    Facts,
+    parse_entry,
+    read_records,
+    rule_problems,
+    selector_surface,
+    stamp_pending,
+    with_covers,
+    without_cells,
+)
 from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 FRAGMENT = '[[change]]\nid = "x"\ncategory = "harness"\ntitle = "t"\nsummary = "s"\n'
 FRAGMENTS = {
@@ -46,3 +63,230 @@ def test_change_record_helpers() -> None:
     ]
     output.append(json.dumps({case: stamp_pending(*args) for case, args in STAMPS.items()}, indent=1))
     assert_output("\n".join(output))
+
+
+def _entry(category: str | None = "output-text", *cells: dict[str, object], **keys: object) -> dict[str, object]:
+    """Return a `[[change]]` table of a category with `[[change.cells]]` tables, as tomllib reads a fragment."""
+    entry: dict[str, object] = {"id": "x", "title": "t", "summary": "s", "refs": ["#1"]}
+    if category is not None:
+        entry["category"] = category
+    return entry | ({"cells": list(cells)} if cells else {}) | keys
+
+
+SELECTOR = {"input": ["tests/data/jsonschema/plain.json"], "backends": "*", "options": "*"}
+SELECTOR_CASES: dict[str, dict[str, object]] = {
+    "every backend and option set": _entry("output-text", SELECTOR),
+    "listed backends and option sets": _entry(
+        "decided-change",
+        SELECTOR
+        | {
+            "backends": ["msgspec.Struct", "pydantic_v2.BaseModel"],
+            "options": [[], ["--use-annotated"]],
+            "input_file_type": "openapi",
+            "aspects": ["type", "exit"],
+            "match": r"^\[type\]",
+        },
+    ),
+    "two selectors": _entry("output-text", SELECTOR, SELECTOR | {"input": ["tests/data/jsonschema/*", "a/**"]}),
+    "cells are no tables": _entry("output-text", cells="x"),
+    "a cell is no table": _entry("output-text", cells=["x"]),
+    "unknown key": _entry("output-text", SELECTOR | {"colour": "red"}),
+    "missing keys": _entry("output-text", {"aspects": ["type"]}),
+    "empty input": _entry("output-text", SELECTOR | {"input": []}),
+    "input of no strings": _entry("output-text", SELECTOR | {"input": [1]}),
+    "input as a string": _entry("output-text", SELECTOR | {"input": "tests/data/jsonschema/plain.json"}),
+    "unknown backend": _entry("output-text", SELECTOR | {"backends": ["pydantic.BaseModel", "msgspec.Struct"]}),
+    "empty backends": _entry("output-text", SELECTOR | {"backends": []}),
+    "backends as another string": _entry("output-text", SELECTOR | {"backends": "all"}),
+    "options of strings": _entry("output-text", SELECTOR | {"options": ["--use-annotated"]}),
+    "empty options": _entry("output-text", SELECTOR | {"options": []}),
+    "options as another string": _entry("output-text", SELECTOR | {"options": "default"}),
+    "input file type of no string": _entry("output-text", SELECTOR | {"input_file_type": 1}),
+    "unknown aspect": _entry("decided-change", SELECTOR | {"aspects": ["colour", "type"]}),
+    "empty aspects": _entry("decided-change", SELECTOR | {"aspects": []}),
+    "match that does not compile": _entry("decided-change", SELECTOR | {"match": "(float"}),
+    "match of no string": _entry("decided-change", SELECTOR | {"match": 1}),
+}
+
+
+@pytest.mark.parametrize("case", sorted(SELECTOR_CASES))
+def test_parse_entry_cells(case: str) -> None:
+    """`[[change.cells]]` tables become selectors (`"*"` is None); each that is none is refused with every reason."""
+    record, problems = parse_entry(SELECTOR_CASES[case], "unreleased/x.toml")
+    cells = [asdict(selector) for selector in record.cells] if record else None
+    assert_output(json.dumps({"cells": cells, "problems": problems}, indent=1) + "\n")
+
+
+FACTS = Facts(
+    new_surface=frozenset({
+        "--new-flag",
+        "--output-model-type new.Type",
+        "preset:20260301",
+        "--input-file-type newtype",
+    })
+)
+RULE_CASES: dict[str, tuple[dict[str, object], str]] = {
+    "output-text without cells, added": (_entry("output-text"), "added"),
+    "output-text without cells, older": (_entry("output-text"), ""),
+    "crash-fix without cells, added": (_entry("crash-fix"), "added"),
+    "notice without cells, added": (_entry("notice", kind="warning", action="warn", source="run"), "added"),
+    "decided-change without cells, added": (
+        _entry("decided-change", decision=["#1"], keep={"note": "n"}),
+        "added",
+    ),
+    "harness with cells": (_entry("harness", SELECTOR, refs=[]), ""),
+    "new-surface with cells": (_entry("new-surface", SELECTOR, surface=["--new-flag"], refs=[]), ""),
+    "internal with cells": (_entry("internal", SELECTOR, refs=[]), ""),
+    "docs-text with cells": (_entry("docs-text", SELECTOR, refs=[]), ""),
+    "decided-change selector without aspects or match": (
+        _entry("decided-change", SELECTOR, SELECTOR | {"match": "x"}, decision=["#1"], keep={"note": "n"}),
+        "",
+    ),
+    "default-fix selector with aspects only": (
+        _entry("default-fix", SELECTOR | {"aspects": ["type"]}, decision=["#1"]),
+        "",
+    ),
+    "notice selector with aspects only": (_entry("notice", SELECTOR | {"aspects": ["warning"]}), ""),
+    "notice selector with match": (_entry("notice", SELECTOR | {"match": "gap"}), ""),
+    "notice selector with an empty match": (_entry("notice", SELECTOR | {"match": ""}), ""),
+    "decided-change selector with an empty match": (
+        _entry("decided-change", SELECTOR | {"match": ""}, decision=["#1"], keep={"note": "n"}),
+        "",
+    ),
+    "decided-change selector with aspects and an empty match": (
+        _entry("decided-change", SELECTOR | {"aspects": ["type"], "match": ""}, decision=["#1"], keep={"note": "n"}),
+        "",
+    ),
+    "api selector": (_entry("api", SELECTOR, decision=["#1"]), ""),
+    "experimental selector": (
+        _entry("experimental", SELECTOR, decision=["#1"], affects={"experimental": ["input-format.avro"]}),
+        "",
+    ),
+    "released entry with cells": (_entry("output-text", SELECTOR), "released"),
+    "released guide entry with cells": (_entry(None, SELECTOR), "released"),
+    "derived entry with cells": (_entry(None, SELECTOR, id="option:--new-flag", refs=[]), ""),
+    "extending record with cells": (
+        {"id": "x", "extends": "y", "refs": ["#1"], "cells": [SELECTOR | {"options": [["--new-flag"]]}]},
+        "facts",
+    ),
+    "extending record without facts": ({"id": "x", "extends": "y", "cells": [SELECTOR]}, ""),
+    "extending record with a title": ({"id": "x", "extends": "y", "title": "t", "cells": [SELECTOR]}, ""),
+    "cells naming unreleased surface": (
+        _entry(
+            "output-text",
+            SELECTOR
+            | {
+                "options": [
+                    ["--new-flag", "--use-annotated"],
+                    ["--output-model-type", "new.Type"],
+                    ["--output-model-type=new.Type"],
+                    ["--preset", "standard-py314-20260301"],
+                    ["--output-model-type", "msgspec.Struct", "--new-flag"],
+                ]
+            },
+        ),
+        "facts",
+    ),
+    "cells naming an unreleased input file type": (
+        _entry("output-text", SELECTOR | {"input_file_type": "newtype"}),
+        "facts",
+    ),
+    "cells naming a released input file type": (
+        _entry("output-text", SELECTOR | {"input_file_type": "openapi"}),
+        "facts",
+    ),
+    "cells naming released surface": (
+        _entry("output-text", SELECTOR | {"options": [["--preset", "standard-py314-20260101"], ["--keyword-only"]]}),
+        "facts",
+    ),
+}
+
+
+@pytest.mark.parametrize("case", sorted(RULE_CASES))
+def test_rule_problems_cells(case: str) -> None:
+    """A category's cells are required (of an added record), optional or forbidden, with the keys its selectors need.
+
+    No released entry, derived entry or record other than a fragment names cells; an extending record may; with the
+    facts, cells that name an option, value or preset date the latest release lacks are refused.
+    """
+    entry, mode = RULE_CASES[case]
+    record, problems = parse_entry(entry, "unreleased/x.toml")
+    facts = FACTS if mode == "facts" else None
+    found = (
+        rule_problems(record, fragment=mode != "released", facts=facts, added=mode == "added") if record else problems
+    )
+    assert_output(json.dumps(found, indent=1) + "\n")
+
+
+CELLS_TABLE = '\n[[change.cells]]\ninput = ["a.json"]\nbackends = "*"\noptions = "*"\n'
+STAMPED_CASES = {
+    "no cells": FRAGMENT,
+    "two cells tables": FRAGMENT + CELLS_TABLE + "# the second\n" + CELLS_TABLE.replace("a.json", "b.json"),
+    "cells before a sub-table": FRAGMENT + CELLS_TABLE + '\n[change.verify]\nschema = "{}"\n',
+    "spaced header": FRAGMENT + CELLS_TABLE.replace("[[change.cells]]", "[[ change . cells ]]  # spaced"),
+    "inline cells": FRAGMENT + 'cells = [{ input = ["a.json"], backends = "*", options = "*" }]\n',
+    "a header-like line in a string": FRAGMENT.replace('summary = "s"', 'summary = """\n[[change.cells]]\n"""'),
+    "option sets at the start of their lines": FRAGMENT
+    + CELLS_TABLE.replace('options = "*"', 'options = [\n["--use-annotated"],\n[]\n]'),
+    "an indented header": FRAGMENT + CELLS_TABLE.replace("[[change.cells]]", "  [[change.cells]]"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(STAMPED_CASES))
+def test_without_cells(case: str) -> None:
+    """The stamp drops each `[[change.cells]]` table up to the next table; cells written otherwise are refused."""
+    try:
+        output = without_cells(STAMPED_CASES[case])
+    except ValueError as error:
+        output = f"ValueError: {error}\n"
+    assert_output(output)
+
+
+SURFACE_CASES: dict[str, CellSelector] = {
+    "every option set": CellSelector(("a.json",)),
+    "flags": CellSelector(("a.json",), options=(("--use-annotated", "--keyword-only"),)),
+    "a value as the next item": CellSelector(
+        ("a.json",), options=(("--output-model-type", "msgspec.Struct", "--use-annotated"),)
+    ),
+    "a value after =": CellSelector(("a.json",), options=(("--output-model-type=msgspec.Struct",),)),
+    "a preset": CellSelector(
+        ("a.json",), options=(("--preset", "standard-py314-20260201"), ("--preset=practical-py310-20260101",))
+    ),
+    "default options": CellSelector(("a.json",), options=((),)),
+    "an input file type": CellSelector(("a.json",), options=(("--use-annotated",),), input_file_type="openapi"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(SURFACE_CASES))
+def test_selector_surface(case: str) -> None:
+    """A selector's option sets name each option, each value and each preset's date as surface items."""
+    assert_output(json.dumps(selector_surface(SURFACE_CASES[case])) + "\n")
+
+
+READ_CASES = {
+    "released and unreleased records": {
+        "changes/0.2.0.toml": '[[change]]\nid = "b"\ntitle = "B"\n\n[[change]]\nid = "a"\ntitle = "A"\n',
+        "unreleased/c.toml": FRAGMENT.replace('"x"', '"c"') + CELLS_TABLE,
+        "unreleased/notes.txt": "not a record\n",
+    },
+    "a table that holds no record": {
+        "changes/0.2.0.toml": '[[change]]\nid = "B"\n',
+        "unreleased/c.toml": '[[change]]\nid = "c"\ncells = "x"\n',
+    },
+}
+
+
+@pytest.mark.parametrize("case", sorted(READ_CASES))
+def test_read_records(case: str, tmp_path: Path) -> None:
+    """The records of a migration data folder are the releases' changes, then the fragments.
+
+    A table that holds no record refuses the read with every reason.
+    """
+    for name, text in READ_CASES[case].items():
+        (tmp_path / name).parent.mkdir(exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    try:
+        output = json.dumps([[record.id, record.title, len(record.cells)] for record in read_records(tmp_path)])
+    except ValueError as error:
+        output = f"ValueError: {error}"
+    assert_output(output + "\n")

@@ -71,28 +71,29 @@ from datamodel_code_generator.preset import (  # ruff: ignore[module-import-not-
     _date_additions,  # ruff: ignore[import-private-name] - the registry's own wording
     get_preset_names,
 )
-from scripts._behaviour_report import version_key  # ruff: ignore[module-import-not-at-top-of-file]
 from scripts._change_records import (  # ruff: ignore[module-import-not-at-top-of-file]
     AFFECTS_KEYS,
+    PRESET_OPTION,
     PRESET_SURFACE,
     Action,
     Facts,
     Kind,
     Source,
+    cells_written,
     covers_written,
     entry_table,
     guide_problems,
     parse_entry,
     rule_problems,
+    version_key,
     with_covers,
+    without_cells,
 )
 
 if TYPE_CHECKING:
     from scripts._change_records import Record
 
 DATA_DIR = ROOT / "docs" / "data" / "migration"
-ALLOWLIST = ROOT / "scripts" / "behaviour_diff_allowlist.toml"
-PRESET_OPTION = "--preset"
 DOCS_DIR = ROOT / "docs" / "migration"
 JSON_PATH = ROOT / "docs" / "data" / "migration.json"
 SITE_URL = "https://datamodel-code-generator.koxudaxi.dev"
@@ -285,7 +286,6 @@ class Layout:
     data: Path = DATA_DIR
     docs: Path = DOCS_DIR
     json: Path = JSON_PATH
-    allowlist: Path = ALLOWLIST
 
     @property
     def releases(self) -> Path:
@@ -666,8 +666,10 @@ def _hand_changes(
             problems += rule_problems(record, fragment=fragment, facts=facts)
             if fragment:
                 fragments[record.id] = record
-                if not covers_written(path.read_text(encoding="utf-8"), record):
+                if not covers_written(text := path.read_text(encoding="utf-8"), record):
                     problems.append(f"{where}: covers are written by 'python scripts/declared_changes.py declare' only")
+                if not cells_written(text):
+                    problems.append(f"{where}: cells are written as [[change.cells]] tables only")
             if not record.guide:
                 continue
             if record.derived:
@@ -876,22 +878,6 @@ def _check_removals(
     )
 
 
-def _check_allowlist(
-    layout: Layout, versions: list[str], changes: dict[str, dict[str, Any]], problems: list[str]
-) -> None:
-    """Report each accepted default-output change of the current cycle whose `migration` names no unreleased entry."""
-    allowlist = tomllib.loads(layout.allowlist.read_text(encoding="utf-8"))
-    if not versions or allowlist.get("base") != versions[-1]:
-        return
-    for index, accepted in enumerate(allowlist.get("accepted", []), 1):
-        migration = accepted.get("migration")
-        if migration not in changes or changes[migration]["release"] != UNRELEASED:
-            problems.append(
-                f"{layout.allowlist.name}: accepted entry {index} ({accepted.get('input')}): migration {migration!r} "
-                "is not an unreleased entry"
-            )
-
-
 def previous_release(versions: list[str], entry: dict[str, Any]) -> str:
     """Return the release before an entry's release, the latest one for an unreleased entry: its output is recorded."""
     return versions[entry["index"] - 1]
@@ -986,7 +972,6 @@ def load(
     _check_removals(registries.surface, released_surface, changes, problems)
     if released and released_check and placed.versions:
         _check_released(registries.surface, released, placed.versions[-1], registries.experimental, problems)
-    _check_allowlist(layout, placed.versions, changes, problems)
     if records and not problems:
         _check_records(layout, placed.versions, changes, problems)
     action_order = {action: index for index, action in enumerate(ACTIONS)}
@@ -1406,11 +1391,12 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     """Record a published release: move the fragments its tag contains, add its row and its new preset dates.
 
     Returns the ids of the moved fragments. Fragments the tag does not contain were merged after it and stay unreleased.
-    A moved guide entry loses its `covers`, and a record without a guide entry, or one that extends another, is
-    deleted: their work, naming the stored outputs a change moves until it is released, is done. Every input is read
-    and checked before the first write, so a refused stamp can run again: a fragment edited after the tag is refused,
-    as its release would get text it did not ship, and so is one that extends a record the tag contains. So is a tree
-    that changes a fact the tag fixes (`_check_released`), such as a preset date of the tag that a later merge edited.
+    A moved guide entry loses its `covers` and `cells`, and a record without a guide entry, or one that extends another,
+    is deleted: their work, naming the stored outputs and cells a change moves until it is released, is done. Every
+    input is read and checked before the first write, so a refused stamp can run again: a fragment edited after the tag
+    is refused, as its release would get text it did not ship, and so is one that extends a record the tag contains.
+    So is a tree that changes a fact the tag fixes (`_check_released`), such as a preset date of the tag that a later
+    merge edited.
     """
     registries = registries or current_registries()
     guide = load(layout, registries, released_check=False)
@@ -1445,7 +1431,9 @@ def stamp(layout: Layout, version: str, tag_tree: Path, date: str, registries: R
     if moved:
         target = layout.changes / f"{version}.toml"
         layout.changes.mkdir(parents=True, exist_ok=True)
-        texts = [with_covers(text, ()).strip() + "\n" for text in moved.values() if _guide_fragment(text)]
+        texts = [
+            with_covers(without_cells(text), ()).strip() + "\n" for text in moved.values() if _guide_fragment(text)
+        ]
         target.write_text(CHANGES_HEADER.format(version=version) + "\n" + "\n".join(texts), encoding="utf-8")
         for path in moved:
             path.unlink()
@@ -1731,7 +1719,6 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--data-dir", type=Path, default=DATA_DIR)
     parser.add_argument("--docs-dir", type=Path, default=DOCS_DIR)
     parser.add_argument("--json", type=Path, default=JSON_PATH)
-    parser.add_argument("--allowlist", type=Path, default=ALLOWLIST)
     ns = parser.parse_args(argv)
     if ns.stamp and ns.tag_tree is None:
         parser.error("--stamp needs --tag-tree")
@@ -1740,7 +1727,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 def run(ns: argparse.Namespace, registries: Registries | None = None) -> int:
     """Run the command the arguments name."""
-    layout = Layout(ns.data_dir, ns.docs_dir, ns.json, ns.allowlist)
+    layout = Layout(ns.data_dir, ns.docs_dir, ns.json)
     if ns.stamp:
         date = ns.date or datetime.now(UTC).date().isoformat()
         moved = stamp(layout, ns.stamp, ns.tag_tree, date, registries)

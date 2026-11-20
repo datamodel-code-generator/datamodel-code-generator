@@ -1,0 +1,3 @@
+[
+ "entry x: an extending record holds only extends, covers, refs and cells, not title"
+]

@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 
 from scripts._behaviour_report import compare_records, error_name, redact, summarize_gate
+from scripts._change_records import Record
 from scripts.behaviour_diff import name_accepted_changes
 from scripts.build_behaviour_docs import render_comparison, render_release
 from tests.conftest import assert_output
@@ -118,8 +119,9 @@ ACCEPTED_ENTRY = {
     "migration": "external-anchor-target",
 }
 MIGRATION_CHANGES = [
-    {"id": "external-anchor-target", "title": "An external $anchor resolves to the anchored schema"},
-    {"id": "other-change", "title": "Another change"},
+    Record("external-anchor-target", frozenset({"title"}), title="An external $anchor resolves to the anchored schema"),
+    Record("other-change", frozenset({"title"}), title="Another change"),
+    Record("untitled", frozenset({"extends"}), extends="other-change"),
 ]
 ACCEPTED_EXAMPLE = {
     "input": "tests/data/jsonschema/external_anchor",
@@ -208,7 +210,7 @@ RELEASE_CASES = {
 def test_render_release(case: str) -> None:
     """A release page sums the gate cells per class and output model type and lists each group's examples.
 
-    Each accepted change is named by the title of its upgrade guide entry.
+    Each accepted change is named by the title of the change record it names.
     """
     data = summarize_gate([ROWS[name] for name in RELEASE_CASES[case]], [ACCEPTED_ENTRY])
     data = {"version": "0.87.0", "previous": "0.86.0", "tier": "pr" if case == "pr_tier" else "release", **data}
