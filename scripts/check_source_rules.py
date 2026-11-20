@@ -33,7 +33,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from functools import cache, cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 import tomllib
 
@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 PACKAGE = "src/datamodel_code_generator"
 PACKAGE_NAME = "datamodel_code_generator"
 GENERATED = "_compiled_templates"
+_T = TypeVar("_T")
 ARCHITECTURE_DOCS = "docs/architecture.md"
 REFERENCE_HOME = f"{PACKAGE}/_json_pointer.py"
 CLONE_MIN_NODES = 11
@@ -1554,18 +1555,30 @@ class _Names:
     def __init__(self, module: Module) -> None:
         self.model = module.model
         self.heads = _heads(module)
+        self._active: set[ast.AST] = set()
 
     def _loaded(self, node: ast.expr) -> Reference | None:
         """Return the reference of a name read, None for any other expression."""
         reference = self.heads.get(node)
         return reference if reference is not None and reference.context == "load" else None
 
-    def expressions(self, name: ast.expr, seen: frozenset[ast.AST] = frozenset()) -> list[ast.expr]:
-        """Return the expressions a name may hold, one step: its assigned values, parameter values and loop items.
+    def _follow(self, name: ast.expr, step: Callable[[ast.expr], list[_T]]) -> list[_T]:
+        """Return what ``step`` makes of each expression a name read may hold, none for a name being followed.
 
-        ``seen`` holds the names being resolved: a loop that rebinds the name it iterates (``for names in names``)
-        reads the iterable's other bindings only.
+        Every walk from a name to what it holds goes through here, so this is the one place that stops a cycle: a
+        name read that is being followed holds nothing meanwhile (``for names in names``, ``for d in d.items()``,
+        ``a = [b]`` with ``b = [a]``).
         """
+        if self._loaded(name) is None or name in self._active:
+            return []
+        self._active.add(name)
+        try:
+            return [found for value in self.expressions(name) for found in step(value)]
+        finally:
+            self._active.discard(name)
+
+    def expressions(self, name: ast.expr) -> list[ast.expr]:
+        """Return the expressions a name may hold, one step: its assigned values, parameter values and loop items."""
         if (reference := self._loaded(name)) is None:
             return []
         found: list[ast.expr] = []
@@ -1580,20 +1593,19 @@ class _Names:
             elif binding.kind in {"for", "comprehension"} and assigned is not None:
                 found += [
                     element
-                    for item in self.items(assigned.value, seen | {name})
+                    for item in self.items(assigned.value)
                     if (element := _element(item, assigned.position)) is not None
                 ]
         return found
 
-    def items(self, iterable: ast.expr, seen: frozenset[ast.AST] = frozenset()) -> list[ast.expr]:
+    def items(self, iterable: ast.expr) -> list[ast.expr]:
         """Return the item expressions a literal collection (or a name bound to one) yields when iterated."""
         if isinstance(iterable, (ast.List, ast.Tuple, ast.Set)):
             return list(iterable.elts)
         if isinstance(iterable, ast.Dict):
             return [key for key in iterable.keys if key is not None]
-        if self._loaded(iterable) is not None and iterable not in seen:
-            inner = seen | {iterable}
-            return [item for value in self.expressions(iterable, inner) for item in self.items(value, inner)]
+        if self._loaded(iterable) is not None:
+            return self._follow(iterable, self.items)
         if (
             isinstance(iterable, ast.Call)
             and isinstance(iterable.func, ast.Attribute)
@@ -1611,12 +1623,12 @@ class _Names:
             return found
         return []
 
-    def mappings(self, node: ast.expr, seen: frozenset[ast.AST] = frozenset()) -> list[ast.Dict]:
+    def mappings(self, node: ast.expr) -> list[ast.Dict]:
         """Return the dict displays an expression may be: itself, or those its name may hold."""
         if isinstance(node, ast.Dict):
             return [node]
-        if self._loaded(node) is not None and node not in seen:
-            return [m for value in self.expressions(node, seen | {node}) for m in self.mappings(value, seen | {node})]
+        if self._loaded(node) is not None:
+            return self._follow(node, self.mappings)
         return []
 
     def _parametrized(self, binding: Binding) -> list[ast.expr]:
@@ -1643,15 +1655,14 @@ class _Names:
                     found.append(element)
         return found
 
-    def strings(self, node: ast.expr, seen: frozenset[ast.AST] = frozenset()) -> list[str]:
+    def strings(self, node: ast.expr) -> list[str]:
         """Return the string constants an expression may take: itself, or what its name or conditional may hold."""
         if isinstance(node, ast.Constant):
             return [node.value] if isinstance(node.value, str) else []
         if isinstance(node, ast.IfExp):
-            return [*self.strings(node.body, seen), *self.strings(node.orelse, seen)]
-        if self._loaded(node) is not None and node not in seen:
-            inner = seen | {node}
-            return [text for value in self.expressions(node, inner) for text in self.strings(value, inner)]
+            return [*self.strings(node.body), *self.strings(node.orelse)]
+        if self._loaded(node) is not None:
+            return self._follow(node, self.strings)
         return []
 
 

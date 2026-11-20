@@ -1375,6 +1375,13 @@ TREES: dict[str, dict[str, str]] = {
                 names = ["rebound.json"]
                 for names in names:
                     (tmp_path / names).write_text("{}")
+                pairs = {"cycle:fine": "{}"}
+                for pairs in pairs.items():
+                    (tmp_path / pairs).write_text("{}")
+                left = [right]
+                right = [left]
+                for left in right:
+                    (tmp_path / left).write_text("{}")
                 for *_, last in [("ok", "skip:fine", "star:bad.json")]:
                     (tmp_path / last).write_text("{}")
                 (tmp_path / "COM\u00b9.txt").write_text("{}")
