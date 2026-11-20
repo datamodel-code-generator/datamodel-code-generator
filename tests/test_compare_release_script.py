@@ -1418,7 +1418,7 @@ ORACLES: dict[str, Oracle] = {
     ),
     "r4_change_only_the_version_lookup_runs": Oracle(
         {
-            "__init__.py": "def get_version():\n    from datamodel_code_generator._ver import number\n\n    return number()\n",
+            "__init__.py": "def get_version():\n    from . import _ver\n\n    return _ver.number()\n",
             "_ver.py": 'def number():\n    return "1"\n',
             "_case.py": PLAIN_RUN,
         },

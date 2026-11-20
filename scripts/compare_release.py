@@ -844,7 +844,7 @@ def _worker() -> None:
         tracer.active = False  # the lookup is the comparator's own: no generation is credited with its code
     with contextlib.suppress(Exception):  # a stand-in package or a tree without a version file reports none
         version = package.get_version()
-    for tracer, active in zip(_TRACER, tracer_active):
+    for tracer, active in zip(_TRACER, tracer_active, strict=False):
         tracer.active = active
     ready = {"package": package.__file__, "measured": bool(_TRACER), "version": version}
     sys.stdout.write(json.dumps(ready) + "\n")
