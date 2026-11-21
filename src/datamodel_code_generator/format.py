@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess  # noqa: S404
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -27,6 +26,7 @@ from typing_extensions import Sentinel
 
 from datamodel_code_generator import _format_types
 from datamodel_code_generator._module_paths import is_below_name, is_within_name
+from datamodel_code_generator._process import run_captured
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.util import _load_config_toml
@@ -34,6 +34,8 @@ from datamodel_code_generator.util import _load_config_toml
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
     from types import CodeType
+
+    from datamodel_code_generator._process import ProcessResult
 
 DEFAULT_FORMATTERS = _format_types.DEFAULT_FORMATTERS
 EXTERNAL_FORMATTERS = _format_types.EXTERNAL_FORMATTERS
@@ -805,17 +807,8 @@ class CodeFormatter:
         *,
         stdin: bytes | None = None,
         allow_stdout_on_error: bool = False,
-    ) -> subprocess.CompletedProcess[bytes]:
-        kwargs: dict[str, Any] = {}
-        if stdin is not None:
-            kwargs["input"] = stdin
-        result = subprocess.run(  # noqa: S603
-            command,
-            capture_output=True,
-            check=False,
-            cwd=self.settings_path,
-            **kwargs,
-        )
+    ) -> ProcessResult:
+        result = run_captured(command, cwd=self.settings_path, stdin=stdin)
         if result.returncode == 0 or (allow_stdout_on_error and result.returncode == 1 and result.stdout):
             return result
         if (message := result.stderr.decode(_RUFF_ENCODING, errors="replace").strip()) or (

@@ -3604,7 +3604,7 @@ def test_generate_with_ruff_batch_formatting(tmp_path: Path) -> None:
 
     with (
         mock.patch("datamodel_code_generator.format.CodeFormatter._find_ruff_path", return_value=FAKE_RUFF_PATH),
-        mock.patch("datamodel_code_generator.format.subprocess.run") as mock_run,
+        mock.patch("datamodel_code_generator._process.subprocess.run") as mock_run,
     ):
         mock_run.return_value.returncode = 0
         datamodel_code_generator.generate(
@@ -3651,7 +3651,7 @@ def test_generate_with_ruff_batch_formatting_and_explicit_type_checking_imports(
 
     with (
         mock.patch("datamodel_code_generator.format.CodeFormatter._find_ruff_path", return_value=FAKE_RUFF_PATH),
-        mock.patch("datamodel_code_generator.format.subprocess.run") as mock_run,
+        mock.patch("datamodel_code_generator._process.subprocess.run") as mock_run,
     ):
         mock_run.return_value.returncode = 0
         datamodel_code_generator.generate(

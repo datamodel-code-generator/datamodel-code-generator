@@ -7,8 +7,9 @@ the descriptor model to JSON Schema definitions for the existing JSON Schema par
 from __future__ import annotations
 
 import contextlib
-import io
+import os
 import re
+import sys
 import tempfile
 from copy import deepcopy
 from pathlib import Path
@@ -20,6 +21,7 @@ from typing_extensions import Unpack
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._process import run_captured
 from datamodel_code_generator._python_syntax import normalize_newlines as normalize_newlines
 from datamodel_code_generator._shared_types import Error, SchemaParseError
 from datamodel_code_generator._source import input_text as _input_text
@@ -166,14 +168,13 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
 }
 
 
-def _load_grpc_tools() -> tuple[Any, Path]:
+def _load_grpc_tools() -> Path:
     try:
         import grpc_tools  # noqa: PLC0415
-        from grpc_tools import protoc  # noqa: PLC0415
     except ImportError as exc:
         msg = f"protobuf input requires grpcio-tools. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
-    return protoc, Path(grpc_tools.__file__).parent / "_proto"
+    return Path(grpc_tools.__file__).parent / "protoc.py"
 
 
 def _load_descriptor_pb2() -> Any:
@@ -361,6 +362,16 @@ def _comment_map(file_descriptor: Any) -> dict[tuple[int, ...], str]:
     return comments
 
 
+def _run_protoc(protoc_script: Path, args: Sequence[str]) -> tuple[int, str]:
+    """Run ``protoc`` in its own process and return its exit code and what it printed.
+
+    ``protoc`` is C++ code that writes to its own standard error, so neither ``contextlib.redirect_stderr`` nor
+    redirecting file descriptor 2 sees it where the extension carries its own C runtime (the Windows wheels).
+    """
+    result = run_captured((sys.executable, str(protoc_script), *args))
+    return result.returncode, result.stderr.decode("utf-8", errors="replace").replace("\r\n", "\n")
+
+
 class _ProtoInputPreparer:
     def __init__(self, parser: ProtobufParser) -> None:
         self.parser = parser
@@ -399,6 +410,19 @@ class _ProtoInputPreparer:
     def __exit__(self, *args: object) -> None:
         assert self.temp_dir is not None
         self.temp_dir.cleanup()
+
+    def without_temp_dir(self, text: str) -> str:
+        """Return `text` without the run's temporary directory in its paths (`protoc` names files by disk path).
+
+        Each spelling of the directory (as given and resolved) is also taken in its POSIX form: on Windows ``protoc``
+        writes it with forward slashes (``C:/Users/RUNNER~1/...``).
+        """
+        assert self.temp_dir is not None
+        root = Path(self.temp_dir.name)
+        forms = {form for path in (root, Path(os.path.realpath(root))) for form in (str(path), path.as_posix())}
+        prefixes = {form + separator for form in forms for separator in (os.sep, "/", "\\")}
+        pattern = "|".join(re.escape(prefix) for prefix in sorted(prefixes, key=len, reverse=True))
+        return re.sub(pattern, "", text, flags=re.IGNORECASE if sys.platform == "win32" else 0)
 
     def _input_files(self, temp_path: Path) -> list[Path]:
         source = self.parser.source
@@ -740,9 +764,10 @@ class ProtobufParser(JsonSchemaParser):
                 "from the include paths by itself, so the input cannot be kept to the given document."
             )
             raise Error(msg)
-        protoc, well_known_include = _load_grpc_tools()
+        protoc_script = _load_grpc_tools()
         descriptor_pb2 = _load_descriptor_pb2()
-        with _ProtoInputPreparer(self) as (input_files, include_paths, input_file_names):
+        preparer = _ProtoInputPreparer(self)
+        with preparer as (input_files, include_paths, input_file_names):
             if not input_files:
                 msg = "No .proto files found in input"
                 raise SchemaParseError(msg)
@@ -756,20 +781,19 @@ class ProtobufParser(JsonSchemaParser):
                     persistent_include_paths = self._persistent_include_paths(lexical_sources)
                     self._record_lexical_import_candidates(lexical_sources, persistent_include_paths)
                 args = [
-                    "grpc_tools.protoc",
-                    *(f"-I{path}" for path in [*include_paths, well_known_include]),
+                    *(f"-I{path}" for path in include_paths),
                     "--include_imports",
                     "--include_source_info",
                     f"--descriptor_set_out={output_path}",
                     *(str(path) for path in input_files),
                 ]
-                stderr = io.StringIO()
-                with contextlib.redirect_stderr(stderr):
-                    exit_code = protoc.main(args)
+                exit_code, printed = _run_protoc(protoc_script, args)
+                details = preparer.without_temp_dir(printed).strip()
                 if exit_code:
-                    details = stderr.getvalue().strip()
                     msg = f"Invalid Protocol Buffers schema: {details or f'protoc exited with {exit_code}'}"
                     raise SchemaParseError(msg)
+                if details:
+                    sys.stderr.write(f"{details}\n")
                 descriptor_set = descriptor_pb2.FileDescriptorSet()
                 descriptor_set.ParseFromString(output_path.read_bytes())
                 if collect_dependencies:
