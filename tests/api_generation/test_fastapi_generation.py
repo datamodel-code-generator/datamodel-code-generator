@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -13,7 +13,8 @@ from tests.api_generation.support.fastapi_generation import (
 )
 from tests.conftest import assert_generated_modules_output, assert_output
 
-EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi"
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.parametrize(
@@ -138,14 +139,14 @@ def test_fastapi_template_fallback(case: str, *, builtin_sources: bool, tmp_path
 
 def test_fastapi_api(tmp_path: Path) -> None:
     """Return the files without an output, generate twice, then restore an edited package file."""
-    assert_output(fastapi_api_report(tmp_path), EXPECTED / "api.txt")
+    assert_output(fastapi_api_report(tmp_path))
 
 
 def test_fastapi_scope(tmp_path: Path) -> None:
     """Stop unsupported settings before generating models, locking, or publishing."""
-    assert_output(fastapi_scope_report(tmp_path), EXPECTED / "acceptance" / "scope.txt")
+    assert_output(fastapi_scope_report(tmp_path))
 
 
 def test_fastapi_checkouts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Write the same bytes from every checkout and directory, and nothing new after moving a checkout."""
-    assert_output(fastapi_checkout_report(tmp_path, monkeypatch), EXPECTED / "acceptance" / "checkouts.txt")
+    assert_output(fastapi_checkout_report(tmp_path, monkeypatch))
