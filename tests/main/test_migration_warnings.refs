@@ -10,479 +10,258 @@ no-extra	main/migration_warnings/genson_notice_for_installed_requirements[no-ext
 other-extra	main/migration_warnings/genson_notice_for_installed_requirements[other-extra].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
 own-extra	main/migration_warnings/genson_notice_for_installed_requirements[own-extra].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
 [test_migration_api_warning_filters]
-error	main/migration_warnings/migration_api_warning_filters[error].file.txt
+error	main/migration_warnings/migration_api_warning_filters[error].file.txt	= main/migration_warnings/file-error.txt
 error	main/migration_warnings/migration_api_warning_filters[error].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 ignore	main/migration_warnings/migration_api_warning_filters[ignore].file.txt
 ignore	main/migration_warnings/migration_api_warning_filters[ignore].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_migration_error_filter_is_not_consumed_by_cli_scope]
-	main/migration_warnings/migration_error_filter_is_not_consumed_by_cli_scope.txt	= main/migration_warnings/migration_api_warning_filters[error].file.txt
+	main/migration_warnings/migration_error_filter_is_not_consumed_by_cli_scope.txt	= main/migration_warnings/file-error.txt
 [test_migration_notices_batch_deduplicated]
-both	main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-both	main/migration_warnings/migration_notices_batch_deduplicated[both].txt	= main/migration_warnings/optional.txt
-both	main/migration_warnings/migration_notices_batch_deduplicated[both].txt	@black=22	= main/migration_warnings/migration_notices_batch_deduplicated[both]@black22.txt
-both	main/migration_warnings/migration_notices_batch_deduplicated[both].txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_batch_deduplicated[both]@black22.txt
-both	main/migration_warnings/migration_notices_batch_deduplicated[both].txt	@isort=5
-implicit	main/migration_warnings/migration_notices_batch_deduplicated[implicit].model.py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-implicit	main/migration_warnings/migration_notices_batch_deduplicated[implicit].txt	= main/migration_warnings/default.txt
-implicit	main/migration_warnings/migration_notices_batch_deduplicated[implicit].txt	@black=22	= main/migration_warnings/migration_notices_batch_deduplicated[implicit]@black22.txt
-implicit	main/migration_warnings/migration_notices_batch_deduplicated[implicit].txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_batch_deduplicated[implicit]@black22.txt
-implicit	main/migration_warnings/migration_notices_batch_deduplicated[implicit].txt	@isort=5
-new-preset	main/migration_warnings/migration_notices_batch_deduplicated[new-preset].model.py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-new-preset	main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-new-preset	main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt	@isort=5
+both	main/migration_warnings/batch-both-old-pydantic-old-black-old-isort.txt	?
+both	main/migration_warnings/batch-both-pydantic-black-isort.txt	?	= main/migration_warnings/optional.txt
+both	main/migration_warnings/batch-both-pydantic-old-black-isort.txt	?
+both	main/migration_warnings/model.py
+implicit	main/migration_warnings/batch-implicit-old-pydantic-old-black-old-isort.txt	?
+implicit	main/migration_warnings/batch-implicit-pydantic-black-isort.txt	?	= main/migration_warnings/default.txt
+implicit	main/migration_warnings/batch-implicit-pydantic-old-black-isort.txt	?
+implicit	main/migration_warnings/model.py
+new-preset	main/migration_warnings/batch-new-preset-old-pydantic-old-black-old-isort.txt	?	= main/migration_warnings/pydantic.txt
+new-preset	main/migration_warnings/batch-new-preset-pydantic-black-isort.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+new-preset	main/migration_warnings/batch-new-preset-pydantic-old-black-isort.txt	?	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+new-preset	main/migration_warnings/model.py
 [test_migration_notices_name_the_code_that_called_generate]
 	main/migration_warnings/migration_notices_name_the_code_that_called_generate.txt
 [test_migration_notices_real_generation]
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].black.txt	@black=22
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].black.txt	@black=24,python=3.12
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].black.txt	@isort=5
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].optional.txt	= main/migration_warnings/optional.txt
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].py
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-black	main/migration_warnings/migration_notices_real_generation[api-black].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].isort.txt	@isort=5
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].optional.txt	= main/migration_warnings/optional.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-both	main/migration_warnings/migration_notices_real_generation[api-both].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-builtin	main/migration_warnings/migration_notices_real_generation[api-builtin].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-builtin	main/migration_warnings/migration_notices_real_generation[api-builtin].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-builtin	main/migration_warnings/migration_notices_real_generation[api-builtin].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-builtin	main/migration_warnings/migration_notices_real_generation[api-builtin].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-builtin	main/migration_warnings/migration_notices_real_generation[api-builtin].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-api-builtin	main/migration_warnings/migration_notices_real_generation[api-builtin].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-builtin	main/migration_warnings/migration_notices_real_generation[api-builtin].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].default.txt	= main/migration_warnings/default.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].py
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-custom	main/migration_warnings/migration_notices_real_generation[api-custom].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-empty	main/migration_warnings/migration_notices_real_generation[api-empty].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-empty	main/migration_warnings/migration_notices_real_generation[api-empty].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-empty	main/migration_warnings/migration_notices_real_generation[api-empty].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-empty	main/migration_warnings/migration_notices_real_generation[api-empty].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-empty	main/migration_warnings/migration_notices_real_generation[api-empty].py
-api-empty	main/migration_warnings/migration_notices_real_generation[api-empty].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-empty	main/migration_warnings/migration_notices_real_generation[api-empty].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].default.txt	= main/migration_warnings/default.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-implicit	main/migration_warnings/migration_notices_real_generation[api-implicit].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].optional.txt	= main/migration_warnings/optional.txt
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-isort	main/migration_warnings/migration_notices_real_generation[api-isort].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-new-preset	main/migration_warnings/migration_notices_real_generation[api-new-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-new-preset	main/migration_warnings/migration_notices_real_generation[api-new-preset].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-new-preset	main/migration_warnings/migration_notices_real_generation[api-new-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-new-preset	main/migration_warnings/migration_notices_real_generation[api-new-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-new-preset	main/migration_warnings/migration_notices_real_generation[api-new-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-api-new-preset	main/migration_warnings/migration_notices_real_generation[api-new-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-new-preset	main/migration_warnings/migration_notices_real_generation[api-new-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].default.txt	= main/migration_warnings/default.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-old-preset	main/migration_warnings/migration_notices_real_generation[api-old-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-api-ruff	main/migration_warnings/migration_notices_real_generation[api-ruff].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-ruff	main/migration_warnings/migration_notices_real_generation[api-ruff].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-ruff	main/migration_warnings/migration_notices_real_generation[api-ruff].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-ruff	main/migration_warnings/migration_notices_real_generation[api-ruff].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-ruff	main/migration_warnings/migration_notices_real_generation[api-ruff].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-api-ruff	main/migration_warnings/migration_notices_real_generation[api-ruff].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-api-ruff	main/migration_warnings/migration_notices_real_generation[api-ruff].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].optional.txt	= main/migration_warnings/optional.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].py	= main/migration_warnings/migration_notices_real_generation[api-black].py
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-black	main/migration_warnings/migration_notices_real_generation[cli-black].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].optional.txt	= main/migration_warnings/optional.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-both	main/migration_warnings/migration_notices_real_generation[cli-both].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-builtin	main/migration_warnings/migration_notices_real_generation[cli-builtin].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-builtin	main/migration_warnings/migration_notices_real_generation[cli-builtin].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-builtin	main/migration_warnings/migration_notices_real_generation[cli-builtin].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-builtin	main/migration_warnings/migration_notices_real_generation[cli-builtin].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-builtin	main/migration_warnings/migration_notices_real_generation[cli-builtin].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-cli-builtin	main/migration_warnings/migration_notices_real_generation[cli-builtin].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-builtin	main/migration_warnings/migration_notices_real_generation[cli-builtin].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].default.txt	= main/migration_warnings/default.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].py	= main/migration_warnings/migration_notices_real_generation[api-custom].py
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-custom	main/migration_warnings/migration_notices_real_generation[cli-custom].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-empty	main/migration_warnings/migration_notices_real_generation[cli-empty].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-empty	main/migration_warnings/migration_notices_real_generation[cli-empty].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-empty	main/migration_warnings/migration_notices_real_generation[cli-empty].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-empty	main/migration_warnings/migration_notices_real_generation[cli-empty].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-empty	main/migration_warnings/migration_notices_real_generation[cli-empty].py	= main/migration_warnings/migration_notices_real_generation[api-empty].py
-cli-empty	main/migration_warnings/migration_notices_real_generation[cli-empty].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-empty	main/migration_warnings/migration_notices_real_generation[cli-empty].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].default.txt	= main/migration_warnings/default.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-implicit	main/migration_warnings/migration_notices_real_generation[cli-implicit].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].optional.txt	= main/migration_warnings/optional.txt
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-isort	main/migration_warnings/migration_notices_real_generation[cli-isort].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-new-preset	main/migration_warnings/migration_notices_real_generation[cli-new-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-new-preset	main/migration_warnings/migration_notices_real_generation[cli-new-preset].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-new-preset	main/migration_warnings/migration_notices_real_generation[cli-new-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-new-preset	main/migration_warnings/migration_notices_real_generation[cli-new-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-new-preset	main/migration_warnings/migration_notices_real_generation[cli-new-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-cli-new-preset	main/migration_warnings/migration_notices_real_generation[cli-new-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-new-preset	main/migration_warnings/migration_notices_real_generation[cli-new-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].default.txt	= main/migration_warnings/default.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-old-preset	main/migration_warnings/migration_notices_real_generation[cli-old-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-cli-ruff	main/migration_warnings/migration_notices_real_generation[cli-ruff].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-ruff	main/migration_warnings/migration_notices_real_generation[cli-ruff].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-ruff	main/migration_warnings/migration_notices_real_generation[cli-ruff].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-ruff	main/migration_warnings/migration_notices_real_generation[cli-ruff].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-ruff	main/migration_warnings/migration_notices_real_generation[cli-ruff].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-cli-ruff	main/migration_warnings/migration_notices_real_generation[cli-ruff].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-cli-ruff	main/migration_warnings/migration_notices_real_generation[cli-ruff].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].optional.txt	= main/migration_warnings/optional.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].py	= main/migration_warnings/migration_notices_real_generation[api-black].py
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-black	main/migration_warnings/migration_notices_real_generation[job-black].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].optional.txt	= main/migration_warnings/optional.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-both	main/migration_warnings/migration_notices_real_generation[job-both].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-builtin	main/migration_warnings/migration_notices_real_generation[job-builtin].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-builtin	main/migration_warnings/migration_notices_real_generation[job-builtin].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-builtin	main/migration_warnings/migration_notices_real_generation[job-builtin].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-builtin	main/migration_warnings/migration_notices_real_generation[job-builtin].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-builtin	main/migration_warnings/migration_notices_real_generation[job-builtin].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-job-builtin	main/migration_warnings/migration_notices_real_generation[job-builtin].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-builtin	main/migration_warnings/migration_notices_real_generation[job-builtin].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].default.txt	= main/migration_warnings/default.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].py	= main/migration_warnings/migration_notices_real_generation[api-custom].py
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-custom	main/migration_warnings/migration_notices_real_generation[job-custom].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-empty	main/migration_warnings/migration_notices_real_generation[job-empty].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-empty	main/migration_warnings/migration_notices_real_generation[job-empty].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-empty	main/migration_warnings/migration_notices_real_generation[job-empty].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-empty	main/migration_warnings/migration_notices_real_generation[job-empty].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-empty	main/migration_warnings/migration_notices_real_generation[job-empty].py	= main/migration_warnings/migration_notices_real_generation[api-empty].py
-job-empty	main/migration_warnings/migration_notices_real_generation[job-empty].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-empty	main/migration_warnings/migration_notices_real_generation[job-empty].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].default.txt	= main/migration_warnings/default.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-implicit	main/migration_warnings/migration_notices_real_generation[job-implicit].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].optional.txt	= main/migration_warnings/optional.txt
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-isort	main/migration_warnings/migration_notices_real_generation[job-isort].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-new-preset	main/migration_warnings/migration_notices_real_generation[job-new-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-new-preset	main/migration_warnings/migration_notices_real_generation[job-new-preset].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-new-preset	main/migration_warnings/migration_notices_real_generation[job-new-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-new-preset	main/migration_warnings/migration_notices_real_generation[job-new-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-new-preset	main/migration_warnings/migration_notices_real_generation[job-new-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-job-new-preset	main/migration_warnings/migration_notices_real_generation[job-new-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-new-preset	main/migration_warnings/migration_notices_real_generation[job-new-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].default.txt	= main/migration_warnings/default.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-old-preset	main/migration_warnings/migration_notices_real_generation[job-old-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-job-ruff	main/migration_warnings/migration_notices_real_generation[job-ruff].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-ruff	main/migration_warnings/migration_notices_real_generation[job-ruff].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-ruff	main/migration_warnings/migration_notices_real_generation[job-ruff].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-ruff	main/migration_warnings/migration_notices_real_generation[job-ruff].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-ruff	main/migration_warnings/migration_notices_real_generation[job-ruff].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-job-ruff	main/migration_warnings/migration_notices_real_generation[job-ruff].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-job-ruff	main/migration_warnings/migration_notices_real_generation[job-ruff].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].optional.txt	= main/migration_warnings/optional.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].py	= main/migration_warnings/migration_notices_real_generation[api-black].py
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-black	main/migration_warnings/migration_notices_real_generation[profile-black].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].optional.txt	= main/migration_warnings/optional.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-both	main/migration_warnings/migration_notices_real_generation[profile-both].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-builtin	main/migration_warnings/migration_notices_real_generation[profile-builtin].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-builtin	main/migration_warnings/migration_notices_real_generation[profile-builtin].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-builtin	main/migration_warnings/migration_notices_real_generation[profile-builtin].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-builtin	main/migration_warnings/migration_notices_real_generation[profile-builtin].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-builtin	main/migration_warnings/migration_notices_real_generation[profile-builtin].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-profile-builtin	main/migration_warnings/migration_notices_real_generation[profile-builtin].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-builtin	main/migration_warnings/migration_notices_real_generation[profile-builtin].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].default.txt	= main/migration_warnings/default.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].py	= main/migration_warnings/migration_notices_real_generation[api-custom].py
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-custom	main/migration_warnings/migration_notices_real_generation[profile-custom].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-empty	main/migration_warnings/migration_notices_real_generation[profile-empty].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-empty	main/migration_warnings/migration_notices_real_generation[profile-empty].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-empty	main/migration_warnings/migration_notices_real_generation[profile-empty].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-empty	main/migration_warnings/migration_notices_real_generation[profile-empty].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-empty	main/migration_warnings/migration_notices_real_generation[profile-empty].py	= main/migration_warnings/migration_notices_real_generation[api-empty].py
-profile-empty	main/migration_warnings/migration_notices_real_generation[profile-empty].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-empty	main/migration_warnings/migration_notices_real_generation[profile-empty].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].default.txt	= main/migration_warnings/default.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-implicit	main/migration_warnings/migration_notices_real_generation[profile-implicit].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].optional.txt	= main/migration_warnings/optional.txt
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-isort	main/migration_warnings/migration_notices_real_generation[profile-isort].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-new-preset	main/migration_warnings/migration_notices_real_generation[profile-new-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-new-preset	main/migration_warnings/migration_notices_real_generation[profile-new-preset].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-new-preset	main/migration_warnings/migration_notices_real_generation[profile-new-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-new-preset	main/migration_warnings/migration_notices_real_generation[profile-new-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-new-preset	main/migration_warnings/migration_notices_real_generation[profile-new-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-profile-new-preset	main/migration_warnings/migration_notices_real_generation[profile-new-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-new-preset	main/migration_warnings/migration_notices_real_generation[profile-new-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].default.txt	= main/migration_warnings/default.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-old-preset	main/migration_warnings/migration_notices_real_generation[profile-old-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-profile-ruff	main/migration_warnings/migration_notices_real_generation[profile-ruff].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-ruff	main/migration_warnings/migration_notices_real_generation[profile-ruff].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-ruff	main/migration_warnings/migration_notices_real_generation[profile-ruff].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-ruff	main/migration_warnings/migration_notices_real_generation[profile-ruff].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-ruff	main/migration_warnings/migration_notices_real_generation[profile-ruff].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-profile-ruff	main/migration_warnings/migration_notices_real_generation[profile-ruff].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-profile-ruff	main/migration_warnings/migration_notices_real_generation[profile-ruff].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].optional.txt	= main/migration_warnings/optional.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].py	= main/migration_warnings/migration_notices_real_generation[api-black].py
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-black	main/migration_warnings/migration_notices_real_generation[pyproject-black].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].optional.txt	= main/migration_warnings/optional.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-both	main/migration_warnings/migration_notices_real_generation[pyproject-both].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-builtin	main/migration_warnings/migration_notices_real_generation[pyproject-builtin].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-builtin	main/migration_warnings/migration_notices_real_generation[pyproject-builtin].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-builtin	main/migration_warnings/migration_notices_real_generation[pyproject-builtin].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-builtin	main/migration_warnings/migration_notices_real_generation[pyproject-builtin].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-builtin	main/migration_warnings/migration_notices_real_generation[pyproject-builtin].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-pyproject-builtin	main/migration_warnings/migration_notices_real_generation[pyproject-builtin].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-builtin	main/migration_warnings/migration_notices_real_generation[pyproject-builtin].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].default.txt	= main/migration_warnings/default.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].py	= main/migration_warnings/migration_notices_real_generation[api-custom].py
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-custom	main/migration_warnings/migration_notices_real_generation[pyproject-custom].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-empty	main/migration_warnings/migration_notices_real_generation[pyproject-empty].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-empty	main/migration_warnings/migration_notices_real_generation[pyproject-empty].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-empty	main/migration_warnings/migration_notices_real_generation[pyproject-empty].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-empty	main/migration_warnings/migration_notices_real_generation[pyproject-empty].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-empty	main/migration_warnings/migration_notices_real_generation[pyproject-empty].py	= main/migration_warnings/migration_notices_real_generation[api-empty].py
-pyproject-empty	main/migration_warnings/migration_notices_real_generation[pyproject-empty].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-empty	main/migration_warnings/migration_notices_real_generation[pyproject-empty].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].default.txt	= main/migration_warnings/default.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-implicit	main/migration_warnings/migration_notices_real_generation[pyproject-implicit].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].optional.txt	= main/migration_warnings/optional.txt
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-isort	main/migration_warnings/migration_notices_real_generation[pyproject-isort].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-new-preset	main/migration_warnings/migration_notices_real_generation[pyproject-new-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-new-preset	main/migration_warnings/migration_notices_real_generation[pyproject-new-preset].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-new-preset	main/migration_warnings/migration_notices_real_generation[pyproject-new-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-new-preset	main/migration_warnings/migration_notices_real_generation[pyproject-new-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-new-preset	main/migration_warnings/migration_notices_real_generation[pyproject-new-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-pyproject-new-preset	main/migration_warnings/migration_notices_real_generation[pyproject-new-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-new-preset	main/migration_warnings/migration_notices_real_generation[pyproject-new-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].black.txt	@black=22	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].black.txt	@black=24,python=3.12	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].black.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-black].black.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].default.txt	= main/migration_warnings/default.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].isort.txt	@isort=5	= main/migration_warnings/migration_notices_real_generation[api-both].isort.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-old-preset	main/migration_warnings/migration_notices_real_generation[pyproject-old-preset].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
-pyproject-ruff	main/migration_warnings/migration_notices_real_generation[pyproject-ruff].black.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-ruff	main/migration_warnings/migration_notices_real_generation[pyproject-ruff].default.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-ruff	main/migration_warnings/migration_notices_real_generation[pyproject-ruff].isort.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-ruff	main/migration_warnings/migration_notices_real_generation[pyproject-ruff].optional.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-ruff	main/migration_warnings/migration_notices_real_generation[pyproject-ruff].py	= main/migration_warnings/migration_notices_batch_deduplicated[both].model.py
-pyproject-ruff	main/migration_warnings/migration_notices_real_generation[pyproject-ruff].pydantic.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-pyproject-ruff	main/migration_warnings/migration_notices_real_generation[pyproject-ruff].pydantic.txt	@isort=5	= main/migration_warnings/migration_notices_batch_deduplicated[new-preset].txt
+api-black	main/migration_warnings/black.py
+api-black	main/migration_warnings/black.txt	?
+api-black	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-black	main/migration_warnings/optional.txt
+api-black	main/migration_warnings/pydantic.txt	?
+api-both	main/migration_warnings/black.txt	?
+api-both	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-both	main/migration_warnings/isort.txt	?
+api-both	main/migration_warnings/model.py
+api-both	main/migration_warnings/optional.txt
+api-both	main/migration_warnings/pydantic.txt	?
+api-builtin	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-builtin	main/migration_warnings/model.py
+api-builtin	main/migration_warnings/pydantic.txt	?
+api-custom	main/migration_warnings/black.txt	?
+api-custom	main/migration_warnings/custom.py
+api-custom	main/migration_warnings/default.txt
+api-custom	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-custom	main/migration_warnings/isort.txt	?
+api-custom	main/migration_warnings/pydantic.txt	?
+api-empty	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-empty	main/migration_warnings/pydantic.txt	?
+api-empty	main/migration_warnings/raw.py
+api-implicit	main/migration_warnings/black.txt	?
+api-implicit	main/migration_warnings/default.txt
+api-implicit	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-implicit	main/migration_warnings/isort.txt	?
+api-implicit	main/migration_warnings/model.py
+api-implicit	main/migration_warnings/pydantic.txt	?
+api-isort	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-isort	main/migration_warnings/isort.txt	?
+api-isort	main/migration_warnings/model.py
+api-isort	main/migration_warnings/optional.txt
+api-isort	main/migration_warnings/pydantic.txt	?
+api-new-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-new-preset	main/migration_warnings/model.py
+api-new-preset	main/migration_warnings/pydantic.txt	?
+api-old-preset	main/migration_warnings/black.txt	?
+api-old-preset	main/migration_warnings/default.txt
+api-old-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-old-preset	main/migration_warnings/isort.txt	?
+api-old-preset	main/migration_warnings/model.py
+api-old-preset	main/migration_warnings/pydantic.txt	?
+api-ruff	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+api-ruff	main/migration_warnings/model.py
+api-ruff	main/migration_warnings/pydantic.txt	?
+cli-black	main/migration_warnings/black.py
+cli-black	main/migration_warnings/black.txt	?
+cli-black	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-black	main/migration_warnings/optional.txt
+cli-black	main/migration_warnings/pydantic.txt	?
+cli-both	main/migration_warnings/black.txt	?
+cli-both	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-both	main/migration_warnings/isort.txt	?
+cli-both	main/migration_warnings/model.py
+cli-both	main/migration_warnings/optional.txt
+cli-both	main/migration_warnings/pydantic.txt	?
+cli-builtin	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-builtin	main/migration_warnings/model.py
+cli-builtin	main/migration_warnings/pydantic.txt	?
+cli-custom	main/migration_warnings/black.txt	?
+cli-custom	main/migration_warnings/custom.py
+cli-custom	main/migration_warnings/default.txt
+cli-custom	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-custom	main/migration_warnings/isort.txt	?
+cli-custom	main/migration_warnings/pydantic.txt	?
+cli-empty	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-empty	main/migration_warnings/pydantic.txt	?
+cli-empty	main/migration_warnings/raw.py
+cli-implicit	main/migration_warnings/black.txt	?
+cli-implicit	main/migration_warnings/default.txt
+cli-implicit	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-implicit	main/migration_warnings/isort.txt	?
+cli-implicit	main/migration_warnings/model.py
+cli-implicit	main/migration_warnings/pydantic.txt	?
+cli-isort	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-isort	main/migration_warnings/isort.txt	?
+cli-isort	main/migration_warnings/model.py
+cli-isort	main/migration_warnings/optional.txt
+cli-isort	main/migration_warnings/pydantic.txt	?
+cli-new-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-new-preset	main/migration_warnings/model.py
+cli-new-preset	main/migration_warnings/pydantic.txt	?
+cli-old-preset	main/migration_warnings/black.txt	?
+cli-old-preset	main/migration_warnings/default.txt
+cli-old-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-old-preset	main/migration_warnings/isort.txt	?
+cli-old-preset	main/migration_warnings/model.py
+cli-old-preset	main/migration_warnings/pydantic.txt	?
+cli-ruff	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+cli-ruff	main/migration_warnings/model.py
+cli-ruff	main/migration_warnings/pydantic.txt	?
+job-black	main/migration_warnings/black.py
+job-black	main/migration_warnings/black.txt	?
+job-black	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-black	main/migration_warnings/optional.txt
+job-black	main/migration_warnings/pydantic.txt	?
+job-both	main/migration_warnings/black.txt	?
+job-both	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-both	main/migration_warnings/isort.txt	?
+job-both	main/migration_warnings/model.py
+job-both	main/migration_warnings/optional.txt
+job-both	main/migration_warnings/pydantic.txt	?
+job-builtin	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-builtin	main/migration_warnings/model.py
+job-builtin	main/migration_warnings/pydantic.txt	?
+job-custom	main/migration_warnings/black.txt	?
+job-custom	main/migration_warnings/custom.py
+job-custom	main/migration_warnings/default.txt
+job-custom	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-custom	main/migration_warnings/isort.txt	?
+job-custom	main/migration_warnings/pydantic.txt	?
+job-empty	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-empty	main/migration_warnings/pydantic.txt	?
+job-empty	main/migration_warnings/raw.py
+job-implicit	main/migration_warnings/black.txt	?
+job-implicit	main/migration_warnings/default.txt
+job-implicit	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-implicit	main/migration_warnings/isort.txt	?
+job-implicit	main/migration_warnings/model.py
+job-implicit	main/migration_warnings/pydantic.txt	?
+job-isort	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-isort	main/migration_warnings/isort.txt	?
+job-isort	main/migration_warnings/model.py
+job-isort	main/migration_warnings/optional.txt
+job-isort	main/migration_warnings/pydantic.txt	?
+job-new-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-new-preset	main/migration_warnings/model.py
+job-new-preset	main/migration_warnings/pydantic.txt	?
+job-old-preset	main/migration_warnings/black.txt	?
+job-old-preset	main/migration_warnings/default.txt
+job-old-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-old-preset	main/migration_warnings/isort.txt	?
+job-old-preset	main/migration_warnings/model.py
+job-old-preset	main/migration_warnings/pydantic.txt	?
+job-ruff	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+job-ruff	main/migration_warnings/model.py
+job-ruff	main/migration_warnings/pydantic.txt	?
+profile-black	main/migration_warnings/black.py
+profile-black	main/migration_warnings/black.txt	?
+profile-black	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-black	main/migration_warnings/optional.txt
+profile-black	main/migration_warnings/pydantic.txt	?
+profile-both	main/migration_warnings/black.txt	?
+profile-both	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-both	main/migration_warnings/isort.txt	?
+profile-both	main/migration_warnings/model.py
+profile-both	main/migration_warnings/optional.txt
+profile-both	main/migration_warnings/pydantic.txt	?
+profile-builtin	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-builtin	main/migration_warnings/model.py
+profile-builtin	main/migration_warnings/pydantic.txt	?
+profile-custom	main/migration_warnings/black.txt	?
+profile-custom	main/migration_warnings/custom.py
+profile-custom	main/migration_warnings/default.txt
+profile-custom	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-custom	main/migration_warnings/isort.txt	?
+profile-custom	main/migration_warnings/pydantic.txt	?
+profile-empty	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-empty	main/migration_warnings/pydantic.txt	?
+profile-empty	main/migration_warnings/raw.py
+profile-implicit	main/migration_warnings/black.txt	?
+profile-implicit	main/migration_warnings/default.txt
+profile-implicit	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-implicit	main/migration_warnings/isort.txt	?
+profile-implicit	main/migration_warnings/model.py
+profile-implicit	main/migration_warnings/pydantic.txt	?
+profile-isort	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-isort	main/migration_warnings/isort.txt	?
+profile-isort	main/migration_warnings/model.py
+profile-isort	main/migration_warnings/optional.txt
+profile-isort	main/migration_warnings/pydantic.txt	?
+profile-new-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-new-preset	main/migration_warnings/model.py
+profile-new-preset	main/migration_warnings/pydantic.txt	?
+profile-old-preset	main/migration_warnings/black.txt	?
+profile-old-preset	main/migration_warnings/default.txt
+profile-old-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-old-preset	main/migration_warnings/isort.txt	?
+profile-old-preset	main/migration_warnings/model.py
+profile-old-preset	main/migration_warnings/pydantic.txt	?
+profile-ruff	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+profile-ruff	main/migration_warnings/model.py
+profile-ruff	main/migration_warnings/pydantic.txt	?
+pyproject-black	main/migration_warnings/black.py
+pyproject-black	main/migration_warnings/black.txt	?
+pyproject-black	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-black	main/migration_warnings/optional.txt
+pyproject-black	main/migration_warnings/pydantic.txt	?
+pyproject-both	main/migration_warnings/black.txt	?
+pyproject-both	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-both	main/migration_warnings/isort.txt	?
+pyproject-both	main/migration_warnings/model.py
+pyproject-both	main/migration_warnings/optional.txt
+pyproject-both	main/migration_warnings/pydantic.txt	?
+pyproject-builtin	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-builtin	main/migration_warnings/model.py
+pyproject-builtin	main/migration_warnings/pydantic.txt	?
+pyproject-custom	main/migration_warnings/black.txt	?
+pyproject-custom	main/migration_warnings/custom.py
+pyproject-custom	main/migration_warnings/default.txt
+pyproject-custom	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-custom	main/migration_warnings/isort.txt	?
+pyproject-custom	main/migration_warnings/pydantic.txt	?
+pyproject-empty	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-empty	main/migration_warnings/pydantic.txt	?
+pyproject-empty	main/migration_warnings/raw.py
+pyproject-implicit	main/migration_warnings/black.txt	?
+pyproject-implicit	main/migration_warnings/default.txt
+pyproject-implicit	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-implicit	main/migration_warnings/isort.txt	?
+pyproject-implicit	main/migration_warnings/model.py
+pyproject-implicit	main/migration_warnings/pydantic.txt	?
+pyproject-isort	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-isort	main/migration_warnings/isort.txt	?
+pyproject-isort	main/migration_warnings/model.py
+pyproject-isort	main/migration_warnings/optional.txt
+pyproject-isort	main/migration_warnings/pydantic.txt	?
+pyproject-new-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-new-preset	main/migration_warnings/model.py
+pyproject-new-preset	main/migration_warnings/pydantic.txt	?
+pyproject-old-preset	main/migration_warnings/black.txt	?
+pyproject-old-preset	main/migration_warnings/default.txt
+pyproject-old-preset	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-old-preset	main/migration_warnings/isort.txt	?
+pyproject-old-preset	main/migration_warnings/model.py
+pyproject-old-preset	main/migration_warnings/pydantic.txt	?
+pyproject-ruff	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-ruff	main/migration_warnings/model.py
+pyproject-ruff	main/migration_warnings/pydantic.txt	?
 [test_optional_dependency_notices_deduplicated_in_one_cli_invocation]
 	main/migration_warnings/optional_dependency_notices_deduplicated_in_one_cli_invocation.notices.txt
 [test_optional_dependency_notices_real_generation]
