@@ -1,0 +1,5 @@
+exit=0
+families: TMP/repo has no tests/main/shape_families/families.py: no family cells
+summary: same=1, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=0
+evidence: complete
+cell: tests/data/jsonschema/plain.json | jsonschema | same

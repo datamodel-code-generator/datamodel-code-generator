@@ -9,6 +9,7 @@ cell a rule names must still differ: under the default output the set is frozen,
 
 from __future__ import annotations
 
+import json
 import re
 from typing import TYPE_CHECKING
 
@@ -17,7 +18,7 @@ import pytest
 from scripts.legacy_rows import LEGACY_ROWS
 from tests.capabilities import needs
 from tests.main.payload_validation import BACKEND_UNASSERTED_MUTATION_CONSTRAINTS
-from tests.main.shape_families.families import FAMILIES, TYPED_DICT
+from tests.main.shape_families.families import COMPONENT_REF, FAMILIES, REF, TYPED_DICT
 from tests.main.shape_families.kept import BASES, ISSUE, KEPT, LEGACY_ROW, Differences, differences
 from tests.main.shape_families.verdict import CONTRACTS, KINDS, Cell, judge, payload_backend
 
@@ -72,6 +73,26 @@ def _enumerated(family: str) -> list[Cell]:
 def test_families_enumerate_their_stated_bound() -> None:
     """Each family yields exactly the shapes its docstring states, so a dropped or added dimension value fails."""
     assert {name: len(family.shapes()) for name, family in FAMILIES.items()} == STATED_BOUND
+
+
+@pytest.mark.allow_direct_assert("Each shape's OpenAPI spelling is compared with its own definitions.")
+def test_openapi_spelling_carries_each_shape() -> None:
+    """Each shape's OpenAPI spelling holds its definitions as components, every reference to a component of that name.
+
+    No reference to ``$defs`` is left, and its one operation sends the checked definition, so the targets generated
+    from it carry the shape.
+    """
+    moved = [
+        shape.name
+        for family in FAMILIES.values()
+        for shape in family.shapes()
+        if REF in json.dumps(shape.openapi)
+        or json.loads(json.dumps(shape.openapi["components"]).replace(f'"{COMPONENT_REF}', f'"{REF}'))
+        != {"schemas": shape.document["$defs"]}
+        or shape.openapi["paths"]["/check"]["post"]["requestBody"]["content"]["application/json"]["schema"]
+        != {"$ref": COMPONENT_REF + shape.name}
+    ]
+    assert moved == []
 
 
 @pytest.mark.allow_direct_assert("The rule list is a static table; each check lists the rules that break it.")

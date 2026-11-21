@@ -1,0 +1,5 @@
+exit=1
+pick: cell family family:fake/kind=deprecated | pydantic_v2.BaseModel | default
+families (report only, the allowlist file's families key): 1 cells, same=1
+evidence: incomplete: changed code objects no compared cell ran: 1
+cell: tests/data/jsonschema/plain.json | jsonschema | same

@@ -847,6 +847,16 @@ it to the gate with `--pick <file>`: the gate prints one list of the catalog cel
 together and adds them to the cells it runs, never dropping one, and it names the probes no catalog cell runs. The
 evidence still judges what the run compared.
 
+Every tier also runs the family cells: each shape of the family library (`tests/main/shape_families/families.py`)
+generated as JSON Schema, and its OpenAPI spelling with a client and with a server. The PR tier runs every shape for
+its two output model types with default options; the nightly tier runs the full product (five output model types,
+the released presets and the option sets). The client and the server run with default options in both tiers. A run with `--select` runs them where a pattern names them
+(`--select 'family:*'`, or one family, `'family:container/*'`), so give a refactoring's identity run with a selection
+that pattern too. For their first cycle they report only: the gate prints each family cell that differs and a count of
+their classes, and leaves them out of its verdict, its evidence and `--json`. The `families` key of
+`scripts/behaviour_diff_allowlist.toml` turns them into ordinary cells (`"fail"`). A catalog records family cells
+where its `--select` names them, and `--pick` reads them like the fixture cells.
+
 ## Calibrating the option recommender
 
 `scripts/recommender_calibrate.py` checks the option recommender's rules against the public schemas listed in

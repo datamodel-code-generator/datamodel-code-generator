@@ -164,6 +164,12 @@ ref_with_defs	behaviour_diff_script/example_value[ref_with_defs].txt
 string_min_length	behaviour_diff_script/example_value[string_min_length].txt
 tuple_items	behaviour_diff_script/example_value[tuple_items].txt
 untyped_object	behaviour_diff_script/example_value[untyped_object].txt	= main/empty_model_metadata_modules.txt
+[test_families_key_refuses_another_value]
+	behaviour_diff_script/families_key_refuses_another_value.txt
+[test_family_cells_of_each_tier]
+the PR tier	behaviour_diff_script/family_cells_of_each_tier[the PR tier].txt
+the nightly tier	behaviour_diff_script/family_cells_of_each_tier[the nightly tier].txt
+types without the targets' type	behaviour_diff_script/family_cells_of_each_tier[types without the targets' type].txt
 [test_first_import_errors]
 	behaviour_diff_script/first_import_errors.txt
 [test_gate]
@@ -197,8 +203,16 @@ identity_keeps_a_moved_warning_and_error	behaviour_diff_script/gate_against_a_gi
 changed_branch_a_cell_takes	behaviour_diff_script/identity_evidence_oracle[changed_branch_a_cell_takes].txt
 changed_branch_no_cell_takes	behaviour_diff_script/identity_evidence_oracle[changed_branch_no_cell_takes].txt
 no_input_matches_the_selection	behaviour_diff_script/identity_evidence_oracle[no_input_matches_the_selection].txt
+[test_identity_picks_family_cells]
+a family cell the run reports only adds no evidence	behaviour_diff_script/identity_picks_family_cells[a family cell the run reports only adds no evidence].txt
+a judged family cell runs the change	behaviour_diff_script/identity_picks_family_cells[a judged family cell runs the change].txt
+a shape the library dropped is left out	behaviour_diff_script/identity_picks_family_cells[a shape the library dropped is left out].txt
 [test_identity_refuses_a_shard]
 	behaviour_diff_script/identity_refuses_a_shard.txt
+[test_identity_reports_family_cells_until_the_key_judges_them]
+a candidate without the library	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[a candidate without the library].txt
+the family cells fail	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[the family cells fail].txt
+the family cells report only	behaviour_diff_script/identity_reports_family_cells_until_the_key_judges_them[the family cells report only].txt
 [test_identity_with_a_pick]
 the pick adds the cell that takes the change	behaviour_diff_script/identity_with_a_pick[the pick adds the cell that takes the change].txt
 without a catalog the tier runs alone	behaviour_diff_script/identity_with_a_pick[without a catalog the tier runs alone].txt

@@ -76,7 +76,7 @@ if TYPE_CHECKING:
 Record = compare_release.Record
 FORMAT = 2
 PACKAGE_SOURCE = f"src/{compare_release.PACKAGE}/"
-KINDS = ("default", "option-set", "preset", "cli-doc", "payload", "project")
+KINDS = ("default", "option-set", "preset", "cli-doc", "payload", "project", "family")
 """The kinds of cells in the order the pick prefers them: the cheapest runs first."""
 HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 STATUSES = ("cells", "startup", "none", "unmeasurable")
