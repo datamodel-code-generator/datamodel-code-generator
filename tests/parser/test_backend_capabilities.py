@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from datamodel_code_generator.imports import Imports
 from datamodel_code_generator.model.base import (
     DataModel,
@@ -17,8 +15,6 @@ from datamodel_code_generator.model.typed_dict import TypedDict
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 from tests.conftest import assert_output
-
-EXPECTED_PATH = Path(__file__).parents[1] / "data" / "expected" / "parser" / "backend_capabilities.txt"
 
 
 class _LegacyTypedExtraField(DataModelFieldBase):
@@ -71,4 +67,4 @@ def test_output_owned_parser_capabilities() -> None:
         f"backport-only imports: {backport_only_imports}",
     ]
 
-    assert_output("\n".join(lines) + "\n", EXPECTED_PATH)
+    assert_output("\n".join(lines) + "\n")

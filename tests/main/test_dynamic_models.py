@@ -64,7 +64,6 @@ if TYPE_CHECKING:
 
 
 DATA_PATH = Path(__file__).parent.parent / "data" / "dynamic_models"
-EXPECTED_PATH = Path(__file__).parent.parent / "data" / "expected" / "dynamic_models"
 
 
 def make_object_schema(properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
@@ -91,22 +90,22 @@ def make_config(
 def assert_dynamic_models(
     schema: dict[str, Any],
     validations: dict[str, dict[str, Any]],
-    expected_path: Path,
     *,
+    name: str | None = None,
     config: GenerateConfig | None = None,
     include_model_names: bool = False,
 ) -> None:
-    """Generate dynamic models, validate data, and assert with external file."""
+    """Generate dynamic models, validate data, and assert the validated dumps."""
     models = generate_dynamic_models(schema, config=config)
     actual: dict[str, Any] = {}
-    for name, data in validations.items():
-        model = models[name]
+    for model_name, data in validations.items():
+        model = models[model_name]
         model_dump = model.model_validate(data).model_dump(mode="json")
         if include_model_names:
-            actual[name] = {"__name__": model.__name__, "data": model_dump}
+            actual[model_name] = {"__name__": model.__name__, "data": model_dump}
             continue
-        actual[name] = model_dump
-    assert_output(actual, expected_path)
+        actual[model_name] = model_dump
+    assert_output(actual, name=name, suffix=".json")
 
 
 @pytest.fixture(autouse=True)
@@ -119,14 +118,14 @@ def _setup_and_clear_cache() -> None:
 def test_simple_model() -> None:
     """Test generating a simple model and validating data."""
     schema = make_object_schema({"name": {"type": "string"}, "age": {"type": "integer"}}, required=["name"])
-    assert_dynamic_models(schema, {"Model": {"name": "John", "age": 30}}, EXPECTED_PATH / "simple_model.json")
-    assert_dynamic_models(schema, {"Model": {"name": "Jane"}}, EXPECTED_PATH / "simple_model_optional.json")
+    assert_dynamic_models(schema, {"Model": {"name": "John", "age": 30}})
+    assert_dynamic_models(schema, {"Model": {"name": "Jane"}}, name="optional")
 
 
 def test_nested_models() -> None:
     """Test generating nested models and validating nested data."""
     schema = make_object_schema({"user": {"type": "object", "properties": {"name": {"type": "string"}}}})
-    assert_dynamic_models(schema, {"Model": {"user": {"name": "Alice"}}}, EXPECTED_PATH / "nested_models.json")
+    assert_dynamic_models(schema, {"Model": {"user": {"name": "Alice"}}})
 
 
 @pytest.mark.parametrize(
@@ -177,7 +176,7 @@ def test_asyncapi_dynamic_models() -> None:
 def test_enum_model() -> None:
     """Test generating model with enum and validating enum values."""
     schema = make_object_schema({"status": {"type": "string", "enum": ["active", "inactive"]}})
-    assert_dynamic_models(schema, {"Model": {"status": "active"}}, EXPECTED_PATH / "enum_model.json")
+    assert_dynamic_models(schema, {"Model": {"status": "active"}})
 
     models = generate_dynamic_models(schema)
     with pytest.raises(pydantic.ValidationError):
@@ -203,7 +202,6 @@ def test_imported_model_classes_are_not_returned() -> None:
     }
     assert_output(
         f"{json.dumps(actual, indent=2, sort_keys=True)}\n",
-        EXPECTED_PATH / "imported_model_classes.txt",
     )
 
 
@@ -219,7 +217,6 @@ def test_generated_root_model_aliases(
 
     schema = json.loads((DATA_PATH / "root_model_aliases.json").read_text(encoding="utf-8"))
     payloads = json.loads((DATA_PATH / "root_model_alias_payloads.json").read_text(encoding="utf-8"))
-    expected = EXPECTED_PATH / "root_model_aliases" / ("aliases" if use_aliases else "classes")
     config = GenerateConfig(
         input_file_type=InputFileType.JsonSchema,
         use_root_model_type_alias=use_aliases,
@@ -235,9 +232,9 @@ def test_generated_root_model_aliases(
     )
     generated = generate(schema, config=config)
     if module_split_mode is None:
-        assert_output(generated, expected / "code.py")
+        assert_output(generated, name="code", suffix=".py")
     else:
-        assert_generated_modules_output(generated, expected / "modules")
+        assert_generated_modules_output(generated, name="modules")
 
     original_module = ImportedIntegerRoot.__module__
     registered_module = sys.modules.get(module_name or "")
@@ -280,10 +277,7 @@ def test_generated_root_model_aliases(
         "imported_target_error": str(error.value),
         "registered_module_restored": sys.modules.get(module_name or "") is registered_module,
     }
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n",
-        expected / ("runtime_single.txt" if module_split_mode is None else "runtime_modules.txt"),
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="runtime")
 
 
 @pytest.mark.parametrize("include_private", [False, True])
@@ -303,7 +297,6 @@ def test_private_root_model_aliases(include_private: bool) -> None:
     )
     assert_output(
         f"{json.dumps({name: model.model_validate(3).root for name, model in models.items()}, indent=2)}\n",
-        EXPECTED_PATH / "root_model_aliases" / ("private.txt" if include_private else "normalized_private.txt"),
     )
 
 
@@ -322,17 +315,14 @@ def test_root_model_alias_assignments_ignore_nested_and_attribute_targets(includ
         formatters=[Formatter.BUILTIN],
         disable_timestamp=True,
     )
-    assert_output(generate(schema, config=config), EXPECTED_PATH / "root_model_aliases" / "header_code.py")
+    assert_output(generate(schema, config=config), name="code", suffix=".py")
     models = generate_dynamic_models(schema, config=config, cache_size=0)
     actual = {
         "models": list(models),
         "header_root": models["HeaderRoot"].model_validate("header").root,
         "generated_root": models["GeneratedRoot"].model_validate(3).root,
     }
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n",
-        EXPECTED_PATH / "root_model_aliases" / ("header_private.txt" if include_private else "header_public.txt"),
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="runtime")
 
 
 def test_ordinary_type_alias_extraction_is_unchanged() -> None:
@@ -345,20 +335,19 @@ def test_ordinary_type_alias_extraction_is_unchanged() -> None:
         formatters=[Formatter.BUILTIN],
         disable_timestamp=True,
     )
-    assert_output(generate(schema, config=config), EXPECTED_PATH / "root_model_aliases" / "type_alias_code.py")
+    assert_output(generate(schema, config=config), name="type_alias_code", suffix=".py")
     models = generate_dynamic_models(schema, config=config, cache_size=0)
     actual = {
         "models": list(models),
         "validated": models["AliasModels"].model_validate(payloads["AliasModels"]).model_dump(mode="json"),
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "root_model_aliases" / "type_alias.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="type_alias")
 
 
 @pytest.mark.parametrize("use_aliases", [False, True], ids=["classes", "aliases"])
 @pytest.mark.parametrize("split_modules", [False, True])
 def test_root_model_alias_cli_output_is_unchanged(tmp_path: Path, use_aliases: bool, split_modules: bool) -> None:
     """CLI code matches baseline Python bytes and validates through the same RootModel fields."""
-    expected = EXPECTED_PATH / "root_model_aliases" / ("aliases" if use_aliases else "classes")
     output = tmp_path / ("models" if split_modules else "models.py")
     args = [
         "--input",
@@ -383,9 +372,9 @@ def test_root_model_alias_cli_output_is_unchanged(tmp_path: Path, use_aliases: b
         args.extend(["--module-split-mode", "single"])
     run_main_with_args(args)
     if split_modules:
-        assert_directory_content(output, expected / "cli_modules")
+        assert_directory_content(output)
     else:
-        assert_output(output.read_text(encoding="utf-8"), expected / "cli_code.py")
+        assert_output(output.read_text(encoding="utf-8"), suffix=".py")
         payloads = json.loads((DATA_PATH / "root_model_alias_payloads.json").read_text(encoding="utf-8"))
         assert_generated_model_json_validation(
             output,
@@ -421,7 +410,6 @@ def test_circular_reference() -> None:
                 "children": [{"value": "child1", "children": []}, {"value": "child2", "children": []}],
             }
         },
-        EXPECTED_PATH / "circular_reference.json",
     )
 
 
@@ -436,7 +424,7 @@ def test_allof_inheritance() -> None:
         },
         "$ref": "#/$defs/Extended",
     }
-    assert_dynamic_models(schema, {"Extended": {"id": 42, "name": "test"}}, EXPECTED_PATH / "allof_inheritance.json")
+    assert_dynamic_models(schema, {"Extended": {"id": 42, "name": "test"}})
 
 
 def test_validation_error() -> None:
@@ -478,18 +466,17 @@ def test_cache_miss_different_config() -> None:
 
 
 @pytest.mark.parametrize(
-    ("fixture_prefix", "payload_name", "expected_name"),
+    ("fixture_prefix", "payload_name"),
     [
-        ("cache_field_order", "field", "cache_field_order.txt"),
-        ("cache_nested_field_order", "nested", "cache_nested_field_order.txt"),
-        ("cache_defs_model_order", "defs", "cache_defs_model_order.txt"),
-        ("cache_openapi_components_order", "openapi", "cache_openapi_components_order.txt"),
+        ("cache_field_order", "field"),
+        ("cache_nested_field_order", "nested"),
+        ("cache_defs_model_order", "defs"),
+        ("cache_openapi_components_order", "openapi"),
     ],
 )
 def test_cache_distinguishes_schema_order(
     fixture_prefix: str,
     payload_name: str,
-    expected_name: str,
 ) -> None:
     """Keep cached models aligned with both orders of order-sensitive schemas."""
     first_schema = json.loads((DATA_PATH / f"{fixture_prefix}_first.json").read_text(encoding="utf-8"))
@@ -543,7 +530,7 @@ def test_cache_distinguishes_schema_order(
                 for name, payload in payloads.items()
             },
         }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / expected_name)
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_cache_hits_do_not_reorder_fifo_eviction() -> None:
@@ -564,7 +551,7 @@ def test_cache_hits_do_not_reorder_fifo_eviction() -> None:
         "second_retained": second_retained_models is second_models,
         "first_evicted": first_rebuilt_models is not first_models,
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "cache_fifo_order.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_module_name_is_applied_for_same_schema_with_different_runtime_modules() -> None:
@@ -589,7 +576,7 @@ def test_module_name_is_applied_for_same_schema_with_different_runtime_modules()
     ids=["importable", "missing-package"],
 )
 def test_module_name_of_importable_module(
-    module_name: str, base_class: str | None, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+    module_name: str, base_class: str | None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Import a module that module_name names before the generated code imports from it, instead of masking it."""
     monkeypatch.delitem(sys.modules, module_name, raising=False)
@@ -610,10 +597,7 @@ def test_module_name_of_importable_module(
         "validated": model.model_validate({"name": "Alice"}).model_dump(mode="json"),
         "module_imported": module_name in sys.modules,
     }
-    assert_output(
-        f"{json.dumps(actual, indent=2)}\n",
-        EXPECTED_PATH / f"module_name_{request.node.callspec.id}.txt",
-    )
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_target_model_names_filters_single_model() -> None:
@@ -825,7 +809,7 @@ def test_concurrent_different_schemas() -> None:
 def test_numeric_constraints() -> None:
     """Test models with numeric constraints validate properly."""
     schema = make_object_schema({"age": {"type": "integer", "minimum": 0, "maximum": 150}})
-    assert_dynamic_models(schema, {"Model": {"age": 30}}, EXPECTED_PATH / "numeric_constraints.json")
+    assert_dynamic_models(schema, {"Model": {"age": 30}})
 
     models = generate_dynamic_models(schema)
     with pytest.raises(pydantic.ValidationError):
@@ -837,7 +821,7 @@ def test_numeric_constraints() -> None:
 def test_string_constraints() -> None:
     """Test models with string constraints validate properly."""
     schema = make_object_schema({"email": {"type": "string", "pattern": r"^[\w\.-]+@[\w\.-]+\.\w+$"}})
-    assert_dynamic_models(schema, {"Model": {"email": "test@example.com"}}, EXPECTED_PATH / "string_constraints.json")
+    assert_dynamic_models(schema, {"Model": {"email": "test@example.com"}})
 
     models = generate_dynamic_models(schema)
     with pytest.raises(pydantic.ValidationError):
@@ -855,9 +839,7 @@ def test_openapi_auto_detection() -> None:
     """Test that OpenAPI schemas are auto-detected and models work."""
     with (DATA_PATH / "openapi_schema.json").open() as f:
         openapi_schema = json.load(f)
-    assert_dynamic_models(
-        openapi_schema, {"User": {"id": 1, "name": "Alice"}}, EXPECTED_PATH / "openapi_auto_detection.json"
-    )
+    assert_dynamic_models(openapi_schema, {"User": {"id": 1, "name": "Alice"}})
 
 
 def test_force_optional_discriminator_literals() -> None:
@@ -875,7 +857,6 @@ def test_force_optional_discriminator_literals() -> None:
             "CashPayment": {},
             "Payment": {"kind": "cash", "received_amount": 50},
         },
-        EXPECTED_PATH / "force_optional_discriminator_literals.json",
         config=config,
     )
 
@@ -897,7 +878,6 @@ def test_optional_literal_discriminator_tags() -> None:
             "Queue": {"current": {"type": "track", "name": "a"}},
             "Payment": {"kind": "voucher", "code": "x"},
         },
-        EXPECTED_PATH / "optional_literal_discriminator_tags.json",
         config=config,
     )
 
@@ -920,7 +900,6 @@ def test_leading_underscore_class_name_default_unchanged() -> None:
     assert_dynamic_models(
         schema,
         {"FieldParsedModel": {"name": "Alice"}},
-        EXPECTED_PATH / "leading_underscore_class_name_default_unchanged.json",
         config=config,
         include_model_names=True,
     )
@@ -938,7 +917,6 @@ def test_allow_leading_underscore_class_name() -> None:
     assert_dynamic_models(
         schema,
         {"__ParsedModel": {"name": "Alice"}},
-        EXPECTED_PATH / "allow_leading_underscore_class_name.json",
         config=config,
         include_model_names=True,
     )
@@ -1060,12 +1038,12 @@ def test_multi_module_output() -> None:
     assert_dynamic_models(
         schema,
         {"User": {"name": "Alice", "age": 25}, "Order": {"id": 1, "user": {"name": "Bob", "age": 30}}},
-        EXPECTED_PATH / "multi_module_output.json",
         config=config,
+        name="validated",
     )
     assert_output(
         f"{json.dumps({'models': list(generate_dynamic_models(schema, config=config))}, indent=2)}\n",
-        EXPECTED_PATH / "multi_module_model_order.txt",
+        name="model_order",
     )
 
 
@@ -1084,11 +1062,7 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
         formatters=[],
     )
     modules = cast("dict[tuple[str, ...], str]", generate(schema, config=config))
-    assert_generated_modules_output(
-        modules,
-        EXPECTED_PATH / "relative_parent_import_modules",
-        transform=lambda output: f"{output}\n",
-    )
+    assert_generated_modules_output(modules, name="modules", transform=lambda output: f"{output}\n")
 
     package_name = "runtime_relative_parent_import"
     models = generate_dynamic_models(schema, config=config, cache_size=0, module_name=package_name)
@@ -1100,9 +1074,9 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
             name == package_name or name.startswith(f"{package_name}.") for name in sys.modules
         ),
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "relative_parent_import.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="relative_parent_import")
     dynamic_payload = f"{json.dumps(actual['validated'], indent=2)}\n"
-    assert_output(dynamic_payload, EXPECTED_PATH / "relative_parent_import_payload.txt")
+    assert_output(dynamic_payload, name="relative_parent_import_payload")
 
     output_path = tmp_path / "cli_generated"
     subprocess.run(
@@ -1131,7 +1105,7 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
         check=True,
         text=True,
     )
-    assert_directory_content(output_path, EXPECTED_PATH / "relative_parent_import_cli_modules")
+    assert_directory_content(output_path, name="cli_modules")
 
     cli_import_result = subprocess.run(
         [
@@ -1150,7 +1124,7 @@ def test_multi_module_relative_parent_import(tmp_path: Path) -> None:
         cwd=tmp_path,
         text=True,
     )
-    assert_output(cli_import_result.stdout, EXPECTED_PATH / "relative_parent_import_payload.txt")
+    assert_output(cli_import_result.stdout, name="relative_parent_import_payload")
 
 
 def test_multi_module_restores_preexisting_modules_after_execution_failure() -> None:
@@ -1199,7 +1173,7 @@ def test_multi_module_restores_preexisting_modules_after_execution_failure() -> 
             "success_restored": success_restored,
             "failure_restored": failure_restored,
         }
-        assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "nested_module_restoration.txt")
+        assert_output(f"{json.dumps(actual, indent=2)}\n")
     finally:
         for name in module_names:
             sys.modules.pop(name, None)
@@ -1260,7 +1234,7 @@ def test_generated_code_matches_expected() -> None:
     )
     result = generate(input_=schema, config=config)
     assert isinstance(result, str)
-    assert_output(result, EXPECTED_PATH / "complex_schema.py")
+    assert_output(result, name="code", suffix=".py")
 
     assert_dynamic_models(
         schema,
@@ -1268,7 +1242,7 @@ def test_generated_code_matches_expected() -> None:
             "Person": {"name": "John", "address": {"street": "123 Main St", "city": "NYC"}},
             "Address": {"street": "456 Oak Ave", "city": "LA"},
         },
-        EXPECTED_PATH / "generated_code_validation.json",
+        name="validated",
     )
 
 
@@ -1283,7 +1257,7 @@ def test_build_module_edges_ignores_unresolvable_relative_imports() -> None:
         "/".join(path): ["/".join(dependency) for dependency in sorted(dependencies)]
         for path, dependencies in edges.items()
     }
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_PATH / "relative_import_edge_cases.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
 def test_build_module_edges_no_matching_import() -> None:
@@ -1371,7 +1345,6 @@ def test_multiple_aliases_required_field() -> None:
     assert_dynamic_models(
         schema,
         {"Customer": {"name": "John"}},
-        EXPECTED_PATH / "multiple_aliases_required.json",
         config=config,
     )
 
@@ -1387,7 +1360,7 @@ def test_multiple_aliases_required_field_code_output() -> None:
     )
     result = generate(input_=schema, config=config)
     assert isinstance(result, str)
-    assert_output(result, EXPECTED_PATH / "multiple_aliases_required_code.py")
+    assert_output(result, suffix=".py")
 
 
 def test_execute_multi_module_enum_only() -> None:

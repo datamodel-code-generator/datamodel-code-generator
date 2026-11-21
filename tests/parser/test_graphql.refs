@@ -3,15 +3,15 @@
 [test_graphql_field_enum]
 	parser/graphql/field_enum.py
 [test_graphql_generate_config_path_collection_options_parse]
-	parser/graphql/collection_options_generate.py
+	parser/graphql/generate_config_path_collection_options_parse.py
 [test_graphql_no_typename]
 	parser/graphql/no_typename.py	= main/graphql/no_typename.py
 [test_graphql_parser_config_path_collection_options_parse]
-	parser/graphql/collection_options.py
+	parser/graphql/parser_config_path_collection_options_parse.py
 [test_graphql_parser_options_path_collection_options_parse]
-	parser/graphql/collection_options.py
+	parser/graphql/parser_options_path_collection_options_parse.py	= parser/graphql/parser_config_path_collection_options_parse.py
 [test_graphql_parser_text_collection_options_parse]
-	parser/graphql/collection_options.py
+	parser/graphql/parser_text_collection_options_parse.py	= parser/graphql/parser_config_path_collection_options_parse.py
 [test_graphql_union_aliased_bug]
 	parser/graphql/union_aliased_bug.py
 [test_graphql_union_commented]

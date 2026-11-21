@@ -20,7 +20,6 @@ from tests.conftest import (
     assert_directory_content,
     assert_inputs_not_mutated,
     assert_output,
-    stored_expected,
 )
 
 if TYPE_CHECKING:
@@ -32,7 +31,7 @@ if TYPE_CHECKING:
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
-EXPECTED = DATA / "expected/main/generation_platform/api_scope"
+EXISTING_OUTPUT = "Existing output must be preserved.\n"
 
 
 @pytest.mark.parametrize("backend", list(DataModelType))
@@ -48,7 +47,7 @@ def test_api_facade_backends(backend: DataModelType) -> None:
         use_operation_id_as_name=True,
         formatters=[Formatter.BLACK, Formatter.ISORT],
     )
-    assert_output(result, EXPECTED / (backend.value.replace(".", "_") + ".py"))
+    assert_output(result, suffix=".py")
 
 
 @pytest.mark.parametrize("source", ["external.json", "external-30.json", "external-31.json"])
@@ -65,7 +64,7 @@ def test_api_external_declaration(source: str) -> None:
             disable_timestamp=True,
             formatters=[],
         ),
-        EXPECTED / "external-generate.py",
+        suffix=".py",
     )
 
 
@@ -77,7 +76,7 @@ def test_api_empty_inventory(dot: bool, exports: AllExportsScope | None, existin
     output = tmp_path / "models.py"
     metadata = tmp_path / "metadata.json"
     if existing:
-        output.write_bytes(stored_expected(EXPECTED / "existing-output.txt").read_bytes())
+        output.write_text(EXISTING_OUTPUT, encoding="utf-8", newline="")
     result = generate(
         SOURCE / "contentless.json",
         input_file_type=InputFileType.OpenAPI,
@@ -89,13 +88,13 @@ def test_api_empty_inventory(dot: bool, exports: AllExportsScope | None, existin
         formatters=[],
         disable_timestamp=True,
     )
-    assert_output(metadata.read_text(), EXPECTED / "empty-metadata.txt")
+    assert_output(metadata.read_text(), name="metadata")
     assert_output(
         json.dumps({"result": result, "output_exists": output.exists()}, indent=2) + "\n",
-        EXPECTED / f"empty-state-{existing}.txt",
+        name="state",
     )
     if existing:
-        assert_output(output.read_text(), EXPECTED / "existing-output.txt")
+        assert_output(output.read_text(), name="existing_output")
 
 
 def test_api_info_version_without_models(tmp_path: Path) -> None:
@@ -111,7 +110,7 @@ def test_api_info_version_without_models(tmp_path: Path) -> None:
         formatters=[],
         disable_timestamp=True,
     )
-    assert_output((output / "__init__.py").read_text(), EXPECTED / "info-version.py")
+    assert_output((output / "__init__.py").read_text(), suffix=".py")
 
 
 @pytest.mark.parametrize(
@@ -138,7 +137,7 @@ def test_api_declarations(scopes: list[OpenAPIScope]) -> None:
             disable_timestamp=True,
             formatters=[],
         ),
-        EXPECTED / "declarations-generate.py",
+        suffix=".py",
     )
 
 
@@ -171,7 +170,7 @@ def test_api_media_applicability(version: str) -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / f"media-{version}.py",
+        suffix=".py",
     )
 
 
@@ -211,7 +210,7 @@ def test_api_callback_cycle_and_root_filter(filtered: bool, scopes: list[OpenAPI
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         )
-    assert_output(result, EXPECTED / ("traversal-filtered.py" if filtered else "traversal.py"))
+    assert_output(result, suffix=".py")
 
 
 def test_api_pointer_spellings() -> None:
@@ -225,7 +224,7 @@ def test_api_pointer_spellings() -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / "pointer-spellings.py",
+        suffix=".py",
     )
 
 
@@ -240,7 +239,7 @@ def test_api_openapi_32_declarations(case: str) -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / f"{case}.py",
+        suffix=".py",
     )
 
 
@@ -254,7 +253,7 @@ def test_api_external_root_and_reserved_definitions() -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / "resources.py",
+        suffix=".py",
     )
 
 
@@ -269,7 +268,7 @@ def test_api_local_roots_and_named_ids(case: str) -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / f"{case}.py",
+        suffix=".py",
     )
 
 
@@ -288,7 +287,7 @@ def test_api_memory_source(raw_text: bool) -> None:
                 disable_timestamp=True,
                 formatters=[Formatter.BLACK, Formatter.ISORT],
             ),
-            EXPECTED / "pydantic_v2_BaseModel.py",
+            suffix=".py",
         )
 
 
@@ -306,7 +305,7 @@ def test_api_nonempty_dot_modules(exports: AllExportsScope | None, tmp_path: Pat
         formatters=[Formatter.BLACK, Formatter.ISORT],
         output=output,
     )
-    assert_directory_content(output, EXPECTED / f"dot-{exports.value if exports else 'none'}")
+    assert_directory_content(output)
 
 
 def test_api_discriminator_canonical_parent() -> None:
@@ -320,7 +319,7 @@ def test_api_discriminator_canonical_parent() -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / "discriminator.py",
+        suffix=".py",
     )
 
 
@@ -355,8 +354,8 @@ def test_api_reference_leaf_extension() -> None:
         SOURCE / "declarations.json", openapi_scopes=[OpenAPIScope.Api], use_operation_id_as_name=True, formatters=[]
     )
     try:
-        assert_output(parser.parse(), EXPECTED / "declarations.py")
-        assert_output(json.dumps(parser.same_mapping) + "\n", EXPECTED / "leaf-mapping.txt")
+        assert_output(parser.parse(), name="declarations", suffix=".py")
+        assert_output(json.dumps(parser.same_mapping) + "\n", name="leaf_mapping")
     finally:
         parser.dispose()
 
@@ -377,7 +376,7 @@ def test_api_repeated_source_declarations(tmp_path: Path) -> None:
         formatters=[],
         output=output,
     )
-    assert_directory_content(output, EXPECTED / "repeated-source")
+    assert_directory_content(output)
 
 
 def test_api_external_document_also_collected_as_root(tmp_path: Path) -> None:
@@ -397,7 +396,7 @@ def test_api_external_document_also_collected_as_root(tmp_path: Path) -> None:
         formatters=[],
         output=output,
     )
-    assert_directory_content(output, EXPECTED / "external-directory")
+    assert_directory_content(output)
 
 
 @pytest.mark.parametrize("case", ["local", "external", "relative", "url", "scoped", "bare", "empty", "many_ordinary"])
@@ -415,7 +414,7 @@ def test_api_external_discriminator_regressions(case: str, tmp_path: Path) -> No
         allow_remote_refs=case in {"bare", "empty"},
         http_local_ref_path=source / "mirror" if case == "url" else None,
     )
-    assert_output(output.read_text(), DATA / "expected/main/openapi/external_discriminator_base" / f"{case}.py")
+    assert_output(output.read_text(), suffix=".py")
 
 
 @pytest.mark.parametrize("status_names", [False, True])
@@ -430,7 +429,7 @@ def test_api_response_headers(status_names: bool) -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / "headers.py",
+        suffix=".py",
     )
 
 
@@ -448,7 +447,7 @@ def test_api_rejects_lost_declaration_frame() -> None:
     try:
         with pytest.raises(SchemaParseError, match="API_DECLARATION_CONTEXT_REQUIRED"):
             parser.parse()
-        assert_output(json.dumps(len(parser.declaration_frames)) + "\n", EXPECTED / "empty-frames.txt")
+        assert_output(json.dumps(len(parser.declaration_frames)) + "\n")
     finally:
         parser.dispose()
 
@@ -470,7 +469,7 @@ def test_api_rejects_unresolved_anchor_from_resolver() -> None:
     try:
         with pytest.raises(SchemaParseError, match="API_DECLARATION_CONTEXT_REQUIRED"):
             parser.parse()
-        assert_output(json.dumps(len(parser.declaration_frames)) + "\n", EXPECTED / "empty-frames.txt")
+        assert_output(json.dumps(len(parser.declaration_frames)) + "\n")
     finally:
         parser.dispose()
 
@@ -488,7 +487,7 @@ def test_api_root_feature_lifetime(version: str, tmp_path: Path) -> None:
         formatters=[],
         output=output,
     )
-    assert_output(f"{output.exists()}\n", EXPECTED / "absent-output.txt")
+    assert_output(f"{output.exists()}\n")
 
 
 @pytest.mark.parametrize("mode", ["first", "reversed", "directory", "explicit"])
@@ -512,7 +511,7 @@ def test_api_root_dialects_affect_generated_models(mode: str, tmp_path: Path) ->
         formatters=[Formatter.BLACK, Formatter.ISORT],
         output=output,
     )
-    assert_directory_content(output, EXPECTED / f"version-{mode}")
+    assert_directory_content(output)
 
 
 @pytest.mark.parametrize("backend", list(DataModelType))
@@ -528,7 +527,7 @@ def test_api_native_types_and_ref_siblings(backend: DataModelType) -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / f"typed-reuse-{backend.name}.py",
+        suffix=".py",
     )
 
 
@@ -544,7 +543,7 @@ def test_api_case_sensitive_declarations(case: str) -> None:
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / f"{case}.py",
+        suffix=".py",
     )
 
 

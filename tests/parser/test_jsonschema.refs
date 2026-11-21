@@ -11,20 +11,20 @@
 [test_parse_nested_array]
 	parser/jsonschema/parse_nested_array.snapshot
 [test_parser_template_data_reuse]
-False-api	parser/template_data_allow.py
-False-api	parser/template_data_forbid.py
-False-config	parser/template_data_allow.py
-False-config	parser/template_data_forbid.py
-False-options	parser/template_data_allow.py
-False-options	parser/template_data_forbid.py
-True-api	parser/template_data_allow.py
-True-api	parser/template_data_forbid.py
-True-config	parser/template_data_allow.py
-True-config	parser/template_data_forbid.py
-True-options	parser/template_data_allow.py
-True-options	parser/template_data_forbid.py
+False-api	parser/jsonschema/parser_template_data_reuse[False-api].allow.py
+False-api	parser/jsonschema/parser_template_data_reuse[False-api].forbid.py
+False-config	parser/jsonschema/parser_template_data_reuse[False-config].allow.py	= parser/jsonschema/parser_template_data_reuse[False-api].allow.py
+False-config	parser/jsonschema/parser_template_data_reuse[False-config].forbid.py	= parser/jsonschema/parser_template_data_reuse[False-api].forbid.py
+False-options	parser/jsonschema/parser_template_data_reuse[False-options].allow.py	= parser/jsonschema/parser_template_data_reuse[False-api].allow.py
+False-options	parser/jsonschema/parser_template_data_reuse[False-options].forbid.py	= parser/jsonschema/parser_template_data_reuse[False-api].forbid.py
+True-api	parser/jsonschema/parser_template_data_reuse[True-api].allow.py	= parser/jsonschema/parser_template_data_reuse[False-api].allow.py
+True-api	parser/jsonschema/parser_template_data_reuse[True-api].forbid.py	= parser/jsonschema/parser_template_data_reuse[False-api].forbid.py
+True-config	parser/jsonschema/parser_template_data_reuse[True-config].allow.py	= parser/jsonschema/parser_template_data_reuse[False-api].allow.py
+True-config	parser/jsonschema/parser_template_data_reuse[True-config].forbid.py	= parser/jsonschema/parser_template_data_reuse[False-api].forbid.py
+True-options	parser/jsonschema/parser_template_data_reuse[True-options].allow.py	= parser/jsonschema/parser_template_data_reuse[False-api].allow.py
+True-options	parser/jsonschema/parser_template_data_reuse[True-options].forbid.py	= parser/jsonschema/parser_template_data_reuse[False-api].forbid.py
 [test_parser_template_data_root_cycle]
-	parser/jsonschema/parser_template_data_root_cycle.py	= parser/template_data_forbid.py
+	parser/jsonschema/parser_template_data_root_cycle.py	= parser/jsonschema/parser_template_data_reuse[False-api].forbid.py
 [test_schema_runtime_validation_copy_replans_unique_items_paths]
 	parser/jsonschema/schema_runtime_validation_copy_replans_unique_items_paths.snapshot
 [test_schema_validator_adds_all_of_missing_required_field]

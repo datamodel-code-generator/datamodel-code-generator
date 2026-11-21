@@ -14,7 +14,6 @@ import datamodel_code_generator.config as config_module
 from datamodel_code_generator.parser.base import Parser, structure
 from tests.conftest import assert_output
 
-EXPECTED_PATH = Path(__file__).parents[1] / "data" / "expected" / "builtin_formatter"
 PYTHON_DATA_PATH = Path(__file__).parents[1] / "data" / "python"
 
 
@@ -117,7 +116,6 @@ def test_generated_formatter_parser_config_contract() -> None:
 
     assert_output(
         "\n".join(report),
-        EXPECTED_PATH / "parser_config_contract.txt",
     )
 
 
@@ -144,5 +142,4 @@ def test_generated_formatter_matches_full_formatter_corpus() -> None:
 
     assert_output(
         "\n".join(formatted_cases),
-        EXPECTED_PATH / "generated_corpus.txt",
     )

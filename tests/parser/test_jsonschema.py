@@ -118,9 +118,8 @@ def test_parser_template_data_reuse(output_file: Path, entrypoint: str, *, custo
                         use_standard_collections=False,
                         use_union_operator=False,
                         settings_path=Path(__file__).parents[2],
-                        assert_func=assert_file_content,
                         transform=lambda content: content.partition("\n\n")[2],
-                        expected_file=EXPECTED_PARSER_PATH / f"template_data_{extra_fields}.py",
+                        name=extra_fields,
                     )
                     continue
                 case "config":
@@ -135,7 +134,7 @@ def test_parser_template_data_reuse(output_file: Path, entrypoint: str, *, custo
                         formatters=[Formatter.BUILTIN],
                     )
             generated = parser.parse()
-            assert_output(generated, EXPECTED_PARSER_PATH / f"template_data_{extra_fields}.py")
+            assert_output(generated, name=extra_fields, suffix=".py")
             output_file.write_text(cast("str", generated), encoding="utf-8")
     assert_generated_model_json_validation(
         output_file,

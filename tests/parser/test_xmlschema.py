@@ -27,7 +27,7 @@ from datamodel_code_generator.parser.xmlschema import (
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports
 from tests.conftest import assert_output
-from tests.main.conftest import DATA_PATH, XML_SCHEMA_DATA_PATH
+from tests.main.conftest import XML_SCHEMA_DATA_PATH
 
 
 @pytest.mark.allow_direct_assert
@@ -75,7 +75,7 @@ def test_xmlschema_parser_config_none_renders_non_finite_enum() -> None:
 
     assert_output(
         f"{parser.parse(format_=False)}\n",
-        DATA_PATH / "expected/parser/xmlschema/config_none_non_finite_enum.py",
+        suffix=".py",
     )
 
 
@@ -89,7 +89,7 @@ def test_xmlschema_parser_config_none_resolves_non_finite_enum_default() -> None
 
     assert_output(
         f"{parser.parse(format_=False)}\n",
-        DATA_PATH / "expected/parser/xmlschema/config_none_non_finite_inline_enum_default.py",
+        suffix=".py",
     )
 
 
