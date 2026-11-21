@@ -13,13 +13,11 @@ from datamodel_code_generator import InputFileType
 from datamodel_code_generator.enums import JsonSchemaVersion, VersionMode
 from tests.conftest import assert_warnings_contain, assert_warnings_do_not_contain
 from tests.main.conftest import (
-    EXPECTED_MAIN_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,7 +31,6 @@ def test_null_type_array_definitions_across_jsonschema_versions(
 ) -> None:
     """Generate valid nullable definitions through the CLI and API without false warnings."""
     input_path = JSON_SCHEMA_DATA_PATH / "null_type_array_definition.json"
-    expected_file = EXPECTED_MAIN_PATH / "schema_versions" / "nullable_definition.py"
     schema = json.loads(input_path.read_text(encoding="utf-8"))
     schema_uri = (
         f"http://json-schema.org/{schema_version.value}/schema#"
@@ -47,8 +44,7 @@ def test_null_type_array_definitions_across_jsonschema_versions(
             input_path=input_path,
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
+            name="model",
             extra_args=[
                 "--schema-version",
                 schema_version.value,
@@ -71,8 +67,7 @@ def test_null_type_array_definitions_across_jsonschema_versions(
             target_python_version="3.10",
             disable_timestamp=True,
             formatters=["builtin"],
-            assert_func=assert_file_content,
-            expected_file=expected_file,
+            name="model",
         )
     assert_warnings_do_not_contain(recorded, "null in type array")
 

@@ -61,7 +61,6 @@ from tests.conftest import (
     assert_warnings_contain,
     assert_warnings_do_not_contain,
     freeze_time,
-    stored_expected,
     validate_generated_code,
 )
 from tests.main.conftest import (
@@ -94,7 +93,6 @@ from tests.main.conftest import (
     run_main_with_system_exit,
     target_pydantic_args,
 )
-from tests.main.openapi.conftest import EXPECTED_OPENAPI_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from _pytest.recwarn import WarningsRecorder
@@ -2256,284 +2254,283 @@ def test_main_invalid_dotted_schema_name_stdout_model_name_map_warnings(capsys: 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_collapse_root_models_recursive_invalid_dotted_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Carry the circular-root fallback into the invalid-dotted stdout repair."""
-    expected_path = EXPECTED_OPENAPI_PATH / "collapse_root_models_recursive_invalid_dotted_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "collapse_root_models_recursive_invalid_dotted.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=["--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "collapse_root_models_recursive_invalid_dotted.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--collapse-root-models",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_mixed_keys_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Fingerprint parsed YAML with heterogeneous mapping keys before a safe retry."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_mixed_keys_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_mixed_keys.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=["--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_mixed_keys.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_invalid_dotted_schema_name_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve usable legacy stdout even when a dotted name is non-canonical."""
-    expected_path = EXPECTED_OPENAPI_PATH / "usable_invalid_dotted_schema_name_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "usable_invalid_dotted_schema_name.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=["--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "usable_invalid_dotted_schema_name.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_future_import_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Repair a second future import that would make concatenated text invalid."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_future_import_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_future_import.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=["--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_future_import.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_relative_import_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Repair a relative module import that cannot work in standalone stdout text."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_relative_import_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_relative_import.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--target-python-version",
-            "3.14",
-            "--disable-future-imports",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_relative_import.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--target-python-version",
+        "3.14",
+        "--disable-future-imports",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_import_binding_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Repair a later import that would hide a generated model binding."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_import_binding_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_import_binding.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--target-python-version",
-            "3.14",
-            "--disable-future-imports",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_import_binding.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--target-python-version",
+        "3.14",
+        "--disable-future-imports",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_conflicting_models_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Repair different model definitions that would share one stdout binding."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_conflicting_models_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_conflicting_models.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--target-python-version",
-            "3.14",
-            "--disable-future-imports",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_conflicting_models.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--target-python-version",
+        "3.14",
+        "--disable-future-imports",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_name_priority_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve canonical names before unrelated invalid dotted modules."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_name_priority_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_name_priority.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--target-python-version",
-            "3.14",
-            "--disable-future-imports",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_name_priority.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--target-python-version",
+        "3.14",
+        "--disable-future-imports",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_info_version_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Repair a future import displaced by the OpenAPI info-version postprocessor."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_info_version_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_info_version.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=["--openapi-include-info-version", "--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_info_version.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--openapi-include-info-version",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_invalid_dotted_no_future_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve independent modular text when concatenation remains usable."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_no_future_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_future_import.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=["--disable-timestamp", "--disable-future-imports", "--formatters", "builtin"],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_future_import.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--disable-timestamp",
+        "--disable-future-imports",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_invalid_dotted_inherited_enum_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve modular text when inherited-enum processing removes the dependency."""
-    expected_path = EXPECTED_OPENAPI_PATH / "usable_invalid_dotted_inherited_enum_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "usable_invalid_dotted_inherited_enum.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--target-python-version",
-            "3.14",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "usable_invalid_dotted_inherited_enum.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--target-python-version",
+        "3.14",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_converging_invalid_dotted_models_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve definitions that differ before inherited-enum extraction but converge afterward."""
-    expected_path = EXPECTED_OPENAPI_PATH / "usable_converging_invalid_dotted_models_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "usable_converging_invalid_dotted_models.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--target-python-version",
-            "3.14",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "usable_converging_invalid_dotted_models.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--target-python-version",
+        "3.14",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_collapsed_invalid_dotted_models_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve definitions that become identical after root-model collapse."""
-    expected_path = EXPECTED_OPENAPI_PATH / "usable_collapsed_invalid_dotted_models_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "usable_collapsed_invalid_dotted_models.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--target-python-version",
-            "3.14",
-            "--collapse-root-models",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "usable_collapsed_invalid_dotted_models.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--target-python-version",
+        "3.14",
+        "--collapse-root-models",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_discriminator_invalid_dotted_models_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve a collision resolved by imports added during discriminator processing."""
-    expected_path = EXPECTED_OPENAPI_PATH / "usable_discriminator_invalid_dotted_models_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "usable_discriminator_invalid_dotted_models.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--target-python-version",
-            "3.14",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "usable_discriminator_invalid_dotted_models.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--target-python-version",
+        "3.14",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2621,23 +2618,21 @@ def test_main_literal_fields_keep_model_named_literal(output_dir: Path, extra_ar
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_identical_invalid_dotted_models_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve identical redefinitions when concatenated text remains usable."""
-    expected_path = EXPECTED_OPENAPI_PATH / "usable_identical_invalid_dotted_models_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "usable_identical_invalid_dotted_models.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=[
-            "--target-python-version",
-            "3.14",
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-        ],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "usable_identical_invalid_dotted_models.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--target-python-version",
+        "3.14",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2664,17 +2659,19 @@ def test_main_unrelated_invalid_dotted_model_stdout(capsys: pytest.CaptureFixtur
 @pytest.mark.isolate_builtin_formatter_config
 def test_main_invalid_dotted_mixed_module_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Keep the legacy dedup survivor when an invalid and valid name share a module."""
-    expected_path = EXPECTED_OPENAPI_PATH / "invalid_dotted_mixed_module_stdout.py"
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "invalid_dotted_mixed_module.yaml",
-        output_path=None,
-        input_file_type="openapi",
-        extra_args=["--disable-timestamp", "--formatters", "builtin"],
-        expected_stdout_path=expected_path,
-        capsys=capsys,
-        assert_no_stderr=True,
-    )
-    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
+    run_main_with_args([
+        "--input",
+        str(OPEN_API_DATA_PATH / "invalid_dotted_mixed_module.yaml"),
+        "--input-file-type",
+        "openapi",
+        "--disable-timestamp",
+        "--formatters",
+        "builtin",
+    ])
+    captured = capsys.readouterr()
+    assert_output(captured.out, suffix=".py")
+    assert_output(captured.err, name="stderr")
+    validate_generated_code(captured.out, "<stdout>", do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -9569,8 +9566,6 @@ def test_main_openapi_parameter_field_policy(
         input_path=OPEN_API_DATA_PATH / "parameter_field_policy.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=f"parameter_field_policy/{expected_name}.py",
         extra_args=[
             *BACKEND_GOLDEN_TARGET_ARGS,
             "--output-model-type",
@@ -9587,7 +9582,7 @@ def test_main_openapi_parameter_field_policy(
     if output_model_type == DataModelType.DataclassesDataclass.value:
         with _generated_model(
             output_file,
-            "parameter_field_policy_dataclasses_dataclass",
+            f"parameter_field_policy_{expected_name}",
             "Defaulted",
         ) as model:
             nested = model().nested
@@ -9600,7 +9595,7 @@ def test_main_openapi_parameter_field_policy(
 
     with _generated_model(
         output_file,
-        "parameter_field_policy_pydantic_v2_dataclass",
+        f"parameter_field_policy_{expected_name}",
         "ListItemsParametersQuery",
     ) as model:
         signature = inspect.signature(model)

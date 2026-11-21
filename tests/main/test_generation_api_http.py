@@ -7,14 +7,13 @@ from urllib.parse import urlparse
 
 from datamodel_code_generator import InputFileType, OpenAPIScope, generate
 from tests.conftest import assert_output
-from tests.test_http import _SchemaHandler, local_http_server  # noqa: F401 - Register the existing fixture.
+from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
-EXPECTED = DATA / "expected/main/generation_platform/api_scope"
 
 
-def test_api_url_path_item(local_http_server: str) -> None:  # noqa: F811 - Request the imported fixture.
+def test_api_url_path_item(local_http_server: str) -> None:  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
     """Keep external Path Item reference context across actual HTTP fetches."""
     for filename in ("external.json", "library.json"):
         _SchemaHandler.routes[f"/{filename}"] = (
@@ -35,13 +34,13 @@ def test_api_url_path_item(local_http_server: str) -> None:  # noqa: F811 - Requ
             disable_timestamp=True,
             formatters=[],
         )
-        assert_output(result, EXPECTED / "external-generate.py")
+        assert_output(result, suffix=".py")
     finally:
         for filename in ("external.json", "library.json"):
             del _SchemaHandler.routes[f"/{filename}"]
 
 
-def test_api_empty_remote_lock(local_http_server: str, tmp_path: Path) -> None:  # noqa: F811
+def test_api_empty_remote_lock(local_http_server: str, tmp_path: Path) -> None:  # ruff: ignore[redefined-while-unused]
     """Publish and verify a real empty API lock without creating a model artifact."""
     _SchemaHandler.routes["/empty-api.json"] = (
         200,
@@ -73,6 +72,6 @@ def test_api_empty_remote_lock(local_http_server: str, tmp_path: Path) -> None: 
             formatters=[],
             disable_timestamp=True,
         )
-        assert_output(str(output.exists()) + "\n", EXPECTED / "absent-output.txt")
+        assert_output(str(output.exists()) + "\n")
     finally:
         del _SchemaHandler.routes["/empty-api.json"]

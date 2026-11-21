@@ -228,7 +228,7 @@ modular	main_kr/main_fail_on_multi_module_stdout[modular].stdout.py	= main_kr/ma
 [test_output_format_json_schema_config]
 	main_kr/output_format_json_schema_config.stdout.txt
 [test_output_format_json_schema_generate_prompt]
-	main_kr/generate_prompt/json_schema.txt
+	main_kr/output_format_json_schema_generate_prompt.stdout.txt
 [test_output_format_json_schema_generation]
 	main_kr/output_format_json_schema_generation.stdout.txt
 [test_output_format_json_schema_model_metadata]
@@ -343,7 +343,7 @@ US	main_kr/pyproject_respects_both_spellings_of_capitalize_enum_members_flag[US]
 [test_shared_module_name]
 	main_kr/shared_module_name.py	= main_kr/custom_formatters_kwargs_inline_json_option.py
 [test_single_module_mapping_text_stdout]
-	main_kr/single_module_mapping/output.py
+	main_kr/single_module_mapping_text_stdout.stdout.py
 [test_target_pydantic_version]
 	main_kr/target_pydantic_version.py
 [test_target_python_version]

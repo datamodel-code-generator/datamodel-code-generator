@@ -14,7 +14,7 @@ import pytest
 from datamodel_code_generator import chdir
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.agent_skill import AgentName, AgentSkillError, SkillScope, install_agent_skill
-from tests.conftest import assert_exact_directory_content, assert_output, create_assert_file_content
+from tests.conftest import assert_exact_directory_content, assert_output
 from tests.main.conftest import run_main_with_args
 
 if TYPE_CHECKING:
@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 
 ROOT = Path(__file__).parents[2]
 SKILL_DIR = ROOT / "skills" / "datamodel-code-generator"
-EXPECTED = ROOT / "tests" / "data" / "expected" / "agent_skill"
-assert_file_content = create_assert_file_content(EXPECTED)
 
 
 def _run_installer_fast_path(args: Sequence[str], *, cwd: Path, home: Path) -> subprocess.CompletedProcess[str]:
@@ -68,8 +66,8 @@ def test_install_skill_copies_bundled_files_for_supported_agents(
     target = (tmp_path if scope == "project" else home) / skill_directory / "datamodel-code-generator"
     captured = capsys.readouterr()
     assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
-    assert_output(captured.out.replace(str(target), "<target>"), EXPECTED / "installed.txt")
-    assert_output(captured.err, EXPECTED / "empty.txt")
+    assert_output(captured.out.replace(str(target), "<target>"), name="stdout")
+    assert_output(captured.err, name="stderr")
 
 
 def test_install_skill_fast_path_uses_the_packaged_resource(tmp_path: Path) -> None:
@@ -81,8 +79,8 @@ def test_install_skill_fast_path_uses_the_packaged_resource(tmp_path: Path) -> N
 
     target = tmp_path / ".agents" / "skills" / "datamodel-code-generator"
     assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
-    assert_output(result.stdout.replace(str(target), "<target>"), EXPECTED / "installed.txt")
-    assert_output(result.stderr, EXPECTED / "empty.txt")
+    assert_output(result.stdout.replace(str(target), "<target>"), name="stdout")
+    assert_output(result.stderr, name="stderr")
 
 
 def test_install_skill_fast_path_parser(
@@ -98,9 +96,9 @@ def test_install_skill_fast_path_parser(
     target = tmp_path / ".claude" / "skills" / "datamodel-code-generator"
     captured = capsys.readouterr()
     assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
-    assert_output(f"{return_code}\n", EXPECTED / "success_exit_code.txt")
-    assert_output(captured.out.replace(str(target), "<target>"), EXPECTED / "installed.txt")
-    assert_output(captured.err, EXPECTED / "empty.txt")
+    assert_output(f"{return_code}\n", name="exit_code")
+    assert_output(captured.out.replace(str(target), "<target>"), name="stdout")
+    assert_output(captured.err, name="stderr")
 
 
 def test_install_skill_requires_explicit_overwrite_and_replaces_stale_files(
@@ -122,18 +120,18 @@ def test_install_skill_requires_explicit_overwrite_and_replaces_stale_files(
     with chdir(tmp_path):
         run_main_with_args(install_args, expected_exit=Exit.ERROR)
     captured = capsys.readouterr()
-    assert_file_content(target / "local-note.txt", "local-note.txt")
-    assert_output(captured.out, EXPECTED / "empty.txt")
-    assert_output(captured.err.replace(str(target), "<target>"), EXPECTED / "existing_skill.txt")
+    assert_output((target / "local-note.txt").read_text(encoding="utf-8"), name="local_note")
+    assert_output(captured.out, name="refused_stdout")
+    assert_output(captured.err.replace(str(target), "<target>"), name="refused_stderr")
 
     with chdir(tmp_path):
         run_main_with_args([*install_args, "--overwrite-skill"])
     captured = capsys.readouterr()
     assert_exact_directory_content(target, SKILL_DIR, pattern="*.md")
     installed_files = "\n".join(sorted(path.relative_to(target).as_posix() for path in target.rglob("*")))
-    assert_output(f"{installed_files}\n", EXPECTED / "installed_files.txt")
-    assert_output(captured.out.replace(str(target), "<target>"), EXPECTED / "installed.txt")
-    assert_output(captured.err, EXPECTED / "empty.txt")
+    assert_output(f"{installed_files}\n", name="installed_files")
+    assert_output(captured.out.replace(str(target), "<target>"), name="stdout")
+    assert_output(captured.err, name="stderr")
 
 
 def test_install_skill_never_replaces_a_non_directory_target(
@@ -148,9 +146,9 @@ def test_install_skill_never_replaces_a_non_directory_target(
     with chdir(tmp_path):
         run_main_with_args(["--install-skill", "codex", "--overwrite-skill"], expected_exit=Exit.ERROR)
     captured = capsys.readouterr()
-    assert_file_content(target, "non_directory.txt")
-    assert_output(captured.out, EXPECTED / "empty.txt")
-    assert_output(captured.err.replace(str(target), "<target>"), EXPECTED / "non_directory_target.txt")
+    assert_output(target.read_text(encoding="utf-8"), name="target")
+    assert_output(captured.out, name="stdout")
+    assert_output(captured.err.replace(str(target), "<target>"), name="stderr")
 
 
 @pytest.mark.parametrize("broken", [False, True], ids=["directory", "broken"])
@@ -175,11 +173,11 @@ def test_install_skill_never_replaces_a_symlink(
         run_main_with_args(["--install-skill", "codex", "--overwrite-skill"], expected_exit=Exit.ERROR)
     captured = capsys.readouterr()
     status = f"is_symlink={target.is_symlink()}\ntarget_exists={target.exists()}\n"
-    assert_output(status, EXPECTED / f"{('broken' if broken else 'directory')}_symlink.txt")
+    assert_output(status, name="status")
     if not broken:
-        assert_file_content(link_source / "SKILL.md", "external_skill.txt")
-    assert_output(captured.out, EXPECTED / "empty.txt")
-    assert_output(captured.err.replace(str(target), "<target>"), EXPECTED / "non_directory_target.txt")
+        assert_output((link_source / "SKILL.md").read_text(encoding="utf-8"), name="external_skill")
+    assert_output(captured.out, name="stdout")
+    assert_output(captured.err.replace(str(target), "<target>"), name="stderr")
 
 
 @pytest.mark.parametrize("args", [["--skill-scope", "project"], ["--overwrite-skill"]])
@@ -192,8 +190,8 @@ def test_skill_options_require_the_installer(
     with chdir(tmp_path):
         run_main_with_args(args, expected_exit=Exit.ERROR)
     captured = capsys.readouterr()
-    assert_output(captured.out, EXPECTED / "empty.txt")
-    assert_output(captured.err, EXPECTED / "installer_option_requires_install.txt")
+    assert_output(captured.out, name="stdout")
+    assert_output(captured.err, name="stderr")
 
 
 def test_install_skill_restores_existing_skill_when_atomic_replacement_fails(
@@ -221,8 +219,8 @@ def test_install_skill_restores_existing_skill_when_atomic_replacement_fails(
         install_agent_skill("codex", "project", overwrite=True, cwd=tmp_path)
 
     error = str(exception_info.value).replace(str(target), "<target>")
-    assert_output(f"{error}\n", EXPECTED / "replacement_failure.txt")
-    assert_exact_directory_content(target, EXPECTED / "preserved_skill", pattern="*.md")
+    assert_output(f"{error}\n", name="error")
+    assert_exact_directory_content(target, pattern="*.md", name="restored")
 
 
 def test_install_skill_preserves_recovery_copy_when_rollback_fails(
@@ -260,12 +258,8 @@ def test_install_skill_preserves_recovery_copy_when_rollback_fails(
         )
         .replace("\\", "/")
     )
-    assert_output(f"{error}\n", EXPECTED / "rollback_failure.txt")
-    assert_exact_directory_content(
-        recovery_directory / "datamodel-code-generator",
-        EXPECTED / "preserved_skill",
-        pattern="*.md",
-    )
+    assert_output(f"{error}\n", name="error")
+    assert_exact_directory_content(recovery_directory / "datamodel-code-generator", pattern="*.md", name="recovery")
 
 
 def test_install_skill_reports_staging_error_without_traceback(
@@ -286,33 +280,32 @@ def test_install_skill_reports_staging_error_without_traceback(
 
     captured = capsys.readouterr()
     target = tmp_path / ".agents" / "skills" / "datamodel-code-generator"
-    assert_output(captured.out, EXPECTED / "empty.txt")
-    assert_output(captured.err.replace(str(target), "<target>"), EXPECTED / "staging_failure.txt")
+    assert_output(captured.out, name="stdout")
+    assert_output(captured.err.replace(str(target), "<target>"), name="stderr")
 
 
 @pytest.mark.parametrize(
-    ("agent", "scope", "expected_name"),
+    ("agent", "scope"),
     [
-        ("unsupported", "project", "unsupported_agent.txt"),
-        ("codex", "unsupported", "unsupported_scope.txt"),
+        pytest.param("unsupported", "project", id="unsupported_agent"),
+        pytest.param("codex", "unsupported", id="unsupported_scope"),
     ],
 )
 def test_install_skill_rejects_unsupported_destination_values(
     tmp_path: Path,
     agent: str,
     scope: str,
-    expected_name: str,
 ) -> None:
     """The typed installer still fails safely if called by an untyped client."""
     with pytest.raises(AgentSkillError) as exception_info:
         install_agent_skill(
-            cast(AgentName, agent),  # noqa: TC006
-            cast(SkillScope, scope),  # noqa: TC006
+            cast(AgentName, agent),  # ruff: ignore[runtime-cast-value]
+            cast(SkillScope, scope),  # ruff: ignore[runtime-cast-value]
             overwrite=False,
             cwd=tmp_path,
         )
 
-    assert_output(f"{exception_info.value}\n", EXPECTED / expected_name)
+    assert_output(f"{exception_info.value}\n")
 
 
 def test_marketplace_manifest_points_at_the_bundled_skill() -> None:

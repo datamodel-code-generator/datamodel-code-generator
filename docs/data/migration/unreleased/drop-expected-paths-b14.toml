@@ -1,0 +1,20 @@
+[[change]]
+id = "drop-expected-paths-b14"
+category = "harness"
+title = "Store the migration notices per environment row instead of version-selected files"
+summary = "The migration notice tests name each notice by its role and record the text every environment writes as its own row, where they picked a file by the installed black, isort and Pydantic versions; the notices and the generated code are the same."
+refs = ["#7311"]
+covers = [
+    "main/migration_warnings/batch-both-old-pydantic-old-black-old-isort.txt",
+    "main/migration_warnings/batch-both-pydantic-black-isort.txt",
+    "main/migration_warnings/batch-both-pydantic-old-black-isort.txt",
+    "main/migration_warnings/batch-implicit-old-pydantic-old-black-old-isort.txt",
+    "main/migration_warnings/batch-implicit-pydantic-black-isort.txt",
+    "main/migration_warnings/batch-implicit-pydantic-old-black-isort.txt",
+    "main/migration_warnings/batch-new-preset-old-pydantic-old-black-old-isort.txt",
+    "main/migration_warnings/batch-new-preset-pydantic-black-isort.txt",
+    "main/migration_warnings/batch-new-preset-pydantic-old-black-isort.txt",
+    "main/migration_warnings/black.txt",
+    "main/migration_warnings/isort.txt",
+    "main/migration_warnings/pydantic.txt",
+]

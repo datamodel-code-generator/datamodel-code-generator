@@ -4,38 +4,38 @@
 empty-list-under-preset	main/preset_opt_in_options/option_list_in_pyproject[empty-list-under-preset].model.py
 toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].model.py	= main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py
 [test_preset_option_turned_off]
-capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
-capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
-infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].py
-infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].py
-read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
-read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
-read-inherited-property-schemas-in-mro-order-command-line	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].py
-read-inherited-property-schemas-in-mro-order-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].py
-read-kubernetes-extensions-command-line	main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-command-line].py
-read-kubernetes-extensions-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-command-line].py
-read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
-read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
-read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
-read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].py
-read-ref-siblings-in-closed-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].py
-read-ref-siblings-in-closed-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].py
-read-single-allof-refs-in-their-documents-command-line	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
-read-single-allof-refs-in-their-documents-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].py
-read-uuid6-uuid7-uuid8-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].py
-read-uuid6-uuid7-uuid8-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].py
-read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
-read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].py
-use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
-use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].py
-use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
-use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
-use-unmapped-variant-tag-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-command-line].py
-use-unmapped-variant-tag-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-command-line].py
-use-validate-default-for-root-model-type-aliases-command-line	main/preset_opt_in_options/preset_option_turned_off[use-validate-default-for-root-model-type-aliases-command-line].py
-use-validate-default-for-root-model-type-aliases-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-validate-default-for-root-model-type-aliases-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-validate-default-for-root-model-type-aliases-command-line].py
-use-x-python-import-for-every-ref-command-line	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].py
-use-x-python-import-for-every-ref-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].py
+capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
+capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].model.py
+infer-union-discriminators-command-line	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
+infer-union-discriminators-pyproject	main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[infer-union-discriminators-command-line].model.py
+read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
+read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
+read-inherited-property-schemas-in-mro-order-command-line	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].model.py
+read-inherited-property-schemas-in-mro-order-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-inherited-property-schemas-in-mro-order-command-line].model.py
+read-kubernetes-extensions-command-line	main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-command-line].model.py
+read-kubernetes-extensions-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-kubernetes-extensions-command-line].model.py
+read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].model.py
+read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].model.py
+read-object-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].model.py
+read-object-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-object-keywords-by-type-command-line].model.py
+read-ref-siblings-in-closed-allof-members-command-line	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].model.py
+read-ref-siblings-in-closed-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-ref-siblings-in-closed-allof-members-command-line].model.py
+read-single-allof-refs-in-their-documents-command-line	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].model.py
+read-single-allof-refs-in-their-documents-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-single-allof-refs-in-their-documents-command-line].model.py
+read-uuid6-uuid7-uuid8-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].model.py
+read-uuid6-uuid7-uuid8-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-uuid6-uuid7-uuid8-formats-command-line].model.py
+read-yaml-1-1-numbers-as-text-command-line	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].model.py
+read-yaml-1-1-numbers-as-text-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-yaml-1-1-numbers-as-text-command-line].model.py
+use-bounds-for-float-const-command-line	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
+use-bounds-for-float-const-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-bounds-for-float-const-command-line].model.py
+use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].model.py
+use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].model.py
+use-unmapped-variant-tag-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-command-line].model.py
+use-unmapped-variant-tag-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-unmapped-variant-tag-values-command-line].model.py
+use-validate-default-for-root-model-type-aliases-command-line	main/preset_opt_in_options/preset_option_turned_off[use-validate-default-for-root-model-type-aliases-command-line].model.py
+use-validate-default-for-root-model-type-aliases-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-validate-default-for-root-model-type-aliases-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-validate-default-for-root-model-type-aliases-command-line].model.py
+use-x-python-import-for-every-ref-command-line	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].model.py
+use-x-python-import-for-every-ref-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[use-x-python-import-for-every-ref-command-line].model.py
 [test_preset_sets_opt_in_option]
 apply-field-options-to-every-field-practical	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].py
 apply-field-options-to-every-field-standard	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].py
