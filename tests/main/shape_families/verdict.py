@@ -4,8 +4,6 @@ The validator is the payload suite's source validator (``source_schema_validator
 payload is the payload suite's (``PayloadRuntime`` and ``model_verdict``). A cell differs from the schema by any of
 ``KINDS``:
 
-``generation-fails``
-    the generator exits with an error or raises;
 ``import-fails``
     the generated module does not import, lacks the checked name, or Pydantic cannot build a validator for it;
 ``model-raises``
@@ -19,8 +17,11 @@ payload is the payload suite's (``PayloadRuntime`` and ``model_verdict``). A cel
     (``--strict-nullable`` and ``--use-missing-sentinel`` write the exact form), and neither is a payload that the
     schema accepts once ``oneOf`` reads as ``anyOf`` (the same table: the models read ``oneOf`` as a union).
 
-TypedDict and standard dataclasses have no runtime of their own; their annotations are judged by a Pydantic
-``TypeAdapter``, which validates both. msgspec Structs are judged by ``msgspec.convert``, as the payload suite does.
+A shape is generated with ``run_main_with_args`` and its module imported with ``_generated_model``, the helpers of the
+main tests, which store no output; a generation that does not exit cleanly fails the test there, as in the payload
+suite, so it is no kind of a cell. TypedDict and standard dataclasses have no runtime of their own; their annotations
+are judged by a Pydantic ``TypeAdapter``, which validates both. msgspec Structs are judged by ``msgspec.convert``, as
+the payload suite does.
 
 The payloads of a shape are a bounded pool, a pure function of its schema (``payload_pool``): every JSON kind at the
 top level, the values the schema writes (enum members and consts, each bound and length with its neighbours, mapping
@@ -33,11 +34,8 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-import importlib.util
-import io
 import itertools
 import json
-import sys
 import warnings
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -45,9 +43,9 @@ from typing import TYPE_CHECKING, Final
 
 from pydantic import TypeAdapter, ValidationError
 
-from datamodel_code_generator.__main__ import main
 from datamodel_code_generator.format import PythonVersion
 from datamodel_code_generator.preset import latest_preset_name
+from tests.main.conftest import _generated_model, run_main_with_args
 from tests.main.payload_validation import PayloadBackend, PayloadRuntime, SchemaCase, source_schema_validator
 from tests.main.payload_validation.neighbours import model_verdict, value_neighbours
 
@@ -58,12 +56,11 @@ if TYPE_CHECKING:
 
     from .families import Schema, Shape
 
-GENERATION_FAILS: Final = "generation-fails"
 IMPORT_FAILS: Final = "import-fails"
 MODEL_RAISES: Final = "model-raises"
 REJECTS_VALID: Final = "rejects-valid"
 ACCEPTS_INVALID: Final = "accepts-invalid"
-KINDS: Final = (GENERATION_FAILS, IMPORT_FAILS, MODEL_RAISES, REJECTS_VALID, ACCEPTS_INVALID)
+KINDS: Final = (IMPORT_FAILS, MODEL_RAISES, REJECTS_VALID, ACCEPTS_INVALID)
 """Every way a cell can differ from its schema."""
 
 
@@ -303,8 +300,8 @@ class _UnusableCellError(Exception):
         self.detail = detail
 
 
-def _generate(shape: Shape, backend: str, contract: str, directory: Path) -> tuple[Path, str]:
-    """Generate a shape into ``directory``; return the path of the module and what the generator wrote to stderr."""
+def _generate(shape: Shape, backend: str, contract: str, directory: Path) -> Path:
+    """Generate a shape into ``directory`` with the main tests' helper and return the path of the module."""
     directory.mkdir(parents=True)
     source = directory / "schema.json"
     source.write_text(json.dumps(shape.document), encoding="utf-8")
@@ -323,11 +320,10 @@ def _generate(shape: Shape, backend: str, contract: str, directory: Path) -> tup
         "builtin",
         *CONTRACTS[contract],
     ]
-    stderr = io.StringIO()
-    with warnings.catch_warnings(record=True), contextlib.redirect_stderr(stderr):
+    with warnings.catch_warnings(record=True):
         warnings.simplefilter("always")
-        main(args)
-    return output, stderr.getvalue()
+        run_main_with_args(args)
+    return output
 
 
 def payload_backend(backend: str) -> PayloadBackend:
@@ -346,37 +342,22 @@ def _runtime(payload_type: object, backend: str) -> PayloadRuntime:
     return PayloadRuntime(PayloadBackend.PYDANTIC_V2, payload_type, TypeAdapter(payload_type))
 
 
-def _import(output: Path, module_name: str) -> object:
-    """Import the generated module at ``output`` under ``module_name``, registered in ``sys.modules``."""
-    spec = importlib.util.spec_from_file_location(module_name, output)
-    module = sys.modules[module_name] = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
 @contextlib.contextmanager
-def _loaded(generated: tuple[Path, str], name: str, backend: str) -> Generator[PayloadRuntime, None, None]:
-    """Import a generated module and yield the runtime of its ``name``; remove the module from ``sys.modules`` after.
+def _loaded(output: Path, name: str, backend: str) -> Generator[PayloadRuntime, None, None]:
+    """Import a generated module with the main tests' helper and yield the runtime of its ``name``.
 
-    A module the generator did not write is a generation that failed; one that does not import, lacks the name or
-    cannot be adapted is an import that failed. Either is the cell's finding, with the error and the generator's
-    stderr.
+    A module that does not import, lacks the name or cannot be adapted is the cell's finding, with the error.
     """
-    output, stderr = generated
     module_name = "shape_families_" + hashlib.sha256(str(output).encode()).hexdigest()[:16]
-    try:
-        with warnings.catch_warnings(record=True):
-            warnings.simplefilter("always")
-            runtime = _runtime(getattr(_import(output, module_name), name), backend)
-    except Exception as error:
-        sys.modules.pop(module_name, None)
-        kind = IMPORT_FAILS if output.exists() else GENERATION_FAILS
-        detail = f"{type(error).__name__}: {error} {stderr}".strip()[:200]
-        raise _UnusableCellError(kind, detail) from error
-    try:
+    with contextlib.ExitStack() as stack:
+        try:
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("always")
+                runtime = _runtime(stack.enter_context(_generated_model(output, module_name, name)), backend)
+        except Exception as error:
+            detail = f"{type(error).__name__}: {error}"[:200]
+            raise _UnusableCellError(IMPORT_FAILS, detail) from error
         yield runtime
-    finally:
-        del sys.modules[module_name]
 
 
 def _strict_verdict(runtime: PayloadRuntime, payload: object) -> str:
