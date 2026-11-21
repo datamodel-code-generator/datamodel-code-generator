@@ -119,5 +119,6 @@
 - [Architecture](https://datamodel-code-generator.koxudaxi.dev/architecture/): `datamodel-code-generator` is organized around one central idea: many input formats are normalized into a shared generation graph, then rendered th...
 ## Optional
 
+- [Preset history](https://datamodel-code-generator.koxudaxi.dev/preset-history/): Presets are immutable: a preset name never changes behavior, and a new recommendation is published as a new dated name. This page keeps every older...
 - [Frequently Asked Questions](https://datamodel-code-generator.koxudaxi.dev/faq/)
 - [Development](https://datamodel-code-generator.koxudaxi.dev/development-contributing/): Install the package in editable mode:
