@@ -22,7 +22,6 @@ from itertools import (
     chain,
     takewhile,
 )
-from os import scandir
 from pathlib import Path
 from stat import S_ISDIR, S_ISREG
 from threading import RLock
@@ -1987,6 +1986,7 @@ def _scan_custom_template_directory(
     entries: list[tuple[str, ...]],
     pending_directories: list[tuple[Path, str]],
 ) -> None:
+    from os import scandir  # noqa: PLC0415
 
     mode_checks = (S_ISDIR, S_ISREG)
     try:

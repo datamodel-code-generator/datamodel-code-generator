@@ -9,8 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
-from typing_extensions import Self
-
 from datamodel_code_generator._config_fields import (
     CLI_RESOLVED_PATH_FIELDS,
     DEFAULT_WATCH_DELAY,
@@ -145,6 +143,7 @@ def _get_config_class() -> type[Config]:
         field_validator,
         model_validator,
     )
+    from typing_extensions import Self  # noqa: PLC0415
 
     from datamodel_code_generator._run_record import RunOptions  # noqa: PLC0415
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
