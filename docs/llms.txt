@@ -1,6 +1,6 @@
 # datamodel-code-generator
 
-> This code generator creates pydantic model from an openapi file and others.
+> Generate Python models, typed clients and FastAPI servers (experimental) from OpenAPI, AsyncAPI, JSON Schema and more, deterministically, with --check for drift.
 
 - [datamodel-code-generator](https://datamodel-code-generator.koxudaxi.dev/): Generate Python models, typed clients and FastAPI servers (experimental) from schemas, deterministically, with `--check` for drift.
 - [Getting Started](https://datamodel-code-generator.koxudaxi.dev/getting-started/): Install `datamodel-code-generator`, generate your first Pydantic v2 model, and pick options for your schema with `--recommend-options` (experimental).
