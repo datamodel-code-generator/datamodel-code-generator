@@ -1266,7 +1266,7 @@ class _Suppressions(_Extents):
         return self._comments
 
     def suppressions(self, tool: str | None = None) -> list[Suppression]:
-        """Return the suppression comments (of one tool: ``ruff``, ``type``, ``ty``, ``pyright``, ``heki``, ``coverage``)."""
+        """Return the suppression comments (of one tool: ruff, type, ty, pyright, heki, coverage)."""
         _ask("suppressions")
         return [item for item in self._suppressions if tool is None or item.tool == tool]
 
