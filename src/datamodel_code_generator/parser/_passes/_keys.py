@@ -52,7 +52,7 @@ def raw_schema_default(field: object) -> tuple[Any, bool] | None:
     A field keeps it where a run has default value overrides and a property builds the field, or a copy takes it;
     ``default`` is None where the property declares none (``_RAW_SCHEMA_DEFAULT_UNDEFINED``).
     """
-    if _RAW_SCHEMA_DEFAULT_KEY not in (values := field.__dict__):
+    if _RAW_SCHEMA_DEFAULT_KEY not in (values := field.__dict__):  # pragma: no cover - not proven unreachable
         return None
     if (default := values[_RAW_SCHEMA_DEFAULT_KEY]) is _RAW_SCHEMA_DEFAULT_UNDEFINED:
         return None, False

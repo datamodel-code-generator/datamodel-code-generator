@@ -267,8 +267,6 @@ def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
     field.parent = None
     clear_parents(field.data_type)
     match field.__dict__.get(_DEFERRED_INHERITED_TYPE_KEY):
-        case DataType() as deferred_type:
-            clear_parents(deferred_type)
         case _InheritedTypeModifiers(list_wrapper=DataType() as list_wrapper):
             clear_parents(list_wrapper)
 

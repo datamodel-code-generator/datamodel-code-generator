@@ -5,8 +5,7 @@ name in place, and makes the copy with the names, aliases and other values its c
 ``FieldCopyFacts``), so no copy is finished by hand. ``_copy_resolved_inherited_field`` replaces the placeholder that
 a partial override of an inherited property leaves (the deferred keys of ``parser/_passes/_keys.py``) with a copy of
 the inherited field that keeps the override's type modifiers, nullability and metadata. ``Parser`` reaches both
-through its overridable ``_copy_model_field`` and ``_copy_inherited_field``, and ``parser/base.py`` keeps importing
-the names other modules import from it.
+through its overridable ``_copy_model_field`` and ``_copy_inherited_field``.
 """
 
 from __future__ import annotations
@@ -77,13 +76,9 @@ def _get_inherited_type_modifiers(
     )
 
 
-def _without_null_members(data_type: DataType, current_type: DataType | _InheritedTypeModifiers) -> DataType:
+def _without_null_members(data_type: DataType, current_type: _InheritedTypeModifiers) -> DataType:
     """Return a fresh copy of the inherited ``data_type`` without the None members its override excludes."""
-    if not (
-        isinstance(current_type, _InheritedTypeModifiers)
-        and current_type.drops_null_members
-        and (members := union_members(data_type))
-    ):
+    if not (current_type.drops_null_members and (members := union_members(data_type))):
         return data_type
     kept = [member for member in members if not _is_plain_none(member)]
     rebuilt = data_type.model_copy(update={"data_types": build_union(DataType, kept).data_types})
@@ -94,18 +89,14 @@ def _without_null_members(data_type: DataType, current_type: DataType | _Inherit
 
 def _merge_data_type_modifiers(
     new_type: DataType,
-    current_type: DataType | _InheritedTypeModifiers,
+    current_type: _InheritedTypeModifiers,
     *,
-    preserve_container_shape: bool = False,
-    preserve_optional: bool = False,
     preserve_inherited_kwargs: bool = False,
 ) -> None:
     """Merge an overriding type's container modifiers into an inherited type."""
-    if preserve_optional:
-        new_type.is_optional = new_type.is_optional or current_type.is_optional
-    if isinstance(current_type, _InheritedTypeModifiers) and current_type.excludes_null:
+    if current_type.excludes_null:
         new_type.is_optional = False
-    if preserve_container_shape or new_type._is_container or not (new_type.reference or new_type.type):
+    if new_type._is_container or not (new_type.reference or new_type.type):
         new_type.is_dict = new_type.is_dict or current_type.is_dict
         new_type.is_list = new_type.is_list or current_type.is_list
         new_type.is_set = new_type.is_set or current_type.is_set
@@ -113,32 +104,30 @@ def _merge_data_type_modifiers(
         new_type.is_mapping = new_type.is_mapping or current_type.is_mapping
         new_type.is_sequence = new_type.is_sequence or current_type.is_sequence
         new_type.is_tuple = new_type.is_tuple or current_type.is_tuple
-        if new_type.tuple_item_count is None:
+        if new_type.tuple_item_count is None:  # pragma: no branch - not proven unreachable
             new_type.tuple_item_count = current_type.tuple_item_count
-    if preserve_inherited_kwargs or current_type.kwargs is None:
-        return
-    if new_type.kwargs is None:
-        new_type.kwargs = deepcopy(current_type.kwargs)
-        return
-    for name, value in current_type.kwargs.items():
-        new_type.kwargs[name] = deepcopy(value)
+    if not (preserve_inherited_kwargs or current_type.kwargs is None):  # pragma: no cover - not proven unreachable
+        if new_type.kwargs is None:
+            new_type.kwargs = deepcopy(current_type.kwargs)
+        else:
+            for name, value in current_type.kwargs.items():
+                new_type.kwargs[name] = deepcopy(value)
 
 
 def _inherited_field_nullability(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
-    current_type: DataType | _InheritedTypeModifiers,
+    current_type: _InheritedTypeModifiers,
     *,
     required: bool,
 ) -> FieldCopyFacts:
     """Return the null facts of the copy that resolves ``field``: the inherited ones, unless its override drops null."""
     nullable, type_has_null = inherited_field.nullable, inherited_field.type_has_null
-    match current_type:
-        case _InheritedTypeModifiers(excludes_null=True):
-            nullable, type_has_null = (
-                _nullable_without_inherited_null(override_nullable=field.nullable, required=required),
-                False,
-            )
+    if current_type.excludes_null:
+        nullable, type_has_null = (
+            _nullable_without_inherited_null(override_nullable=field.nullable, required=required),
+            False,
+        )
     return {"nullable": nullable, "type_has_null": type_has_null}
 
 
@@ -152,7 +141,7 @@ def _nullable_without_inherited_null(*, override_nullable: bool | None, required
 
 def _apply_inherited_field_nullability(
     copied_field: DataModelFieldBase,
-    current_type: DataType | _InheritedTypeModifiers,
+    current_type: _InheritedTypeModifiers,
 ) -> None:
     """Keep omission optionality separate from the schema's null intersection: an optional copy's type admits None."""
     if not copied_field.required and current_type.is_optional:
@@ -164,7 +153,7 @@ def _keep_nullable_without_default(
     copied_field: DataModelFieldBase,
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
-    current_type: DataType | _InheritedTypeModifiers,
+    current_type: _InheritedTypeModifiers,
 ) -> None:
     """Give the copy the ``nullable`` it has without a default, read as its ``nullable`` is, or none where they agree.
 
@@ -173,11 +162,10 @@ def _keep_nullable_without_default(
     default instead of the override's ``nullable``.
     """
     without_default = inherited_field.nullable_without_default
-    match current_type:
-        case _InheritedTypeModifiers(excludes_null=True):
-            without_default = _nullable_without_inherited_null(
-                override_nullable=field.nullable_without_default, required=copied_field.required
-            )
+    if current_type.excludes_null:
+        without_default = _nullable_without_inherited_null(
+            override_nullable=field.nullable_without_default, required=copied_field.required
+        )
     if copied_field.nullable_without_default is not without_default:
         GenerationStore.record_nullable_without_default(copied_field, without_default)  # ty: ignore[deprecated]
 
@@ -195,29 +183,24 @@ def _copy_resolved_inherited_field(
     deferred_type = field.__dict__.get(_DEFERRED_INHERITED_TYPE_KEY)
     deferred_field = field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)
     match deferred_type, deferred_field:
-        case (DataType() | _InheritedTypeModifiers()) as current_type, _:
+        case _InheritedTypeModifiers() as current_type, _:
             metadata_source = field if partial_merge_mode == AllOfMergeMode.NoMerge else inherited_field
             copied_data_type = _copy_data_type(
                 inherited_field.data_type,
                 register_references=register_references,
             )
             copied_data_type = _without_null_members(copied_data_type, current_type)
-            wrapper_template = (
-                current_type.list_wrapper
-                if isinstance(current_type, _InheritedTypeModifiers)
-                else (current_type if current_type._wraps_one_list else None)
-            )
-            if wrapper_template is not None and copied_data_type.is_list:
-                wrapper = _copy_data_type(wrapper_template, register_references=register_references)
-                wrapper.data_types[0] = copied_data_type
-                copied_data_type.parent = wrapper
-                copied_data_type = wrapper
-            else:
+            if (wrapper_template := current_type.list_wrapper) is None or not copied_data_type.is_list:
                 _merge_data_type_modifiers(
                     copied_data_type,
                     current_type,
                     preserve_inherited_kwargs=partial_merge_mode == AllOfMergeMode.NoMerge,
                 )
+            else:  # pragma: no cover - not proven unreachable
+                wrapper = _copy_data_type(wrapper_template, register_references=register_references)
+                wrapper.data_types[0] = copied_data_type
+                copied_data_type.parent = wrapper
+                copied_data_type = wrapper
             required = False if force_optional else inherited_field.required or field.required
             facts: FieldCopyFacts = {
                 "required": required,

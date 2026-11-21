@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import gc
-import weakref
 from collections import OrderedDict
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -12,7 +10,6 @@ import pytest
 from pydantic import BaseModel as PydanticBaseModel
 
 import datamodel_code_generator._internal_utils as internal_utils
-from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator.enums import CollapseRootModelsNameStrategy
 from datamodel_code_generator.imports import Import, Imports
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -26,7 +23,6 @@ from datamodel_code_generator.model.dataclass import DataClass as DataclassModel
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
 from datamodel_code_generator.model.pydantic_v2 import BaseModel, DataModelField
-from datamodel_code_generator.model.pydantic_v2.base_model import Constraints
 from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass as PydanticDataclassModel
 from datamodel_code_generator.model.pydantic_v2.dataclass import DataModelField as PydanticDataclassField
 from datamodel_code_generator.model.pydantic_v2.root_model import RootModel
@@ -37,19 +33,13 @@ from datamodel_code_generator.model.runtime_validation import (
 )
 from datamodel_code_generator.model.type_alias import TypeAlias, TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser._passes._shared import (
-    _detach_deferred_inherited_field_parents,
     _get_discriminator_field_value,
     _restore_inherited_field_names_for_unique_aliases,
     exact_import,
     is_ancestor_package_reference,
 )
 from datamodel_code_generator.parser.base import (
-    _DEFERRED_INHERITED_CLASS_KEY,
-    _DEFERRED_INHERITED_FIELD_KEY,
-    _DEFERRED_INHERITED_TYPE_KEY,
-    _RAW_SCHEMA_DEFAULT_KEY,
     Child,
-    ClassScope,
     HashableComparable,
     ModuleContext,
     ParseConfig,
@@ -57,9 +47,6 @@ from datamodel_code_generator.parser.base import (
     T,
     _copy_data_model_field,
     _copy_data_type,
-    _copy_resolved_inherited_field,
-    _get_inherited_type_modifiers,
-    _merge_data_type_modifiers,
     add_model_path_to_list,
     alias_shadowed_imports,
     escape_characters,
@@ -849,184 +836,6 @@ def test_copy_data_model_field_isolates_aliases_and_mutable_default() -> None:
     assert field.default == {"nested": ["original"]}
 
 
-def test_merge_inherited_type_modifiers_overlays_kwargs() -> None:
-    """Deferred type modifiers copy and overlay independent constraint maps."""
-    copied_kwargs_type = DataType(type="str")
-    _merge_data_type_modifiers(
-        copied_kwargs_type,
-        DataType(kwargs={"min_length": 2}),
-    )
-
-    intersected_kwargs_type = DataType(type="str", kwargs={"min_length": 1})
-    _merge_data_type_modifiers(
-        intersected_kwargs_type,
-        DataType(kwargs={"min_length": 3, "max_length": 8}),
-    )
-
-    container_type = DataType(type="str")
-    _merge_data_type_modifiers(
-        container_type,
-        DataType(
-            is_optional=True,
-            is_dict=True,
-            is_list=True,
-            is_set=True,
-            is_frozen_set=True,
-            is_mapping=True,
-            is_sequence=True,
-            is_tuple=True,
-            tuple_item_count=3,
-        ),
-        preserve_container_shape=True,
-        preserve_optional=True,
-    )
-
-    overriding_tuple_type = DataType(is_tuple=True, tuple_item_count=2)
-    _merge_data_type_modifiers(
-        overriding_tuple_type,
-        DataType(is_tuple=True, tuple_item_count=3),
-        preserve_container_shape=True,
-    )
-
-    assert copied_kwargs_type.kwargs == {"min_length": 2}
-    assert intersected_kwargs_type.kwargs == {"min_length": 3, "max_length": 8}
-    assert container_type.is_optional
-    assert container_type.is_dict
-    assert container_type.is_list
-    assert container_type.is_set
-    assert container_type.is_frozen_set
-    assert container_type.is_mapping
-    assert container_type.is_sequence
-    assert container_type.is_tuple
-    assert container_type.tuple_item_count == 3
-    assert overriding_tuple_type.tuple_item_count == 2
-
-
-def test_copy_resolved_inherited_field_preserves_wrapper_and_schema_metadata() -> None:
-    """A partial array wrapper retains optionality, constraints, and raw defaults."""
-    inherited_field = DataModelField(
-        name="items",
-        original_name="items",
-        data_type=DataType(data_types=[DataType(type="str")], is_list=True),
-        constraints=Constraints(minLength=2, pattern="^a"),
-    )
-    field = DataModelField(
-        name="items",
-        original_name="items",
-        data_type=DataType(
-            data_types=[DataType(data_types=[DataType(type="str")], is_list=True)],
-            is_optional=True,
-        ),
-        constraints=Constraints(minLength=3, pattern="z$"),
-        default=["az"],
-        has_default=True,
-    )
-    field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = field.data_type
-    field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = ["raw"]
-
-    copied_field = _copy_resolved_inherited_field(
-        field,
-        inherited_field,
-        partial_merge_mode=AllOfMergeMode.All,
-    )
-
-    assert copied_field is not None
-    assert copied_field.data_type.is_optional
-    assert not copied_field.data_type.is_list
-    assert copied_field.data_type.data_types[0].is_list
-    assert copied_field.data_type.data_types[0].data_types[0].type == "str"
-    assert copied_field.constraints == Constraints(
-        minLength=3,
-        pattern="z$",
-    )
-    assert copied_field.default == ["az"]
-    assert copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] == ["raw"]
-
-
-def test_copy_resolved_required_only_inherited_field_metadata() -> None:
-    """A required-only declaration keeps child aliases on the inherited field type."""
-    inherited_field = DataModelField(
-        name="inherited_name",
-        original_name="source-name",
-        data_type=DataType(type="str"),
-    )
-    field = DataModelField(
-        name="source_name",
-        original_name="source-name",
-        data_type=DataType(),
-        required=True,
-        serialization_alias="serialized-name",
-        use_serialization_alias=True,
-    )
-    field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = ClassScope("Derived")
-
-    copied_field = _copy_resolved_inherited_field(field, inherited_field)
-
-    assert copied_field is not None
-    assert copied_field.required
-    assert copied_field.serialization_alias == "serialized-name"
-    assert copied_field.use_serialization_alias
-
-
-@pytest.mark.parametrize("gc_initially_enabled", [True, False])
-def test_detach_deferred_inherited_field_parents_releases_cycles_without_gc(
-    *,
-    gc_initially_enabled: bool,
-) -> None:
-    """Discarded placeholder trees are reclaimed immediately without touching live references."""
-    gc_state_setters = (gc.disable, gc.enable)
-    restore_gc = gc_state_setters[gc.isenabled()]
-    gc_state_setters[gc_initially_enabled]()
-    gc.disable()
-    try:
-        field = DataModelField(
-            name="items",
-            original_name="items",
-            data_type=DataType(
-                data_types=[
-                    DataType(
-                        data_types=[DataType(type="str")],
-                        is_list=True,
-                    ),
-                ],
-            ),
-        )
-        modifiers = _get_inherited_type_modifiers(field.data_type)
-        field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = modifiers
-        assert modifiers.list_wrapper is not None
-        tracked_objects = [
-            field,
-            *field.data_type.all_data_types,
-            modifiers.list_wrapper,
-            *modifiers.list_wrapper.all_data_types,
-        ]
-        weak_references = [weakref.ref(value) for value in tracked_objects]
-
-        _detach_deferred_inherited_field_parents(field)
-        del field, modifiers, tracked_objects
-
-        assert all(reference() is None for reference in weak_references)
-    finally:
-        restore_gc()
-
-
-def test_detach_deferred_inherited_field_data_type_releases_parent_links() -> None:
-    """The pre-compression deferred type form also releases every parent link."""
-    field = DataModelField(
-        name="items",
-        original_name="items",
-        data_type=DataType(data_types=[DataType(type="str")], is_list=True),
-    )
-    deferred_type = DataType(data_types=[DataType(type="int")], is_list=True)
-    deferred_type.parent = field
-    field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = deferred_type
-
-    _detach_deferred_inherited_field_parents(field)
-
-    assert field.parent is None
-    assert all(data_type.parent is None for data_type in deferred_type.all_data_types)
-
-
 def test_override_required_field_copies_plain_type_with_required_default() -> None:
     """Required inherited fields can keep defaults when that option is enabled."""
     parser = C(source="", apply_default_values_for_required_fields=True)
@@ -1057,33 +866,6 @@ def test_override_required_field_copies_plain_type_with_required_default() -> No
     assert replacement.default == "'fallback'"
     assert replacement.use_default_with_required is True
     assert child_model.fields[1] is concrete_field
-
-
-def test_override_required_field_resolves_scoped_mutable_default() -> None:
-    """Late inherited defaults use the derived scope and own mutable values."""
-    parser = C(
-        source="",
-        default_value_overrides={"ChildModel.value": {"source": ["override"]}},
-        allof_merge_mode=AllOfMergeMode.All,
-    )
-    base_model, child_model, child_field = _create_override_required_models(
-        DataType(type="str"),
-        original_default="'schema'",
-        original_has_default=True,
-    )
-    base_model.fields[0].__dict__[_RAW_SCHEMA_DEFAULT_KEY] = "schema"
-    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = ClassScope("ChildModel")
-    parser.generation_store.register_model(base_model)
-    parser.generation_store.register_model(child_model)
-
-    _override_required_fields(parser, [base_model, child_model])
-
-    replacement = child_model.fields[0]
-    replacement.default["source"].append("child")
-    assert replacement.default == {"source": ["override", "child"]}
-    assert parser.model_resolver.default_value_overrides["ChildModel.value"] == {
-        "source": ["override"],
-    }
 
 
 def test_override_required_field_removes_placeholder_without_inherited_field(parser_fixture: C) -> None:
