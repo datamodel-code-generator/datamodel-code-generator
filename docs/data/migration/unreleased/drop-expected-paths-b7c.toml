@@ -1,0 +1,9 @@
+[[change]]
+id = "drop-expected-paths-b7c"
+category = "harness"
+title = "Store the protobuf, GraphQL and XML Schema test outputs under the test names"
+summary = "These tests store their outputs under their own names, and the protobuf directory test stores its whole tree for the black 22 lane too; the package writes the same output."
+covers = [
+    "main/protobuf/directory//*.py",
+    "main/protobuf/directory_black_lt_24//*.py",
+]
