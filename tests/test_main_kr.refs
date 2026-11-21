@@ -3,7 +3,11 @@
 [test_allof_with_description_generates_class_not_alias]
 	main_kr/allof_with_description_generates_class_not_alias.py
 [test_allow_private_network_cli_doc]
-	main_kr/allow_private_network/output.py
+	main_kr/allow_private_network_cli_doc.py
+[test_capitalise_enum_members]
+	main_kr/capitalise_enum_members.py
+[test_capitalise_enum_members_and_use_subclass_enum]
+	main_kr/capitalise_enum_members_and_use_subclass_enum.py
 [test_capitalise_enum_members_and_use_subclass_enum_builtin_conflict]
 	main_kr/capitalise_enum_members_and_use_subclass_enum_builtin_conflict.py
 [test_capitalise_enum_members_builtin_conflict]
@@ -11,7 +15,7 @@
 [test_cli_args_override_profile_and_base]
 	main_kr/cli_args_override_profile_and_base.py	= main_kr/pyproject_profile/cli_override.py
 [test_copy_backup_without_fchmod]
-	main_kr/jobs/stale.py
+	main_kr/copy_backup_without_fchmod.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
 [test_custom_file_header]
 	main_kr/custom_file_header.py
 [test_custom_formatters_kwargs_inline_json_option]
@@ -23,42 +27,42 @@
 [test_encoding_option]
 	main_kr/encoding_option.py
 [test_fail_on_multi_module_stdout_single_file]
-	main/person.py
+	main_kr/fail_on_multi_module_stdout_single_file.stdout.py	= main/person.py
 [test_formatters_option]
 	main_kr/formatters_option.py	= main_kr/custom_formatters_kwargs_inline_json_option.py
 [test_generate_cli_command_basic]
-	main_kr/generate_cli_command/basic.txt
+	main_kr/generate_cli_command_basic.stdout.txt
 [test_generate_cli_command_excludes_excluded_options]
-	main_kr/generate_cli_command/excluded_options.txt
+	main_kr/generate_cli_command_excludes_excluded_options.stdout.txt	= main/main_general/generate_cli_command_with_false_boolean.stdout.txt
 [test_generate_cli_command_json_with_false_boolean_optional_actions]
-	main_kr/output_format_json/cli_command_false_boolean_optional_actions.txt
+	main_kr/generate_cli_command_json_with_false_boolean_optional_actions.stdout.txt
 [test_generate_cli_command_reconstructs_external_ref_mapping_with_equals_path]
-	main_kr/generate_cli_command/external_ref_mapping_round_trip.py
+	main_kr/generate_cli_command_reconstructs_external_ref_mapping_with_equals_path.model.py
 [test_generate_cli_command_reconstructs_false_boolean_optional_actions]
-person.json-pydantic_v2.BaseModel-generate_cli_command/no_use_union_operator.py	main_kr/generate_cli_command/no_use_union_operator.py
-typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed_dict.py	main_kr/generate_cli_command/no_use_closed_typed_dict.py
+person.json-pydantic_v2.BaseModel	main_kr/generate_cli_command_reconstructs_false_boolean_optional_actions[person.json-pydantic_v2.BaseModel].model.py
+typed_dict_closed.json-typing.TypedDict	main_kr/generate_cli_command_reconstructs_false_boolean_optional_actions[typed_dict_closed.json-typing.TypedDict].model.py
 [test_generate_cli_command_reconstructs_mapping_options]
-	main_kr/generate_cli_command/mapping_round_trip.py
+	main_kr/generate_cli_command_reconstructs_mapping_options.model.py
 [test_generate_cli_command_skips_empty_external_ref_mapping]
-	main_kr/generate_cli_command/empty_external_ref_mapping.txt	= main_kr/generate_cli_command/excluded_options.txt
+	main_kr/generate_cli_command_skips_empty_external_ref_mapping.stdout.txt	= main/main_general/generate_cli_command_with_false_boolean.stdout.txt
 [test_generate_cli_command_with_boolean_options]
-	main_kr/generate_cli_command/boolean_options.txt
+	main_kr/generate_cli_command_with_boolean_options.stdout.txt
 [test_generate_cli_command_with_false_boolean]
-	main_kr/generate_cli_command/false_boolean.txt
+	main_kr/generate_cli_command_with_false_boolean.stdout.txt
 [test_generate_cli_command_with_false_boolean_optional_actions]
-	main_kr/generate_cli_command/false_boolean_optional_actions.txt
+	main_kr/generate_cli_command_with_false_boolean_optional_actions.stdout.txt
 [test_generate_cli_command_with_list_options]
-	main_kr/generate_cli_command/list_options.txt
+	main_kr/generate_cli_command_with_list_options.stdout.txt
 [test_generate_cli_command_with_mapping_options]
-	main_kr/generate_cli_command/mapping_options.txt
+	main_kr/generate_cli_command_with_mapping_options.stdout.txt
 [test_generate_cli_command_with_multiple_options]
-	main_kr/generate_cli_command/multiple_options.txt
+	main_kr/generate_cli_command_with_multiple_options.stdout.txt
 [test_generate_cli_command_with_no_use_specialized_enum]
-	main_kr/generate_cli_command/no_use_specialized_enum.txt	= main/generate_cli_command/no_use_specialized_enum.txt
+	main_kr/generate_cli_command_with_no_use_specialized_enum.stdout.txt	= main/main_general/generate_cli_command_with_no_use_specialized_enum.stdout.txt
 [test_generate_cli_command_with_profile]
-	main_kr/generate_cli_command/with_profile.txt
+	main_kr/generate_cli_command_with_profile.stdout.txt
 [test_generate_cli_command_with_spaces_in_values]
-	main_kr/generate_cli_command/spaces_in_values.txt
+	main_kr/generate_cli_command_with_spaces_in_values.stdout.txt
 [test_generate_cli_command_writes_an_empty_formatters_list_as_no_formatters]
 	main_kr/generate_cli_command_writes_an_empty_formatters_list_as_no_formatters.stdout.txt
 	main_kr/generate_cli_command_writes_an_empty_formatters_list_as_no_formatters.txt
@@ -75,28 +79,28 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 [test_generate_prompt_with_question]
 	main_kr/generate_prompt/with_question.txt
 [test_generate_pyproject_config_basic]
-	main_kr/generate_pyproject_config/basic.txt
+	main_kr/generate_pyproject_config_basic.stdout.txt
 [test_generate_pyproject_config_escapes_toml_strings]
-	main_kr/generate_pyproject_config/escapes_toml_strings.txt
+	main_kr/generate_pyproject_config_escapes_toml_strings.stdout.txt
 [test_generate_pyproject_config_excludes_meta_options]
-	main_kr/generate_pyproject_config/excludes_meta_options.txt
+	main_kr/generate_pyproject_config_excludes_meta_options.stdout.txt
 [test_generate_pyproject_config_float_round_trip]
-	main/person.py
-	main_kr/generate_pyproject_config/float_option_helper.txt
 	main_kr/generate_pyproject_config_float_round_trip.2.py	= main/person.py
+	main_kr/generate_pyproject_config_float_round_trip.config.txt
+	main_kr/generate_pyproject_config_float_round_trip.model.py	= main/person.py
 	main_kr/generate_pyproject_config_float_round_trip.py	= main/person.py
 [test_generate_pyproject_config_helper_uses_default_formatter]
 	main_kr/generate_pyproject_config_helper_uses_default_formatter.txt
 [test_generate_pyproject_config_with_boolean_options]
-	main_kr/generate_pyproject_config/boolean_options.txt
+	main_kr/generate_pyproject_config_with_boolean_options.stdout.txt
 [test_generate_pyproject_config_with_enum_option]
-	main_kr/generate_pyproject_config/enum_option.txt
+	main_kr/generate_pyproject_config_with_enum_option.stdout.txt
 [test_generate_pyproject_config_with_float_option]
-	main_kr/generate_pyproject_config/float_option.txt
+	main_kr/generate_pyproject_config_with_float_option.stdout.txt
 [test_generate_pyproject_config_with_list_options]
-	main_kr/generate_pyproject_config/list_options.txt
+	main_kr/generate_pyproject_config_with_list_options.stdout.txt
 [test_generate_pyproject_config_with_multiple_options]
-	main_kr/generate_pyproject_config/multiple_options.txt
+	main_kr/generate_pyproject_config_with_multiple_options.stdout.txt
 [test_generate_pyproject_config_writes_no_formatters_as_an_empty_formatters_list]
 	main_kr/generate_pyproject_config_writes_no_formatters_as_an_empty_formatters_list.stdout.txt
 [test_generated_config_leaves_out_the_option_only_the_command_line_reads]
@@ -105,48 +109,48 @@ config	main_kr/generated_config_leaves_out_the_option_only_the_command_line_read
 [test_help_shows_new_options]
 	main_kr/help_shows_new_options.txt	= main/help/color.txt
 [test_http_ignore_tls]
-	main_kr/url_with_headers/output.py
+	main_kr/http_ignore_tls.py
 [test_http_local_ref_path_cli_doc]
-	main_kr/http_local_ref_path/output.py
+	main_kr/http_local_ref_path_cli_doc.py
 [test_http_query_parameters]
-	main_kr/url_with_headers/output.py
+	main_kr/http_query_parameters.py	= main_kr/http_ignore_tls.py
 [test_http_timeout]
-	main_kr/url_with_headers/output.py
+	main_kr/http_timeout.py	= main_kr/http_ignore_tls.py
 [test_ignore_pyproject_cli_doc]
 	main_kr/ignore_pyproject_cli_doc.py
 [test_ignore_pyproject_option]
 	main_kr/ignore_pyproject_option.py	= main_kr/ignore_pyproject_cli_doc.py
 [test_ignore_pyproject_with_profile]
-	main_kr/pyproject_profile/ignore_pyproject_with_profile.py	= main_kr/pyproject_profile/cli_override.py
+	main_kr/ignore_pyproject_with_profile.py	= main_kr/pyproject_profile/cli_override.py
 [test_include_path_parameters]
 	main_kr/include_path_parameters.py
 [test_input_option]
 	main_kr/input_option.py	= main_kr/custom_formatters_kwargs_inline_json_option.py
 [test_locked_remote_lock_cli_doc]
-	main_kr/url_with_headers/output.py
+	main_kr/locked_remote_lock_cli_doc.output.py	= main_kr/http_ignore_tls.py
 [test_lockfile_remote_lock_cli_doc]
-	main_kr/url_with_headers/output.py
+	main_kr/lockfile_remote_lock_cli_doc.py	= main_kr/http_ignore_tls.py
 [test_main]
 	main_kr/main.py	= main/openapi/custom_file_header_empty.py
 [test_main_base_class]
 	main_kr/main_base_class.py	= main/openapi/base_class.py
 [test_main_custom_template_dir]
-	main_kr/main_custom_template_dir/output.py	= main/openapi/extra_template_data_config_pydantic_v2.py
+	main_kr/main_custom_template_dir.stdout.py	= main/openapi/extra_template_data_config_pydantic_v2.py
 [test_main_docstring_special_chars]
 	main_kr/main_docstring_special_chars.py
 [test_main_fail_on_multi_module_stdout]
-invalid-dotted-repair	__init__.py
-invalid-dotted-repair	main_kr/multi_module_stdout/error.txt
-modular	__init__.py
-modular	main_kr/multi_module_stdout/error.txt
+invalid-dotted-repair	main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stderr.txt
+invalid-dotted-repair	main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
+modular	main_kr/main_fail_on_multi_module_stdout[modular].stderr.txt	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stderr.txt
+modular	main_kr/main_fail_on_multi_module_stdout[modular].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 [test_main_modular]
-	main_kr/main_modular//*.py	= main/openapi/modular//*.py
+	main_kr/main_modular/	= main/openapi/modular//*.py
 [test_main_modular_json_no_file]
-	main_kr/output_format_json/generation_modular_stdout.txt
+	main_kr/main_modular_json_no_file.stdout.txt
 [test_main_modular_no_file]
-	main_kr/main_modular_no_file/output.py
+	main_kr/main_modular_no_file.stdout.py
 [test_main_no_file]
-	main_kr/main_no_file/output.py
+	main_kr/main_no_file.stdout.py	= main_kr/main_no_file/output.py
 [test_main_use_field_description]
 	main_kr/main_use_field_description.py
 [test_main_use_field_description_example]
@@ -174,63 +178,63 @@ modular	main_kr/multi_module_stdout/error.txt
 [test_no_subclass_enum_no_capitalise_builtin_names]
 	main_kr/no_subclass_enum_no_capitalise_builtin_names.py
 [test_output_format_json_check_missing_output_directory]
-	main_kr/output_format_json/check_missing_output.txt
+	main_kr/output_format_json_check_missing_output_directory.stdout.txt
 [test_output_format_json_check_missing_output_file]
-	__init__.py
+	main_kr/output_format_json_check_missing_output_file.stderr.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 	main_kr/output_format_json_check_missing_output_file.txt
 [test_output_format_json_check_output_directory_differences]
-	__init__.py
+	main_kr/output_format_json_check_output_directory_differences.stderr.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 	main_kr/output_format_json_check_output_directory_differences.txt
 [test_output_format_json_check_output_file_difference]
-	__init__.py
+	main_kr/output_format_json_check_output_file_difference.stderr.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 	main_kr/output_format_json_check_output_file_difference.txt
 [test_output_format_json_check_success]
-	main_kr/output_format_json/check_success.txt	= main/openapi/api_scope_without_models/check_success_json.txt
+	main_kr/output_format_json_check_success.stdout.txt	= main/openapi/api_scope_without_models/check_success_json.txt
 [test_output_format_json_check_text_reports_output_directory_differences]
-	main_kr/output_format_json/check_output_directory_differences_text.txt
+	main_kr/output_format_json_check_text_reports_output_directory_differences.stdout.txt
 [test_output_format_json_check_text_reports_output_file_difference]
-	__init__.py
+	main_kr/output_format_json_check_text_reports_output_file_difference.stderr.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 	main_kr/output_format_json_check_text_reports_output_file_difference.txt
 [test_output_format_json_generate_cli_command]
-	main_kr/output_format_json/cli_command.txt
+	main_kr/output_format_json_generate_cli_command.stdout.txt
 [test_output_format_json_generate_pyproject_config]
-	main_kr/output_format_json/pyproject_config.txt
+	main_kr/output_format_json_generate_pyproject_config.stdout.txt
 [test_output_format_json_generate_pyproject_config_with_float_option]
-	main_kr/output_format_json/pyproject_config_float.txt
+	main_kr/output_format_json_generate_pyproject_config_with_float_option.stdout.txt
 [test_output_format_json_generation_mapping_payload]
 	main_kr/output_format_json_generation_mapping_payload.txt
 [test_output_format_json_generation_output_directory]
-	__init__.py
-	main_kr/main_modular//*.py	= main/openapi/modular//*.py
+	main_kr/output_format_json_generation_output_directory.stderr.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 	main_kr/output_format_json_generation_output_directory.txt
+	main_kr/output_format_json_generation_output_directory/	= main/openapi/modular//*.py
 [test_output_format_json_generation_output_file]
-	__init__.py
-	main_kr/main_no_file/output.py
+	main_kr/output_format_json_generation_output_file.model.py	= main_kr/main_no_file/output.py
+	main_kr/output_format_json_generation_output_file.stderr.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 	main_kr/output_format_json_generation_output_file.txt
 [test_output_format_json_generation_stdout]
-	main_kr/output_format_json/generation_stdout.txt
+	main_kr/output_format_json_generation_stdout.stdout.txt
 [test_output_format_json_json_ready_values]
 	main_kr/output_format_json_json_ready_values.txt
 [test_output_format_json_list_deprecations]
-	main_kr/output_format_json/list_deprecations.txt
+	main_kr/output_format_json_list_deprecations.stdout.txt
 [test_output_format_json_list_experimental]
-	main_kr/output_format_json/list_experimental.txt
+	main_kr/output_format_json_list_experimental.stdout.txt
 [test_output_format_json_normalizes_multiple_generation_output_paths]
 	main_kr/output_format_json_normalizes_multiple_generation_output_paths.generation_output_path_normalized.txt
 	main_kr/output_format_json_normalizes_multiple_generation_output_paths.generation_stdout_path_normalized.txt
 [test_output_format_json_rejects_watch]
-	__init__.py
+	main_kr/output_format_json_rejects_watch.stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 	main_kr/output_format_json_rejects_watch.txt
 [test_output_format_json_schema_config]
-	main_kr/output_format_json/config_schema.txt
+	main_kr/output_format_json_schema_config.stdout.txt
 [test_output_format_json_schema_generate_prompt]
 	main_kr/generate_prompt/json_schema.txt
 [test_output_format_json_schema_generation]
-	main_kr/output_format_json/generation_schema.txt
+	main_kr/output_format_json_schema_generation.stdout.txt
 [test_output_format_json_schema_model_metadata]
-	main_kr/output_format_json/model_metadata_schema.txt
+	main_kr/output_format_json_schema_model_metadata.stdout.txt
 [test_output_format_json_schema_structured_output]
-	main_kr/output_format_json/structured_output_schema.txt
+	main_kr/output_format_json_schema_structured_output.stdout.txt
 [test_output_format_json_schema_validates_model_metadata_json]
 	main_kr/output_format_json_schema_validates_model_metadata_json.py	= main/jsonschema/model_metadata_base_model_name.py
 [test_output_option]
@@ -248,32 +252,32 @@ modular	main_kr/multi_module_stdout/error.txt
 [test_pyproject]
 	main_kr/pyproject.py	?
 [test_pyproject_all_jobs_runs_every_job]
-	main/person.py
-	main_kr/jobs/strict.py
+	main_kr/pyproject_all_jobs_runs_every_job.plain.py	= main/person.py
+	main_kr/pyproject_all_jobs_runs_every_job.strict.py
 [test_pyproject_delimited_list_options_accept_toml_lists]
 	main_kr/pyproject_delimited_list_options_accept_toml_lists.py
 [test_pyproject_job_command_header_uses_batch_invocation]
-	main_kr/jobs/strict_command_header.py
+	main_kr/pyproject_job_command_header_uses_batch_invocation.py
 [test_pyproject_job_custom_formatter_resolves_relative_resources_from_original_output]
-	main_kr/jobs/custom_formatter.py
+	main_kr/pyproject_job_custom_formatter_resolves_relative_resources_from_original_output.py	= main_kr/jobs/custom_formatter.py
 [test_pyproject_job_input_clears_inherited_alternate_sources]
--input-model = ["missing.py"]-profile = "inherited"	main/person.py
-url = "https://example.invalid/schema.json"--	main/person.py
+-input-model = ["missing.py"]-profile = "inherited"	main_kr/pyproject_job_input_clears_inherited_alternate_sources[-input-model = [_missing.py_]-profile = _inherited_].py	= main/person.py
+url = "https://example.invalid/schema.json"--	main_kr/pyproject_job_input_clears_inherited_alternate_sources[url = _https___example.invalid_schema.json_--].py	= main/person.py
 [test_pyproject_job_runs_selected_profile]
-	main_kr/jobs/strict.py
+	main_kr/pyproject_job_runs_selected_profile.py	= main_kr/pyproject_all_jobs_runs_every_job.strict.py
 [test_pyproject_jobs_abort_runtime_errors_without_publishing]
 output_format1-stale generated output\n	main_kr/pyproject_jobs_abort_runtime_errors_without_publishing[output_format1-stale generated output_n].stale_metadata.txt
 output_format1-stale generated output\n	main_kr/pyproject_jobs_abort_runtime_errors_without_publishing[output_format1-stale generated output_n].stale_output.txt
 [test_pyproject_jobs_check_does_not_write_output]
-	main_kr/jobs/stale.py
+	main_kr/pyproject_jobs_check_does_not_write_output.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
 [test_pyproject_jobs_cleanup_failure_after_success_is_a_clean_error]
-	main/person.py
-	main_kr/jobs/staging_cleanup_error.txt
+	main_kr/pyproject_jobs_cleanup_failure_after_success_is_a_clean_error.model.py	= main/person.py
+	main_kr/pyproject_jobs_cleanup_failure_after_success_is_a_clean_error.txt	= main_kr/jobs/staging_cleanup_error.txt
 [test_pyproject_jobs_directory_output_overlays_generated_files]
-	main_kr/jobs/modular_init.py
-	main_kr/jobs/stale.py
+	main_kr/pyproject_jobs_directory_output_overlays_generated_files.extra.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
+	main_kr/pyproject_jobs_directory_output_overlays_generated_files.init.py
 [test_pyproject_jobs_failed_replacement_discards_unchanged_symlink_backup]
-	main_kr/jobs/stale.py
+	main_kr/pyproject_jobs_failed_replacement_discards_unchanged_symlink_backup.stale.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
 [test_pyproject_jobs_json_is_one_ordered_payload]
 	main_kr/pyproject_jobs_json_is_one_ordered_payload.json_generation.txt
 	main_kr/pyproject_jobs_json_is_one_ordered_payload.ordered_outputs.txt
@@ -282,53 +286,56 @@ u0085	main_kr/pyproject_jobs_json_keeps_unicode_line_separators_inside_strings[u
 u2028	main_kr/pyproject_jobs_json_keeps_unicode_line_separators_inside_strings[u2028].txt
 u2029	main_kr/pyproject_jobs_json_keeps_unicode_line_separators_inside_strings[u2029].txt
 [test_pyproject_jobs_json_publish_failure_has_no_batch_payload]
-	__init__.py
+	main_kr/pyproject_jobs_json_publish_failure_has_no_batch_payload.stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 [test_pyproject_jobs_json_rejects_invalid_inner_payload_without_stdout]
-[]-raw JSON '[]'	__init__.py
-not JSON-returned invalid JSON batch output	__init__.py
-{"kind":"unexpected"}-kind 'unexpected'	__init__.py
+[]-raw JSON '[]'	main_kr/pyproject_jobs_json_rejects_invalid_inner_payload_without_stdout[[]-raw JSON '[]'].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
+not JSON-returned invalid JSON batch output	main_kr/pyproject_jobs_json_rejects_invalid_inner_payload_without_stdout[not JSON-returned invalid JSON batch output].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
+{"kind":"unexpected"}-kind 'unexpected'	main_kr/pyproject_jobs_json_rejects_invalid_inner_payload_without_stdout[{_kind___unexpected_}-kind 'unexpected'].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 [test_pyproject_jobs_json_reports_check_results]
 	main_kr/pyproject_jobs_json_reports_check_results.txt
 [test_pyproject_jobs_json_spool_failure_has_no_batch_payload]
-	__init__.py
+	main_kr/pyproject_jobs_json_spool_failure_has_no_batch_payload.stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 [test_pyproject_jobs_partial_copy_backup_failure_removes_backup]
-	main_kr/jobs/stale.py
+	main_kr/pyproject_jobs_partial_copy_backup_failure_removes_backup.stale.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
 [test_pyproject_jobs_post_publish_check_does_not_recreate_missing_parent]
-	main_kr/jobs/stale.py
+	main_kr/pyproject_jobs_post_publish_check_does_not_recreate_missing_parent.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
 [test_pyproject_jobs_preflight_protects_other_job_inputs]
 output = "$PROTECTED_INPUT"	main_kr/pyproject_jobs_preflight_protects_other_job_inputs[output = _$PROTECTED_INPUT_].txt	= main/malformed/path_conflict_input.txt
 output = "$PROTECTED_PARENT"	main_kr/pyproject_jobs_preflight_protects_other_job_inputs[output = _$PROTECTED_PARENT_].txt	= main/malformed/path_conflict_input.txt
 output = "$WRITER_OUTPUT"\nemit-model-metadata = "$PROTECTED_INPUT"	main_kr/pyproject_jobs_preflight_protects_other_job_inputs[output = _$WRITER_OUTPUT__nem~ffb58505.txt	= main/malformed/path_conflict_input.txt
 [test_pyproject_jobs_preflight_rejects_hardlinked_other_job_input]
-	main_kr/jobs/protected_schema.txt	= main/malformed/path_conflict_input.txt
+	main_kr/pyproject_jobs_preflight_rejects_hardlinked_other_job_input.schema.txt	= main/malformed/path_conflict_input.txt
 [test_pyproject_jobs_publish_first_replacement_failure_removes_backup]
-	main_kr/jobs/stale.py
+	main_kr/pyproject_jobs_publish_first_replacement_failure_removes_backup.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
 [test_pyproject_jobs_publish_model_metadata]
-	main/person.py
-	main_kr/jobs/metadata_version.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+	main_kr/pyproject_jobs_publish_model_metadata.py	= main/person.py
+	main_kr/pyproject_jobs_publish_model_metadata.version.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_pyproject_jobs_publish_nested_output_and_preserve_mode]
-	main/person.py
+	main_kr/pyproject_jobs_publish_nested_output_and_preserve_mode.py	= main/person.py
 [test_pyproject_jobs_reject_input_diff_from_every_configuration_layer_without_publication]
-base	__init__.py
-cli	__init__.py
-job	__init__.py
-profile	__init__.py
+base	main_kr/pyproject_jobs_reject_input_diff_from_every_configuration_layer_without_publication[base].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
+cli	main_kr/pyproject_jobs_reject_input_diff_from_every_configuration_layer_without_publication[cli].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
+job	main_kr/pyproject_jobs_reject_input_diff_from_every_configuration_layer_without_publication[job].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
+profile	main_kr/pyproject_jobs_reject_input_diff_from_every_configuration_layer_without_publication[profile].stdout.py	= main_kr/main_fail_on_multi_module_stdout[invalid-dotted-repair].stdout.py
 [test_pyproject_jobs_reject_nested_output_symlink_escape]
 	main_kr/pyproject_jobs_reject_nested_output_symlink_escape.txt	= main/malformed/path_conflict_input.txt
 [test_pyproject_jobs_rejects_output_ancestor_swap_between_validation_and_publication]
-	main_kr/jobs/stale.py
+	main_kr/pyproject_jobs_rejects_output_ancestor_swap_between_validation_and_publication.stale.py	= main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py
 [test_pyproject_jobs_report_batch_watch_startup_error]
-	main/person.py
-	main_kr/jobs/strict.py
+	main_kr/pyproject_jobs_report_batch_watch_startup_error.plain.py	= main/person.py
+	main_kr/pyproject_jobs_report_batch_watch_startup_error.strict.py	= main_kr/pyproject_all_jobs_runs_every_job.strict.py
 [test_pyproject_jobs_reraises_generation_failure_after_attempting_staging_cleanup]
 	main_kr/pyproject_jobs_reraises_generation_failure_after_attempting_staging_cleanup.txt	= main_kr/jobs/staging_cleanup_error.txt
 [test_pyproject_jobs_run_in_toml_declaration_order]
-	main/person.py
-	main_kr/jobs/strict.py
+	main_kr/pyproject_jobs_run_in_toml_declaration_order.plain.py	= main/person.py
+	main_kr/pyproject_jobs_run_in_toml_declaration_order.strict.py	= main_kr/pyproject_all_jobs_runs_every_job.strict.py
 [test_pyproject_jobs_staging_failure_keeps_primary_error_when_anchor_cleanup_fails]
 	main_kr/pyproject_jobs_staging_failure_keeps_primary_error_when_anchor_cleanup_fails.txt
 [test_pyproject_profile_inherits_base_settings]
 	main_kr/pyproject_profile_inherits_base_settings.py	= main_kr/profile_extends_single_parent.py
+[test_pyproject_respects_both_spellings_of_capitalize_enum_members_flag]
+UK	main_kr/pyproject_respects_both_spellings_of_capitalize_enum_members_flag[UK].py
+US	main_kr/pyproject_respects_both_spellings_of_capitalize_enum_members_flag[US].py	= main_kr/pyproject_respects_both_spellings_of_capitalize_enum_members_flag[UK].py
 [test_pyproject_with_profile]
 	main_kr/pyproject_with_profile.py
 [test_pyproject_with_tool_section]
@@ -344,9 +351,9 @@ profile	__init__.py
 [test_target_python_version_outputs]
 	main_kr/target_python_version_outputs.py	= main/jsonschema/autodetect.py
 [test_update_remote_lock_cli_doc]
-	main_kr/url_with_headers/output.py
+	main_kr/update_remote_lock_cli_doc.py	= main_kr/http_ignore_tls.py
 [test_url_with_http_headers]
-	main_kr/url_with_headers/output.py
+	main_kr/url_with_http_headers.py	= main_kr/http_ignore_tls.py
 [test_use_decimal_for_multiple_of]
 	main_kr/use_decimal_for_multiple_of.py
 [test_use_exact_imports]

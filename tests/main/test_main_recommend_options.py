@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 
     from tests.conftest import HttpxGetMockFactory
 
-EXPECTED_PATH = EXPECTED_MAIN_PATH / "recommend_options"
 INPUT_PATH = DATA_PATH / "recommend_options"
 CHANGELOG = Path(__file__).parents[2] / "CHANGELOG.md"
 RECOMMEND_DOCS = Path(__file__).parents[2] / "docs" / "recommend-options.md"
@@ -899,7 +898,7 @@ def test_recommend_options_small_schema_default(tmp_path: Path, capsys: pytest.C
         run_main_with_args(
             ["--input", "titled_variants.yaml", "--target-python-version", "3.14", "--recommend-options"],
             capsys=capsys,
-            expected_stdout_path=EXPECTED_PATH / "titled_variants.txt",
+            derived_stdout=True,
             assert_no_stderr=True,
             use_builtin_default_formatter=False,
         )
@@ -1255,30 +1254,27 @@ def _naming_hints(recorded: Iterable[warnings.WarningMessage]) -> str:
 
 
 @pytest.mark.parametrize(
-    ("input_name", "options", "pyproject", "expected_exit", "expected"),
+    ("input_name", "options", "pyproject", "expected_exit"),
     [
-        pytest.param("naming_hint.yaml", [], "", Exit.OK, "naming_hint.txt", id="numbered"),
-        pytest.param("naming_hint_few.yaml", [], "", Exit.OK, None, id="below-count"),
-        pytest.param("naming_hint_minority.yaml", [], "", Exit.OK, None, id="below-share"),
-        pytest.param("naming_hint_collapsed.yaml", ["--collapse-root-models"], "", Exit.OK, None, id="collapsed-root"),
-        pytest.param("naming_hint.yaml", ["--naming-strategy", "numbered"], "", Exit.OK, None, id="naming-strategy"),
-        pytest.param("naming_hint.yaml", [], 'naming-strategy = "numbered"', Exit.OK, None, id="pyproject-naming"),
+        pytest.param("naming_hint.yaml", [], "", Exit.OK, id="numbered"),
+        pytest.param("naming_hint_few.yaml", [], "", Exit.OK, id="below-count"),
+        pytest.param("naming_hint_minority.yaml", [], "", Exit.OK, id="below-share"),
+        pytest.param("naming_hint_collapsed.yaml", ["--collapse-root-models"], "", Exit.OK, id="collapsed-root"),
+        pytest.param("naming_hint.yaml", ["--naming-strategy", "numbered"], "", Exit.OK, id="naming-strategy"),
+        pytest.param("naming_hint.yaml", [], 'naming-strategy = "numbered"', Exit.OK, id="pyproject-naming"),
         pytest.param(
             "naming_hint.yaml",
             ["--model-name-map", '{"Order": "Purchase"}'],
             "",
             Exit.OK,
-            None,
             id="model-name-map",
         ),
-        pytest.param(
-            "naming_hint.yaml", [], 'model-name-map = {Order = "Purchase"}', Exit.OK, None, id="pyproject-map"
-        ),
-        pytest.param("naming_hint.yaml", ["--check"], "", Exit.DIFF, None, id="check"),
-        pytest.param("naming_hint.yaml", ["--diff-against", "naming_hint_few.yaml"], "", Exit.DIFF, None, id="diff"),
-        pytest.param("naming_hint.yaml", ["--output-format", "json"], "", Exit.OK, None, id="json"),
-        pytest.param("naming_hint.yaml", ["--disable-warnings"], "", Exit.OK, None, id="disable-warnings"),
-        pytest.param("naming_hint.yaml", ["--recommend-options"], "", Exit.OK, None, id="recommend-options"),
+        pytest.param("naming_hint.yaml", [], 'model-name-map = {Order = "Purchase"}', Exit.OK, id="pyproject-map"),
+        pytest.param("naming_hint.yaml", ["--check"], "", Exit.DIFF, id="check"),
+        pytest.param("naming_hint.yaml", ["--diff-against", "naming_hint_few.yaml"], "", Exit.DIFF, id="diff"),
+        pytest.param("naming_hint.yaml", ["--output-format", "json"], "", Exit.OK, id="json"),
+        pytest.param("naming_hint.yaml", ["--disable-warnings"], "", Exit.OK, id="disable-warnings"),
+        pytest.param("naming_hint.yaml", ["--recommend-options"], "", Exit.OK, id="recommend-options"),
     ],
 )
 def test_naming_hint(
@@ -1286,7 +1282,6 @@ def test_naming_hint(
     options: list[str],
     pyproject: str,
     expected_exit: Exit,
-    expected: str | None,
     tmp_path: Path,
 ) -> None:
     """Point to --recommend-options after a generation whose class names are mostly numbered collisions.
@@ -1306,18 +1301,18 @@ def test_naming_hint(
             ["--input", input_name, "--input-file-type", "openapi", "--output", "models.py", *options],
             expected_exit=expected_exit,
         )
-    assert_output(_naming_hints(recorded), None if expected is None else EXPECTED_PATH / expected)
+    assert_output(_naming_hints(recorded))
 
 
 @pytest.mark.parametrize(
-    ("selection", "expected"),
+    "selection",
     [
-        pytest.param(["--job", "big shop"], "naming_hint.txt", id="one-job"),
-        pytest.param(["--job", "plain", "--job", "big shop"], None, id="jobs"),
-        pytest.param(["--all-jobs"], None, id="all-jobs"),
+        pytest.param(["--job", "big shop"], id="one-job"),
+        pytest.param(["--job", "plain", "--job", "big shop"], id="jobs"),
+        pytest.param(["--all-jobs"], id="all-jobs"),
     ],
 )
-def test_naming_hint_batch_jobs(selection: list[str], expected: str | None, tmp_path: Path) -> None:
+def test_naming_hint_batch_jobs(selection: list[str], tmp_path: Path) -> None:
     """Show the hint for a single job, which --recommend-options takes, and not for several jobs, which it refuses."""
     for name in NAMING_HINT_INPUTS:
         shutil.copy(INPUT_PATH / name, tmp_path / name)
@@ -1332,7 +1327,7 @@ def test_naming_hint_batch_jobs(selection: list[str], expected: str | None, tmp_
     with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", NamingHintWarning)
         run_main_with_args(selection)
-    assert_output(_naming_hints(recorded), None if expected is None else EXPECTED_PATH / expected)
+    assert_output(_naming_hints(recorded))
 
 
 @pytest.mark.parametrize(

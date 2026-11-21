@@ -1,0 +1,10 @@
+[[change]]
+id = "drop-expected-paths-b3"
+category = "harness"
+title = "Store the general, kr and watch test outputs under the test names"
+summary = "The stored outputs of these tests are named by the test and carry per-environment rows where the formatter or Python version selected the file; the generated code is the same."
+covers = [
+    "main/formatter_policy/no_warning.txt",
+    "main/standard_preset_no_snake_case.py",
+    "main/standard_preset_no_snake_case_black_lt_24.py",
+]
