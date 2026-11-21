@@ -16,7 +16,7 @@ from decimal import Decimal
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar, cast
 
-from typing_extensions import Protocol, assert_never, final, override
+from typing_extensions import Protocol, assert_type, final, override
 
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._container_kinds import (
@@ -646,8 +646,7 @@ def normalize_default_value_constraints(
             import_overrides, annotation_import, descriptor.constructor_import
         ):
             continue
-        if descriptor.recipe is not DefaultValueRecipe.Decimal:  # pragma: no cover - Decimal is the only recipe
-            assert_never(descriptor.recipe)
+        assert_type(descriptor.recipe, Literal[DefaultValueRecipe.Decimal])
         kwargs = data_type.kwargs
         for key, value in kwargs.items():
             if not isinstance(value, Decimal):
