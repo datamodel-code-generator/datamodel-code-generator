@@ -20,12 +20,13 @@ Legacy rows, each named by the function that decides it:
   ``enum`` takes no keyword of a kind its schema does not declare, though it takes those of its values' type for a
   declared one. The literal check (``literal_check``) decides such a keyword on the values where it can, so the row
   keeps only the keywords it cannot decide, such as ``pattern``, off the field.
-* ``legacy-override-keeps-string-keywords`` (``overridden_declared_constraints``; the constraint decision after the field's final type removes it):
-  ``--type-overrides`` decides the string keywords a field left out again, but keeps those the replaced type took
-  whatever the override type takes.
-* ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; the constraint decision after the field's final type removes it with
-  the render-time drop): a type that names ``AnyUrl`` takes every keyword a declared string holds, and the Pydantic outputs leave out
-  every constraint of a field whose type holds it outside a container when they write the field, with a warning.
+* ``legacy-override-keeps-string-keywords`` (``overridden_declared_constraints``; the constraint decision after the
+  field's final type removes it): ``--type-overrides`` decides the string keywords a field left out again, but keeps
+  those the replaced type took whatever the override type takes.
+* ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; the constraint decision after the field's
+  final type removes it with the render-time drop): a type that names ``AnyUrl`` takes every keyword a declared string
+  holds, and the Pydantic outputs leave out every constraint of a field whose type holds it outside a container when
+  they write the field, with a warning.
 * ``legacy-msgspec-float-bounds`` (``union_bound_arithmetic``): without ``--read-msgspec-union-bounds-exactly`` the
   check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past ``2**53`` is
   the integer of its binary value, where the schema models read the decimal that is written.
@@ -553,10 +554,11 @@ def split_declared_keywords(
 def declared_string_keywords_taken(taken: frozenset[str], type_paths: Iterable[str]) -> frozenset[str]:
     """Return the keywords a declared string's field takes: those its type takes (``taken``), given its type paths.
 
-    Row ``legacy-anyurl-keeps-string-keywords`` (the constraint decision after the field's final type removes it with the render-time drop): a type that names
-    ``AnyUrl`` takes them all, as in every release, so the root-model and collapsing decisions see them; the Pydantic
-    outputs leave every constraint out of a field whose type holds ``AnyUrl`` outside a container when they write it,
-    with a warning, though Pydantic checks ``maxLength`` on it, and ``minLength`` from 2.10 on.
+    Row ``legacy-anyurl-keeps-string-keywords`` (the constraint decision after the field's final type removes it with
+    the render-time drop): a type that names ``AnyUrl`` takes them all, as in every release, so the root-model and
+    collapsing decisions see them; the Pydantic outputs leave every constraint out of a field whose type holds
+    ``AnyUrl`` outside a container when they write it, with a warning, though Pydantic checks ``maxLength`` on it, and
+    ``minLength`` from 2.10 on.
     """
     return taken | STRING_KEYWORDS if _STRING_KEYWORDS_KEPT_TYPE in type_paths else taken
 
@@ -936,8 +938,9 @@ def overridden_declared_constraints(
 
     They are the field's number constraints the schema type decided (not those ``type_dependent`` remembers as decided
     by the emitted type) and the ``untaken`` number and string ones it was generated without. Row
-    ``legacy-override-keeps-string-keywords`` (the constraint decision after the field's final type removes it): the string keywords the replaced type took stay
-    whatever the override type takes, as the field's lengths no longer tell a string's from an array's or a mapping's.
+    ``legacy-override-keeps-string-keywords`` (the constraint decision after the field's final type removes it): the
+    string keywords the replaced type took stay whatever the override type takes, as the field's lengths no longer tell
+    a string's from an array's or a mapping's.
     """
     return {
         **{key: value for key, value in values.items() if key in NUMBER_KEYWORDS and key not in type_dependent},
