@@ -953,7 +953,8 @@ def test_declared_changes_check_in_ci(case: str, tmp_path: Path) -> None:
         (tmp_path / "verdicts.json").write_text(
             json.dumps({"verdicts": [row | {"problem": None} for row in rows]}), encoding="utf-8"
         )
-        args += ["--verdicts", str(tmp_path / ("verdicts.json" if spec["verdicts"] == "admit" else "missing.json"))]
+        name = "verdicts.json" if spec["verdicts"] == "admit" else "missing.json"
+        args += ["--verdicts", (tmp_path / name).as_posix()]
     run = subprocess.run(
         [sys.executable, str(repository / declared_changes.SCRIPT), args[0], "--ci", *args[1:]],
         cwd=repository,
@@ -962,4 +963,4 @@ def test_declared_changes_check_in_ci(case: str, tmp_path: Path) -> None:
         text=True,
     )
     shown = f"$ {args[0]} --ci {' '.join(args[1:])}\nexit {run.returncode}\n{run.stdout}{run.stderr}"
-    assert_output(shown.replace(str(tmp_path), "TMP"))
+    assert_output(shown.replace(tmp_path.as_posix(), "TMP"))
