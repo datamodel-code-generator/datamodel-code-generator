@@ -21,7 +21,6 @@ from tests.conftest import (
     CHECK_SCHEMA_LOCATIONS_ENV,
     assert_inputs_not_mutated,
     assert_output,
-    stored_expected,
 )
 from tests.main.conftest import (
     ASYNC_API_DATA_PATH,
@@ -33,7 +32,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,9 +47,7 @@ if TYPE_CHECKING:
 def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_metadata: bool, mode: str) -> None:
     """Metadata resolves runtime fields while aliases and Python output stay stable."""
     input_path = JSON_SCHEMA_DATA_PATH / "root_model_metadata.json"
-    expected_dir = EXPECTED_JSON_SCHEMA_PATH / "root_model_metadata"
     metadata_path = output_file.with_suffix(".metadata.json")
-    expected_metadata = expected_dir / f"{mode}.txt"
     options = {} if mode == "root_model" else {f"use_{mode}": True}
     match entry_point:
         case "cli":
@@ -63,8 +59,6 @@ def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_met
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="jsonschema",
-                assert_func=assert_file_content,
-                expected_file=expected_dir / f"{mode}.py",
                 extra_args=extra_args,
                 force_exec_validation=True,
             )
@@ -73,8 +67,6 @@ def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_met
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.JsonSchema,
-                assert_func=assert_file_content,
-                expected_file=expected_dir / f"{mode}.py",
                 disable_timestamp=True,
                 target_python_version=PythonVersion.PY_310,
                 formatters=[Formatter.BUILTIN],
@@ -82,10 +74,19 @@ def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_met
                 **options,
             )
     if emit_metadata:
-        assert_output(metadata_path.read_text(encoding="utf-8"), expected_metadata)
-    metadata = json.loads(
-        stored_expected(metadata_path if emit_metadata else expected_metadata).read_text(encoding="utf-8")
-    )
+        assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
+    else:
+        generate(
+            input_path,
+            input_file_type=InputFileType.JsonSchema,
+            output=output_file.with_name("metadata_source.py"),
+            disable_timestamp=True,
+            target_python_version=PythonVersion.PY_310,
+            formatters=[Formatter.BUILTIN],
+            emit_model_metadata=metadata_path,
+            **options,
+        )
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     payloads = json.loads((JSON_DATA_PATH / "root_model_metadata_payloads.json").read_text(encoding="utf-8"))
     runtime = []
     with _generated_model(output_file, "root_model_metadata", "RootMetadata") as model:
@@ -112,7 +113,7 @@ def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_met
             })
     assert_output(
         f"{json.dumps(runtime, indent=2)}\n",
-        expected_dir / ("type_alias_runtime.txt" if mode == "type_alias" else "root_model_runtime.txt"),
+        name="runtime",
     )
 
 

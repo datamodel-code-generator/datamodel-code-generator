@@ -17,7 +17,6 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model.base import TEMPLATE_DIR
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, JSON_SCHEMA_DATA_PATH, _generated_model, run_main_with_args
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -78,9 +77,9 @@ def test_pattern_string_adapters(tmp_path: Path, entrypoint: str, formatter: str
                 indent=2,
             )
             + "\n",
-            EXPECTED_JSON_SCHEMA_PATH / f"pattern_string_adapters/inherited_minimum_{entrypoint}_warnings.txt",
+            name="warnings",
         )
-    assert_output(output.read_text(), EXPECTED_JSON_SCHEMA_PATH / "pattern_string_adapters" / f"{case['name']}.py")
+    assert_output(output.read_text(), suffix=".py")
     results = []
     with _generated_model(output, "pattern_string_adapter", "Root") as model:
         for payload in json.loads((DATA_PATH / "payloads/pattern_string_adapters/values.json").read_text()):
@@ -92,5 +91,5 @@ def test_pattern_string_adapters(tmp_path: Path, entrypoint: str, formatter: str
             results.append(result)
     assert_output(
         json.dumps(results, indent=2) + "\n",
-        EXPECTED_JSON_SCHEMA_PATH / "pattern_string_adapters" / f"{case['name']}.runtime.txt",
+        name="runtime",
     )

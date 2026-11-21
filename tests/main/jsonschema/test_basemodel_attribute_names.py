@@ -12,23 +12,18 @@ from pydantic import BaseModel
 from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, generate
 from tests.conftest import assert_output
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, _generated_model, run_main_and_assert
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-@pytest.mark.parametrize(
-    ("prefix", "case"), [(None, "default_prefix"), ("", "empty_prefix")], ids=["default-prefix", "empty-prefix"]
-)
-def test_basemodel_metaclass_attribute_names(output_file: Path, prefix: str | None, case: str) -> None:
+@pytest.mark.parametrize("prefix", [None, ""], ids=["default-prefix", "empty-prefix"])
+def test_basemodel_metaclass_attribute_names(output_file: Path, prefix: str | None) -> None:
     """Rename `mro`, `register` and `__name__`, which the BaseModel metaclass chain provides."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "basemodel_attribute_names.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"basemodel_attribute_names_{case}.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -43,7 +38,7 @@ def test_basemodel_metaclass_attribute_names(output_file: Path, prefix: str | No
         with _generated_model(output_file, "basemodel_attribute_names", "AttributeNames") as model:
             assert_output(
                 "".join(f"{name}={field.alias}\n" for name, field in model.model_fields.items()),
-                EXPECTED_JSON_SCHEMA_PATH / f"basemodel_attribute_names_{case}_fields.txt",
+                name="fields",
             )
 
 

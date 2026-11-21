@@ -1419,7 +1419,7 @@ class _XMLSchemaConverter:
         current = schema.get(key)
         schema[key] = current * value if isinstance(current, int) else value
 
-    def _builtin_qname(self, qname: str, element: ET.Element | None) -> tuple[bool, QNameKey]:
+    def _builtin_qname(self, qname: str, element: ET.Element) -> tuple[bool, QNameKey]:
         """Return whether a qname names a built-in type, and the key of the type it resolves to.
 
         A name in the XML Schema namespace does, and so does an unprefixed name of a built-in type that no type of
@@ -1434,7 +1434,7 @@ class _XMLSchemaConverter:
             and key not in self.complex_types
         ), key
 
-    def _schema_for_qname(self, qname: str, element: ET.Element | None = None) -> JsonSchema:
+    def _schema_for_qname(self, qname: str, element: ET.Element) -> JsonSchema:
         builtin, key = self._builtin_qname(qname, element)
         if builtin:
             return self._builtin_type_schema(_local_name(qname), default=STRING_SCHEMA)
@@ -1448,22 +1448,20 @@ class _XMLSchemaConverter:
             schema["x-python-type"] = "datetime"
         return schema
 
-    def _qname_namespace(self, qname: str, element: ET.Element | None = None) -> str | None:
+    def _qname_namespace(self, qname: str, element: ET.Element) -> str | None:
         if ":" not in qname:
             return None
         prefix = qname.split(":", maxsplit=1)[0]
         return self._namespaces_for(element).get(prefix)
 
-    def _qname_key(self, qname: str, element: ET.Element | None = None) -> QNameKey:
+    def _qname_key(self, qname: str, element: ET.Element) -> QNameKey:
         return (self._qname_namespace(qname, element), _local_name(qname))
 
-    def _resolve_key(
-        self,
-        qname: str | QNameKey,
-        *registries: dict[QNameKey, ET.Element],
-        element: ET.Element | None = None,
-    ) -> QNameKey:
-        key = qname if isinstance(qname, tuple) else self._qname_key(qname, element)
+    def _resolve_key(self, qname: str, *registries: dict[QNameKey, ET.Element], element: ET.Element) -> QNameKey:
+        return self._resolve_registered_key(self._qname_key(qname, element), *registries)
+
+    @staticmethod
+    def _resolve_registered_key(key: QNameKey, *registries: dict[QNameKey, ET.Element]) -> QNameKey:
         if any(key in registry for registry in registries):
             return key
         namespace, local = key
@@ -1475,7 +1473,7 @@ class _XMLSchemaConverter:
         return key
 
     def _resolved_referenced_elements(self) -> set[QNameKey]:
-        resolved = {self._resolve_key(ref, self.elements) for ref in self.referenced_elements}
+        resolved = {self._resolve_registered_key(ref, self.elements) for ref in self.referenced_elements}
         for ref in tuple(resolved):
             resolved.update(self.substitution_groups.get(ref, set()))
         return resolved
@@ -1501,9 +1499,7 @@ class _XMLSchemaConverter:
     def _element_ref(self, key: QNameKey) -> str:
         return self._ref(self._element_definition_key(key))
 
-    def _namespaces_for(self, element: ET.Element | None) -> dict[str, str]:
-        if element is None:  # pragma: no cover - not proven unreachable: namespaces asked for no element
-            return self.namespaces
+    def _namespaces_for(self, element: ET.Element) -> dict[str, str]:
         return self._element_namespaces.get(id(element), self.namespaces)
 
     @staticmethod

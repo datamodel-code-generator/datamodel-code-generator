@@ -20,7 +20,6 @@ from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[1]
 FIXTURE_ROOT = Path(__file__).parent / "data" / "architecture_boundaries"
-EXPECTED_ROOT = Path(__file__).parent / "data" / "expected" / "architecture_boundaries"
 CHECKER_FILES = ("check_architecture_boundaries.py", "_import_cycles.py", "_source_model.py")
 """The guard and the modules it reads imports with, as a copy of the guard in a tree needs them."""
 
@@ -71,26 +70,17 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
 
 
 @pytest.mark.parametrize(
-    ("fixture", "expected"),
+    "fixture",
     [
-        (
-            FIXTURE_ROOT / "shared_model_dynamic_import" / "forbidden.py",
-            EXPECTED_ROOT / "shared_model_dynamic_import.txt",
-        ),
-        (FIXTURE_ROOT / "shared_model_dynamic_import" / "allowed.py", EXPECTED_ROOT / "clean.txt"),
+        pytest.param(FIXTURE_ROOT / "shared_model_dynamic_import" / "forbidden.py", id="shared_model_dynamic_import"),
+        pytest.param(FIXTURE_ROOT / "shared_model_dynamic_import" / "allowed.py", id="clean"),
     ],
 )
-def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(
-    fixture: Path,
-    expected: Path,
-) -> None:
+def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(fixture: Path) -> None:
     """Reject concrete dynamic imports while allowing shadowed aliases without a target."""
     violations = check_architecture_boundaries.check_files([(fixture, "shared-model")], allowlist={})
 
-    assert_output(
-        check_architecture_boundaries.format_report(violations),
-        expected,
-    )
+    assert_output(check_architecture_boundaries.format_report(violations))
 
 
 def test_architecture_boundary_detector_fails_closed_where_the_source_model_cannot_read(tmp_path: Path) -> None:
@@ -455,20 +445,13 @@ def test_architecture_boundary_cli_checks_the_full_source_tree() -> None:
 
 
 @pytest.mark.parametrize(
-    ("fixture", "expected"),
+    "fixture",
     [
-        (FIXTURE_ROOT / "shared_model" / "forbidden.py", EXPECTED_ROOT / "cli_subprocess_forbidden.txt"),
-        (
-            FIXTURE_ROOT / "shared_model_dynamic_import" / "forbidden.py",
-            EXPECTED_ROOT / "cli_subprocess_shared_model_dynamic_import.txt",
-        ),
+        pytest.param(FIXTURE_ROOT / "shared_model" / "forbidden.py", id="forbidden"),
+        pytest.param(FIXTURE_ROOT / "shared_model_dynamic_import" / "forbidden.py", id="shared_model_dynamic_import"),
     ],
 )
-def test_architecture_boundary_cli_reports_shared_model_backend_access(
-    tmp_path: Path,
-    fixture: Path,
-    expected: Path,
-) -> None:
+def test_architecture_boundary_cli_reports_shared_model_backend_access(tmp_path: Path, fixture: Path) -> None:
     """Run the executable guard against isolated shared-model backend access fixtures."""
     script_path = _copy_checker(tmp_path)
     source_path = tmp_path / "src" / "datamodel_code_generator" / "model" / "base.py"
@@ -483,7 +466,4 @@ def test_architecture_boundary_cli_reports_shared_model_backend_access(
         text=True,
     )
 
-    assert_output(
-        f"exit: {completed.returncode}\nstdout: {completed.stdout!r}\nstderr:\n{completed.stderr}",
-        expected,
-    )
+    assert_output(f"exit: {completed.returncode}\nstdout: {completed.stdout!r}\nstderr:\n{completed.stderr}")

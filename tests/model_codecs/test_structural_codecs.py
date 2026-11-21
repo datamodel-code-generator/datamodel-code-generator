@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs"
-EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
 
 
 @pytest.mark.parametrize(
@@ -57,10 +56,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
 )
 def test_structural_codecs(source: str, cases: str, tmp_path: PathType) -> None:
     """Decode, construct, snapshot, and encode generated models through their final annotations."""
-    assert_output(
-        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path),
-        EXPECTED / f"{cases}.txt",
-    )
+    assert_output(builtin_codec_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path))
 
 
 @pytest.mark.abnormal_path("generated models or bindings edited out of sync after generation")
@@ -75,6 +71,5 @@ def test_structural_codecs(source: str, cases: str, tmp_path: PathType) -> None:
 def test_structural_codec_startup(source: str, cases: str, tmp_path: PathType) -> None:
     """Refuse edited bindings, bundles, and native types that disagree, and native failures past the wire schema."""
     assert_output(
-        builtin_codec_startup_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path),
-        EXPECTED / f"{cases}.txt",
+        builtin_codec_startup_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path)
     )
