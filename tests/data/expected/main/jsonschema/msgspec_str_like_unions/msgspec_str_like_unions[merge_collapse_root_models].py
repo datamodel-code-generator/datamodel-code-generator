@@ -18,6 +18,12 @@ type Url = Annotated[str, Meta(min_length=1)]
 type Url1 = Annotated[str, Meta(max_length=0)]
 
 
+type InnerLost = Annotated[str, Meta(max_length=8)]
+
+
+type KeyLookup = Annotated[str, Meta(max_length=3)]
+
+
 class Color(StrEnum):
     red = 'red'
     blue = 'blue'
@@ -46,6 +52,20 @@ class Code(Struct):
     code: UUID | Code1 | UnsetType = UNSET
 
 
+class Point(Struct):
+    x: int | UnsetType = UNSET
+
+
+class NoneOrOne(Enum):
+    none = 'none'
+    int_1 = 1
+
+
+class Kept(Struct):
+    mixed_alias: str | int | UnsetType = UNSET
+    none_or_one: UUID | NoneOrOne | UnsetType = UNSET
+
+
 class Model(Struct):
     id: str
     plain_id: UUID | UnsetType = UNSET
@@ -62,3 +82,9 @@ class Model(Struct):
     nullable_ids: list[str | None] | UnsetType = UNSET
     plain_level: str | PlainLevel | UnsetType = UNSET
     id_list: UUID | list[str] | UnsetType = UNSET
+    with_struct: str | Point | UnsetType = UNSET
+    alias_member: str | UnsetType = UNSET
+    inner_lost: str | UnsetType = UNSET
+    key_lookup: dict[str, int] | UnsetType = UNSET
+    pair: tuple[UUID, str] | UnsetType = UNSET
+    number_alias: str | int | bool | UnsetType = UNSET

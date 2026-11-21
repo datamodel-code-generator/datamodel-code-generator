@@ -59,13 +59,18 @@ values is left as it is, with its warning.""",
 def test_msgspec_str_like_unions(output_file: Path, option_set: str) -> None:
     """Write one ``str`` for colliding str-like union members under --merge-msgspec-str-like-union-members.
 
-    Without it ``Model`` holds unions such as ``UUID | str``, which msgspec refuses to decode, as in 0.90.0. With it the
+    Without it ``Model`` holds unions such as ``UUID | str``, which msgspec refuses to decode, as in 0.99.0. With it the
     unions of a property, of list items, of map values, of a ``Literal`` beside ``UUID``, of a nested ``anyOf`` and of
     a type alias decode every valid document as ``str``, while a lone ``UUID`` keeps its check, nullable list items keep
     ``None``, an Enum of int values and a list alias stay members, and a ``Literal`` of str and int values keeps its
-    int values (``Code`` under ``--enum-field-as-literal all``); the union of ``UUID`` and an Enum of str values in
-    ``Paint`` stays as it is. The documents are decoded by the model generated for the running Python, which writes
-    the type aliases of Python 3.12 in another form before it.
+    int values (``Code`` under ``--enum-field-as-literal all``); a Struct member and an alias of a union of other kinds
+    stay members, the keys of a map and a member that aliases a union of only str-like members merge too, a nested
+    union that loses every member leaves its union, and the positions of a tuple, which form no union, keep their
+    types. The union of ``UUID`` and an Enum of str values in ``Paint`` stays as it is, as do the unions of ``Kept``
+    with an alias of a union of str and other members and an alias of a ``Literal`` of str and int values (under
+    ``--enum-field-as-literal all``; an Enum of str and int values otherwise). A schema-invalid string that one merged
+    member rejects is accepted, as the warnings say. The documents are decoded by the model generated for the running
+    Python, which writes the type aliases of Python 3.12 in another form before it.
     """
     with pytest.warns(UserWarning, match="msgspec") as warned:
         run_main_and_assert(
@@ -111,3 +116,20 @@ def _verdict(model: Any, document: object) -> str:
     except TypeError:
         return "type refused by msgspec"
     return "accepted"
+
+
+def test_msgspec_str_like_union_kept_members(output_file: Path) -> None:
+    """Leave the unions as they are whose str-like members --merge-msgspec-str-like-union-members cannot merge.
+
+    ``python_typed`` holds a member that ``x-python-type`` types, whose class the merge would lose, and ``looped``
+    names ``LoopA`` and ``LoopB``, aliases of unions that name each other through no Struct, which msgspec refuses on
+    its own; the decision reads each alias once on the way rather than following them without end. Both unions keep
+    their warnings.
+    """
+    with pytest.warns(UserWarning, match="msgspec"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_str_like_union_kept_members.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[*ARGS, "--target-python-version", "3.12", *OPTION_SETS["merge"]],
+        )

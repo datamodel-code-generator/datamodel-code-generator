@@ -44,6 +44,28 @@
       "id": "x",
       "plain_level": "text",
       "id_list": "123e4567-e89b-12d3-a456-426614174000"
+    },
+    {
+      "id": "x",
+      "with_struct": {
+        "x": 1
+      },
+      "alias_member": "free text",
+      "inner_lost": "123e4567-e89b-12d3-a456-426614174000",
+      "key_lookup": {
+        "123e4567-e89b-12d3-a456-426614174000": 1,
+        "abc": 2
+      },
+      "number_alias": "text"
+    },
+    {
+      "id": "x",
+      "with_struct": "text",
+      "pair": [
+        "123e4567-e89b-12d3-a456-426614174000",
+        "x"
+      ],
+      "number_alias": true
     }
   ],
   "invalid": [
@@ -67,6 +89,23 @@
     {
       "id_list": [
         1
+      ]
+    },
+    {
+      "with_struct": 5
+    },
+    {
+      "key_lookup": {
+        "abc": "1"
+      }
+    },
+    {
+      "one_of_id": "short"
+    },
+    {
+      "pair": [
+        "not-a-uuid",
+        "x"
       ]
     }
   ]

@@ -190,6 +190,97 @@
           "$ref": "#/$defs/IdList"
         }
       ]
+    },
+    "with_struct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/Point"
+        }
+      ]
+    },
+    "alias_member": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "$ref": "#/$defs/IdOrText"
+        }
+      ]
+    },
+    "inner_lost": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string",
+              "maxLength": 8
+            }
+          ]
+        }
+      ]
+    },
+    "key_lookup": {
+      "type": "object",
+      "propertyNames": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "string",
+            "maxLength": 3
+          }
+        ]
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "pair": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "number_alias": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/IntOrBool"
+        }
+      ]
     }
   },
   "$defs": {
@@ -272,6 +363,67 @@
           ]
         }
       }
+    },
+    "Point": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "IdOrNumber": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "NoneOrOne": {
+      "enum": [
+        "none",
+        1
+      ]
+    },
+    "Kept": {
+      "type": "object",
+      "properties": {
+        "mixed_alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/IdOrNumber"
+            }
+          ]
+        },
+        "none_or_one": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "$ref": "#/$defs/NoneOrOne"
+            }
+          ]
+        }
+      }
+    },
+    "IntOrBool": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
     }
   }
 }

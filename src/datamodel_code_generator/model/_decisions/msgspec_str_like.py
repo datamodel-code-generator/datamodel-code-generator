@@ -42,13 +42,11 @@ def msgspec_str_like_leaf(leaf: DataTypeView) -> str | None:
     ``str`` and a ``Literal`` holding a str value count as ``str``; every other str-like type counts as its own name.
     A type with members, or one that writes enum member literals, is no leaf.
     """
-    if leaf.data_types or leaf.enum_member_literals:
-        return None
     if leaf.literals:
-        return STR if any(literal_value_kind(literal) == STR for literal in leaf.literals) else None
-    if leaf.type == STR or leaf.type in MSGSPEC_STR_LIKE_TYPES:
-        return leaf.type
-    return None
+        counted = STR if any(literal_value_kind(literal) == STR for literal in leaf.literals) else None
+    else:
+        counted = leaf.type if leaf.type == STR or leaf.type in MSGSPEC_STR_LIKE_TYPES else None
+    return None if leaf.data_types or leaf.enum_member_literals else counted
 
 
 def merged_str_like_union_message(name: str, members: Sequence[str]) -> str:
