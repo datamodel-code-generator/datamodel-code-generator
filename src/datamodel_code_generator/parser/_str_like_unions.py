@@ -22,17 +22,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final, Protocol, TypeAlias
 
-from datamodel_code_generator._container_kinds import CONTAINERS, ITEM_CONTAINERS, MAPPINGS
-from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator.model._decisions.enum_kind import enum_member_kinds, literal_value_kind
+from datamodel_code_generator._container_kinds import CONTAINERS
+from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind
 from datamodel_code_generator.model._decisions.msgspec_str_like import STR, msgspec_str_like_leaf
-from datamodel_code_generator.model.enum import get_raw_enum_member_value
-from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
+from datamodel_code_generator.parser._passes._shared import msgspec_union_members, msgspec_written_member
+from datamodel_code_generator.parser._passes.imports import _msgspec_enum_kinds
+from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
+from datamodel_code_generator.types import _union_members, _written_union_members
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Callable, Iterator, Sequence
 
-    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
+    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.parser._phases import FinalFacts
 
 __all__ = ["MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS", "StrLikeUnionWriter"]
@@ -73,53 +74,16 @@ class StrLikeUnionWriter(DecisionWriter, Protocol):
         """
 
 
-def _union_members(data_type: DataTypeView) -> Sequence[DataTypeView]:
-    """Return the members of the union a type writes: its own, or the items of a list, set or map of several types.
-
-    The items of a tuple are its positions, not a union.
-    """
-    if len(data_type.data_types) <= 1:
-        return ()
-    if data_type not in CONTAINERS or data_type in ITEM_CONTAINERS or data_type in MAPPINGS:
-        return data_type.data_types
-    return ()
-
-
-def _is_spread(data_type: DataTypeView) -> bool:
-    """Return whether a member of a union is a union of its own, whose members the enclosing union writes."""
-    return len(data_type.data_types) > 1 and data_type not in CONTAINERS
-
-
-def _spread(data_types: Sequence[DataTypeView]) -> Iterator[DataTypeView]:
-    """Yield the members of a union as written, spreading each member that is a union of its own."""
-    for data_type in data_types:
-        if _is_spread(data_type):
-            yield from _spread(data_type.data_types)
-        else:
-            yield data_type
-
-
-def _unwrap(data_type: DataTypeView) -> DataTypeView:
-    """Return the type a type of one member and no text of its own writes: that member."""
-    while (
-        len(data_type.data_types) == 1
-        and data_type.type is None
-        and data_type.reference is None
-        and data_type not in CONTAINERS
-    ):
-        data_type = data_type.data_types[0]
-    return data_type
-
-
 def _union_roots(data_type: DataTypeView, *, spread: bool = False) -> Iterator[DataTypeView]:
     """Yield each union of a type tree that no enclosing union spreads, inner ones first.
 
     A union member that is a union of its own is written as members of the enclosing union, so only the enclosing one
-    is a root; a container member, such as a list of several item types, is a root of its own.
+    is a root; a container member, such as a list of several item types, is a root of its own. The unions are those
+    of the msgspec decoding warnings (``msgspec_union_members``).
     """
-    members = _union_members(data_type)
+    members = msgspec_union_members(data_type)
     for member in data_type.data_types:
-        yield from _union_roots(member, spread=bool(members) and _is_spread(member))
+        yield from _union_roots(member, spread=bool(members) and bool(_union_members(member)))
     if (dict_key := data_type.dict_key) is not None:
         yield from _union_roots(dict_key)
     if members and not spread:
@@ -129,10 +93,10 @@ def _union_roots(data_type: DataTypeView, *, spread: bool = False) -> Iterator[D
 class _Classifier:
     """What msgspec counts each member of a union as, following the type aliases and root models it names."""
 
-    __slots__ = ("_models",)
+    __slots__ = ("_model_of",)
 
-    def __init__(self, models: dict[object, ModelView]) -> None:
-        self._models = models
+    def __init__(self, model_of: Callable[[ReferenceView], ModelView | None]) -> None:
+        self._model_of = model_of
 
     def slot(self, member: DataTypeView, seen: frozenset[int] = frozenset()) -> str | None:
         """Return the str-like member ``member`` counts as, or None; raise ``_UnmergeableError`` where it cannot merge.
@@ -143,23 +107,22 @@ class _Classifier:
         and other values, which the merge would lose, an Enum of str values and a type an ``x-python-type``
         annotation writes cannot merge.
         """
-        member = _unwrap(member)
+        member = msgspec_written_member(member)
         if (reference := member.reference) is None:
             if member.python_type is not None or (seen and _other_literals(member)):
                 raise _UnmergeableError
             return None if member in CONTAINERS else msgspec_str_like_leaf(member)
-        if id(reference) in seen or (model := self._models.get(model_key_of(reference))) is None:
+        if id(reference) in seen or (model := self._model_of(reference)) is None:
             return None
         match model.form:
             case "enum":
-                values = (get_raw_enum_member_value(field.default) for field in model.fields)
-                if "str" in enum_member_kinds(values, value_base=model.value_base):
+                if "str" in _msgspec_enum_kinds(model):
                     raise _UnmergeableError
             case "alias" | "root" if len(model.fields) == 1:
-                value = _unwrap(model.fields[0].data_type)
+                value = msgspec_written_member(model.fields[0].data_type)
                 if value in CONTAINERS:
                     return None
-                if not _union_members(value):
+                if not msgspec_union_members(value):
                     return self.slot(value, seen | {id(reference)})
                 slots = self._slots(value, seen | {id(reference)})
                 if all(counted is not None for _, counted in slots):
@@ -170,7 +133,7 @@ class _Classifier:
 
     def _slots(self, union: DataTypeView, seen: frozenset[int] = frozenset()) -> list[_Slot]:
         """Return each written member of ``union`` with the str-like member it counts as."""
-        return [(member, self.slot(member, seen)) for member in _spread(_union_members(union))]
+        return [(member, self.slot(member, seen)) for member in _written_union_members(msgspec_union_members(union))]
 
     def merge(self, union: DataTypeView) -> Sequence[DataTypeView]:
         """Return the written members of ``union`` that one ``str`` replaces, or nothing when it is left as it is.
@@ -204,7 +167,9 @@ def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewr
     """
     lost = {id(member) for member in merged}
     keeps_null = any(member.admits_none for member in merged) and not any(
-        member.type == _NONE for member in _spread(_union_members(union)) if id(member) not in lost
+        member.type == _NONE
+        for member in _written_union_members(msgspec_union_members(union))
+        if id(member) not in lost
     )
     rewrites: list[_Rewrite] = []
     placed = False
@@ -217,9 +182,9 @@ def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewr
                 if not placed:
                     placed = True
                     members.extend((STR, _NONE) if keeps_null else (STR,))
-                if member.reference is None and (others := _other_literals(_unwrap(member))):
+                if member.reference is None and (others := _other_literals(msgspec_written_member(member))):
                     members.append(others)
-            elif _is_spread(member) and any(id(leaf) in lost for leaf in _spread(member.data_types)):
+            elif _union_members(member) and any(id(leaf) in lost for leaf in _written_union_members(member.data_types)):
                 if inner := rewrite(member):
                     rewrites.append((member, inner))
                     members.append(member)
@@ -237,7 +202,7 @@ def _merge_msgspec_str_like_union_members(facts: FinalFacts, writer: StrLikeUnio
     Every union is decided on the types before the first write, so a union that names a type alias reads the alias's
     value as the schema gives it, whichever model comes first.
     """
-    classifier = _Classifier({model_key_of(model.reference): model for model in facts.live_models})
+    classifier = _Classifier(live_model_of(facts))
     planned = [
         (model, field, merges)
         for model in facts.live_models

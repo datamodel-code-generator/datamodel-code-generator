@@ -218,6 +218,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from types import ModuleType
 
+    from typing_extensions import Self
+
     from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
@@ -618,23 +620,51 @@ def build_union(
     return data_type(data_types=kept, **values)
 
 
+class _UnionNode(Protocol):
+    """A node of a type tree as the union walk reads it: a ``DataType``, or a view of one (``DataTypeView``)."""
+
+    @property
+    def data_types(self) -> Sequence[Self]:
+        """The member or item types."""
+
+
+_UnionNodeT = TypeVar("_UnionNodeT", bound=_UnionNode)
+
+
+def _union_members(data_type: _UnionNodeT) -> Sequence[_UnionNodeT]:
+    """Return the members of the union a type is at its top level, or nothing when it is no union there.
+
+    A container of several items is no union at its top level: it writes the union of its items inside it.
+    ``union_members`` reads it for a ``DataType``, a decision for a view of one.
+    """
+    if len(data_type.data_types) < 2 or data_type in CONTAINERS:  # noqa: PLR2004
+        return ()
+    return data_type.data_types
+
+
+def _written_union_members(data_types: Iterable[_UnionNodeT]) -> Iterator[_UnionNodeT]:
+    """Yield the members of a union as written, spreading each member that is a union at its top level.
+
+    ``written_union_members`` reads them for ``DataType`` nodes, a decision for views of them.
+    """
+    for data_type in data_types:
+        if members := _union_members(data_type):
+            yield from _written_union_members(members)
+        else:
+            yield data_type
+
+
 def union_members(data_type: DataType) -> Sequence[DataType]:
     """Return the members of the union a type is at its top level, or nothing when it is no union there.
 
     A container of several items is no union at its top level: it writes the union of its items inside it.
     """
-    if len(data_type.data_types) < 2 or data_type._is_container:  # noqa: PLR2004, SLF001
-        return ()
-    return data_type.data_types
+    return _union_members(data_type)
 
 
 def written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
     """Yield the members of a union as written, spreading each member that is a union at its top level."""
-    for data_type in data_types:
-        if members := union_members(data_type):
-            yield from written_union_members(members)
-        else:
-            yield data_type
+    return _written_union_members(data_types)
 
 
 def is_data_model_field(obj: object) -> TypeIs[DataModelFieldBase]:

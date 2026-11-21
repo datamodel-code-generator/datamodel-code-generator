@@ -3,8 +3,9 @@
 msgspec decodes a union only if it holds at most one member that it decodes from a JSON string: ``str`` (with the str
 values of a ``Literal``, which count as the same member), an Enum of str values, ``bytes``, ``bytearray``, the dates and
 times, ``UUID`` and ``Decimal``. The msgspec decoding warnings (``parser/_passes/imports.py:_msgspec_member_slots``)
-and the decision of ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) read a leaf member
-through ``msgspec_str_like_leaf``.
+and the decision of ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) walk a union through
+``parser/_passes/_shared.py:msgspec_union_members`` and ``msgspec_written_member``, and read a leaf member through
+``msgspec_str_like_leaf``.
 """
 
 from __future__ import annotations
