@@ -997,12 +997,19 @@ class ArchitectureBoundaryReader:
         package = call_argument(node, 1, "package")
         anchors = [] if package is None or not reads_relative or not target.startswith(".") else self._packages(package)
         resolved = [_absolute_name(target, anchor) for anchor in anchors]
+        if not resolved and not reads_relative and not target.startswith("."):
+            level = call_argument(node, 4, "level")
+            if isinstance(level, ast.Constant) and isinstance(level.value, int) and level.value > 0:
+                resolved = [_absolute_name("." * level.value + target, self._packages_of_module())]
         return resolved or [target]
+
+    def _packages_of_module(self) -> str:
+        return self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]
 
     def _packages(self, node: ast.expr) -> list[str]:
         """Return the package names an expression may give: ``__package__`` of this module, or its strings."""
         if self.reading.spelled(node) == "__package__":
-            return [self.model.module if self.model.is_package else self.model.module.rpartition(".")[0]]
+            return [self._packages_of_module()]
         return self.reading.strings(node)
 
     def _is_sys_modules_registry(self, node: ast.expr) -> bool:

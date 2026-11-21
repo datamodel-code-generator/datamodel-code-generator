@@ -32,7 +32,8 @@ def function_local_import():
 def dynamic_imports():
     root = importlib.import_module("datamodel_code_generator")
     module = importlib.import_module("datamodel_code_generator.errors")
-    return root, module, importlib.import_module("datamodel_code_generator.__main__")
+    relative = __import__("__main__", globals(), fromlist=["run"], level=1)
+    return root, module, importlib.import_module("datamodel_code_generator.__main__"), relative
 
 
 def attribute_reads():
