@@ -24,9 +24,6 @@
 "data_type._is_container" = 1
 "data_type._materialize_render_state" = 2
 
-["src/datamodel_code_generator/parser/_field_copies.py"."_copy_resolved_inherited_field"]
-"current_type._wraps_one_list" = 1
-
 ["src/datamodel_code_generator/parser/_field_copies.py"."_get_inherited_type_modifiers"]
 "data_type._wraps_one_list" = 1
 

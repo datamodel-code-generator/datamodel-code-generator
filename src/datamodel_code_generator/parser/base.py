@@ -157,8 +157,6 @@ from datamodel_code_generator.parser import _inheritance_check, _init_exports, _
 from datamodel_code_generator.parser._field_copies import (
     _copy_data_model_field,
     _copy_resolved_inherited_field,
-    _get_inherited_type_modifiers,  # noqa: F401  # Preserve the established parser.base export.
-    _merge_data_type_modifiers,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._field_rows import (
     FIELD_OPTIONS_LEFT_OUT,
@@ -190,12 +188,6 @@ from datamodel_code_generator.parser._passes import plans as _plans
 from datamodel_code_generator.parser._passes import render_prep as _render_prep
 from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
 from datamodel_code_generator.parser._passes._import_edges import NO_IMPORT_CYCLE_SEEDS, ImportCycleSeeds
-from datamodel_code_generator.parser._passes._keys import (
-    _DEFERRED_INHERITED_CLASS_KEY,  # noqa: F401  # Preserve the established parser.base export.
-    _DEFERRED_INHERITED_FIELD_KEY,  # noqa: F401  # Preserve the established parser.base export.
-    _DEFERRED_INHERITED_TYPE_KEY,  # noqa: F401  # Preserve the established parser.base export.
-    _RAW_SCHEMA_DEFAULT_KEY,  # noqa: F401  # Preserve the established parser.base export.
-)
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     DiscriminatorValue,
