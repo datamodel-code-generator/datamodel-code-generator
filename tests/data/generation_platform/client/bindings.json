@@ -2940,6 +2940,9 @@
         }
       },
       "decorated": {
+        "additional_imports": [
+          "functools"
+        ],
         "class_decorators": [
           "@functools.total_ordering"
         ]

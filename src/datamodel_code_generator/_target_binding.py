@@ -1877,7 +1877,14 @@ class _Projector:
             hint = ModelHint(HintText(annotation.parts, (*annotation.imports, IMPORT_FIELD)), hints.of(union).static)
             hints.fixed[IMPORT_FIELD] = None
             schema = union.discriminator if isinstance(union, UnionType) else None
-            return UnionType(parts, preserve_order, schema, hint, discriminator)
+            union = UnionType(parts, preserve_order, schema, hint, discriminator)
+        if data_type.items_admit_none and union != ImportedType(IMPORT_ANY):
+            items = union
+            union = _ordered_union(
+                (items, NoneType()),
+                preserve_order=preserve_order,
+                hint=lambda _: hints.composed(data_type, base=items, is_optional=True),
+            )
         return union
 
     def selector(self, data_type: DataType) -> UnionDiscriminator | None:

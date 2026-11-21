@@ -7,13 +7,26 @@ defined (never where it is imported), and ``sites``: the defs, classes and modul
 besides the home modules that may call a home. ``tests/test_decision_homes.py`` fails for a home or site that ``src/``
 does not define, for one its own cell does not name, and for a caller of a home outside them that
 ``tests/decision_home_allowlist.py`` does not list.
+
+One ``BuilderHome`` per builder home that the L1 prose of the page states (the parse method a dispatch table
+chooses at each position, the one builder of object maps, the resolver that names models): the builder, the passage of
+the page that states it, and the syntactic mark of what it builds. The prose stays as written; the guards of
+``tests/test_decision_homes.py`` read these records.
+
+One ``Placement`` per row of the table of the Placement Guide that says where a decision reading some facts goes, in
+its order; ``scripts/build_architecture_docs.py`` writes that table from ``PLACEMENTS``. The two cells stay the Markdown
+the page shows; ``facts`` (members of ``Fact`` and ``RenderFact`` of ``scripts/fact_tables.py``) and ``after`` (passes
+of ``scripts/pass_decls.py``) are what ``tests/test_decision_homes.py`` checks: every pass a place names is declared,
+writes a fact its row reads and is named by the place cell, which names no other pass.
 """
 
 from __future__ import annotations
 
 from typing import Final, NamedTuple
 
-__all__ = ["DECISION_HOMES", "DecisionHome", "Home"]
+from scripts.fact_tables import Fact, RenderFact
+
+__all__ = ["BUILDER_HOMES", "DECISION_HOMES", "PLACEMENTS", "BuilderHome", "DecisionHome", "Home", "Mark", "Placement"]
 
 
 class Home(NamedTuple):
@@ -39,6 +52,66 @@ class DecisionHome(NamedTuple):
     sites: tuple[Home, ...]
     """Every def or class the adapters cell names, in its order, or a module it names without naming one of its
     definitions: the scopes, besides the home modules, that may call a home (``tests/test_decision_homes.py``)."""
+
+
+class Mark(NamedTuple):
+    """The syntactic mark of a built output: a call of ``callee``, or a call that sets ``keyword`` to ``value``."""
+
+    callee: str = ""
+    """The callee as the dotted path its name leads to through imports, or the attribute chain it ends with; ``""``:
+    any call."""
+    keyword: str = ""
+    """A keyword the call passes, as ``keyword=value``, in a ``**`` dict display or in a dict display of flags handed
+    on; ``""``: none is asked."""
+    value: bool | int | str | None = None
+    """The constant the keyword takes."""
+    argument: tuple[int, str] | None = None
+    """A positional argument the call passes as ``(index, constant)``: the slot a flags helper is asked for
+    (``_container_flags(obj, "dict")``); ``None``: none is asked."""
+
+
+class BuilderHome(NamedTuple):
+    """One builder home: what it builds, the passage of the page that states it, the builder, and how to find a bypass.
+
+    A record with a ``table`` stands for a position of L1: its builder chooses the parse method from that dispatch table
+    (``parser/_schema_dispatch.py``), the only call of the table's ``choose``, and the parse methods the table's rows
+    hold run only through the tables; the table is read outside the builder only by ``typed_children``. A record with
+    ``marks`` stands for an output: a call with one of those marks is built only in the builder and its ``parts``.
+    The marks are syntactic: a call of the class (or its ``model_construct``/``model_validate``), a keyword, a flag
+    dict or a constant slot argument. An output built by ``model_copy`` or by a flag computed from a variable slot
+    (``{CONTAINER_FLAGS[slot]: True}``) carries no mark and is not seen.
+    """
+
+    output: str
+    """What the builder builds."""
+    prose: str
+    """The passage of ``docs/architecture.md`` that states the home, verbatim up to line breaks; it names the
+    builder."""
+    builder: Home
+    """The def that builds the output."""
+    table: Home | None = None
+    """The dispatch table the builder chooses from, as the class attribute that holds it."""
+    marks: tuple[Mark, ...] = ()
+    """The marks of the output outside a dispatch table: a call with any of them builds it."""
+    parts: tuple[Home, ...] = ()
+    """The defs the builder hands parts of the output to, which the builder reaches by calls through one another."""
+    within: str = ""
+    """The package path prefix of the modules where a call with the mark is the output (``""``: the whole package)."""
+
+
+class Placement(NamedTuple):
+    """One row of the placement table: what a decision reads, the earliest correct place for it, and their data."""
+
+    reads: str
+    """What the decision reads: the Markdown of the first cell, which no other record repeats."""
+    facts: frozenset[Fact | RenderFact]
+    """The facts of ``scripts/fact_tables.py`` that ``reads`` names; empty where it names none (raw keywords, the
+    location of a model, the target version) or any fact."""
+    place: str
+    """The Markdown of the earliest correct place."""
+    after: tuple[str, ...] = ()
+    """The passes of ``scripts/pass_decls.py`` that ``place`` puts the decision after; empty where the
+    place is no pass (L1, the module loop, the end of a hook, render, any pass)."""
 
 
 DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
@@ -297,6 +370,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(
             Home("model/_decisions/nullability.py", "rendered_nullability"),
             Home("model/_decisions/nullability.py", "takes_member_null"),
+            Home("model/_decisions/nullability.py", "takes_item_null"),
             Home("model/_decisions/nullability.py", "member_null"),
             Home("model/_decisions/nullability.py", "field_renders_none"),
             Home("model/_decisions/nullability.py", "reference_null"),
@@ -304,26 +378,28 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/_decisions/nullability.py", "TypeNull"),
         ),
         core=(
-            "`model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, "
-            "`field_renders_none`, `reference_null`, `reference_adds_null` (record `TypeNull`)"
+            "`model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `takes_item_null`, "
+            "`member_null`, `field_renders_none`, `reference_null`, `reference_adds_null` (record `TypeNull`)"
         ),
         adapters=(
-            "`types.py:DataType.admits_none`, `names_nullable_model`, `adds_reference_null`; "
-            "`model/_field_imports.py:field_none_source` (the field's facts into `field_renders_none`, for "
-            "`model/base.py:DataModelFieldBase._field_null_source` and `field_admits_none`); writes: "
-            "`types.py:DataType._materialize_render_state` (see L7) and the record, through "
-            "`DataType._update_type_null`, from the store operations `redirect_reference_users`, "
+            "`types.py:DataType.admits_none`, `items_admit_none` (the None of a container's item union, inside it), "
+            "`names_nullable_model`, `adds_reference_null`; `model/_field_imports.py:field_none_source` (the field's "
+            "facts into `field_renders_none`, for `model/base.py:DataModelFieldBase._field_null_source` and "
+            "`field_admits_none`); writes: `types.py:DataType._materialize_render_state` (see L7) and the record, "
+            "through `DataType._update_type_null`, from the store operations `redirect_reference_users`, "
             "`redirect_model_reference_users`, `mark_target_null`, `clear_target_null`, `write_rendered_null` and "
             "`drop_held_null` of `parser/generation.py:GenerationStore`; the targets read them: "
             "`_target_binding.py:_Projector._admits_none` (`DataType.admits_none` of a node; a reference that binds no "
             "symbol is read through as the type it stands for, which holds the None of its model already, and adds "
-            "only its own None), `field_admits_none` for an annotation (`_Models.field_facts` and "
+            "only its own None), `_Projector._structural` (`DataType.items_admit_none` of a container whose items are "
+            "several schemas), `field_admits_none` for an annotation (`_Models.field_facts` and "
             "`_Models.alias_nullable`, whose field's own null is `field_renders_none`'s); not yet: the null of the "
             "wire, `_Models.wire_null` over `_Models.preexisting_null` (rows `legacy-wire-null-ignores-nullable-false` "
             "and `legacy-wire-null-unknown-type`)"
         ),
         sites=(
             Home("types.py", "DataType.admits_none"),
+            Home("types.py", "DataType.items_admit_none"),
             Home("types.py", "DataType.names_nullable_model"),
             Home("types.py", "DataType.adds_reference_null"),
             Home("model/_field_imports.py", "field_none_source"),
@@ -333,6 +409,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("types.py", "DataType._update_type_null"),
             Home("parser/generation.py", "GenerationStore"),
             Home("_target_binding.py", "_Projector._admits_none"),
+            Home("_target_binding.py", "_Projector._structural"),
             Home("_target_binding.py", "_Models.field_facts"),
             Home("_target_binding.py", "_Models.alias_nullable"),
             Home("_target_binding.py", "_Models.wire_null"),
@@ -1543,7 +1620,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "union as written, with such member unions spread (msgspec's plain-union checks, and the nested-union "
             "checks of `parser/_passes/imports.py` and `parser/_passes/_shared.py:_iter_discriminator_data_types`); a "
             "container's item union takes `constructed` from `DataType.__init__`, and the None of its items stays "
-            "inside the container (`model/_decisions/nullability.py:takes_member_null`: a container is no union); not "
+            "inside the container (`model/_decisions/nullability.py:takes_member_null`: a container is no union; "
+            "`takes_item_null`: its item union takes it, read by the targets through `DataType.items_admit_none`); not "
             "yet: msgspec's decode view (`model/msgspec.py:DataModelField._union_leaves`) spreads alias unions by its "
             "own rule"
         ),
@@ -1562,6 +1640,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("types.py", "written_union_members"),
             Home("parser/_passes/_shared.py", "_iter_discriminator_data_types"),
             Home("model/_decisions/nullability.py", "takes_member_null"),
+            Home("model/_decisions/nullability.py", "takes_item_null"),
+            Home("types.py", "DataType.items_admit_none"),
             Home("model/msgspec.py", "DataModelField._union_leaves"),
             Home("parser/jsonschema.py"),
             Home("parser/openapi.py"),
@@ -8099,3 +8179,144 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
     ),
 )
+
+BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
+    BuilderHome(
+        output="the parse of a definition, a root, a reserved target, an AsyncAPI payload or the `api` scope",
+        prose=(
+            "`_DEFINITION_TABLE` in `_parse_schema_obj` (definitions, roots, reserved targets, AsyncAPI payloads and "
+            "the `api` scope)"
+        ),
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_schema_obj"),
+        table=Home("parser/jsonschema.py", "JsonSchemaParser._DEFINITION_TABLE"),
+    ),
+    BuilderHome(
+        output="the parse of a field, an item or a map value",
+        prose="`_FIELD_TABLE` in `parse_item` (fields, items and map values)",
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser.parse_item"),
+        table=Home("parser/jsonschema.py", "JsonSchemaParser._FIELD_TABLE"),
+    ),
+    BuilderHome(
+        output="the parse of a body, a response or a parameter of the legacy OpenAPI scopes",
+        prose=(
+            "`_OPENAPI_OPERATION_TABLE` in `OpenAPIParser.parse_schema` (the bodies, responses and parameters of the "
+            "legacy scopes)"
+        ),
+        builder=Home("parser/openapi.py", "OpenAPIParser.parse_schema"),
+        table=Home("parser/openapi.py", "OpenAPIParser._OPENAPI_OPERATION_TABLE"),
+    ),
+    BuilderHome(
+        output="the parse of an object-kind schema",
+        prose=(
+            "the rows of an object-kind schema (`_OBJECT_KIND_ROWS`) are shared by the definition table and the "
+            "object-kind table that `_parse_object_kind_schema` chooses from"
+        ),
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_kind_schema"),
+        table=Home("parser/jsonschema.py", "JsonSchemaParser._OBJECT_KIND_TABLE"),
+    ),
+    BuilderHome(
+        output="the dict of an object map",
+        prose="is built by one builder at every position (`_parse_object_map`)",
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_map"),
+        marks=(Mark(keyword="is_dict", value=True), Mark(callee="_container_flags", argument=(1, "dict"))),
+        parts=(
+            Home("parser/_object_maps.py", "parse_additional_properties_map"),
+            Home("parser/_object_maps.py", "parse_pattern_map"),
+            Home("parser/_object_maps.py", "pattern_map_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_property_names"),
+            Home("parser/_object_maps.py", "parse_property_names"),
+        ),
+        within="parser/",
+    ),
+    BuilderHome(
+        output="the reference that names a model",
+        prose="Names come from `ModelResolver.add`.",
+        builder=Home("reference.py", "ModelResolver.add"),
+        marks=(
+            Mark(callee="datamodel_code_generator.reference.Reference"),
+            Mark(callee="datamodel_code_generator.reference.Reference.model_construct"),
+            Mark(callee="datamodel_code_generator.reference.Reference.model_validate"),
+        ),
+        parts=(Home("reference.py", "ModelResolver._register_reference"),),
+    ),
+)
+"""The builder homes of the L1 prose, guarded by ``tests/test_decision_homes.py``."""
+
+PLACEMENTS: Final[tuple[Placement, ...]] = (
+    Placement(
+        reads="raw keywords of one schema object (`const`, `enum`, `nullable`, `uniqueItems`, extension keys)",
+        facts=frozenset(),
+        place="L1 at that object, or record them on the field for a later pass",
+    ),
+    Placement(
+        reads="names settled by `--model-name-map` or yielding names",
+        facts=frozenset({RenderFact.CLASS_NAMES}),
+        place="after L2 `settle_yielding_names`",
+        after=("settle_yielding_names",),
+    ),
+    Placement(
+        reads="the names of the models once every model has claimed one (the naming plan)",
+        facts=frozenset({RenderFact.CLASS_NAMES, RenderFact.PLANS}),
+        place="after L2 `name_models`",
+        after=("name_models",),
+    ),
+    Placement(
+        reads="field set, required or nullable of a model in the same module, without discriminator tags",
+        facts=frozenset({Fact.FIELD_SET, Fact.REQUIRED, Fact.NULLABLE}),
+        place="after that module's `set_one_literal_on_default`",
+        after=("set_one_literal_on_default",),
+    ),
+    Placement(
+        reads="a fact of a model in another module that the module loop can still change",
+        facts=frozenset(),
+        place="L6, after the module loop (facts that settle earlier, such as mapped names, follow their own row)",
+    ),
+    Placement(
+        reads="discriminator tags or msgspec ClassVars",
+        facts=frozenset({Fact.DISCRIMINATOR_TAGS}),
+        place="L6, after `tag_fields_of_tagged_bases`",
+        after=("tag_fields_of_tagged_bases",),
+    ),
+    Placement(
+        reads="type overrides",
+        facts=frozenset({Fact.TYPE_OVERRIDES, Fact.FIELD_TYPES, Fact.BASES}),
+        place=(
+            "field types of a model in the same module: after that module's `apply_field_type_overrides`; of a model "
+            "in another module: after the module loop; base classes: after the model's "
+            "`apply_base_class_type_overrides`"
+        ),
+        after=("apply_field_type_overrides", "apply_base_class_type_overrides"),
+    ),
+    Placement(
+        reads="bases including the generic base class",
+        facts=frozenset({Fact.BASES}),
+        place="L6, after `apply_generic_base_class`",
+        after=("apply_generic_base_class",),
+    ),
+    Placement(
+        reads="class names",
+        facts=frozenset({RenderFact.CLASS_NAMES}),
+        place="L6, after `change_imported_model_name`",
+        after=("change_imported_model_name",),
+    ),
+    Placement(
+        reads="where a model comes from in its document",
+        facts=frozenset(),
+        place="after L1, through `location_of(model.reference)`, never from `Reference.path` or a parse path",
+    ),
+    Placement(
+        reads="imports or names written in annotations",
+        facts=frozenset({RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.CLASS_NAMES}),
+        place="end of `_finalize_modules`, or at render",
+    ),
+    Placement(
+        reads="the target Python or Pydantic version a generated construct needs",
+        facts=frozenset(),
+        place=(
+            "any pass: read its row in `_requirements.py` (`python_target_meets`, `pydantic_target_meets`, or "
+            "`model_target_meets` for the target recorded on a Pydantic model); a new construct gets a row instead "
+            "of a version comparison"
+        ),
+    ),
+)
+"""The rows of the placement table of the Placement Guide, in its order."""

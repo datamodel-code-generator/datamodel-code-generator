@@ -160,6 +160,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "nullable-required-parameters",
         "nullable-required-parameters-31",
         "nullable-required-parameters-unpack",
+        "container-item-nulls",
+        "container-item-nulls-30",
         "type-spellings-cycle",
         "type-spellings-bound",
         "type-spellings-containers",
