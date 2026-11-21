@@ -59,8 +59,6 @@ from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     SchemaSite,
     Types,
-    _get_json_value_type,
-    _get_union_variant_name,
     _json_literal_values_equal,
     _validate_schema_python_import_path,
     get_model_by_path,
@@ -2615,14 +2613,15 @@ def test_infer_union_variant_names_distinguishes_literal_types() -> None:
         _json_schema_object({"properties": {"kind": {"const": 1}}}),
         _json_schema_object({"properties": {"kind": {"const": "1"}}}),
         _json_schema_object({"properties": {"kind": {"const": True}}}),
+        _json_schema_object({"properties": {"kind": {"const": ""}}}),
     ]
 
     assert parser._infer_union_variant_names("Event", parent, variants, {}) == [
         "Event_int_1",
         "Event__1",
         "Event_bool_true",
+        None,
     ]
-    assert _get_union_variant_name("Event", "") is None
 
 
 def test_infer_union_variant_names_skips_generated_name_collisions() -> None:
@@ -3624,24 +3623,6 @@ def test_bind_python_type_preserves_direct_runtime_symbol_identity() -> None:
 
     assert bound_type.expression == PythonTypeRuntimeSymbol("pkg.models", ("Outer", "Inner"))
     assert bound_type.imports == (Import(import_="pkg.models"),)
-
-
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [
-        (True, "boolean"),
-        (1, "integer"),
-        ("value", "string"),
-        (1.5, "number"),
-        (["value"], "array"),
-        ({"value": 1}, "object"),
-        (None, "null"),
-        (object(), ""),
-    ],
-)
-def test_inherited_json_value_type_matrix(value: object, expected: str) -> None:
-    """Concrete enum and const values retain every JSON instance type."""
-    assert _get_json_value_type(value) == expected
 
 
 def test_parse_nested_inline_inherited_schema_fields() -> None:

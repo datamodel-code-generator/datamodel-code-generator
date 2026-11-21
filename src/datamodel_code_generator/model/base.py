@@ -108,7 +108,6 @@ from datamodel_code_generator.model._decisions.hashability import (
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
 from datamodel_code_generator.model._field_imports import (
-    _annotation_typing_import_names,  # noqa: F401  # Preserve the established model.base export.
     _TypingImportNames,  # noqa: TC001  # Preserve the established model.base export.
 )
 from datamodel_code_generator.model._render_plan import (
