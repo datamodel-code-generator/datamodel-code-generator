@@ -1275,6 +1275,11 @@ class PackageIndex:
         return self._resolved[origin]
 
 
+def _protocol_bases(model: SourceModule, scope: Scope) -> list[ast.expr]:
+    """Return the bases of a class scope that are ``Protocol`` (``Protocol[T]`` too), read by origin."""
+    return [base for base in bases(scope) if model.origin(base) in _PROTOCOL_ORIGINS]
+
+
 class HostIndex(PackageIndex):
     """The members each ``*Host`` Protocol declares, its Host bases' included, found through the imports."""
 
@@ -1323,7 +1328,7 @@ class HostIndex(PackageIndex):
     def _class_members(self, model: SourceModule, binding: Binding) -> frozenset[str] | None:
         scope = model.scope_defined_by(binding.node)
         listed = bases(scope)
-        protocols = [base for base in listed if model.origin(base) in _PROTOCOL_ORIGINS]
+        protocols = _protocol_bases(model, scope)
         if not binding.name.endswith("Host") or not protocols:
             return None
         inherited = (self.members(model.origin(base)) for base in listed if base not in protocols)

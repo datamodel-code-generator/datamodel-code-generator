@@ -545,6 +545,17 @@ cycles of every import, function-local and `TYPE_CHECKING` ones included, and
 function or not, move what the modules share into a module that imports none
 of them.
 
+heki, a development dependency of the `test` group, checks the same records
+statically: `scripts/build_heki_contracts.py` writes `scripts/heki.toml` from
+the fact rows of `scripts/fact_tables.py`, the homes and builders of
+`scripts/decision_homes.py` and the concern modules above, and
+`tests/test_build_heki_contracts_script.py` runs
+`heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src`.
+The baseline records today's findings and only shrinks (its sites are the
+`allowlist:heki-baseline` key of `scripts/check_ratchets.py`): keep a new write,
+read or call inside its owners instead of recording it, and after a change that
+removes findings run the same command with `--update-baseline`.
+
 A key of `scripts/check_ratchets.py` rises only with an owner decision, through
 an `[[approved]]` entry of `scripts/ratchet_approvals.toml`: the key, the count
 it may reach (`head`), the pull request it is for (`pr`), the public references

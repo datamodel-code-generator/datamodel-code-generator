@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from scripts._source_model import Reference, Scope, SourceModule
+    from scripts.where import Found
 
 ROOT = Path(__file__).parents[1]
 PACKAGE = "datamodel_code_generator"
@@ -160,19 +161,17 @@ def _is_exception(repo: Repo, path: str, name: str) -> bool:
     return False
 
 
-def unlisted_callers(repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR) -> list[Caller]:
-    """Return the run-time reads of a def or class home of records in a package outside the modules and sites.
+def checked_homes(
+    repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR
+) -> list[tuple[Home, Found, set[str], set[Home]]]:
+    """Return the def and class homes of records that the caller guard checks, with what may call each.
 
-    Paths of homes, sites and callers are relative to the package directory, ``src/datamodel_code_generator/`` unless
-    given.
-
-    `Repo.module_reads` finds the references; a store binds the name and one in an annotation names a type, so neither
-    calls the home. A site is a def or a class (and the scopes inside it), or a whole module.
-
-    A home that is an exception class (it derives from ``BaseException``) is not checked: its record states where the
-    type is defined, not who may raise or catch it.
+    Each comes with its definition in the package and the home modules and adapter sites of every row that holds it
+    (`_callable_homes`). A home that is an exception class (it derives from ``BaseException``) is not checked: its
+    record states where the type is defined, not who may raise or catch it. `scripts/build_heki_contracts.py` writes
+    the same homes as heki contracts.
     """
-    callers: list[Caller] = []
+    checked: list[tuple[Home, Found, set[str], set[Home]]] = []
     for home, (modules, sites) in _callable_homes(records).items():
         path = f"{package}{home.path}"
         for found in repo.definitions(home.name, path) if path in repo.names else []:
@@ -180,17 +179,33 @@ def unlisted_callers(repo: Repo, records: Iterable[DecisionHome], package: str =
                 continue
             if found.kind == "class" and _is_exception(repo, found.path, found.qualname):
                 continue
-            for rel, references in repo.module_reads(found).items():
-                module = rel.removeprefix(package)
-                if not rel.startswith(package) or module in modules:
-                    continue
-                callers += [
-                    Caller(f"{home.path}:{home.name}", f"{module}:{scope}", reference.line)
-                    for reference in references
-                    if reference.context == "load" and not reference.annotation
-                    for scope in [scope_name(reference.scope)]
-                    if not any(_covers(site, module, scope) for site in sites)
-                ]
+            checked.append((home, found, modules, sites))
+    return checked
+
+
+def unlisted_callers(repo: Repo, records: Iterable[DecisionHome], package: str = PACKAGE_DIR) -> list[Caller]:
+    """Return the run-time reads of a def or class home of records in a package outside the modules and sites.
+
+    Paths of homes, sites and callers are relative to the package directory, ``src/datamodel_code_generator/`` unless
+    given.
+
+    `Repo.module_reads` finds the references; a store binds the name and one in an annotation names a type, so neither
+    calls the home. A site is a def or a class (and the scopes inside it), or a whole module. The homes are those
+    `checked_homes` returns.
+    """
+    callers: list[Caller] = []
+    for home, found, modules, sites in checked_homes(repo, records, package):
+        for rel, references in repo.module_reads(found).items():
+            module = rel.removeprefix(package)
+            if not rel.startswith(package) or module in modules:
+                continue
+            callers += [
+                Caller(f"{home.path}:{home.name}", f"{module}:{scope}", reference.line)
+                for reference in references
+                if reference.context == "load" and not reference.annotation
+                for scope in [scope_name(reference.scope)]
+                if not any(_covers(site, module, scope) for site in sites)
+            ]
     return sorted(callers)
 
 
@@ -457,6 +472,34 @@ def builder_problems(repo: Repo, records: Iterable[BuilderHome], page: str, pack
     return problems
 
 
+def _holders(
+    repo: Repo, records: Iterable[BuilderHome], package: str
+) -> list[tuple[str, SourceModule, list[ast.expr]]]:
+    """Return the module path, the model and the held values (`_held`) of each recorded table of a package."""
+    return [
+        (rel, model, held)
+        for record in records
+        if record.table and (value := _class_value(repo, record.table)) is not None
+        for model, table in [value]
+        for rel in [f"{package}{record.table.path}"]
+        for held in [_held(model, table)]
+    ]
+
+
+def _held_builds(reads: _Reads, holders: Iterable[tuple[str, SourceModule, list[ast.expr]]]) -> set[Home]:
+    """Return the defs that the entries of held table values name as their parse methods."""
+    return {home for rel, model, held in holders for name in _builds(held, model) if (home := reads.home_of(rel, name))}
+
+
+def held_parse_methods(repo: Repo, records: Iterable[BuilderHome], package: str = PACKAGE_DIR) -> list[Home]:
+    """Return the parse methods that the entries of the recorded tables hold, which run only through the tables.
+
+    `builder_bypasses` reports their reads outside the tables; `scripts/build_heki_contracts.py` writes them as heki
+    contracts.
+    """
+    return sorted(_held_builds(_Reads(repo, package), _holders(repo, records, package)))
+
+
 def builder_bypasses(repo: Repo, records: Iterable[BuilderHome], package: str = PACKAGE_DIR) -> list[Bypass]:
     """Return the scopes of a package that bypass a builder home.
 
@@ -470,19 +513,9 @@ def builder_bypasses(repo: Repo, records: Iterable[BuilderHome], package: str = 
     reads = _Reads(repo, package)
     found: dict[tuple[str, str], int] = {}
     records = list(records)
-    holders = [
-        (rel, model, held)
-        for record in records
-        if record.table and (value := _class_value(repo, record.table)) is not None
-        for model, table in [value]
-        for rel in [f"{package}{record.table.path}"]
-        for held in [_held(model, table)]
-    ]
+    holders = _holders(repo, records, package)
     inside = {id(node) for _, _, held in holders for expr in held for node in ast.walk(expr)}
-    builds = {
-        home for rel, model, held in holders for name in _builds(held, model) if (home := reads.home_of(rel, name))
-    }
-    for build in builds:
+    for build in _held_builds(reads, holders):
         for rel, node, scope in reads.reads(build):
             if id(node) not in inside:
                 key = (f"{build.path}:{build.name}", f"{rel.removeprefix(package)}:{scope_name(scope)}")
