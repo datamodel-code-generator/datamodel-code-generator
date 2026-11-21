@@ -82,6 +82,10 @@ only one unnamed output per test, so later calls need `name=` or an explicit
 expected path. `name="warnings"` names one (the run helpers, the tree helpers and
 `assert_output` take it), and two outputs under
 one name in one test must be equal, which is how a test compares two runs.
+`against=` (on `assert_output`, `assert_directory_content` and
+`assert_exact_directory_content`) compares with a git-tracked document or tree
+outside `tests/`, such as a docs page, or with another copy of the package
+runtime (`_runtime`), and stores nothing.
 `assert_output(text, suffix=".py")` keeps a stored suffix other than `.txt`
 (`.json` stores a JSON value); `derived_stdout=True` compares stdout beside a
 written output, and `stdout_suffix=".py"` stores a stdout module as `.py`. The

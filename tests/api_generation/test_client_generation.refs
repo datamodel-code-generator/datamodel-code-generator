@@ -50,6 +50,9 @@ stream-resume	api_generation/client_generation/client_documentation[stream-resum
 streams	api_generation/client_generation/client_documentation[streams]/
 templates	api_generation/client_generation/client_documentation[templates]/
 uploads	api_generation/client_generation/client_documentation[uploads]/
+[test_client_helper_spellings]
+pagination-root-pagination-documents-helper-documents	api_generation/client_generation/client_helper_spellings[pagination-root-pagination-documents-helper-documents].client/
+references-self-references-reference-spellings	api_generation/client_generation/client_helper_spellings[references-self-references-reference-spellings].client/
 [test_client_input]
 input-aliases	api_generation/client_generation/client_input[input-aliases].txt
 input-cycle-dict	api_generation/client_generation/client_input[input-cycle-dict].txt
@@ -215,8 +218,10 @@ asyncapi-unloaded-references	api_generation/client_generation/client_render[asyn
 asyncapi-unloaded-references-v2	api_generation/client_generation/client_render[asyncapi-unloaded-references-v2].pydantic_v2_BaseModel/
 asyncapi-unloaded-references-v2	api_generation/client_generation/client_render[asyncapi-unloaded-references-v2].txt
 asyncapi-unopened	api_generation/client_generation/client_render[asyncapi-unopened].txt
+auth	api_generation/client_generation/client_render[auth].ordinary/
 auth	api_generation/client_generation/client_render[auth].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/auth/pydantic_v2_BaseModel//*.py
 auth	api_generation/client_generation/client_render[auth].txt	= main/generation_platform/client/auth.txt
+auth-context	api_generation/client_generation/client_render[auth-context].ordinary/
 auth-context	api_generation/client_generation/client_render[auth-context].pydantic_v2_BaseModel/
 auth-context	api_generation/client_generation/client_render[auth-context].txt
 auth-errors	api_generation/client_generation/client_render[auth-errors].txt
@@ -294,19 +299,23 @@ discriminator-variants	api_generation/client_generation/client_render[discrimina
 discriminator-variants	api_generation/client_generation/client_render[discriminator-variants].typing_TypedDict/
 docstrings	api_generation/client_generation/client_render[docstrings].pydantic_v2_BaseModel/
 docstrings	api_generation/client_generation/client_render[docstrings].txt
+empty	api_generation/client_generation/client_render[empty].ordinary/
 empty	api_generation/client_generation/client_render[empty].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/empty/pydantic_v2_BaseModel//*.py
 empty	api_generation/client_generation/client_render[empty].txt	= main/generation_platform/client/empty.txt
 empty-security	api_generation/client_generation/client_render[empty-security].pydantic_v2_BaseModel/
 empty-security	api_generation/client_generation/client_render[empty-security].txt
 evolution	api_generation/client_generation/client_render[evolution].msgspec_Struct/
+evolution	api_generation/client_generation/client_render[evolution].ordinary/
 evolution	api_generation/client_generation/client_render[evolution].txt
 fields	api_generation/client_generation/client_render[fields].msgspec_Struct/
+fields	api_generation/client_generation/client_render[fields].ordinary/
 fields	api_generation/client_generation/client_render[fields].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/fields/pydantic_v2_BaseModel//*.py
 fields	api_generation/client_generation/client_render[fields].pydantic_v2_dataclass/
 fields	api_generation/client_generation/client_render[fields].txt
 fields-both	api_generation/client_generation/client_render[fields-both].txt	= main/generation_platform/client/fields-both.txt
 fields-cycle	api_generation/client_generation/client_render[fields-cycle].txt
 fields-errors	api_generation/client_generation/client_render[fields-errors].txt
+fields-optional-models	api_generation/client_generation/client_render[fields-optional-models].ordinary/
 fields-optional-models	api_generation/client_generation/client_render[fields-optional-models].pydantic_v2_BaseModel/
 fields-optional-models	api_generation/client_generation/client_render[fields-optional-models].txt
 fields-strip	api_generation/client_generation/client_render[fields-strip].dataclasses_dataclass/
@@ -316,10 +325,12 @@ fields-strip-nullable	api_generation/client_generation/client_render[fields-stri
 fields-strip-nullable	api_generation/client_generation/client_render[fields-strip-nullable].pydantic_v2_dataclass/
 fields-strip-nullable	api_generation/client_generation/client_render[fields-strip-nullable].txt
 fields-structural	api_generation/client_generation/client_render[fields-structural].dataclasses_dataclass/
+fields-structural	api_generation/client_generation/client_render[fields-structural].ordinary/
 fields-structural	api_generation/client_generation/client_render[fields-structural].txt
 fields-structural	api_generation/client_generation/client_render[fields-structural].typing_TypedDict/
 fields-typeddict-template-bases	api_generation/client_generation/client_render[fields-typeddict-template-bases].txt
 fields-typeddict-template-bases	api_generation/client_generation/client_render[fields-typeddict-template-bases].typing_TypedDict/
+fields-unpack	api_generation/client_generation/client_render[fields-unpack].ordinary/
 fields-unpack	api_generation/client_generation/client_render[fields-unpack].pydantic_v2_BaseModel/
 fields-unpack	api_generation/client_generation/client_render[fields-unpack].txt
 fingerprint-nested	api_generation/client_generation/client_render[fingerprint-nested].pydantic_v2_BaseModel/
@@ -348,6 +359,7 @@ held-extras-allow	api_generation/client_generation/client_render[held-extras-all
 held-extras-forbid	api_generation/client_generation/client_render[held-extras-forbid].pydantic_v2_BaseModel/
 held-extras-forbid	api_generation/client_generation/client_render[held-extras-forbid].pydantic_v2_dataclass/
 held-extras-forbid	api_generation/client_generation/client_render[held-extras-forbid].txt
+helpers	api_generation/client_generation/client_render[helpers].ordinary/
 helpers	api_generation/client_generation/client_render[helpers].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/helpers/pydantic_v2_BaseModel//*.py
 helpers	api_generation/client_generation/client_render[helpers].txt
 implicit-server	api_generation/client_generation/client_render[implicit-server].pydantic_v2_BaseModel/	= main/generation_platform/fastapi/packages/info/
@@ -358,6 +370,7 @@ item-streams	api_generation/client_generation/client_render[item-streams].txt
 item-streams-collision	api_generation/client_generation/client_render[item-streams-collision].txt
 item-streams-declared	api_generation/client_generation/client_render[item-streams-declared].pydantic_v2_BaseModel/
 item-streams-declared	api_generation/client_generation/client_render[item-streams-declared].txt
+media	api_generation/client_generation/client_render[media].ordinary/
 media	api_generation/client_generation/client_render[media].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/media/pydantic_v2_BaseModel//*.py
 media	api_generation/client_generation/client_render[media].txt	= main/generation_platform/client/media.txt
 media	api_generation/client_generation/client_render[media].typing_TypedDict/	= main/generation_platform/client/packages/media/typing_TypedDict//*.py
@@ -405,6 +418,7 @@ multipart-union-parts	api_generation/client_generation/client_render[multipart-u
 multipart-union-parts-errors	api_generation/client_generation/client_render[multipart-union-parts-errors].txt
 name-errors	api_generation/client_generation/client_render[name-errors].txt
 name-repeats	api_generation/client_generation/client_render[name-repeats].txt
+names	api_generation/client_generation/client_render[names].ordinary/
 names	api_generation/client_generation/client_render[names].pydantic_v2_BaseModel/
 names	api_generation/client_generation/client_render[names].txt
 names-unpack	api_generation/client_generation/client_render[names-unpack].pydantic_v2_BaseModel/
@@ -429,6 +443,7 @@ nullable-required-parameters-31	api_generation/client_generation/client_render[n
 nullable-required-parameters-31	api_generation/client_generation/client_render[nullable-required-parameters-31].txt
 nullable-required-parameters-unpack	api_generation/client_generation/client_render[nullable-required-parameters-unpack].pydantic_v2_BaseModel/
 nullable-required-parameters-unpack	api_generation/client_generation/client_render[nullable-required-parameters-unpack].txt
+pagination	api_generation/client_generation/client_render[pagination].ordinary/
 pagination	api_generation/client_generation/client_render[pagination].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/pagination/pydantic_v2_BaseModel//*.py
 pagination	api_generation/client_generation/client_render[pagination].txt	= main/generation_platform/client/pagination.txt
 pagination-counts	api_generation/client_generation/client_render[pagination-counts].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/pagination-counts/pydantic_v2_BaseModel//*.py
@@ -440,6 +455,7 @@ pagination-plans	api_generation/client_generation/client_render[pagination-plans
 pagination-plans	api_generation/client_generation/client_render[pagination-plans].pydantic_v2_dataclass/
 pagination-plans	api_generation/client_generation/client_render[pagination-plans].txt
 pagination-plans	api_generation/client_generation/client_render[pagination-plans].typing_TypedDict/
+pagination-querystring	api_generation/client_generation/client_render[pagination-querystring].ordinary/
 pagination-querystring	api_generation/client_generation/client_render[pagination-querystring].pydantic_v2_BaseModel/
 pagination-querystring	api_generation/client_generation/client_render[pagination-querystring].txt
 pagination-targets	api_generation/client_generation/client_render[pagination-targets].pydantic_v2_BaseModel/
@@ -468,10 +484,12 @@ parts-bound-types-reuse	api_generation/client_generation/client_render[parts-bou
 parts-bound-types-reuse	api_generation/client_generation/client_render[parts-bound-types-reuse].txt
 pets	api_generation/client_generation/client_render[pets].dataclasses_dataclass/
 pets	api_generation/client_generation/client_render[pets].msgspec_Struct/
+pets	api_generation/client_generation/client_render[pets].ordinary/
 pets	api_generation/client_generation/client_render[pets].pydantic_v2_BaseModel/
 pets	api_generation/client_generation/client_render[pets].pydantic_v2_dataclass/
 pets	api_generation/client_generation/client_render[pets].txt
 pets	api_generation/client_generation/client_render[pets].typing_TypedDict/
+pets-unpack	api_generation/client_generation/client_render[pets-unpack].ordinary/
 pets-unpack	api_generation/client_generation/client_render[pets-unpack].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/pets-unpack/pydantic_v2_BaseModel//*.py
 pets-unpack	api_generation/client_generation/client_render[pets-unpack].txt	= main/generation_platform/client/pets-unpack.txt
 pointer-errors	api_generation/client_generation/client_render[pointer-errors].txt
@@ -487,6 +505,7 @@ polling-plans	api_generation/client_generation/client_render[polling-plans].typi
 query-free-objects	api_generation/client_generation/client_render[query-free-objects].msgspec_Struct/
 query-free-objects	api_generation/client_generation/client_render[query-free-objects].pydantic_v2_BaseModel/	= api_generation/client_generation/client_render[query-free-objects].msgspec_Struct/
 query-free-objects	api_generation/client_generation/client_render[query-free-objects].txt
+querystring	api_generation/client_generation/client_render[querystring].ordinary/	= api_generation/client_generation/client_render[pagination-querystring].ordinary/
 querystring	api_generation/client_generation/client_render[querystring].pydantic_v2_BaseModel/
 querystring	api_generation/client_generation/client_render[querystring].txt
 querystring-targets	api_generation/client_generation/client_render[querystring-targets].pydantic_v2_BaseModel/
@@ -501,9 +520,11 @@ references	api_generation/client_generation/client_render[references].txt
 required-errors	api_generation/client_generation/client_render[required-errors].txt
 response-keys	api_generation/client_generation/client_render[response-keys].pydantic_v2_BaseModel/
 response-keys	api_generation/client_generation/client_render[response-keys].txt
+retries	api_generation/client_generation/client_render[retries].ordinary/
 retries	api_generation/client_generation/client_render[retries].pydantic_v2_BaseModel/	= main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py
 retries	api_generation/client_generation/client_render[retries].txt	= main/generation_platform/client/retries.txt
 retry-header-conflicts	api_generation/client_generation/client_render[retry-header-conflicts].txt
+retry-headers	api_generation/client_generation/client_render[retry-headers].ordinary/
 retry-headers	api_generation/client_generation/client_render[retry-headers].pydantic_v2_BaseModel/
 retry-headers	api_generation/client_generation/client_render[retry-headers].txt
 retry-security-context	api_generation/client_generation/client_render[retry-security-context].txt
