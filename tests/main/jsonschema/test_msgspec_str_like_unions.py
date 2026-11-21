@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import msgspec
 import pytest
@@ -82,8 +81,7 @@ def test_msgspec_str_like_unions(output_file: Path, option_set: str) -> None:
     runtime_file = output_file
     if sys.version_info < (3, 12):
         runtime_file = output_file.with_name("runtime_model.py")
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with pytest.warns(UserWarning, match="msgspec"):
             main([
                 *("--input", str(INPUT), "--input-file-type", "jsonschema", "--output", str(runtime_file)),
                 *ARGS,
@@ -107,7 +105,7 @@ def test_msgspec_str_like_unions(output_file: Path, option_set: str) -> None:
     assert_output(verdicts + "".join(f"warning: {message}\n" for message in messages), name="payloads")
 
 
-def _verdict(model: Any, document: object) -> str:
+def _verdict(model: type, document: object) -> str:
     """Return whether the generated model decodes a JSON document, or that msgspec refuses the model's types."""
     try:
         msgspec.json.decode(json.dumps(document), type=model)

@@ -435,7 +435,13 @@ def merge_str_like_members(original: Callable[..., None]) -> Callable[..., None]
     """Wrap ``_DecisionWriter.merge_str_like_members``: it writes the objects that the guarded views it gets name."""
 
     @wraps(original)
-    def merge_str_like_members(self: Any, model: Any, field: Any, rewrites: Any, merged: Any) -> None:
+    def merge_str_like_members(
+        self: object,
+        model: object,
+        field: object,
+        rewrites: Sequence[tuple[object, Sequence[object]]],
+        merged: Sequence[object],
+    ) -> None:
         return original(
             self,
             viewed(model),

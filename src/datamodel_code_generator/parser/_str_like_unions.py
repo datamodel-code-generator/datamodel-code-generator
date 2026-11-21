@@ -41,7 +41,7 @@ _Slot: TypeAlias = "tuple[DataTypeView, str | None]"
 """A written member of a union and the str-like member msgspec counts it as, or None."""
 
 
-class _Blocked(Exception):  # noqa: N818
+class _UnmergeableError(Exception):
     """The union holds a str-like member that the decision cannot merge."""
 
 
@@ -78,7 +78,7 @@ def _union_members(data_type: DataTypeView) -> Sequence[DataTypeView]:
 
     The items of a tuple are its positions, not a union.
     """
-    if len(data_type.data_types) < 2:  # noqa: PLR2004
+    if len(data_type.data_types) <= 1:
         return ()
     if data_type not in CONTAINERS or data_type in ITEM_CONTAINERS or data_type in MAPPINGS:
         return data_type.data_types
@@ -135,7 +135,7 @@ class _Classifier:
         self._models = models
 
     def slot(self, member: DataTypeView, seen: frozenset[int] = frozenset()) -> str | None:
-        """Return the str-like member ``member`` counts as, or None; raise ``_Blocked`` for one that cannot merge.
+        """Return the str-like member ``member`` counts as, or None; raise ``_UnmergeableError`` where it cannot merge.
 
         A type alias or root model of one type counts as that type, and one of a union whose members are all
         str-like members it merges as ``str``; one of a container counts as none, as its items are no members. An
@@ -146,7 +146,7 @@ class _Classifier:
         member = _unwrap(member)
         if (reference := member.reference) is None:
             if member.python_type is not None or (seen and _other_literals(member)):
-                raise _Blocked
+                raise _UnmergeableError
             return None if member in CONTAINERS else msgspec_str_like_leaf(member)
         if id(reference) in seen or (model := self._models.get(model_key_of(reference))) is None:
             return None
@@ -154,7 +154,7 @@ class _Classifier:
             case "enum":
                 values = (get_raw_enum_member_value(field.default) for field in model.fields)
                 if "str" in enum_member_kinds(values, value_base=model.value_base):
-                    raise _Blocked
+                    raise _UnmergeableError
             case "alias" | "root" if len(model.fields) == 1:
                 value = _unwrap(model.fields[0].data_type)
                 if value in CONTAINERS:
@@ -165,7 +165,7 @@ class _Classifier:
                 if all(counted is not None for _, counted in slots):
                     return STR
                 if any(counted is not None for _, counted in slots):
-                    raise _Blocked
+                    raise _UnmergeableError
         return None
 
     def _slots(self, union: DataTypeView, seen: frozenset[int] = frozenset()) -> list[_Slot]:
@@ -180,9 +180,9 @@ class _Classifier:
         """
         try:
             slots = self._slots(union)
-        except _Blocked:
+        except _UnmergeableError:
             return ()
-        if len({counted for _, counted in slots if counted is not None}) < 2:  # noqa: PLR2004
+        if len({counted for _, counted in slots if counted is not None}) <= 1:
             return ()
         return [member for member, counted in slots if counted is not None]
 
