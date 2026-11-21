@@ -5771,6 +5771,97 @@ values is left as it is, with its warning.
               "$ref": "#/$defs/IdList"
             }
           ]
+        },
+        "with_struct": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Point"
+            }
+          ]
+        },
+        "alias_member": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "$ref": "#/$defs/IdOrText"
+            }
+          ]
+        },
+        "inner_lost": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "string",
+                  "maxLength": 8
+                }
+              ]
+            }
+          ]
+        },
+        "key_lookup": {
+          "type": "object",
+          "propertyNames": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string",
+                "maxLength": 3
+              }
+            ]
+          },
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "pair": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "number_alias": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/IntOrBool"
+            }
+          ]
         }
       },
       "$defs": {
@@ -5853,6 +5944,67 @@ values is left as it is, with its warning.
               ]
             }
           }
+        },
+        "Point": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "integer"
+            }
+          }
+        },
+        "IdOrNumber": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "NoneOrOne": {
+          "enum": [
+            "none",
+            1
+          ]
+        },
+        "Kept": {
+          "type": "object",
+          "properties": {
+            "mixed_alias": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/IdOrNumber"
+                }
+              ]
+            },
+            "none_or_one": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "$ref": "#/$defs/NoneOrOne"
+                }
+              ]
+            }
+          }
+        },
+        "IntOrBool": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
         }
       }
     }
@@ -5883,6 +6035,12 @@ values is left as it is, with its warning.
 
 
         type Url1 = Annotated[str, Meta(max_length=0)]
+
+
+        type InnerLost = Annotated[str, Meta(max_length=8)]
+
+
+        type KeyLookup = Annotated[str, Meta(max_length=3)]
 
 
         type IdOrText = str
@@ -5919,6 +6077,26 @@ values is left as it is, with its warning.
             code: UUID | Code1 | UnsetType = UNSET
 
 
+        class Point(Struct):
+            x: int | UnsetType = UNSET
+
+
+        type IdOrNumber = UUID | int
+
+
+        class NoneOrOne(Enum):
+            none = 'none'
+            int_1 = 1
+
+
+        class Kept(Struct):
+            mixed_alias: str | IdOrNumber | UnsetType = UNSET
+            none_or_one: UUID | NoneOrOne | UnsetType = UNSET
+
+
+        type IntOrBool = int | bool
+
+
         class Model(Struct):
             id: str
             plain_id: UUID | UnsetType = UNSET
@@ -5935,6 +6113,12 @@ values is left as it is, with its warning.
             nullable_ids: list[str | None] | UnsetType = UNSET
             plain_level: str | PlainLevel | UnsetType = UNSET
             id_list: UUID | IdList | UnsetType = UNSET
+            with_struct: str | Point | UnsetType = UNSET
+            alias_member: str | UnsetType = UNSET
+            inner_lost: str | UnsetType = UNSET
+            key_lookup: dict[str, int] | UnsetType = UNSET
+            pair: tuple[UUID, str] | UnsetType = UNSET
+            number_alias: str | IntOrBool | UnsetType = UNSET
         ```
 
         <!-- fmt: on -->
@@ -5962,6 +6146,12 @@ values is left as it is, with its warning.
 
 
         type Url1 = Annotated[str, Meta(max_length=0)]
+
+
+        type InnerLost = Annotated[str, Meta(max_length=8)]
+
+
+        type KeyLookup = Annotated[str, Meta(max_length=3)]
 
 
         type IdOrText = UUID | str
@@ -5998,6 +6188,26 @@ values is left as it is, with its warning.
             code: UUID | Code1 | UnsetType = UNSET
 
 
+        class Point(Struct):
+            x: int | UnsetType = UNSET
+
+
+        type IdOrNumber = UUID | int
+
+
+        class NoneOrOne(Enum):
+            none = 'none'
+            int_1 = 1
+
+
+        class Kept(Struct):
+            mixed_alias: str | IdOrNumber | UnsetType = UNSET
+            none_or_one: UUID | NoneOrOne | UnsetType = UNSET
+
+
+        type IntOrBool = int | bool
+
+
         class Model(Struct):
             id: UUID | str
             plain_id: UUID | UnsetType = UNSET
@@ -6014,6 +6224,12 @@ values is left as it is, with its warning.
             nullable_ids: list[UUID | str | None] | UnsetType = UNSET
             plain_level: UUID | str | PlainLevel | UnsetType = UNSET
             id_list: UUID | IdList | UnsetType = UNSET
+            with_struct: UUID | str | Point | UnsetType = UNSET
+            alias_member: UUID | IdOrText | UnsetType = UNSET
+            inner_lost: str | UUID | UnsetType = UNSET
+            key_lookup: dict[UUID | KeyLookup, int] | UnsetType = UNSET
+            pair: tuple[UUID, str] | UnsetType = UNSET
+            number_alias: UUID | str | IntOrBool | UnsetType = UNSET
         ```
 
         <!-- fmt: on -->

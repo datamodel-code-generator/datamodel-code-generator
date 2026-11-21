@@ -764,7 +764,7 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "member that admits null leaves None in the union, and a merged Literal keeps its values that are no str. A "
         "union whose str-like members include an Enum of str values, a member typed by x-python-type, an alias of a "
         "union that mixes str-like and other members or an alias of a Literal of str and other values is left as it "
-        "is, with its warning. Without it such a union is written as the schema gives it, with a warning, as in 0.90.0",
+        "is, with its warning. Without it such a union is written as the schema gives it, with a warning, as in 0.99.0",
     ),
     flag(
         Section.MODEL,
