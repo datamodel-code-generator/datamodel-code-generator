@@ -5,13 +5,13 @@
 [test_generate_api_protobuf]
 	main/protobuf/main_protobuf/generate_api_protobuf.py
 [test_generate_api_protobuf_definition_key_collision]
-	main/protobuf/collision.py
+	main/protobuf/main_protobuf/generate_api_protobuf_definition_key_collision.py
 [test_generate_api_protobuf_from_path_list]
 	main/protobuf/main_protobuf/generate_api_protobuf_from_path_list.py
 [test_generate_api_protobuf_from_text]
-	main/protobuf/text_input.py
+	main/protobuf/main_protobuf/generate_api_protobuf_from_text.py
 [test_generate_api_protobuf_returns_code]
-	main/protobuf/generate_returns_code.py
+	main/protobuf/main_protobuf/generate_api_protobuf_returns_code.py
 [test_generate_api_protobuf_strict_schema_version_warning]
 	main/protobuf/main_protobuf/generate_api_protobuf_strict_schema_version_warning.py
 [test_main_protobuf_complex_proto3]
@@ -19,8 +19,8 @@
 [test_main_protobuf_custom_template_non_finite_raw]
 	main/protobuf/main_protobuf/custom_template_non_finite_raw.py
 [test_main_protobuf_directory_output_importable]
-	main/protobuf/directory//*.py	?
-	main/protobuf/directory_black_lt_24//*.py	?
+	main/protobuf/main_protobuf/directory_output_importable/
+	main/protobuf/main_protobuf/directory_output_importable/	@black=22	= main/protobuf/main_protobuf/directory_output_importable@black22/
 [test_main_protobuf_edition_2023_schema_version]
 	main/protobuf/main_protobuf/edition_2023_schema_version.py
 [test_main_protobuf_enum_field_defaults_beside_ref]
@@ -50,72 +50,72 @@ typed-dict	main/protobuf/main_protobuf/output_model_types[typed-dict].warnings.t
 [test_native_referenced_standard_types]
 nullvalue	main/protobuf/main_protobuf/native_referenced_standard_types[nullvalue].txt
 [test_nullvalue_enum_backends]
-api-False-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/enum_value.txt
-api-False-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/nullvalue_DataclassesDataclass.py
-api-False-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/enum_value.txt
-api-False-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/nullvalue_MsgspecStruct.py
-api-False-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/enum_value.txt
-api-False-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/nullvalue_PydanticV2BaseModel.py
-api-False-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/enum_value.txt
-api-False-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/nullvalue_PydanticV2Dataclass.py
-api-False-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/enum_value.txt
-api-False-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/nullvalue_TypingTypedDict.py
-api-True-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/enum_value.txt
-api-True-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/nullvalue_DataclassesDataclass.py
-api-True-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/enum_value.txt
-api-True-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/nullvalue_MsgspecStruct.py
-api-True-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/enum_value.txt
-api-True-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/nullvalue_PydanticV2BaseModel.py
-api-True-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/enum_value.txt
-api-True-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/nullvalue_PydanticV2Dataclass.py
-api-True-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/enum_value.txt
-api-True-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/nullvalue_TypingTypedDict.py
-cli-False-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/enum_value.txt
-cli-False-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/nullvalue_DataclassesDataclass.py
-cli-False-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/enum_value.txt
-cli-False-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/nullvalue_MsgspecStruct.py
-cli-False-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/enum_value.txt
-cli-False-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/nullvalue_PydanticV2BaseModel.py
-cli-False-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/enum_value.txt
-cli-False-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/nullvalue_PydanticV2Dataclass.py
-cli-False-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/enum_value.txt
-cli-False-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/nullvalue_TypingTypedDict.py
-cli-True-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/enum_value.txt
-cli-True-DataModelType.DataclassesDataclass	main/protobuf/referenced_standard/nullvalue_DataclassesDataclass.py
-cli-True-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/enum_value.txt
-cli-True-DataModelType.MsgspecStruct	main/protobuf/referenced_standard/nullvalue_MsgspecStruct.py
-cli-True-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/enum_value.txt
-cli-True-DataModelType.PydanticV2BaseModel	main/protobuf/referenced_standard/nullvalue_PydanticV2BaseModel.py
-cli-True-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/enum_value.txt
-cli-True-DataModelType.PydanticV2Dataclass	main/protobuf/referenced_standard/nullvalue_PydanticV2Dataclass.py
-cli-True-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/enum_value.txt
-cli-True-DataModelType.TypingTypedDict	main/protobuf/referenced_standard/nullvalue_TypingTypedDict.py
+api-False-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-False-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].py
+api-False-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.MsgspecStruct].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-False-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.MsgspecStruct].py
+api-False-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2BaseModel].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-False-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2BaseModel].py
+api-False-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2Dataclass].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-False-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2Dataclass].py
+api-False-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.TypingTypedDict].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-False-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.TypingTypedDict].py
+api-True-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.DataclassesDataclass].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-True-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.DataclassesDataclass].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].py
+api-True-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.MsgspecStruct].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-True-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.MsgspecStruct].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.MsgspecStruct].py
+api-True-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.PydanticV2BaseModel].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-True-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.PydanticV2BaseModel].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2BaseModel].py
+api-True-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.PydanticV2Dataclass].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-True-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.PydanticV2Dataclass].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2Dataclass].py
+api-True-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.TypingTypedDict].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+api-True-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[api-True-DataModelType.TypingTypedDict].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.TypingTypedDict].py
+cli-False-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.DataclassesDataclass].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-False-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.DataclassesDataclass].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].py
+cli-False-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.MsgspecStruct].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-False-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.MsgspecStruct].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.MsgspecStruct].py
+cli-False-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.PydanticV2BaseModel].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-False-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.PydanticV2BaseModel].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2BaseModel].py
+cli-False-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.PydanticV2Dataclass].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-False-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.PydanticV2Dataclass].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2Dataclass].py
+cli-False-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.TypingTypedDict].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-False-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-False-DataModelType.TypingTypedDict].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.TypingTypedDict].py
+cli-True-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.DataclassesDataclass].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-True-DataModelType.DataclassesDataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.DataclassesDataclass].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].py
+cli-True-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.MsgspecStruct].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-True-DataModelType.MsgspecStruct	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.MsgspecStruct].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.MsgspecStruct].py
+cli-True-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.PydanticV2BaseModel].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-True-DataModelType.PydanticV2BaseModel	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.PydanticV2BaseModel].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2BaseModel].py
+cli-True-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.PydanticV2Dataclass].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-True-DataModelType.PydanticV2Dataclass	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.PydanticV2Dataclass].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.PydanticV2Dataclass].py
+cli-True-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.TypingTypedDict].enum_value.txt	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.DataclassesDataclass].enum_value.txt
+cli-True-DataModelType.TypingTypedDict	main/protobuf/main_protobuf/nullvalue_enum_backends[cli-True-DataModelType.TypingTypedDict].py	= main/protobuf/main_protobuf/nullvalue_enum_backends[api-False-DataModelType.TypingTypedDict].py
 [test_protobuf_parser_renders_non_finite_defaults]
-	parser/protobuf/non_finite_defaults.py
+	main/protobuf/main_protobuf/protobuf_parser_renders_non_finite_defaults.py
 [test_referenced_standard_definition_order]
-nullvalue	main/protobuf/referenced_standard/nullvalue.txt
-standard_enum	main/protobuf/referenced_standard/standard_enum.txt
-standard_message	main/protobuf/referenced_standard/standard_message.txt
-unused_standard	main/protobuf/referenced_standard/unused_standard.txt
-user_namespace	main/protobuf/referenced_standard/user_namespace.txt
+nullvalue	main/protobuf/main_protobuf/referenced_standard_definition_order[nullvalue].txt
+standard_enum	main/protobuf/main_protobuf/referenced_standard_definition_order[standard_enum].txt
+standard_message	main/protobuf/main_protobuf/referenced_standard_definition_order[standard_message].txt
+unused_standard	main/protobuf/main_protobuf/referenced_standard_definition_order[unused_standard].txt
+user_namespace	main/protobuf/main_protobuf/referenced_standard_definition_order[user_namespace].txt
 [test_referenced_standard_generation]
-api-False-nullvalue	main/protobuf/referenced_standard/nullvalue.py
-api-False-standard_enum	main/protobuf/referenced_standard/standard_enum.py
-api-False-standard_message	main/protobuf/referenced_standard/standard_message.py
-api-False-unused_standard	main/protobuf/referenced_standard/unused_standard.py
-api-False-user_namespace	main/protobuf/referenced_standard/user_namespace.py
-api-True-nullvalue	main/protobuf/referenced_standard/nullvalue.py
-api-True-standard_enum	main/protobuf/referenced_standard/standard_enum.py
-api-True-standard_message	main/protobuf/referenced_standard/standard_message.py
-api-True-unused_standard	main/protobuf/referenced_standard/unused_standard.py
-api-True-user_namespace	main/protobuf/referenced_standard/user_namespace.py
-cli-False-nullvalue	main/protobuf/referenced_standard/nullvalue.py
-cli-False-standard_enum	main/protobuf/referenced_standard/standard_enum.py
-cli-False-standard_message	main/protobuf/referenced_standard/standard_message.py
-cli-False-unused_standard	main/protobuf/referenced_standard/unused_standard.py
-cli-False-user_namespace	main/protobuf/referenced_standard/user_namespace.py
-cli-True-nullvalue	main/protobuf/referenced_standard/nullvalue.py
-cli-True-standard_enum	main/protobuf/referenced_standard/standard_enum.py
-cli-True-standard_message	main/protobuf/referenced_standard/standard_message.py
-cli-True-unused_standard	main/protobuf/referenced_standard/unused_standard.py
-cli-True-user_namespace	main/protobuf/referenced_standard/user_namespace.py
+api-False-nullvalue	main/protobuf/main_protobuf/referenced_standard_generation[api-False-nullvalue].py
+api-False-standard_enum	main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_enum].py
+api-False-standard_message	main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_message].py
+api-False-unused_standard	main/protobuf/main_protobuf/referenced_standard_generation[api-False-unused_standard].py
+api-False-user_namespace	main/protobuf/main_protobuf/referenced_standard_generation[api-False-user_namespace].py
+api-True-nullvalue	main/protobuf/main_protobuf/referenced_standard_generation[api-True-nullvalue].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-nullvalue].py
+api-True-standard_enum	main/protobuf/main_protobuf/referenced_standard_generation[api-True-standard_enum].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_enum].py
+api-True-standard_message	main/protobuf/main_protobuf/referenced_standard_generation[api-True-standard_message].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_message].py
+api-True-unused_standard	main/protobuf/main_protobuf/referenced_standard_generation[api-True-unused_standard].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-unused_standard].py
+api-True-user_namespace	main/protobuf/main_protobuf/referenced_standard_generation[api-True-user_namespace].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-user_namespace].py
+cli-False-nullvalue	main/protobuf/main_protobuf/referenced_standard_generation[cli-False-nullvalue].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-nullvalue].py
+cli-False-standard_enum	main/protobuf/main_protobuf/referenced_standard_generation[cli-False-standard_enum].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_enum].py
+cli-False-standard_message	main/protobuf/main_protobuf/referenced_standard_generation[cli-False-standard_message].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_message].py
+cli-False-unused_standard	main/protobuf/main_protobuf/referenced_standard_generation[cli-False-unused_standard].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-unused_standard].py
+cli-False-user_namespace	main/protobuf/main_protobuf/referenced_standard_generation[cli-False-user_namespace].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-user_namespace].py
+cli-True-nullvalue	main/protobuf/main_protobuf/referenced_standard_generation[cli-True-nullvalue].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-nullvalue].py
+cli-True-standard_enum	main/protobuf/main_protobuf/referenced_standard_generation[cli-True-standard_enum].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_enum].py
+cli-True-standard_message	main/protobuf/main_protobuf/referenced_standard_generation[cli-True-standard_message].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-standard_message].py
+cli-True-unused_standard	main/protobuf/main_protobuf/referenced_standard_generation[cli-True-unused_standard].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-unused_standard].py
+cli-True-user_namespace	main/protobuf/main_protobuf/referenced_standard_generation[cli-True-user_namespace].py	= main/protobuf/main_protobuf/referenced_standard_generation[api-False-user_namespace].py

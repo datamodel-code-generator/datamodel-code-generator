@@ -18,14 +18,12 @@ from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_PROTOBUF_PATH,
     _generated_model,
     assert_input_file_type,
     run_generate_and_assert,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.protobuf.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,7 +47,6 @@ def test_protobuf_auto_generation(
 ) -> None:
     """Auto and explicit inputs retain identical Python bytes and runtime values."""
     input_path = PROTOBUF_AUTO_PATH / f"{schema}.proto"
-    expected = f"auto_detection/{schema}_{backend.name}.py"
     options = {"custom_file_header": "# Protobuf detection regression", "output_model_type": backend}
     match entry:
         case "cli":
@@ -63,23 +60,19 @@ def test_protobuf_auto_generation(
                     "--output-model-type",
                     backend.value,
                 ],
-                assert_func=assert_file_content,
-                expected_file=expected,
             )
         case "path":
             run_generate_file_and_assert(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=input_type,
-                assert_func=assert_file_content,
-                expected_file=expected,
                 **options,
             )
         case _:
             run_generate_and_assert(
                 input_=input_path.read_text(encoding="utf-8"),
                 input_file_type=input_type,
-                expected_file=EXPECTED_PROTOBUF_PATH / expected.replace(".py", "_text.py"),
+                name="api",
                 **options,
             )
             return
@@ -90,9 +83,7 @@ def test_protobuf_auto_generation(
         else:
             adapter = TypeAdapter(model)
             result = adapter.dump_python(adapter.validate_python(payload))
-        assert_output(
-            json.dumps(result, indent=2) + "\n", DATA_PATH / "expected/payloads/protobuf_auto_detection/runtime.txt"
-        )
+        assert_output(json.dumps(result, indent=2) + "\n", name="runtime")
 
 
 @pytest.mark.parametrize("schema", SCHEMAS)
@@ -106,7 +97,7 @@ def test_protobuf_auto_compiler_oracle(schema: str, tmp_path: Path) -> None:
         f"--descriptor_set_out={output_path}",
         str(input_path),
     ])
-    assert_output(str(result), EXPECTED_PROTOBUF_PATH / "auto_detection" / "protoc_exit.txt")
+    assert_output(str(result), name="protoc_exit")
     descriptor = FileDescriptorSet.FromString(output_path.read_bytes()).file[0]
     assert_output(
         json.dumps(
@@ -121,7 +112,7 @@ def test_protobuf_auto_compiler_oracle(schema: str, tmp_path: Path) -> None:
             indent=2,
         )
         + "\n",
-        EXPECTED_PROTOBUF_PATH / "auto_detection" / f"{schema}_descriptor.txt",
+        name="descriptor",
     )
 
 
@@ -136,7 +127,6 @@ def test_protobuf_auto_other_formats(
     expected_type = InputFileType(CONTROLS[control])
     assert_input_file_type(infer_input_type(input_path.read_text(encoding="utf-8")), expected_type)
     selected_type = input_type or expected_type
-    expected = f"auto_detection/control_{control}.py"
     match entry:
         case "cli":
             run_main_and_assert(
@@ -144,8 +134,6 @@ def test_protobuf_auto_other_formats(
                 output_path=output_file,
                 input_file_type=selected_type.value,
                 extra_args=["--custom-file-header", "# Protobuf detection regression"],
-                assert_func=assert_file_content,
-                expected_file=expected,
             )
         case "path":
             run_generate_file_and_assert(
@@ -153,15 +141,13 @@ def test_protobuf_auto_other_formats(
                 output_path=output_file,
                 input_file_type=selected_type,
                 custom_file_header="# Protobuf detection regression",
-                assert_func=assert_file_content,
-                expected_file=expected,
             )
         case _:
             run_generate_and_assert(
                 input_=input_path.read_text(encoding="utf-8"),
                 input_file_type=selected_type,
                 custom_file_header="# Protobuf detection regression",
-                expected_file=EXPECTED_PROTOBUF_PATH / expected.replace(".py", "_text.py"),
+                name="api",
             )
 
 
@@ -176,7 +162,7 @@ def test_protobuf_auto_inference_imports(schema: str) -> None:
         ],
         text=True,
     )
-    assert_output(result, EXPECTED_PROTOBUF_PATH / "auto_detection" / "inference_imports.txt")
+    assert_output(result)
 
 
 @pytest.mark.parametrize("schema", ["invalid_yaml", "unknown_scalar"])

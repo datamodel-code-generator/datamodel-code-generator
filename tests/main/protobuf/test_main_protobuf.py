@@ -8,7 +8,6 @@ from copy import deepcopy
 from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
-import black
 import msgspec
 import pytest
 import yaml
@@ -23,7 +22,6 @@ from tests.main.conftest import (
     BACKEND_GOLDEN_CASES,
     BACKEND_GOLDEN_TARGET_ARGS,
     DATA_PATH,
-    EXPECTED_PROTOBUF_PATH,
     PROTOBUF_DATA_PATH,
     _generated_model,
     _model_json_validator,
@@ -32,7 +30,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.protobuf.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -196,7 +193,7 @@ def test_protobuf_parser_renders_non_finite_defaults() -> None:
 
     assert_output(
         f"{parser.parse(format_=False)}\n",
-        DATA_PATH / "expected/parser/protobuf/non_finite_defaults.py",
+        suffix=".py",
     )
 
 
@@ -262,7 +259,7 @@ def test_generate_api_protobuf_returns_code() -> None:
         disable_timestamp=True,
     )
 
-    assert_output(result, EXPECTED_PROTOBUF_PATH / "generate_returns_code.py")
+    assert_output(result, suffix=".py")
 
 
 def test_generate_api_protobuf_from_text() -> None:
@@ -273,7 +270,7 @@ def test_generate_api_protobuf_from_text() -> None:
         disable_timestamp=True,
     )
 
-    assert_output(result, EXPECTED_PROTOBUF_PATH / "text_input.py")
+    assert_output(result, suffix=".py")
 
 
 def test_generate_api_protobuf_definition_key_collision() -> None:
@@ -284,7 +281,7 @@ def test_generate_api_protobuf_definition_key_collision() -> None:
         disable_timestamp=True,
     )
 
-    assert_output(result, EXPECTED_PROTOBUF_PATH / "collision.py")
+    assert_output(result, suffix=".py")
 
 
 def test_generate_api_protobuf_from_path_list() -> None:
@@ -310,17 +307,11 @@ def test_infer_input_file_type_from_message_declaration() -> None:
 
 def test_main_protobuf_directory_output_importable(output_dir: Path) -> None:
     """Generate a package from imported .proto files and import the result."""
-    expected_directory = (
-        EXPECTED_PROTOBUF_PATH / "directory_black_lt_24"
-        if int(black.__version__.split(".")[0]) < 24
-        else EXPECTED_PROTOBUF_PATH / "directory"
-    )
     run_main_and_assert(
         input_path=PROTOBUF_DATA_PATH,
         output_path=output_dir,
         input_file_type="protobuf",
         extra_args=["--module-split-mode", "single"],
-        expected_directory=expected_directory,
         force_exec_validation=True,
         importable_module_name="generated_protobuf",
         importable_module_file="__init__.py",
@@ -447,7 +438,7 @@ def test_referenced_standard_definition_order(name: str) -> None:
     """Materialize exactly the referenced closure and preserve defaults and comments."""
     path = DATA_PATH / "protobuf_referenced_standard" / f"{name}.proto"
     schema = convert_protobuf_schema_data(path.read_text(), base_path=path.parent)
-    assert_output(json.dumps(schema, indent=2) + "\n", EXPECTED_PROTOBUF_PATH / "referenced_standard" / f"{name}.txt")
+    assert_output(json.dumps(schema, indent=2) + "\n")
 
 
 @pytest.mark.parametrize("name", REFERENCED_STANDARD_CASES)
@@ -456,15 +447,12 @@ def test_referenced_standard_definition_order(name: str) -> None:
 def test_referenced_standard_generation(name: str, strict: bool, entrypoint: str, output_file: Path) -> None:
     """Resolve real CLI/API references while preserving normal output and validation."""
     path = DATA_PATH / "protobuf_referenced_standard" / f"{name}.proto"
-    expected = f"referenced_standard/{name}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=path,
             output_path=output_file,
             input_file_type="protobuf",
             extra_args=["--disable-timestamp", "--use-field-description", *(["--strict-refs"] if strict else [])],
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     else:
         run_generate_file_and_assert(
@@ -474,8 +462,6 @@ def test_referenced_standard_generation(name: str, strict: bool, entrypoint: str
             strict_refs=strict,
             disable_timestamp=True,
             use_field_description=True,
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     class_name = "GoogleProtobufPayload" if name == "user_namespace" else "Payload"
     payloads = DATA_PATH / "payloads/protobuf_referenced_standard"
@@ -492,7 +478,6 @@ def test_referenced_standard_generation(name: str, strict: bool, entrypoint: str
 def test_nullvalue_enum_backends(backend: DataModelType, strict: bool, entrypoint: str, output_file: Path) -> None:
     """Preserve enum names and backend null handling without claiming ProtoJSON serialization."""
     path = DATA_PATH / "protobuf_referenced_standard/nullvalue.proto"
-    expected = f"referenced_standard/nullvalue_{backend.name}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=path,
@@ -504,8 +489,6 @@ def test_nullvalue_enum_backends(backend: DataModelType, strict: bool, entrypoin
                 backend.value,
                 *(["--strict-refs"] if strict else []),
             ],
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     else:
         run_generate_file_and_assert(
@@ -515,8 +498,6 @@ def test_nullvalue_enum_backends(backend: DataModelType, strict: bool, entrypoin
             strict_refs=strict,
             output_model_type=backend,
             disable_timestamp=True,
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     payloads = DATA_PATH / "payloads/protobuf_referenced_standard"
     with _generated_model(output_file, f"nullvalue_{backend.name}_{entrypoint}_{strict}", "Payload") as model:
@@ -542,7 +523,7 @@ def test_nullvalue_enum_backends(backend: DataModelType, strict: bool, entrypoin
         value = result["value"] if isinstance(result, dict) else result.value
         assert_output(
             json.dumps(value.value if isinstance(value, Enum) else value) + "\n",
-            EXPECTED_PROTOBUF_PATH / "referenced_standard/enum_value.txt",
+            name="enum_value",
         )
 
 

@@ -16,9 +16,9 @@ class ExampleWktWrapperBucket(BaseModel):
     double_value: float | None = None
     float_value: float | None = None
     int64_value: int | None = None
-    uint64_value: conint(ge=0) | None = None
+    uint64_value: conint(ge=0, le=18446744073709551615) | None = None
     int32_value: int | None = None
-    uint32_value: conint(ge=0) | None = None
+    uint32_value: conint(ge=0, le=4294967295) | None = None
     bool_value: bool | None = None
     string_value: str | None = None
     bytes_value: bytes | None = None

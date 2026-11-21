@@ -6,8 +6,6 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import Field
-
 
 class ExampleCommonStatus(Enum):
     STATUS_UNSPECIFIED = 'STATUS_UNSPECIFIED'
