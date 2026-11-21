@@ -15551,7 +15551,7 @@ def test_discriminator_final_field_aliases(
     payloads = json.loads((DATA_PATH / "payloads" / "discriminator_alias_outputs" / "validation.json").read_text())
     runtime: dict[str, Any] = {}
     wire_name = "wireKind" if "serialization_aliases" in options else "petType"
-    for tag, detail in [("cat", "meow"), ("dog", "bark")]:
+    for tag, detail, ordinary in [("cat", "meow", "cat_ordinary"), ("dog", "bark", "dog_ordinary")]:
         assert_generated_model_json_validation(
             output_file,
             module_name=f"generated_discriminator_alias_{case}_{tag}",
@@ -15584,7 +15584,7 @@ def test_discriminator_final_field_aliases(
                 runtime[tag]["ordinary_native_identity"] = model.model_validate(native).root is native
                 assert_output(
                     json.dumps(native.model_dump(mode="json", by_alias=True, exclude_none=True), sort_keys=True) + "\n",
-                    name=f"{tag}_ordinary",
+                    name=ordinary,
                 )
                 # Keep tagged dispatch and its existing schema order, including Python-name-first lookup.
                 schema = model.model_json_schema()
