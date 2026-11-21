@@ -1,0 +1,4 @@
+[
+  "/allof_constraint_only maxLength \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\": invalid, model accepts",
+  "/allof_constraint_only minLength \"\": invalid, model accepts"
+]

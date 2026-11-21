@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .cases import SCHEMA_CASES, discover_unaccounted_files
+from .cases import SCHEMA_CASES, discover_unaccounted_files, discover_unresolved_openapi_candidates
 from .codegen import (
     PayloadAdapterError,
     PayloadRuntime,
@@ -33,6 +33,7 @@ from .constants import (
     PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION,
+    REJECTION_EXCLUDED_CASES,
     ROUND_TRIP_EXCLUDED_CASES,
 )
 from .models import GeneratedModelCache, InvalidPayloadMutation, PayloadBackend, SchemaCase
@@ -61,6 +62,7 @@ __all__ = [
     "PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES",
     "PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION",
     "PYDANTIC_V2_UNASSERTED_MUTATION_CONSTRAINTS",
+    "REJECTION_EXCLUDED_CASES",
     "ROUND_TRIP_EXCLUDED_CASES",
     "SCHEMA_CASES",
     "GeneratedModelCache",
@@ -72,6 +74,7 @@ __all__ = [
     "backend_acceptance_exclusion_reason",
     "backend_rejection_exclusion_reason",
     "discover_unaccounted_files",
+    "discover_unresolved_openapi_candidates",
     "generate_payload_adapter",
     "generate_payload_runtime",
     "has_rejection_oracle_constraints",

@@ -47,6 +47,7 @@ from .payload_validation import (
     PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION,
     PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION,
+    REJECTION_EXCLUDED_CASES,
     ROUND_TRIP_EXCLUDED_CASES,
     SCHEMA_CASES,
     GeneratedModelCache,
@@ -55,6 +56,7 @@ from .payload_validation import (
     backend_acceptance_exclusion_reason,
     backend_rejection_exclusion_reason,
     discover_unaccounted_files,
+    discover_unresolved_openapi_candidates,
     generate_payload_adapter,
     has_rejection_oracle_constraints,
     invalid_payload_mutations,
@@ -181,7 +183,9 @@ PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeE
     *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES),
     *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
 )
-REJECTION_ORACLE_CASES = [case for case in SCHEMA_CASES if has_rejection_oracle_constraints(case)]
+REJECTION_ORACLE_CASES = [
+    case for case in SCHEMA_CASES if case.id not in REJECTION_EXCLUDED_CASES and has_rejection_oracle_constraints(case)
+]
 SCHEMA_CASE_BY_ID = {case.id: case for case in SCHEMA_CASES}
 ROUND_TRIP_CASES = [case for case in SCHEMA_CASES if case.id not in ROUND_TRIP_EXCLUDED_CASES]
 
@@ -447,7 +451,8 @@ def test_payload_openapi_cases_keep_the_components_in_document_order() -> None:
 def test_payload_validation_cases_cover_discovered_schema_files() -> None:
     """Every discovered schema fixture must be validated or explicitly excluded; the cases are counted.
 
-    The count of the OpenAPI cases that hold the components they reference shows a change that skips them again.
+    The count of the OpenAPI cases that hold the components they reference shows a change that skips them again, and
+    the count of the OpenAPI candidates skipped for a reference their case cannot resolve shows those skips.
     """
     unaccounted = discover_unaccounted_files(SCHEMA_CASES)
     if unaccounted:  # pragma: no cover
@@ -459,6 +464,7 @@ def test_payload_validation_cases_cover_discovered_schema_files() -> None:
     counts["openapi with referenced components"] = sum(
         bool(case.source_schema["components"]["schemas"]) for case in SCHEMA_CASES if case.input_file_type == "openapi"
     )
+    counts["openapi skipped for an unresolved internal $ref"] = len(discover_unresolved_openapi_candidates())
     assert_output(json.dumps(dict(sorted(counts.items())), indent=2) + "\n")
 
 
@@ -718,7 +724,24 @@ def test_payload_round_trip_exclusions_are_classified() -> None:
         pytest.fail("Payload round-trip exclusions reference unknown cases:\n" + "\n".join(unknown_cases))
 
 
-def test_payload_round_trip_drops_undeclared_properties(generated_model_cache: dict[str, Any]) -> None:
+@pytest.mark.allow_direct_assert(
+    "a rejection exclusion without a reason or a case fails outright: a stored list would let a fix run accept it"
+)
+def test_payload_rejection_exclusions_are_classified() -> None:
+    """Rejection check exclusions must carry reasons and name existing cases that the check would take."""
+    unclassified = sorted(
+        case_id
+        for case_id, reason in REJECTION_EXCLUDED_CASES.items()
+        if not reason
+        or case_id not in SCHEMA_CASE_BY_ID
+        or not has_rejection_oracle_constraints(SCHEMA_CASE_BY_ID[case_id])
+    )
+    assert not unclassified, "Payload rejection exclusions need a reason and a case of the rejection check:\n" + (
+        "\n".join(unclassified)
+    )
+
+
+def test_payload_round_trip_drops_undeclared_properties(generated_model_cache: dict[str, object]) -> None:
     """Dump two pets that differ only in an undeclared property as equal items, which breaks their uniqueItems.
 
     The default models ignore undeclared properties (``--extra-fields allow`` keeps them), so

@@ -211,11 +211,6 @@ _DISTRIBUTE_ALLOF_REASON = (
     "default output drops the allOf member beside the oneOf or anyOf, so the model has no required id; "
     "--distribute-allof-over-unions writes it and test_schema_intersection_shape_payloads checks it"
 )
-_OPTIONAL_TAG_REASON = (
-    "the suite requires a variant's tag, as OpenAPI reads it, where the generated model keeps the optional tag of the "
-    "schema or no discriminator for one variant, so it takes a payload without the tag; "
-    "test_main_openapi_discriminator_lone_variant_tags and test_discriminator_nested_variant_diamond pin those models"
-)
 _TAG_CLASH_WARNING_REASON = (
     "generation warns that a variant which two discriminated unions tag differently cannot be decoded by one of them"
 )
@@ -354,23 +349,15 @@ EXCLUDED_CASES: dict[str, str] = {
         "pins the 0.85.0 output G01 PR 5 fixes: an allOf of two enum references warns about duplicated members; "
         "test_schema_intersection_shape_output records it"
     ),
-    "openapi/allof_with_required_inherited_complex_allof.yaml::components.schemas.ProjectedItem": (
-        "hypothesis-jsonschema generates this nested allOf schema inconsistently"
-    ),
     "openapi/allof_with_required_inherited_comprehensive.yaml::components.schemas.Entity": (
         "hypothesis-jsonschema generates this inherited allOf schema inconsistently"
     ),
     "openapi/allof_with_required_inherited_comprehensive.yaml::components.schemas.ProjectedEntity": (
-        "hypothesis-jsonschema generates this inherited allOf schema inconsistently"
+        "legacy-lookahead-patterns: the patterns of allof_with_pattern are joined as (?=^[a-z]+)(?=[0-9]$), which no "
+        "string matches, so the model refuses a valid value such as a0; --intersect-allof-keywords writes them apart"
     ),
     "openapi/allof_with_required_inherited_coverage.yaml::components.schemas.EdgeCasesCoverage": (
-        "hypothesis-jsonschema generates this inherited allOf coverage schema inconsistently"
-    ),
-    "openapi/allof_with_required_inherited_edge_cases.yaml::components.schemas.EdgeCases": (
-        "hypothesis-jsonschema generates this inherited allOf edge-case schema inconsistently"
-    ),
-    "openapi/allof_with_required_inherited_edge_cases.yaml::components.schemas.ProjectedEdgeCases": (
-        "hypothesis-jsonschema generates this allOf edge-case schema inconsistently"
+        "generation warns that the constraint beside its allOf $ref is ignored in inherited field type resolution"
     ),
     "openapi/discriminator.yaml::components.schemas.Demo": (
         "discriminator branches overlap under JSON Schema validation; see payload_validation_future_work.md"
@@ -444,6 +431,10 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/component_embedded_ids/api.yaml::components.schemas.Pet": (
         "generation warns that its #/components/schemas/Tag reference is resolved against the document, where JSON "
         "Schema resolves it against the component's $id pet.json"
+    ),
+    "openapi/allof_no_merge_boolean_false_nested.yaml::components.schemas.Derived": (
+        "generation refuses the false schema nested in its inherited allOf; "
+        "test_main_openapi_allof_no_merge_boolean_false_schema_errors pins the error"
     ),
     "openapi/discriminator_external_mapping/openapi.yaml::components.schemas.Wrapper": (
         "its discriminator mapping names schemas/foo.yaml beside the document, which the case's temporary input lacks"
@@ -553,7 +544,6 @@ EXCLUDED_CASES: dict[str, str] = {
             "openapi/discriminator_typed_mapping_keys.yaml::components.schemas.ByInteger",
             "openapi/discriminator_typed_mapping_keys.yaml::components.schemas.ByIntegerAgain",
             "openapi/discriminator_typed_mapping_keys.yaml::components.schemas.ByWholeNumber",
-            "openapi/discriminator_typed_mapping_keys.yaml::components.schemas.Holder",
         ),
         _UNCONSTRAINED_TAG_REASON
         + "here the mapping keys are integer, number and boolean tags"
@@ -562,8 +552,6 @@ EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(
         (
             "openapi/discriminator_lone_variant_tags.yaml::components.schemas.MemberBoth",
-            "openapi/discriminator_plain_enum_tags.yaml::components.schemas.Holder",
-            "openapi/discriminator_plain_enum_tags_string.yaml::components.schemas.Holder",
             "openapi/open_enums.yaml::components.schemas.Pet",
             "openapi/shared_enum_discriminator/repeated.yaml::components.schemas.Pet",
         ),
@@ -575,15 +563,6 @@ EXCLUDED_CASES: dict[str, str] = {
             "openapi/discriminator_field_aliases/wire_collision_missing.json::components.schemas.Pet",
             "openapi/field_options_every_field.yaml::components.schemas.Pet",
             "openapi/discriminator_inlined_list_items/tag_named_like_enum.yaml::components.schemas.Pet",
-            "openapi/discriminator_inlined_list_items/tag_named_like_enum.yaml::components.schemas.Shelter",
-            "openapi/discriminator_msgspec_tagged_unions_base_earlier.yaml::components.schemas.Owner",
-            "openapi/discriminator_msgspec_tagged_unions_base_later.yaml::components.schemas.Owner",
-            "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Garage",
-            "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Shed",
-            "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Zoo",
-            "openapi/discriminator_shared_written_tag/nested_variant_inherits_tag.yaml::components.schemas.Shelter",
-            "openapi/discriminator_shared_written_tag/tag_named_like_enum.yaml::components.schemas.Holder",
-            "openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Holder",
             "openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Pet",
         ),
         _UNCONSTRAINED_TAG_REASON
@@ -593,24 +572,6 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/discriminator_merged_variant_tag_limits.yaml::components.schemas.ByName": (
         _UNCONSTRAINED_TAG_REASON + "here other unions of the document tag Cat and Dog by other keys, which one "
         "constraint per component cannot hold at once" + _OVERLAPPING_BRANCHES
-    ),
-    **dict.fromkeys(
-        (
-            "openapi/discriminator_enum_tag_variants.yaml::components.schemas.LoneOptional",
-            "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneFloatTag",
-            "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneOptionalRootTag",
-            "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneStringTag",
-            *(
-                f"{_DIAMOND}/{document}.yaml::components.schemas.{name}"
-                for document, names in (
-                    ("optional_tag_from_the_first_base", ("D", "Group", "Holder")),
-                    ("optional_tag_from_the_first_base_in_a_list", ("D", "Group", "Shelter", "Thing")),
-                    ("shallow_diamond", ("D", "Group")),
-                )
-                for name in names
-            ),
-        ),
-        _OPTIONAL_TAG_REASON,
     ),
 }
 MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
@@ -828,6 +789,53 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
         "(PydanticSerializationUnexpectedValue), which fails the run that turns warnings into errors",
     ),
 }
+REJECTION_EXCLUDED_CASES: dict[str, str] = {
+    **dict.fromkeys(
+        (
+            "openapi/discriminator_inlined_list_items/tag_named_like_enum.yaml::components.schemas.Shelter",
+            "openapi/discriminator_msgspec_tagged_unions_base_earlier.yaml::components.schemas.Owner",
+            "openapi/discriminator_msgspec_tagged_unions_base_later.yaml::components.schemas.Owner",
+            "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Garage",
+            "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Shed",
+            "openapi/discriminator_msgspec_tagged_unions_inherited.yaml::components.schemas.Zoo",
+            "openapi/discriminator_plain_enum_tags.yaml::components.schemas.Holder",
+            "openapi/discriminator_plain_enum_tags_string.yaml::components.schemas.Holder",
+            "openapi/discriminator_shared_written_tag/nested_variant_inherits_tag.yaml::components.schemas.Shelter",
+            "openapi/discriminator_shared_written_tag/tag_named_like_enum.yaml::components.schemas.Holder",
+            "openapi/discriminator_shared_written_tag/tag_named_like_enum_list_items.yaml::components.schemas.Holder",
+            "openapi/discriminator_typed_mapping_keys.yaml::components.schemas.Holder",
+        ),
+        _UNCONSTRAINED_TAG_REASON + "here the variants take their tag through allOf, from an enum $ref or as no "
+        "string, so a valid value of the optional union property is seldom drawn and the payloads drawn leave it out, "
+        "which leaves the rejection oracle no mutation (Unsatisfiable)",
+    ),
+    **dict.fromkeys(
+        (
+            "openapi/discriminator_enum_tag_variants.yaml::components.schemas.LoneOptional",
+            "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneFloatTag",
+            "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneOptionalRootTag",
+            "openapi/discriminator_lone_variant_tags.yaml::components.schemas.LoneStringTag",
+        ),
+        "the suite requires a variant's tag, as OpenAPI reads it, where the generated model keeps the optional tag of "
+        "the schema or no discriminator for one variant, so it takes a payload without the tag; "
+        "test_main_openapi_discriminator_lone_variant_tags pins those models",
+    ),
+    **dict.fromkeys(
+        (
+            f"{_DIAMOND}/{document}.yaml::components.schemas.{name}"
+            for document, names in (
+                ("optional_tag_from_the_first_base", ("D", "Group", "Holder")),
+                ("optional_tag_from_the_first_base_in_a_list", ("D", "Group", "Shelter", "Thing")),
+                ("shallow_diamond", ("D", "Group")),
+            )
+            for name in names
+        ),
+        "a property that a later allOf parent requires stays optional in the model, whose class takes the parents in "
+        "order (class D(B, C) keeps B's optional kind over C's required one), so it takes a payload without kind "
+        "(issue pending)",
+    ),
+}
+"""The cases the Pydantic v2 rejection check leaves out, by reason; their acceptance and round trip checks run."""
 PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION = "2.5.0"
 PYDANTIC_V2_0_RUNTIME_MAX_VERSION = "2.1.0"
 PYDANTIC_V2_0_UNION_SERIALIZER_WARNING = r"Pydantic serializer warnings:\s+Expected `Union\["
