@@ -76,9 +76,11 @@ output, run `pytest '<test>' --inline-snapshot=fix`. Never edit `.refs` or
 expected files by hand; every failure prints the exact command that fixes it.
 Review the resulting `git diff` before committing.
 
-A test's outputs are stored under its own name. Its second and later unnamed
-outputs of one kind are numbered; `name="warnings"` names one instead (the run
-helpers, the tree helpers and `assert_output` take it), and two outputs under
+A test's outputs are stored under its own name. With the run and tree helpers, its
+second and later unnamed outputs of one kind are numbered; `assert_output` allows
+only one unnamed output per test, so later calls need `name=` or an explicit
+expected path. `name="warnings"` names one (the run helpers, the tree helpers and
+`assert_output` take it), and two outputs under
 one name in one test must be equal, which is how a test compares two runs.
 `assert_output(text, suffix=".py")` keeps a stored suffix other than `.txt`
 (`.json` stores a JSON value); `derived_stdout=True` compares stdout beside a

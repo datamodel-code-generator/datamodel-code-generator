@@ -1770,7 +1770,13 @@ def run_main_url_and_assert(
     return_code = _run_main_url(url, output_path, input_file_type, extra_args=extra_args)
     _assert_exit_code(return_code, Exit.OK, f"URL: {url}")
     if assert_func is None:
-        _compare_output(output_path, expected_file, transform, name=name)
+        _compare_output(
+            output_path,
+            expected_file,
+            transform,
+            _get_argument_value(extra_args, "--encoding") or "utf-8",
+            name=name,
+        )
     else:
         assert_func(output_path, expected_file, transform=transform)
 
