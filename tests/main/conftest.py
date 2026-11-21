@@ -919,7 +919,7 @@ def run_generate_file_and_assert(
     elif assert_func is None:
         _compare_output(output_path, expected_file, transform, name=name)
     else:
-        assert_func(output_path, expected_file, transform=transform)
+        assert_func(output_path, expected_file)
     with _enable_test_parsed_source_cache(), assert_inputs_not_mutated(unchanged_inputs):
         _assert_builtin_generate_formatter_parity(
             input_=input_,
@@ -1265,7 +1265,7 @@ def run_main_and_assert(  # noqa: PLR0912
             assert frame.f_back is not None
             expected_file = _infer_expected_file(frame.f_back.f_code.co_name)
             del frame
-        assert_func(output_path, expected_file, transform=transform)
+        assert_func(output_path, expected_file)
     elif output_path is not None:
         _compare_output(
             output_path,
