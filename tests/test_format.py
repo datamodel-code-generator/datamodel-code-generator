@@ -52,7 +52,8 @@ BLACK_VERSION_DEPENDENT_NORMALIZED_EXPECTED_FILES = {
     "main/jsonschema/custom_file_header_path_prepend_multi_file/order.py",
     "main/jsonschema/custom_file_header_path_prepend_multi_file/product.py",
     "main/jsonschema/custom_file_header_path_prepend_multi_file/user.py",
-    "main/openapi/custom_file_header_with_docstring_and_import.py",
+    "main/openapi/main_openapi/main_custom_file_header_with_docstring_and_import[False].model.py",
+    "main/openapi/main_openapi/main_custom_file_header_with_docstring_and_import[True].model/api.py",
 }
 BUILTIN_FORMATTER_LOCAL_CONSTANTS = {
     "DEFAULT_LINE_LENGTH",

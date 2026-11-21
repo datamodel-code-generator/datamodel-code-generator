@@ -58,8 +58,8 @@ use-type-alias	main/openapi/open_enums/open_enum_literals_beside_enum_options[us
 [test_open_enum_literals_without_type]
 	main/openapi/open_enums/open_enum_literals_without_type.py
 [test_open_enums_turned_off_in_preset]
-command-line	main/openapi/open_enums/turned_off_in_preset[command-line].py
-pyproject	main/openapi/open_enums/turned_off_in_preset[pyproject].py	= main/openapi/open_enums/turned_off_in_preset[command-line].py
+command-line	main/openapi/open_enums/turned_off_in_preset[command-line].model.py
+pyproject	main/openapi/open_enums/turned_off_in_preset[pyproject].model.py	= main/openapi/open_enums/turned_off_in_preset[command-line].model.py
 [test_open_graphql_enums]
 base-classes	main/openapi/open_enums/open_graphql_enums[base-classes].py
 literal-all	main/openapi/open_enums/open_graphql_enums[literal-all].py

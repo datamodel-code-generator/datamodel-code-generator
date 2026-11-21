@@ -13,7 +13,6 @@ from tests.conftest import assert_generated_file_matches_output, assert_output, 
 
 DATA = Path(__file__).parents[2] / "data"
 SOURCE = DATA / "generation_platform/api_scope/discriminator.json"
-EXPECTED = DATA / "expected/main/openapi"
 DRIVER = DATA / "python/core_special_field_prefix_generate.py"
 
 
@@ -49,10 +48,7 @@ def test_special_field_prefix_discriminator(route: str, api_scope: bool, tmp_pat
             command.append("api")
     subprocess.run(command, cwd=tmp_path, check=True, timeout=60)
     code = output.read_text(encoding="utf-8")
-    expected = EXPECTED / (
-        "special_field_prefix_discriminator.py" if api_scope else "special_field_prefix_discriminator_schemas.py"
-    )
-    assert_output(code, expected)
+    assert_output(code, suffix=".py")
     if route == "generate":
         assert_generated_file_matches_output(
             generate(
