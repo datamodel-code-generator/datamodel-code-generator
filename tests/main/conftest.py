@@ -930,12 +930,6 @@ def run_generate_file_and_assert(
     elif assert_func is None:
         _compare_output(output_path, expected_file, transform, name=name)
     else:
-        if expected_file is None:
-            frame = inspect.currentframe()
-            assert frame is not None
-            assert frame.f_back is not None
-            expected_file = _infer_expected_file(frame.f_back.f_code.co_name)
-            del frame
         assert_func(output_path, expected_file, transform=transform)
     with _enable_test_parsed_source_cache(), assert_inputs_not_mutated(unchanged_inputs):
         _assert_builtin_generate_formatter_parity(
