@@ -19,14 +19,12 @@ from tests.api_generation.support.client_generation import (
     client_generate_options,
     prepare_client_case,
 )
-from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content, stored_expected
+from tests.conftest import assert_generated_modules_output, assert_output
 from tests.main.conftest import run_main_and_assert, run_main_with_args, run_main_with_system_exit
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "client"
 CLI = SOURCE / "cli"
-EXPECTED = DATA / "expected" / "main" / "generation_platform" / "client"
-DEPENDENCIES = stored_expected(EXPECTED / "cli" / "dependencies.txt").read_text(encoding="utf-8")
 OPTIONS = [
     *("--target-python-version", "3.11", "--openapi-scopes", "schemas", "api"),
     *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
@@ -44,10 +42,7 @@ SENTINEL_TARGET = (
 )
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *CLIENT]
 DOC_INPUT = "generation_platform/client/cli/options.yaml"
-DOC_OUTPUT = "main/generation_platform/client/cli/options"
 SYNC = "client/resources/pets/_sync.py"
-
-assert_file_content = create_assert_file_content(EXPECTED)
 
 
 def _inputs(root: Path, *pyproject: str) -> list[tuple[Path, Path]]:
@@ -137,10 +132,9 @@ def test_client_cli_generate(
         input_file_type="openapi",
         extra_args=[*OPTIONS, *CLIENT],
         copy_files=_inputs(tmp_path),
-        capsys=capsys,
-        expected_stderr=DEPENDENCIES,
     )
-    assert_file_content(tmp_path / SYNC, "cli/options/_sync.py")
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / SYNC).read_text(encoding="utf-8"), name="client", suffix=".py")
     run_main_and_assert(
         input_path=Path("options.yaml"),
         output_path=Path("models.py"),
@@ -157,7 +151,7 @@ def test_client_cli_generate(
         extra_args=[*OPTIONS, *CLIENT, "--check"],
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "check-edited.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -175,8 +169,9 @@ def test_client_cli_nested_models(
         *CLIENT,
         *("--client-model-package", "client.models"),
     ]
-    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES)
-    assert_file_content(tmp_path / "client" / "models.py", "cli/options/models.py")
+    run_main_with_args(arguments)
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "client" / "models.py").read_text(encoding="utf-8"), suffix=".py")
     run_main_with_args([*arguments, "--check"], capsys=capsys, assert_no_stderr=True)
     (tmp_path / "client" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
     (tmp_path / "client" / "models.py").unlink()
@@ -184,7 +179,7 @@ def test_client_cli_nested_models(
         [*arguments, "--check"],
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "check-nested.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -217,25 +212,24 @@ def test_client_cli_equivalence(
             (elsewhere := tmp_path / "elsewhere").mkdir()
             monkeypatch.chdir(elsewhere)
             generate(tmp_path / source, config=load_pyproject_config(tmp_path))
-    expected, modules = client_cli_modules(case, tmp_path)
-    assert_generated_modules_output(modules, EXPECTED / "packages" / expected / "pydantic_v2_BaseModel")
+    _, modules = client_cli_modules(case, tmp_path)
+    assert_generated_modules_output(modules)
 
 
 @pytest.mark.parametrize(
-    ("name", "arguments"),
+    "arguments",
     [
-        ("base", []),
-        ("profile", ["--profile", "unpack"]),
-        ("cli-over-profile", ["--profile", "unpack", "--client-signature-style", "explicit"]),
-        ("operation-over-cli", ["--client-body-arguments", "both"]),
-        ("cli-table", ["--client-operations", '{"/paths/~1pets/post": {"name": "add"}}']),
-        ("cli-empty-table", ["--client-operations", "{}"]),
-        ("profile-output", ["--profile", "elsewhere"]),
-        ("cli-output", ["--profile", "elsewhere", "--client-output", "service"]),
+        pytest.param([], id="base"),
+        pytest.param(["--profile", "unpack"], id="profile"),
+        pytest.param(["--profile", "unpack", "--client-signature-style", "explicit"], id="cli-over-profile"),
+        pytest.param(["--client-body-arguments", "both"], id="operation-over-cli"),
+        pytest.param(["--client-operations", '{"/paths/~1pets/post": {"name": "add"}}'], id="cli-table"),
+        pytest.param(["--client-operations", "{}"], id="cli-empty-table"),
+        pytest.param(["--profile", "elsewhere"], id="profile-output"),
+        pytest.param(["--profile", "elsewhere", "--client-output", "service"], id="cli-output"),
     ],
 )
 def test_client_cli_precedence(
-    name: str,
     arguments: list[str],
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -250,9 +244,7 @@ def test_client_cli_precedence(
     run_main_with_args(arguments)
     notice = capsys.readouterr().err
     report = "".join(_methods(path, tmp_path) for path in sorted(tmp_path.glob("*/resources/pets/_sync.py")))
-    assert_output(
-        f"$ datamodel-codegen {' '.join(arguments)}\n{notice}{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
-    )
+    assert_output(f"$ datamodel-codegen {' '.join(arguments)}\n{notice}{report}")
 
 
 def test_client_cli_pyproject_paths(
@@ -302,7 +294,9 @@ def test_client_cli_pyproject_protocols_file(
     assert_output(
         capsys.readouterr().err.replace(project.as_posix(), "<project>"),
     )
-    assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/options/protocols/_helpers.py")
+    assert_output(
+        (project / "client" / "protocols" / "_helpers.py").read_text(encoding="utf-8"), name="helpers", suffix=".py"
+    )
 
 
 def _json_files(root: Path, *pyproject: str) -> None:
@@ -365,7 +359,7 @@ def test_client_cli_json_file_documents(
         capsys.readouterr().err.replace(project.as_posix(), "<project>"),
         name="notice",
     )
-    assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/json-files/_helpers.py")
+    assert_output((project / "client" / "protocols" / "_helpers.py").read_text(encoding="utf-8"), suffix=".py")
     assert_output(_methods(project / SYNC, tmp_path), name="documents")
 
 
@@ -397,7 +391,6 @@ def test_client_cli_json_file_errors(
     )
     assert_output(
         capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
-        EXPECTED / "cli" / "json-files" / f"{name}.txt",
     )
 
 
@@ -414,7 +407,7 @@ def test_client_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str]
             "--generate-pyproject-config",
         ],
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "pyproject-config.txt",
+        derived_stdout=True,
     )
 
 
@@ -424,9 +417,7 @@ def test_client_cli_generate_cli_command(
     """Print the client keys of pyproject.toml as command-line options, like model keys."""
     monkeypatch.chdir(tmp_path)
     shutil.copy2(CLI / "pyproject-configured.toml", tmp_path / "pyproject.toml")
-    run_main_with_args(
-        ["--generate-cli-command"], capsys=capsys, expected_stdout_path=EXPECTED / "cli" / "cli-command.txt"
-    )
+    run_main_with_args(["--generate-cli-command"], capsys=capsys, derived_stdout=True)
 
 
 def test_client_cli_ignore_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -489,7 +480,6 @@ def test_client_cli_selector_replaces_pyproject(
     )
     assert_output(
         f"{written} {(tmp_path / written).is_dir()}\n{unwritten} {(tmp_path / unwritten).exists()}\n",
-        EXPECTED / "cli" / f"selected-{written}.txt",
     )
 
 
@@ -650,30 +640,33 @@ def test_client_cli_generation_json(
     lines.append("$ datamodel-codegen --all-jobs --output-format json")
     for job in json.loads(jobs.out)["jobs"]:
         lines.extend((f"job {job['name']}", *_payload(job["result"], tmp_path)))
-    assert_output(single.err, EXPECTED / "cli" / "dependencies.txt")
-    assert_output(jobs.err, EXPECTED / "cli" / "shared-models-dependencies.txt")
-    assert_output("\n".join(lines).replace(Path.cwd().as_posix(), "<root>") + "\n", EXPECTED / "cli" / "json.txt")
+    assert_output(single.err, name="notice")
+    assert_output(jobs.err, name="jobs_notice")
+    assert_output("\n".join(lines).replace(Path.cwd().as_posix(), "<root>") + "\n", name="payload")
 
 
 @pytest.mark.parametrize(
-    ("name", "arguments"),
+    "arguments",
     [
-        ("target-2.14-missing", ["--target-pydantic-version", "2.14", "--use-missing-sentinel"]),
-        ("target-2.14", ["--target-pydantic-version", "2.14"]),
-        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", *MISSING]),
-        (
-            "target-2-msgspec",
+        pytest.param(["--target-pydantic-version", "2.14", "--use-missing-sentinel"], id="target-2.14-missing"),
+        pytest.param(["--target-pydantic-version", "2.14"], id="target-2.14"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", *MISSING], id="dataclass-missing"),
+        pytest.param(
             [
                 *("--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct"),
                 *("--use-msgspec-tagged-unions", "--use-msgspec-nullable-enum-alias"),
             ],
+            id="target-2-msgspec",
         ),
-        ("target-2-dataclass", ["--target-pydantic-version", "2", "--output-model-type", "dataclasses.dataclass"]),
-        ("target-2-typed-dict", ["--target-pydantic-version", "2", "--output-model-type", "typing.TypedDict"]),
+        pytest.param(
+            ["--target-pydantic-version", "2", "--output-model-type", "dataclasses.dataclass"], id="target-2-dataclass"
+        ),
+        pytest.param(
+            ["--target-pydantic-version", "2", "--output-model-type", "typing.TypedDict"], id="target-2-typed-dict"
+        ),
     ],
 )
 def test_client_cli_pydantic_dependency(
-    name: str,
     arguments: list[str],
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -700,7 +693,6 @@ def test_client_cli_pydantic_dependency(
             *(line for line in models if "MISSING" in line and "import" in line),
             *(line for line in readme if "pydantic>=" in line),
         )),
-        EXPECTED / "cli" / "pydantic-dependency" / f"{name}.txt",
     )
 
 
@@ -961,16 +953,17 @@ def test_client_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], monk
     """Write the models and the package of a client job as a single run does, check them, then check a drift."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-jobs.toml")
-    run_main_with_args(["--job", "client"], capsys=capsys, expected_stderr=DEPENDENCIES)
-    assert_file_content(tmp_path / "models.py", "cli/options/models.py")
-    assert_file_content(tmp_path / SYNC, "cli/options/_sync.py")
+    run_main_with_args(["--job", "client"])
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output((tmp_path / SYNC).read_text(encoding="utf-8"), name="client", suffix=".py")
     run_main_with_args(["--job", "client", "--check"], capsys=capsys, assert_no_stderr=True)
     (tmp_path / SYNC).write_text("# edited\n", encoding="utf-8")
     run_main_with_args(
         ["--all-jobs", "--check"],
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "check-edited.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -1094,16 +1087,11 @@ def test_client_cli_shared_models_jobs(
     """Write the models a server job and a client job share once, next to the package of each job, then check them."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-shared-models-jobs.toml")
-    run_main_with_args(
-        ["--all-jobs"],
-        capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / "shared-models-dependencies.txt").read_text(
-            encoding="utf-8"
-        ),
-    )
-    assert_file_content(tmp_path / "models.py", "cli/options/models.py")
-    assert_file_content(tmp_path / SYNC, "cli/options/_sync.py")
-    assert_file_content(tmp_path / "server" / "services.py", "cli/shared-models-services.py")
+    run_main_with_args(["--all-jobs"])
+    assert_output(capsys.readouterr().err, name="stderr")
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output((tmp_path / SYNC).read_text(encoding="utf-8"), name="client", suffix=".py")
+    assert_output((tmp_path / "server" / "services.py").read_text(encoding="utf-8"), name="server", suffix=".py")
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
 
 
@@ -1266,10 +1254,9 @@ def test_client_cli_json_errors(
 
 
 @pytest.mark.parametrize(
-    ("name", "arguments"),
+    "arguments",
     [
-        (
-            "operations",
+        pytest.param(
             [
                 "--client-operations",
                 (
@@ -1284,9 +1271,9 @@ def test_client_cli_json_errors(
                     '"/paths/~1apes/get": {"body_field_names": null}}'
                 ),
             ],
+            id="operations",
         ),
-        (
-            "values",
+        pytest.param(
             [
                 *("--client-resource-names", '{"pets": "Pets"}', "--client-default-base-url", "ftp://example.com"),
                 "--client-operations",
@@ -1297,25 +1284,26 @@ def test_client_cli_json_errors(
                     '"runtime": {"idempotency": {"header_name": "bad name"}, "success_statuses": "302"}}}'
                 ),
             ],
+            id="values",
         ),
-        (
-            "protocols",
+        pytest.param(
             [
                 *("--client-protocols", '{"pets.all": {"kind": "pagination"}, "Bad": {"kind": "teleport"}}'),
                 *("--client-operations", '{"/paths/~1pets/get": {"name": "list_all"}}'),
             ],
+            id="protocols",
         ),
-        (
-            "references",
+        pytest.param(
             [
                 "--client-operations",
                 '{"/paths/~1cats/get": {"name": "list_cats"}, "other.yaml#/paths/~1pets/get": {"name": "list_all"}}',
             ],
+            id="references",
         ),
     ],
 )
 def test_client_cli_setting_errors(
-    name: str, arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Report every client setting the client cannot use, before any file is written."""
     monkeypatch.chdir(tmp_path)
@@ -1330,7 +1318,6 @@ def test_client_cli_setting_errors(
     )
     assert_output(
         capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
-        EXPECTED / "cli" / "setting-errors" / f"{name}.txt",
     )
 
 
@@ -1348,13 +1335,12 @@ def test_client_cli_member_types(
 
 
 @pytest.mark.parametrize(
-    ("source", "arguments", "generated", "expected"),
+    ("source", "arguments", "generated"),
     [
         pytest.param(
             "options.yaml",
             [],
             SYNC,
-            "_sync.py",
             id="generate-client",
             marks=pytest.mark.cli_doc(
                 options=["--generate-client"],
@@ -1367,14 +1353,13 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 `generate-client = "httpx2"`. It cannot be used with `--generate-server`.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/_sync.py",
+                golden_output="api_generation/client_cli/generate.client.py",
             ),
         ),
         pytest.param(
             "options.yaml",
             [],
             SYNC,
-            "_sync.py",
             id="client-output",
             marks=pytest.mark.cli_doc(
                 options=["--client-output"],
@@ -1385,14 +1370,13 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
 `--output`.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/_sync.py",
+                golden_output="api_generation/client_cli/generate.client.py",
             ),
         ),
         pytest.param(
             "options.yaml",
             [],
             SYNC,
-            "_sync.py",
             id="client-package",
             marks=pytest.mark.cli_doc(
                 options=["--client-package"],
@@ -1402,14 +1386,13 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
 generation prints name the package by it; the package imports its own modules relatively.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/_sync.py",
+                golden_output="api_generation/client_cli/generate.client.py",
             ),
         ),
         pytest.param(
             "options.yaml",
             [],
             SYNC,
-            "_sync.py",
             id="client-model-package",
             marks=pytest.mark.cli_doc(
                 options=["--client-model-package"],
@@ -1419,14 +1402,13 @@ generation prints name the package by it; the package imports its own modules re
 generates.""",
                 input_schema=DOC_INPUT,
                 cli_args=DOC_OPTIONS,
-                golden_output=f"{DOC_OUTPUT}/_sync.py",
+                golden_output="api_generation/client_cli/generate.client.py",
             ),
         ),
         pytest.param(
             "options.yaml",
             ["--client-signature-style", "unpack"],
             SYNC,
-            "signature-style/_sync.py",
             id="client-signature-style",
             marks=pytest.mark.cli_doc(
                 options=["--client-signature-style"],
@@ -1436,14 +1418,13 @@ generates.""",
 `**kwargs: Unpack[TypedDict]` with one TypedDict per overload of each operation, whose keys are the same arguments.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-signature-style", "unpack"],
-                golden_output=f"{DOC_OUTPUT}/signature-style/_sync.py",
+                golden_output="api_generation/client_cli/options[client-signature-style].client.py",
             ),
         ),
         pytest.param(
             "options.yaml",
             ["--client-body-arguments", "both"],
             SYNC,
-            "body-arguments/_sync.py",
             id="client-body-arguments",
             marks=pytest.mark.cli_doc(
                 options=["--client-body-arguments"],
@@ -1454,14 +1435,13 @@ keyword arguments, so a call can pass either. The `body_arguments` of an operati
 overrides it for that operation.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-body-arguments", "both"],
-                golden_output=f"{DOC_OUTPUT}/body-arguments/_sync.py",
+                golden_output="api_generation/client_cli/options[client-body-arguments].client.py",
             ),
         ),
         pytest.param(
             "options.yaml",
             ["--client-resource-names", '{"pets": "animals"}'],
             "client/resources/animals/_sync.py",
-            "resource-names/_sync.py",
             id="client-resource-names",
             marks=pytest.mark.cli_doc(
                 options=["--client-resource-names"],
@@ -1473,7 +1453,7 @@ operations without a tag join the resource `default`. In
 pyproject.toml, `client-resource-names` is a table, and a command-line value replaces the whole table.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-resource-names", '{"pets": "animals"}'],
-                golden_output=f"{DOC_OUTPUT}/resource-names/_sync.py",
+                golden_output="api_generation/client_cli/options[client-resource-names].client.py",
             ),
         ),
         pytest.param(
@@ -1483,7 +1463,6 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
                 '{"/paths/~1pets/get": {"name": "list_all", "parameter_names": {"query:limit": "page_size"}}}',
             ],
             SYNC,
-            "operations/_sync.py",
             id="client-operations",
             marks=pytest.mark.cli_doc(
                 options=["--client-operations"],
@@ -1506,14 +1485,13 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
                     "--client-operations",
                     '{"/paths/~1pets/get": {"name": "list_all", "parameter_names": {"query:limit": "page_size"}}}',
                 ],
-                golden_output=f"{DOC_OUTPUT}/operations/_sync.py",
+                golden_output="api_generation/client_cli/options[client-operations].client.py",
             ),
         ),
         pytest.param(
             "options-unserved.yaml",
             ["--client-default-base-url", "https://api.example.com/v1"],
             "client/_operations.py",
-            "default-base-url/_operations.py",
             id="client-default-base-url",
             marks=pytest.mark.cli_doc(
                 options=["--client-default-base-url"],
@@ -1523,14 +1501,13 @@ An absolute `http` or `https` URL without userinfo, query, or fragment. Operatio
 servers keep them.""",
                 input_schema="generation_platform/client/cli/options-unserved.yaml",
                 cli_args=[*DOC_OPTIONS, "--client-default-base-url", "https://api.example.com/v1"],
-                golden_output=f"{DOC_OUTPUT}/default-base-url/_operations.py",
+                golden_output="api_generation/client_cli/options[client-default-base-url].client.py",
             ),
         ),
         pytest.param(
             "options-relative.yaml",
             ["--client-server-base-url", "https://api.example.com/"],
             "client/_operations.py",
-            "server-base-url/_operations.py",
             id="client-server-base-url",
             marks=pytest.mark.cli_doc(
                 options=["--client-server-base-url"],
@@ -1540,14 +1517,13 @@ An absolute `http` or `https` URL without userinfo, query, or fragment. Without 
 against the document's URL when it is read from one.""",
                 input_schema="generation_platform/client/cli/options-relative.yaml",
                 cli_args=[*DOC_OPTIONS, "--client-server-base-url", "https://api.example.com/"],
-                golden_output=f"{DOC_OUTPUT}/server-base-url/_operations.py",
+                golden_output="api_generation/client_cli/options[client-server-base-url].client.py",
             ),
         ),
         pytest.param(
             "options-deep-object.yaml",
             ["--client-deep-object-brackets"],
             "client/_operations.py",
-            "deep-object-brackets/_operations.py",
             id="client-deep-object-brackets",
             marks=pytest.mark.cli_doc(
                 options=["--client-deep-object-brackets"],
@@ -1565,14 +1541,13 @@ value does not tell apart stay left out. `--no-client-deep-object-brackets` turn
 `client-deep-object-brackets` key of pyproject.toml.""",
                 input_schema="generation_platform/client/cli/options-deep-object.yaml",
                 cli_args=[*DOC_OPTIONS, "--client-deep-object-brackets"],
-                golden_output=f"{DOC_OUTPUT}/deep-object-brackets/_operations.py",
+                golden_output="api_generation/client_cli/options[client-deep-object-brackets].client.py",
             ),
         ),
         pytest.param(
             "options.yaml",
             ["--client-protocols", "protocols.json"],
             "client/protocols/_helpers.py",
-            "protocols/_helpers.py",
             id="client-protocols",
             marks=pytest.mark.cli_doc(
                 options=["--client-protocols"],
@@ -1585,13 +1560,13 @@ references name resolve against the directory of the JSON file that holds them, 
 `client-protocols` key against the pyproject.toml directory.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-protocols", "protocols.json"],
-                golden_output=f"{DOC_OUTPUT}/protocols/_helpers.py",
+                golden_output="api_generation/client_cli/options[client-protocols].client.py",
             ),
         ),
     ],
 )
 def test_client_cli_options(
-    source: str, arguments: list[str], generated: str, expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    source: str, arguments: list[str], generated: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Write the client file each client option changes."""
     monkeypatch.chdir(tmp_path)
@@ -1602,7 +1577,7 @@ def test_client_cli_options(
         extra_args=[*OPTIONS, *CLIENT, *arguments],
         copy_files=[(CLI / source, tmp_path / source), (CLI / "protocols.json", tmp_path / "protocols.json")],
     )
-    assert_file_content(tmp_path / generated, f"cli/options/{expected}")
+    assert_output((tmp_path / generated).read_text(encoding="utf-8"), name="client", suffix=".py")
 
 
 @pytest.mark.cli_doc(
@@ -1661,5 +1636,4 @@ def test_client_cli_implied_settings(
     same = (tmp_path / "given.py").read_text(encoding="utf-8") == (tmp_path / "models.py").read_text(encoding="utf-8")
     assert_output(
         f"{notice}models equal those of a model-only run given {' '.join(given)}: {same}\n",
-        EXPECTED / "cli" / "implied" / f"{backend}.txt",
     )
