@@ -1,6 +1,6 @@
 # Using datamodel-code-generator with coding agents
 
-This repository includes an experimental Agent Skill for skills-compatible coding agents. The skill teaches an agent to run `datamodel-codegen` when a user asks for Python models from OpenAPI, AsyncAPI, JSON Schema, GraphQL, JSON/YAML/CSV sample data, MCP tool schemas, Protocol Buffers, XML Schema, Apache Avro, or existing Python model objects.
+This repository includes an experimental Agent Skill for skills-compatible coding agents. The skill teaches an agent to run `datamodel-codegen` when a user asks for Python models from OpenAPI, AsyncAPI, JSON Schema, GraphQL, JSON/YAML/CSV sample data, MCP tool schemas, Protocol Buffers, XML Schema, Apache Avro, or existing Python model objects. It also teaches the experimental generation of a typed HTTP client (OpenAPI), a WebSocket or server-sent-event client (AsyncAPI) and a FastAPI server (OpenAPI) beside the models.
 
 The skill is a directory with a `SKILL.md` entrypoint and supporting files under
 `references/`. It is bundled with the CLI and can be installed without checking
@@ -10,7 +10,7 @@ Treat this skill as experimental. The workflow, trigger wording, and client-spec
 
 ## Why agents should run the CLI
 
-Agents should run `datamodel-codegen` instead of hand-writing generated models when a usable input artifact exists.
+Agents should run `datamodel-codegen` instead of hand-writing generated models, clients, or servers when a usable input artifact exists.
 
 The CLI handles refs, enums, nested models, unions, `allOf`, `oneOf`, `anyOf`, and model reuse. It also produces output that can be imported and checked after generation.
 
@@ -32,6 +32,10 @@ datamodel-codegen --output-format-json-schema structured-output
 ```
 
 Use the generated prompt output before recommending a final command when the correct input type, output model type, strictness, aliasing, module layout, or verification flags are not obvious.
+
+## Clients and servers
+
+For a typed Python HTTP client from an OpenAPI document, a WebSocket or server-sent-event client from an AsyncAPI document, or a FastAPI server from an OpenAPI document, the skill uses `--generate-client httpx2` or `--generate-server fastapi` together with the models (experimental). See [Python Client Generation](python-client.md) and [FastAPI Server Generation](fastapi-server.md). The skill keeps the boundary those pages describe: the generated models and packages are overwritten on every run and are never edited by hand, and the user's own services implement the generated service Protocols in modules that generation writes once and never overwrites.
 
 ## Install from the repository
 
@@ -111,7 +115,7 @@ Create Pydantic v2 models from openapi.yaml.
 
 Expected agent behavior:
 
-1. Runs `datamodel-codegen`.
+1. Runs `datamodel-codegen` (with `--recommend-options` to pick the options).
 2. Writes the generated file.
 3. Imports the generated file.
 4. Summarizes generated classes.

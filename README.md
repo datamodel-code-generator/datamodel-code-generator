@@ -1,6 +1,6 @@
 # datamodel-code-generator
 
-🚀 Generate Python data models from schema definitions in seconds.
+🚀 Generate Python models, typed clients and FastAPI servers (experimental) from schemas, deterministically, with `--check` for drift.
 
 📚 [Documentation](https://datamodel-code-generator.koxudaxi.dev/) ·
 🧪 [Playground](https://datamodel-code-generator.koxudaxi.dev/playground/) ·
@@ -29,7 +29,10 @@
   </picture>
 </p>
 
-Pick any one of the supported inputs and pick the Python model style you want as output.
+Pick any one of the supported inputs and pick the Python model style you want as output. From OpenAPI (and, for
+clients, AsyncAPI), the same run can also write a typed client or a FastAPI server package (experimental).
+Generation is deterministic with a [preset](https://datamodel-code-generator.koxudaxi.dev/presets/), which turns the header timestamp off, and
+`datamodel-codegen --check` exits with 1 when the files on disk differ from what the schema generates, so CI catches drift.
 `--input-model path/to/file.py:ClassName` can even retarget an existing Pydantic, dataclass, or TypedDict class defined
 in another Python file to a different output type.
 
