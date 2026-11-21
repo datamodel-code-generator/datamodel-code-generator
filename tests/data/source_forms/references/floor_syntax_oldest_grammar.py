@@ -1,4 +1,4 @@
-"""G13 floor-syntax: syntax the oldest supported Python reads is no site, whatever the running Python is.
+"""Rule floor-syntax: syntax the oldest supported Python reads is no site, whatever the running Python is.
 
 Pattern matching, ``except*``, parenthesized context managers, positional-only parameters, the walrus operator and
 subscripts with ``*`` are all older than the floor.

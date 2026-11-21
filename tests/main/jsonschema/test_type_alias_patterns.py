@@ -24,13 +24,11 @@ from tests.main.conftest import (
     run_main_and_assert,
     target_pydantic_args,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 LOOKAROUND_SCHEMAS = JSON_SCHEMA_DATA_PATH / "type_alias_lookaround"
-LOOKAROUND_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "type_alias_lookaround"
 LOOKAROUND_PAYLOADS = json.loads((DATA_PATH / "payloads/type_alias_lookaround/cases.json").read_text())
 MODEL_NAME = "Holder"
 STRING_PATTERN_TARGET = "2"
@@ -65,12 +63,6 @@ ALIAS_OF_ALIAS_RUNTIME = pytest.mark.skipif(
     not installed_pydantic_runs_target("2.10"),
     reason="Pydantic before 2.10 cannot fill a TypeAliasType that only names another one",
 )
-
-
-def _expected(variant: str, target_pydantic_version: str | None) -> str:
-    """Name the expected output; an explicit newer target shares the output of an unset target."""
-    directory = "target_2/" if target_pydantic_version == STRING_PATTERN_TARGET else ""
-    return f"type_alias_lookaround/{directory}{variant}"
 
 
 def _validation_results(namespace: dict[str, Any], fixture: str, target_pydantic_version: str | None) -> str:
@@ -145,8 +137,6 @@ def test_type_alias_lookaround(
             input_path=LOOKAROUND_SCHEMAS / f"{fixture}.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"{_expected(variant, target_pydantic_version)}.py",
             extra_args=["--disable-timestamp", *args, *target_pydantic_args(target_pydantic_version)],
             force_exec_validation=True,
         )
@@ -160,7 +150,7 @@ def test_type_alias_lookaround(
     module_name = f"type_alias_lookaround_{variant}"
     with _generated_model(output_file, module_name, MODEL_NAME):
         results = _validation_results(vars(sys.modules[module_name]), fixture, target_pydantic_version)
-    assert_output(results, LOOKAROUND_EXPECTED / f"{fixture}_runtime.txt")
+    assert_output(results, name="runtime")
 
 
 @ALIAS_OF_ALIAS_RUNTIME

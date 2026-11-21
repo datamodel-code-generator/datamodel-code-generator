@@ -1,4 +1,4 @@
-"""G13 portable-names: a string in a path position that Windows refuses is a site.
+"""Rule portable-names: a string in a path position that Windows refuses is a site.
 
 The positions are the right of ``/``, the arguments of ``Path``, ``os.path.join``, ``.joinpath``, ``.with_name`` and the
 first argument of ``open``; the constant parts of an f-string count as fragments of a name. A colon, ``<>"|?*`` or a

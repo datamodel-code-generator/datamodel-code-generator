@@ -368,6 +368,14 @@ class KnownWrite:
     """The roadmap item that removes the violation."""
 
 
+_TAG_PLAN: Final = "the step that plans discriminator tags before any module applies them"
+_ONE_STEP_DEDUP: Final = "the step that makes L3 deduplication one step"
+_MOVED_NULL: Final = "the step that keeps the null each moved reference named in reuse merges"
+_FIELD_PLAN_C: Final = "the step that renders msgspec, dataclass, TypedDict and enum fields from one plan"
+_FIELD_PLAN_A: Final = "the step that renders pydantic fields from one frozen plan"
+_ORDER_PLAN: Final = "the step that makes ordering read the render plans"
+_IMPORT_PLAN: Final = "the step that writes imports from module import plans"
+
 _IMPORTS_CORRECT_WITNESS: Final = (
     "--input tests/data/jsonschema/imports_correct --output-model-type pydantic_v2.BaseModel --formatters builtin"
 )
@@ -383,19 +391,27 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "DataModel.fields",
         "--input tests/data/openapi/external_discriminator_base/multiple --input-file-type openapi "
         "--formatters builtin",
-        "RP17",
+        _TAG_PLAN,
     ),
     KnownWrite(
-        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.data_type", _IMPORTS_CORRECT_WITNESS, "RP17"
+        "apply_discriminator_type",
+        Rule.OTHER_MODULE,
+        "DataModelFieldBase.data_type",
+        _IMPORTS_CORRECT_WITNESS,
+        _TAG_PLAN,
     ),
     KnownWrite(
-        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.required", _IMPORTS_CORRECT_WITNESS, "RP17"
+        "apply_discriminator_type",
+        Rule.OTHER_MODULE,
+        "DataModelFieldBase.required",
+        _IMPORTS_CORRECT_WITNESS,
+        _TAG_PLAN,
     ),
     KnownWrite(
-        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.default", _NESTED_TAG_WITNESS, "RP17"
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.default", _NESTED_TAG_WITNESS, _TAG_PLAN
     ),
     KnownWrite(
-        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.nullable", _NESTED_TAG_WITNESS, "RP17"
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.nullable", _NESTED_TAG_WITNESS, _TAG_PLAN
     ),
     KnownWrite(
         "apply_discriminator_type",
@@ -403,7 +419,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         'DataModelFieldBase.extras["is_classvar"]',
         "--input tests/data/jsonschema/discriminator_with_external_reference --output-model-type msgspec.Struct "
         "--target-python-version 3.10 --formatters builtin",
-        "RP17",
+        _TAG_PLAN,
     ),
     KnownWrite(
         "delete_duplicate_models",
@@ -411,7 +427,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "DataModel.base_classes",
         "--input tests/data/jsonschema/schema_validators_property_count_cross_module --input-file-type jsonschema "
         "--generate-schema-validators --output-model-type pydantic_v2.BaseModel --formatters builtin",
-        "DC11b",
+        _ONE_STEP_DEDUP,
     ),
     KnownWrite(
         "delete_duplicate_models",
@@ -419,7 +435,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "DataType.reference",
         "--input tests/data/jsonschema/external_ref_slash_key/schema.json --input-file-type jsonschema "
         "--target-python-version 3.10 --formatters builtin",
-        "DC11b",
+        _ONE_STEP_DEDUP,
     ),
     KnownWrite(
         "reuse_model",
@@ -427,7 +443,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "DataType.reference",
         "--input tests/data/openapi/reuse_model_cross_module_users.yaml --input-file-type openapi --output-model-type "
         "pydantic_v2.BaseModel --reuse-model --target-python-version 3.10 --formatters builtin",
-        "G07",
+        _MOVED_NULL,
     ),
     KnownWrite(
         "fix_constructor_field_ordering",
@@ -436,7 +452,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "--input tests/data/openapi/allof_required_inherited_dataclass_metadata.yaml --input-file-type openapi "
         "--output-model-type dataclasses.dataclass --field-extra-keys init --order-constructor-fields-by final-names "
         "--formatters builtin",
-        "RP14c",
+        _FIELD_PLAN_C,
     ),
     KnownWrite(
         "prepare_type_alias_fields",
@@ -444,7 +460,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "DataModelFieldBase.extras",
         "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias "
         "--use-annotated --formatters builtin",
-        "RP14a",
+        _FIELD_PLAN_A,
     ),
     KnownWrite(
         "fix_constructor_field_ordering",
@@ -452,7 +468,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "DataType.is_optional",
         "--input tests/data/openapi/schema_intersection/inherited_override_null_oas31.yaml --input-file-type openapi "
         "--output-model-type msgspec.Struct --formatters builtin",
-        "RP14",
+        _ORDER_PLAN,
     ),
     KnownWrite(
         "finalize_rendered_nullability",
@@ -460,19 +476,19 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "DataType.import_",
         "--input tests/data/generation_platform/fastapi/unbound-body.yaml --input-file-type openapi --openapi-scopes "
         "schemas api --collapse-root-models --formatters builtin",
-        "RP15",
+        _IMPORT_PLAN,
     ),
 )
 """The violations of today's pipeline; ``scripts/check_fact_finality.py --witnesses`` runs their witnesses.
 
-A module pass writes models of other modules: the discriminator pass writes the tags of variants (RP17 plans them
-first), reuse redirects the users of removed duplicates (G07's reuse groups), and L3 deduplication redirects users
-and bases module by module (DC11b makes it one step). Constructor ordering, after the decision phase, gives a
-required field back the place in the constructor it left out while its base excluded it (RP14c's dataclass field
-plan holds it), and it reads the nullability of base fields before render preparation writes rendered nullability
-once (RP14's ordering reads the plans written after it). Rendering writes the import of the ``Any`` an empty union
-renders as after B1, at render preparation (RP15), and alias preparation records compiled patterns in
-field extras after B1 (RP14a's field render plan holds them).
+A module pass writes models of other modules: the discriminator pass writes the tags of variants (the tag plan step
+plans them first), reuse redirects the users of removed duplicates (the step that keeps moved nulls changes its
+groups), and L3 deduplication redirects users and bases module by module (one step replaces it). Constructor ordering,
+after the decision phase, gives a required field back the place in the constructor it left out while its base excluded
+it (the dataclass field plan of the field plan step holds it), and it reads the nullability of base fields before render
+preparation writes rendered nullability once (the ordering step reads the plans written after it). Rendering writes the
+import of the ``Any`` an empty union renders as after B1, at render preparation (the import plan step), and alias
+preparation records compiled patterns in field extras after B1 (the field render plan holds them).
 """
 
 _KNOWN: Final = frozenset((known.pass_name, known.rule, known.row) for known in KNOWN_WRITES)

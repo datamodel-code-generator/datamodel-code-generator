@@ -9,7 +9,7 @@ nullability that rendering the types of its fields decides. The candidate key of
 
 The users disagree today on whether union tags count, which root models they compare and how they tell apart the
 bases of a merged model's children. The rows named ``legacy-*`` (:data:`SAME_NAME`, :data:`COLLAPSE_REUSE`,
-:data:`TREE_SCOPE`, :data:`REUSE_MODEL`) keep that output; keys over model facts (G06 for #4834, G07 for #4816) replace
+:data:`TREE_SCOPE`, :data:`REUSE_MODEL`) keep that output; keys over model facts (for #4834 and #4816) replace
 them. Every user but collapse-reuse compares the keys the parse's memo kept for a model in an earlier pass
 (:data:`STALE_DEDUP_KEYS`).
 
@@ -72,7 +72,7 @@ STALE_DEDUP_KEYS: KeyCache = "legacy-stale-dedup-keys"
 
 The memo keeps a model's key the first time a user compares it, and a later pass compares that key again unless a
 mutation through the generation store invalidated the model's render caches. Rendering anew is not proven to change
-nothing; keys over model facts (G06, G07) replace the memo. The ``RENDER_MEMOS`` check records the keys that differ.
+nothing; keys over model facts replace the memo. The ``RENDER_MEMOS`` check records the keys that differ.
 """
 BaseDedup: TypeAlias = Literal["by-type-hint", "by-reference"]
 """How a user that removes merged models tells apart the bases of their children: by module and type hint, or by

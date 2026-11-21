@@ -9,7 +9,7 @@ objects are listed in ``docs/architecture.md``. The converters write null in the
 :data:`NullForm` (:func:`with_null`, :func:`null_schema`), which the sites then read as written.
 
 The sites disagree today on which sources count and whether ``nullable`` needs ``--strict-nullable``. The rows named
-``legacy-*`` keep that output; the fix of each (G12, G01 decision 3) deletes its row.
+``legacy-*`` keep that output; the fix of each (the null decision of the allOf intersection) deletes its row.
 """
 
 from __future__ import annotations
@@ -178,16 +178,17 @@ NullRule: TypeAlias = Literal[
 * ``legacy-nullable-as-type-list``: OpenAPI reads the type as a ``type`` list holding null instead, from the moment
   ``JsonSchemaParser._get_data_type`` first builds the type of the schema object: the sites that read the schema
   object afterwards see the null of a ``type`` list, those before see none, and ``JsonSchemaObject.type_has_null``
-  keeps the answer of its first read. RP13 deletes the row with rows ``legacy-root-model-type-only`` and
+  keeps the answer of its first read. The step that writes rendered nullability once deletes the row with rows
+  ``legacy-root-model-type-only`` and
   ``legacy-ref-target-null-type-only``: a use writes the null of its target once, at render preparation.
 * ``scalar-not-null``: a scalar type adds no null.
 * ``object-type-or-strict-nullable``: an object model is nullable by ``type-or-member-null`` or by ``nullable: true``
   under ``--strict-nullable``.
 * ``legacy-root-model-type-only``: a root model is nullable by ``type-or-member-null`` only; ``nullable`` does not
-  count (O3). RP13 deletes the row (see ``legacy-nullable-as-type-list``).
+  count. That step deletes the row (see ``legacy-nullable-as-type-list``).
 * ``legacy-ref-target-null-type-only``: a referenced schema makes its references nullable when its ``type`` is the one
   string null, or by ``nullable: true`` under ``--strict-nullable``; a ``type`` list holding null does not count.
-  RP13 deletes the row (see ``legacy-nullable-as-type-list``).
+  That step deletes the row (see ``legacy-nullable-as-type-list``).
 * ``strict-nullable-ref``: a ``$ref`` beside only ``nullable: true`` admits null under ``--strict-nullable``.
 * ``type-union-null``: the union of a ``type`` list admits null by ``type-or-member-null``.
 * ``map-type-list``: an object map whose ``type`` list holds object and null admits null.
@@ -197,7 +198,8 @@ NullRule: TypeAlias = Literal[
   admits it.
 * ``all-of-own-null``: the schema an ``allOf`` merges admits null by its own ``nullable`` or its own ``type`` list
   holding null, also without ``--strict-nullable``, as root types read it (``legacy-root-type-nullable-ungated``).
-* ``all-of-every-part-null``: a merged map also admits null when every typed part lists null (G01 decision 3).
+* ``all-of-every-part-null``: a merged map also admits null when every typed part lists null (the allOf intersection's
+  null rule).
 * ``all-of-not-null``: neither holds.
 * ``all-of-own-declares-null``: the intersection of parts admits null when the last part declares it: ``nullable:
   true``, a ``type`` of null or a ``type`` list holding null.

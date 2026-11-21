@@ -1835,7 +1835,7 @@ def _load_single_model_schema(
         if ref_strategy and nested_models is not None:
             model_name = getattr(obj, "__name__", None)
             defs = cast("dict[str, object]", schema.get("$defs", {}))
-            if model_name and model_name in defs:  # pragma: no cover - not proven unreachable: the root model in $defs
+            if model_name and model_name in defs:
                 nested_models[model_name] = model
             schema = _filter_defs_by_strategy(
                 schema, nested_models, output_family, ref_strategy, expression_collector, [model]

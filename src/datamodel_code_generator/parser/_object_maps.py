@@ -305,7 +305,7 @@ def flatten_additional_properties_all_of(
                         return None
                     case True:
                         continue
-                    case JsonSchemaObject():  # pragma: no branch
+                    case _:
                         pending.append(item)
             continue
         if (

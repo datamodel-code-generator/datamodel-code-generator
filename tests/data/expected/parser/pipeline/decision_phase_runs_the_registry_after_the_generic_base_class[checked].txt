@@ -1,8 +1,8 @@
 apply_generic_base_class
-G12b
-G06
-G03b
-G08
+decide_literal_fields
+decide_unique_containers
+decide_constraints
+decide_defaults
 settle_module_unused_models
 decisions that read these facts: 4
 _internal: [[], ['field_'], ['field_'], ['code', 'message'], ['event'], ['country'], ['foo', 'nested'], ['flavour', 'id'], ['quality'], ['flavour', 'id', 'self', 'optional'], ['flavour', 'id', 'self', 'optional'], ['field_']]

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Store",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "$ref": "#/$defs/Pet"
+    }
+  },
+  "$defs": {
+    "Resource": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Pet": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Resource"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 20
+            }
+          }
+        }
+      ]
+    }
+  }
+}

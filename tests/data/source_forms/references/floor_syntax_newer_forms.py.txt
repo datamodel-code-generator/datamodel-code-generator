@@ -1,4 +1,4 @@
-"""G13 floor-syntax: syntax only Python 3.12 and later reads is a site, though the running Python parses it.
+"""Rule floor-syntax: syntax only Python 3.12 and later reads is a site, though the running Python parses it.
 
 min-python: 3.12
 

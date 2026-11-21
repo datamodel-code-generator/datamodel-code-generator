@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shelter",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "$ref": "#/$defs/Pet"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Resource": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "Pet": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Resource"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    }
+  }
+}

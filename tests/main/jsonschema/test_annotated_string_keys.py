@@ -9,6 +9,7 @@ import pytest
 
 from datamodel_code_generator import DataModelType, Formatter, InputFileType, PythonVersion
 from datamodel_code_generator.format import CodeFormatter
+from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -17,7 +18,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,7 +41,6 @@ def test_annotated_string_keys(
 ) -> None:
     """Check exact output everywhere and native constraints where the installed Pydantic supports the case."""
     source = JSON_SCHEMA_DATA_PATH / "annotated_string_keys" / f"{case['schema']}.json"
-    expected = f"annotated_string_keys/{case['name']}_{backend}_{formatter}.py"
     runs = installed_pydantic_runs_target(case["options"].get("target_pydantic_version")) and (
         not (minimum := case.get("minimum_pydantic_version"))
         or installed_pydantic_runs_target(".".join(map(str, minimum)))
@@ -72,8 +71,6 @@ def test_annotated_string_keys(
                 output_path=output_file,
                 input_file_type="jsonschema",
                 extra_args=args,
-                assert_func=assert_file_content,
-                expected_file=expected,
                 force_exec_validation=True,
                 skip_code_validation=not runs,
             )
@@ -85,8 +82,6 @@ def test_annotated_string_keys(
                 output_model_type=DataModelType(backend),
                 disable_timestamp=True,
                 formatters=[Formatter(value) for value in formatters],
-                assert_func=assert_file_content,
-                expected_file=expected,
                 **options,
             )
     if not runs:
@@ -109,7 +104,7 @@ def test_annotated_alias_formatting(output_file: Path, formatters: list[Formatte
     source = (DATA_PATH / "python/annotated_string_key_aliases.py").read_text()
     formatter = CodeFormatter(PythonVersion.PY_310, formatters=formatters, builtin_format_line_length=88)
     output_file.write_text(formatter.format_code(source), encoding="utf-8")
-    assert_file_content(output_file, "annotated_string_keys/formatter_alias.py")
+    assert_output(output_file.read_text(encoding="utf-8"), suffix=".py")
     payloads = json.loads((PAYLOADS / "formatter_alias.json").read_text())
     for invalid in payloads["invalid"]:
         assert_generated_model_json_validation(
