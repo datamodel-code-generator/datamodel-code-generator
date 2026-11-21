@@ -40,8 +40,9 @@ change moves; `--rest` only what this change moves. The check prints one `declar
 output, with `--base` unless the base is that merge base.
 
 `check --ci` is the CI step's form: it reads `--verdicts FILE` only where the gate wrote it (the gate writes none for a
-change without `src/`, which needs none), and when the change touches the files of this check (`CHECK_FILES`) the
-copy of them in the base judges the head, so a change cannot weaken the check that judges it.
+change without `src/`, which needs none). When the change touches `COPY_PATHS` and the base has this check, the base's
+copy judges it first and the head's own check after it, and either one fails the step: a change cannot weaken the
+check that judges it, and a change that tightens it obeys it.
 """
 
 from __future__ import annotations
@@ -110,15 +111,8 @@ RELEASES = "docs/data/migration/releases.toml"
 LISTED = ("tests", "docs/data/migration", "src", "uv.lock")
 GENERATOR = ("src/", "uv.lock")
 DEFAULT_BASE = "origin/main"
-CHECK_FILES = (
-    "scripts/__init__.py",
-    "scripts/declared_changes.py",
-    "scripts/_change_records.py",
-    "scripts/compare_release.py",
-    "tests/__init__.py",
-    "tests/units.py",
-)
-"""The files of this check: the script and the repository modules it imports, which `check --ci` takes from the base."""
+COPY_PATHS = ("scripts", "tests/__init__.py", "tests/units.py")
+"""What `check --ci` takes from the base as its copy of this check (the paths of the behaviour gate's base copy)."""
 HISTORY = ("--first-parent", "--diff-merges=first-parent", "--reverse", "--name-only", "-z", "--format=%x01%H")
 """The `git log` options that list each first-parent commit with the files it changes against its first parent."""
 CHANGED, REMOVED, ADDED, MOVED = "changed", "removed", "added", "moved"
@@ -1043,18 +1037,19 @@ def _judged(repo: Path, ns: argparse.Namespace) -> Report:
 
 
 def _judged_by_base(repo: Path, ns: argparse.Namespace) -> int | None:
-    """Run `check` with the base's copy of this check when the change touches its files; None when it does not.
+    """Run `check` with the base's copy of this check when the change touches `COPY_PATHS`; None when it does not.
 
     The copy is told only what every version of `check` takes: the revisions, `--tag`, `--main`, `--report-only` and the
-    verdicts. A base without the check's files has no copy to run.
+    verdicts. A base without this script has no copy to run.
     """
     base, head = _rev(repo, ns.base), ns.head and _rev(repo, ns.head)
-    if not git(repo, "diff", "--name-only", base, *([head] if head else []), "--", *CHECK_FILES):
+    if not git(repo, "diff", "--name-only", base, *([head] if head else []), "--", *COPY_PATHS):
         return None
     try:
-        archive = git(repo, "archive", "--format=tar", base, "--", *CHECK_FILES)
+        git(repo, "cat-file", "-e", f"{base}:{SCRIPT}")
     except subprocess.CalledProcessError:
         return None
+    archive = git(repo, "archive", "--format=tar", base, "--", *COPY_PATHS)
     arguments = ["--base", ns.base, *(["--head", ns.head] if head else []), *(["--tag", ns.tag] if ns.tag else [])]
     arguments += ["--main"] if ns.main else []
     arguments += ["--report-only"] if ns.report_only else []
@@ -1064,7 +1059,9 @@ def _judged_by_base(repo: Path, ns: argparse.Namespace) -> int | None:
         with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
             tar.extractall(directory, filter="data")
         command = [sys.executable, str(Path(directory) / SCRIPT), "check", *arguments]
-        return subprocess.run(command, cwd=repo, check=False).returncode
+        code = subprocess.run(command, cwd=repo, check=False).returncode
+    print("judged by the head's own copy of this check", flush=True)
+    return code
 
 
 def main(argv: list[str] | None = None, repo: Path | None = None) -> int:
@@ -1079,14 +1076,14 @@ def main(argv: list[str] | None = None, repo: Path | None = None) -> int:
                 return declare(repo, ns)
             case "prune":
                 return prune(repo, ns)
-        if getattr(ns, "ci", False) and (code := _judged_by_base(repo, ns)) is not None:
-            return code
+        base_code = _judged_by_base(repo, ns) if getattr(ns, "ci", False) else None
         report = _judged(repo, ns)
     except CheckError as error:
         print(f"{SCRIPT}: {error}", file=sys.stderr)
         return 2
     print(format_report(report), end="")
-    return 1 if ns.command == "check" and report.failed and not ns.report_only else 0
+    own_code = 1 if ns.command == "check" and report.failed and not ns.report_only else 0
+    return base_code or own_code
 
 
 if __name__ == "__main__":

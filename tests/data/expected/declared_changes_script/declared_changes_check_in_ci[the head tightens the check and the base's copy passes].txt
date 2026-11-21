@@ -1,0 +1,8 @@
+$ check --ci --base base --head HEAD
+exit 1
+judged by the copy of this check in base: the change touches its files
+declared changes: HEAD against base, release since 0.1.0
+ok
+judged by the head's own copy of this check
+declared changes: HEAD against base, release since 0.1.0
+failed

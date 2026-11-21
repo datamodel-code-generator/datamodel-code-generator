@@ -6,7 +6,6 @@ the change records differ between them as a pull request, a stack layer or a rel
 
 from __future__ import annotations
 
-import ast
 import json
 import shlex
 import subprocess
@@ -850,8 +849,18 @@ def test_declared_changes_errors(tmp_path: Path, capsys: pytest.CaptureFixture[s
     assert_output("\n".join(output))
 
 
-CHECK_TREE = {name: (declared_changes.ROOT / name).read_text(encoding="utf-8") for name in declared_changes.CHECK_FILES}
-"""The files of the check as the repository has them, so that a temporary repository has a copy to run."""
+CHECK_TREE = {
+    name: (declared_changes.ROOT / name).read_text(encoding="utf-8")
+    for name in (
+        "scripts/__init__.py",
+        "scripts/declared_changes.py",
+        "scripts/_change_records.py",
+        "scripts/compare_release.py",
+        "tests/__init__.py",
+        "tests/units.py",
+    )
+}
+"""The check and the modules it imports as the repository has them, so that a temporary repository has a copy to run."""
 UNDECLARED_B = SRC | {f"{EXPECTED}/models/b.py": "B = 2\n"}
 """A change of a stored output that no record covers."""
 
@@ -889,16 +898,50 @@ CI_CASES: dict[str, dict[str, Any]] = {
         "head": UNDECLARED_B | WEAKENED | _record("same-output", ["models/b.py"]),
         "verdicts": "missing",
     },
-    "the base has no copy of the check": {"head": UNDECLARED_B | WEAKENED},
+    "the base has no copy of the check": {"head": UNDECLARED_B | CHECK_TREE | WEAKENED},
+    "the head adds a module to the check and weakens it": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B | WEAKENED | {"scripts/_added.py": "VALUE = 1\n"},
+    },
+    "the head drops a module the base's check imports": {
+        "release": CHECK_TREE
+        | {
+            "scripts/_dropped.py": "VALUE = 1\n",
+            "scripts/_change_records.py": CHECK_TREE["scripts/_change_records.py"]
+            + "\nfrom scripts._dropped import VALUE\n",
+        },
+        "head": UNDECLARED_B
+        | _record("b-two", ["models/b.py"], **OUTPUT_TEXT)
+        | {"scripts/_dropped.py": None, "scripts/_change_records.py": CHECK_TREE["scripts/_change_records.py"]},
+    },
+    "the head tightens the check and the base's copy passes": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B
+        | _record("b-two", ["models/b.py"], **OUTPUT_TEXT)
+        | {
+            "scripts/declared_changes.py": CHECK_TREE["scripts/declared_changes.py"].replace(
+                "        return bool(\n            self.undeclared",
+                "        return True or bool(\n            self.undeclared",
+                1,
+            )
+        },
+    },
+    "the verdicts reach the base's copy": {
+        "release": CHECK_TREE,
+        "head": UNDECLARED_B
+        | _record("same-output", ["models/b.py"])
+        | {"tests/units.py": CHECK_TREE["tests/units.py"] + "\n"},
+        "verdicts": "admit",
+    },
 }
 
 
 @pytest.mark.parametrize("case", sorted(CI_CASES))
-def test_declared_changes_check_in_ci(case: str, tmp_path: Path, capfd: pytest.CaptureFixture[str]) -> None:
+def test_declared_changes_check_in_ci(case: str, tmp_path: Path) -> None:
     """`check --ci` reads the gate's verdicts if there are some; the base's copy of the check judges a change of it.
 
-    The first run is the CI step's; the second is the head's own copy of the check, run as the head has it, which a
-    head that weakens the check passes and the base's copy refuses. A base without the check has no copy to run.
+    The head's own script runs, as it does in CI: with the base's copy of the check first and its own judgement after
+    it, either of which fails the step. A base without the check has no copy, so the head's script judges alone.
     """
     spec = CI_CASES[case]
     repository = _repository(tmp_path, spec)
@@ -910,47 +953,12 @@ def test_declared_changes_check_in_ci(case: str, tmp_path: Path, capfd: pytest.C
             json.dumps({"verdicts": [row | {"problem": None} for row in rows]}), encoding="utf-8"
         )
         args += ["--verdicts", str(tmp_path / ("verdicts.json" if spec["verdicts"] == "admit" else "missing.json"))]
-    code = declared_changes.main([args[0], "--ci", *args[1:]], repository)
-    output = [f"$ {args[0]} --ci {' '.join(args[1:])}\nexit {code}\n{capfd.readouterr().out}"]
-    if "release" in spec:
-        own = subprocess.run(
-            [sys.executable, str(repository / declared_changes.SCRIPT), *args],
-            cwd=repository,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        output.append(f"$ head's copy: {' '.join(args)}\nexit {own.returncode}\n{own.stdout}{own.stderr}")
-    assert_output("\n".join(output).replace(str(tmp_path), "TMP"))
-
-
-def _imports(name: str) -> set[str]:
-    """Return the repository files a module imports, at any depth, and the packages they sit in."""
-    tree = ast.parse((declared_changes.ROOT / name).read_text(encoding="utf-8"))
-    modules = {
-        node.module if isinstance(node, ast.ImportFrom) else alias.name
-        for node in ast.walk(tree)
-        if isinstance(node, (ast.Import, ast.ImportFrom))
-        for alias in (node.names if isinstance(node, ast.Import) else [node])
-        if (node.module if isinstance(node, ast.ImportFrom) else alias.name)
-    }
-    found = set()
-    for module in modules:
-        parts = module.split(".")
-        if parts[0] in {"scripts", "tests"} and (declared_changes.ROOT / f"{'/'.join(parts)}.py").is_file():
-            found |= {f"{'/'.join(parts[:depth])}/__init__.py" for depth in range(1, len(parts))}
-            found.add(f"{'/'.join(parts)}.py")
-    return found
-
-
-def test_check_files_are_what_the_check_imports() -> None:
-    """The files `check --ci` takes from the base are the check and every repository module it imports, as a closure.
-
-    The stored output lists the files in which the two differ: none.
-    """
-    pending, closure = [declared_changes.SCRIPT], {declared_changes.SCRIPT}
-    while pending:
-        for found in _imports(pending.pop()) - closure:
-            closure.add(found)
-            pending.append(found)
-    assert_output("".join(f"{name}\n" for name in sorted(closure ^ set(declared_changes.CHECK_FILES))))
+    run = subprocess.run(
+        [sys.executable, str(repository / declared_changes.SCRIPT), args[0], "--ci", *args[1:]],
+        cwd=repository,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    shown = f"$ {args[0]} --ci {' '.join(args[1:])}\nexit {run.returncode}\n{run.stdout}{run.stderr}"
+    assert_output(shown.replace(str(tmp_path), "TMP"))
