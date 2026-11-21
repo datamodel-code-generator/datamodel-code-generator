@@ -17,6 +17,8 @@ from pathlib import Path
 import pytest
 import tomllib
 
+from scripts import check_ratchets
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
 CONTRACTS = ROOT / "scripts" / "heki.toml"
@@ -168,3 +170,19 @@ def test_heki_judges_a_home_call_in_the_helper_that_makes_it(tmp_path: Path) -> 
 
     found = [(item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)]
     assert (result.returncode, found) == (1, [("_helper", "MUT204")]), result.stderr
+
+
+@pytest.mark.allow_direct_assert(
+    "the rule names of the ratchet must fail the test, not be stored as an expected output"
+)
+def test_the_ratchet_knows_every_rule_of_the_pinned_heki() -> None:
+    """The names and code families the ratchet reads in suppression comments are the rules the pinned heki lists."""
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+    result = subprocess.run(
+        [heki, "rule", "--all", "--output-format", "json"], capture_output=True, text=True, check=False
+    )
+
+    rules = {item["slug"]: item["code"] for item in json.loads(result.stdout)}
+
+    assert rules == check_ratchets.HEKI_RULES, result.stderr
+    assert [code for code in rules.values() if not check_ratchets.HEKI_CODE.fullmatch(code)] == []

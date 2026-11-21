@@ -198,6 +198,8 @@ HEKI_RULES = {
     "loop-possible-db-query": "EFF113",
     "async-blocking-fs": "EFF105",
     "lock-or-tx-held-across-io": "EFF106",
+    "lock-reacquired-while-held": "EFF109",
+    "exclusive-object-fanout": "EFF110",
     "unretained-async-task": "EFF107",
     "effect-boundary-violation": "EFF201",
     "loop-carried-concat": "DATA101",
