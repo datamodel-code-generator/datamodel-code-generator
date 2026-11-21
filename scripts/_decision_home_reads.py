@@ -171,7 +171,7 @@ class _Reads:
         self.package = package
         self.modules = {module: rel for rel, (_, module) in repo.names.items() if rel.startswith(package)}
         self._scoped: dict[str, list[tuple[ast.AST, Scope]]] = {}
-        self._attributes: dict[str, dict[str, list[tuple[ast.AST, Scope]]]] = {}
+        self._attributes: dict[str, dict[str, list[tuple[ast.Attribute, Scope]]]] = {}
 
     def paths(self, word: str = "") -> list[str]:
         """Return the module paths of the package whose text holds a word."""
@@ -208,14 +208,14 @@ class _Reads:
                     attributes.setdefault(node.attr, []).append((node, scope))
         return found
 
-    def reads(self, home: Home) -> list[tuple[str, ast.AST, Scope]]:
+    def reads(self, home: Home) -> list[tuple[str, ast.expr, Scope]]:
         """Return the reads of a def by module path: a name that leads to it, or an attribute of its name.
 
         Name resolution does not follow an attribute (``self.method``, ``module.function``), so every attribute
         spelled as the def's name reads it.
         """
         leaf = home.name.rpartition(".")[2]
-        found: list[tuple[str, ast.AST, Scope]] = []
+        found: list[tuple[str, ast.expr, Scope]] = []
         for rel in self.paths(leaf):
             self.scoped(rel)
             found += [(rel, node, scope) for node, scope in self._attributes[rel].get(leaf, [])]
@@ -325,7 +325,7 @@ def _sets(pairs: Iterable[tuple[str | None, ast.expr]], mark: Mark) -> bool:
 def _pairs(node: ast.AST) -> list[tuple[str | None, ast.expr]]:
     """Return the keywords a call passes, those of a ``**`` dict display included, or the constant keys of a dict."""
     if isinstance(node, ast.Dict):
-        return [(key.value, value) for key, value in zip(node.keys, node.values, strict=True) if _is_text(key)]
+        return [(str(key.value), value) for key, value in zip(node.keys, node.values, strict=True) if _is_text(key)]
     if not isinstance(node, ast.Call):
         return []
     pairs: list[tuple[str | None, ast.expr]] = [(item.arg, item.value) for item in node.keywords if item.arg]
@@ -394,9 +394,7 @@ def builder_problems(repo: Repo, records: Iterable[BuilderHome], page: str, pack
             problems.append(f"{key}: the passage does not name {name}")
         if (record.table is None) is (not record.marks):
             problems.append(f"{key}: a record states either a table or a mark")
-        problems += [
-            f"{key}: {gap}" for home in (record.builder, *record.parts) if (gap := missing(home, repo))
-        ]
+        problems += [f"{key}: {gap}" for home in (record.builder, *record.parts) if (gap := missing(home, repo))]
         if record.table and ((value := _class_value(repo, record.table)) is None or not _is_table(*value)):
             problems.append(f"{key}: {record.table.path} assigns no dispatch table to {record.table.name}")
         problems += [f"{key}: the builder does not reach {part.path}:{part.name}" for part in _unreached(reads, record)]
@@ -482,8 +480,12 @@ def builder_bypasses(repo: Repo, records: Iterable[BuilderHome], package: str = 
             model = repo.model(rel)
             for node, inside_scope in reads.scoped(rel):
                 scope = scope_name(inside_scope) if _marked(model, node, mark) else ""
-                if scope and not any(
-                    _covers(holder, rel.removeprefix(package), scope) for holder in (record.builder, *record.parts)
+                if (
+                    scope
+                    and isinstance(node, ast.expr)
+                    and not any(
+                        _covers(holder, rel.removeprefix(package), scope) for holder in (record.builder, *record.parts)
+                    )
                 ):
                     key = (f"{record.builder.path}:{record.builder.name}", f"{rel.removeprefix(package)}:{scope}")
                     found[key] = min(found.get(key, node.lineno), node.lineno)
