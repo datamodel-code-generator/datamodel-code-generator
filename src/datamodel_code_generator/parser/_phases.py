@@ -277,7 +277,7 @@ def rewrite_copied_type(
     return copied
 
 
-def rewrite_field_copy(  # noqa: PLR0913
+def rewrite_field_copy(
     store: DecisionStore,
     copy: Callable[[Any], Any],
     field: Any,

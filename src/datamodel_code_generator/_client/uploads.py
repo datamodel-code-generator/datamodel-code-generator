@@ -111,7 +111,7 @@ class _Uploads:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{helper.at}.create.operation", message, create))
         return sources
 
-    def count(  # noqa: PLR0913, PLR0917
+    def count(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -140,7 +140,7 @@ class _Uploads:
         problems.extend(found)
         return None if found else _parameter(create, target)
 
-    def typed(  # noqa: PLR0913, PLR0917
+    def typed(  # noqa: PLR0917
         self, helper: Helper, sources: list[_Source], read: Mapping[str, Any], at: str, what: str, wanted: str
     ) -> Iterator[Diagnostic]:
         """Check that a selector reads values of one JSON type, or header text, from each response, never the status."""

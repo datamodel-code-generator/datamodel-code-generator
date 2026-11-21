@@ -332,7 +332,7 @@ def get_union_variant_tag_keys(
     return tag_keys
 
 
-def infer_union_variant_literal_names(  # noqa: PLR0913, PLR0917
+def infer_union_variant_literal_names(  # noqa: PLR0917
     parser: UnionTagsHost,
     name: str,
     obj: JsonSchemaObject,
@@ -569,7 +569,7 @@ def set_tagged_union_discriminator(
     )
 
 
-def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
+def parse_combined_schema_items(  # noqa: PLR0917
     parser: UnionTagsHost,
     name: str,
     obj: JsonSchemaObject,

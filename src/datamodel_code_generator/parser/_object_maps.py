@@ -94,7 +94,7 @@ class ObjectMapsHost(AllOfValuesHost, Protocol):
     def _types_nullable_map_values(self) -> bool:
         """Whether this run types the values of nullable maps."""
 
-    def get_object_field(  # noqa: PLR0913
+    def get_object_field(
         self,
         *,
         field_name: str | None,
@@ -513,7 +513,7 @@ def _pattern_keys_checked(
     return _property_name_key_row(parser, schema) == "string"
 
 
-def parse_pattern_map(  # noqa: PLR0913, PLR0917
+def parse_pattern_map(  # noqa: PLR0917
     parser: ObjectMapsHost,
     name: str,
     pattern_properties: dict[str, JsonSchemaObject | bool],
@@ -765,7 +765,7 @@ def parse_string_property_name_union(
     return build_union(parser.data_type, data_types), False
 
 
-def parse_property_names(  # noqa: PLR0913, PLR0917
+def parse_property_names(  # noqa: PLR0917
     parser: ObjectMapsHost,
     name: str,
     property_names: JsonSchemaObject | bool,  # noqa: FBT001
@@ -873,7 +873,7 @@ def get_additional_properties_root_field(
     return field
 
 
-def object_map_key_type(  # noqa: PLR0913
+def object_map_key_type(
     parser: ObjectMapsHost,
     property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
     row: Literal["pattern-map", "property-names-map", "extra-field"],

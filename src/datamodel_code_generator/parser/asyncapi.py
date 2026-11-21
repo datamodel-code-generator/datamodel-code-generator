@@ -361,7 +361,7 @@ class AsyncAPIParser(OpenAPIParser):
         finally:
             self.raw_obj = previous_raw_obj
 
-    def _schema(  # noqa: PLR0913
+    def _schema(
         self,
         name: str,
         raw_schema: YamlValue,

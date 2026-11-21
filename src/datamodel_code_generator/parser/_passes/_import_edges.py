@@ -282,7 +282,7 @@ def _failing_cycles(
             yield component
 
 
-def _failing_import_cycles(  # noqa: PLR0913
+def _failing_import_cycles(
     merges: list[set[tuple[str, ...]]],
     internal_modules: list[tuple[str, ...]],
     module_graph: GroupGraph[tuple[str, ...]],

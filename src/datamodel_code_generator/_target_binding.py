@@ -530,7 +530,7 @@ class _TargetRecording(OpenAPIParser):
             self.copies[id(copied)] = (copied, inherited_field)
         return copied
 
-    def _create_variant_model(  # noqa: PLR0913
+    def _create_variant_model(
         self,
         base_reference: Reference,
         suffix: Literal["Request", "Response"],
@@ -571,7 +571,7 @@ class _TargetRecording(OpenAPIParser):
         ):
             self.free_schemas[declaration] = self._validate_schema_object(raw, path)
 
-    def _generate_module_output(  # noqa: PLR0913, PLR0917
+    def _generate_module_output(  # noqa: PLR0917
         self,
         ctx: ModuleContext,
         config: ParseConfig,
@@ -767,7 +767,7 @@ class TargetApiOpenAPIParser(_TargetRecording, ApiOpenAPIParser):
         if declaration not in self._declaration_types:
             self._free(declaration, "value", raw, path)
 
-    def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
+    def _acquire_item_schema(
         self,
         name: str,
         item: YamlValue,
@@ -2179,7 +2179,7 @@ def _applied_configuration(model: DataModel) -> tuple[Literal["allow", "forbid",
     return extra, "validate_by_alias" in items and _syntax_value(items["validate_by_alias"]).value == _FALSE
 
 
-def _field_facts(  # noqa: PLR0913
+def _field_facts(
     field: DataModelFieldBase,
     type_value: TypeView,
     backend: BackendName,
@@ -2893,7 +2893,7 @@ class _SchemaUses(_Models):
             members.append(replace(member, direction=direction) if direction != member.direction else member)
         return tuple(members)
 
-    def use_id(  # ruff: ignore[too-many-arguments]
+    def use_id(
         self,
         owner: OperationId | SourceLocation,
         role: TypeUseRole,
@@ -3210,7 +3210,7 @@ class _UseFacts(_SchemaUses):
         """Return what the class a type holds takes of the other properties its schema gives (``_held``)."""
         return _held(others, self.applied_extra(value))
 
-    def member_shape(  # noqa: PLR0913
+    def member_shape(
         self,
         name: str,
         value: TypeView | None,
@@ -3249,7 +3249,7 @@ class _UseFacts(_SchemaUses):
         """Return where the schema of the items of a form member's values is, its own where it does not repeat."""
         return source if self.tables.contained(value, "items") is None else self.holder(value, source).child("items")
 
-    def shape(  # noqa: PLR0911, PLR0913
+    def shape(  # noqa: PLR0911
         self,
         value: TypeView | None,
         source: SourceLocation,
@@ -3925,7 +3925,7 @@ class _Contracts(_Octets):
             )
         return uses
 
-    def media(  # noqa: PLR0913
+    def media(
         self,
         holder: _WalkedObject,
         use_site: SchemaLocation,
@@ -4012,7 +4012,7 @@ class _Contracts(_Octets):
             )
         return tuple(values)
 
-    def parameter(  # noqa: PLR0913
+    def parameter(
         self,
         walked: _WalkedObject,
         use_site: SchemaLocation,
@@ -4060,7 +4060,7 @@ class _Contracts(_Octets):
             children,
         )
 
-    def headers(  # noqa: PLR0913
+    def headers(
         self,
         holder: _WalkedObject,
         use_site: SchemaLocation,

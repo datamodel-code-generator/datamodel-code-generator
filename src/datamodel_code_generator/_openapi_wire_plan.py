@@ -234,7 +234,7 @@ def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
     return tuple(found)
 
 
-def plan_wire(  # noqa: PLR0913
+def plan_wire(
     batch: GeneratedTypeContractBatch,
     uses: Sequence[TypeUseId] | None = None,
     *,

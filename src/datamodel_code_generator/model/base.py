@@ -479,7 +479,7 @@ DataModelFieldBaseT = TypeVar("DataModelFieldBaseT", bound="DataModelFieldBase")
 class ConstraintsBase(_BaseModel):
     """Base class for field constraints (min/max, patterns, etc.)."""
 
-    unique_items: Optional[bool] = Field(None, alias="uniqueItems")  # noqa: UP045
+    unique_items: Optional[bool] = Field(None, alias="uniqueItems")
     _exclude_fields: ClassVar[set[str]] = {"has_constraints", "_exclude_unset_dump"}
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -533,7 +533,7 @@ def _overlay_constraints(
     return constraints_class.model_validate(values) if issubclass(constraints_class, ConstraintsBase) else None
 
 
-def _normalized_constraint_kwargs(  # noqa: PLR0913
+def _normalized_constraint_kwargs(
     constraints: Mapping[str, Any],
     omitted: list[Omitted],
     output: OutputKeywords,
@@ -574,7 +574,7 @@ TYPENAME_PROPERTY_KEY: Final = "typename_property"
 
 
 class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
-    """Base class for model field representation and rendering."""
+    """Base class for model field representation and rendering; ``validation_aliases`` are Pydantic v2 AliasChoices."""
 
     PARSER_CONSTRUCTOR: ClassVar[Callable[..., DataModelFieldBase] | None] = None
     PREPARE_PYTHON_PATTERNS: ClassVar[
@@ -627,18 +627,18 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         defer_build=True,
     )
 
-    name: Optional[str] = None  # noqa: UP045
-    default: Optional[Any] = None  # noqa: UP045
+    name: Optional[str] = None
+    default: Optional[Any] = None
     required: bool = False
-    alias: Optional[str] = None  # noqa: UP045
-    validation_aliases: Optional[list[str]] = None  # noqa: UP045  # Multiple aliases for Pydantic v2 AliasChoices
-    serialization_alias: Optional[str] = None  # noqa: UP045
+    alias: Optional[str] = None
+    validation_aliases: Optional[list[str]] = None
+    serialization_alias: Optional[str] = None
     data_type: DataType
     constraints: Any = None
     strip_default_none: bool = False
     order_constructor_fields_by_written_defaults: bool = False
-    nullable: Optional[bool] = None  # noqa: UP045
-    parent: Optional[DataModel] = None  # noqa: UP045
+    nullable: Optional[bool] = None
+    parent: Optional[DataModel] = None
     extras: dict[str, Any] = Field(default_factory=dict)
     use_annotated: bool = False
     use_serialize_as_any: bool = False
@@ -647,15 +647,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     use_field_description_example: bool = False
     use_inline_field_description: bool = False
     const: bool = False
-    original_name: Optional[str] = None  # noqa: UP045
+    original_name: Optional[str] = None
     use_default_kwarg: bool = False
     use_missing_sentinel: bool = False
     use_one_literal_as_default: bool = False
-    target_python_version: Optional[PythonVersion] = None  # noqa: UP045
+    target_python_version: Optional[PythonVersion] = None
     _exclude_fields: ClassVar[set[str]] = {"parent"}
     _pass_fields: ClassVar[set[str]] = {"parent", "data_type"}
     can_have_extra_keys: ClassVar[bool] = True
-    type_has_null: Optional[bool] = None  # noqa: UP045
+    type_has_null: Optional[bool] = None
     read_only: bool = False
     write_only: bool = False
     use_frozen_field: bool = False
@@ -2794,7 +2794,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY in extra_template_data
 
     @classmethod
-    def store_additional_properties_type(  # noqa: PLR0913
+    def store_additional_properties_type(
         cls,
         extra_template_data: dict[str, Any],
         type_hint: str,
@@ -2857,7 +2857,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return dependencies contributed by model-owned additional properties."""
         return self._additional_properties_reference_classes
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

@@ -45,7 +45,7 @@ class UnionConstraintsWriter(DecisionWriter, Protocol):
         """
 
 
-def _keeps_check(  # noqa: PLR0913, PLR0917
+def _keeps_check(  # noqa: PLR0917
     facts: FinalFacts,
     model_of: Callable[[ReferenceView], ModelView | None],
     data_type: DataTypeView,

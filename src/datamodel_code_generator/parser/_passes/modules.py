@@ -647,7 +647,7 @@ class DroppedRootModelUsersHost(ReferenceUsersHost, Protocol):
 class ModuleLoopHost(RecursionFactsHost, TagPlanHost, Protocol[ConfigT, ContextT, ResultT]):
     """The hook and run state of the parser that processing the output modules one by one calls and writes."""
 
-    def _process_single_module(  # noqa: PLR0913, PLR0917
+    def _process_single_module(  # noqa: PLR0917
         self,
         module_: ModulePath,
         models: list[DataModel],
@@ -1375,7 +1375,7 @@ def collapse_module_root_models(parser: CollapseHost, state: ModuleStateView) ->
         raise _CollapseRootModelsRecursionError from exc
 
 
-def collapse_root_models(  # noqa: PLR0913, PLR0917
+def collapse_root_models(  # noqa: PLR0917
     parser: CollapseHost,
     models: list[DataModel],
     unused_models: list[DataModel],
@@ -2567,7 +2567,7 @@ def _adopt_keyless_references(
     return source
 
 
-def rename_named_type(  # noqa: PLR0913, PLR0917
+def rename_named_type(  # noqa: PLR0917
     parser: ModulesHost,
     field: DataModelFieldBase,
     reference: Reference,
@@ -2603,7 +2603,7 @@ def rename_named_type(  # noqa: PLR0913, PLR0917
     class_names.add(source.class_name)
 
 
-def family_hides_named_type(  # noqa: PLR0913
+def family_hides_named_type(
     parser: ModulesHost,
     model: DataModel,
     field_name: str | None,

@@ -700,7 +700,7 @@ def iter_schema_validation_sources(
         yield source
 
 
-def _iter_all_of_reads(  # noqa: PLR0913
+def _iter_all_of_reads(
     parser: SchemaValidatorsHost,
     obj: JsonSchemaObject,
     visited_refs: frozenset[_TargetNode],
@@ -737,7 +737,7 @@ def _iter_all_of_reads(  # noqa: PLR0913
             yield *target, target_scope, True
 
 
-def iter_scoped_schema_validation_sources(  # noqa: PLR0913
+def iter_scoped_schema_validation_sources(
     parser: SchemaValidatorsHost,
     obj: JsonSchemaObject,
     visited_refs: frozenset[_TargetNode] = frozenset(),
@@ -1132,7 +1132,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
         visited.remove(data_type_id)
 
 
-def iter_path_rules(  # noqa: PLR0912, PLR0913
+def iter_path_rules(  # noqa: PLR0912
     parser: SchemaValidatorsHost,
     obj: JsonSchemaObject,
     path: UniqueItemsPath,
@@ -1324,7 +1324,7 @@ def _contains_matcher(
     return tuple(matcher)
 
 
-def add_path_rules_validator(  # noqa: PLR0913
+def add_path_rules_validator(
     parser: SchemaValidatorsHost,
     reference_path: str,
     obj: JsonSchemaObject,
@@ -1783,7 +1783,7 @@ def add_conditional_validator(
         runtime_validation.conditional_required.append(rule)
 
 
-def add_schema_validators(  # noqa: PLR0913, PLR0917
+def add_schema_validators(  # noqa: PLR0917
     parser: SchemaValidatorsHost,
     reference_path: str,
     name: str,

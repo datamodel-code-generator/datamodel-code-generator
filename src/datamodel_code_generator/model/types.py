@@ -128,7 +128,7 @@ class DataTypeManager(_DataTypeManager):
         _import_key(IMPORT_DECIMAL): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     })
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # noqa: PLR0917
         self,
         python_version: PythonVersion = PythonVersionMin,
         use_standard_collections: bool = False,  # noqa: FBT001, FBT002

@@ -21,21 +21,21 @@ cast("FieldInfo", _MULTIPLE_OF_FIELD).metadata.extend(get_args(FloatConstraint)[
 class Constraints(ConstraintsBase):
     """Pydantic field constraints (gt, ge, lt, le, regex, etc.)."""
 
-    gt: Optional[UnionIntFloat] = Field(None, alias="exclusiveMinimum")  # noqa: UP045
-    ge: Optional[UnionIntFloat] = Field(None, alias="minimum")  # noqa: UP045
-    lt: Optional[UnionIntFloat] = Field(None, alias="exclusiveMaximum")  # noqa: UP045
-    le: Optional[UnionIntFloat] = Field(None, alias="maximum")  # noqa: UP045
-    multiple_of: Optional[float] = _MULTIPLE_OF_FIELD  # noqa: UP045
-    min_items: Optional[int] = Field(None, alias="minItems")  # noqa: UP045
-    max_items: Optional[int] = Field(None, alias="maxItems")  # noqa: UP045
-    min_length: Optional[int] = Field(None, alias="minLength")  # noqa: UP045
-    max_length: Optional[int] = Field(None, alias="maxLength")  # noqa: UP045
-    regex: Optional[str] = Field(None, alias="pattern")  # noqa: UP045
+    gt: Optional[UnionIntFloat] = Field(None, alias="exclusiveMinimum")
+    ge: Optional[UnionIntFloat] = Field(None, alias="minimum")
+    lt: Optional[UnionIntFloat] = Field(None, alias="exclusiveMaximum")
+    le: Optional[UnionIntFloat] = Field(None, alias="maximum")
+    multiple_of: Optional[float] = _MULTIPLE_OF_FIELD
+    min_items: Optional[int] = Field(None, alias="minItems")
+    max_items: Optional[int] = Field(None, alias="maxItems")
+    min_length: Optional[int] = Field(None, alias="minLength")
+    max_length: Optional[int] = Field(None, alias="maxLength")
+    regex: Optional[str] = Field(None, alias="pattern")
 
 
 class PatternConstraints(Constraints):
-    regex: Optional[str] = Field(None, alias="regex")  # noqa: UP045
-    pattern: Optional[str] = Field(None, alias="pattern")  # noqa: UP045
+    regex: Optional[str] = Field(None, alias="regex")
+    pattern: Optional[str] = Field(None, alias="pattern")
 
 
 Constraints.model_rebuild()

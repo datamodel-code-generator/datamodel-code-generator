@@ -24,9 +24,9 @@ def install_agent_skill_command(agent: str, scope: str, *, overwrite: bool) -> i
             overwrite=overwrite,
         )
     except AgentSkillError as e:
-        print(f"Error: {e}", file=sys.stderr)  # noqa: T201
+        print(f"Error: {e}", file=sys.stderr)
         return _ExitCode.ERROR
-    print(f"Installed datamodel-code-generator skill at {destination}")  # noqa: T201
+    print(f"Installed datamodel-code-generator skill at {destination}")
     return _ExitCode.OK
 
 

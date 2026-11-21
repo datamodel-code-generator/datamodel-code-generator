@@ -513,7 +513,7 @@ class Owned:
 class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     """Render every module of one server package from its plan, codec plan, and wire plan."""
 
-    def __init__(  # ruff: ignore[too-many-arguments]
+    def __init__(
         self,
         *,
         config: FastAPIConfig,
@@ -1475,7 +1475,7 @@ def _services(services: list[str]) -> str:
     return dict_display((stable_repr(service), service) for service in services)
 
 
-def _builder(  # ruff: ignore[too-many-arguments]
+def _builder(
     module: Module,
     name: str,
     returns: str,

@@ -1437,7 +1437,7 @@ class Planner:  # noqa: PLR0904
             return None
         return _primary(operation, choice.status_code, response, media, null=self.json_null(media))
 
-    def arguments(  # noqa: PLR0913
+    def arguments(
         self,
         operation: OperationContract,
         parameters: tuple[ParameterSpec, ...],

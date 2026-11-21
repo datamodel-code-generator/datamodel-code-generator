@@ -128,7 +128,7 @@ def member_null(*, is_none: bool, is_any: bool) -> bool | None:
     return True if is_none else False if is_any else None
 
 
-def field_renders_none(  # noqa: PLR0913
+def field_renders_none(
     *,
     hint_has_none: bool,
     has_default_factory: bool,

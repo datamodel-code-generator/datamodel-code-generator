@@ -348,7 +348,7 @@ class _InternalSchemaRuntimeValidation(SchemaRuntimeValidation):
 
     __slots__ = ()
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         token: object,
         *,

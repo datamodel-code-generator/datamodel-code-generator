@@ -1085,7 +1085,7 @@ def _prepare_parser_common_options(
     return data_model_types, source, defer_formatting, additional_options, python_type_expressions
 
 
-def _build_parser(  # noqa: PLR0913
+def _build_parser(
     input_file_type: InputFileType,
     source: Any,
     config: GenerateConfig,
@@ -1197,7 +1197,7 @@ def _ensure_output_text_encodable(text: str, encoding: str) -> None:
         raise Error(msg) from exc
 
 
-def _write_results_to_output(  # noqa: PLR0913
+def _write_results_to_output(
     results: _ParserResults,
     output: Path,
     config: GenerateConfig,
@@ -1293,7 +1293,7 @@ def _read_custom_file_header(
         raise Error(msg) from e
 
 
-def _emit_results(  # noqa: PLR0913
+def _emit_results(
     results: _ParserResults,
     input_: _GenerationInput,
     input_filename: str | None,
@@ -1650,7 +1650,7 @@ class _GenerationRun(NamedTuple):
     decoded_input: _DecodedInput | None
 
 
-def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
+def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
     input_: _GenerationInput,
     config: GenerateConfig,
     caller_cwd: Path,
@@ -1831,7 +1831,7 @@ def _parse_collapse_root_models_retry(run: _GenerationRun, parser: Any) -> _Pars
         raise public_error from None
 
 
-def _parse_again(  # noqa: PLR0913
+def _parse_again(
     run: _GenerationRun,
     run_context: ParserRunContext,
     caches: _ReparseCaches,
@@ -2281,7 +2281,7 @@ def _run_generation(
     return _run_generation_with_metadata(input_, config, caller_cwd, use_output_cwd=use_output_cwd, capture=capture)[0]
 
 
-def _run_generation_with_metadata(  # noqa: PLR0913
+def _run_generation_with_metadata(
     input_: _GenerationInput,
     config: GenerateConfig,
     caller_cwd: Path,
@@ -2316,7 +2316,7 @@ def _run_generation_with_metadata(  # noqa: PLR0913
         raise
 
 
-def _parse_run(  # noqa: PLR0913, PLR0914
+def _parse_run(  # noqa: PLR0914
     input_: _GenerationInput,
     config: GenerateConfig,
     caller_cwd: Path,

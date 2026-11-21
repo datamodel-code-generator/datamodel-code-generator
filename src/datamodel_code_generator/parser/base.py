@@ -549,7 +549,7 @@ class Result(BaseModel):
 
     body: str
     future_imports: str = ""
-    source: Optional[Path] = None  # noqa: UP045
+    source: Optional[Path] = None
 
 
 class Source(BaseModel):
@@ -755,7 +755,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return the immutable settings for the current facade-managed run."""
         return self._run_context or _DEFAULT_PARSER_RUN_CONTEXT
 
-    def configure_run_context(  # noqa: PLR0913
+    def configure_run_context(
         self,
         *,
         diagnostic_source_path: Path | None = None,
@@ -923,7 +923,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             else None,
         )
 
-    def _take_field_aliases(  # noqa: PLR0913
+    def _take_field_aliases(
         self,
         field: DataModelFieldBase,
         name: str,
@@ -2425,7 +2425,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             state.model_path_to_module_name,
         )
 
-    def _process_single_module(  # noqa: PLR0913, PLR0917
+    def _process_single_module(  # noqa: PLR0917
         self,
         module_: ModulePath,
         models: list[DataModel],
@@ -2530,7 +2530,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 )
                 model_imports[model] = prepared_imports
 
-    def _finalize_modules(  # noqa: PLR0913, PLR0917
+    def _finalize_modules(  # noqa: PLR0917
         self,
         contexts: list[ModuleContext],
         unused_models: list[DataModel],
@@ -2602,7 +2602,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for ctx in contexts:
             _set_nested_model_default_factory_order(ctx.models, cast("NestedFactoryMetadata", metadata))
 
-    def _generate_module_output(  # noqa: PLR0913, PLR0917
+    def _generate_module_output(  # noqa: PLR0917
         self,
         ctx: ModuleContext,
         config: ParseConfig,
@@ -2879,7 +2879,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         with quiet():
             callback()
 
-    def parse(  # noqa: PLR0913, PLR0917
+    def parse(  # noqa: PLR0917
         self,
         with_import: bool | None = True,  # noqa: FBT001, FBT002
         format_: bool | None = True,  # noqa: FBT001, FBT002

@@ -340,7 +340,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
             return False
         return field.extras.pop("init", None) is False
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,
@@ -399,7 +399,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         "metadata",
         "kw_only",
     }
-    constraints: Optional[Constraints] = None  # noqa: UP045
+    constraints: Optional[Constraints] = None
 
     @override
     def process_const(self) -> None:
@@ -553,7 +553,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 class DataTypeManager(_DataTypeManager):
     """Type manager for dataclass models."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # noqa: PLR0917
         self,
         python_version: PythonVersion = PythonVersionMin,
         use_standard_collections: bool = False,  # noqa: FBT001, FBT002

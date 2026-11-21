@@ -156,7 +156,7 @@ def _showing(show: Callable[[_ShowCall], bool]) -> Generator[None, None, None]:
         _CHECKS.reset(token)
 
 
-def _show_kept(  # noqa: PLR0913, PLR0917
+def _show_kept(  # noqa: PLR0917
     message: Warning | str,
     category: type[Warning],
     filename: str,

@@ -389,7 +389,7 @@ class RenderHost(
     ) -> None:
         """Write the exports of the package ``__init__.py`` files that no module writes."""
 
-    def _generate_module_output(  # noqa: PLR0913, PLR0917
+    def _generate_module_output(  # noqa: PLR0917
         self,
         ctx: ContextT,
         config: ConfigT,
@@ -459,7 +459,7 @@ def _reserved_aliases(
     return {name: _reserve_import_alias(name, reserved) for name in names}
 
 
-def _bind_module_field_names(  # noqa: PLR0913
+def _bind_module_field_names(
     models: list[DataModel],
     imports: Imports,
     shared_imports: Imports,
@@ -516,7 +516,7 @@ def _bind_module_field_names(  # noqa: PLR0913
     return True
 
 
-def render_module_models(  # noqa: PLR0913, PLR0917
+def render_module_models(  # noqa: PLR0917
     models: list[DataModel],
     imports: Imports,
     shared_imports: Imports,
@@ -1803,7 +1803,7 @@ def resolve_module_import_conflicts(parser: ImportsHost[Any], state: _FinalizeSt
             parser.data_model_type.resolve_module_import_conflicts(ctx.models, state.model_imports, ctx.imports)
 
 
-def _rebind_import(  # noqa: PLR0913
+def _rebind_import(
     parser: ImportsHost[Any],
     ctx: ModuleContextView,
     binding: str,
@@ -1827,7 +1827,7 @@ def _rebind_import(  # noqa: PLR0913
     return alias
 
 
-def _rebind_users(  # noqa: PLR0913
+def _rebind_users(
     parser: ImportsHost[Any],
     ctx: ModuleContextView,
     held: Mapping[str, Reference],
@@ -2738,7 +2738,7 @@ def reject_unimportable_imports(
             raise Error(msg)
 
 
-def render_modules(  # noqa: PLR0913
+def render_modules(
     parser: RenderHost[ConfigT, ContextT, ResultT],
     results: dict[ModulePath, ResultT],
     *,
@@ -2905,7 +2905,7 @@ def _generic_base_class_placement(
     )
 
 
-def check_import_reads(  # noqa: PLR0913
+def check_import_reads(
     parser: RenderHost[Any, Any, Any],
     results: Mapping[ModulePath, object],
     contexts: Sequence[ModuleContextView],

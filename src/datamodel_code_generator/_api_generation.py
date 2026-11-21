@@ -433,7 +433,7 @@ def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArti
     )
 
 
-def _generate_models(  # noqa: PLR0913
+def _generate_models(
     input_: _GenerationInput,
     config: GenerateConfig,
     target: TargetConfig,
@@ -607,7 +607,7 @@ def _collision(message: str, path: Path) -> Diagnostic:
 
 
 class _Planner:
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         models: _Models,
         effective: GenerateConfig,
@@ -1125,7 +1125,7 @@ def _run_models(
     return _generate_models(input_, effective, config, cwd, use_output_cwd=False, compares=compares)
 
 
-def plan_target(  # noqa: PLR0913
+def plan_target(
     input_: _GenerationInput,
     *,
     model_config: GenerateConfig,

@@ -1483,7 +1483,7 @@ def holds_union_member(parser: SchemaRefsHost, schema: JsonSchemaObject, seen: f
     return False
 
 
-def _member_conjunctions(  # noqa: PLR0913
+def _member_conjunctions(
     parser: AllOfValuesHost,
     item: JsonSchemaObject | bool,  # noqa: FBT001
     where: str,

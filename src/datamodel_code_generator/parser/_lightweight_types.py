@@ -168,7 +168,7 @@ def merge_schema_constraints(
             base_dict.pop(field, None)
 
 
-def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
+def build_lightweight_array_type(  # noqa: PLR0917
     parser: LightweightTypesHost,
     schema: JsonSchemaObject,
     depth: int,

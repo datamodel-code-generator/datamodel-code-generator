@@ -2059,7 +2059,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         _rw_split.store_extra_items_type(self, metadata, additional_type, reference_classes_required=True)
         _rw_split.unregister_temporary_type(self, additional_type)
 
-    def _copy_schema_runtime_validation_for_variant(  # noqa: PLR0913
+    def _copy_schema_runtime_validation_for_variant(
         self,
         source_path: str,
         target_path: str,
@@ -2152,7 +2152,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _generate_forced_base_models(self) -> None:
         """Retain the late parser extension hook used by schema subclasses."""
 
-    def _create_variant_model(  # noqa: PLR0913
+    def _create_variant_model(
         self,
         base_reference: Reference,
         suffix: Literal["Request", "Response"],
@@ -2167,7 +2167,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self, base_reference, suffix, model_fields, obj, data_model_type_class, source_fields=source_fields
         )
 
-    def get_object_field(  # noqa: PLR0913
+    def get_object_field(
         self,
         *,
         field_name: str | None,
@@ -3322,7 +3322,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 groups.constraint_only.append(item)
         return groups
 
-    def _build_allof_type(  # noqa: PLR0911, PLR0912, PLR0913, PLR0917
+    def _build_allof_type(  # noqa: PLR0911, PLR0912, PLR0917
         self,
         allof_items: Sequence[JsonSchemaObject | bool],
         depth: int,
@@ -4325,7 +4325,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> None:
         _schema_validators.add_conditional_validator(self, reference_path, obj, names_by_property)
 
-    def _add_schema_validators(  # noqa: PLR0913, PLR0917
+    def _add_schema_validators(  # noqa: PLR0917
         self,
         reference_path: str,
         name: str,
@@ -4344,7 +4344,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the scope of the model at ``path`` by the name the parser adds it under (row ``predicted``)."""
         return self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
 
-    def _parse_object_common_part(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
+    def _parse_object_common_part(  # noqa: PLR0912, PLR0914, PLR0915
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -4525,7 +4525,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             fields.append(field)
             existing_field_names.update({required_field_name, field.name or required_field_name})
 
-    def _parse_all_of_item(  # noqa: PLR0912, PLR0913, PLR0917
+    def _parse_all_of_item(  # noqa: PLR0912, PLR0917
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -4680,7 +4680,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return self.data_type(reference=reference)
 
-    def _register_root_model(  # noqa: PLR0913
+    def _register_root_model(
         self,
         *,
         reference: Reference,
@@ -4708,7 +4708,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Keep template-origin decisions local to this generation and model type."""
         return {}
 
-    def _create_registered_root_model(  # noqa: PLR0913
+    def _create_registered_root_model(
         self,
         data_model_root_type: type[DataModel],
         *,
@@ -4748,7 +4748,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._graph_builder.register_model(data_model_root)
         return data_model_root
 
-    def _register_root_model_as(  # noqa: PLR0913
+    def _register_root_model_as(
         self,
         data_model_root_type: type[DataModel],
         *,
@@ -5281,7 +5281,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return admits(part, frozenset())[0]
 
-    def _parse_all_of_union_model(  # noqa: PLR0913
+    def _parse_all_of_union_model(
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -6045,7 +6045,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return bool(is_primitive)
 
-    def _parse_combined_const_enum(  # noqa: PLR0913
+    def _parse_combined_const_enum(
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -6691,7 +6691,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return tuple(type_ for type_ in non_null_types(type_list) if type_ != "array")
         return ()
 
-    def _add_array_union_non_array_types(  # noqa: PLR0913
+    def _add_array_union_non_array_types(
         self,
         data_types: list[DataType],
         obj: JsonSchemaObject,
@@ -7074,7 +7074,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             root_type=root_type,
         )
 
-    def _parse_root_type_with_context(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
+    def _parse_root_type_with_context(  # noqa: PLR0912, PLR0914, PLR0915
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -9348,7 +9348,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _is_version_definition_namespace_name(self, name: str) -> bool:  # noqa: PLR6301
         return re.fullmatch(r"v\d+(?:[._-]\d+)*", name, flags=re.IGNORECASE) is not None
 
-    def _parse_file(  # noqa: PLR0913
+    def _parse_file(
         self,
         raw: dict[str, Any],
         obj_name: str,

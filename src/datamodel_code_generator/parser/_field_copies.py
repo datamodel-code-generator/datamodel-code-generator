@@ -179,7 +179,7 @@ def _keep_nullable_without_default(
         GenerationStore.record_nullable_without_default(copied_field, without_default)  # ty: ignore[deprecated]
 
 
-def _copy_resolved_inherited_field(  # noqa: PLR0913
+def _copy_resolved_inherited_field(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
     *,

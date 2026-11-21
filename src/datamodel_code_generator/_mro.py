@@ -52,7 +52,7 @@ def resolve_members(
     return resolved
 
 
-def collect_members(  # noqa: PLR0913
+def collect_members(
     order: Sequence[_T],
     members_of: Callable[[_T], Iterable[_M]],
     key: Callable[[_M], _K | None],

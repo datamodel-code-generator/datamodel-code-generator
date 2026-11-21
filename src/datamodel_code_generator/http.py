@@ -229,7 +229,7 @@ if TYPE_CHECKING:
         URL: _HTTPXURLFactory
         create_ssl_context: Callable[[bool], ssl.SSLContext]
 
-        def get(  # noqa: PLR0913
+        def get(
             self,
             url: str,
             *,
@@ -837,7 +837,7 @@ class _HTTPFetchSession:
         self._dns_cache.put(host, resolved_ips, _HTTP_FETCH_DNS_CACHE_MAX_SIZE)
         return resolved_ips
 
-    def get_response(  # noqa: PLR0913
+    def get_response(
         self,
         http_stack: _HTTPStack[_HTTPTransport],
         url: str,
@@ -877,7 +877,7 @@ class _HTTPFetchSession:
                 with contextlib.suppress(Exception):
                     client.close()
 
-    def get_body(  # noqa: PLR0913
+    def get_body(
         self,
         url: str,
         headers: Sequence[tuple[str, str]] | None = None,
@@ -910,7 +910,7 @@ class _HTTPFetchSession:
                 client.close()
 
 
-def _get_http_response(  # noqa: PLR0913
+def _get_http_response(
     http_stack: _HTTPStack[_HTTPTransport],
     url: str,
     *,
@@ -1095,7 +1095,7 @@ def _get_redirect_headers(
     return fields_without(headers, _SENSITIVE_REDIRECT_HEADERS)
 
 
-def get_body(  # noqa: PLR0913
+def get_body(
     url: str,
     headers: Sequence[tuple[str, str]] | None = None,
     ignore_tls: bool = False,  # noqa: FBT001, FBT002
@@ -1164,7 +1164,7 @@ def _get_configured_body(
     )
 
 
-def _get_body(  # noqa: PLR0913, PLR0914
+def _get_body(  # noqa: PLR0914
     url: str,
     headers: Sequence[tuple[str, str]] | None,
     ignore_tls: bool,  # noqa: FBT001

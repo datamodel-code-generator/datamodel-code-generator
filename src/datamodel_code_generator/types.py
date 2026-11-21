@@ -680,12 +680,12 @@ class DataType(_BaseModel):  # noqa: PLR0904
         defer_build=True,
     )
 
-    type: Optional[str] = None  # noqa: UP045
-    reference: Optional[Reference] = None  # noqa: UP045
+    type: Optional[str] = None
+    reference: Optional[Reference] = None
     data_types: list[DataType] = Field(default_factory=list)
     is_func: bool = False
-    kwargs: Optional[dict[str, Any]] = None  # noqa: UP045
-    import_: Optional[Import] = None  # noqa: UP045
+    kwargs: Optional[dict[str, Any]] = None
+    import_: Optional[Import] = None
     python_type: _BoundPythonTypeField | None = Field(default=None, exclude=True, repr=False)
     python_version: PythonVersion = PythonVersionMin
     is_optional: bool = False
@@ -697,19 +697,19 @@ class DataType(_BaseModel):  # noqa: PLR0904
     is_sequence: bool = False
     is_tuple: bool = False
     tuple_item_count: int | None = Field(default=None, ge=0)
-    given_container: Optional[GivenContainerName] = None  # noqa: UP045
+    given_container: Optional[GivenContainerName] = None
     is_custom_type: bool = False
-    literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)  # noqa: UP007
+    literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)
     enum_member_literals: list[tuple[str, str]] = Field(default_factory=list)  # [(EnumClassName, member_name), ...]
-    enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()  # noqa: UP007
+    enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()
     """The values written after ``enum_member_literals``, ``Literal[Kind.a, 'a']``: the tags a payload carries for
     members of a plain Enum, which equal no value (``parser/_tag_plan.py:writes_member_values``)."""
     use_standard_collections: bool = False
     use_generic_container: bool = False
     use_union_operator: bool = False
     preserve_union_member_order: bool = False
-    alias: Optional[str] = None  # noqa: UP045
-    parent: Union[DataModelFieldBase, DataType, None] = None  # noqa: UP007
+    alias: Optional[str] = None
+    parent: Union[DataModelFieldBase, DataType, None] = None
 
     @field_validator("python_type")
     @classmethod
@@ -726,10 +726,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     children: list[DataType] = Field(default_factory=list)
     strict: bool = False
-    dict_key: Optional[DataType] = None  # noqa: UP045
+    dict_key: Optional[DataType] = None
     treat_dot_as_module: bool = False
     use_serialize_as_any: bool = False
-    discriminator: Optional[str] = None  # noqa: UP045
+    discriminator: Optional[str] = None
 
     _exclude_fields: ClassVar[set[str]] = {"parent", "children"}
     _pass_fields: ClassVar[set[str]] = {"parent", "children", "data_types", "reference"}
@@ -787,7 +787,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         )
 
     @classmethod
-    def from_import(  # noqa: PLR0913
+    def from_import(
         cls: builtins.type[DataTypeT],
         import_: Import,
         *,
@@ -1871,7 +1871,7 @@ def written_type_name(data_type: DataType) -> str | None:
 
 
 @cache
-def _create_context_data_type(  # noqa: PLR0913, PLR0917
+def _create_context_data_type(  # noqa: PLR0917
     model_name: str,
     base: type[DataType],
     python_version: PythonVersion,
@@ -2121,7 +2121,7 @@ class DataTypeManager(ABC):
     type_map: dict[Types, DataType]
     """The type of each schema type and format, which the type managers of the outputs build."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # noqa: PLR0917
         self,
         python_version: PythonVersion = PythonVersionMin,
         use_standard_collections: bool = False,  # noqa: FBT001, FBT002
@@ -2392,7 +2392,7 @@ class DataTypeManager(ABC):
         return frozenset(keywords)
 
     @classmethod
-    def _constraint_keywords(  # noqa: PLR0911, PLR0913
+    def _constraint_keywords(  # noqa: PLR0911
         cls,
         data_type: DataTypeView,
         target_version: tuple[int, int],

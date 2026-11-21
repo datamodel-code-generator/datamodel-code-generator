@@ -141,7 +141,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     _OVERWRITES_REGEX_ENGINE: ClassVar[bool] = True
     _FOLLOWS_PATTERN_REFERENCES: ClassVar[bool] = True
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

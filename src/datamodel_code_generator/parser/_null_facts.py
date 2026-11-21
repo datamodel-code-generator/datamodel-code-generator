@@ -329,7 +329,7 @@ def with_null(schema: dict[str, Any], form: NullForm) -> dict[str, Any]:
     return {"anyOf": [schema, null_schema()]}
 
 
-def null_sources(  # noqa: PLR0913
+def null_sources(
     type_: object,
     *,
     nullable: bool | None = None,
@@ -390,7 +390,7 @@ class NullFacts:
     required: bool | None = None
 
 
-def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913, PLR0915
+def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0915
     sources: NullSources,
     site: NullSite,
     mode: NullMode = NO_NULL_MODE,

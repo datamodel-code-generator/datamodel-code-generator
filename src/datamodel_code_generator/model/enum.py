@@ -175,7 +175,7 @@ class Enum(DataModel):
         """
         return self._compared_class_hash(frozen=True)
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

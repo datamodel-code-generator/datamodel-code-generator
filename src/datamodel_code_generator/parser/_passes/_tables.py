@@ -147,7 +147,7 @@ class PipelineHost(
     def _check_model_inheritance(self, contexts: Sequence[Any]) -> None:
         """Reject invalid builtin inheritance."""
 
-    def _finalize_modules(  # noqa: PLR0913, PLR0917
+    def _finalize_modules(  # noqa: PLR0917
         self,
         contexts: list[Any],
         unused_models: list[DataModel],

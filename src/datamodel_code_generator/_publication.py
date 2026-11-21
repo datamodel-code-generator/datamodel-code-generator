@@ -218,7 +218,7 @@ def staged_artifact_path(directory: Path, target: Path, default_name: str, *, ma
     return staged
 
 
-def stage_artifact(  # noqa: PLR0913
+def stage_artifact(
     target: Path,
     default_name: str,
     anchor_path: Path,

@@ -354,7 +354,7 @@ class _Planner:
         return tag, tuple(tags.values())
 
 
-def plan_client_codecs(  # ruff: ignore[too-many-arguments]
+def plan_client_codecs(
     batch: GeneratedTypeContractBatch,
     wire: WirePlan,
     backend: CodecBackend,

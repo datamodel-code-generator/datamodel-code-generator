@@ -207,7 +207,7 @@ class TypedDict(DataModel):
         if _holds(imports, IMPORT_TYPED_DICT_BACKPORT) and _holds(imports, IMPORT_TYPED_DICT):
             _remove_all(imports, IMPORT_TYPED_DICT)
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

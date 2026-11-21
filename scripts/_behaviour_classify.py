@@ -451,7 +451,7 @@ class Verdict:
     accepted_by: frozenset[int] = frozenset()
 
 
-def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statements]
+def classify_cell(  # ruff: ignore[too-many-return-statements]
     base: Side,
     candidate: Side,
     *,

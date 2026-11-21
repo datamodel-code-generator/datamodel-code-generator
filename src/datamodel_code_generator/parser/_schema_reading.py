@@ -104,7 +104,7 @@ def _dump_enum_entries_skip_null(dump: Mapping[str, Any]) -> bool:
     return resolve_null_facts(dump_null_sources(dump), "enum").rule == "enum-null-as-nullable"
 
 
-def _intersect_dumps(  # noqa: PLR0913
+def _intersect_dumps(
     parts: Sequence[Mapping[str, Any]],
     row: dict[str, Any],
     *,
@@ -141,7 +141,7 @@ class _IntersectionReader(Protocol):
         """Warn about the keywords of an intersection whose parts have no value in common, and its untaken patterns."""
 
 
-def _intersect_parts(  # noqa: PLR0913
+def _intersect_parts(
     parser: _IntersectionReader,
     dumps: Sequence[Mapping[str, Any]],
     row: dict[str, Any],

@@ -252,7 +252,7 @@ class DataModelField(DataModelFieldBase):
     """The type manager of the output model, whose tables give the keywords the value of an enum's base takes."""
     _TYPE_WITHOUT_PATTERN: ClassVar[Callable[[DataType], DataType] | None] = None
     """The type a type of the output writes without its pattern (``_written_type``), or None to keep every pattern."""
-    constraints: Optional[Constraints] = None  # noqa: UP045
+    constraints: Optional[Constraints] = None
 
     @property
     def has_default_factory_in_field(self) -> bool:
@@ -950,7 +950,7 @@ class BaseModelBase(DataModel, ABC):
     REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK: ClassVar[bool] = True
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

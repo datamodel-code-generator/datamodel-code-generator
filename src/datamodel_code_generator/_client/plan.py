@@ -380,7 +380,7 @@ def _strings(value: object) -> TypeIs[tuple[str, ...]]:
 class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         request: TargetRequest,
         config: ClientGenerationConfig,
@@ -964,7 +964,7 @@ class Planner:
             for name, member, facts in members
         ), additional
 
-    def _read(  # noqa: PLR0913
+    def _read(
         self,
         body: TypeUseBinding,
         name: str,

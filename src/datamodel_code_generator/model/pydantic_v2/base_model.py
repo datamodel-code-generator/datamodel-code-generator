@@ -289,8 +289,8 @@ class Constraints(_Constraints):
     """Pydantic v2 field constraints with pattern support."""
 
     # To override existing pattern alias
-    regex: Optional[str] = Field(None, alias="regex")  # noqa: UP045
-    pattern: Optional[str] = Field(None, alias="pattern")  # noqa: UP045
+    regex: Optional[str] = Field(None, alias="regex")
+    pattern: Optional[str] = Field(None, alias="pattern")
 
     @model_validator(mode="before")
     def validate_min_max_items(cls, values: Any) -> dict[str, Any]:  # noqa: N805
@@ -812,7 +812,7 @@ class DataModelField(_PydanticBaseDataModelField):
         "pattern",
     }
     _DEFAULT_FIELD_KEYS: ClassVar[frozenset[str]] = _PYDANTIC_V2_DEFAULT_FIELD_KEYS
-    constraints: Optional[Constraints] = None  # noqa: UP045  # ty: ignore[invalid-mutable-override]
+    constraints: Optional[Constraints] = None  # ty: ignore[invalid-mutable-override]
     can_have_extra_keys: ClassVar[bool] = False
     _PYDANTIC_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     _PYDANTIC_EXTRA_PLAIN_ANNOTATION_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
@@ -2706,7 +2706,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             original_name=cls.TYPED_EXTRA_FIELD_NAME,
         )
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,

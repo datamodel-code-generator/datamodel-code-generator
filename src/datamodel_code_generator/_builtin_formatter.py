@@ -412,7 +412,7 @@ def _import_line_sort_key(
     return 1, 0, _natural_key(lower(module, target)), int(alias_category), alias_name, line_key
 
 
-def _build_builtin_import_block(  # noqa: PLR0913
+def _build_builtin_import_block(
     import_nodes: list[ast.Import | ast.ImportFrom],
     line_length: int,
     lines: list[str],
@@ -579,7 +579,7 @@ _MAGIC_TRAILING_COMMA = re.compile(r",\s*[)\]}]")
 _JOINED_STRINGS = re.compile(r"""['"]\s+[rRbBuUfF]*['"]""")
 
 
-def _logical_line_replacement(  # noqa: PLR0913
+def _logical_line_replacement(
     lines: list[str],
     start: int,
     end: int,
@@ -725,7 +725,7 @@ def _collect_header_replacements(
             yield replacement
 
 
-def _import_run_replacements(  # noqa: PLR0913
+def _import_run_replacements(
     body: list[ast.stmt],
     lines: list[str],
     line_length: int,
@@ -750,7 +750,7 @@ def _import_run_replacements(  # noqa: PLR0913
         )
 
 
-def _collect_statement_replacements(  # noqa: PLR0913
+def _collect_statement_replacements(
     statement: ast.stmt,
     lines: list[str],
     line_length: int,
@@ -781,7 +781,7 @@ def _collect_statement_replacements(  # noqa: PLR0913
             )
 
 
-def _collect_builtin_replacements(  # noqa: PLR0913
+def _collect_builtin_replacements(
     tree: ast.Module,
     lines: list[str],
     line_length: int,
@@ -916,9 +916,7 @@ def _clauses(statement: _ClauseStatement | ast.Match, lines: list[str], depth: i
             yield _clause(start, body, lines, depth, 0, laid_out=False)
 
 
-def _clause(  # noqa: PLR0913
-    start: int, body: list[ast.stmt], lines: list[str], depth: int, flags: int, *, laid_out: bool
-) -> _Clause:
+def _clause(start: int, body: list[ast.stmt], lines: list[str], depth: int, flags: int, *, laid_out: bool) -> _Clause:
     """Return the clause whose header starts on ``start``, before ``body``.
 
     A body on the header's line is read from that line, after the header, as black splits it there, but a definition's
@@ -1388,7 +1386,7 @@ def _generated_import_prefix_end(lines: list[str]) -> int | None:
     return import_end
 
 
-def _try_apply_builtin_generated_formatter(  # noqa: PLR0911, PLR0913
+def _try_apply_builtin_generated_formatter(  # noqa: PLR0911
     code: str,
     *,
     line_length: int,
@@ -1446,7 +1444,7 @@ def _try_apply_builtin_generated_formatter(  # noqa: PLR0911, PLR0913
     return _finalize_builtin_code(_join_import_block(import_block, "\n".join(lines)), string_normalization=False)
 
 
-def _apply_builtin_generated_formatter(  # noqa: PLR0913
+def _apply_builtin_generated_formatter(
     code: str,
     *,
     line_length: int = DEFAULT_LINE_LENGTH,
@@ -1477,7 +1475,7 @@ def _apply_builtin_generated_formatter(  # noqa: PLR0913
     )
 
 
-def apply_builtin_formatter(  # noqa: PLR0913
+def apply_builtin_formatter(
     code: str,
     *,
     line_length: int = DEFAULT_LINE_LENGTH,
@@ -1775,7 +1773,7 @@ def _strip_ends_before_last(text: str) -> str:
     return "".join(f"{line.rstrip()}\n" for line in complete) + last
 
 
-def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
+def _apply_builtin_formatter(  # noqa: PLR0914
     code: str,
     *,
     line_length: int,
