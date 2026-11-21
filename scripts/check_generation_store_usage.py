@@ -165,8 +165,8 @@ CONSTRUCTION_METHODS = frozenset({
 RENDER_ENTRY_POINTS = {
     "get_dedup_key": "renders a model to compare duplicates; its writes are caches, which the cache rules report",
     "prepare_module_code": "plans schema-validator module code at IMPORTS into a cache, which the cache rules report",
-    "render": "renders a model's text; render-time writes move into the field render plans (RP14a)",
-    "render_module_code": "renders a module's code at L7; render-time writes move into the field render plans (RP14a)",
+    "render": "renders a model's text; render-time writes move into the field render plans",
+    "render_module_code": "renders a module's code at L7; render-time writes move into the field render plans",
     "render_type_expr": "renders a type expression frozen at B2 under the render plan check at L7, as `type_hint` does",
 }
 """Render-time entry points that parser passes call; they are not hooks, and the hook closure stops at them."""

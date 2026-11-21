@@ -8,7 +8,7 @@ gives the type of a const, for the field hook and for the L1 const type, which r
 list or ``nullable`` (under ``--strict-nullable``) adds beside it.
 
 The rows named ``legacy-*`` keep today's output where sources or backends disagree on a fixed value's default or
-nullability; the fix of each (G12b, which also moves the decision after the facts it reads are final) deletes its row.
+nullability; the fix of each (which also moves the decision after the facts it reads are final) deletes its row.
 """
 
 from __future__ import annotations

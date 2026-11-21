@@ -1,4 +1,4 @@
-"""G13 posix-only-call: a collected test that reaches what exists on POSIX only needs a capability that Windows lacks.
+"""Rule posix-only-call: a collected test that reaches what exists on POSIX only needs a capability that Windows lacks.
 
 The use is found by origin in the test, in the helpers it calls, in a fixture it asks for and in a nested function.
 ``posix`` and ``symlinks`` (``platform!=win32``) and ``linux`` (``platform==linux``) exclude Windows; a capability of

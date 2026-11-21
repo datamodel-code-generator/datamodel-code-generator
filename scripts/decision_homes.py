@@ -258,13 +258,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`anyOf`/`oneOf` member typed null, `nullable`, a null `enum` value) and what each L1 site reads from it; "
             "OpenAPI passes `nullable` under `--strict-nullable` as a fact (a marker the first `_get_data_type` call "
             "sets) instead of rewriting `type`; today's disagreeing sites are named `legacy-*` rows, each deleted by "
-            "its fix (G12, G01 decision 3): root models ignore `nullable` (`legacy-root-model-type-only`), references "
+            "its fix (the null decision of the allOf intersection): root models ignore `nullable` (`legacy-root-model-type-only`), references "
             "read only a `type` of null (`legacy-ref-target-null-type-only`), root and array sites read `nullable` "
             "without `--strict-nullable` (`legacy-root-type-nullable-ungated`, `legacy-array-nullable-ungated`; "
-            "`allOf` sites read it so by G01 decision 3, `all-of-own-null`), a copied `nullable` leaves a map without "
+            "`allOf` sites read it so by the allOf intersection's null rule, `all-of-own-null`), a copied `nullable` leaves a map without "
             "null (`legacy-map-copied-nullable`), a `Literal` enum reads its null value alone "
             "(`legacy-enum-literal-value-only`), and OpenAPI's `nullable` counts as a type list only after the type is "
-            "first built (`legacy-nullable-as-type-list`); RP13 deletes the three use-site rows "
+            "first built (`legacy-nullable-as-type-list`); the step that writes rendered nullability once at render preparation deletes the three use-site rows "
             "(`legacy-nullable-as-type-list`, `legacy-root-model-type-only`, `legacy-ref-target-null-type-only`)"
         ),
         homes=(
@@ -463,7 +463,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`(T, Enum)`) only when it keeps every member value, else `Enum`; without it the 0.86.0 base of the schema "
             "type unless that base refuses a member (`legacy-value-base-changing-a-member`); merged enums keep today's "
             "kinds as named `legacy-*` rows, and msgspec keeps the 0.86.0 base where it could not decode that `Enum` "
-            "(`legacy-msgspec-decodable-value-base`, until G16 decides msgspec Enums; capability "
+            "(`legacy-msgspec-decodable-value-base`, until msgspec Enums are decided as a whole; capability "
             "`DataModel._DECODES_MIXED_ENUM_VALUES` through "
             "`model/output.py:OutputModelContext.decodes_mixed_enum_values`)"
         ),
@@ -786,7 +786,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "releases wrote group as they did); rendering for a key writes nothing, as "
             "`model/base.py:DataModel._prepare_dedup_key` first decides a root model's sequence interface and writes "
             "the nullability the field types render; today's disagreeing users are named `legacy-*` rows, replaced by "
-            "keys over model facts (G06, G07): same-name deduplication leaves union tags out, renders models under "
+            "keys over model facts (#4834, #4816): same-name deduplication leaves union tags out, renders models under "
             "their own class name, redirects root models that name the model of their own name and tells bases apart "
             "by type hint (`legacy-same-name-dedup`), collapse-reuse skips root models, renders each round anew and "
             "tells bases apart by reference (`legacy-collapse-reuse`), tree scope compares root models "
@@ -918,7 +918,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`combined_values_admitted` (`extract_const_enum_from_combined`), `literal_written` (the const of "
             "`_get_data_type`, the enum and const of `_parse_root_type_with_context`); "
             "`parser/_intersection.py:warn_unsatisfiable`; "
-            "`model/msgspec.py:DataModelField._literal_decided_meta_keywords`; not yet: `pattern` (G01's static "
+            "`model/msgspec.py:DataModelField._literal_decided_meta_keywords`; not yet: `pattern` (the static "
             "pattern scanner) and the literals of `_build_lightweight_type`"
         ),
         sites=(
@@ -1654,7 +1654,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the value types of its key classes, the null and the other types of its type array (an L1 builder over "
             "raw keywords of the map object, not a pure core); an `additionalProperties` schema that asserts something "
             "admits the keys outside the patterns, which makes the keys those of `propertyNames` or `str`, except for "
-            "msgspec, which keeps its 0.86.0 type until G16 decides msgspec union fallbacks (capability "
+            "msgspec, which keeps its 0.86.0 type until msgspec union fallbacks are decided as a whole (capability "
             "`DataModel._DECODES_VALUE_UNIONS` through `model/output.py:OutputModelContext.decodes_value_unions`)"
         ),
         homes=(Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_map"),),

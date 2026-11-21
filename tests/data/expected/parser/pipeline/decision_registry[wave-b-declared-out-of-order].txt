@@ -1,2 +1,2 @@
-order: G12b -> G06 -> G03b -> G08
-problem: decision phase: the registry lists G03b, G08, G06, G12b, not the order the order rule computes: G12b, G06, G03b, G08
+order: decide_literal_fields -> decide_unique_containers -> decide_constraints -> decide_defaults
+problem: decision phase: the registry lists decide_constraints, decide_defaults, decide_unique_containers, decide_literal_fields, not the order the order rule computes: decide_literal_fields, decide_unique_containers, decide_constraints, decide_defaults

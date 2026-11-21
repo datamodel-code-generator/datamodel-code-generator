@@ -1088,7 +1088,7 @@ IMPORT_REMOVED_REUSE_CANONICALS = PassDecl(
             "repairs the imports of every module once the fields models copy from their bases import theirs",
         ),
     ),
-    removed_by="RP15b",
+    removed_by="the step that writes imports from module import plans",
     trigger=Trigger("reuse removed a duplicate that a model named (_removed_reuse_users)", frozenset()),
 )
 IMPORT_RENAMED_TYPES = PassDecl(
@@ -1112,7 +1112,7 @@ IMPORT_RENAMED_TYPES = PassDecl(
             "imports renamed types next to the canonicals of removed reuse duplicates",
         ),
     ),
-    removed_by="RP15b",
+    removed_by="the step that writes imports from module import plans",
     trigger=Trigger(
         "a field-type rename, or a collapsed-root rename that changed the class name, was recorded",
         _facts(RenderFact.CLASS_NAMES),
@@ -1135,7 +1135,7 @@ IMPORT_ENUM_MEMBER_LITERAL_CLASSES = PassDecl(
             "warn_enums_admitting_other_values", "the warning reads the enum types before literal classes replace them"
         ),
     ),
-    removed_by="RP15b",
+    removed_by="the step that writes imports from module import plans",
 )
 APPLY_GENERIC_BASE_CLASS = PassDecl(
     "apply_generic_base_class",
@@ -1239,7 +1239,7 @@ UPDATE_TYPE_ALIASES = PassDecl(
         After("assign_forward_reference_fields", "the forward-reference assignment reads the field types unquoted"),
     ),
     summary="Quotes forward references and defers recursive containers.",
-    removed_by="RP16b",
+    removed_by="the step that quotes and binds references at render time without writing shared nodes",
 )
 COLLECT_LIVE_MODELS = PassDecl(
     "collect_live_models",
@@ -1296,7 +1296,7 @@ FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
             "the pydantic warning and this msgspec repair never read or write the same models",
         ),
     ),
-    removed_by="G08",
+    removed_by="the step that validates a default only against the type it belongs to",
     condition="msgspec",
     trigger=Trigger("a struct opted out of its tag", frozenset()),
 )
@@ -1508,7 +1508,7 @@ REMOVE_UNUSED_IMPORTS = PassDecl(
     PassKind.REPAIR,
     reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.CLASS_NAMES, RenderFact.MODULE_CODE),
     writes=_facts(RenderFact.MODULE_IMPORTS),
-    removed_by="RP15b",
+    removed_by="the step that writes imports from module import plans",
     after=(After("merge_runtime_expression_imports", "removes unused imports once every producer added its imports"),),
     summary="Drops the imports no rendered name uses; becomes a check.",
 )
@@ -1560,7 +1560,7 @@ BIND_MODULE_FIELD_NAMES = PassDecl(
         After("alias_builtin_shadowing_module_imports", "binds field names against the aliases of module imports"),
         After("alias_builtins_hidden_by_submodules", "binds field names against the aliases of hidden builtins"),
     ),
-    removed_by="RP15b",
+    removed_by="the step that writes imports from module import plans",
     condition="a class takes a name its module imports, which ``change_imported_model_name`` reads",
     summary=(
         "Binds the names that a field name hides from the text of its class under aliases (``object_aliased``) "
@@ -1645,7 +1645,7 @@ REFRESH_SEQUENCE_INTERFACE_AFTER_RENAMES = PassDecl(
     PassKind.REPAIR,
     reads=_facts(RenderFact.CLASS_NAMES),
     writes=_facts(RenderFact.BACKEND_CONFIG),
-    removed_by="RP15b",
+    removed_by="the step that writes imports from module import plans",
     after=(
         After(
             "name_final_classes_of_additional_properties",
@@ -1666,7 +1666,7 @@ REPLAN_SCHEMA_VALIDATORS_AFTER_RENAMES = PassDecl(
     PassKind.REPAIR,
     reads=_facts(RenderFact.CLASS_NAMES),
     writes=_facts(RenderFact.MODULE_CODE, RenderFact.MODULE_IMPORTS),
-    removed_by="RP15b",
+    removed_by="the step that writes imports from module import plans",
     after=(
         After("change_imported_model_name", "plans the validator helpers again for the renamed models"),
         After("bind_module_field_names", "binding reads the module imports before the helpers are planned again"),
