@@ -7,8 +7,8 @@ fast paths read it without loading pydantic.
 
 from __future__ import annotations
 
+import importlib
 import json
-from importlib import import_module
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias, TypedDict
 
@@ -104,7 +104,7 @@ def json_schema_path(name: str) -> JsonSchemaPath | None:
 def json_schema_text(name: str) -> str:
     """Return the JSON Schema ``--output-format-json-schema`` prints for ``name``, importing only the module with it."""
     source = _JSON_SCHEMAS[name]
-    return getattr(import_module(f"datamodel_code_generator.{source.module}"), source.function)()
+    return getattr(importlib.import_module(f"datamodel_code_generator.{source.module}"), source.function)()
 
 
 __all__ = [

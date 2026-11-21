@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import contextlib
 import gc
+import importlib
 import io
 import json
 import os
@@ -22,7 +23,6 @@ from collections.abc import Generator, Iterable, Mapping
 from dataclasses import fields, replace
 from functools import lru_cache as _lru_cache
 from functools import partial as _partial
-from importlib import import_module
 from itertools import starmap
 from pathlib import Path
 from typing import (
@@ -1123,7 +1123,7 @@ def _build_parser(  # noqa: PLR0913
     )
     module, _, class_name = name.rpartition(".")
 
-    parser_class = getattr(import_module(f"datamodel_code_generator.parser.{module}"), class_name)
+    parser_class = getattr(importlib.import_module(f"datamodel_code_generator.parser.{module}"), class_name)
     if python_type_expressions is not None and row.parser == _JSON_SCHEMA_ROW.parser:
         return parser_class._from_python_type_expressions(  # noqa: SLF001
             source=source,
