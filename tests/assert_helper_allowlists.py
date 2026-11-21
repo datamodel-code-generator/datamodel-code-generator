@@ -111,7 +111,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "abnormal-e2e": (
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._publication",
     ),
-    "embedded-sources": ("embedded-source:tests/data/expected/main/generation_platform/client/fields-shared-refs.txt",),
 }
 LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "pre-platform": (
