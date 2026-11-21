@@ -39,7 +39,7 @@ def test_diff_against_identical_inputs_share_the_default_timestamp_across_genera
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=DATA_PATH / "expected" / "main" / "input_diff" / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
     assert CodeFormatter.apply_count == 2

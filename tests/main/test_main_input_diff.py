@@ -591,7 +591,7 @@ use-double-quotes = true
 
 def test_diff_against_json_fixture_matches_structured_output_schema() -> None:
     """The input-diff payload remains part of the public structured-output schema."""
-    schema_path = DATA_PATH / "expected" / "main_kr" / "output_format_json" / "structured_output_schema.txt"
+    schema_path = DATA_PATH / "expected" / "main_kr" / "output_format_json_schema_structured_output.stdout.txt"
     jsonschema.validate(
         instance=json.loads(
             stored_expected(INPUT_DIFF_EXPECTED_PATH / "different_file_json.txt").read_text(encoding="utf-8")
