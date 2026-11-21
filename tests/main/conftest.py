@@ -1718,7 +1718,6 @@ def run_main_url_and_assert(
     url: str,
     output_path: Path,
     input_file_type: InputFileTypeLiteral | None,
-    assert_func: AssertFileContent | None = None,
     expected_file: str | Path | None = None,
     extra_args: Sequence[str] | None = None,
     transform: Callable[[str], str] | None = None,
@@ -1731,8 +1730,7 @@ def run_main_url_and_assert(
         url: URL to fetch schema from
         output_path: Path to output file
         input_file_type: Type of input file (openapi, jsonschema, graphql, etc.)
-        assert_func: The assert_file_content function to use with expected_file
-        expected_file: Expected output filename; without both, pytest names the stored output after the test
+        expected_file: Expected output filename; without it, pytest names the stored output after the test
         extra_args: Additional CLI arguments
         transform: Optional function to transform output before comparison
         force_exec_validation: Run exec() even when target Python version differs from
@@ -1742,15 +1740,12 @@ def run_main_url_and_assert(
     __tracebackhide__ = True
     return_code = _run_main_url(url, output_path, input_file_type, extra_args=extra_args)
     _assert_exit_code(return_code, Exit.OK, f"URL: {url}")
-    if assert_func is None:
-        _compare_output(
-            output_path,
-            expected_file,
-            transform,
-            _get_argument_value(extra_args, "--encoding") or "utf-8",
-            name=name,
-        )
-    else:
-        assert_func(output_path, expected_file, transform=transform)
+    _compare_output(
+        output_path,
+        expected_file,
+        transform,
+        _get_argument_value(extra_args, "--encoding") or "utf-8",
+        name=name,
+    )
 
     _validate_output_files(output_path, extra_args, force_exec_validation=force_exec_validation)
