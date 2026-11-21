@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feed",
+  "type": "object",
+  "properties": {
+    "entry": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "$defs": {
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "type": "object",
+          "required": [
+            "source-name"
+          ]
+        }
+      ]
+    },
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "source-name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

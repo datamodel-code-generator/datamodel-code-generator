@@ -190,17 +190,17 @@ def _copy_resolved_inherited_field(
                 register_references=register_references,
             )
             copied_data_type = _without_null_members(copied_data_type, current_type)
-            if (wrapper_template := current_type.list_wrapper) is None or not copied_data_type.is_list:
+            if (wrapper_template := current_type.list_wrapper) is not None and copied_data_type.is_list:
+                wrapper = _copy_data_type(wrapper_template, register_references=register_references)
+                wrapper.data_types[0] = copied_data_type
+                copied_data_type.parent = wrapper
+                copied_data_type = wrapper
+            else:
                 _merge_data_type_modifiers(
                     copied_data_type,
                     current_type,
                     preserve_inherited_kwargs=partial_merge_mode == AllOfMergeMode.NoMerge,
                 )
-            else:  # pragma: no cover - not proven unreachable
-                wrapper = _copy_data_type(wrapper_template, register_references=register_references)
-                wrapper.data_types[0] = copied_data_type
-                copied_data_type.parent = wrapper
-                copied_data_type = wrapper
             required = False if force_optional else inherited_field.required or field.required
             facts: FieldCopyFacts = {
                 "required": required,

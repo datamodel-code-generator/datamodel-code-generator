@@ -42,3 +42,39 @@ def test_request_response_variant_keeps_a_constrained_override(output_file: Path
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--read-only-write-only-model-type", "request-response"],
     )
+
+
+def test_list_restated_over_an_inherited_list_const(output_file: Path) -> None:
+    """Restate an inherited list ``const`` as an array: the copy keeps the list type of the const in the child's."""
+    run_main_and_assert(
+        input_path=DEFERRED_PATH / "list_const_restated.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin"],
+    )
+
+
+def test_default_values_beside_a_required_name_no_schema_declares(output_file: Path) -> None:
+    """Apply ``--default-values`` to a child whose parent requires a name that no schema declares, as the child does."""
+    run_main_and_assert(
+        input_path=DEFERRED_PATH / "required_name_without_schema.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--default-values", '{"Pet.tag": "dog"}'],
+    )
+
+
+def test_required_only_name_keeps_the_serialization_alias_of_the_child(output_file: Path) -> None:
+    """Keep the alias ``--serialization-aliases`` gives a child that requires a property of a later parent."""
+    run_main_and_assert(
+        input_path=DEFERRED_PATH / "required_only_alias.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--serialization-aliases",
+            '{"Child.source-name": "serialized-name"}',
+            "--use-serialization-alias",
+        ],
+    )

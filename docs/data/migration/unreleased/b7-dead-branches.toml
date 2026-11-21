@@ -2,18 +2,30 @@
 id = "b7-dead-branches"
 category = "harness"
 title = "Test deferred inherited overrides through the CLI instead of private names"
-summary = "Six tests of parser/base.py that imported private re-exports give way to e2e cases of overrides of a parent written later and of request/response variants; the package writes the same output."
-refs = ["#1"]
+summary = "Six tests of parser/base.py that imported private re-exports give way to e2e cases of overrides of a parent written later, of an inherited list const, of required-only names and of request/response variants; the package writes the same output."
 covers = [
+    "main/jsonschema/deferred_inherited_overrides/default_values_beside_a_required_name_no_schema_declares.py",
     "main/jsonschema/deferred_inherited_overrides/deferred_override_of_a_parent_defined_later[default].py",
     "main/jsonschema/deferred_inherited_overrides/deferred_override_of_a_parent_defined_later[default_values].py",
+    "main/jsonschema/deferred_inherited_overrides/list_restated_over_an_inherited_list_const.py",
     "main/jsonschema/deferred_inherited_overrides/request_response_variant_keeps_a_constrained_override.py",
+    "main/jsonschema/deferred_inherited_overrides/required_only_name_keeps_the_serialization_alias_of_the_child.py",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_jsonschema_defe~0b3e0bd8.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_jsonschema_defe~1399d36b.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~1c2bd852.txt",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~a56b616c.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~68de0e2b.txt",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_~b2ae075c.txt",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~cac2f906.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~d6b16f45.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_deferred_~54404e97.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_deferred_~552863ed.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_deferred_~654d9bb3.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_deferred_~a901e50e.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_deferred_~f3b41b11.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_deferred_inhe~3d667376.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_deferred_inhe~c3cf19dd.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_deferred_inhe~ce7b1169.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_deferred_inhe~eaeca206.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_deferred_inhe~f7c4e755.errors.txt",
 ]
