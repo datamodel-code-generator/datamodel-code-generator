@@ -22,6 +22,7 @@ from datamodel_code_generator.preset import (
     PresetOptionGroup,
     get_latest_preset_name,
     get_preset_infos,
+    render_preset_history,
     render_presets,
     resolve_preset_config_updates,
 )
@@ -68,6 +69,7 @@ def test_build_preset_docs_check_help_mentions_all_generated_targets() -> None:
 def test_preset_metadata_renderers() -> None:
     """Preset metadata renderers expose the committed preset reference."""
     assert_output(render_presets("markdown"), name="presets_markdown")
+    assert_output(render_preset_history(), name="preset_history_markdown")
     assert_output(render_presets("json"), name="presets_json")
     assert_output(
         f"{get_latest_preset_name()}\n{get_preset_infos()[0].name.value}\n",

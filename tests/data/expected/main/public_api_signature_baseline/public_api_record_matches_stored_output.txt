@@ -4970,6 +4970,8 @@ def get_preset_infos() -> tuple[PresetInfo, ...]
 def get_preset_names() -> tuple[str, ...]
 def latest_preset_name(family: str, target_python_version: PythonVersion) -> str
 def preset_info_as_dict(info: PresetInfo) -> _PresetInfoDict
+def render_preset_history() -> str
+def render_preset_history_markdown() -> str
 def render_presets(format_: PresetFormat) -> str
 def render_presets_json() -> str
 def render_presets_markdown() -> str
