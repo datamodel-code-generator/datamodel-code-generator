@@ -6005,7 +6005,7 @@ path = "src/datamodel_code_generator/parser/_field_copies.py"
 qualname = "_copy_resolved_inherited_field"
 rule_code = "MUT201"
 target = "DataType.is_optional"
-count = 3
+count = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_field_copies.py"
@@ -6090,13 +6090,6 @@ qualname = "_copy_resolved_inherited_field"
 rule_code = "MUT204"
 target = "datamodel_code_generator.types._copy_data_type"
 count = 2
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_field_copies.py"
-qualname = "_copy_resolved_inherited_field"
-rule_code = "MUT206"
-target = "_wraps_one_list"
-count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_field_copies.py"
