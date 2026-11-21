@@ -1,4 +1,4 @@
-"""G13 posix-only-call: a test reaches the fixtures pytest gives it from its ``conftest.py`` files.
+"""Rule posix-only-call: a test reaches the fixtures pytest gives it from its ``conftest.py`` files.
 
 A test is given the fixtures it asks for by parameter, the ``usefixtures`` of its decorator, class or module, and the
 ``autouse`` fixtures in scope, from the ``conftest.py`` of its folder and of the folders above it (the nearest

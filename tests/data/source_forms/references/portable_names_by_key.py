@@ -1,4 +1,4 @@
-"""G13 portable-names: the keys of a mapping that a helper turns into file names are file names.
+"""Rule portable-names: the keys of a mapping that a helper turns into file names are file names.
 
 ``write`` names files by the entries of the mapping it takes. A mapping passed to it, directly or through a module-level
 name that an argument reads (``CASES[case]``), at any depth, is checked key by key. A key that is a name read from a constant (`KEY`) is the string it holds, and a mapping held by a local name passed to

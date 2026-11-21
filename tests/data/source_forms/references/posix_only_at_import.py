@@ -1,4 +1,4 @@
-"""G13 posix-only-call: a name or module that exists on POSIX only breaks the import where it runs at import time.
+"""Rule posix-only-call: a name or module that exists on POSIX only breaks the import where it runs at import time.
 
 The module (``fcntl``, ``resource``) or the name (``os.fork``, ``os.mkfifo``, ``signal.SIGKILL``) counts by the origin the
 model gives it, through an alias or a ``from`` import. A use at module or class level is a site, in a script and in a

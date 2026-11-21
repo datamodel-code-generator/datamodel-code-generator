@@ -501,7 +501,7 @@ class DataModelField(DataModelFieldV2):
         """Drop Annotated when dataclass metadata moves to the assignment.
 
         Row ``legacy.pdc-annotated-strip``: the import goes whenever the dataclass must see the field's metadata, also
-        when the type hint itself writes ``Annotated`` (``NameError`` at import); the module import plan (RP15) keeps
+        when the type hint itself writes ``Annotated`` (``NameError`` at import); the module import plan keeps
         the imports the rendered text uses and deletes the row.
         """
         imports = super().imports

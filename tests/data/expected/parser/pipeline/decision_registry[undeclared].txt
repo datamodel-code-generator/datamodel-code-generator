@@ -1,2 +1,2 @@
-order: G12b
+order: decide_literal_fields
 problem: decision G99 has no declaration in DECISION_DECLS

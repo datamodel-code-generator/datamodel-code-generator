@@ -27,8 +27,8 @@ Named legacy rows, imports decided where the ledger does not see them:
   ``Field`` for described members), which the class never renders. The module binds their names, so class names
   (``Parser.__replace_duplicate_name_in_module``, ``_stdout_repair.flatten_invalid_modules``) and reuse keys
   (``DataModel._render_dedup_key``, ``Parser._stdout_model_fingerprint``) stay as in 0.86.0, and ``rendered`` leaves
-  them out of the import block. It goes when an option lets the module bind only what it writes (G09's naming
-  rules, #4802).
+  them out of the import block. It goes when an option lets the module bind only what it writes (the naming
+  rules of the naming phase, #4802).
 * ``legacy.alias-order``: a module's import names are unique among the names taken when each was asked for, in the
   order L5 and the L6 repairs asked. Unifying the alias schemes changes names (an option candidate).
 """
