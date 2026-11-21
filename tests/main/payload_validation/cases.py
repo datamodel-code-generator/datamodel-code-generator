@@ -29,7 +29,7 @@ from .constants import (
 from .models import SchemaCase
 from .schema import (
     _apply_component_discriminator_payload_constraints,
-    _apply_discriminator_payload_constraints,
+    _apply_every_discriminator_payload_constraints,
     _has_dotted_openapi_component_name,
     _has_read_only_exclusion,
     _normalize_schema_dialect,
@@ -128,7 +128,7 @@ def _make_openapi_case(path: Path, document: dict[str, Any], candidate_name: str
         **_to_json_schema(schema),
         "components": {"schemas": _to_json_schema(referenced_components)},
     }
-    _apply_discriminator_payload_constraints(json_schema, schema)
+    _apply_every_discriminator_payload_constraints(json_schema)
     _apply_component_discriminator_payload_constraints(json_schema)
     codegen_schema = {
         "openapi": document.get("openapi", "3.0.0"),
@@ -191,14 +191,16 @@ def _jsonschema_file_candidates(path: Path) -> Iterator[SchemaCase]:
 
 
 def _openapi_file_candidates(path: Path) -> Iterator[SchemaCase]:
+    """Yield the supported cases of an OpenAPI document's components and JSON bodies.
+
+    Each candidate is judged with the components it references, as its case holds them: alone, a reference to another
+    component of the document would be unresolved.
+    """
     document = _load_mapping(path)
     if not _is_openapi_document(document) or _has_dotted_openapi_component_name(document):
         return
     for name, schema in _iter_openapi_schema_candidates(document):
-        if not _schema_is_supported(schema, is_openapi=True):
-            continue
-        case = _make_openapi_case(path, document, name, schema)
-        if _case_is_supported(case):
+        if _case_is_supported(case := _make_openapi_case(path, document, name, schema)):
             yield case
 
 

@@ -1,0 +1,4 @@
+[
+  "/enum_a/0 enum null: invalid, model accepts",
+  "/enum_f enum null: invalid, model accepts"
+]

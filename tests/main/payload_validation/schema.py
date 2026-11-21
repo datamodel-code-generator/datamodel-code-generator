@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from hypothesis_jsonschema import from_schema
 from jsonschema import exceptions, validators
 
+from .conformance import _iter_schema_nodes
 from .constants import (
     ARRAY_SCHEMA_KEYWORDS,
     COMBINED_SCHEMA_KEYS,
@@ -332,7 +333,11 @@ def _to_json_schema(value: Any) -> Any:
     converted_value = value
     match value:
         case dict():
-            converted = {key: _to_json_schema(child) for key, child in value.items() if key != "nullable"}
+            converted = {
+                key: _to_json_schema(child)
+                for key, child in value.items()
+                if key != "nullable" or not isinstance(child, bool)
+            }
             if (property_names := converted.get("x-propertyNames")) is not None:
                 converted.setdefault("propertyNames", property_names)
             _set_discriminator_mapping_enum(converted, value)
@@ -446,6 +451,16 @@ def _apply_discriminator_payload_constraints(json_schema: dict[str, Any], schema
         ):
             property_schema["enum"] = [tag]
     return
+
+
+def _apply_every_discriminator_payload_constraints(json_schema: dict[str, object]) -> None:
+    """Constrain the tags of each discriminator of a case like its root's: its own, its nested and its components'.
+
+    OpenAPI selects a branch by its tag, which JSON Schema validation does not read, so a branch's tag property takes
+    the tag that selects it, wherever the discriminator sits.
+    """
+    for node in [node for node in _iter_schema_nodes(json_schema) if "discriminator" in node]:
+        _apply_discriminator_payload_constraints(json_schema, node)
 
 
 def _add_required_property(schema: dict[str, Any], property_name: str) -> None:

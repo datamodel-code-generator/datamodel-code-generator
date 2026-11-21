@@ -1,0 +1,10 @@
+[
+  "/cache enum 0: invalid, model accepts",
+  "/cache enum 0.0: invalid, model accepts",
+  "/cache enum null: invalid, model accepts",
+  "/kind enum \"1\": invalid, model accepts",
+  "/kind enum true: invalid, model accepts",
+  "/level enum null: invalid, model accepts",
+  "/limit enum \"0\": invalid, model accepts",
+  "/limit enum false: invalid, model accepts"
+]

@@ -1,0 +1,8 @@
+[
+  "/array/0 minLength \"a\": invalid, model accepts",
+  "/arrayRoot minItems [\"aa\"]: invalid, model accepts",
+  "/deep/0/0 minLength \"a\": invalid, model accepts",
+  "/direct minLength \"a\": invalid, model accepts",
+  "/inline minLength \"a\": invalid, model accepts",
+  "/mappingRoot minProperties {\"neighbour0\": \"aa\"}: invalid, model accepts"
+]

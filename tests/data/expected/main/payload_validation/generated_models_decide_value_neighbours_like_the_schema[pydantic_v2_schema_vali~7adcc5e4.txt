@@ -1,0 +1,14 @@
+[
+  "/color enum null: invalid, model accepts",
+  "/kind enum null: invalid, model accepts",
+  "/pinned const null: invalid, model accepts",
+  "/pinned enum null: invalid, model accepts",
+  "/priority enum \"1\": invalid, model accepts",
+  "/priority enum \"2\": invalid, model accepts",
+  "/priority enum \"3\": invalid, model accepts",
+  "/priority enum null: invalid, model accepts",
+  "/provisioningState enum null: invalid, model accepts",
+  "/region enum null: invalid, model accepts",
+  "/tier enum null: invalid, model accepts",
+  "/type enum null: invalid, model accepts"
+]

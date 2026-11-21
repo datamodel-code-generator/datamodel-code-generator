@@ -1,0 +1,4 @@
+[
+  "/payload maxProperties {\"kind\": \"a\", \"neighbour0\": \"a\", \"noteLeaf\": {\"id\": 0}}: invalid, model accepts",
+  "/payload/kind const \"metric\": invalid, model accepts"
+]

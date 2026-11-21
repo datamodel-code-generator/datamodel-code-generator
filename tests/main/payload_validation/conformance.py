@@ -569,7 +569,13 @@ SCHEMA_KEYWORD_KINDS: Final[dict[str, str]] = {
         "schema_map",
     ),
     "dependencies": "dependencies",
+    "components": "components",
 }
+"""How each keyword that holds schemas holds them.
+
+``components`` holds, under ``schemas``, the OpenAPI components that an OpenAPI case references, which its schema
+reads like ``$defs``.
+"""
 
 
 def _schema_keyword_kind(keyword: object) -> str | None:
@@ -597,6 +603,8 @@ def _iter_keyword_schema_nodes(keyword: object, value: object) -> Iterable[dict[
                 if isinstance(dependency, dict):
                     yield from _iter_schema_nodes(dependency)
             return
+        case "components":
+            yield from _iter_keyword_schema_nodes("$defs", value.get("schemas") if isinstance(value, dict) else None)
         case _:
             return
 

@@ -1,0 +1,5 @@
+{
+  "jsonschema": 1117,
+  "openapi": 1816,
+  "openapi with referenced components": 715
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
@@ -444,13 +445,21 @@ def test_payload_openapi_cases_keep_the_components_in_document_order() -> None:
 
 
 def test_payload_validation_cases_cover_discovered_schema_files() -> None:
-    """Every discovered schema fixture must be validated or explicitly excluded."""
+    """Every discovered schema fixture must be validated or explicitly excluded; the cases are counted.
+
+    The count of the OpenAPI cases that hold the components they reference shows a change that skips them again.
+    """
     unaccounted = discover_unaccounted_files(SCHEMA_CASES)
     if unaccounted:  # pragma: no cover
         pytest.fail(
             "Schema files must be covered by payload validation or added to EXCLUDED_FILES with a reason:\n"
             + "\n".join(unaccounted)
         )
+    counts = Counter(case.input_file_type for case in SCHEMA_CASES)
+    counts["openapi with referenced components"] = sum(
+        bool(case.source_schema["components"]["schemas"]) for case in SCHEMA_CASES if case.input_file_type == "openapi"
+    )
+    assert_output(json.dumps(dict(sorted(counts.items())), indent=2) + "\n")
 
 
 def test_payload_rejection_oracle_policy_is_classified() -> None:

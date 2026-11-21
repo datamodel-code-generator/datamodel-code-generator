@@ -1,0 +1,4 @@
+[
+  "/thing discriminator {\"kind\": null, \"meow\": \"a\", \"tiny\": true}: invalid, model accepts",
+  "/thing/kind const null: invalid, model accepts"
+]
