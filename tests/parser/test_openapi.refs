@@ -23,7 +23,7 @@ True-True-custom_module.Base	parser/openapi/openapi_parser_parse_additional_prop
 [test_openapi_parser_parse_any]
 	parser/openapi/openapi_parser_parse_any/output.py
 [test_openapi_parser_parse_anyof]
-	parser/openapi/openapi_parser_parse_anyof/output.py
+	parser/openapi/parser_parse_anyof.py
 [test_openapi_parser_parse_anyof_required]
 	parser/openapi/openapi_parser_parse_anyof_required/output.py
 [test_openapi_parser_parse_array_enum]
@@ -37,7 +37,7 @@ True-True-custom_module.Base	parser/openapi/openapi_parser_parse_additional_prop
 [test_openapi_parser_parse_invalid_dotted_without_imports]
 	parser/openapi/openapi_parser_parse_invalid_dotted_without_imports//*.py
 [test_openapi_parser_parse_modular]
-	parser/openapi/openapi_parser_parse_modular//*.py
+	parser/openapi/parser_parse_modular/
 [test_openapi_parser_parse_modular_pydantic_v2_ruff_keeps_runtime_imports]
 	parser/openapi/openapi_parser_parse_modular_pydantic_v2_ruff//*.py
 [test_openapi_parser_parse_nested_anyof]

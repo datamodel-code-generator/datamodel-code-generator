@@ -1039,11 +1039,12 @@ def test_option_list_in_pyproject(
             output_path=pyproject_output,
             input_file_type="openapi",
             extra_args=[*common, *pyproject_args],
+            name="model",
         )
     run_main_and_assert(
         input_path=input_path,
         output_path=tmp_path / "options.py",
         input_file_type="openapi",
         extra_args=[*common, *options_args],
-        expected_output=pyproject_output.read_text(encoding="utf-8"),
+        name="model",
     )

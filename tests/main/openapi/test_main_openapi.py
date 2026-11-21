@@ -2257,7 +2257,7 @@ def test_main_invalid_dotted_schema_name_stdout(capsys: pytest.CaptureFixture[st
             input_path=OPEN_API_DATA_PATH / "invalid_dotted_schema_name.yaml",
             output_path=None,
             input_file_type="openapi",
-            expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_stdout.py",
+            stdout_suffix=".py",
             capsys=capsys,
             assert_no_stderr=True,
         )

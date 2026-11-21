@@ -461,7 +461,7 @@ True	main/openapi/custom_file_header_with_docstring_and_import.py
 [test_main_invalid_dotted_schema_name_json_stdout]
 	main/openapi/invalid_dotted_schema_name_json_stdout.txt
 [test_main_invalid_dotted_schema_name_stdout]
-	main/openapi/invalid_dotted_schema_name_stdout.py
+	main/openapi/main_openapi/main_invalid_dotted_schema_name_stdout.stdout.py	= main/openapi/invalid_dotted_schema_name_stdout.py
 [test_main_invalid_dotted_schema_name_stdout_model_name_map_warnings]
 	main/openapi/invalid_dotted_schema_name_stdout.py
 	main/openapi/main_openapi/main_invalid_dotted_schema_name_stdout_model_name_map_warnings.txt

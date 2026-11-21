@@ -783,9 +783,9 @@ same-document	api_generation/fastapi_cli/shared_parent_jobs[same-document].txt	=
 [test_fastapi_cli_shared_parent_later_job]
 	api_generation/fastapi_cli/shared_parent_later_job.txt
 [test_fastapi_cli_shared_parent_runs]
-nested	main/generation_platform/fastapi/cli/shared-parent-runs/pkg.server_a-generate.txt
+nested	api_generation/fastapi_cli/shared_parent_runs[nested].txt
 nested	main/generation_platform/fastapi/cli/shared-parent-runs/pkg.server_a.txt
-top-level	main/generation_platform/fastapi/cli/shared-parent-runs/server_a-generate.txt
+top-level	api_generation/fastapi_cli/shared_parent_runs[top-level].txt
 top-level	main/generation_platform/fastapi/cli/shared-parent-runs/server_a.txt
 [test_fastapi_cli_stdin]
 	api_generation/fastapi_cli/stdin.2.py	= main/generation_platform/fastapi/cli/stdin-models.py

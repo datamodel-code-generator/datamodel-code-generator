@@ -2086,6 +2086,143 @@ def test_ledger_generation_helpers_name_outputs(ledger: LedgerProject) -> None:
     ledger.run("suite", "--inline-snapshot=disable").assert_outcomes(passed=10)
 
 
+NAMED_OUTPUT_TESTS = """
+from pathlib import Path
+
+from datamodel_code_generator import Error, InputFileType
+from tests.conftest import (
+    MockHttpxResponse,
+    assert_directory_content,
+    assert_exact_directory_content,
+    assert_generated_modules_output,
+    assert_output,
+    assert_parser_modules,
+    assert_parser_results,
+)
+from tests.main.conftest import (
+    run_generate_and_assert,
+    run_generate_file_and_assert,
+    run_main_and_assert,
+    run_main_url_and_assert,
+    run_main_with_args,
+)
+
+SCHEMA = Path(__file__).parent / "schema.json"
+ARGS = ["--disable-timestamp", "--input-file-type", "jsonschema"]
+OPTIONS = {"input_file_type": InputFileType.JsonSchema, "disable_timestamp": True}
+MODULES = {("pkg", "__init__.py"): "", ("pkg", "a.py"): "A = 1\\n", ("README.md",): "# pkg\\n"}
+MISSING = '{"type": "object", "properties": {"a": {"$ref": "#/definitions/missing"}}}'
+
+
+def test_runs(tmp_path):
+    run_main_and_assert(input_path=SCHEMA, output_path=tmp_path / "a.py", extra_args=ARGS, name="model")
+    run_generate_file_and_assert(input_path=SCHEMA, output_path=tmp_path / "b.py", name="model", **OPTIONS)
+    run_generate_and_assert(input_=SCHEMA, name="returned", **OPTIONS)
+
+
+def test_runs_differ(tmp_path):
+    run_main_and_assert(input_path=SCHEMA, output_path=tmp_path / "a.py", extra_args=ARGS, name="model")
+    run_main_and_assert(
+        input_path=SCHEMA, output_path=tmp_path / "b.py", extra_args=[*ARGS, "--class-name", "B"], name="model"
+    )
+
+
+def test_error():
+    run_generate_and_assert(input_=MISSING, expected_error=Error, strict_refs=True, **OPTIONS)
+
+
+def test_url(mock_httpx_get, tmp_path):
+    mock_httpx_get(*(MockHttpxResponse("https://example.com/schema.json", SCHEMA) for _ in range(2)))
+    run_main_url_and_assert(
+        url="https://example.com/schema.json",
+        output_path=tmp_path / "m.py",
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp"],
+    )
+    run_main_url_and_assert(
+        url="https://example.com/schema.json",
+        output_path=tmp_path / "n.py",
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--class-name", "B"],
+        name="renamed",
+    )
+
+
+def test_stdout_beside_file(tmp_path, capsys):
+    run_main_and_assert(
+        input_path=SCHEMA, output_path=tmp_path / "m.py", extra_args=ARGS, capsys=capsys, derived_stdout=True
+    )
+
+
+def test_stdout_suffix(capsys):
+    run_main_and_assert(input_path=SCHEMA, extra_args=ARGS, stdout_suffix=".py")
+    run_main_and_assert(input_path=SCHEMA, extra_args=ARGS, capsys=capsys, stdout_suffix=".py", name="captured")
+    run_main_with_args(["--input", str(SCHEMA), *ARGS], capsys=capsys, derived_stdout=True, stdout_suffix=".py")
+
+
+def test_suffix():
+    assert_output("A = 1\\n", suffix=".py")
+    assert_output({"b": [1, "x"]}, name="value", suffix=".json")
+
+
+def test_trees(tmp_path):
+    for name, text in {"a.py": "A = 1\\n", "notes.txt": "skip\\n"}.items():
+        (tmp_path / name).write_text(text)
+    assert_directory_content(tmp_path)
+    assert_exact_directory_content(tmp_path, pattern="*.txt", name="notes")
+    assert_generated_modules_output(MODULES, pattern="*", name="whole")
+    assert_parser_modules(MODULES, name="modules")
+    assert_parser_results({"pkg/a.py": "A = 1\\n", "README.md": "# pkg\\n"}, name="results")
+"""
+
+
+def test_ledger_helpers_store_named_outputs_without_paths(ledger: LedgerProject) -> None:
+    """Helpers without an expected path store outputs under ``name``, ``suffix`` and stdout roles of their own.
+
+    Two runs under one name compare one stored output and must be equal; an expected error without a match pattern
+    stores its text, and a tree helper without a directory stores the files its pattern selects as the test's tree.
+    """
+    ledger.write("schema.json", '{"title": "A", "type": "object", "properties": {"x": {"type": "string"}}}')
+    ledger.write("test_named.py", NAMED_OUTPUT_TESTS)
+    first = ledger.run("suite", "--inline-snapshot=fix")
+    first.assert_outcomes(passed=7, failed=1)
+    assert "test_runs_differ compares two different outputs against named/runs_differ.model.py" in first.stdout.str()
+    files = ledger.files()
+    assert files["named/error.txt"] == "Unresolved local $ref targets:\n- <input>: #/definitions/missing\n"
+    assert files["named/suffix.py"] == "A = 1\n"
+    assert files["named/suffix.value.json"] == '{\n  "b": [\n    1,\n    "x"\n  ]\n}'
+    assert not files["named/stdout_beside_file.stdout.txt"]
+    assert "class B(BaseModel)" in files["named/url.renamed.py"]
+    assert {name: text for name, text in files.items() if name.startswith("named/trees")} == {
+        "named/trees.modules/pkg/__init__.py": "",
+        "named/trees.modules/pkg/a.py": "A = 1\n",
+        "named/trees.notes/notes.txt": "skip\n",
+        "named/trees.results/pkg/a.py": "A = 1\n",
+        "named/trees.whole/README.md": "# pkg\n",
+        "named/trees.whole/pkg/__init__.py": "",
+        "named/trees.whole/pkg/a.py": "A = 1\n",
+        "named/trees/a.py": "A = 1\n",
+    }
+    refs = ledger.refs("test_named")
+    assert "[test_runs]\n\tnamed/runs.model.py\n\tnamed/runs.returned.py\n" in refs
+    assert (
+        "[test_stdout_beside_file]\n\tnamed/stdout_beside_file.py\t= named/runs.model.py\n"
+        "\tnamed/stdout_beside_file.stdout.txt\n"
+    ) in refs
+    assert (
+        "[test_stdout_suffix]\n\tnamed/stdout_suffix.2.stdout.py\t= named/runs.model.py\n"
+        "\tnamed/stdout_suffix.captured.stdout.py\t= named/runs.model.py\n"
+        "\tnamed/stdout_suffix.stdout.py\t= named/runs.model.py\n"
+    ) in refs
+    assert (
+        "[test_trees]\n\tnamed/trees.modules/\n\tnamed/trees.notes/\n\tnamed/trees.results/\n\tnamed/trees.whole/\n"
+        "\tnamed/trees/\n"
+    ) in refs
+    assert "[test_url]\n\tnamed/url.py\n\tnamed/url.renamed.py\n" in refs
+    again = ledger.run("suite", "--inline-snapshot=disable", "--deselect", "suite/test_named.py::test_runs_differ")
+    again.assert_outcomes(passed=7)
+
+
 KEPT_MODULE_TESTS = """
 from tests.test_conftest_helpers import kept_modules, ledger
 

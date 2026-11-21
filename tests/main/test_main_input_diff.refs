@@ -5,7 +5,7 @@ different	main/input_diff/different_suffixless_file.txt
 different-json	main/input_diff/different_suffixless_file_json.txt
 identical	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_diff_against_identical_single_file_does_not_write_virtual_output]
-	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+	main/main_input_diff/diff_against_identical_single_file_does_not_write_virtual_output.stdout.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_diff_against_infers_each_input_type_independently]
 	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_diff_against_json_reports_added_and_removed_directory_files_without_writing_virtual_output]

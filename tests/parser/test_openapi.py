@@ -522,7 +522,7 @@ def test_openapi_parser_parse_anyof(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     parser = OpenAPIParser(
         Path(DATA_PATH / "anyof.yaml"),
     )
-    assert_output(parser.parse(), EXPECTED_OPEN_API_PATH / "openapi_parser_parse_anyof" / "output.py")
+    assert_output(parser.parse(), suffix=".py")
 
 
 def test_openapi_parser_parse_anyof_required(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -606,7 +606,7 @@ def test_openapi_parser_parse_modular(tmp_path: Path, monkeypatch: pytest.Monkey
     monkeypatch.chdir(tmp_path)
     parser = OpenAPIParser(Path(DATA_PATH / "modular.yaml"), data_model_field_type=DataModelFieldBase)
     modules = parser.parse()
-    assert_parser_modules(modules, EXPECTED_OPEN_API_PATH / "openapi_parser_parse_modular")
+    assert_parser_modules(modules)
 
 
 def test_openapi_parser_parse_invalid_dotted_without_imports() -> None:
