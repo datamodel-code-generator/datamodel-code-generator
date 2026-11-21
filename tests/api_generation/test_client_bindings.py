@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -43,9 +44,13 @@ def test_client_model_bindings(case: str, tmp_path: Path) -> None:
     report, packages, bindings = client_binding_report(case, tmp_path)
     assert_output(report)
     assert_generated_modules_output(bindings, name="bindings")
-    for index, (models, ordinary) in enumerate(packages):
-        write_generated_modules(captured := tmp_path / "captured" / str(index), models)
-        assert_exact_directory_content(captured, ordinary)
+    if packages:
+        for index, (models, ordinary) in enumerate(packages):
+            write_generated_modules(tmp_path / "captured" / str(index), models)
+            ordinary.mkdir(exist_ok=True)
+            shutil.copytree(ordinary, tmp_path / "ordinary" / str(index))
+        assert_exact_directory_content(tmp_path / "captured", name="models")
+        assert_exact_directory_content(tmp_path / "ordinary", name="models")
 
 
 @pytest.mark.parametrize(
@@ -100,7 +105,8 @@ def test_capture_preserves_ordinary_model_bytes(
     write_generated_modules(
         captured := tmp_path / "captured", {parts: text for parts, text in modules.items() if parts[0] != package}
     )
-    assert_exact_directory_content(captured, ordinary)
+    assert_exact_directory_content(captured, name="models")
+    assert_exact_directory_content(ordinary, name="models")
 
 
 @pytest.mark.abnormal_path(
