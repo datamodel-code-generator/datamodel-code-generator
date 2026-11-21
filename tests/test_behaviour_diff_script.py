@@ -2000,7 +2000,7 @@ def test_identity_with_a_pick(case: str, tmp_path: Path, monkeypatch: pytest.Mon
     assert_output(text.replace(commit[:12], "<sha>").replace(str(tmp_path), "TMP"))
 
 
-@needs("no-sys-monitoring")
+@needs("posix", "no-sys-monitoring")
 def test_catalog_refuses_an_interpreter_without_sys_monitoring(tmp_path: Path) -> None:
     """`catalog` refuses Python 3.11, which records nothing a cell ran, before any worker: no catalog of no keys."""
     out = tmp_path / "catalog.json.gz"
