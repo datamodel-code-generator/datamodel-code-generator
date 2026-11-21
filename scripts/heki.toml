@@ -5836,6 +5836,6 @@ unresolved = "report"
 
 [[effect-boundaries]]
 name = "no-environment-reads"
-scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*", "datamodel_code_generator.*:<module>", "datamodel_code_generator:<module>"]
 forbid = ["reads-environment"]
 import-probes = "report"

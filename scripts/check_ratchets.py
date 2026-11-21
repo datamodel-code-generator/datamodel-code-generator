@@ -50,12 +50,6 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   ``comment:plain@src`` the other plain comments (a directive such as ``noqa``, a pragma, a type ignore, a shebang or
   an encoding line is none). A comment that explains a hard line is legitimate, so the budget is today's count, paid
   by turning another comment into a docstring.
-- ``env-probe@src``: the places where the package reads the environment it runs in: a guarded import (an import
-  statement or ``import_module`` call in the body of a ``try`` with a handler for ``ImportError`` or
-  ``ModuleNotFoundError``, one probe per statement; ``except Exception`` makes an ordinary lazy import), the version
-  and platform reads of the source model's tables, ``os.environ``, ``os.getenv`` and ``importlib.util.find_spec``,
-  read with the source model by origin. Output that depends on the
-  environment cost review rounds, so the count may stay or fall, never rise.
 - ``expected:env-override`` and ``expected:conditional``: the ``.refs`` lines that carry an environment predicate
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
@@ -122,7 +116,7 @@ import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._import_cycles import import_cycles
-from scripts._source_model import _PLATFORMS, _VERSIONS, SourceModule
+from scripts._source_model import SourceModule
 from scripts.check_source_rules import RULES
 from scripts.check_source_rules import Tree as SourceTree
 from scripts.check_source_rules import run as run_source_rules
@@ -291,7 +285,7 @@ ALLOWLISTS = (
     ("tests/test_checks_are_run.py", frozenset({"UNREACHED"})),
 )
 PLAIN_COMMENT_AREAS = frozenset({"src"})
-"""The areas whose plain comments and environment probes are counted."""
+"""The areas whose plain comments are counted."""
 TODO_MARKER = re.compile(r"\b(?:TODO|FIXME|XXX|HACK)\b")
 COMMENT_DIRECTIVE = re.compile(
     r"^#(?:!|\s*-\*-|\s*(?:vim?|coding)[:=]|\s*(?:type|ty|pyright|mypy|pylint|isort|fmt)\s*:)", re.IGNORECASE
@@ -300,10 +294,6 @@ COMMENT_DIRECTIVE = re.compile(
 
 Comments the source model reports as suppressions (``noqa``, ``pragma``, ``ruff:``, type ignores) are directives too.
 """
-ENV_PROBES = frozenset({*_VERSIONS, *_PLATFORMS, "os.environ", "os.getenv", "importlib.util.find_spec"})
-"""The dotted origins whose reads depend on the environment: the source model's version and platform tables, etc."""
-IMPORT_ERRORS = frozenset({"builtins.ImportError", "builtins.ModuleNotFoundError"})
-"""The exceptions whose handler makes a ``try`` around an import a probe (``Exception`` makes it an ordinary guard)."""
 REPORT_ONLY = frozenset({"expected"})
 """The kinds of keys that are reported in the table and never fail."""
 ADVICE = {
@@ -325,11 +315,6 @@ ADVICE = {
         "nobody tracks."
     ),
     "comment": "Say it in the docstring or fix it: a comment that only explains a stopgap hides the stopgap.",
-    "env-probe": (
-        "Output must not depend on the environment the generator runs in: key the decision on an option or a "
-        "static rule, not on the interpreter, the platform, a variable or an installed package. A probe that "
-        "belongs to the runtime itself (an optional dependency) is paid for by removing another one."
-    ),
     "ty-ignore": "Fix the type error or the annotation instead of ignoring it.",
     "pyright-ignore": "pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.",
     "type-ignore": "Fix the type error or the annotation instead of ignoring it.",
@@ -855,58 +840,20 @@ def comment_sites(model: SourceModule) -> tuple[list[int], list[int]]:
     return plain, todo
 
 
-def _catches_import_error(model: SourceModule, node: ast.AST) -> bool:
-    """Return whether a ``try`` has a handler that names ``ImportError`` or ``ModuleNotFoundError`` by origin."""
-    if not isinstance(node, (ast.Try, ast.TryStar)):
-        return False
-    return any(
-        isinstance(part, ast.expr) and model.origin(part) in IMPORT_ERRORS
-        for handler in node.handlers
-        if handler.type is not None
-        for part in (handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type])
-    )
-
-
-def _guarded_by_import_error(model: SourceModule, guard: tuple) -> bool:
-    return any(condition.branch == "body" and _catches_import_error(model, condition.node) for condition in guard)
-
-
-def env_probe_sites(model: SourceModule) -> list[int]:
-    """Return the lines where a module reads the environment it runs in, by origin through the source model.
-
-    A guarded import (an import statement or ``import_module`` call in the body of a ``try`` with a handler for
-    ``ImportError``; one probe per statement) and each read of one of `ENV_PROBES`.
-    """
-    nodes = list(ast.walk(model.tree))
-    reads = [reference.node for reference in model.references if reference.context == "load"]
-    reads += [node for node in nodes if isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load)]
-    lines = [node.lineno for node in reads if model.origin(node) in ENV_PROBES]
-    guarded = {found.node for found in model.imports if _guarded_by_import_error(model, found.guard)}
-    guarded |= {
-        site.node
-        for site in model.dynamic_sites
-        if site.kind == "import-module" and _guarded_by_import_error(model, site.guard)
-    }
-    return sorted([*lines, *(node.lineno for node in guarded)])
-
-
 def _comment_tally(tally: Tally, root: Path, files: list[str]) -> None:
-    """Count the plain and to-do comments and the environment probes of the package, through the source model."""
+    """Count the plain and to-do comments of the package, through the source model."""
     for path in files:
         if not path.endswith((".py", ".pyi")) or path.startswith(UNCHECKED) or _area(path) not in PLAIN_COMMENT_AREAS:
             continue
         try:
             model = SourceModule((root / path).read_text(encoding="utf-8", errors="replace"), path)
             plain, todo = comment_sites(model)
-            probes = env_probe_sites(model)
         except (SyntaxError, ValueError):
             continue
         for line in plain:
             tally.add(f"comment:plain@{_area(path)}", path, line)
         for line in todo:
             tally.add("comment:todo", path, line)
-        for line in probes:
-            tally.add(f"env-probe@{_area(path)}", path, line)
 
 
 def _expected_tally(tally: Tally, root: Path) -> None:

@@ -42,10 +42,12 @@ SEEDED_PACKAGE = {
         "from datamodel_code_generator.model.base import DataModel\n\n\n"
         'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n'
     ),
+    f"{PACKAGE}/parser/seeded_env.py": "import sys\n\nOLD = sys.version_info < (3, 12)\n",
 }
 """A package whose ``seeded.py`` writes ``DataModel.fields`` outside the store operations that the fact row names.
 
-``GenerationStore.set_fields``, one of those operations, writes it too: heki allows that write.
+``GenerationStore.set_fields``, one of those operations, writes it too: heki allows that write. The module body of
+``seeded_env.py`` reads the interpreter's version, which the environment boundary forbids in module bodies too.
 """
 
 
@@ -91,8 +93,11 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
 
 
 @pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_reports_a_fact_write_outside_its_store_operations(tmp_path: Path) -> None:
-    """A write of a fact row's attribute outside the store operations the row names is a finding; theirs is none."""
+def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_reads(tmp_path: Path) -> None:
+    """A write of a fact row's attribute outside the store operations the row names is a finding; theirs is none.
+
+    A module body that reads the environment the package runs in is a finding too.
+    """
     for name, text in SEEDED_PACKAGE.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
@@ -105,7 +110,10 @@ def test_heki_reports_a_fact_write_outside_its_store_operations(tmp_path: Path) 
     ]
     assert (result.returncode, found) == (
         1,
-        [(f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields")],
+        [
+            (f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields"),
+            (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", "no-environment-reads:reads-environment"),
+        ],
     ), result.stderr
 
 

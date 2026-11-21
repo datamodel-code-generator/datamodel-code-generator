@@ -23,10 +23,6 @@ coverage-omit-widened	check_ratchets_script/check_ratchets_against_base[coverage
 demoted-absolute-rule	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule].txt
 demoted-absolute-rule-approved-in-head	check_ratchets_script/check_ratchets_against_base[demoted-absolute-rule-approved-in-head].txt
 dodges	check_ratchets_script/check_ratchets_against_base[dodges].txt
-environment-probes	check_ratchets_script/check_ratchets_against_base[environment-probes].txt
-environment-probes-broad-try	check_ratchets_script/check_ratchets_against_base[environment-probes-broad-try].txt	= check_ratchets_script/check_ratchets_against_base[form-swap].txt
-environment-probes-more	check_ratchets_script/check_ratchets_against_base[environment-probes-more].txt
-environment-probes-unchanged	check_ratchets_script/check_ratchets_against_base[environment-probes-unchanged].txt
 exempt-files-listed	check_ratchets_script/check_ratchets_against_base[exempt-files-listed].txt
 expected-reported-only	check_ratchets_script/check_ratchets_against_base[expected-reported-only].txt
 explicit-preview-rules	check_ratchets_script/check_ratchets_against_base[explicit-preview-rules].txt
