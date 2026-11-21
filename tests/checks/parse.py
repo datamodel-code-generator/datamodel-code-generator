@@ -431,6 +431,34 @@ def omit_default(original: Callable[..., None]) -> Callable[..., None]:
     return omit_default
 
 
+def merge_str_like_members(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.merge_str_like_members``: it writes the objects that the guarded views it gets name."""
+
+    @wraps(original)
+    def merge_str_like_members(
+        self: object,
+        model: object,
+        field: object,
+        rewrites: Sequence[tuple[object, Sequence[object]]],
+        merged: Sequence[object],
+    ) -> None:
+        return original(
+            self,
+            viewed(model),
+            viewed(field),
+            [
+                (
+                    viewed(union),
+                    tuple(member if isinstance(member, (str, tuple)) else viewed(member) for member in members),
+                )
+                for union, members in rewrites
+            ],
+            [viewed(member) for member in merged],
+        )
+
+    return merge_str_like_members
+
+
 def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``_DecisionWriter.mark_serialized_as_any``: it writes the model that the guarded view it gets names."""
 

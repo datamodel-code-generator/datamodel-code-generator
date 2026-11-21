@@ -10,13 +10,12 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator import InputFileType, load_yaml_dict_from_path
 from datamodel_code_generator.watch_dependencies import WatchDependencies
 from tests.conftest import assert_output
-from tests.main.conftest import DATA_PATH, EXPECTED_MAIN_PATH, run_generate_and_assert
+from tests.main.conftest import DATA_PATH, run_generate_and_assert
 
 if TYPE_CHECKING:
     import pytest
 
 _YAML_CACHE_DATA_PATH = DATA_PATH / "yaml" / "cache_paths"
-_YAML_CACHE_EXPECTED_PATH = EXPECTED_MAIN_PATH / "yaml_cache_paths"
 _SAME_MTIME_NS = 1_234_567_890_000_000_000
 
 
@@ -36,7 +35,7 @@ def test_load_yaml_dict_from_path_keeps_relative_cwd_cache_entries_distinct(
         input_=schema_from_a,
         input_file_type=InputFileType.JsonSchema,
         disable_timestamp=True,
-        expected_file=_YAML_CACHE_EXPECTED_PATH / "a.py",
+        name="from_a",
     )
 
     schema_from_b_path = schema_root / "b" / "schema.yaml"
@@ -53,7 +52,7 @@ def test_load_yaml_dict_from_path_keeps_relative_cwd_cache_entries_distinct(
         input_=schema_from_b,
         input_file_type=InputFileType.JsonSchema,
         disable_timestamp=True,
-        expected_file=_YAML_CACHE_EXPECTED_PATH / "b.py",
+        name="from_b",
     )
 
     assert_output(
@@ -65,5 +64,4 @@ def test_load_yaml_dict_from_path_keeps_relative_cwd_cache_entries_distinct(
             f"symlink remains a watch dependency: {symlink_path in dependencies.files}",
         ))
         + "\n",
-        _YAML_CACHE_EXPECTED_PATH / "cache_behavior.txt",
     )

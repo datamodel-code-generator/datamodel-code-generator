@@ -1,0 +1,31 @@
+[[change]]
+id = "merge-msgspec-str-like-union-members"
+category = "new-surface"
+title = "Write one str for the str-like members of a msgspec union under an option"
+summary = "msgspec.Struct output: --merge-msgspec-str-like-union-members writes one str in place of the str-like members of a union (str, UUID, the dates and times, Decimal, bytes, the str values of a Literal, and aliases of them) when it holds more than one of them, which msgspec refuses to decode; the union then accepts every string as str, without the formats and constraints of those members, with a warning. Unions with an Enum of str values, a member typed by x-python-type, a member built for an integer or number schema (a number of format decimal, time-delta or date-time, whose JSON numbers one str would refuse) or an alias of a union that mixes str-like and other members stay as they are, with their warning. Without the option the output is that of 0.99.0."
+refs = ["#1"]
+surface = ["--merge-msgspec-str-like-union-members"]
+covers = [
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members[merge].payloads.txt",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members[merge].py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members[merge_collapse_root_models].payloads.txt",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members[merge_collapse_root_models].py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members[merge_datetime_type_mappings].payloads.txt",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members[merge_datetime_type_mappings].py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_number_members_openapi.py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_union_kept_members.py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[merge].payloads.txt",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[merge].py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[merge_collapse_root_models].payloads.txt",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[merge_collapse_root_models].py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[merge_enum_field_as_literal].payloads.txt",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[merge_enum_field_as_literal].py",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[released].payloads.txt",
+    "main/jsonschema/msgspec_str_like_unions/msgspec_str_like_unions[released].py",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_j~cdc05350.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_jsonschema_msgspec_str_like_unions.json].txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~fbeeaad4.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_msgspec_str_like_unions.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_msgspec_str_like_unions.json].errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_msgspec_str_like_number_members.yaml].txt",
+]

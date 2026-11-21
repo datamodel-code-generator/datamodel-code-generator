@@ -213,6 +213,7 @@ class BaseGenerateConfig(TypedDict):
     use_encoded_str_for_constrained_base64: NotRequired[bool]
     use_strict_str_for_base64: NotRequired[bool]
     use_msgspec_meta_for_map_keys: NotRequired[bool]
+    merge_msgspec_str_like_union_members: NotRequired[bool]
     omit_redundant_constraints: NotRequired[bool]
     read_length_keywords_by_type: NotRequired[bool]
     read_object_keywords_by_type: NotRequired[bool]

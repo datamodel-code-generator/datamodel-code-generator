@@ -16,14 +16,13 @@ from datamodel_code_generator.__main__ import (
     _compare_generated_outputs,
     _write_comparison_output,
 )
-from tests.conftest import assert_output, create_assert_file_content, stored_expected
+from tests.conftest import assert_directory_content, assert_output, stored_expected
 from tests.main.conftest import DATA_PATH, InputFileTypeLiteral, run_main_and_assert, run_main_with_args
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-INPUT_DIFF_EXPECTED_PATH = DATA_PATH / "expected" / "main" / "input_diff"
 JSON_SCHEMA_INPUT_DIFF_PATH = DATA_PATH / "jsonschema" / "input_diff"
 OPENAPI_INPUT_DIFF_PATH = DATA_PATH / "openapi" / "input_diff"
 LOCAL_INPUT_TYPE_CASES: tuple[tuple[InputFileTypeLiteral, Path, bool], ...] = (
@@ -40,9 +39,8 @@ LOCAL_INPUT_TYPE_CASES: tuple[tuple[InputFileTypeLiteral, Path, bool], ...] = (
     ("csv", DATA_PATH / "csv" / "simple.csv", False),
     ("graphql", DATA_PATH / "graphql" / "simple-star-wars.graphql", False),
 )
-VIRTUAL_FILE_SENTINEL = INPUT_DIFF_EXPECTED_PATH / "virtual_file_sentinel.py"
-VIRTUAL_DIRECTORY_SENTINEL = INPUT_DIFF_EXPECTED_PATH / "virtual_directory_sentinel"
-assert_file_content = create_assert_file_content(INPUT_DIFF_EXPECTED_PATH)
+VIRTUAL_FILE_SENTINEL = DATA_PATH / "input_diff" / "virtual_file_sentinel.py"
+VIRTUAL_DIRECTORY_SENTINEL = DATA_PATH / "input_diff" / "virtual_directory_sentinel"
 
 
 @pytest.mark.parametrize(
@@ -135,7 +133,7 @@ def test_diff_against_supports_every_output_model_type(
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -151,7 +149,7 @@ def test_diff_against_infers_each_input_type_independently(
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         expected_stderr=(
             "The input file type was determined to be: jsonschema\n"
             "This can be specified explicitly with the `--input-file-type` option.\n"
@@ -179,7 +177,7 @@ def test_diff_against_supports_every_local_input_type(
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
         copy_files=[(source_input, copied_input)],
     )
@@ -252,28 +250,20 @@ def test_diff_against_reports_model_name_map_keys_that_match_no_model_of_the_cur
             expected_exit=Exit.DIFF,
             output_should_not_exist=True,
             capsys=capsys,
-            expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "model_name_map.txt",
+            derived_stdout=True,
             assert_no_stderr=True,
         )
     assert_output(
-        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
-        INPUT_DIFF_EXPECTED_PATH / "model_name_map_warnings.txt",
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning), name="warnings"
     )
 
 
 @pytest.mark.parametrize(
-    ("baseline", "current", "extra_args", "expected_exit", "expected_stdout"),
+    ("baseline", "current", "extra_args", "expected_exit"),
     [
-        pytest.param("same_new.json", "same_new.json", (), Exit.OK, "identical.txt", id="identical"),
-        pytest.param("old.json", "new.json", (), Exit.DIFF, "different_suffixless_file.txt", id="different"),
-        pytest.param(
-            "old.json",
-            "new.json",
-            ("--output-format", "json"),
-            Exit.DIFF,
-            "different_suffixless_file_json.txt",
-            id="different-json",
-        ),
+        pytest.param("same_new.json", "same_new.json", (), Exit.OK, id="identical"),
+        pytest.param("old.json", "new.json", (), Exit.DIFF, id="different"),
+        pytest.param("old.json", "new.json", ("--output-format", "json"), Exit.DIFF, id="different-json"),
     ],
 )
 def test_diff_against_compares_single_file_results_at_a_suffixless_output(
@@ -281,7 +271,6 @@ def test_diff_against_compares_single_file_results_at_a_suffixless_output(
     current: str,
     extra_args: tuple[str, ...],
     expected_exit: Exit,
-    expected_stdout: str,
     output_dir: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -294,20 +283,20 @@ def test_diff_against_compares_single_file_results_at_a_suffixless_output(
         expected_exit=expected_exit,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / expected_stdout,
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
 
 @pytest.mark.parametrize(
-    ("baseline", "current", "expected_stdout"),
+    ("baseline", "current"),
     [
-        pytest.param("api.yaml", "input_diff/new.yaml", "single_file_to_directory.txt", id="single-file-to-directory"),
-        pytest.param("input_diff/new.yaml", "api.yaml", "directory_to_single_file.txt", id="directory-to-single-file"),
+        pytest.param("api.yaml", "input_diff/new.yaml", id="single-file-to-directory"),
+        pytest.param("input_diff/new.yaml", "api.yaml", id="directory-to-single-file"),
     ],
 )
 def test_diff_against_reports_single_file_and_directory_results_by_path(
-    baseline: str, current: str, expected_stdout: str, output_dir: Path, capsys: pytest.CaptureFixture[str]
+    baseline: str, current: str, output_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """A single-module file and the modules of a directory at the same virtual output are different paths."""
     run_main_and_assert(
@@ -318,7 +307,7 @@ def test_diff_against_reports_single_file_and_directory_results_by_path(
         expected_exit=Exit.DIFF,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / expected_stdout,
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -344,10 +333,10 @@ def test_diff_against_single_file_comparison_reports_added_when_old_output_is_mi
         OutputComparisonOptions(is_directory_output=False, input_diff=True, single_file_display_path="models.py"),
     )
     _write_comparison_output(comparison, None, kind="input-diff")
-    assert_output(capsys.readouterr().out, INPUT_DIFF_EXPECTED_PATH / "added_single_file.txt")
+    assert_output(capsys.readouterr().out, name="text")
 
     _write_comparison_output(comparison, "json", kind="input-diff")
-    assert_output(capsys.readouterr().out, INPUT_DIFF_EXPECTED_PATH / "added_single_file_json.txt")
+    assert_output(capsys.readouterr().out, name="json")
 
 
 @pytest.mark.cli_doc(
@@ -373,7 +362,10 @@ def test_diff_against_single_file_comparison_reports_added_when_old_output_is_mi
         "openapi",
         "--disable-timestamp",
     ],
-    expected_stdout="main/input_diff/different_directory.txt",
+    expected_stdout=(
+        "main_input_diff/diff_against_reports_added_and_removed_directory_files_without_writing_virtual_output"
+        ".stdout.txt"
+    ),
     related_options=["--input", "--output", "--check", "--output-format"],
 )
 def test_diff_against_reports_added_and_removed_directory_files_without_writing_virtual_output(
@@ -392,7 +384,7 @@ def test_diff_against_reports_added_and_removed_directory_files_without_writing_
         expected_exit=Exit.DIFF,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "different_directory.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -415,7 +407,7 @@ def test_diff_against_json_reports_added_and_removed_directory_files_without_wri
         expected_exit=Exit.DIFF,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "different_directory_json.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -438,7 +430,7 @@ def test_diff_against_json_reports_structured_differences_without_writing_virtua
         expected_exit=Exit.DIFF,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "different_file_json.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -461,7 +453,7 @@ def test_diff_against_json_reports_identical_inputs_without_writing_virtual_outp
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical_json.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
@@ -480,13 +472,14 @@ def test_diff_against_preserves_a_preexisting_virtual_file(
             "--disable-timestamp",
         ],
         expected_exit=Exit.OK,
-        assert_func=assert_file_content,
-        expected_file=VIRTUAL_FILE_SENTINEL,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
-        copy_files=[(stored_expected(VIRTUAL_FILE_SENTINEL), output_file)],
+        name="sentinel",
+        copy_files=[(VIRTUAL_FILE_SENTINEL, output_file)],
     )
+    assert_output(output_file.read_text(encoding="utf-8"), name="sentinel", suffix=".py")
+    assert_output(VIRTUAL_FILE_SENTINEL.read_text(encoding="utf-8"), name="sentinel", suffix=".py")
 
 
 @pytest.mark.parametrize(
@@ -514,12 +507,14 @@ def test_diff_against_preserves_a_preexisting_virtual_directory(
             "--disable-timestamp",
         ],
         expected_exit=Exit.OK,
-        expected_directory=VIRTUAL_DIRECTORY_SENTINEL,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
-        copy_files=[(stored_expected(VIRTUAL_DIRECTORY_SENTINEL / "sentinel.py"), output_dir / "sentinel.py")],
+        name="sentinel",
+        copy_files=[(VIRTUAL_DIRECTORY_SENTINEL / "sentinel.py", output_dir / "sentinel.py")],
     )
+    assert_directory_content(output_dir, pattern="*", name="sentinel")
+    assert_directory_content(VIRTUAL_DIRECTORY_SENTINEL, pattern="*", name="sentinel")
 
 
 def test_diff_against_uses_the_virtual_output_context_for_relative_custom_formatter_resources(
@@ -546,7 +541,7 @@ def test_diff_against_uses_the_virtual_output_context_for_relative_custom_format
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
-        expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
         copy_files=[
             (
@@ -584,18 +579,34 @@ use-double-quotes = true
             expected_exit=Exit.OK,
             output_should_not_exist=True,
             capsys=capsys,
-            expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
+            derived_stdout=True,
             assert_no_stderr=True,
         )
 
 
-def test_diff_against_json_fixture_matches_structured_output_schema() -> None:
+def test_diff_against_json_fixture_matches_structured_output_schema(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """The input-diff payload remains part of the public structured-output schema."""
+    run_main_with_args(
+        [
+            "--input",
+            str(JSON_SCHEMA_INPUT_DIFF_PATH / "new.json"),
+            "--output",
+            str(output_file),
+            "--input-file-type",
+            "jsonschema",
+            "--diff-against",
+            str(JSON_SCHEMA_INPUT_DIFF_PATH / "old.json"),
+            "--disable-timestamp",
+            "--output-format",
+            "json",
+        ],
+        expected_exit=Exit.DIFF,
+    )
     schema_path = DATA_PATH / "expected" / "main_kr" / "output_format_json_schema_structured_output.stdout.txt"
     jsonschema.validate(
-        instance=json.loads(
-            stored_expected(INPUT_DIFF_EXPECTED_PATH / "different_file_json.txt").read_text(encoding="utf-8")
-        ),
+        instance=json.loads(capsys.readouterr().out),
         schema=json.loads(stored_expected(schema_path).read_text(encoding="utf-8")),
     )
 

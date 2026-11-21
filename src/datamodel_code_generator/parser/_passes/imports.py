@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, WIDENED_VALUES_KEY, int_beyond_values
-from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS, SLOT_CLASSES
+from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SLOT_CLASSES
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import counted, english_list, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
@@ -57,6 +57,11 @@ from datamodel_code_generator.imports import (
     _stored_import,
 )
 from datamodel_code_generator.model._decisions.enum_kind import enum_member_kinds, literal_value_kind
+from datamodel_code_generator.model._decisions.msgspec_str_like import (
+    MSGSPEC_STR_LIKE_TYPES,
+    merged_str_like_union_message,
+    msgspec_str_like_leaf,
+)
 from datamodel_code_generator.model._decisions.tag_value import struct_union_refusal
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model._rendered_names import FieldNameBindings, _bare_loads_of
@@ -109,6 +114,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _string_or_identifier_pattern,
     definition_reads,
     get_special_path,
+    msgspec_union_members,
     site_display_name,
     tagged_structs,
     unimported_model_keys,
@@ -127,7 +133,7 @@ from datamodel_code_generator.parser._passes._warnings import warn_as_parser_bas
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import field_origin_of, named_schema_location, type_origin_of
-from datamodel_code_generator.types import union_members, written_union_members
+from datamodel_code_generator.types import _written_member, written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -143,6 +149,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
+    from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.model_metadata import ModelMetadata
@@ -654,18 +661,6 @@ def _msgspec_refused_member_structs(data_types: Iterable[DataType]) -> _MsgspecR
     return _msgspec_refused_structs(union_structs(data_types))
 
 
-def _msgspec_union_members(data_type: DataType) -> Sequence[DataType]:
-    """Return the members of the union a type writes: its own, or the items of a list, set or map of several types.
-
-    Such a container writes its items as a union inside it; the items of a tuple are its positions instead.
-    """
-    if members := union_members(data_type):
-        return members
-    if len(data_type.data_types) > 1 and (data_type in ITEM_CONTAINERS or data_type in MAPPINGS):
-        return data_type.data_types
-    return ()
-
-
 def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
     """Yield the root types of the aliases a union names."""
     for member in written_union_members(data_type.data_types):
@@ -681,7 +676,7 @@ def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
 def _msgspec_refused_union_structs(data_type: DataType) -> _MsgspecRefusal:
     """Return the Struct types of a union msgspec refuses, unless an alias it names is refused on its own."""
     if (
-        not (members := _msgspec_union_members(data_type))
+        not (members := msgspec_union_members(data_type))
         or not (refusal := _msgspec_refused_member_structs(members))[0]
         or any(_msgspec_refused_member_structs((root,))[0] for root in _iter_union_alias_roots(data_type))
     ):
@@ -705,18 +700,6 @@ def _msgspec_union_message(name: str, refusal: _MsgspecRefusal, *, discriminated
         f"msgspec cannot decode {union}: its Struct types {names} are not all tagged, and only the "
         "variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
     )
-
-
-_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS: frozenset[str] = frozenset({
-    "bytes",
-    "bytearray",
-    "datetime",
-    "date",
-    "time",
-    "timedelta",
-    "UUID",
-    "Decimal",
-})
 
 
 _MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...], bool]
@@ -749,7 +732,7 @@ def _msgspec_enum_clashes(
                     if key not in literal_enum_ids:
                         classes[kind].add(key)
             elif source is None and not leaf.data_types and not leaf.enum_member_literals:
-                if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
+                if leaf.type in MSGSPEC_STR_LIKE_TYPES:
                     refused.add("str")
                 for kind in (
                     {literal_value_kind(literal) for literal in leaf.literals} or {leaf.type or ""}
@@ -779,7 +762,7 @@ def _refused_union_clashes(
     The kinds of an Enum (``_msgspec_enum_clashes``) come first, then those of more than one member
     (``_msgspec_kind_clashes``), which leave the kinds of an Enum to them.
     """
-    if not (members := _msgspec_union_members(data_type)):
+    if not (members := msgspec_union_members(data_type)):
         return (), ()
     enum_clashes = _msgspec_enum_clashes(members, literal_enum_ids)
     kind_clashes = _msgspec_kind_clashes(members, enum_clashes)
@@ -818,7 +801,7 @@ _MSGSPEC_ANNOTATION_KINDS: Final[Mapping[str, str]] = {
         for slot, written in SLOT_CLASSES.items()
         for name in (written.name, written.typing_name)
     },
-    **dict.fromkeys(("str", *_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS), "str"),
+    **dict.fromkeys(("str", *MSGSPEC_STR_LIKE_TYPES), "str"),
 }
 """The kind that msgspec counts of each class a Python type annotation writes, by its name: the container classes
 (``SLOT_CLASSES``), str and the other str-like types."""
@@ -852,8 +835,7 @@ def _msgspec_member_slots(leaf: DataType) -> tuple[tuple[str, object], ...]:
     counts as that member, and one a Python type annotation types as the members the annotation writes, where it
     writes any msgspec counts (``_msgspec_annotation_slots``).
     """
-    while leaf._writes_nothing_of_its_own and len(leaf.data_types) == 1:
-        leaf = leaf.data_types[0]
+    leaf = _written_member(leaf)
     if (
         leaf.python_type is not None
         and leaf.reference is None
@@ -871,15 +853,8 @@ def _msgspec_member_slots(leaf: DataType) -> tuple[tuple[str, object], ...]:
         slot = "dict", leaf.type_hint
     elif leaf in ARRAYS:
         slot = "array", leaf.type_hint
-    elif leaf.literals and not leaf.data_types and not leaf.enum_member_literals:
-        if any(literal_value_kind(literal) == "str" for literal in leaf.literals):
-            slot = "str", "str"
-    elif (
-        not leaf.data_types
-        and not leaf.enum_member_literals
-        and (leaf.type == "str" or leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS)
-    ):
-        slot = "str", leaf.type
+    elif (counted := msgspec_str_like_leaf(leaf)) is not None:
+        slot = "str", counted
     number = _msgspec_number_slot(leaf)
     return (*(() if slot is None else (slot,)), *(() if number is None else (number,)))
 
@@ -1051,10 +1026,11 @@ def _msgspec_null_enum_message(model: Enum) -> str | None:
     )
 
 
-def _msgspec_enum_kinds(model: Enum) -> frozenset[str]:
+def _msgspec_enum_kinds(model: ModelView) -> frozenset[str]:
     """Return the kinds of the members of an enum that msgspec reads (``enum_member_kinds``).
 
-    msgspec skips a list or an object value, which has no hash.
+    msgspec skips a list or an object value, which has no hash. The warnings read an ``Enum`` and the decision of
+    ``--merge-msgspec-str-like-union-members`` (``parser/_str_like_unions.py``) a view of one.
     """
     return enum_member_kinds(
         (get_raw_enum_member_value(field.default) for field in model.fields), value_base=model.value_base
@@ -1522,12 +1498,27 @@ def warn_about_unmatched_type_override_keys(parser: FinishHost) -> None:
         record.record_unmatched_type_override_keys(parser, message)
 
 
-def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912
+def warn_about_msgspec_decoding(  # noqa: PLR0912
+    parser: FinishHost,
+    contexts: Sequence[ModuleContextView],
+    merged_str_like_unions: Sequence[tuple[DataModel, DataModelFieldBase, Sequence[DataType]]] = (),
+) -> None:
     """Warn once per union and enum of msgspec output that msgspec refuses to decode.
 
     A field whose ``Literal``, or union of ``Literal`` members, holds both bytes and str values, which no msgspec type
-    holds, is refused instead (``_refuse_msgspec_bytes_and_str_literal``).
+    holds, is refused instead (``_refuse_msgspec_bytes_and_str_literal``). Each field whose str-like union members
+    ``--merge-msgspec-str-like-union-members`` wrote as one ``str`` (``merged_str_like_unions``, from the decision
+    phase) is warned about first, naming the members it lost.
     """
+    for merged_model, merged_field, members in merged_str_like_unions:
+        warn_as_parser_base(
+            merged_str_like_union_message(
+                site_display_name(parser, merged_model, merged_field),
+                [*dict.fromkeys(member.type_hint for member in members)],
+            ),
+            UserWarning,
+            stacklevel=2,
+        )
     from datamodel_code_generator.model.union import _DataTypeUnionBase  # noqa: PLC0415
 
     models = _context_models(contexts)

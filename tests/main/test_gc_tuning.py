@@ -13,7 +13,6 @@ import pytest
 from datamodel_code_generator import _GC_YOUNG_THRESHOLD, InputFileType, _tuned_gc, generate
 from tests.conftest import assert_generated_file_matches_output, assert_output, create_assert_file_content
 from tests.main.conftest import (
-    DATA_PATH,
     EXPECTED_JSON_SCHEMA_PATH,
     JSON_SCHEMA_DATA_PATH,
     run_generate_file_and_assert,
@@ -24,7 +23,6 @@ if TYPE_CHECKING:
 
 
 assert_file_content = create_assert_file_content(EXPECTED_JSON_SCHEMA_PATH)
-_GC_TUNING_DATA_PATH = DATA_PATH / "expected" / "main" / "gc_tuning"
 
 
 class _ThresholdRecordingMapping(Mapping[str, Any]):
@@ -100,7 +98,6 @@ def test_generate_scopes_tuned_gc_for_e2e_mapping_input(gc_state: tuple[int, int
             f"restored_after_generation={gc.get_threshold() == gc_state}",
             "",
         )),
-        _GC_TUNING_DATA_PATH / "generate.txt",
     )
 
 
@@ -116,7 +113,6 @@ def test_generate_restores_gc_threshold_after_exception(gc_state: tuple[int, int
 
     assert_output(
         f"restored_after_exception={gc.get_threshold() == gc_state}\n",
-        _GC_TUNING_DATA_PATH / "exception.txt",
     )
 
 
@@ -132,7 +128,7 @@ def test_tuned_gc_keeps_nested_scope_tuned_until_outer_exit(gc_state: tuple[int,
         observations.append(f"inner_exited={gc.get_threshold() == tuned_threshold}")
 
     observations.append(f"outer_exited={gc.get_threshold() == gc_state}")
-    assert_output("\n".join((*observations, "")), _GC_TUNING_DATA_PATH / "nested.txt")
+    assert_output("\n".join((*observations, "")))
 
 
 def test_tuned_gc_keeps_concurrent_scope_tuned_until_all_workers_exit(gc_state: tuple[int, int, int]) -> None:
@@ -178,7 +174,7 @@ def test_tuned_gc_keeps_concurrent_scope_tuned_until_all_workers_exit(gc_state: 
         f"second_joined={not second.is_alive()}",
         f"restored_after_workers={gc.get_threshold() == gc_state}",
     ))
-    assert_output("\n".join((*observations, "")), _GC_TUNING_DATA_PATH / "concurrent.txt")
+    assert_output("\n".join((*observations, "")))
 
 
 def test_tuned_gc_leaves_disabled_host_unchanged(gc_state: tuple[int, int, int]) -> None:
@@ -203,7 +199,7 @@ def test_tuned_gc_leaves_disabled_host_unchanged(gc_state: tuple[int, int, int])
     finally:
         gc.enable()
 
-    assert_output("\n".join((*observations, "")), _GC_TUNING_DATA_PATH / "disabled.txt")
+    assert_output("\n".join((*observations, "")))
 
 
 @pytest.mark.abnormal_path("CPython always provides gc.get_threshold; PyPy's gc module does not")
@@ -231,5 +227,4 @@ def test_generate_without_gc_threshold_api(
             f"restored_after_generation={gc.get_threshold() == gc_state}",
             "",
         )),
-        _GC_TUNING_DATA_PATH / "no_threshold_api.txt",
     )

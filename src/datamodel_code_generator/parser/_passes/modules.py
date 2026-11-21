@@ -1707,7 +1707,6 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                     root_type_model.reference, data_type
                 )
 
-                replacement_context = None
                 shared_holders: tuple[DataType, ...] = ()
                 if isinstance(field_ := data_type.parent, parser.data_model_field_type):
                     # for field
@@ -1780,8 +1779,6 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
                 else:  # pragma: no cover - not proven unreachable
                     continue
 
-                if replacement_context is None:  # pragma: no cover - not proven unreachable
-                    continue
                 model_field.inherit_unconstrained_union_members(root_type_field)
                 model_field.inherit_untaken_constraints(
                     root_type_field, whole_type=isinstance(field_, parser.data_model_field_type)

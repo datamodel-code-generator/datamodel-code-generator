@@ -1200,8 +1200,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "JSON has no type); `_target_binding.py:_Models.symbols` and "
             "`parser/jsonschema.py:JsonSchemaParser._with_open_enum_type` (`json_type` of enum values); the literals "
             "of a protocol helper (`json_type`: `_client/pagination.py:_Pages` `ends` and `bindings`, "
-            "`_client/polling.py:_Polls.states`); not yet: `_constraint_applicability.py` (`json_number`, "
-            "`json_integer`, the rows above)"
+            "`_client/polling.py:_Polls.states`); the str values of a `Literal`, which msgspec counts as its str "
+            "member: `model/_decisions/msgspec_str_like.py:msgspec_str_like_leaf` (read by the msgspec decoding "
+            "warnings and `--merge-msgspec-str-like-union-members`) and `parser/_str_like_unions.py:_other_literals` "
+            "(the values that merge keeps); not yet: `_constraint_applicability.py` (`json_number`, `json_integer`, "
+            "the rows above)"
         ),
         sites=(
             Home("_json_schema.py", "literal_value_kind"),
@@ -1218,6 +1221,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_constraint_applicability.py", "json_number"),
             Home("_constraint_applicability.py", "json_integer"),
             Home("model/_decisions/enum_kind.py"),
+            Home("model/_decisions/msgspec_str_like.py", "msgspec_str_like_leaf"),
+            Home("parser/_str_like_unions.py", "_other_literals"),
         ),
     ),
     DecisionHome(
@@ -1242,7 +1247,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "kind); `parser/jsonschema.py:JsonSchemaParser._widened` (`values_no_literal_holds`, kept for "
             "`parser/_passes/imports.py:widened_values_warning`); `parser/_passes/imports.py`: `_msgspec_enum_kinds` "
             "(`enum_member_kinds`, read by `_msgspec_enum_clashes`, `_msgspec_member_slots`, "
-            "`_msgspec_null_enum_message` and `_msgspec_mixed_enum_message`); discriminator tags through "
+            "`_msgspec_null_enum_message`, `_msgspec_mixed_enum_message` and the decision of "
+            "`--merge-msgspec-str-like-union-members`, `parser/_str_like_unions.py:_Classifier.slot`); discriminator "
+            "tags through "
             "`model/_decisions/tag_value.py` (`field_tag`, `enum_tag_literal`, `union_tag_values`); the type of a "
             "const through `model/_decisions/literal_default.py:const_type`"
         ),
@@ -1621,7 +1628,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/_passes/render_prep.py:_flatten_union_members` (`flattened`); `types.py:union_members` gives the "
             "members of a type that is a union at its top level and `types.py:written_union_members` the members of a "
             "union as written, with such member unions spread (msgspec's plain-union checks, and the nested-union "
-            "checks of `parser/_passes/imports.py` and `parser/_passes/_shared.py:_iter_discriminator_data_types`); a "
+            "checks of `parser/_passes/imports.py` and `parser/_passes/_shared.py:_iter_discriminator_data_types`), "
+            "through `types.py:_union_members` and `_written_union_members`, which the decisions call for views; "
+            "`parser/_passes/_shared.py:msgspec_union_members` the union a msgspec type writes (its own, or the items "
+            "of a list, set or map), which the msgspec decoding warnings and `parser/_str_like_unions.py` read; a "
             "container's item union takes `constructed` from `DataType.__init__`, and the None of its items stays "
             "inside the container (`model/_decisions/nullability.py:takes_member_null`: a container is no union; "
             "`takes_item_null`: its item union takes it, read by the targets through `DataType.items_admit_none`); not "

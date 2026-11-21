@@ -10,15 +10,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datamodel_code_generator import DataModelType
-from tests.conftest import CHILD_COVERAGE_ENV, assert_output, create_assert_file_content
-from tests.main.conftest import DATA_PATH, EXPECTED_MAIN_PATH, _generated_model
+from tests.conftest import CHILD_COVERAGE_ENV, assert_output
+from tests.main.conftest import DATA_PATH, _generated_model
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 DATA = DATA_PATH / "inflect_isolation"
-EXPECTED = EXPECTED_MAIN_PATH / "inflect_isolation"
-assert_file_content = create_assert_file_content(EXPECTED)
 
 
 @pytest.mark.parametrize(
@@ -71,14 +69,7 @@ def test_inflect_independent_callers_preserve_checks_and_names(
         env={**os.environ, **CHILD_COVERAGE_ENV, "PYTHONPATH": str(root / "src")},
         timeout=60,
     )
-    expected_probe = (
-        "unexpected"
-        if scenario.startswith("unexpected_")
-        else "fallback"
-        if scenario.startswith("failure_")
-        else scenario
-    )
-    assert_output(result.stdout, EXPECTED / f"{expected_probe}.txt")
-    assert_file_content(output_file, f"{backend.value.replace('.', '_')}.py")
+    assert_output(result.stdout)
+    assert_output(output_file.read_text(encoding="utf-8"), name="model", suffix=".py")
     with _generated_model(output_file, "generated_inflect_isolation", "Catalog") as model:
-        assert_output(model.__name__ + "\n", EXPECTED / "model_name.txt")
+        assert_output(model.__name__ + "\n", name="model_name")

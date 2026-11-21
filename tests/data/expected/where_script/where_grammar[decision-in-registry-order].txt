@@ -4,8 +4,9 @@ pass omit_untaken_union_constraints
   DECIDE, scope global, transform; condition: --field-constraints
   reads: bases, constraints, field_types, model_kind
   writes: constraints, field_types
-  neighbours: runs after serialize_as_any_for_every_subclass, before write_unique_items_as_sets
-  order edges (2):
+  neighbours: runs after merge_msgspec_str_like_union_members, before write_unique_items_as_sets
+  order edges (3):
     after omit_held_null: reads the member types after the None omission rewrote them
     after serialize_as_any_for_every_subclass: copies the field types after the subclass marking
+    after merge_msgspec_str_like_union_members: reads the union members after str-like members merged
   defined: no definition found

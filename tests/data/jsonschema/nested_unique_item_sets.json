@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shelter",
+  "type": "object",
+  "$defs": {
+    "Pet": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "required": ["name"]
+    }
+  },
+  "properties": {
+    "groups": {
+      "description": "Pets housed together; a pet is listed once in its group.",
+      "type": "array",
+      "items": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/Pet"}}
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+    }
+  }
+}

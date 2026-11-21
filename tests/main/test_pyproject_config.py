@@ -11,14 +11,13 @@ import pytest
 from pydantic import ValidationError
 
 from datamodel_code_generator import Error, GenerateConfig, chdir, load_pyproject_config
-from tests.conftest import assert_inputs_not_mutated, assert_output, create_assert_file_content
+from tests.conftest import assert_inputs_not_mutated, assert_output
 from tests.main.conftest import run_generate_and_assert, run_main_and_assert
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
 DATA_PATH = Path(__file__).parents[1] / "data" / "pyproject_config"
-EXPECTED_PATH = Path(__file__).parents[1] / "data" / "expected" / "main" / "pyproject_config"
 CASES = json.loads((DATA_PATH / "cases.json").read_text())
 ERRORS = json.loads((DATA_PATH / "errors.json").read_text())
 
@@ -56,11 +55,10 @@ def test_load_pyproject_config_generation(case: dict[str, Any], project: Path) -
             if isinstance(value := getattr(config, field), Path):
                 values[field] = value.as_posix().replace(project.as_posix(), "$PROJECT")
         normalized = json.dumps(values, indent=2, sort_keys=True)
-        assert_output(normalized + "\n", EXPECTED_PATH / f"{case.get('expected_config', case['name'])}.txt")
+        assert_output(normalized + "\n")
         run_generate_and_assert(
             input_=project / "schema.json",
             config=config,
-            expected_file=EXPECTED_PATH / f"{case.get('expected_code', case['name'])}.py",
             unchanged_inputs={"overrides": overrides},
         )
 
@@ -82,8 +80,6 @@ def test_cli_reads_pyproject_json_files_from_working_directory(project: Path) ->
         run_main_and_assert(
             input_path=project / "schema.json",
             output_path=project / "cli.py",
-            expected_file="json_files_working_directory.py",
-            assert_func=create_assert_file_content(EXPECTED_PATH),
             transform=str.rstrip,
         )
 

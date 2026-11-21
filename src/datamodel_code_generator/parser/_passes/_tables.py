@@ -850,7 +850,9 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             ),
             PassSpec(
                 "warn_about_msgspec_decoding",
-                lambda self, run: imports.warn_about_msgspec_decoding(self, run.contexts),
+                lambda self, run: imports.warn_about_msgspec_decoding(
+                    self, run.contexts, run.decisions.merged_str_like_unions
+                ),
                 when=lambda self, _: self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR,
             ),
             PassSpec(

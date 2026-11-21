@@ -131,8 +131,8 @@ def test_migration_api_warning_filters(action: str, tmp_path: Path) -> None:
                 generate(DATA_PATH / "jsonschema" / "migration_notice.json", config=config)
         else:
             generate(DATA_PATH / "jsonschema" / "migration_notice.json", config=config)
-    assert_output("\n".join(str(item.message) for item in recorded), EXPECTED / "empty.txt")
-    assert_output(str((tmp_path / "output.py").exists()), EXPECTED / f"file-{action}.txt")
+    assert_output("\n".join(str(item.message) for item in recorded))
+    assert_output(str((tmp_path / "output.py").exists()), name="file")
 
 
 def test_migration_error_filter_is_not_consumed_by_cli_scope(tmp_path: Path) -> None:
@@ -150,7 +150,7 @@ def test_migration_error_filter_is_not_consumed_by_cli_scope(tmp_path: Path) -> 
                         disable_timestamp=True,
                     ),
                 )
-    assert_output(str((tmp_path / "output.py").exists()), EXPECTED / "file-error.txt")
+    assert_output(str((tmp_path / "output.py").exists()))
 
 
 def _optional_dependency_notices(recorded: list[warnings.WarningMessage]) -> str:

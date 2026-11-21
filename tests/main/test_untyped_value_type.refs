@@ -25,7 +25,7 @@ off-pydantic_v2.dataclass	main/untyped_value_type/untyped_value_type[off-pydanti
 [test_untyped_value_type_imports_only_where_used]
 	main/untyped_value_type/imports_only_where_used/
 [test_untyped_value_type_keeps_msgspec_any]
-	main/untyped_value_type/keeps_msgspec_any.py
+	main/untyped_value_type/keeps_msgspec_any.model.py
 [test_untyped_value_type_object_in_targets]
 client	main/untyped_value_type/object_in_targets[client].py
 server	main/untyped_value_type/object_in_targets[server].py	= main/untyped_value_type/object_in_targets[client].py

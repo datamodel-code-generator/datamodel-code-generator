@@ -342,6 +342,7 @@ from datamodel_code_generator.parser._origins import (
     with_binary_content,
     with_enum_literal,
     with_field_origin,
+    with_json_number,
     with_type_origin,
     with_unique_items,
 )
@@ -1005,12 +1006,10 @@ _UUID_VERSION_DATA_FORMATS: dict[str, dict[str, Types]] = {
 
 def _get_type(
     type_: str,
-    format__: str | None = None,
-    data_formats: dict[str, dict[str, Types]] | None = None,
+    format__: str | None,
+    data_formats: dict[str, dict[str, Types]],
 ) -> Types:
     """Get the appropriate Types enum for a given JSON Schema type and format."""
-    if data_formats is None:  # pragma: no cover - not proven unreachable
-        data_formats = json_schema_data_formats
     if type_ not in data_formats:
         return Types.any
     if (type_format := data_formats[type_].get("default" if format__ is None else format__)) is not None:
@@ -1328,17 +1327,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         format_ = obj.format or "default"
         types = self._get_schema_type(obj, type_, format_)
         data_type = self.data_type_manager.get_data_type(types, **self._get_format_type_kwargs(type_, format_, types))
-        return self._with_binary_content(data_type, obj, type_, format_, types)
+        return self._with_type_records(data_type, obj, type_, format_, types)
 
-    def _with_binary_content(
+    def _with_type_records(
         self, data_type: DataType, obj: JsonSchemaObject, type_: str, format_: str, types: Types
     ) -> DataType:
-        """Record BINARY_CONTENT on the type of a string of ``obj`` that the specification reads as raw octets.
+        """Record what the type mapping reads of the schema type of ``obj`` on the type it built for it.
 
-        A string holds raw octets when its format maps to bytes, unless they are bytes mapped from base64 text, or,
-        where a content media type reads so (``_content_media_type_is_octets``), when it names a content media type
-        without a content encoding and its format maps to plain text.
+        JSON_NUMBER for an ``integer`` or ``number`` type, whatever type it maps to; BINARY_CONTENT for a string that
+        the specification reads as raw octets: when its format maps to bytes, unless they are bytes mapped from base64
+        text, or, where a content media type reads so (``_content_media_type_is_octets``), when it names a content
+        media type without a content encoding and its format maps to plain text.
         """
+        if type_ in {"integer", "number"}:
+            return with_json_number(data_type)
         if type_ == "string" and (
             self._format_bytes(types, type_, format_) == "raw"
             if types == Types.binary
@@ -2314,7 +2316,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         context = self._output_model_context
         if not field_constraints and context.writes_constrained_types and context.supports_annotated_constraints:
             kwargs["annotated_constraints"] = True
-        data_type = self._with_binary_content(
+        data_type = self._with_type_records(
             self.data_type_manager.get_data_type(types, field_constraints=field_constraints, **kwargs),
             obj,
             type_,
@@ -3377,7 +3379,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 for ap_type in additional_props_types[1:]:  # pragma: no branch
                     is_better = best_type.type == ANY and ap_type.type != ANY
                     is_better = is_better or (ap_type.reference and not best_type.reference)
-                    if is_better:  # pragma: no cover - not proven unreachable: a later additionalProperties type wins
+                    if is_better:
                         best_type = ap_type
                 return self.data_type(data_types=[best_type], is_dict=True)
 
@@ -3471,12 +3473,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return None
             data_types: list[DataType] = []
             for item in combined_items:
-                if _lightweight_types.is_false_schema_item(self, item):
-                    continue
                 if item is True:
                     data_types.append(untyped_value_data_type(DataType, self.data_type_manager.untyped_value))
                     continue
-                if not isinstance(item, JsonSchemaObject):  # pragma: no cover - not proven unreachable
+                if item is False or item.is_boolean_schema_false:
                     continue
                 if item.ref:
                     data_types.append(self.get_ref_data_type(item.ref))

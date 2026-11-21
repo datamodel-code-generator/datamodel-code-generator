@@ -1,0 +1,6 @@
+[
+  "/level enum null: invalid, model accepts",
+  "/one_of_id minLength \"12345678-1234-5678-1234-5678123456788888\": invalid, model accepts",
+  "/plain_level enum null: invalid, model accepts",
+  "/token const null: invalid, model accepts"
+]

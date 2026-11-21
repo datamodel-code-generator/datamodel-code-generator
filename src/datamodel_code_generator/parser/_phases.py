@@ -25,7 +25,8 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
-    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.types import DataType
 
 __all__ = [
     "DecisionOptions",
@@ -84,6 +85,12 @@ class DecisionStore(Protocol):
 
     def replace_additional_properties_type(self, model: Any, data_type: Any) -> None:
         """Give a model the type of the additional properties its settings write (TypedDict ``extra_items``)."""
+
+    def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
+        """Write the members of a data type."""
+
+    def detach_data_type_ref(self, data_type: DataType) -> None:
+        """Remove a data type from the users of its reference."""
 
 
 @final
@@ -144,9 +151,14 @@ def live_model_of(facts: FinalFacts) -> Callable[[ReferenceView], ModelView | No
 @final
 @record
 class DecisionOutcome:
-    """What the decision phase changed: the live models a decision wrote, in model order."""
+    """What the decision phase changed: the live models a decision wrote, in model order.
+
+    ``merged_str_like_unions`` holds each field whose str-like union members ``--merge-msgspec-str-like-union-members``
+    wrote as one ``str``, with its model and the members it lost, which the msgspec decoding warnings name.
+    """
 
     changed_models: tuple[DataModel, ...]
+    merged_str_like_unions: tuple[tuple[DataModel, DataModelFieldBase, tuple[DataType, ...]], ...] = ()
 
 
 @final
@@ -168,12 +180,13 @@ class DecisionPass(Generic[W]):
 class _DecisionWriter:
     """The one implementation of the writer protocols, over the generation store; it records the models it changes."""
 
-    __slots__ = ("_changed", "_copy", "_store")
+    __slots__ = ("_changed", "_copy", "_merged_str_like_unions", "_store")
 
     def __init__(self, store: DecisionStore, copy: Callable[[Any], Any]) -> None:
         self._store = store
         self._copy = copy
         self._changed: dict[int, DataModel] = {}
+        self._merged_str_like_unions: list[tuple[DataModel, DataModelFieldBase, tuple[DataType, ...]]] = []
 
     def drop_held_null(self, model: ModelView, field: FieldView, data_types: Sequence[DataTypeView]) -> None:
         """Drop the None each of ``data_types``, types of ``field`` of ``model``, restates (``HeldNullWriter``).
@@ -182,13 +195,12 @@ class _DecisionWriter:
         stay as the other fields see them.
         """
         dropped = {id(data_type) for data_type in data_types}
-        original: Any = field.data_type
-        copied = self._copy(original)
-        for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
-            if id(source) in dropped:
+        copied, copies = self._copied_type(field)
+        for source, target in copies.items():
+            if source in dropped:
                 self._store.drop_held_null(target)
         self._store.replace_field_type(field, copied)
-        self._changed[id(model)] = cast("DataModel", model)
+        self._mark_changed(model)
 
     def drop_field_constraints(
         self,
@@ -211,12 +223,12 @@ class _DecisionWriter:
         constraints: Any = field.constraints
         values = {key: value for key, value in constraints.set_values().items() if key not in keywords}
         self._store.set_field_constraints(field, type(constraints).model_validate(values))
-        self._changed[id(model)] = cast("DataModel", model)
+        self._mark_changed(model)
 
     def mark_serialized_as_any(self, model: ModelView, *, wrapped: bool) -> None:
         """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` (``SerializeAsAnyWriter``)."""
         self._store.mark_serialized_as_any(model, wrapped=wrapped)
-        self._changed[id(model)] = cast("DataModel", model)
+        self._mark_changed(model)
 
     def write_sets(
         self, model: ModelView, field: FieldView, lists: Sequence[DataTypeView], default: object | None
@@ -229,7 +241,7 @@ class _DecisionWriter:
         rewrite_field_copy(self._store, self._copy, field, container_copy, ids={id(data_type) for data_type in lists})
         if default is not None:
             self._store.set_field_default(field, default)
-        self._changed[id(model)] = cast("DataModel", model)
+        self._mark_changed(model)
 
     def write_additional_properties_sets(self, model: ModelView, lists: Sequence[DataTypeView]) -> None:
         """Write each of ``lists``, types of the additional properties of ``model``, as a set (``UniqueSetsWriter``).
@@ -237,17 +249,74 @@ class _DecisionWriter:
         The model takes a copy of the type tree with the sets (``rewrite_copied_type``); the nodes stay as they are.
         """
         rewrite_additional_properties(self._store, self._copy, model, lists, container_copy)
-        self._changed[id(model)] = cast("DataModel", model)
+        self._mark_changed(model)
 
     def omit_default(self, model: ModelView, field: FieldView) -> None:
         """Write ``field`` of ``model`` without its default (``IncompleteDefaultsWriter``)."""
         self._store.omit_field_default(field)
+        self._mark_changed(model)
+
+    def merge_str_like_members(
+        self,
+        model: ModelView,
+        field: FieldView,
+        rewrites: Sequence[tuple[DataTypeView, Sequence[DataTypeView | str | tuple[bool | int | str, ...]]]],
+        merged: Sequence[DataTypeView],
+    ) -> None:
+        """Write each union of ``rewrites``, a type of ``field`` of ``model``, with its members (StrLikeUnionWriter).
+
+        Fields share type nodes, so the field gets a copy of its type tree, whose copies of the unions take the copies
+        of their members, a new type for a name (``str``, ``None``) and a new ``Literal`` for a tuple of values; the
+        copies of ``merged`` leave the users of their references.
+        """
+        copied, copies = self._copied_type(field)
+        self._store.replace_field_type(field, copied)
+        for member in merged:
+            if (target := copies[id(member)]).reference is not None:
+                self._store.detach_data_type_ref(target)
+        for union, members in rewrites:
+            target = copies[id(union)]
+            self._store.set_nested_data_types(target, [_rewritten_member(target, member, copies) for member in members])
+        self._merged_str_like_unions.append((
+            cast("DataModel", model),
+            cast("DataModelFieldBase", field),
+            tuple(cast("DataType", member) for member in merged),
+        ))
+        self._mark_changed(model)
+
+    def _copied_type(self, field: FieldView) -> tuple[DataType, dict[int, DataType]]:
+        """Return a copy of the type tree of ``field``, and the copy of each of its nodes by the id of the node.
+
+        Fields share type nodes, so a write goes to the copy, which the field then takes; the nodes stay as the other
+        fields see them.
+        """
+        original: Any = field.data_type
+        copied = self._copy(original)
+        return copied, {
+            id(source): target for source, target in zip(original.all_data_types, copied.all_data_types, strict=True)
+        }
+
+    def _mark_changed(self, model: ModelView) -> None:
+        """Record that a write changed ``model``, a live model behind its view."""
         self._changed[id(model)] = cast("DataModel", model)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:
-        """Return the models of ``live_models`` that the writes changed, in their order."""
+        """Return the models of ``live_models`` that the writes changed, in their order, and the merged unions."""
         changed = self._changed
-        return DecisionOutcome(tuple(model for model in live_models if id(model) in changed))
+        return DecisionOutcome(
+            tuple(model for model in live_models if id(model) in changed), tuple(self._merged_str_like_unions)
+        )
+
+
+def _rewritten_member(
+    owner: DataType, member: DataTypeView | str | tuple[bool | int | str, ...], copies: Mapping[int, DataType]
+) -> DataType:
+    """Return the member a union of a copied type tree is written with (``merge_str_like_members``)."""
+    if isinstance(member, str):
+        return type(owner)(type=member)
+    if isinstance(member, tuple):
+        return type(owner)(literals=list(member))
+    return copies[id(member)]
 
 
 def container_copy(data_type: Any, *, is_set: bool = True) -> Any:

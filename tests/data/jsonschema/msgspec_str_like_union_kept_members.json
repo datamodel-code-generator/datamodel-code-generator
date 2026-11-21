@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "looped": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "$ref": "#/$defs/LoopA"
+        }
+      ]
+    },
+    "python_typed": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string",
+          "x-python-type": "datetime.date"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "LoopA": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/LoopB"
+        }
+      ]
+    },
+    "LoopB": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "$ref": "#/$defs/LoopA"
+        }
+      ]
+    }
+  }
+}

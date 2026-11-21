@@ -915,7 +915,7 @@ def run_generate_file_and_assert(
     if assert_func is None:
         _compare_output(output_path, expected_file, transform, name=name)
     else:
-        assert_func(output_path, expected_file, transform=transform)
+        assert_func(output_path, expected_file)
     with _enable_test_parsed_source_cache(), assert_inputs_not_mutated(unchanged_inputs):
         _assert_builtin_generate_formatter_parity(
             input_=input_,
@@ -1018,7 +1018,6 @@ def run_main_and_assert(  # noqa: PLR0912
     extra_args: Sequence[str] | None = None,
     expected_exit: Exit = Exit.OK,
     # Output verification options (use one)
-    assert_func: AssertFileContent | None = None,
     expected_file: str | Path | None = None,
     expected_output: str | None = None,
     expected_directory: Path | None = None,
@@ -1070,7 +1069,7 @@ def run_main_and_assert(  # noqa: PLR0912
         copy_files: Files to copy before running
 
     Output verification (use one):
-        assert_func + expected_file: Compare with expected file using assert function
+        expected_file: Compare with this file below tests/data/expected instead of the output pytest stores
         expected_output: Compare with string directly
         expected_directory: Compare entire directory
         file_should_not_exist: Assert a file does NOT exist
@@ -1108,7 +1107,6 @@ def run_main_and_assert(  # noqa: PLR0912
     """
     __tracebackhide__ = True
     output_verification_requested = any((
-        assert_func is not None,
         expected_file is not None,
         expected_output is not None,
         expected_directory is not None,
@@ -1197,8 +1195,7 @@ def run_main_and_assert(  # noqa: PLR0912
     )
 
     output_verification_modes = (
-        int(assert_func is not None)
-        + int(expected_output is not None)
+        int(expected_output is not None)
         + int(expected_directory is not None)
         + int(file_should_not_exist is not None)
         + int(output_should_not_exist)
@@ -1206,8 +1203,7 @@ def run_main_and_assert(  # noqa: PLR0912
     if output_verification_modes > 1:  # pragma: no cover
         pytest.fail(
             "Output verification options are mutually exclusive; use exactly one of "
-            "assert_func, expected_output, expected_directory, "
-            "file_should_not_exist, or output_should_not_exist"
+            "expected_output, expected_directory, file_should_not_exist, or output_should_not_exist"
         )
 
     if output_should_not_exist:
@@ -1239,10 +1235,6 @@ def run_main_and_assert(  # noqa: PLR0912
         actual_output = output_path.read_text(encoding="utf-8")
         if actual_output != expected_output:  # pragma: no cover
             pytest.fail(f"Output mismatch\nExpected:\n{expected_output}\n\nActual:\n{actual_output}")
-    elif assert_func is not None:
-        if output_path is None:  # pragma: no cover
-            pytest.fail("output_path is required when using assert_func")
-        assert_func(output_path, expected_file, transform=transform)
     elif output_path is not None:
         _compare_output(
             output_path,

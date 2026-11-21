@@ -968,6 +968,7 @@ def test_preset_option_turned_off(
             input_file_type="jsonschema",
             extra_args=[*preset_args, *common],
             skip_code_validation=sys.version_info < (3, 12),
+            name="model",
         )
     options = [
         item
@@ -990,7 +991,7 @@ def test_preset_option_turned_off(
             input_file_type="jsonschema",
             extra_args=["--preset", "standard-py312-20261017", *common, *options],
             skip_code_validation=sys.version_info < (3, 12),
-            expected_output=off_output.read_text(encoding="utf-8"),
+            name="model",
         )
 
 
