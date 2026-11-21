@@ -352,8 +352,8 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         data_type = final_data_type
         obj = field.type
 
-        while graphql.is_list_type(obj) or graphql.is_non_null_type(obj):
-            if graphql.is_list_type(obj):
+        while isinstance(obj, (graphql.GraphQLList, graphql.GraphQLNonNull)):
+            if isinstance(obj, graphql.GraphQLList):
                 data_type.is_list = True
 
                 new_data_type = self._graphql_data_type(is_optional=True)
@@ -361,10 +361,9 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 new_data_type.parent = data_type
 
                 data_type = new_data_type
-            elif graphql.is_non_null_type(obj):  # pragma: no cover - not proven unreachable
+            else:
                 data_type.is_optional = False
 
-            obj = graphql.assert_wrapping_type(obj)
             obj = obj.of_type
 
         obj = graphql.assert_named_type(obj)
