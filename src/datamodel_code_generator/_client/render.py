@@ -41,7 +41,13 @@ from datamodel_code_generator._client.naming import (
 )
 from datamodel_code_generator._client.plan import member_parts, reachable, success_media, success_response
 from datamodel_code_generator._client.polling import STATES, PollingSpec
-from datamodel_code_generator._client.protocols import COUNTED_CONTINUATIONS, POLL_INTERVAL
+from datamodel_code_generator._client.protocols import (
+    COUNTED_CONTINUATIONS,
+    MESSAGE_CODECS,
+    POLL_INTERVAL,
+    selector_record,
+    target_record,
+)
 from datamodel_code_generator._client.runtime import (
     Capabilities,
     compresses,
@@ -70,6 +76,7 @@ from datamodel_code_generator._runtime.client.options import DEFAULT_RETRY, DEFA
 from datamodel_code_generator._runtime.client.retry import IdempotencyPlan
 from datamodel_code_generator._runtime.model_codecs.media import NO_CONTENT, media_kind, media_range
 from datamodel_code_generator._runtime.model_codecs.parameters import PATH_SAFE, percent_encoded
+from datamodel_code_generator._runtime.protocols import pagination
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._runtime.protocols.options import _KIND_OPTIONS
 from datamodel_code_generator._runtime.protocols.pagination import _DEFAULTS as _PAGE_LIMITS
@@ -2550,15 +2557,11 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     @staticmethod
     def selector(module: TargetModule, selector: Mapping[str, Any]) -> str:
         """Return the runtime record of a selector."""
-        from datamodel_code_generator._client.protocols import selector_record  # noqa: PLC0415
-
         return runtime_record(module.local, selector_record(selector))
 
     @staticmethod
     def target(module: TargetModule, target: Mapping[str, Any]) -> str:
         """Return the runtime record of a request target."""
-        from datamodel_code_generator._client.protocols import target_record  # noqa: PLC0415
-
         return runtime_record(module.local, target_record(target))
 
     def binding(self, module: TargetModule, binding: Mapping[str, Any]) -> str:
@@ -2581,9 +2584,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     @staticmethod
     def continuation(module: TargetModule, spec: PaginationSpec) -> str:
         """Return the runtime record of a helper's cursor, offset, page-number, next-URL, or Link continuation."""
-        from datamodel_code_generator._client.protocols import selector_record, target_record  # noqa: PLC0415
-        from datamodel_code_generator._runtime.protocols import pagination  # noqa: PLC0415
-
         continuation = spec.continuation
         if (kind := continuation["kind"]) == "link":
             plan = pagination.LinkPlan(header=continuation["header"], rel=continuation["rel"])
@@ -3158,8 +3158,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
         The type of several messages is the union of theirs, each member once.
         """
-        from datamodel_code_generator._client.protocols import MESSAGE_CODECS  # noqa: PLC0415
-
         if not routes:
             return module.name("typing", "Never")
         if len(routes) == 1:
