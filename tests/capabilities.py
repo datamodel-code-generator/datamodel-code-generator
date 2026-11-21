@@ -40,6 +40,14 @@ CAPABILITIES: dict[str, tuple[tuple[str, ...], str]] = {
         "sys.monitoring, which the comparator and the legacy-row witnesses measure runs with, needs Python 3.12",
     ),
     "no-sys-monitoring": (("python<3.12",), "Python 3.11 has no sys.monitoring: the comparator measures nothing there"),
+    "branch-events": (
+        ("python>=3.14",),
+        "sys.monitoring reports each way of a branch (BRANCH_LEFT, BRANCH_RIGHT), which keys a line's arms, from 3.14",
+    ),
+    "no-branch-events": (
+        ("python>=3.12", "python<3.14"),
+        "Python 3.12 and 3.13 report no branch's ways apart: a cell catalog keys lines there",
+    ),
     "typed-dict-validation": (("python>=3.12",), "Pydantic validates typing.TypedDict from Python 3.12 on"),
     "native-deferred-annotations": (("python>=3.14",), "Python defers annotations natively from 3.14 on"),
     "target-newer-than-runtime": (("python<3.14",), "the test needs a target Python version newer than the runtime"),

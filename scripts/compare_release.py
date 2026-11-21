@@ -46,6 +46,7 @@ import argparse
 import builtins
 import contextlib
 import difflib
+import dis
 import functools
 import hashlib
 import importlib
@@ -72,7 +73,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable, Generator, Iterable, Mapping
     from types import CodeType, FrameType, ModuleType
 
 Record = dict[str, Any]
@@ -714,6 +715,92 @@ def _outside(args: list[str], root: str) -> list[str]:
 _UNSEEN = "\0"
 FREE_TOOLS = (5, 2, 1, 0)
 """The `sys.monitoring` tool ids a recorder may take, the first free one: the tracer holds 3 and 4."""
+SUB_LINE = sys.version_info >= (3, 14)
+"""Whether a recorder keys what ran finer than a line (`_Recorder`): ``BRANCH_LEFT`` and ``BRANCH_RIGHT`` (3.14+)."""
+BRANCHES = frozenset({"POP_JUMP_IF_FALSE", "POP_JUMP_IF_TRUE", "POP_JUMP_IF_NONE", "POP_JUMP_IF_NOT_NONE", "FOR_ITER"})
+"""The instructions whose two ways `sys.monitoring` reports (``BRANCH_LEFT``, ``BRANCH_RIGHT``)."""
+NO_FALL_THROUGH = frozenset({
+    "JUMP_FORWARD",
+    "JUMP_BACKWARD",
+    "JUMP_BACKWARD_NO_INTERRUPT",
+    "RETURN_VALUE",
+    "RAISE_VARARGS",
+    "RERAISE",
+})
+"""The instructions after which the next instruction runs only where something jumps to it."""
+
+
+def instruction_place(code: CodeType, offset: int) -> str | None:
+    """Return the sub-line key of a code object's instruction at `offset`: its source span and its name.
+
+    None for an instruction without a whole span. The spans and names are those of the running interpreter's
+    compiler: a catalog's sub-line keys hold for the version that recorded them.
+    """
+    raw, positions = _units(code)
+    if offset // 2 >= len(positions) or None in (position := positions[offset // 2]):
+        return None
+    line, last, column, end = position
+    return f"{line}:{column}-{last}:{end} {dis.opname[raw[offset]]}"
+
+
+@functools.cache
+def _units(code: CodeType) -> tuple[bytes, list[tuple[int | None, int | None, int | None, int | None]]]:
+    """Return a code object's bytecode and the position of each of its code units, read once."""
+    return code.co_code, list(code.co_positions())
+
+
+def start_place(code: CodeType) -> str:
+    """Return the sub-line key of a code object's start: its first position (`_first_position`) and its qualname.
+
+    The qualname tells it from the code object around it, which may start at the same position.
+    """
+    return "{}:{} {}".format(*_first_position(code), code.co_qualname)
+
+
+@functools.cache
+def _flow(code: CodeType) -> tuple[list[dis.Instruction], dict[int, set[str]], frozenset[int], int]:
+    """Return a code object's instructions, the names of those that jump to each, its handlers and where it starts.
+
+    It starts at its last ``RESUME`` at the start of its body (the low bits of the argument 0), where ``PY_START``
+    reports it: a generator's runs its setup before (`dis` documents the argument).
+    """
+    instructions = list(dis.get_instructions(code))
+    jumpers: dict[int, set[str]] = {}
+    for item in instructions:
+        if (target := getattr(item, "jump_target", None)) is not None:
+            jumpers.setdefault(target, set()).add(item.opname)
+    handlers = frozenset(entry.target for entry in getattr(dis.Bytecode(code), "exception_entries", ()))
+    starts = [index for index, item in enumerate(instructions) if item.opname == "RESUME" and not (item.arg or 0) & 3]
+    return instructions, jumpers, handlers, starts[-1] if starts else -1
+
+
+def entry_places(code: CodeType, offset: int) -> list[tuple[str, str]] | None:
+    """Return the sub-line keys of which a run that ran the instruction at `offset` recorded one (`_Recorder`).
+
+    The instruction runs where a run enters the straight stretch of instructions that ends at it, at its first
+    instruction or at a branch's destination inside it: a ``start`` key (the code object's first position) for the
+    stretch that starts the code object, else the ``arm`` key of each instruction of the stretch. None where a way into
+    the stretch reports no event: something falls through or jumps into it, or an exception does; or where nothing in
+    it has a place.
+    """
+    instructions, jumpers, handlers, start = _flow(code)
+    at = next((index for index, item in enumerate(instructions) if item.offset == offset), -1)
+    stretch: list[int] = []
+    for index in range(at, start - 1, -1):
+        item = instructions[index]
+        stretch.append(item.offset)
+        entered = jumpers.get(item.offset, set())
+        if item.offset in handlers or entered - BRANCHES:
+            return None
+        if index == start:
+            return None if entered else [("start", start_place(code))]
+        previous = instructions[index - 1].opname
+        if previous in BRANCHES or previous in NO_FALL_THROUGH or entered:
+            if previous not in BRANCHES and (previous not in NO_FALL_THROUGH or not entered):
+                return None
+            found = [("arm", place) for kept in stretch if (place := instruction_place(code, kept)) is not None]
+            return found or None
+    return None
 
 
 class _Recorder:
@@ -727,7 +814,10 @@ class _Recorder:
     that opened them) counts for each job that uses the module: runs its code or imports it, and for the modules
     importing it imported. An ``open`` of a package file counts unless the import system opens it to load a module.
     Only what runs between `begin` and `end` counts. It never runs beside the tracer: a ``LINE`` callback that
-    disables itself drops the ``INSTRUCTION`` event of the line's first instruction.
+    disables itself drops the ``INSTRUCTION`` event of the line's first instruction. Where the interpreter reports
+    branches (`SUB_LINE`), it also keys what ran finer than a line: the first position of each code object that
+    started (``start``) and the instruction each branch taken led to (``arm``, `instruction_place`), which tell apart
+    two code objects or two arms of one line (`entry_places` reads them back).
     """
 
     def __init__(self, package: Path) -> None:
@@ -737,10 +827,12 @@ class _Recorder:
         self.lines: dict[str, set[int]] = {}
         self.codes: dict[str, set[str]] = {}
         self.files: dict[str, set[str]] = {}
+        self.starts: dict[str, set[str]] = {}
+        self.arms: dict[str, set[str]] = {}
         self.requested: set[str] = set()
         self.names: dict[str, str] = {}
         self.requires: dict[str, set[str]] = {}
-        self.imported: tuple[dict[str, set[int]], dict[str, set[str]], dict[str, set[str]]] = ({}, {}, {})
+        self.imported: tuple[Mapping[str, Iterable[int | str]], ...] = ({}, {}, {}, {}, {})
         self.active = True
         monitoring = sys.monitoring
         self.disable = monitoring.DISABLE
@@ -749,7 +841,11 @@ class _Recorder:
         monitoring.use_tool_id(self.tool, "compare_release lines")
         monitoring.register_callback(self.tool, events.LINE, self._line)
         monitoring.register_callback(self.tool, events.PY_START, self._start)
-        monitoring.set_events(self.tool, events.LINE | events.PY_START)
+        wanted = events.LINE | events.PY_START
+        for name in ("BRANCH_LEFT", "BRANCH_RIGHT") if SUB_LINE else ():
+            monitoring.register_callback(self.tool, getattr(events, name), self._branch)
+            wanted |= getattr(events, name)
+        monitoring.set_events(self.tool, wanted)
         sys.addaudithook(self._audit)
 
     def _path(self, filename: str) -> str | None:
@@ -771,6 +867,15 @@ class _Recorder:
             return None
         if (path := self._path(code.co_filename)) is not None:
             self.codes.setdefault(path, set()).add(code.co_qualname)
+            if SUB_LINE:
+                self.starts.setdefault(path, set()).add(start_place(code))
+        return self.disable
+
+    def _branch(self, code: CodeType, _: int, destination: int) -> object:
+        if not self.active:
+            return None
+        if (path := self._path(code.co_filename)) is not None and (place := instruction_place(code, destination)):
+            self.arms.setdefault(path, set()).add(place)
         return self.disable
 
     def _audit(self, event: str, args: tuple[object, ...]) -> None:
@@ -843,11 +948,12 @@ class _Recorder:
 
     def keep(self) -> None:
         """Keep what importing the modules ran, by module (`keys`)."""
-        self.imported = (self.lines, self.codes, self.files)
+        self.imported = (self.lines, self.codes, self.starts, self.arms, self.files)
 
     def begin(self) -> None:
         """Start a job's record."""
-        self.lines, self.codes, self.files, self.requested, self.active = {}, {}, {}, set(), True
+        self.lines, self.codes, self.files, self.starts, self.arms = {}, {}, {}, {}, {}
+        self.requested, self.active = set(), True
 
     def end(self) -> None:
         """End a job's record: what runs next (the comparator's own checks) does not count."""
@@ -866,19 +972,20 @@ class _Recorder:
 
     def keys(self) -> Record:
         """Return what the record holds, as JSON, with what importing each module it used ran."""
-        lines = {path: set(found) for path, found in self.lines.items()}
-        codes = {path: set(found) for path, found in self.codes.items()}
+        kept: list[Mapping[str, Iterable[int | str]]] = [self.lines, self.codes, self.starts, self.arms]
+        found = [{path: set(items) for path, items in record.items()} for record in kept]
         files = set().union(*self.files.values())
-        imported_lines, imported_codes, imported_files = self.imported
-        for path in self._used():
-            lines.setdefault(path, set()).update(imported_lines.get(path, ()))
-            codes.setdefault(path, set()).update(imported_codes.get(path, ()))
-            files.update(imported_files.get(path, ()))
-        return {
-            "line": {path: sorted(found) for path, found in sorted(lines.items()) if found},
-            "code": {path: sorted(found) for path, found in sorted(codes.items()) if found},
-            "file": sorted(files),
+        used = self._used()
+        for record, imported in zip(found, self.imported, strict=False):
+            for path in used:
+                record.setdefault(path, set()).update(imported.get(path, ()))
+        files.update(*(self.imported[-1].get(path, ()) for path in used))
+        names = ("line", "code", "start", "arm") if SUB_LINE else ("line", "code")
+        keys: Record = {
+            name: {path: sorted(items) for path, items in sorted(record.items()) if items}
+            for name, record in zip(names, found, strict=False)
         }
+        return keys | {"file": sorted(files)} | ({"python": "{}.{}".format(*sys.version_info[:2])} if SUB_LINE else {})
 
 
 _TRACER: list[_Tracer] = []

@@ -15,17 +15,24 @@ evidence incomplete where no other compared cell ran the code.
   cell runs it), the worker imports the package's modules before its first cell, and each cell runs in a fork of the
   warm worker, so what it records depends on no cell run before it (what importing a module ran counts for each cell
   that uses the module). Each key maps to its set of cells; equal sets are stored once, each as the shorter of its
-  cells and the cells it lacks.
+  cells and the cells it lacks. On Python 3.14+ the catalog also holds keys finer than a line, for the version it
+  names (``python``): the first position of each code object that started (`start` keys) and the instruction each
+  branch taken led to (`arm` keys), which tell apart two code objects or two arms of one line.
 - **The pick** (`pick`): each probe of a changed code object is one requirement (`requirements`); a unit counts once
   each of its probes ran in some compared cell, so covering every requirement is what the evidence asks for. A
   ``start`` probe needs the `code` key of its code object, an ``instr`` probe a `line` key of its span, a
   ``readers`` probe a `line` key of one of its readers, a ``read`` probe the `file` key; an ``unmeasurable`` probe
   needs what no run gives. A probe's lines are on its side's revision (what a change removes on the base, what it
   adds on the candidate) and translate to the catalog's (`FileMap`): an unchanged line by its offset, a line of a hunk
-  to the catalog lines the hunk replaced, a line of a pure insertion to the catalog lines around it. A requirement is
-  met at ``startup``, by catalog ``cells`` or by ``none``. The cells are chosen greedily (`cover`): each requirement
-  gets ``redundancy`` cells where the catalog has that many, ties broken by the cost order of `KINDS` and a stable
-  hash, so the choice is deterministic.
+  to the catalog lines the hunk replaced, a line of a pure insertion to the catalog lines around it. Where the catalog
+  has sub-line keys for the running interpreter's version, a probe of instructions needs one of the keys a run that
+  ran them records on its way in (`compare_release.entry_places`, read off the side's code object, `Sources`), and a
+  ``start`` probe the `start` key of its code object; they replace the probe's line or code keys where the text of
+  each of them is the catalog's (`FileMap.place`), so the cells that run a line but not the probe's part of it are
+  no cells of the probe (none may be left); elsewhere the probe keeps its line or code keys. A
+  requirement is met at ``startup``, by catalog ``cells`` or by ``none``. The cells are chosen greedily (`cover`):
+  each requirement gets ``redundancy`` cells where the catalog has that many, ties broken by the cost order of `KINDS`
+  and a stable hash, so the choice is deterministic.
 
 Usage:
   python -m scripts._cell_catalog build OUT [REVISION] --cache-dir DIR [--types T1,T2] [--options 'default;--x']
@@ -53,16 +60,18 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import CodeType
 from typing import TYPE_CHECKING
 
 from scripts import behaviour_diff, compare_release
+from scripts._change_units import first_position
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
 Record = compare_release.Record
-FORMAT = 1
+FORMAT = 2
 PACKAGE_SOURCE = f"src/{compare_release.PACKAGE}/"
 KINDS = ("default", "option-set", "preset", "cli-doc", "payload", "project")
 """The kinds of cells in the order the pick prefers them: the cheapest runs first."""
@@ -72,7 +81,10 @@ STATUSES = ("cells", "startup", "none", "unmeasurable")
 
 
 Key = tuple[str, str, int | str]
-"""A catalog key: its kind (`line`, `code`, `file`), the path below the package, and the line or the qualname."""
+"""A catalog key: its kind (`line`, `code`, `file`, `start`, `arm`), the path below the package, and the line, the
+qualname or the place (`compare_release.instruction_place`, `compare_release.start_place`)."""
+POSITIONED = ("start", "arm")
+"""The kinds of sub-line keys, whose places hold lines (`compare_release.SUB_LINE`)."""
 
 
 def keys_of(recorded: Iterable[Record]) -> set[Key]:
@@ -81,6 +93,12 @@ def keys_of(recorded: Iterable[Record]) -> set[Key]:
     for record in recorded:
         found.update(("line", path, line) for path, lines in record["line"].items() for line in lines)
         found.update(("code", path, name) for path, names in record["code"].items() for name in names)
+        found.update(
+            (kind, path, place)
+            for kind in POSITIONED
+            for path, places in record.get(kind, {}).items()
+            for place in places
+        )
         found.update(("file", path, "") for path in record["file"])
     return found
 
@@ -143,16 +161,28 @@ class Catalog:
     failed: list[int] = field(default_factory=list)
     keys: dict[Key, int] = field(default_factory=dict)
     sets: list[list[object]] = field(default_factory=list)
+    python: str | None = None
     decoded: dict[int, frozenset[int]] = field(default_factory=dict)
 
     @classmethod
-    def of(cls, revision: str, cells: list[CatalogCell], ran: list[set[Key] | None], startup: set[Key]) -> Catalog:
-        """Return the catalog of cells and what each ran (None: it failed, so it can never be compared)."""
+    def of(
+        cls,
+        revision: str,
+        cells: list[CatalogCell],
+        ran: list[set[Key] | None],
+        startup: set[Key],
+        python: str | None = None,
+    ) -> Catalog:
+        """Return the catalog of cells and what each ran (None: it failed, so it can never be compared).
+
+        `python` is the version whose sub-line keys the records hold, None for records of lines only.
+        """
         holders: dict[Key, list[int]] = {}
         for index, keys in enumerate(ran):
             for key in keys or ():
                 holders.setdefault(key, []).append(index)
-        catalog = cls(revision, cells, startup, [index for index, keys in enumerate(ran) if keys is None])
+        failed = [index for index, keys in enumerate(ran) if keys is None]
+        catalog = cls(revision, cells, startup, failed, python=python)
         ids: dict[tuple[int, ...], int] = {}
         for key in sorted(holders, key=str):
             members = tuple(holders[key])
@@ -172,7 +202,7 @@ class Catalog:
 
     def write(self, path: Path) -> None:
         """Write the catalog as gzip JSON."""
-        keys: Record = {"line": {}, "code": {}, "file": {}}
+        keys: Record = {"line": {}, "code": {}, **{kind: {} for kind in POSITIONED}, "file": {}}
         for (kind, where, item), found in sorted(self.keys.items(), key=lambda pair: str(pair[0])):
             if kind == "file":
                 keys["file"][where] = found
@@ -181,6 +211,7 @@ class Catalog:
         data = {
             "format": FORMAT,
             "revision": self.revision,
+            "python": self.python,
             "cells": [cell.row() for cell in self.cells],
             "failed": self.failed,
             "startup": sorted([list(key) for key in self.startup], key=str),
@@ -200,11 +231,11 @@ class Catalog:
             raise SystemExit(msg)
         cells = [CatalogCell(**(row | {"options": tuple(row["options"])})) for row in data["cells"]]
         keys: dict[Key, int] = {("file", where, ""): found for where, found in data["keys"]["file"].items()}
-        for kind in ("line", "code"):
+        for kind in ("line", "code", *POSITIONED):
             for where, pairs in data["keys"][kind].items():
                 keys.update(((kind, where, item), found) for item, found in zip(pairs[::2], pairs[1::2], strict=True))
         startup = {(kind, where, item) for kind, where, item in data["startup"]}
-        return cls(data["revision"], cells, startup, data["failed"], keys, data["sets"])
+        return cls(data["revision"], cells, startup, data["failed"], keys, data["sets"], data["python"])
 
 
 @dataclass(frozen=True)
@@ -212,11 +243,13 @@ class FileMap:
     """How the lines of a file on one revision lie on the catalog's: its catalog path and the hunks between them.
 
     Each hunk is ``git diff -U0``'s (catalog start, catalog count, side start, side count); `catalog` is None for a
-    file the catalog lacks.
+    file the catalog lacks. `replaced` holds the side line, the catalog's text and the side's of each line a hunk
+    replaces one for one.
     """
 
     catalog: str | None
     hunks: tuple[tuple[int, int, int, int], ...] = ()
+    replaced: tuple[tuple[int, str, str], ...] = ()
 
     def lines(self, line: int) -> list[int]:
         """Return the catalog lines of a side's line: by its offset, or the lines its hunk replaced or surrounds."""
@@ -230,6 +263,23 @@ class FileMap:
                 return list(range(old, old + old_count)) if old_count else [at for at in (old, old + 1) if at > 0]
             shift = (old + old_count if old_count else old + 1) - (new + new_count if new_count else new + 1)
         return [line + shift]
+
+    def place(self, line: int, upto: int | None = None) -> int | None:
+        """Return the catalog line of a side's line where its text is the catalog's, up to byte `upto` if given.
+
+        A line outside every hunk is the catalog's whole; a line a hunk replaces one for one keeps the catalog's
+        start up to where their texts first differ. None elsewhere, or where the text up to `upto` differs.
+        """
+        if self.catalog is None:
+            return None
+        if not any(new <= line < new + new_count for _, _, new, new_count in self.hunks):
+            return self.lines(line)[0]
+        before, after = next(((old, new) for at, old, new in self.replaced if at == line), ("", None))
+        if after is None or upto is None:
+            return None
+        first, second = before.encode(), after.encode()
+        same = next((at for at, pair in enumerate(zip(first, second, strict=False)) if pair[0] != pair[1]), len(first))
+        return self.lines(line)[0] if upto <= same else None
 
 
 def file_maps(repo: Path, catalog: str, side: str | None) -> dict[str, FileMap]:
@@ -245,21 +295,34 @@ def file_maps(repo: Path, catalog: str, side: str | None) -> dict[str, FileMap]:
     maps: dict[str, FileMap] = {}
     old: str | None = None
     current: tuple[str | None, str | None, list[tuple[int, int, int, int]]] | None = None
+    removed: list[str] = []
+    added: list[str] = []
+    replaced: list[tuple[int, str, str]] = []
+    pending = 0
     for text in diff.stdout.splitlines():
-        if text.startswith("rename from "):
+        if pending and text[:1] in {"-", "+"}:
+            (removed if text[0] == "-" else added).append(text[1:])
+            pending -= 1
+            if not pending and current is not None and current[1] is not None and len(removed) == len(added):
+                start = current[2][-1][2]
+                replaced += [(start + index, *pair) for index, pair in enumerate(zip(removed, added, strict=True))]
+                maps[current[1]] = FileMap(current[0], tuple(current[2]), tuple(replaced))
+        elif text.startswith("rename from "):
             old = _below_package(text[12:], "")
         elif text.startswith("rename to ") and (renamed := _below_package(text[10:], "")) is not None:
             maps[renamed] = FileMap(old)
         elif text.startswith("--- "):
             old = _below_package(text[4:], "a/")
         elif text.startswith("+++ "):
-            current = (old, _below_package(text[4:], "b/"), [])
+            current, replaced = (old, _below_package(text[4:], "b/"), []), []
             if current[1] is not None:
                 maps[current[1]] = FileMap(old)
-        elif (match := HUNK.match(text)) and current is not None and current[1] is not None:
+        elif (match := HUNK.match(text)) and current is not None:
             start, count, new, new_count = match.groups()
             current[2].append((int(start), int(count or 1), int(new), int(new_count or 1)))
-            maps[current[1]] = FileMap(current[0], tuple(current[2]))
+            removed, added, pending = [], [], current[2][-1][1] + current[2][-1][3]
+            if current[1] is not None:
+                maps[current[1]] = FileMap(current[0], tuple(current[2]), tuple(replaced))
     return maps
 
 
@@ -279,6 +342,7 @@ class Requirement:
     status: str = "none"
     cells: frozenset[int] = frozenset()
     picked: list[int] = field(default_factory=list)
+    sub_line: bool = False
 
 
 def _span_lines(where: str) -> list[int]:
@@ -303,8 +367,65 @@ def probe_keys(probe: Record) -> list[Key]:
     return []
 
 
+class Sources:
+    """The code objects of each side's package (`roots`: the ``src`` directory of each side), by a probe's key.
+
+    A probe's ``code`` is the path below the package, ``co_qualname``, ``co_firstlineno`` and the first position
+    (`_change_units.Probe`); each file is compiled once, as the comparator's mapping compiles it.
+    """
+
+    def __init__(self, roots: dict[str, Path]) -> None:
+        """Find the code objects of the files below each side's `roots`."""
+        self.roots = roots
+        self.found: dict[tuple[str, str], dict[tuple[object, ...], CodeType]] = {}
+
+    def code(self, side: str, key: list[object]) -> CodeType | None:
+        """Return the code object of a probe's key on a side, None where the side's file has none."""
+        path = str(key[0])
+        if (side, path) not in self.found:
+            source = self.roots[side] / compare_release.PACKAGE / path
+            codes: dict[tuple[object, ...], CodeType] = {}
+            with contextlib.suppress(OSError, SyntaxError, ValueError):
+                pending = [compile(source.read_text(encoding="utf-8"), str(source), "exec", dont_inherit=True)]
+                while pending:
+                    code = pending.pop()
+                    codes[(path, code.co_qualname, code.co_firstlineno, *first_position(code))] = code
+                    pending += [item for item in code.co_consts if isinstance(item, CodeType)]
+            self.found[side, path] = codes
+        return self.found[side, path].get(tuple(key))
+
+
+def sub_line_keys(probe: Record, side: str, sources: Sources) -> list[Key] | None:
+    """Return the sub-line keys of a probe on its side's revision, one of which a run that meets it records.
+
+    A ``start`` probe needs its code object's `start` key, an ``instr`` probe or a reader one of the keys of a run's
+    way into one of its instructions (`compare_release.entry_places`). None where an instruction has no such keys.
+    """
+    match probe["kind"]:
+        case "start":
+            path, qualname, _, line, column = probe["code"]
+            return [("start", path, f"{line}:{column} {qualname}")]
+        case "instr" | "readers":
+            members = probe["readers"] if probe["kind"] == "readers" else [probe]
+        case _:
+            return None
+    found: list[Key] = []
+    for member in members:
+        if (code := sources.code(side, member["code"])) is None:
+            return None
+        for offset in member["offsets"]:
+            if (places := compare_release.entry_places(code, offset)) is None:
+                return None
+            found += [(kind, member["code"][0], place) for kind, place in places]
+    return found
+
+
 def translated(key: Key, maps: dict[str, FileMap]) -> list[Key]:
-    """Return the catalog keys of a key on a side's revision (`FileMap`)."""
+    """Return the catalog keys of a key on a side's revision (`FileMap`).
+
+    A sub-line key's place translates only where its text is the catalog's (`FileMap.place`: up to where a span on
+    one line ends, a start starts; a span over lines needs its lines whole), so its columns hold; else it has none.
+    """
     kind, path, item = key
     if (found := maps.get(path)) is None:
         return [key]
@@ -312,11 +433,39 @@ def translated(key: Key, maps: dict[str, FileMap]) -> list[Key]:
         return []
     if kind == "line":
         return [(kind, found.catalog, line) for line in found.lines(int(item))]
+    if kind in POSITIONED:
+        span, _, name = str(item).partition(" ")
+        ends = [tuple(map(int, end.split(":"))) for end in span.split("-")]
+        one_line = len({line for line, _ in ends}) == 1
+        moved: list[str] = []
+        for line, column in ends:
+            if (at := found.place(line, ends[-1][1] if one_line else None)) is None:
+                return []
+            moved.append(f"{at}:{column}")
+        return [(kind, found.catalog, " ".join(["-".join(moved), *([name] if name else [])]))]
     return [(kind, found.catalog, item)]
 
 
-def requirements(catalog: Catalog, units: list[Record], maps: dict[str, dict[str, FileMap]]) -> list[Requirement]:
-    """Return a requirement per probe of the units, with how the catalog meets it; `maps` are each side's."""
+def _translated_all(keys: list[Key], maps: dict[str, FileMap]) -> set[Key] | None:
+    """Return the catalog keys of sub-line keys, None where one of them has none (its text changed)."""
+    found: set[Key] = set()
+    for key in keys:
+        if not (moved := translated(key, maps)):
+            return None
+        found.update(moved)
+    return found
+
+
+def requirements(
+    catalog: Catalog, units: list[Record], maps: dict[str, dict[str, FileMap]], sources: Sources | None = None
+) -> list[Requirement]:
+    """Return a requirement per probe of the units, with how the catalog meets it; `maps` are each side's.
+
+    With `sources` and a catalog of the running interpreter's sub-line keys, a probe's sub-line keys replace its line
+    or code keys where all of them translate (module docstring).
+    """
+    version = "{}.{}".format(*sys.version_info[:2])
+    finer = sources is not None and catalog.python == version
     found = []
     for unit in units:
         for probe in unit["probes"]:
@@ -324,6 +473,11 @@ def requirements(catalog: Catalog, units: list[Record], maps: dict[str, dict[str
             for key in probe_keys(probe):
                 requirement.keys.update(translated(key, maps[unit["side"]]))
             requirement.cells = frozenset().union(*(catalog.cells_of(key) for key in requirement.keys))
+            sub_line = sub_line_keys(probe, unit["side"], sources) if finer and sources is not None else None
+            moved = _translated_all(sub_line, maps[unit["side"]]) if sub_line is not None else None
+            if moved:
+                requirement.keys, requirement.sub_line = moved, True
+                requirement.cells = frozenset().union(*(catalog.cells_of(key) for key in moved))
             if probe["kind"] == "unmeasurable":
                 requirement.status = "unmeasurable"
             elif requirement.keys & catalog.startup:
@@ -377,11 +531,12 @@ class Pick:
     def lines(self) -> list[str]:
         """Return the pick as text: the counts, the cells, and the requirements no catalog cell meets."""
         counts = {status: sum(item.status == status for item in self.found) for status in STATUSES}
+        finer = sum(item.sub_line and item.status == "cells" for item in self.found)
         text = [
             (
                 f"pick: catalog {self.catalog.revision[:12]}, requirements {len(self.found)}: by cells "
-                f"{counts['cells']}, at startup {counts['startup']}, no catalog cell {counts['none']}, unmeasurable "
-                f"{counts['unmeasurable']}; cells picked {len(self.picked)}"
+                f"{counts['cells']} ({finer} by sub-line keys), at startup {counts['startup']}, no catalog cell "
+                f"{counts['none']}, unmeasurable {counts['unmeasurable']}; cells picked {len(self.picked)}"
             )
         ]
         for index in self.picked:
@@ -409,6 +564,7 @@ class Pick:
                     "kind": item.probe["kind"],
                     "where": item.probe["where"],
                     "status": item.status,
+                    "keys": "sub-line" if item.sub_line else "line",
                     "picked": [self.catalog.cells[index].label for index in item.picked],
                 }
                 for item in self.found
@@ -416,9 +572,15 @@ class Pick:
         }
 
 
-def pick(catalog: Catalog, units: list[Record], maps: dict[str, dict[str, FileMap]], redundancy: int = 2) -> Pick:
+def pick(
+    catalog: Catalog,
+    units: list[Record],
+    maps: dict[str, dict[str, FileMap]],
+    redundancy: int = 2,
+    sources: Sources | None = None,
+) -> Pick:
     """Return the cells of the catalog that run the changed code objects `units` (module docstring)."""
-    found = requirements(catalog, units, maps)
+    found = requirements(catalog, units, maps, sources)
     return Pick(catalog, found, cover(catalog, found, redundancy))
 
 
@@ -428,11 +590,14 @@ def pick_change(
     units: compare_release.Units | None,
     sides: tuple[str, str | None],
     redundancy: int = 2,
+    *,
+    roots: dict[str, Path] | None = None,
 ) -> Pick:
     """Return the pick of a change's units (`compare_release.changed_units`) of the base and candidate revisions.
 
-    `sides` are the base revision and the candidate's, None for the working tree of `repo`. A release base has no
-    change units (`units` is None): there is nothing to pick, the tier runs.
+    `sides` are the base revision and the candidate's, None for the working tree of `repo`; `roots` the ``src`` each
+    side's units were mapped from (`Sources`), None for line keys only. A release base has no change units (`units`
+    is None): there is nothing to pick, the tier runs.
     """
     if units is None:
         msg = "pick: a release base has no change units: run the tier"
@@ -441,7 +606,7 @@ def pick_change(
         side: file_maps(repo, catalog.revision, revision)
         for side, revision in zip(("base", "head"), sides, strict=True)
     }
-    return pick(catalog, units.units, maps, redundancy)
+    return pick(catalog, units.units, maps, redundancy, Sources(roots) if roots else None)
 
 
 def record(runner: compare_release.Runner, cells: list[behaviour_diff.Cell], revision: str, jobs: int) -> Catalog:
@@ -458,7 +623,8 @@ def record(runner: compare_release.Runner, cells: list[behaviour_diff.Cell], rev
     startup = next((worker.startup for worker in runner.workers.values() if worker.startup), None)
     runner.close()
     rows = [CatalogCell(cell.kind, cell.label, cell.file_type, cell.backend, cell.options) for cell in cells]
-    return Catalog.of(revision, rows, ran, keys_of([startup]) if startup else set())
+    python = startup.get("python") if startup else None
+    return Catalog.of(revision, rows, ran, keys_of([startup]) if startup else set(), python)
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -525,7 +691,8 @@ def _pick(ns: argparse.Namespace) -> int:
     root = compare_release.ROOT
     head = compare_release.source_tree(candidate, cache_dir) / "src" if candidate else root / "src"
     units = compare_release.changed_units(python, root, base, candidate, head)
-    chosen = pick_change(catalog, root, units, (base.revision or ns.base, candidate), ns.redundancy)
+    roots = {"base": base.source, "head": head} if base.source else None
+    chosen = pick_change(catalog, root, units, (base.revision or ns.base, candidate), ns.redundancy, roots=roots)
     print("\n".join(chosen.lines()))
     if ns.json:
         ns.json.write_text(json.dumps(chosen.data(), indent=1) + "\n", encoding="utf-8")
