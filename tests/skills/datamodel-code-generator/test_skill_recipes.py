@@ -11,13 +11,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.conftest import assert_exact_directory_content, assert_output, create_assert_file_content
+from tests.conftest import assert_exact_directory_content, assert_output
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
 FIXTURES = Path(__file__).parent / "fixtures"
-EXPECTED = Path(__file__).parents[2] / "data" / "expected" / "skills" / "datamodel-code-generator"
 TARGET_PYTHON = "3.10"
 COMMON_ARGS = (
     "--output-model-type",
@@ -29,7 +28,6 @@ COMMON_ARGS = (
     "isort",
     "--disable-timestamp",
 )
-assert_file_content = create_assert_file_content(EXPECTED)
 
 
 def _run_codegen(args: Sequence[str], *, cwd: Path | None = None) -> str:
@@ -59,25 +57,24 @@ def test_run_codegen_reports_failure(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    ("fixture_name", "input_type", "expected_file", "extra_args"),
+    ("fixture_name", "input_type", "extra_args"),
     [
-        ("openapi.yaml", "openapi", "single_file/openapi.py", ()),
-        ("asyncapi.yaml", "asyncapi", "single_file/asyncapi.py", ()),
-        ("jsonschema.json", "jsonschema", "single_file/jsonschema.py", ()),
-        ("sample.json", "json", "single_file/json.py", ("--class-name", "SampleJson")),
-        ("sample.yaml", "yaml", "single_file/yaml.py", ("--class-name", "SampleYaml")),
-        ("sample.csv", "csv", "single_file/csv.py", ("--class-name", "SampleCsv")),
-        ("sample.avsc", "avro", "single_file/avro.py", ()),
-        ("sample.xsd", "xmlschema", "single_file/xmlschema.py", ()),
-        ("sample.proto", "protobuf", "single_file/protobuf.py", ()),
-        ("mcp_tools.json", "mcp-tools", "single_file/mcp_tools.py", ()),
+        pytest.param("openapi.yaml", "openapi", (), id="openapi"),
+        pytest.param("asyncapi.yaml", "asyncapi", (), id="asyncapi"),
+        pytest.param("jsonschema.json", "jsonschema", (), id="jsonschema"),
+        pytest.param("sample.json", "json", ("--class-name", "SampleJson"), id="json"),
+        pytest.param("sample.yaml", "yaml", ("--class-name", "SampleYaml"), id="yaml"),
+        pytest.param("sample.csv", "csv", ("--class-name", "SampleCsv"), id="csv"),
+        pytest.param("sample.avsc", "avro", (), id="avro"),
+        pytest.param("sample.xsd", "xmlschema", (), id="xmlschema"),
+        pytest.param("sample.proto", "protobuf", (), id="protobuf"),
+        pytest.param("mcp_tools.json", "mcp-tools", (), id="mcp_tools"),
     ],
 )
 def test_skill_single_file_recipes_match_expected_output(
     tmp_path: Path,
     fixture_name: str,
     input_type: str,
-    expected_file: str,
     extra_args: tuple[str, ...],
 ) -> None:
     """Representative single-file recipes match checked-in expected output."""
@@ -92,7 +89,7 @@ def test_skill_single_file_recipes_match_expected_output(
         *COMMON_ARGS,
         *extra_args,
     ])
-    assert_file_content(output, expected_file)
+    assert_output(output.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_skill_graphql_recipe_matches_expected_output(tmp_path: Path) -> None:
@@ -109,7 +106,7 @@ def test_skill_graphql_recipe_matches_expected_output(tmp_path: Path) -> None:
         str(output),
         *COMMON_ARGS,
     ])
-    assert_file_content(output, "graphql.py")
+    assert_output(output.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_skill_input_model_recipe_matches_expected_output(tmp_path: Path) -> None:
@@ -122,7 +119,7 @@ def test_skill_input_model_recipe_matches_expected_output(tmp_path: Path) -> Non
         str(output),
         *COMMON_ARGS,
     ])
-    assert_file_content(output, "input_model.py")
+    assert_output(output.read_text(encoding="utf-8"), suffix=".py")
 
 
 def test_skill_directory_output_recipe_matches_expected_package(tmp_path: Path) -> None:
@@ -139,7 +136,7 @@ def test_skill_directory_output_recipe_matches_expected_package(tmp_path: Path) 
         "--all-exports-scope",
         "recursive",
     ])
-    assert_exact_directory_content(output, EXPECTED / "directory_output")
+    assert_exact_directory_content(output)
 
 
 def test_skill_recipe_check_mode_matches_expected_output(tmp_path: Path) -> None:
@@ -155,7 +152,7 @@ def test_skill_recipe_check_mode_matches_expected_output(tmp_path: Path) -> None
         *COMMON_ARGS,
     ]
     _run_codegen(base_args)
-    assert_file_content(output, "check_mode.py")
+    assert_output(output.read_text(encoding="utf-8"), suffix=".py")
     _run_codegen([*base_args, "--check"])
 
 
