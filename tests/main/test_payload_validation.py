@@ -25,7 +25,6 @@ from scripts.check_ratchets import NO_SEED_LINE
 from tests.conftest import assert_inputs_not_mutated, assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_MAIN_PATH,
     EXPERIMENTAL_MISSING_IMPORT_WARNING,
     JSON_SCHEMA_DATA_PATH,
 )
@@ -107,10 +106,6 @@ from .payload_validation.strategy import (
     _bound_float_multiples,
     _regex_agreement_validator,
     _valid_where_regex_engines_agree,
-)
-
-NATIVE_NUMERIC_EMPTY_ERRORS = (
-    Path(__file__).parents[1] / "data" / "expected" / "payloads" / "native_numeric_empty_errors.txt"
 )
 
 NUMERIC_SAMPLING_PATH = Path(__file__).parents[1] / "data" / "payloads" / "numeric_sampling.json"
@@ -356,7 +351,6 @@ def test_numeric_payload_sampling_preserves_source_schemas() -> None:
             normalized[name] = schema
         assert_output(
             json.dumps(normalized, indent=2) + "\n",
-            NUMERIC_SAMPLING_PATH.parents[1] / "expected" / "payloads" / "numeric_sampling.txt",
         )
 
 
@@ -414,7 +408,7 @@ def test_numeric_payload_sampling_validates_generated_models(
                 indent=2,
                 default=str,
             ),
-            NATIVE_NUMERIC_EMPTY_ERRORS,
+            name="errors",
         )
         if errors:
             return
@@ -999,7 +993,7 @@ def test_generated_pydantic_v2_model_accepts_schema_derived_payloads(
         expected = expected_errors or []
         assert_output(
             json.dumps([] if errors == expected else {"expected": expected, "actual": errors}, indent=2, default=str),
-            NATIVE_NUMERIC_EMPTY_ERRORS,
+            name="errors",
         )
         if expected_errors is not None and not errors:
             validate_with_source_schema(case, pydantic_payload_dump(adapter, validated))
@@ -1040,7 +1034,7 @@ def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
                 indent=2,
                 default=str,
             ),
-            NATIVE_NUMERIC_EMPTY_ERRORS,
+            name="errors",
         )
         if errors:
             return
@@ -1431,7 +1425,6 @@ def test_union_rejection_capabilities() -> None:
         capabilities = {name: sorted(rejection_constraint_ids(case)) for name, case in PAYLOAD_UNION_CASES.items()}
         assert_output(
             json.dumps(capabilities, indent=2) + "\n",
-            PAYLOAD_UNION_DATA_PATH.parents[1] / "expected" / "payloads" / "union_capabilities.txt",
         )
 
 
@@ -1469,9 +1462,7 @@ def test_allof_payload_strategy_classification() -> None:
                 "classification": _schema_exclusion_reason(schema),
                 "source_acceptance": [validator.is_valid(payload) for payload in payloads],
             }
-    assert_output(
-        json.dumps(results, indent=2) + "\n", EXPECTED_MAIN_PATH / "allof_payload_strategy_classification.txt"
-    )
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 def test_payload_generation_reports_real_schema_failure(tmp_path: Path) -> None:
@@ -1490,11 +1481,10 @@ def test_payload_generation_reports_real_schema_failure(tmp_path: Path) -> None:
         generate_payload_runtime(
             case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2
         )
-    assert_output(str(caught.value) + "\n", EXPECTED_MAIN_PATH / "payload_generation_missing_reference.txt")
+    assert_output(str(caught.value) + "\n")
 
 
 RUNTIME_COMPATIBILITY_PATH = DATA_PATH / "payloads/runtime_compatibility"
-RUNTIME_COMPATIBILITY_EXPECTED = EXPECTED_MAIN_PATH / "runtime_compatibility"
 
 
 @pytest.mark.parametrize(
@@ -1521,7 +1511,7 @@ def test_payload_runtime_null_aliases(tmp_path: Path, case_id: str, payloads: di
             with pytest.raises(JsonSchemaValidationError):
                 validate_with_source_schema(case, payload)
             runtime.assert_rejects_python(payload)
-        assert_output(json.dumps(result, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "null_aliases.txt")
+        assert_output(json.dumps(result, indent=2) + "\n")
 
 
 @pytest.mark.parametrize("backend", [PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS])
@@ -1540,7 +1530,6 @@ def test_payload_runtime_union_options(
         runtime.validate_python(payload)
         assert_output(
             json.dumps({"options": case.backend_extra_args[backend], "validated": payload}, indent=2) + "\n",
-            RUNTIME_COMPATIBILITY_EXPECTED / f"union_{'field' if case_id.endswith('field.json') else 'root'}.txt",
         )
 
 
@@ -1567,7 +1556,7 @@ def test_payload_runtime_msgspec_gaps(generated_model_cache: dict[str, Any]) -> 
                 "rejection": backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC),
                 "error": type(caught.value).__name__,
             }
-    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "msgspec_gaps.txt")
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 def test_payload_runtime_legacy_alias_policy(tmp_path: Path) -> None:
@@ -1586,7 +1575,7 @@ def test_payload_runtime_legacy_alias_policy(tmp_path: Path) -> None:
     else:
         with pytest.raises(TypeError, match="ForwardRef"):
             runtime.validate_python(payload)
-    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "legacy_alias.txt")
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 def test_payload_runtime_version_policies(tmp_path: Path) -> None:
@@ -1626,7 +1615,7 @@ def test_payload_runtime_version_policies(tmp_path: Path) -> None:
             },
         }
         results[case_id]["dataclass"] = backend_acceptance_exclusion_reason(case, PayloadBackend.PYDANTIC_V2_DATACLASS)
-    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "versions.txt")
+    assert_output(json.dumps(results, indent=2) + "\n")
 
 
 @pytest.mark.parametrize(
@@ -1740,4 +1729,4 @@ def test_payload_runtime_alias_fallback(tmp_path: Path, name: str, fixture: dict
         with pytest.raises(PayloadAdapterError) as caught:
             generate_payload_runtime(case, cache, backend)
         result = str(caught.value)
-    assert_output(result + "\n", RUNTIME_COMPATIBILITY_EXPECTED / f"fallback_{name}.txt")
+    assert_output(result + "\n")

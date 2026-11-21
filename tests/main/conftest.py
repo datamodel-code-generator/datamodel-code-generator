@@ -252,7 +252,6 @@ EXPECTED_JSON_SCHEMA_PATH: Path = EXPECTED_MAIN_PATH / "jsonschema"
 EXPECTED_GRAPHQL_PATH: Path = EXPECTED_MAIN_PATH / "graphql"
 EXPECTED_XML_SCHEMA_PATH: Path = EXPECTED_MAIN_PATH / "xmlschema"
 EXPECTED_PROTOBUF_PATH: Path = EXPECTED_MAIN_PATH / "protobuf"
-EXPECTED_AVRO_PATH: Path = EXPECTED_MAIN_PATH / "avro"
 EXPECTED_JSON_PATH: Path = EXPECTED_MAIN_PATH / "json"
 EXPECTED_CSV_PATH: Path = EXPECTED_MAIN_PATH / "csv"
 
@@ -1651,12 +1650,11 @@ def assert_generated_model_json_validation(
     expected_attribute_value: Any = None,
     expected_keyword_only_fields: Collection[str] | None = None,
     expected_repr: str | None = None,
-    expected_repr_path: Path | None = None,
     invalid_keyword_arguments: Sequence[tuple[Mapping[str, Any], str]] = (),
 ) -> None:
     """Import a generated module and validate JSON data through a generated Pydantic model or dataclass.
 
-    The repr of the parsed value equals ``expected_repr``, or the expected file ``expected_repr_path`` as one line.
+    The repr of the parsed value equals ``expected_repr``.
     """
     with _generated_model(output_path, module_name, model_name) as model:
         validate_json = _model_json_validator(model)
@@ -1696,8 +1694,6 @@ def assert_generated_model_json_validation(
 
         if expected_repr is not None and repr(parsed) != expected_repr:  # pragma: no cover
             pytest.fail(f"Expected repr {expected_repr!r}, got {parsed!r}", pytrace=False)
-        if expected_repr_path is not None:
-            assert_output(f"{parsed!r}\n", expected_repr_path)
 
         _assert_model_json_invalid(validate_json, invalid_json, expected_error_type)
         for keyword_arguments, keyword_error_type in invalid_keyword_arguments:
