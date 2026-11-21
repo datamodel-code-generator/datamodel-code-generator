@@ -14,10 +14,9 @@ import pytest
 from datamodel_code_generator import InputFileType, chdir
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
-from tests.conftest import assert_directory_content, assert_output, create_assert_file_content
+from tests.conftest import assert_directory_content, assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_MAIN_PATH,
     OPEN_API_DATA_PATH,
     run_generate_file_and_assert,
     run_main_and_assert,
@@ -28,16 +27,12 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 INPUT_PATH = OPEN_API_DATA_PATH / "shadowed_modules"
-EXPECTED_PATH = EXPECTED_MAIN_PATH / "shadowed_modules"
-MODULE_FILES = [("__init__.py", "stale_package/__init__.py"), ("pets.py", "stale_package/pets.py")]
-
-assert_file_content = create_assert_file_content(EXPECTED_PATH)
 
 
-def _run(name: str, output: Path, *extra_args: str, **options: Any) -> None:
+def _run(fixture: str, output: Path, *extra_args: str, **options: Any) -> None:
     """Generate one fixture document through the CLI."""
     run_main_and_assert(
-        input_path=INPUT_PATH / f"{name}.json",
+        input_path=INPUT_PATH / f"{fixture}.json",
         output_path=output,
         input_file_type="openapi",
         extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
@@ -77,7 +72,7 @@ def test_shadowed_module_warns(publication: str, output_dir: Path, tmp_path: Pat
             "module",
             output_dir,
             *_publication_args(publication, tmp_path),
-            expected_directory=EXPECTED_PATH / "stale_package",
+            name="tree",
         )
 
 
@@ -90,8 +85,7 @@ def test_shadowed_single_file_output_warns(publication: str, output_dir: Path, t
             "single",
             output_dir / "pets.py",
             *_publication_args(publication, tmp_path),
-            assert_func=assert_file_content,
-            expected_file="single.py",
+            name="single",
         )
 
 
@@ -107,8 +101,8 @@ def test_shadowed_module_warns_in_batch_jobs(output_dir: Path, tmp_path: Path) -
         pytest.warns(UserWarning, match=_pattern(tmp_path / "model.py")),
     ):
         run_main_with_args(["--all-jobs", "--formatters", "builtin"])
-    assert_directory_content(output_dir, EXPECTED_PATH / "stale_package")
-    assert_file_content(tmp_path / "model.py", "single.py")
+    assert_directory_content(output_dir)
+    assert_output((tmp_path / "model.py").read_text(encoding="utf-8"), name="single", suffix=".py")
 
 
 @pytest.mark.parametrize("publication", ["direct", "json", "update-lock", "batch", "batch-json"])
@@ -151,7 +145,7 @@ def test_generate_warns_about_shadowed_module(update_lock: bool, output_dir: Pat
         input_path=INPUT_PATH / "module.json",
         output_path=output_dir,
         input_file_type=InputFileType.OpenAPI,
-        expected_directory=EXPECTED_PATH / "stale_package",
+        name="tree",
         expected_warnings=[_message(output_dir / "pets.py")],
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
@@ -168,6 +162,7 @@ def test_generate_warns_about_shadowed_single_file_output(update_lock: bool, out
         input_path=INPUT_PATH / "single.json",
         output_path=output_dir / "pets.py",
         input_file_type=InputFileType.OpenAPI,
+        name="single",
         expected_warnings=[_message(output_dir / "pets.py")],
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
@@ -179,7 +174,7 @@ def test_generate_warns_about_shadowed_single_file_output(update_lock: bool, out
 def test_disable_warnings_silences_shadowed_module(output_dir: Path) -> None:
     """`--disable-warnings` silences the report and changes nothing else."""
     _run("package", output_dir)
-    _run("module", output_dir, "--disable-warnings", expected_directory=EXPECTED_PATH / "stale_package")
+    _run("module", output_dir, "--disable-warnings", name="tree")
 
 
 def test_check_lists_stale_package_without_warning(output_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -193,7 +188,7 @@ def test_check_lists_stale_package_without_warning(output_dir: Path, capsys: pyt
         "--check",
         expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stdout_path=EXPECTED_PATH / "check.txt",
+        derived_stdout=True,
     )
 
 
@@ -224,36 +219,36 @@ def test_unlistable_directory_does_not_stop_generation(output_dir: Path, monkeyp
 
     _run("package", output_dir)
     monkeypatch.setattr(os, "listdir", fail)
-    _run("module", output_dir, expected_directory=EXPECTED_PATH / "stale_package")
+    _run("module", output_dir, name="tree")
 
 
 def test_directory_without_init_does_not_shadow(output_dir: Path) -> None:
     """A leftover directory without `__init__.py` loses to the module of its name."""
     _run("package", output_dir)
     (output_dir / "pets" / "__init__.py").unlink()
-    _run("module", output_dir, assert_func=assert_file_content, output_to_expected=MODULE_FILES)
+    _run("module", output_dir, name="tree")
 
 
 def test_differently_spelled_package_does_not_shadow(output_dir: Path) -> None:
     """A package whose name differs in case is another module, also on a case-insensitive filesystem."""
     (output_dir / "PETS").mkdir(parents=True)
     (output_dir / "PETS" / "__init__.py").touch()
-    _run("module", output_dir, assert_func=assert_file_content, output_to_expected=MODULE_FILES)
+    _run("module", output_dir)
 
 
 def test_package_beside_stale_module_does_not_warn(output_dir: Path) -> None:
     """A generated package wins over the stale module of its name, so nothing is shadowed."""
     _run("module", output_dir)
-    _run("package", output_dir, expected_directory=EXPECTED_PATH / "stale_module")
+    _run("package", output_dir, name="tree")
 
 
 def test_fresh_output_directory_does_not_warn(output_dir: Path) -> None:
     """A new output directory holds no package that could shadow a module."""
-    _run("module", output_dir, assert_func=assert_file_content, output_to_expected=MODULE_FILES)
+    _run("module", output_dir)
 
 
 def test_single_file_output_without_package_does_not_warn(output_dir: Path) -> None:
     """A single-file output is written without a warning into a new directory and beside unrelated modules."""
-    _run("single", output_dir / "pets.py", assert_func=assert_file_content, expected_file="single.py")
+    _run("single", output_dir / "pets.py", name="single")
     _run("module", output_dir / "other")
-    _run("single", output_dir / "pets.py", assert_func=assert_file_content, expected_file="single.py")
+    _run("single", output_dir / "pets.py", name="single")

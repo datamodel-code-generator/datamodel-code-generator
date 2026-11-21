@@ -17,7 +17,7 @@ import trustme
 
 from datamodel_code_generator import HTTPBackend, SchemaFetchError
 from datamodel_code_generator.http import _get_http_response, _get_http_stack, get_body
-from tests.conftest import create_assert_file_content
+from tests.conftest import assert_output
 from tests.main.conftest import run_main_url_and_assert
 
 if TYPE_CHECKING:
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
 HTTP_DATA_PATH = Path(__file__).parent / "data"
 PET_SCHEMA_PATH = HTTP_DATA_PATH / "jsonschema" / "pet_simple.json"
-assert_https_generated_file = create_assert_file_content(HTTP_DATA_PATH / "expected" / "http")
 needs_openssl = pytest.mark.skipif(shutil.which("openssl") is None, reason="OpenSSL is needed to hash a CA directory")
 
 
@@ -153,7 +152,7 @@ def test_https_ignore_tls_fetches_real_schema(
         newline="",
     )
 
-    assert_https_generated_file(output_path, "pet_schema.txt")
+    assert_output(output_path.read_text(encoding="utf-8"), name="pet_schema")
 
 
 @pytest.mark.cli_doc(
@@ -166,7 +165,7 @@ and selects experimental HTTPX2 only when that module is absent. Explicit
 and paired dependency errors do not fall back.""",
     input_schema="jsonschema/pet_simple.json",
     cli_args=["--http-backend", "auto"],
-    golden_output="http/backend.py",
+    golden_output="http/cli_does_not_fall_back_to_a_subdirectory_lock_when_project_lock_is_absent.py",
 )
 def test_cli_https_ignore_tls_generates_model(
     local_https_server: tuple[str, Path],
@@ -180,8 +179,6 @@ def test_cli_https_ignore_tls_generates_model(
         url=schema_url,
         output_path=tmp_path / "output.py",
         input_file_type="jsonschema",
-        assert_func=assert_https_generated_file,
-        expected_file="backend.py",
         extra_args=[
             "--allow-private-network",
             "--http-ignore-tls",
@@ -224,8 +221,7 @@ def test_cli_https_updates_and_verifies_remote_lock(
         url=schema_url,
         output_path=tmp_path / "output.py",
         input_file_type="jsonschema",
-        assert_func=assert_https_generated_file,
-        expected_file="backend.py",
+        name="model",
         extra_args=update_args,
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
@@ -237,8 +233,7 @@ def test_cli_https_updates_and_verifies_remote_lock(
         url=schema_url,
         output_path=tmp_path / "verified.py",
         input_file_type="jsonschema",
-        assert_func=assert_https_generated_file,
-        expected_file="backend.py",
+        name="model",
         extra_args=verify_args,
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
@@ -267,14 +262,12 @@ def test_https_trusted_ca_verifies_and_generates_model(
         encoding="utf-8",
         newline="",
     )
-    assert_https_generated_file(pinned_output_path, "pet_schema.txt")
+    assert_output(pinned_output_path.read_text(encoding="utf-8"), name="pet_schema")
 
     run_main_url_and_assert(
         url=schema_url,
         output_path=tmp_path / "output.py",
         input_file_type="jsonschema",
-        assert_func=assert_https_generated_file,
-        expected_file="backend.py",
         extra_args=["--allow-private-network", "--disable-timestamp", *_selected_http_backend_cli_args()],
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
