@@ -25,7 +25,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import assert_file_content
 from tests.main.payload_validation.constants import ALLOF_REF_SIBLING_DIAGNOSTICS
 
 if TYPE_CHECKING:
@@ -50,7 +49,6 @@ def test_allof_ref_siblings(
     """Preserve modern sibling constraints and ignore them in older reference drafts."""
     data = JSON_SCHEMA_DATA_PATH / "allof_ref_siblings"
     schema_path = data / f"{case['name']}.json"
-    expected = f"allof_ref_siblings/{case['name']}_{field_constraints}_{schema_validators}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=schema_path,
@@ -67,8 +65,6 @@ def test_allof_ref_siblings(
                 *(["--generate-schema-validators"] if schema_validators else []),
                 *(["--use-tuple-for-fixed-items"] if case.get("use_tuple") else []),
             ],
-            assert_func=assert_file_content,
-            expected_file=expected,
             force_exec_validation=True,
         )
     else:
@@ -83,8 +79,6 @@ def test_allof_ref_siblings(
             field_constraints=field_constraints,
             generate_schema_validators=schema_validators,
             use_tuple_for_fixed_items=case.get("use_tuple", False),
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     schema = json.loads(schema_path.read_text())
     registry = Registry().with_resource(
@@ -118,7 +112,7 @@ def test_allof_ref_siblings(
                     actual.append({"accepted": False})
             assert_output(
                 json.dumps(actual, indent=2) + "\n",
-                DATA_PATH / "expected" / expected.relative_to(DATA_PATH),
+                name="values",
             )
             code = output_file.read_text(encoding="utf-8")
             assert_output(
@@ -133,7 +127,7 @@ def test_allof_ref_siblings(
                     )
                 })
                 + "\n",
-                DATA_PATH / "expected/payloads/allof_ref_sibling_outputs/without_validators.txt",
+                name="custom_validator",
             )
             return
         actual = []
@@ -143,7 +137,7 @@ def test_allof_ref_siblings(
             actual.append(json.loads(adapter.dump_json(adapter.validate_json(json.dumps(value)))))
         assert_output(
             json.dumps(actual, indent=2) + "\n",
-            DATA_PATH / "expected" / "payloads" / "allof_ref_sibling_outputs" / f"{case['name']}.txt",
+            name="values",
         )
         if case["name"].startswith(("enum_", "const_")):
             base = vars(sys.modules[model.__module__])["Base"]
@@ -153,7 +147,7 @@ def test_allof_ref_siblings(
                 parsed_inputs.append(json.loads(adapter.dump_json(adapter.validate_python(base_value))))
             assert_output(
                 json.dumps(parsed_inputs, indent=2) + "\n",
-                DATA_PATH / "expected" / "payloads" / "allof_ref_sibling_outputs" / f"{case['name']}.txt",
+                name="values",
             )
         for value in case["invalid"]:
             with pytest.raises(JsonSchemaValidationError):

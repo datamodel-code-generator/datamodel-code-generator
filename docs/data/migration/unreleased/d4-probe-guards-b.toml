@@ -1,0 +1,10 @@
+[[change]]
+id = "d4-probe-guards-b"
+category = "harness"
+title = "A test stores the output of a recursive input model under the reuse strategies"
+summary = "A new test stores the output of a recursive Pydantic input model under the reuse strategies, which reach the branch for a root model in its own definitions; the package writes the same output as 0.99.0."
+refs = ["#7317"]
+covers = [
+    "main/guard_inputs/recursive_input_model_is_reused_from_its_own_definitions[reuse-all].stdout.txt",
+    "main/guard_inputs/recursive_input_model_is_reused_from_its_own_definitions[reuse-foreign].stdout.txt",
+]

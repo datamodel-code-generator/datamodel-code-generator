@@ -149,36 +149,40 @@ def test_pipeline_tables_follow_the_rules(capsys: pytest.CaptureFixture[str]) ->
 
 
 WAVE_B_READS = {
-    "G12b": {"REQUIRED", "DEFAULTS", "NULLABLE", "DISCRIMINATOR_TAGS", "FIELD_TYPES"},
-    "G06": {"FIELD_TYPES", "MODEL_KIND", "BASES", "DISCRIMINATOR_TAGS", "CONSTRAINTS"},
-    "G03b": {"FIELD_TYPES", "CONSTRAINTS", "TYPE_OVERRIDES"},
-    "G08": {"DEFAULTS", "REQUIRED", "FIELD_TYPES", "BASES", "DISCRIMINATOR_TAGS", "TYPE_OVERRIDES"},
+    "decide_literal_fields": {"REQUIRED", "DEFAULTS", "NULLABLE", "DISCRIMINATOR_TAGS", "FIELD_TYPES"},
+    "decide_unique_containers": {"FIELD_TYPES", "MODEL_KIND", "BASES", "DISCRIMINATOR_TAGS", "CONSTRAINTS"},
+    "decide_constraints": {"FIELD_TYPES", "CONSTRAINTS", "TYPE_OVERRIDES"},
+    "decide_defaults": {"DEFAULTS", "REQUIRED", "FIELD_TYPES", "BASES", "DISCRIMINATOR_TAGS", "TYPE_OVERRIDES"},
 }
 WAVE_B_WRITES = {
     "declared": {
-        "G12b": {"NULLABLE", "DEFAULTS"},
-        "G06": {"CONTAINERS", "DEFAULTS"},
-        "G03b": {"CONSTRAINTS"},
-        "G08": {"DEFAULTS"},
+        "decide_literal_fields": {"NULLABLE", "DEFAULTS"},
+        "decide_unique_containers": {"CONTAINERS", "DEFAULTS"},
+        "decide_constraints": {"CONSTRAINTS"},
+        "decide_defaults": {"DEFAULTS"},
     },
     "measured": {
-        "G12b": {"NULLABLE", "DEFAULTS", "REQUIRED"},
-        "G06": {"FIELD_TYPES", "DEFAULTS"},
-        "G03b": {"CONSTRAINTS", "FIELD_TYPES"},
-        "G08": {"DEFAULTS", "REQUIRED"},
+        "decide_literal_fields": {"NULLABLE", "DEFAULTS", "REQUIRED"},
+        "decide_unique_containers": {"FIELD_TYPES", "DEFAULTS"},
+        "decide_constraints": {"CONSTRAINTS", "FIELD_TYPES"},
+        "decide_defaults": {"DEFAULTS", "REQUIRED"},
     },
 }
 WAVE_B_AFTER = {
     "declared": {
-        "G06": [("G12b", "unique-item containers are decided on the final nullability and defaults")],
-        "G03b": [("G06", "constraints apply to the final container type")],
-        "G08": [("G06", "object defaults are dropped after the container decision")],
+        "decide_unique_containers": [
+            ("decide_literal_fields", "unique-item containers are decided on the final nullability and defaults")
+        ],
+        "decide_constraints": [("decide_unique_containers", "constraints apply to the final container type")],
+        "decide_defaults": [("decide_unique_containers", "object defaults are dropped after the container decision")],
     },
     "measured": {
-        "G06": [("G12b", "unique-item containers are decided on the final nullability and defaults")],
-        "G03b": [
-            ("G12b", "constrained forms are decided after the const nullability"),
-            ("G06", "constraints apply to the final container type"),
+        "decide_unique_containers": [
+            ("decide_literal_fields", "unique-item containers are decided on the final nullability and defaults")
+        ],
+        "decide_constraints": [
+            ("decide_literal_fields", "constrained forms are decided after the const nullability"),
+            ("decide_unique_containers", "constraints apply to the final container type"),
         ],
     },
 }
@@ -271,9 +275,9 @@ def _decision(
     return decl, check_pass_pipeline.DecisionPass({"name": decl.name, "issue": issue}, writer, run)
 
 
-WAVE_B_REGISTRATION = ("G12b", "G06", "G03b", "G08")
+WAVE_B_REGISTRATION = ("decide_literal_fields", "decide_unique_containers", "decide_constraints", "decide_defaults")
 """The wave-B decisions in the order they run."""
-WAVE_B_SHUFFLED = ("G03b", "G08", "G06", "G12b")
+WAVE_B_SHUFFLED = ("decide_constraints", "decide_defaults", "decide_unique_containers", "decide_literal_fields")
 """The wave-B decisions in another order than they run."""
 
 
@@ -304,8 +308,8 @@ DECISION_REGISTRIES = {
         ),
     ],
     "broken": [
-        _decision(_decl("G06", {"FIELD_TYPES"}, {"CONTAINERS"}, []), issue=""),
-        _decision(_decl("G06", {"FIELD_TYPES"}, {"CONTAINERS"}, [])),
+        _decision(_decl("decide_unique_containers", {"FIELD_TYPES"}, {"CONTAINERS"}, []), issue=""),
+        _decision(_decl("decide_unique_containers", {"FIELD_TYPES"}, {"CONTAINERS"}, [])),
         _decision(
             check_pass_pipeline.PassDecl(
                 "apply_generic_base_class",
@@ -316,7 +320,7 @@ DECISION_REGISTRIES = {
             ),
             writer=WideWriter,
         ),
-        _decision(_decl("G08", {"DEFAULTS"}, {"DEFAULTS"}, []), writer=BaseModel),
+        _decision(_decl("decide_defaults", {"DEFAULTS"}, {"DEFAULTS"}, []), writer=BaseModel),
     ],
 }
 

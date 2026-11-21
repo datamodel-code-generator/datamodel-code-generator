@@ -21,7 +21,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,8 +53,6 @@ def test_allof_constraint_intersections(
 ) -> None:
     """Intersect enabled object merges while preserving explicit opt-outs and ordinary metadata."""
     input_path = JSON_SCHEMA_DATA_PATH / "allof_constraint_intersections" / f"{fixture}.json"
-    expected_mode = "constraints" if mode == "all" or fixture == "ordinary" else mode
-    expected_name = f"{fixture}_{expected_mode}_{'field' if field_constraints else 'constrained'}_{hierarchy}"
     if entry_point == "api":
         options = {
             "input_file_type": InputFileType.JsonSchema,
@@ -66,15 +63,12 @@ def test_allof_constraint_intersections(
         }
         run_generate_and_assert(
             input_=json.loads(input_path.read_text(encoding="utf-8")),
-            expected_file=EXPECTED_JSON_SCHEMA_PATH / "allof_constraint_intersections" / f"{expected_name}_api.py",
             assert_input_unchanged=True,
             **options,
         )
         run_generate_file_and_assert(
             input_path=input_path,
             output_path=output_file,
-            assert_func=assert_file_content,
-            expected_file=f"allof_constraint_intersections/{expected_name}.py",
             **options,
         )
     else:
@@ -82,8 +76,6 @@ def test_allof_constraint_intersections(
             input_path=input_path,
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"allof_constraint_intersections/{expected_name}.py",
             extra_args=[
                 "--disable-timestamp",
                 "--allof-merge-mode",

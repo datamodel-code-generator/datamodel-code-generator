@@ -23,7 +23,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,9 +48,6 @@ def test_msgspec_alias_structured_defaults(
 ) -> None:
     """Construct real Struct defaults through aliases and preserve explicit validation."""
     input_path = JSON_SCHEMA_DATA_PATH / "msgspec_alias_defaults.json"
-    # Black 22 cannot format PEP 695 type statements; keep their native runtime coverage.
-    suffix = "_type" if use_alias_type and target == PythonVersion.PY_310 else ""
-    expected = f"msgspec_alias_defaults_{target.value.replace('.', '_')}{suffix}.py"
     with (
         pytest.warns(UserWarning, match=_BACKPORT_ALIAS_WARNING)
         if use_alias_type and target == PythonVersion.PY_310
@@ -62,8 +58,6 @@ def test_msgspec_alias_structured_defaults(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="jsonschema",
-                assert_func=assert_file_content,
-                expected_file=expected,
                 extra_args=[
                     "--output-model-type",
                     "msgspec.Struct",
@@ -80,8 +74,6 @@ def test_msgspec_alias_structured_defaults(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.JsonSchema,
-                assert_func=assert_file_content,
-                expected_file=expected,
                 output_model_type=DataModelType.MsgspecStruct,
                 use_type_alias=True,
                 use_type_alias_type=use_alias_type,
@@ -114,7 +106,7 @@ def test_msgspec_alias_structured_defaults(
         first.alias_list[0].id = 99
         first.empty_alias_list.append(first.aliased)
         actual["independent_defaults"] = msgspec.to_builtins(second)
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_JSON_SCHEMA_PATH / "msgspec_alias_defaults_runtime.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n", name="runtime")
 
 
 @pytest.mark.parametrize(

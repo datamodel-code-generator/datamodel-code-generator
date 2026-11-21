@@ -1,4 +1,4 @@
-"""G13 floor-syntax: syntax only Python 3.14 reads (template strings, ``except`` without parentheses) is a site.
+"""Rule floor-syntax: syntax only Python 3.14 reads (template strings, ``except`` without parentheses) is a site.
 
 min-python: 3.14
 

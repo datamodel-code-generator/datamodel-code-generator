@@ -6,7 +6,8 @@ rows need, in their order, as an Enum lookup or a variant's mapped tags cost mor
 that read the facts from the live objects are listed in ``docs/architecture.md``.
 
 The rows named ``legacy-*`` keep today's output where passes or backends disagree on a tag; the fix of each deletes
-its row (G05): ``legacy-literal-only`` and ``legacy-nested-root-model-tag`` (``FieldTagSite``),
+its row (the tag decision for a variant that several unions share): ``legacy-literal-only`` and
+``legacy-nested-root-model-tag`` (``FieldTagSite``),
 ``legacy-python-equality`` (``TagIdentity``), ``legacy-any-key`` (``MappingPathRule``) and the rows in the docstrings
 of ``redeclared_tag_field``, ``tagged_union_discriminator`` and ``struct_tag_field``.
 """

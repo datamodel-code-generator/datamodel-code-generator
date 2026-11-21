@@ -18,13 +18,11 @@ from tests.main.conftest import (
     assert_generated_model_json_validation,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 CONSTRAINTS_SCHEMA = JSON_SCHEMA_DATA_PATH / "type_alias_annotated" / "constraints.json"
-CONSTRAINTS_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "type_alias_annotated"
 CONSTRAINT_PAYLOADS: dict[str, list[Any]] = json.loads(
     (DATA_PATH / "payloads/type_alias_annotated/cases.json").read_text()
 )
@@ -103,8 +101,7 @@ def test_type_alias_constraints_match_con_types(
         input_path=CONSTRAINTS_SCHEMA,
         output_path=output_file,
         input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"type_alias_annotated/{variant}.py",
+        name="alias",
         extra_args=["--use-type-alias", "--disable-timestamp", *extra_args],
         force_exec_validation=True,
     )
@@ -115,19 +112,18 @@ def test_type_alias_constraints_match_con_types(
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--formatters", "isort", *extra_args],
     )
-    expected = CONSTRAINTS_EXPECTED / f"{variant}_runtime.txt"
     alias_module = f"type_alias_constraints_{variant}"
     with _generated_model(output_file, alias_module, "Constraints"):
         namespace = vars(sys.modules[alias_module])
         assert_output(
-            _constraint_report({name: TypeAdapter(namespace[name]) for name in CONSTRAINT_PAYLOADS}), expected
+            _constraint_report({name: TypeAdapter(namespace[name]) for name in CONSTRAINT_PAYLOADS}), name="runtime"
         )
     root_module = f"type_alias_constraints_{variant}_root_models"
     with _generated_model(root_models, root_module, "Constraints"):
         namespace = vars(sys.modules[root_module])
         assert_output(
             _constraint_report({name: TypeAdapter(_con_alias(name, namespace[name])) for name in CONSTRAINT_PAYLOADS}),
-            expected,
+            name="runtime",
         )
 
 

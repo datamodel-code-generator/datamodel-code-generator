@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog",
+  "type": "object",
+  "properties": {
+    "product": {
+      "$ref": "#/$defs/Product"
+    }
+  },
+  "$defs": {
+    "Product": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Item"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name shown in the catalog."
+            },
+            "tags": {
+              "type": "array",
+              "description": "The tags of the product."
+            },
+            "aliases": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "Other names of the product, or null."
+            }
+          }
+        }
+      ]
+    },
+    "Item": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aliases": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -15,13 +15,11 @@ from pydantic import ValidationError
 from datamodel_code_generator import Formatter, GenerateConfig, InputFileType, ReadOnlyWriteOnlyModelType, generate
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, _generated_model, run_main_with_args
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 CASES = json.loads((DATA_PATH / "payloads/allof_root_regressions/cases.json").read_text())
-EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "allof_root_regressions"
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -81,9 +79,9 @@ def test_allof_root_regressions(
                 indent=2,
             )
             + "\n",
-            EXPECTED / f"{case}_{entrypoint}_{field_constraints}_minimum_warnings.txt",
+            name="warnings",
         )
-    assert_output(output.read_text(), EXPECTED / f"{case}_{field_constraints}_{formatter}.py")
+    assert_output(output.read_text(), suffix=".py")
     schema = yaml.safe_load(source.read_text())
     validator_class = validator_for(schema)
     validator_class.check_schema(schema)
@@ -100,4 +98,4 @@ def test_allof_root_regressions(
                         model.model_validate(payload)
                     row["error"] = "ValidationError"
                 results.append(row)
-    assert_output(json.dumps(results, indent=2) + "\n", EXPECTED / f"{case}_runtime.txt")
+    assert_output(json.dumps(results, indent=2) + "\n", name="runtime")

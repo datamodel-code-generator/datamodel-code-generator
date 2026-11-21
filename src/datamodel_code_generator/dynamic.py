@@ -571,7 +571,7 @@ def _build_dynamic_module(
     result, metadata, identities = generated or _generate_code(
         input_, config, collect_model_metadata=collect_model_metadata
     )
-    if result is None:  # pragma: no cover - not proven unreachable
+    if result is None:
         msg = "generate() returned None"
         raise Error(msg)
     include_private_models = config.allow_leading_underscore_class_name

@@ -1,5 +1,5 @@
-order: G06 -> G03b -> G12b -> G08
-problem: G06 conflicts with G12b on DEFAULTS, FIELD_TYPES and needs an explicit edge
-problem: G03b conflicts with G06 on CONSTRAINTS, FIELD_TYPES and needs an explicit edge
-problem: G08 conflicts with G12b on DEFAULTS, REQUIRED and needs an explicit edge
-problem: G08 conflicts with G06 on DEFAULTS, FIELD_TYPES and needs an explicit edge
+order: decide_unique_containers -> decide_constraints -> decide_literal_fields -> decide_defaults
+problem: decide_unique_containers conflicts with decide_literal_fields on DEFAULTS, FIELD_TYPES and needs an explicit edge
+problem: decide_constraints conflicts with decide_unique_containers on CONSTRAINTS, FIELD_TYPES and needs an explicit edge
+problem: decide_defaults conflicts with decide_literal_fields on DEFAULTS, REQUIRED and needs an explicit edge
+problem: decide_defaults conflicts with decide_unique_containers on DEFAULTS, FIELD_TYPES and needs an explicit edge

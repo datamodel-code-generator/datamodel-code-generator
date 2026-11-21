@@ -27,8 +27,7 @@
   },
   {
     "name": "warm",
-    "field": "first",
-    "expected": "initial"
+    "field": "first"
   },
   {
     "name": "include_changed",
@@ -48,16 +47,14 @@
         "Example.preferred.jinja2"
       ]
     ],
-    "field": "first",
-    "expected": "initial"
+    "field": "first"
   },
   {
     "name": "preferred_deleted",
     "delete": [
       "Example.preferred.jinja2"
     ],
-    "field": "second",
-    "expected": "include_changed"
+    "field": "second"
   },
   {
     "name": "import_changed",
@@ -94,8 +91,7 @@
     "delete": [
       "optional.jinja2"
     ],
-    "field": "second",
-    "expected": "from_import_changed"
+    "field": "second"
   },
   {
     "name": "extends_changed",

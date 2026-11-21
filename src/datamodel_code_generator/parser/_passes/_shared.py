@@ -16,7 +16,7 @@ from decimal import Decimal
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar, cast
 
-from typing_extensions import Protocol, final, override
+from typing_extensions import Protocol, assert_type, final, override
 
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._container_kinds import (
@@ -274,8 +274,6 @@ def _detach_deferred_inherited_field_parents(field: DataModelFieldBase) -> None:
     field.parent = None
     clear_parents(field.data_type)
     match field.__dict__.get(_DEFERRED_INHERITED_TYPE_KEY):
-        case DataType() as deferred_type:
-            clear_parents(deferred_type)
         case _InheritedTypeModifiers(list_wrapper=DataType() as list_wrapper):
             clear_parents(list_wrapper)
 
@@ -655,8 +653,7 @@ def normalize_default_value_constraints(
             import_overrides, annotation_import, descriptor.constructor_import
         ):
             continue
-        if descriptor.recipe is not DefaultValueRecipe.Decimal:  # pragma: no cover - not proven unreachable
-            continue
+        assert_type(descriptor.recipe, Literal[DefaultValueRecipe.Decimal])
         kwargs = data_type.kwargs
         for key, value in kwargs.items():
             if not isinstance(value, Decimal):

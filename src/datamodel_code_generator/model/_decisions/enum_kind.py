@@ -92,7 +92,7 @@ EnumKindRule: TypeAlias = Literal[
   whose values are all str or all int (msgspec), the 0.86.0 ``IntEnum`` or ``(T, Enum)`` where the plain ``Enum`` of
   ``enum-value-base-changes-a-member`` would hold values of other kinds and so fail every decode, and where ``T``
   (``int`` or ``str``) constructs every member, so the class imports and decodes, though with the changed members. It
-  stays until msgspec Enums are decided as a whole (G16).
+  stays until msgspec Enums are decided as a whole.
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a
