@@ -6,7 +6,7 @@ summary = "Client argument types and server parameter types now keep the None of
 kind = "experimental"
 action = "review"
 affects = { experimental = ["cli-option.generate-client", "cli-option.generate-server"] }
-refs = ["#7303"]
+refs = ["#7305"]
 source = "release-note"
 covers = [
     "api_generation/client_generation/client_render[container-item-nulls-30].dataclasses_dataclass/",
