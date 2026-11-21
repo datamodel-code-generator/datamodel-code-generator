@@ -5,22 +5,22 @@ DataModelType.DataclassesDataclass	main/jsonschema/msgspec_alias_defaults/msgspe
 DataModelType.MsgspecStruct	main/jsonschema/msgspec_alias_defaults/msgspec_alias_default_controls[DataModelType.MsgspecStruct].py
 DataModelType.PydanticV2BaseModel	main/jsonschema/msgspec_alias_defaults/msgspec_alias_default_controls[DataModelType.PydanticV2BaseModel].py
 [test_msgspec_alias_structured_defaults]
-PythonVersion.PY_310-False-api	main/jsonschema/msgspec_alias_defaults_3_10.py
-PythonVersion.PY_310-False-api	main/jsonschema/msgspec_alias_defaults_runtime.txt
-PythonVersion.PY_310-False-cli	main/jsonschema/msgspec_alias_defaults_3_10.py
-PythonVersion.PY_310-False-cli	main/jsonschema/msgspec_alias_defaults_runtime.txt
-PythonVersion.PY_310-True-api	main/jsonschema/msgspec_alias_defaults_3_10_type.py
-PythonVersion.PY_310-True-api	main/jsonschema/msgspec_alias_defaults_runtime.txt	?
-PythonVersion.PY_310-True-cli	main/jsonschema/msgspec_alias_defaults_3_10_type.py
-PythonVersion.PY_310-True-cli	main/jsonschema/msgspec_alias_defaults_runtime.txt	?
-PythonVersion.PY_312-False-api	main/jsonschema/msgspec_alias_defaults_3_12.py
-PythonVersion.PY_312-False-api	main/jsonschema/msgspec_alias_defaults_runtime.txt
-PythonVersion.PY_312-False-cli	main/jsonschema/msgspec_alias_defaults_3_12.py
-PythonVersion.PY_312-False-cli	main/jsonschema/msgspec_alias_defaults_runtime.txt
-PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_3_12.py
-PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_runtime.txt
-PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_3_12.py
-PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_runtime.txt
+PythonVersion.PY_310-False-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].py
+PythonVersion.PY_310-False-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
+PythonVersion.PY_310-False-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-cli].py	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].py
+PythonVersion.PY_310-False-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-cli].runtime.txt	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
+PythonVersion.PY_310-True-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-True-api].py
+PythonVersion.PY_310-True-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-True-api].runtime.txt	?	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
+PythonVersion.PY_310-True-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-True-cli].py	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-True-api].py
+PythonVersion.PY_310-True-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-True-cli].runtime.txt	?	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
+PythonVersion.PY_312-False-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-False-api].py
+PythonVersion.PY_312-False-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-False-api].runtime.txt	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
+PythonVersion.PY_312-False-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-False-cli].py	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-False-api].py
+PythonVersion.PY_312-False-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-False-cli].runtime.txt	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
+PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-True-api].py	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-False-api].py
+PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-True-api].runtime.txt	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
+PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-True-cli].py	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-False-api].py
+PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_312-True-cli].runtime.txt	= main/jsonschema/msgspec_alias_defaults/msgspec_alias_structured_defaults[PythonVersion.PY_310-False-api].runtime.txt
 [test_msgspec_array_like_struct_object_defaults]
 	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_object_defaults.py
 	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_object_defaults.txt

@@ -20,7 +20,6 @@ from tests.conftest import (
     assert_output,
     assert_warnings_contain,
     assert_warnings_do_not_contain,
-    create_assert_file_content,
 )
 from tests.main.conftest import (
     BACKEND_GOLDEN_CASES,
@@ -30,13 +29,9 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-assert_file_content = create_assert_file_content(EXPECTED_JSON_SCHEMA_PATH)
 
 
 def test_serialized_decimal_defaults_warn_without_changing_output(output_file: Path) -> None:
@@ -63,14 +58,10 @@ def test_serialized_decimal_defaults_warn_without_changing_output(output_file: P
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_name"),
+    "output_model_type",
     [
-        *BACKEND_GOLDEN_CASES,
-        pytest.param(
-            DataModelType.PydanticV2Dataclass.value,
-            "pydantic_v2_dataclass",
-            id="pydantic-v2-dataclass",
-        ),
+        *(pytest.param(param.values[0], id=param.id, marks=param.marks) for param in BACKEND_GOLDEN_CASES),
+        pytest.param(DataModelType.PydanticV2Dataclass.value, id="pydantic-v2-dataclass"),
     ],
 )
 @pytest.mark.cli_doc(
@@ -84,16 +75,17 @@ cannot be deserialized remain serialized so the generated module stays importabl
     input_schema="jsonschema/serialized_decimal_defaults.json",
     cli_args=["--deserialize-default-values", "decimal", "--target-python-version", "3.10"],
     model_outputs={
-        "pydantic_v2": "main/jsonschema/serialized_decimal_defaults/pydantic_v2_BaseModel.py",
-        "pydantic_v2.dataclass": "main/jsonschema/serialized_decimal_defaults/pydantic_v2_dataclass.py",
-        "dataclass": "main/jsonschema/serialized_decimal_defaults/dataclasses_dataclass.py",
-        "typeddict": "main/jsonschema/serialized_decimal_defaults/typing_TypedDict.py",
-        "msgspec": "main/jsonschema/serialized_decimal_defaults/msgspec_Struct.py",
+        "pydantic_v2": "main/jsonschema/serialized_decimal_defaults/deserialize_decimal_defaults[pydantic-v2].py",
+        "pydantic_v2.dataclass": (
+            "main/jsonschema/serialized_decimal_defaults/deserialize_decimal_defaults[pydantic-v2-dataclass].py"
+        ),
+        "dataclass": "main/jsonschema/serialized_decimal_defaults/deserialize_decimal_defaults[dataclass].py",
+        "typeddict": "main/jsonschema/serialized_decimal_defaults/deserialize_decimal_defaults[typed-dict].py",
+        "msgspec": "main/jsonschema/serialized_decimal_defaults/deserialize_decimal_defaults[msgspec].py",
     },
 )
 def test_deserialize_decimal_defaults(
     output_model_type: str,
-    expected_name: str,
     output_file: Path,
 ) -> None:
     """Deserialize valid Decimal defaults without making invalid defaults break imports."""
@@ -103,8 +95,6 @@ def test_deserialize_decimal_defaults(
             input_path=JSON_SCHEMA_DATA_PATH / "serialized_decimal_defaults.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"serialized_decimal_defaults/{expected_name}.py",
             extra_args=[
                 *BACKEND_GOLDEN_TARGET_ARGS,
                 "--disable-timestamp",

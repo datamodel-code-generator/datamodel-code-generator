@@ -16,7 +16,6 @@ from tests.main.conftest import (
     assert_generated_model_json_validation,
     run_generate_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -73,8 +72,6 @@ def test_schema_validators_presence_custom_helper(output_file: Path, case_name: 
         input_file_type=InputFileType.JsonSchema,
         output=output_file,
         expected_error=Error,
-        expected_error_match="Custom schema runtime validation helper overrides",
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "schema_validators_presence/custom_helper_error.txt",
         output_model_type=DataModelType.PydanticV2BaseModel,
         generate_schema_validators=True,
         disable_timestamp=True,

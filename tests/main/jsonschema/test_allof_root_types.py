@@ -18,7 +18,6 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -45,7 +44,6 @@ if TYPE_CHECKING:
 def test_allof_root_types(output_file: Path, fixture: str, field_constraints: bool, entry_point: str) -> None:
     """Preserve allOf value shapes and constraints without changing ordinary object and enum models."""
     input_path = JSON_SCHEMA_DATA_PATH / "allof_root_types" / f"{fixture}.json"
-    expected_name = f"{fixture}_{'field' if field_constraints else 'constrained'}"
     options = {
         "input_file_type": InputFileType.JsonSchema,
         "field_constraints": field_constraints,
@@ -55,15 +53,12 @@ def test_allof_root_types(output_file: Path, fixture: str, field_constraints: bo
     if entry_point == "api":
         run_generate_and_assert(
             input_=input_path if fixture == "string_external" else json.loads(input_path.read_text(encoding="utf-8")),
-            expected_file=EXPECTED_JSON_SCHEMA_PATH / "allof_root_types" / f"{expected_name}_api.py",
             assert_input_unchanged=True,
             **options,
         )
         run_generate_file_and_assert(
             input_path=input_path,
             output_path=output_file,
-            assert_func=assert_file_content,
-            expected_file=f"allof_root_types/{expected_name}.py",
             **options,
         )
     else:
@@ -71,8 +66,6 @@ def test_allof_root_types(output_file: Path, fixture: str, field_constraints: bo
             input_path=input_path,
             output_path=output_file,
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=f"allof_root_types/{expected_name}.py",
             extra_args=[
                 "--disable-timestamp",
                 "--formatters",
