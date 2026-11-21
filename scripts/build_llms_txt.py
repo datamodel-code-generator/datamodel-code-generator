@@ -27,7 +27,7 @@ DOCS_DIR = ROOT_DIR / "docs"
 ZENSICAL_TOML = ROOT_DIR / "zensical.toml"
 MIGRATION_BUILDER = Path(__file__).parent / "build_migration_docs.py"
 """Builds the upgrade guide's pages from the repository's records, as the docs deploy does before this script."""
-OPTIONAL_PATTERNS = ("faq.md", "development-contributing.md", "cli-reference/manual/*.md")
+OPTIONAL_PATTERNS = ("faq.md", "development-contributing.md", "preset-history.md", "cli-reference/manual/*.md")
 SKIP_PREFIXES = ("```", "!!!", "[![", "![", "<", "---")
 MAX_DESC_LINES, MAX_DESC_LEN = 2, 150
 EMOJI_RE = re.compile(

@@ -64,7 +64,6 @@ BUILTIN_FORMATTER_LOCAL_CONSTANTS = {
     "TYPE_ALIAS_INLINE_ARGUMENT_COUNT",
     "STRING_PREFIX_PATTERN",
 }
-BUILTIN_FORMATTER_EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "builtin_formatter"
 BUILTIN_STRING_NORMALIZATION_INPUT_PATH = (
     Path(__file__).parent / "data" / "python" / "builtin_formatter_string_normalization.txt"
 )
@@ -72,9 +71,6 @@ BUILTIN_WRAP_STRING_LITERAL_INPUT_PATH = (
     Path(__file__).parent / "data" / "python" / "builtin_formatter_wrap_string_literal.txt"
 )
 BUILTIN_PEP695_INVALID_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_pep695_invalid.txt"
-BUILTIN_PEP695_INVALID_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
-    "pep695_invalid.txt" if sys.version_info[:2] >= (3, 12) else "pep695_invalid_legacy.txt"
-)
 BUILTIN_QUALIFIED_HEADS_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_qualified_heads.txt"
 
 
@@ -1676,10 +1672,7 @@ def test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors(
         else:
             formatted_cases.append(f"[{name}]\n{source}")
 
-    assert_output(
-        "\n".join(formatted_cases),
-        BUILTIN_PEP695_INVALID_EXPECTED_PATH,
-    )
+    assert_output("\n".join(formatted_cases))
 
 
 def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_python() -> None:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -18,36 +18,38 @@ from tests.api_generation.support.fastapi_typing import (
 )
 from tests.conftest import assert_output
 
-EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "fastapi" / "typing"
+if TYPE_CHECKING:
+    from pathlib import Path
+
 ENABLED = "DATAMODEL_CODE_GENERATOR_FASTAPI_TYPING_E2E"
 
 
 @pytest.mark.parametrize(
-    ("backend", "name"),
+    "backend",
     [
-        (DataModelType.PydanticV2BaseModel, "applications-basemodel"),
-        (DataModelType.PydanticV2Dataclass, "applications-dataclass"),
+        pytest.param(DataModelType.PydanticV2BaseModel, id="applications-basemodel"),
+        pytest.param(DataModelType.PydanticV2Dataclass, id="applications-dataclass"),
     ],
 )
-def test_fastapi_typing_applications(backend: DataModelType, name: str, tmp_path: Path) -> None:
+def test_fastapi_typing_applications(backend: DataModelType, tmp_path: Path) -> None:
     """Check the secured package and its samples: no error in the positive one, one on each marked negative line."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(fastapi_typing_report(tmp_path, backend), EXPECTED / f"{name}.txt")
+    assert_output(fastapi_typing_report(tmp_path, backend))
 
 
 def test_fastapi_typing_missing(tmp_path: Path) -> None:
     """Check a service of Pydantic dataclasses that reads and leaves out unset members through MISSING."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(fastapi_missing_report(tmp_path), EXPECTED / "missing-dataclass.txt")
+    assert_output(fastapi_missing_report(tmp_path))
 
 
 def test_fastapi_typing_bodies(tmp_path: Path) -> None:
     """Check the package of a server that reads its bodies through adapters, with its copied request runtime."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(fastapi_bodies_report(tmp_path), EXPECTED / "bodies.txt")
+    assert_output(fastapi_bodies_report(tmp_path))
 
 
 def test_fastapi_typing_extras(tmp_path: Path) -> None:
@@ -61,11 +63,11 @@ def test_fastapi_typing_parameters(tmp_path: Path) -> None:
     """Check the package of a server whose routes have renamed path parameters, with its copied route classes."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(fastapi_parameters_report(tmp_path), EXPECTED / "parameters.txt")
+    assert_output(fastapi_parameters_report(tmp_path))
 
 
 def test_fastapi_typing_updates(tmp_path: Path) -> None:
     """Check a user's service against the first document, then against the package regenerated from the second."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(fastapi_update_report(tmp_path), EXPECTED / "updates.txt")
+    assert_output(fastapi_update_report(tmp_path))

@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Container item nulls under OpenAPI 3.0
+  version: "1"
+servers:
+  - url: https://rows.example.com
+paths:
+  /rows:
+    post:
+      operationId: sendRows
+      parameters:
+        - name: pair
+          in: query
+          schema:
+            type: array
+            items: [{type: string}, {type: integer, nullable: true}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Row"}
+      responses:
+        "204":
+          description: Sent.
+components:
+  schemas:
+    Row:
+      type: object
+      properties:
+        positions:
+          type: array
+          items: [{type: string}, {type: integer, nullable: true}]
+          additionalItems: false
+        own_union:
+          type: array
+          items: {anyOf: [{type: string}, {type: integer, nullable: true}]}

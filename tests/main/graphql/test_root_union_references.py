@@ -14,13 +14,11 @@ from datamodel_code_generator import DataModelType, InputFileType, PythonVersion
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_GRAPHQL_PATH,
     GRAPHQL_DATA_PATH,
     _generated_model,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.graphql.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,7 +32,6 @@ def test_graphql_root_union_references(
 ) -> None:
     """Generate only union-required roots and construct recursive union members."""
     input_path = GRAPHQL_DATA_PATH / f"root_union_{case}.graphql"
-    expected_name = f"root_union_{case}_{output_model_type.value.replace('.', '_')}"
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         if entrypoint == "cli":
@@ -42,8 +39,6 @@ def test_graphql_root_union_references(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="graphql",
-                assert_func=assert_file_content,
-                expected_file=f"{expected_name}.py",
                 extra_args=["--output-model-type", output_model_type.value, "--target-python-version", "3.10"],
             )
         else:
@@ -51,8 +46,6 @@ def test_graphql_root_union_references(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.GraphQL,
-                assert_func=assert_file_content,
-                expected_file=f"{expected_name}.py",
                 output_model_type=output_model_type,
                 target_python_version=PythonVersion.PY_310,
             )
@@ -81,4 +74,4 @@ def test_graphql_root_union_references(
                 "value": instance["value"] if isinstance(instance, dict) else instance.value,
                 "nested_value": nested["value"] if isinstance(nested, dict) else getattr(nested, "value", None),
             })
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_GRAPHQL_PATH / f"{expected_name}.txt")
+    assert_output(f"{json.dumps(actual, indent=2)}\n")

@@ -278,6 +278,39 @@ def test_related_tests_rows_select_with_the_repository_rules(
     assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD"))
 
 
+SHIPPED_ROW_FILES = {
+    "docs-source-of-client-generation": (
+        (),
+        {
+            "tests/data/expected/api_generation/client_generation/client_protocols[a].txt": "value = {}\n",
+            "tests/test_build_docs_examples_script.py": TEST,
+        },
+    ),
+    "platform-observations-of-the-test-modules": (
+        ("--envs",),
+        {
+            "tests/data/expected/api_generation/client_runtime/client_runtime[a].txt": "value = {}\n",
+            "tests/data/expected/model_codecs/wire_values/a.txt": "value = {}\n",
+            "tests/data/expected/parser/openapi_scope/a.txt": "value = {}\n",
+            "tests/data/expected/main/generation_api_contract/a.txt": "value = {}\n",
+        },
+    ),
+}
+
+
+@pytest.mark.parametrize("case", SHIPPED_ROW_FILES)
+def test_related_tests_rows_follow_the_stored_outputs_where_they_live(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The shipped rows read the folders the stored outputs of the docs and of the platform tests are in now."""
+    args, files = SHIPPED_ROW_FILES[case]
+    base = {name: text.replace("{}", "1") for name, text in files.items()}
+    head = {name: text.replace("{}", "2") for name, text in files.items()}
+    repository = _repository(tmp_path, base, head)
+    (repository / "related_tests.toml").write_text((ROOT / "scripts/related_tests.toml").read_text("utf-8"), "utf-8")
+    assert_output(_select(repository, monkeypatch, capsys, "--base", "base", "--head", "HEAD", *args))
+
+
 def test_related_tests_check_reports_unknown_environments(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

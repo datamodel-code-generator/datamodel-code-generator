@@ -18,13 +18,11 @@ from datamodel_code_generator import DataModelType, InputFileType, PythonVersion
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
-    EXPECTED_GRAPHQL_PATH,
     GRAPHQL_DATA_PATH,
     _generated_model,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.graphql.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -50,7 +48,6 @@ def test_graphql_typename_collisions(
         (DATA_PATH / "payloads" / f"typename_collision_{settings.pop('payload', profile)}.json").read_text()
     )
     input_path = GRAPHQL_DATA_PATH / settings.pop("schema")
-    expected_name = f"typename_{profile}_{output_model_type.value.replace('.', '_')}_{no_typename}"
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         if entrypoint == "cli":
@@ -58,8 +55,6 @@ def test_graphql_typename_collisions(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type="graphql",
-                assert_func=assert_file_content,
-                expected_file=f"{expected_name}.py",
                 skip_code_validation=output_model_type.value in payload.get("import_errors", {}),
                 extra_args=[
                     "--output-model-type",
@@ -83,8 +78,6 @@ def test_graphql_typename_collisions(
                 input_path=input_path,
                 output_path=output_file,
                 input_file_type=InputFileType.GraphQL,
-                assert_func=assert_file_content,
-                expected_file=f"{expected_name}.py",
                 output_model_type=output_model_type,
                 target_python_version=PythonVersion.PY_310,
                 graphql_no_typename=no_typename,
@@ -174,8 +167,5 @@ def test_graphql_typename_collisions(
             }
     if error_info is not None:
         actual["import_error"] = str(error_info.value)
-    assert_output(
-        f"{all(base == child for base, child in inherited_type_roles)}\n",
-        DATA_PATH / "expected/payloads/typename_inherited_type_compatible.txt",
-    )
-    assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_GRAPHQL_PATH / f"{expected_name}.txt")
+    assert_output(f"{all(base == child for base, child in inherited_type_roles)}\n", name="inherited_type_compatible")
+    assert_output(f"{json.dumps(actual, indent=2)}\n")

@@ -35,7 +35,7 @@ from typing import (
 from urllib.parse import ParseResult, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import TypeIs, override
+from typing_extensions import override
 
 from datamodel_code_generator import _model_keys
 from datamodel_code_generator._context_scope import context_values
@@ -44,7 +44,7 @@ from datamodel_code_generator._format_types import (
     PythonVersionMin,
 )
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
-from datamodel_code_generator._graph_links import data_type_children
+from datamodel_code_generator._graph_links import data_model_children, data_type_children
 from datamodel_code_generator._json_pointer import document_part, is_pointer_fragment, join_pointer
 from datamodel_code_generator._lazy_exports import module_hooks as _module_hooks
 from datamodel_code_generator._message_text import printable_text
@@ -84,7 +84,6 @@ if TYPE_CHECKING:
     import inflect
 
     from datamodel_code_generator._user_keys import ClassKeyRow, ModelNameKeys, ModelNames
-    from datamodel_code_generator.model import base as model_base
 
     DEFAULT_FIELD_NAME_RESOLVERS: dict[ModelType, type[FieldNameResolver]]
     _RwDirection: TypeAlias = Literal["request", "response"]
@@ -103,7 +102,38 @@ model_key_of = _model_keys.model_key_of
 _MODEL_KEYS: Final = count()
 
 
-def _wire_name(field: model_base.DataModelFieldBase) -> str | None:
+class _AliasFieldModel(Protocol):
+    """The model of a field as the explicit alias checks read it (``model.base.DataModel``)."""
+
+    EXPLICIT_ALIAS_CONFLICT_CHECKER: ClassVar[Callable[[_AliasField, str], bool] | None]
+    """The check of whether a field's explicit alias collides with a name of the output model, if any."""
+
+
+class _AliasField(Protocol):
+    """A field as the explicit alias checks read it (``model.base.DataModelFieldBase``)."""
+
+    @property
+    def name(self) -> str | None:
+        """Return the field name in the output."""
+        raise NotImplementedError
+
+    @property
+    def alias(self) -> str | None:
+        """Return the alias the field is given in the output."""
+        raise NotImplementedError
+
+    @property
+    def original_name(self) -> str | None:
+        """Return the field name the schema gives."""
+        raise NotImplementedError
+
+    @property
+    def parent(self) -> object:
+        """Return the model that holds the field: an ``_AliasFieldModel`` once the field has one."""
+        raise NotImplementedError
+
+
+def _wire_name(field: _AliasField) -> str | None:
     return field.alias if field.alias is not None else field.original_name
 
 
@@ -163,20 +193,13 @@ def get_inferred_module_name(
     return ".".join(parts[:-1])
 
 
-def _is_data_model(value: object) -> TypeIs[model_base.DataModel]:
-    """Check if value is a DataModel instance."""
-    from datamodel_code_generator.model.base import DataModel as DataModel_  # noqa: PLC0415
-
-    return isinstance(value, DataModel_)
-
-
 @runtime_checkable
 class ReferenceChild(Protocol):
     """Protocol for objects that can be stored in Reference.children.
 
-    This is a minimal protocol: `_graph_links.py` tells a DataType child by its replace_reference method, and
-    `Reference.iter_data_model_children` checks isinstance for DataModel. Using a property makes the type covariant,
-    allowing both DataModel (Reference) and DataType (Reference | None) to satisfy this protocol.
+    This is a minimal protocol: `_graph_links.py` tells a DataType child by its replace_reference method, and every
+    other child is a DataModel, which `Reference.iter_data_model_children` yields. Using a property makes the type
+    covariant, allowing both DataModel (Reference) and DataType (Reference | None) to satisfy this protocol.
     """
 
     @property
@@ -306,9 +329,7 @@ class Reference(_BaseModel):
 
     def iter_data_model_children(self) -> Iterator[Any]:
         """Yield all DataModel children."""
-        for child in self.children:
-            if _is_data_model(child):
-                yield child
+        yield from data_model_children(self.children)
 
 
 SINGULAR_NAME_SUFFIX: str = "Item"
@@ -612,7 +633,7 @@ class FieldNameResolver:
 
     def prepare_explicit_field_aliases(
         self,
-        fields: list[model_base.DataModelFieldBase],
+        fields: Sequence[_AliasField],
         reference: Reference,
         *,
         output_names: tuple[str, ...] = (),
@@ -633,7 +654,7 @@ class FieldNameResolver:
 
     def explicit_field_alias(
         self,
-        field: model_base.DataModelFieldBase,
+        field: _AliasField,
         reference: Reference,
         *,
         output_names: tuple[str, ...] = (),
@@ -656,7 +677,7 @@ class FieldNameResolver:
     @classmethod
     def validate_explicit_field_aliases(
         cls,
-        fields: list[model_base.DataModelFieldBase],
+        fields: Sequence[_AliasField],
         *,
         final: bool,
         target_python_version: PythonVersion | None = None,
@@ -668,8 +689,8 @@ class FieldNameResolver:
         if not any(_EXPLICIT_FIELD_ALIAS_KEY in field.__dict__ for field in fields):
             return
         helper_name = cls.FIELD_ASSIGNMENT_HELPER if final else None
-        names: dict[str, model_base.DataModelFieldBase] = {}
-        field_helper: model_base.DataModelFieldBase | None = None
+        names: dict[str, _AliasField] = {}
+        field_helper: _AliasField | None = None
         for field in fields:
             name = cast("str", field.name)
             if final:
@@ -691,7 +712,7 @@ class FieldNameResolver:
             invalid = explicit and not is_python_name(cast("str", field.name), target_python_version)
             if (
                 explicit
-                and (conflicts_with_alias := cast("model_base.DataModel", field.parent).EXPLICIT_ALIAS_CONFLICT_CHECKER)
+                and (conflicts_with_alias := cast("_AliasFieldModel", field.parent).EXPLICIT_ALIAS_CONFLICT_CHECKER)
                 is not None
             ):
                 invalid |= conflicts_with_alias(field, name)
@@ -2634,7 +2655,7 @@ class ModelResolver:  # noqa: PLR0904
         return self._field_name_resolvers[model_type].get_valid_name(name, excludes)
 
     def prepare_explicit_field_aliases(
-        self, fields: list[model_base.DataModelFieldBase], reference: Reference, model_type: ModelType
+        self, fields: Sequence[_AliasField], reference: Reference, model_type: ModelType
     ) -> None:
         """Record explicit choices before model transforms can combine fields."""
         self._field_name_resolvers[model_type].prepare_explicit_field_aliases(
@@ -2642,7 +2663,7 @@ class ModelResolver:  # noqa: PLR0904
         )
 
     def explicit_field_alias(
-        self, field: model_base.DataModelFieldBase, reference: Reference, model_type: ModelType
+        self, field: _AliasField, reference: Reference, model_type: ModelType
     ) -> tuple[str, str] | None:
         """Return the ``--aliases`` entry that names a field of the model of ``reference`` as is, with its wire name."""
         return self._field_name_resolvers[model_type].explicit_field_alias(
@@ -2651,7 +2672,7 @@ class ModelResolver:  # noqa: PLR0904
 
     @staticmethod
     def validate_explicit_field_aliases(
-        fields: list[model_base.DataModelFieldBase],
+        fields: Sequence[_AliasField],
         model_type: ModelType,
         target_python_version: PythonVersion | None = None,
     ) -> None:

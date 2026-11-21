@@ -1,0 +1,10 @@
+[[change]]
+id = "drop-expected-paths-b15"
+category = "harness"
+title = "Store the Python-version outputs of the PEP 695 formatter test under its own name"
+summary = "The test stored its Python 3.11 and 3.12+ outputs under two selected names; it now stores them under its own name with a Python 3.11 override, and the formatter writes the same output."
+refs = ["#7312"]
+covers = [
+    "builtin_formatter/pep695_invalid.txt",
+    "builtin_formatter/pep695_invalid_legacy.txt",
+]

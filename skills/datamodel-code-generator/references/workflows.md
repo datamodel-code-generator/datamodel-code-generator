@@ -5,20 +5,21 @@
 1. OpenAPI to Pydantic v2
 2. OpenAPI to a FastAPI server or Python client (experimental)
 3. AsyncAPI to Pydantic v2
-4. JSON Schema to Pydantic v2
-5. JSON Schema split across files
-6. Raw JSON sample to models
-7. Raw YAML sample to models
-8. CSV sample to models
-9. GraphQL SDL to models
-10. Apache Avro schema to models
-11. XML Schema to models
-12. Protocol Buffers to models
-13. MCP tool schemas to models
-14. Remote URL input
-15. Existing Python model or dict schema object
-16. Multiple modules for large specs
-17. Output as dataclasses, TypedDict, or msgspec
+4. AsyncAPI to a WebSocket or server-sent-event client (experimental)
+5. JSON Schema to Pydantic v2
+6. JSON Schema split across files
+7. Raw JSON sample to models
+8. Raw YAML sample to models
+9. CSV sample to models
+10. GraphQL SDL to models
+11. Apache Avro schema to models
+12. XML Schema to models
+13. Protocol Buffers to models
+14. MCP tool schemas to models
+15. Remote URL input
+16. Existing Python model or dict schema object
+17. Multiple modules for large specs
+18. Output as dataclasses, TypedDict, or msgspec
 
 ## OpenAPI to Pydantic v2
 
@@ -45,7 +46,9 @@ Expect Pydantic v2 model classes for schema components, and optionally request, 
 
 ## OpenAPI to a FastAPI server or Python client (experimental)
 
-Use this when the user wants a FastAPI server or an HTTPX2 client generated from an OpenAPI document, on top of the models.
+Use this when the user wants a FastAPI server or an HTTPX2 client generated from an OpenAPI document, on top of the models. Both are experimental: their options and the generated package may change. They need Python 3.11 or later.
+
+Run the recommender with the same options plus `--recommend-options --output-format json` and use its preset for `PRESET`; it accepts `--generate-server` and `--generate-client` and starts from a preset the target can use.
 
 ```bash
 uvx --from datamodel-code-generator datamodel-codegen \
@@ -53,7 +56,7 @@ uvx --from datamodel-code-generator datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --target-python-version 3.12 \
+  --preset PRESET \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -63,9 +66,9 @@ uvx --from datamodel-code-generator datamodel-codegen \
 
 Generation overwrites the models and the server package on every run: never edit them. Write the implementation of each router group in `app/services/<group>.py`, as class `<Group>` subclassing the `<Group>Service` Protocol of `app.server.services`; with `--server-layout single`, write `app/services/service.py` with class `Operations` subclassing the `Service` Protocol. A secured document adds `app/services/authorize.py` with `authorize`. Generation writes each missing module once with stubs and never overwrites it. Give each server package a parent package of its own. `app/server/main.py` imports them and defines `app`. The run prints the `uv add` command for the runtime dependencies and the next steps; `--output-format json` reports them under `target`.
 
-For a client, use `--generate-client httpx2 --client-output app/client --client-package app.client --client-model-package app.models` instead, and call it as `with Client(base_url=...) as client: client.<group>.<method>(...)`.
+For a client, use `--generate-client httpx2 --client-output app/client --client-package app.client --client-model-package app.models` instead, and call it as `with Client(base_url=...) as client: client.<group>.<method>(...)`. The client package is generated too and overwritten on every run; the user's code only imports it.
 
-Verify with:
+Verify with `--check` (the same command plus `--check`, which reports drift without writing) and, for a server:
 
 ```bash
 uv add uvicorn
@@ -87,7 +90,7 @@ uvx --from datamodel-code-generator datamodel-codegen \
   --target-python-version 3.12
 ```
 
-This generates data models from schema-bearing fields. It does not generate producers, consumers, clients, servers, brokers, or runtime protocol adapters.
+This generates data models from schema-bearing fields. It does not generate servers, protocol adapters, or runtime message validators. The only AsyncAPI client it generates is the WebSocket and server-sent-event client of the next workflow; do not add `--openapi-scopes api`, which stops AsyncAPI input with an error.
 
 Verify with:
 
@@ -96,6 +99,39 @@ python -c "import pathlib, importlib.util; p=pathlib.Path('models.py'); s=import
 ```
 
 Expect models for payload schemas and reusable schema components.
+
+## AsyncAPI to a WebSocket or server-sent-event client (experimental)
+
+Use this when the user wants a client for the channels of an AsyncAPI 2 or 3 document: each channel that a `ws` or `wss` server serves becomes `client.<channel>.connect(...)`, which opens the WebSocket and sends and receives the channel's messages as the generated models, and each server-sent-event channel of an `http`, `https` or `sse` server becomes `client.<channel>.open(...)`, which receives its events. It is experimental: the channels it opens and the generated package may change. It needs Python 3.11 or later. Take `PRESET` from the recommender run with the same options and `--recommend-options --output-format json`.
+
+```bash
+uvx --from datamodel-code-generator datamodel-codegen \
+  --input asyncapi.yaml \
+  --input-file-type asyncapi \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset PRESET \
+  --output models.py \
+  --generate-client httpx2 \
+  --client-output client \
+  --client-package client \
+  --client-model-package models
+```
+
+Add `--client-asyncapi-perspective client` when the document describes the client's side of a WebSocket channel; the default `server` means the document describes the server, whose sends the client receives. It does not apply to server-sent-event channels. A document that declares no servers needs `--client-default-base-url`, or the `base_url` given to the client. A channel that uses a feature the client does not support is left out with a warning that names the feature; read the warnings.
+
+Use it as:
+
+```python
+from client import Client
+from models import Subscribe
+
+with Client() as client, client.market.connect(pair="XBT-USD") as session:
+    session.send(Subscribe(event="subscribe", channels=["trades"]))
+    for message in session:
+        print(message.data)
+```
+
+Generation overwrites the models and the client package on every run: never edit them. Verify with the command plus `--check`, then import the client and run the project's checks.
 
 ## JSON Schema to Pydantic v2
 

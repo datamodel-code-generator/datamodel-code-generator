@@ -18,7 +18,6 @@ from scripts.select_ci_test_shard import PROFILES
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = ROOT / "tests/data/expected/ci_coverage"
 MAIN_ONLY_IF = "github.event_name != 'pull_request'"
 TEST_TARGET = re.compile(r"(?<![\w/.\-])(?:\./)?tests/[\w/.\-]*(?:::[\w:]+)?")
 ANY_MEMBER = "::*"

@@ -19,11 +19,11 @@ fewer than half	compare_release_script/cell_sets_are_stored_by_the_shorter_side[
 more than half	compare_release_script/cell_sets_are_stored_by_the_shorter_side[more than half].txt
 no cell	compare_release_script/cell_sets_are_stored_by_the_shorter_side[no cell].txt
 [test_compare_release]
-directory-args1	compare_release/directory.txt
-fail_both-args3	compare_release/fail_both.txt
-identical-args0	compare_release/identical.txt
-import_fails_both-args4	compare_release/import_fails_both.txt
-path_option-args2	compare_release/path_option.txt
+directory	compare_release_script/compare_release[directory].txt
+fail_both	compare_release_script/compare_release[fail_both].txt
+identical	compare_release_script/compare_release[identical].txt
+import_fails_both	compare_release_script/compare_release[import_fails_both].txt
+path_option	compare_release_script/compare_release[path_option].txt
 [test_compare_release_evidence_oracle]
 f1_copy_hides_a_deletion	compare_release_script/compare_release_evidence_oracle[f1_copy_hides_a_deletion].txt
 f2_global_declaration_removed	compare_release_script/compare_release_evidence_oracle[f2_global_declaration_removed].txt

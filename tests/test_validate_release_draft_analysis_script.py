@@ -15,7 +15,6 @@ from scripts import validate_release_draft_analysis as validator
 from tests.conftest import assert_output
 
 DATA_PATH = Path(__file__).parent / "data" / "validate_release_draft_analysis"
-EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "validate_release_draft_analysis"
 
 
 def _file_read_output(
@@ -1318,6 +1317,5 @@ def test_script_validates_inline_code(input_path: Path, tmp_path: Path) -> None:
             },
             sort_keys=True,
         )
-        + "\n",
-        EXPECTED_PATH / "inline_code" / f"{input_path.stem}.txt",
+        + "\n"
     )

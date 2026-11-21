@@ -337,7 +337,13 @@ envs = ["nightly-tier"]
 id = "platform-observations-windows"
 prs = [7037]
 incident = "stored call counts of a platform output changed and their Windows variants came only from a dispatch run"
-paths = ["tests/data/expected/main/generation_platform/*"]
+paths = [
+  "tests/data/expected/main/generation_platform/*",
+  "tests/data/expected/main/generation_api_contract/*",
+  "tests/data/expected/api_generation/*",
+  "tests/data/expected/model_codecs/*",
+  "tests/data/expected/parser/openapi_scope/*",
+]
 status = "M"
 envs = ["dispatch"]
 
@@ -353,7 +359,7 @@ envs = ["dispatch"]
 id = "docs-examples-stored-outputs"
 prs = [7222, 7223]
 incident = "renaming stored outputs under main/ broke the docs examples that read them by name, which no selected test built"
-paths = ["tests/data/expected/main/*"]
+paths = ["tests/data/expected/main/*", "tests/data/expected/api_generation/client_generation/*"]
 exclude = ["tests/data/expected/main/generation_platform/*"]
 tests = ["tests/test_build_docs_examples_script.py"]
 

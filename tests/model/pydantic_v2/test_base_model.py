@@ -41,7 +41,6 @@ from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 from tests.conftest import assert_output
 
-EXPECTED_PYDANTIC_V2_MODEL_PATH = Path(__file__).parents[2] / "data" / "expected" / "model" / "pydantic_v2"
 JSON_SCHEMA_DATA_PATH = Path(__file__).parents[2] / "data" / "jsonschema"
 
 
@@ -98,13 +97,12 @@ def test_schema_runtime_validation_unique_items_follows_model_description() -> N
         ),
     )
 
-    expected = EXPECTED_PYDANTIC_V2_MODEL_PATH / "schema_runtime_unique_items_description.txt"
-    assert_output(model.render(), expected)
+    assert_output(model.render(), name="model")
 
     model._process_schema_runtime_validation()
     model.invalidate_render_caches()
 
-    assert_output(model.render(), expected)
+    assert_output(model.render(), name="model")
 
 
 @pytest.mark.allow_direct_assert
@@ -627,16 +625,15 @@ def test_parser_simple_field_call_keywords_match_model_fields() -> None:
 
 
 @pytest.mark.parametrize(
-    ("use_missing_sentinel", "expected_file"),
+    "use_missing_sentinel",
     [
-        pytest.param(False, "simple_pydantic_v2_field_states.snapshot", id="standard-default"),
-        pytest.param(True, "simple_pydantic_v2_field_states_missing.snapshot", id="missing-sentinel"),
+        pytest.param(False, id="standard-default"),
+        pytest.param(True, id="missing-sentinel"),
     ],
 )
 @pytest.mark.allow_direct_assert
 def test_parser_simple_field_matches_public_constructor_for_schema_states(
     use_missing_sentinel: bool,
-    expected_file: str,
 ) -> None:
     """Compare actual parser states with public validation across field-state pairs."""
 
@@ -659,9 +656,8 @@ def test_parser_simple_field_matches_public_constructor_for_schema_states(
     fast_parser = JsonSchemaParser(data_model_field_type=DataModelField, **parser_kwargs)
     public_parser = JsonSchemaParser(data_model_field_type=PublicDataModelField, **parser_kwargs)
 
-    expected_path = EXPECTED_PYDANTIC_V2_MODEL_PATH / expected_file
-    assert_output(fast_parser.parse(), expected_path)
-    assert_output(public_parser.parse(), expected_path)
+    assert_output(fast_parser.parse(), name="model", suffix=".snapshot")
+    assert_output(public_parser.parse(), name="model", suffix=".snapshot")
 
     fast_fields = {field.name: field for model in fast_parser.results for field in model.fields}
     public_fields = {field.name: field for model in public_parser.results for field in model.fields}

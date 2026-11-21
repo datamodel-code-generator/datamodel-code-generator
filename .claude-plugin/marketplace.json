@@ -3,12 +3,12 @@
   "owner": {
     "name": "Koudai Aono"
   },
-  "description": "Agent Skill that teaches coding agents to run datamodel-codegen.",
+  "description": "Agent Skill that teaches coding agents to run datamodel-codegen for models, typed clients and FastAPI servers.",
   "plugins": [
     {
       "name": "datamodel-code-generator",
       "source": "./skills/datamodel-code-generator",
-      "description": "Generate Python models from OpenAPI, JSON Schema, GraphQL and more with datamodel-codegen."
+      "description": "Generate Python models from OpenAPI, AsyncAPI, JSON Schema, GraphQL and more, plus typed HTTP and WebSocket clients and FastAPI servers (experimental), with datamodel-codegen."
     }
   ]
 }

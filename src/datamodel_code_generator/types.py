@@ -1252,17 +1252,34 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         return self._rendered_null_source() is not None
 
+    @property
+    def items_admit_none(self) -> bool:
+        """Return whether the union a container writes of its several items includes None, inside the container.
+
+        A tuple writes its items one by one, and an item that is the one type of a container holds its own None.
+        """
+        core = _nullability_core()
+        return (
+            self._is_container
+            and not self.is_tuple
+            and core.takes_item_null(
+                keeps_member_order=self.preserve_union_member_order, member_count=len(self.data_types)
+            )
+            and any(self._member_nulls(core))
+        )
+
     def _rendered_null_source(self) -> NullSource | None:
         """Return why the rendered type hint includes None, reading the members of a union only when they decide."""
         core = _nullability_core()
-        members = self.data_types
         return core.rendered_nullability(
             own=self.is_optional,
             reference=self.adds_reference_null,
-            member_nulls=(member._gives_member_null(core) for member in members)  # noqa: SLF001
-            if self._takes_member_null(core)
-            else (),
+            member_nulls=self._member_nulls(core) if self._takes_member_null(core) else (),
         )
+
+    def _member_nulls(self, core: ModuleType) -> Iterator[bool]:
+        """Return, for each member, whether it gives the union of the members its None (``member_null``)."""
+        return (member._gives_member_null(core) for member in self.data_types)  # noqa: SLF001
 
     def _takes_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a union, takes over the None of its members."""

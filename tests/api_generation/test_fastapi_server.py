@@ -18,8 +18,6 @@ from scripts.build_docs_examples import (
     CLIENT_HOWTO,
     CLIENT_HOWTO_SCRIPTS,
     DOCS_PROJECTS,
-    EXPECTED_CLIENT_HOWTO,
-    EXPECTED_DOCS_PROJECTS,
     TUTORIAL,
     api_quick_start_arguments,
     docs_project_arguments,
@@ -39,17 +37,12 @@ from tests.api_generation.support.model_codec_builtin import builtin_codec_repor
 from tests.conftest import (
     assert_generated_modules_output,
     assert_output,
-    create_assert_file_content,
 )
 from tests.main.conftest import run_main_with_args
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs/pydantic"
-CODEC_EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
-EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi/servers"
-CROSS = Path(__file__).parents[1] / "data/expected/main/generation_platform/cross"
 PRESET = needs("type-statements")
-assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
 
 
 @pytest.mark.parametrize(
@@ -124,9 +117,9 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
     The snapshotted packages pin their Python modules and the served OpenAPI document.
     """
     report, packages, documents = fastapi_server_report(case, tmp_path, monkeypatch)
-    assert_output(report, EXPECTED / f"{case}.txt")
+    assert_output(report, name="report")
     package = {(backend, *parts): body for backend, modules in packages.items() for parts, body in modules.items()}
-    assert_generated_modules_output({**package, **documents}, EXPECTED / "packages" / case, pattern="*")
+    assert_generated_modules_output({**package, **documents}, pattern="*", name="package")
 
 
 @pytest.mark.parametrize(
@@ -171,23 +164,23 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
 )
 def test_generated_client(case: str, tmp_path: Path) -> None:
     """Generate a server and a client from one document, then call every operation of the server through the client."""
-    assert_output(cross_report(case, tmp_path), CROSS / f"{case}.txt")
+    assert_output(cross_report(case, tmp_path))
 
 
 @pytest.mark.parametrize("case", list(SCENARIOS))
 def test_fastapi_openapi(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Compose the served OpenAPI document of generated packages in applications of every shape."""
-    assert_output(fastapi_openapi_report(case, tmp_path, monkeypatch), EXPECTED.parent / "openapi" / f"{case}.txt")
+    assert_output(fastapi_openapi_report(case, tmp_path, monkeypatch))
 
 
 def test_fastapi_upstream(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Close uploaded files and end parse errors and anyio cancellations as FastAPI and Starlette do."""
-    assert_output(fastapi_upstream_report(tmp_path, monkeypatch), EXPECTED / "uploads.txt")
+    assert_output(fastapi_upstream_report(tmp_path, monkeypatch))
 
 
 def test_text_charsets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Use the selected Content-Type for both decoding requests and encoding responses."""
-    assert_output(text_charsets(tmp_path, monkeypatch), EXPECTED.parent.parent / "http_boundaries/charsets.txt")
+    assert_output(text_charsets(tmp_path, monkeypatch))
 
 
 @pytest.mark.parametrize(
@@ -228,20 +221,14 @@ def test_text_charsets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 )
 def test_pydantic_codecs(source: str, cases: str, tmp_path: Path) -> None:
     """Decode and encode native models through the generated FastAPI server."""
-    assert_output(
-        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / f"{cases}.json", tmp_path, server=True),
-        CODEC_EXPECTED / f"{cases}.txt",
-    )
+    assert_output(builtin_codec_report(CODECS / f"{source}.yaml", CODECS / f"{cases}.json", tmp_path, server=True))
 
 
 @pytest.mark.abnormal_path("generated models or bindings edited out of sync after generation")
 @pytest.mark.parametrize("cases", ["pets-startup", "pets-startup-dataclass", "pets-startup-noalias"])
 def test_pydantic_codec_startup(cases: str, tmp_path: Path) -> None:
     """Start native server apps after the retained generated model substitutions."""
-    assert_output(
-        builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path, server=True),
-        CODEC_EXPECTED / f"{cases}.txt",
-    )
+    assert_output(builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path, server=True))
 
 
 @PRESET
@@ -253,12 +240,11 @@ def test_docs_project(
     generated = generate_project(
         DOCS_PROJECTS / project, tmp_path / project, docs_project_arguments(project), monkeypatch, capsys
     )
-    expected = EXPECTED_DOCS_PROJECTS / project
-    assert_output(generated.notice, expected / "notice.txt")
-    assert_output(generated.files, expected / "files.txt")
-    for name in ("app/models.py", "app/server/services.py"):
-        assert_docs_file(generated.root / name, f"{project}/{name}")
-    assert_output(run_tests(generated.root, "test_app.py"), expected / "pytest.txt")
+    assert_output(generated.notice, name="notice")
+    assert_output(generated.files, name="files")
+    for path, role in (("app/models.py", "models"), ("app/server/services.py", "services")):
+        assert_output((generated.root / path).read_text(encoding="utf-8"), name=role, suffix=".py")
+    assert_output(run_tests(generated.root, "test_app.py"), name="pytest")
 
 
 @PRESET
@@ -267,17 +253,16 @@ def test_docs_tutorial_client(
 ) -> None:
     """Serve the tutorial with uvicorn and call it with the client generated from the same document."""
     server = generate_project(TUTORIAL, tmp_path / "server", docs_project_arguments("tutorial"), monkeypatch, capsys)
-    expected = EXPECTED_DOCS_PROJECTS / "tutorial"
     with serve(server.root, "app.server.main:app") as url:
         client = generate_project(
             TUTORIAL, tmp_path / "client", api_quick_start_arguments("client"), monkeypatch, capsys, server_url=url
         )
-        assert_output(client.notice, expected / "client-notice.txt")
-        assert_output(client.files, expected / "client-files.txt")
-        sync = "app/client/resources/pets/_sync.py"
-        assert_docs_file(client.root / sync, f"tutorial/{sync}")
-        for script in ("call.py", "call_async.py"):
-            assert_output(run_python(client.root, script), expected / script.replace(".py", ".txt"))
+        assert_output(client.notice, name="notice")
+        assert_output(client.files, name="files")
+        sync = client.root / "app/client/resources/pets/_sync.py"
+        assert_output(sync.read_text(encoding="utf-8"), name="sync", suffix=".py")
+        for script, role in (("call.py", "call"), ("call_async.py", "call_async")):
+            assert_output(run_python(client.root, script), name=role)
 
 
 @PRESET
@@ -286,10 +271,10 @@ def test_docs_client_howto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caps
     project = generate_project(
         CLIENT_HOWTO, tmp_path / "client-howto", docs_project_arguments("client-howto"), monkeypatch, capsys
     )
-    assert_output(project.notice, EXPECTED_CLIENT_HOWTO / "notice.txt")
+    assert_output(project.notice, name="notice")
     for script in (*CLIENT_HOWTO_SCRIPTS, "generate"):
-        assert_output(run_python(project.root, f"{script}.py"), EXPECTED_CLIENT_HOWTO / f"{script}.txt")
-    assert_output(run_tests(project.root, "test_client.py"), EXPECTED_CLIENT_HOWTO / "pytest.txt")
+        assert_output(run_python(project.root, f"{script}.py"), name=script)
+    assert_output(run_tests(project.root, "test_client.py"), name="pytest")
 
 
 def test_fastapi_entrypoint(tmp_path: Path) -> None:
@@ -299,13 +284,13 @@ def test_fastapi_entrypoint(tmp_path: Path) -> None:
     missing dependency through, and refuses a method that cannot take its route's arguments as it starts.
     """
     report, stubs = fastapi_entrypoint_report(tmp_path)
-    assert_output(report, EXPECTED / "entrypoint.txt")
-    assert_generated_modules_output(stubs, EXPECTED / "packages" / "entrypoint")
+    assert_output(report, name="report")
+    assert_generated_modules_output(stubs, name="stubs")
 
 
 def test_fastapi_readme_examples(tmp_path: Path) -> None:
     """Run the test and router examples of the READMEs of an unsecured and a secured server as a reader copies them."""
-    assert_output(readme_examples_report(tmp_path), EXPECTED / "readme-examples.txt")
+    assert_output(readme_examples_report(tmp_path))
 
 
 @pytest.mark.parametrize("output", ["src/app/server", "my src/app/server"], ids=["src", "src-with-space"])
@@ -323,4 +308,4 @@ def test_fastapi_run_commands(
         *("--server-output", output, "--server-package", "app.server", "--server-model-package", "app.models"),
     ])
     report = run_commands_report(tmp_path, capsys.readouterr().err)
-    assert_output(report, EXPECTED / "run-commands" / f"{output.replace(' ', '_').replace('/', '-')}.txt")
+    assert_output(report)

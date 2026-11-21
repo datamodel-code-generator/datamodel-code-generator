@@ -5,11 +5,14 @@ description: >
   dataclasses, TypedDicts, msgspec structs, or type-safe Python classes
   generated from OpenAPI, AsyncAPI, JSON Schema, GraphQL, JSON/YAML/CSV
   sample data, MCP tool schemas, Protocol Buffers, XML Schema, Apache Avro,
-  or existing Python model objects. Use it for requests such as "Pydantic
-  models from this schema", "types for this API", "parse this JSON into
-  classes", or "convert this spec into Python models". Prefer the
-  datamodel-codegen CLI over hand-written model code whenever an input
-  schema, API spec, sample data file, or Python model object exists.
+  or existing Python model objects. It also generates, experimentally, a
+  typed HTTP client (SDK) or a FastAPI server from OpenAPI and a WebSocket or
+  server-sent-event client from AsyncAPI. Use it for requests such as
+  "Pydantic models from this schema", "types for this API", "parse this JSON
+  into classes", "a Python client for this OpenAPI spec", or "a FastAPI server
+  from this spec". Prefer the datamodel-codegen CLI over hand-written model,
+  client, or server code whenever an input schema, API spec, sample data file,
+  or Python model object exists.
 license: MIT
 metadata:
   status: experimental
@@ -134,11 +137,10 @@ uvx --from datamodel-code-generator datamodel-codegen \
   --input-file-type openapi \
   --output models.py \
   --output-model-type pydantic_v2.BaseModel \
-  --target-python-version 3.12 \
   --preset PRESET
 ```
 
-Replace `PRESET` with the preset the recommender prints, and add the options it recommends.
+Replace `PRESET` with the preset the recommender prints, and add the options it recommends. A preset name carries its Python target, so do not add `--target-python-version` to this command yourself; run the `arguments` of the recommender's payload as printed (see "Target Python version").
 
 For remote URLs or remote refs, use the HTTP extra:
 
@@ -171,13 +173,32 @@ Infer the minimum Python version from:
 5. Existing generated model style
 6. User instruction
 
-Then pass:
+Then pass it to the recommender, which prints the preset for that target and the `arguments` to run:
 
 ```bash
---target-python-version X.Y
+datamodel-codegen [options] --target-python-version X.Y --recommend-options --output-format json
 ```
 
-Do not accept the CLI default if the project clearly declares a Python version.
+Do not accept the CLI default if the project clearly declares a Python version. A command with `--preset` takes its target from the preset name and keeps an explicit `--target-python-version` only when it matches; a command without `--preset` needs `--target-python-version X.Y`.
+
+## Clients and servers (experimental)
+
+Use these when the user wants more than models from an API document. They are experimental: their options and the generated package may change.
+
+| User wants | Use |
+| --- | --- |
+| A typed Python HTTP client (SDK) for an OpenAPI API | `--generate-client httpx2` with `--input-file-type openapi` |
+| A Python client for the WebSocket or server-sent-event channels of an AsyncAPI document | `--generate-client httpx2` with `--input-file-type asyncapi` (`--client-asyncapi-perspective` says which side the document describes) |
+| A FastAPI server for an OpenAPI API | `--generate-server fastapi` with `--input-file-type openapi` |
+
+Each writes the models to `--output` and a package to `--client-output` or `--server-output`, with `--client-package`/`--server-package` and `--client-model-package`/`--server-model-package` naming their import paths. For OpenAPI add `--openapi-scopes schemas api`. Generation needs Python 3.11 or later and prints the `uv add` command for the package's runtime dependencies and the next steps. The recommender accepts `--generate-client` and `--generate-server` and starts from a preset the target can use. `references/workflows.md` has the full commands.
+
+Boundary:
+
+* Generated files are overwritten on every run, so never edit the models or the client or server package. Change the document or the options and regenerate; `--check` reports drift.
+* A server is completed by the user's own code: their services implement the generated service Protocols in `services` modules beside the server package. Generation writes each missing services module once, with stubs, and never overwrites it.
+* A client is used by the user's own code and tests, which import it; nothing in it is written by hand.
+* If the user needs a server or client from a document type other than OpenAPI (and AsyncAPI for clients), say that it is not generated and offer models only.
 
 ## Verification step
 

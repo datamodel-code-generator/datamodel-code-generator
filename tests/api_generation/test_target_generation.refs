@@ -54,6 +54,7 @@ validation	api_generation/target_generation/target_render[validation].txt
 	api_generation/target_generation/target_render_nested_models_symlink.txt
 [test_target_render_object_document_loaded_by_pointer]
 	api_generation/target_generation/target_render_object_document_loaded_by_pointer.txt
+	api_generation/target_generation/target_render_object_document_loaded_by_pointer/
 [test_target_render_timestamp]
 	api_generation/target_generation/target_render_timestamp.txt
 [test_target_render_untyped_nullable_maps]

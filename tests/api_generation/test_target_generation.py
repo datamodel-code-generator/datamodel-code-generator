@@ -97,6 +97,7 @@ def test_target_render_object_document_loaded_by_pointer(
     not indexed and generation failed with "Unresolved $id reference" (#6070); the run parses again with the role known.
     """
     assert_output(target_render_report("roles-after-pointer", tmp_path, monkeypatch, capsys))
+    assert_directory_content(tmp_path, pattern="models.py")
 
 
 def test_target_render_timestamp(

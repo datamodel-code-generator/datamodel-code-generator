@@ -4973,6 +4973,8 @@ def get_preset_infos() -> tuple[PresetInfo, ...]
 def get_preset_names() -> tuple[str, ...]
 def latest_preset_name(family: str, target_python_version: PythonVersion) -> str
 def preset_info_as_dict(info: PresetInfo) -> _PresetInfoDict
+def render_preset_history() -> str
+def render_preset_history_markdown() -> str
 def render_presets(format_: PresetFormat) -> str
 def render_presets_json() -> str
 def render_presets_markdown() -> str
@@ -5093,10 +5095,10 @@ class FieldNameResolver
     FIELD_ASSIGNMENT_HELPER: ClassVar[str | None] = None
     capitalise_numbered_enum_members: bool = False
     def __init__(self, aliases: Mapping[str, str | list[str]] | None=None, snake_case_field: bool=False, empty_field_name: str | None=None, original_delimiter: str | None=None, special_field_name_prefix: str | None=None, remove_special_field_name_prefix: bool=False, capitalise_enum_members: bool=False, no_alias: bool=False, use_subclass_enum: bool=False, target_python_version: PythonVersion | None=None, capitalise_numbered_enum_members: bool=False) -> None
-    def prepare_explicit_field_aliases(self, fields: list[model_base.DataModelFieldBase], reference: Reference, *, output_names: tuple[str, ...]=()) -> None
-    def explicit_field_alias(self, field: model_base.DataModelFieldBase, reference: Reference, *, output_names: tuple[str, ...]=()) -> tuple[str, str] | None
+    def prepare_explicit_field_aliases(self, fields: Sequence[_AliasField], reference: Reference, *, output_names: tuple[str, ...]=()) -> None
+    def explicit_field_alias(self, field: _AliasField, reference: Reference, *, output_names: tuple[str, ...]=()) -> tuple[str, str] | None
     @classmethod
-    def validate_explicit_field_aliases(cls, fields: list[model_base.DataModelFieldBase], *, final: bool, target_python_version: PythonVersion | None=None) -> None
+    def validate_explicit_field_aliases(cls, fields: Sequence[_AliasField], *, final: bool, target_python_version: PythonVersion | None=None) -> None
     def get_valid_name(self, name: str, excludes: set[str] | None=None, ignore_snake_case_field: bool=False, upper_camel: bool=False) -> str
     def get_valid_field_name_and_alias(self, field_name: str, excludes: set[str] | None=None, path: list[str] | None=None, class_name: str | None=None, *, output_names: tuple[str, ...]=()) -> tuple[str, str | list[str] | None]
     self.target_python_version
@@ -5189,10 +5191,10 @@ class ModelResolver
     @classmethod
     def validate_name(cls, name: str, target_python_version: PythonVersion | None=None) -> bool
     def get_valid_field_name(self, name: str, excludes: set[str] | None=None, model_type: ModelType=ModelType.PYDANTIC) -> str
-    def prepare_explicit_field_aliases(self, fields: list[model_base.DataModelFieldBase], reference: Reference, model_type: ModelType) -> None
-    def explicit_field_alias(self, field: model_base.DataModelFieldBase, reference: Reference, model_type: ModelType) -> tuple[str, str] | None
+    def prepare_explicit_field_aliases(self, fields: Sequence[_AliasField], reference: Reference, model_type: ModelType) -> None
+    def explicit_field_alias(self, field: _AliasField, reference: Reference, model_type: ModelType) -> tuple[str, str] | None
     @staticmethod
-    def validate_explicit_field_aliases(fields: list[model_base.DataModelFieldBase], model_type: ModelType, target_python_version: PythonVersion | None=None) -> None
+    def validate_explicit_field_aliases(fields: Sequence[_AliasField], model_type: ModelType, target_python_version: PythonVersion | None=None) -> None
     def get_valid_field_name_and_alias(self, field_name: str, excludes: set[str] | None=None, model_type: ModelType=ModelType.PYDANTIC, path: list[str] | None=None, class_name: str | None=None, *, output_names: tuple[str, ...]=()) -> tuple[str, str | list[str] | None]
     def output_names(self, path: str) -> tuple[str, ...]
     def class_scope(self, row: ClassKeyRow, model: ModelNames | str, path: str) -> ClassScope
@@ -5407,6 +5409,8 @@ class DataType(_BaseModel)
     def has_target_null(self) -> bool
     @property
     def admits_none(self) -> bool
+    @property
+    def items_admit_none(self) -> bool
     @property
     def type_hint(self) -> str
     @property

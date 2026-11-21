@@ -25,12 +25,11 @@ from datamodel_code_generator.parser.xmlschema import (
     _read_xml_text,
     convert_xml_schema_data,
 )
-from tests.conftest import assert_output, stored_expected
+from tests.conftest import assert_output
 from tests.main.conftest import (
     BACKEND_GOLDEN_CASES,
     BACKEND_GOLDEN_TARGET_ARGS,
     DATA_PATH,
-    EXPECTED_XML_SCHEMA_PATH,
     XML_SCHEMA_DATA_PATH,
     _generated_model,
     _model_json_validator,
@@ -39,10 +38,13 @@ from tests.main.conftest import (
     run_generate_file_and_assert,
     run_main_and_assert,
 )
-from tests.main.xmlschema.conftest import assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+_XML_TEXT_INITIAL = '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">caf\u00e9</xs:schema>\n'
+_XML_TEXT_UPDATED = '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">jalape\u00f1o</xs:schema>\n'
 
 
 def test_main_xmlschema_purchase_order(output_file: Path) -> None:
@@ -86,23 +88,19 @@ def test_main_xmlschema_with_parsed_source_cache(output_file: Path) -> None:
 def test_read_xml_text_detects_byte_order_mark(tmp_path: Path, byte_order_mark: bytes, xml_encoding: str) -> None:
     """Decode XML source according to its byte order mark."""
     schema_path = tmp_path / "schema.xsd"
-    expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_initial.txt"
-    schema_text = stored_expected(expected_path).read_text(encoding="utf-8")
-    schema_path.write_bytes(byte_order_mark + schema_text.encode(xml_encoding))
+    schema_path.write_bytes(byte_order_mark + _XML_TEXT_INITIAL.encode(xml_encoding))
 
-    assert_output(_read_xml_text(schema_path, "ascii"), expected_path)
+    assert_output(_read_xml_text(schema_path, "ascii"))
 
 
 def test_read_xml_text_reads_updated_source(tmp_path: Path) -> None:
     """Read the current XML source content without retaining stale text."""
     schema_path = tmp_path / "schema.xsd"
-    first_expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_initial.txt"
-    second_expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_updated.txt"
-    schema_path.write_bytes(stored_expected(first_expected_path).read_text(encoding="utf-8").encode("latin-1"))
-    assert_output(_read_xml_text(schema_path, "latin-1"), first_expected_path)
+    schema_path.write_bytes(_XML_TEXT_INITIAL.encode("latin-1"))
+    assert_output(_read_xml_text(schema_path, "latin-1"), name="initial")
 
-    schema_path.write_bytes(stored_expected(second_expected_path).read_text(encoding="utf-8").encode("latin-1"))
-    assert_output(_read_xml_text(schema_path, "latin-1"), second_expected_path)
+    schema_path.write_bytes(_XML_TEXT_UPDATED.encode("latin-1"))
+    assert_output(_read_xml_text(schema_path, "latin-1"), name="updated")
 
 
 def test_load_xml_schema_data_from_path_evicts_lru_entries(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -559,7 +557,6 @@ def test_main_xmlschema_utf16_input(tmp_path: Path, output_file: Path) -> None:
         input_path=input_path,
         output_path=output_file,
         input_file_type="xmlschema",
-        assert_func=assert_file_content,
     )
 
 
@@ -583,7 +580,6 @@ def test_main_xmlschema_unicode_ncname_alias(tmp_path: Path, output_file: Path) 
         input_path=input_path,
         output_path=output_file,
         input_file_type="xmlschema",
-        assert_func=assert_file_content,
     )
 
 
@@ -614,7 +610,6 @@ def test_main_xmlschema_unsupported_xsd_pattern_importable(tmp_path: Path, outpu
         input_path=input_path,
         output_path=output_file,
         input_file_type="xmlschema",
-        assert_func=assert_file_content,
     )
 
 
@@ -643,7 +638,6 @@ def test_main_xmlschema_self_extension_without_redefine_importable(tmp_path: Pat
         input_path=input_path,
         output_path=output_file,
         input_file_type="xmlschema",
-        assert_func=assert_file_content,
     )
 
 
@@ -707,7 +701,6 @@ def test_main_xmlschema_redefine_self_references_importable(tmp_path: Path, outp
         input_path=input_path,
         output_path=output_file,
         input_file_type="xmlschema",
-        assert_func=assert_file_content,
     )
 
 
@@ -968,7 +961,6 @@ def test_xmlschema_pattern_alternatives(
 ) -> None:
     """Match the XSD oracle for sibling alternatives and intersect inherited constraints."""
     input_path = XML_SCHEMA_DATA_PATH / f"{fixture}.xsd"
-    expected_file = f"{fixture}_{suffix}.py"
     # Keep the deep regex fixture on its selected formatter; the compact fixture checks default parity.
     explicit_builtin = fixture == "pattern_alternatives"
     if entrypoint == "cli":
@@ -982,8 +974,6 @@ def test_xmlschema_pattern_alternatives(
             output_path=output_file,
             input_file_type="xmlschema",
             extra_args=extra_args,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
         )
     else:
         run_generate_file_and_assert(
@@ -996,8 +986,6 @@ def test_xmlschema_pattern_alternatives(
             use_annotated=backend == "msgspec.Struct",
             disable_timestamp=True,
             **({"formatters": [Formatter.BUILTIN]} if explicit_builtin else {}),
-            assert_func=assert_file_content,
-            expected_file=expected_file,
         )
     if fixture == "pattern_controls":
         return
@@ -1208,15 +1196,12 @@ def test_native_xsd_property_names(name: str) -> None:
 def test_xsd_property_reuse(name: str, entrypoint: str, output_file: Path) -> None:
     """Preserve baseline output for legal reuse, scope changes, and ordinary fields."""
     source = XML_SCHEMA_DATA_PATH / "field_name_collisions" / f"{name}.xsd"
-    expected = f"field_name_collisions/{name}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=source,
             output_path=output_file,
             input_file_type="xmlschema",
             extra_args=["--disable-timestamp"],
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     else:
         run_generate_file_and_assert(
@@ -1224,8 +1209,6 @@ def test_xsd_property_reuse(name: str, entrypoint: str, output_file: Path) -> No
             output_path=output_file,
             input_file_type=InputFileType.XMLSchema,
             disable_timestamp=True,
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
 
     if name != "unused":
@@ -1252,19 +1235,12 @@ def test_xsd_property_reuse(name: str, entrypoint: str, output_file: Path) -> No
 def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, output_file: Path) -> None:
     """Keep field order and usable generated types across all supported backends."""
     source = XML_SCHEMA_DATA_PATH / "field_name_collisions/ordinary.xsd"
-    expected = (
-        "field_name_collisions/ordinary.py"
-        if backend == DataModelType.PydanticV2BaseModel
-        else f"field_name_collisions/ordinary_{backend.name}.py"
-    )
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=source,
             output_path=output_file,
             input_file_type="xmlschema",
             extra_args=["--disable-timestamp", "--output-model-type", backend.value],
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     else:
         run_generate_file_and_assert(
@@ -1273,8 +1249,6 @@ def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, ou
             input_file_type=InputFileType.XMLSchema,
             output_model_type=backend,
             disable_timestamp=True,
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     payloads = DATA_PATH / "payloads/xsd_field_name_collisions"
     valid_json = (payloads / "ordinary.json").read_text(encoding="utf-8")
@@ -1331,14 +1305,11 @@ def test_xmlschema_composed_content(output_file: Path, entrypoint: str, schema_g
     """Preserve occurrence limits and inherited scalar content through real generation."""
     name = case["name"]
     source = XML_SCHEMA_DATA_PATH / schema_group / f"{name}.xsd"
-    expected = f"{schema_group}/{name}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=source,
             output_path=output_file,
             input_file_type="xmlschema",
-            assert_func=assert_file_content,
-            expected_file=expected,
             extra_args=[
                 "--output-model-type",
                 "pydantic_v2.BaseModel",
@@ -1357,8 +1328,6 @@ def test_xmlschema_composed_content(output_file: Path, entrypoint: str, schema_g
             field_constraints=True,
             use_field_description=True,
             disable_timestamp=True,
-            assert_func=assert_file_content,
-            expected_file=expected,
         )
     with _generated_model(output_file, f"generated_{schema_group}_{name}", "Root") as model:
         results = []

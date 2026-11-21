@@ -426,7 +426,6 @@ from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
     _declares_key_keywords,
     _enum_without_positions,
-    _get_json_value_type,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _get_model_by_decoded_path,
     _intersect_parts,
     _merges_ref_siblings,
@@ -446,9 +445,6 @@ from datamodel_code_generator.parser._schema_refs import (
     _Worklist,
 )
 from datamodel_code_generator.parser._union_tags import TaggedUnionValue as TaggedUnionValue
-from datamodel_code_generator.parser._union_tags import (
-    _get_union_variant_name,  # noqa: F401  # Preserve the established parser.jsonschema export.
-)
 from datamodel_code_generator.parser._value_keywords import (
     _LITERAL_PARTS,
     _keep_values_as_written,

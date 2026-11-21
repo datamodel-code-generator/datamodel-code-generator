@@ -1,8 +1,8 @@
 # datamodel-code-generator
 
-> This code generator creates pydantic model from an openapi file and others.
+> Generate Python models, typed clients and FastAPI servers (experimental) from OpenAPI, AsyncAPI, JSON Schema and more, deterministically, with --check for drift.
 
-- [datamodel-code-generator](https://datamodel-code-generator.koxudaxi.dev/): Generate Python data models from schema definitions in seconds.
+- [datamodel-code-generator](https://datamodel-code-generator.koxudaxi.dev/): Generate Python models, typed clients and FastAPI servers (experimental) from schemas, deterministically, with `--check` for drift.
 - [Getting Started](https://datamodel-code-generator.koxudaxi.dev/getting-started/): Install `datamodel-code-generator`, generate your first Pydantic v2 model, and pick options for your schema with `--recommend-options` (experimental).
 - [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/): Presets are immutable named groups of CLI options. A preset name never changes behavior; new recommendations are published as new dated preset names.
 - [Option recommendations](https://datamodel-code-generator.koxudaxi.dev/recommend-options/): Analyse a schema and get the `datamodel-codegen` options that suit it, starting from the latest dated preset.
@@ -119,5 +119,6 @@
 - [Architecture](https://datamodel-code-generator.koxudaxi.dev/architecture/): `datamodel-code-generator` is organized around one central idea: many input formats are normalized into a shared generation graph, then rendered th...
 ## Optional
 
+- [Preset history](https://datamodel-code-generator.koxudaxi.dev/preset-history/): Presets are immutable: a preset name never changes behavior, and a new recommendation is published as a new dated name. This page keeps every older...
 - [Frequently Asked Questions](https://datamodel-code-generator.koxudaxi.dev/faq/)
 - [Development](https://datamodel-code-generator.koxudaxi.dev/development-contributing/): Install the package in editable mode:

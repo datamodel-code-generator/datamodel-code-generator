@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Literal, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS_PATH = ROOT / "docs" / "presets.md"
+DOCS_PRESET_HISTORY_PATH = ROOT / "docs" / "preset-history.md"
 DOCS_GETTING_STARTED_PATH = ROOT / "docs" / "getting-started.md"
 DOCS_FASTAPI_SERVER_PATH = ROOT / "docs" / "fastapi-server.md"
 README_PATH = ROOT / "README.md"
@@ -58,7 +59,7 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from datamodel_code_generator.enums import DataModelType, InputFileType  # noqa: E402
-from datamodel_code_generator.preset import get_preset_names, render_presets  # noqa: E402
+from datamodel_code_generator.preset import get_preset_names, render_preset_history, render_presets  # noqa: E402
 
 if TYPE_CHECKING:
     from datamodel_code_generator.preset_names import PresetName
@@ -188,6 +189,7 @@ def _generate_docs(preset_names_doc: GeneratedDoc) -> tuple[GeneratedDoc, ...]:
     return (
         preset_names_doc,
         GeneratedDoc(DOCS_PATH, render_presets("markdown")),
+        GeneratedDoc(DOCS_PRESET_HISTORY_PATH, render_preset_history()),
         GeneratedDoc(README_PATH, readme_content),
         GeneratedDoc(
             DOCS_GETTING_STARTED_PATH,
@@ -529,8 +531,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Check whether preset docs, preset-powered quick-start examples, and README support lists are up to date "
-            "(docs/presets.md, docs/getting-started.md, and generated sections in README.md and the FastAPI "
-            "server page)"
+            "(docs/presets.md, docs/preset-history.md, docs/getting-started.md, and generated sections in README.md "
+            "and the FastAPI server page)"
         ),
     )
     parser.add_argument(

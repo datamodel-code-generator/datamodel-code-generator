@@ -5370,6 +5370,55 @@
       "signature_style": "unpack"
     }
   },
+  "container-item-nulls": {
+    "input": "container-item-nulls.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "body_arguments": "both"
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
+  "container-item-nulls-30": {
+    "input": "container-item-nulls-30.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "strict_nullable": true
+    },
+    "config": {
+      "body_arguments": "both"
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
   "parameter-kinds": {
     "input": "parameter-kinds.yaml"
   },

@@ -15,7 +15,6 @@ from tests.main.conftest import run_main_and_assert
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "fastapi" / "install"
-EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi" / "install"
 OPTIONS = [
     "--target-python-version",
     "3.11",
@@ -54,4 +53,4 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     dependencies = shlex.split(notice.splitlines()[1])[2:]
     subprocess.run(["uv", "pip", "install", "--quiet", "--python", python, *dependencies], check=True)
     served = subprocess.run([python, "app.py"], capture_output=True, text=True, check=False)
-    assert_output(served.stdout + served.stderr, EXPECTED / "served.txt")
+    assert_output(served.stdout + served.stderr)

@@ -158,8 +158,8 @@ Expected output lives under `tests/data/expected/main/generation_platform/`:
   only in `minimal`. Each capability report also lists the modules the package imports from outside the standard
   library: those of the printed dependencies, then the others, which only those dependencies' own requirements may
   provide.
-- `client/typing/dependencies/*.txt` hold the checkers' findings for a package of each backend where only its
-  printed dependencies are installed.
+- `tests/data/expected/api_generation/client_typing/printed_dependencies[*].txt` hold the checkers' findings for a
+  package of each backend where only its printed dependencies are installed.
 - Reports hold listings, diagnostics, and outcomes. Generated source is pinned as files at its generated path, not
   embedded in a report.
 
