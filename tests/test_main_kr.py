@@ -4947,13 +4947,23 @@ def test_generate_prompt_basic(capsys: pytest.CaptureFixture[str]) -> None:
     This prompt can be copied to ChatGPT, Claude, or other LLMs to get
     recommendations for appropriate CLI options.
     """
-    run_main_with_args(["--generate-prompt"], expected_exit=Exit.OK, capsys=capsys, derived_stdout=True)
+    run_main_with_args(
+        ["--generate-prompt"],
+        expected_exit=Exit.OK,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED_MAIN_KR_PATH / "generate_prompt" / "basic.txt",
+    )
 
 
 def test_generate_prompt_with_question(capsys: pytest.CaptureFixture[str]) -> None:
     """Test --generate-prompt with a question argument."""
     question = "How do I convert enums to Literal types?"
-    run_main_with_args(["--generate-prompt", question], expected_exit=Exit.OK, capsys=capsys, derived_stdout=True)
+    run_main_with_args(
+        ["--generate-prompt", question],
+        expected_exit=Exit.OK,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED_MAIN_KR_PATH / "generate_prompt" / "with_question.txt",
+    )
 
 
 def test_generate_prompt_with_options(capsys: pytest.CaptureFixture[str]) -> None:
@@ -4970,7 +4980,7 @@ def test_generate_prompt_with_options(capsys: pytest.CaptureFixture[str]) -> Non
         ],
         expected_exit=Exit.OK,
         capsys=capsys,
-        derived_stdout=True,
+        expected_stdout_path=EXPECTED_MAIN_KR_PATH / "generate_prompt" / "with_options.txt",
     )
 
 
@@ -4988,7 +4998,7 @@ def test_generate_prompt_with_list_options(capsys: pytest.CaptureFixture[str]) -
         ],
         expected_exit=Exit.OK,
         capsys=capsys,
-        derived_stdout=True,
+        expected_stdout_path=EXPECTED_MAIN_KR_PATH / "generate_prompt" / "with_list_options.txt",
     )
 
 
@@ -4998,7 +5008,7 @@ def test_generate_prompt_json(capsys: pytest.CaptureFixture[str]) -> None:
         GENERATE_PROMPT_JSON_ARGS,
         expected_exit=Exit.OK,
         capsys=capsys,
-        derived_stdout=True,
+        expected_stdout_path=EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_output.txt",
         assert_no_stderr=True,
     )
 
@@ -5009,17 +5019,15 @@ def test_output_format_json_schema_generate_prompt(capsys: pytest.CaptureFixture
         GENERATE_PROMPT_JSON_SCHEMA_ARGS,
         expected_exit=Exit.OK,
         capsys=capsys,
-        derived_stdout=True,
+        expected_stdout_path=EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_schema.txt",
         assert_no_stderr=True,
     )
 
 
 def test_output_format_json_schema_validates_generate_prompt_json() -> None:
     """Test prompt JSON output conforms to its emitted JSON Schema."""
-    schema = json.loads(
-        stored_expected(EXPECTED_MAIN_KR_PATH / "output_format_json_schema_generate_prompt.stdout.txt").read_text()
-    )
-    payload = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / "generate_prompt_json.stdout.txt").read_text())
+    schema = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_schema.txt").read_text())
+    payload = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_output.txt").read_text())
 
     jsonschema.validate(instance=payload, schema=schema)
 
@@ -5206,7 +5214,7 @@ def test_output_format_json_schema_validates_prompt_json_as_structured_output() 
     schema = json.loads(
         stored_expected(EXPECTED_MAIN_KR_PATH / "output_format_json_schema_structured_output.stdout.txt").read_text()
     )
-    payload = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / "generate_prompt_json.stdout.txt").read_text())
+    payload = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_output.txt").read_text())
 
     jsonschema.validate(instance=payload, schema=schema)
 
