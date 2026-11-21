@@ -1637,7 +1637,14 @@ writes the table from those records, and `tests/test_decision_homes.py` fails fo
 define and for one its cell does not name. It also fails where code of the package outside a row's home modules and
 sites reads a def or class home of the row at run time (an annotation reads none, and a method, constant or module home
 is not checked); the callers of today's code that no row lists are in `tests/decision_home_allowlist.py`, which may
-only shrink.
+only shrink. The builder homes that L1 states (the parse method each position chooses from its dispatch table, the
+one builder of object maps, the resolver that names models) are records of the same file (`BUILDER_HOMES`), each with
+its passage of this page: the test fails where a parse method a table row holds is called outside the tables, where a
+table's `choose` is called or the table is read (other than by `typed_children`) outside its position, and where a
+call with an output's mark (`is_dict=True` or the `"dict"` slot flags under `parser/`, a `Reference` built by its
+constructor, `model_construct` or `model_validate`) is made outside its builder and the parts it hands the output to;
+the marks are syntactic, so a `Reference` built by `model_copy` or a flag computed from a variable slot is not seen;
+today's bypasses are in `BUILDER_BYPASSES` of the same allowlist, which may only shrink.
 
 **Legacy rows.** A `legacy-*` row names an exception that keeps the output of an earlier release. Every row that `src/`
 names has one record in `scripts/legacy_rows.py`: what it keeps, what deletes it (`fix`: the issue whose fix does, or

@@ -7,13 +7,18 @@ defined (never where it is imported), and ``sites``: the defs, classes and modul
 besides the home modules that may call a home. ``tests/test_decision_homes.py`` fails for a home or site that ``src/``
 does not define, for one its own cell does not name, and for a caller of a home outside them that
 ``tests/decision_home_allowlist.py`` does not list.
+
+One ``BuilderHome`` per builder home that the L1 prose of the page states (the parse method a dispatch table
+chooses at each position, the one builder of object maps, the resolver that names models): the builder, the passage of
+the page that states it, and the syntactic mark of what it builds. The prose stays as written; the guards of
+``tests/test_decision_homes.py`` read these records.
 """
 
 from __future__ import annotations
 
 from typing import Final, NamedTuple
 
-__all__ = ["DECISION_HOMES", "DecisionHome", "Home"]
+__all__ = ["BUILDER_HOMES", "DECISION_HOMES", "BuilderHome", "DecisionHome", "Home", "Mark"]
 
 
 class Home(NamedTuple):
@@ -39,6 +44,51 @@ class DecisionHome(NamedTuple):
     sites: tuple[Home, ...]
     """Every def or class the adapters cell names, in its order, or a module it names without naming one of its
     definitions: the scopes, besides the home modules, that may call a home (``tests/test_decision_homes.py``)."""
+
+
+class Mark(NamedTuple):
+    """The syntactic mark of a built output: a call of ``callee``, or a call that sets ``keyword`` to ``value``."""
+
+    callee: str = ""
+    """The callee as the dotted path its name leads to through imports, or the attribute chain it ends with; ``""``:
+    any call."""
+    keyword: str = ""
+    """A keyword the call passes, as ``keyword=value``, in a ``**`` dict display or in a dict display of flags handed
+    on; ``""``: none is asked."""
+    value: bool | int | str | None = None
+    """The constant the keyword takes."""
+    argument: tuple[int, str] | None = None
+    """A positional argument the call passes as ``(index, constant)``: the slot a flags helper is asked for
+    (``_container_flags(obj, "dict")``); ``None``: none is asked."""
+
+
+class BuilderHome(NamedTuple):
+    """One builder home: what it builds, the passage of the page that states it, the builder, and how to find a bypass.
+
+    A record with a ``table`` stands for a position of L1: its builder chooses the parse method from that dispatch table
+    (``parser/_schema_dispatch.py``), the only call of the table's ``choose``, and the parse methods the table's rows
+    hold run only through the tables; the table is read outside the builder only by ``typed_children``. A record with
+    ``marks`` stands for an output: a call with one of those marks is built only in the builder and its ``parts``.
+    The marks are syntactic: a call of the class (or its ``model_construct``/``model_validate``), a keyword, a flag
+    dict or a constant slot argument. An output built by ``model_copy`` or by a flag computed from a variable slot
+    (``{CONTAINER_FLAGS[slot]: True}``) carries no mark and is not seen.
+    """
+
+    output: str
+    """What the builder builds."""
+    prose: str
+    """The passage of ``docs/architecture.md`` that states the home, verbatim up to line breaks; it names the
+    builder."""
+    builder: Home
+    """The def that builds the output."""
+    table: Home | None = None
+    """The dispatch table the builder chooses from, as the class attribute that holds it."""
+    marks: tuple[Mark, ...] = ()
+    """The marks of the output outside a dispatch table: a call with any of them builds it."""
+    parts: tuple[Home, ...] = ()
+    """The defs the builder hands parts of the output to, which the builder reaches by calls through one another."""
+    within: str = ""
+    """The package path prefix of the modules where a call with the mark is the output (``""``: the whole package)."""
 
 
 DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
@@ -8099,3 +8149,65 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
     ),
 )
+
+BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
+    BuilderHome(
+        output="the parse of a definition, a root, a reserved target, an AsyncAPI payload or the `api` scope",
+        prose=(
+            "`_DEFINITION_TABLE` in `_parse_schema_obj` (definitions, roots, reserved targets, AsyncAPI payloads and "
+            "the `api` scope)"
+        ),
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_schema_obj"),
+        table=Home("parser/jsonschema.py", "JsonSchemaParser._DEFINITION_TABLE"),
+    ),
+    BuilderHome(
+        output="the parse of a field, an item or a map value",
+        prose="`_FIELD_TABLE` in `parse_item` (fields, items and map values)",
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser.parse_item"),
+        table=Home("parser/jsonschema.py", "JsonSchemaParser._FIELD_TABLE"),
+    ),
+    BuilderHome(
+        output="the parse of a body, a response or a parameter of the legacy OpenAPI scopes",
+        prose=(
+            "`_OPENAPI_OPERATION_TABLE` in `OpenAPIParser.parse_schema` (the bodies, responses and parameters of the "
+            "legacy scopes)"
+        ),
+        builder=Home("parser/openapi.py", "OpenAPIParser.parse_schema"),
+        table=Home("parser/openapi.py", "OpenAPIParser._OPENAPI_OPERATION_TABLE"),
+    ),
+    BuilderHome(
+        output="the parse of an object-kind schema",
+        prose=(
+            "the rows of an object-kind schema (`_OBJECT_KIND_ROWS`) are shared by the definition table and the "
+            "object-kind table that `_parse_object_kind_schema` chooses from"
+        ),
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_kind_schema"),
+        table=Home("parser/jsonschema.py", "JsonSchemaParser._OBJECT_KIND_TABLE"),
+    ),
+    BuilderHome(
+        output="the dict of an object map",
+        prose="is built by one builder at every position (`_parse_object_map`)",
+        builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_map"),
+        marks=(Mark(keyword="is_dict", value=True), Mark(callee="_container_flags", argument=(1, "dict"))),
+        parts=(
+            Home("parser/_object_maps.py", "parse_additional_properties_map"),
+            Home("parser/_object_maps.py", "parse_pattern_map"),
+            Home("parser/_object_maps.py", "pattern_map_type"),
+            Home("parser/jsonschema.py", "JsonSchemaParser.parse_property_names"),
+            Home("parser/_object_maps.py", "parse_property_names"),
+        ),
+        within="parser/",
+    ),
+    BuilderHome(
+        output="the reference that names a model",
+        prose="Names come from `ModelResolver.add`.",
+        builder=Home("reference.py", "ModelResolver.add"),
+        marks=(
+            Mark(callee="datamodel_code_generator.reference.Reference"),
+            Mark(callee="datamodel_code_generator.reference.Reference.model_construct"),
+            Mark(callee="datamodel_code_generator.reference.Reference.model_validate"),
+        ),
+        parts=(Home("reference.py", "ModelResolver._register_reference"),),
+    ),
+)
+"""The builder homes of the L1 prose, guarded by ``tests/test_decision_homes.py``."""
