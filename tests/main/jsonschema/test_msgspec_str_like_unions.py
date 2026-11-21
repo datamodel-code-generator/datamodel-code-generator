@@ -13,7 +13,13 @@ from jsonschema import ValidationError as SchemaValidationError
 
 from datamodel_code_generator.__main__ import main
 from tests.conftest import assert_output
-from tests.main.conftest import DATA_PATH, JSON_SCHEMA_DATA_PATH, _generated_model, run_main_and_assert
+from tests.main.conftest import (
+    DATA_PATH,
+    JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
+    _generated_model,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -42,8 +48,9 @@ of them, such as a `format: uuid` string beside a plain string, writes `UUID | s
 members, so it decodes every string they accept, as `str`, without their formats and constraints; a warning names the
 members each union loses. A merged member that admits null leaves `None` in the union, and a merged `Literal` keeps
 its values that are no str. A union whose str-like members include an Enum of str values, a member typed by
-`x-python-type`, an alias of a union that mixes str-like and other members or an alias of a `Literal` of str and other
-values is left as it is, with its warning.""",
+`x-python-type`, a member built for an `integer` or `number` schema (a number of `format: decimal`, `time-delta` or
+`date-time`), whose JSON numbers one `str` would refuse, an alias of a union that mixes str-like and other members or
+an alias of a `Literal` of str and other values is left as it is, with its warning.""",
     input_schema="jsonschema/msgspec_str_like_unions.json",
     cli_args=[
         "--output-model-type",
@@ -130,4 +137,70 @@ def test_msgspec_str_like_union_kept_members(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="jsonschema",
             extra_args=[*ARGS, "--target-python-version", "3.12", *OPTION_SETS["merge"]],
+        )
+
+
+NUMBER_INPUT = JSON_SCHEMA_DATA_PATH / "msgspec_str_like_number_members.json"
+NUMBER_OPTION_SETS = {
+    "merge": OPTION_SETS["merge"],
+    "merge_collapse_root_models": OPTION_SETS["merge_collapse_root_models"],
+    "merge_datetime_type_mappings": (
+        *OPTION_SETS["merge"],
+        *("--output-datetime-class", "datetime", "--type-mappings", "number+double=decimal"),
+    ),
+}
+
+
+@pytest.mark.parametrize("option_set", NUMBER_OPTION_SETS)
+def test_msgspec_str_like_number_members(output_file: Path, option_set: str) -> None:
+    """Leave the unions unmerged whose str-like members are built for an integer or number schema.
+
+    In ``Model`` a ``number`` of ``format: decimal`` is ``Decimal``, of ``format: time-delta`` ``timedelta``, an
+    ``integer`` of ``format: date-time`` ``str`` (``datetime`` under ``--output-datetime-class datetime``) and, under
+    ``--type-mappings number+double=decimal``, a ``number`` of ``format: double`` ``Decimal``. Each decodes a JSON
+    number, which one ``str`` would refuse, so the unions that hold them stay as the schema gives them, with the
+    refusal warning: directly, through the alias ``NumberDecimal`` (inlined by ``--collapse-root-models``), as list
+    items and map values, from a type array, beside null and in the field ``Child`` inherits from ``Base``; msgspec
+    refuses ``Model`` as it does without the option. The same members built for ``string`` schemas in ``Controls``
+    merge, so it decodes every string and rejects the numbers the schema rejects.
+    """
+    with pytest.warns(UserWarning, match="msgspec") as warned:
+        run_main_and_assert(
+            input_path=NUMBER_INPUT,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[*ARGS, "--target-python-version", "3.11", *NUMBER_OPTION_SETS[option_set]],
+        )
+    schema = json.loads(NUMBER_INPUT.read_text())
+    payloads = json.loads((DATA_PATH / "payloads" / "msgspec_str_like_number_members.json").read_text())
+    verdicts = ""
+    for name, documents in payloads.items():
+        validator = Draft202012Validator({**schema, "$ref": f"#/$defs/{name}"} if name != "Model" else schema)
+        for document in documents["valid"]:
+            validator.validate(document)
+        for document in documents.get("invalid", []):
+            with pytest.raises(SchemaValidationError):
+                validator.validate(document)
+        with _generated_model(output_file, f"msgspec_str_like_number_members_{name}", name) as model:
+            verdicts += "".join(
+                f"{name} {label} {json.dumps(document)}: {_verdict(model, document)}\n"
+                for label in ("valid", "invalid")
+                for document in documents.get(label, [])
+            )
+    messages = sorted(str(warning.message) for warning in warned if "union" in str(warning.message))
+    assert_output(verdicts + "".join(f"warning: {message}\n" for message in messages), name="payloads")
+
+
+def test_msgspec_str_like_number_members_openapi(output_file: Path) -> None:
+    """Leave an OpenAPI 3.0 union unmerged whose ``Decimal`` is built for a number schema.
+
+    It stays so also through ``nullable: true`` and an alias, while a string ``format: decimal`` beside a plain string
+    merges.
+    """
+    with pytest.warns(UserWarning, match="msgspec"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "msgspec_str_like_number_members.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[*ARGS, "--target-python-version", "3.11", *OPTION_SETS["merge"]],
         )

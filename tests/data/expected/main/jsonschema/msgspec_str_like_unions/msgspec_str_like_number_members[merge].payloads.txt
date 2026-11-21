@@ -1,0 +1,18 @@
+Model valid {"decimal": 1.5, "decimal_alias": 2, "decimal_items": [1, "a"], "decimal_values": {"k": 3.25}, "type_array": 4, "nullable_decimal": null, "duration": 30, "moment": 1700000000, "mapped": 1.5, "child": {"inherited": 1.5, "name": "n"}}: type refused by msgspec
+Model valid {"decimal": "text", "decimal_alias": "123e4567-e89b-12d3-a456-426614174000", "decimal_items": ["a"], "type_array": "1.5", "nullable_decimal": "text", "duration": "text", "moment": "123e4567-e89b-12d3-a456-426614174000", "mapped": "123e4567-e89b-12d3-a456-426614174000", "child": {"inherited": "text"}}: type refused by msgspec
+Controls valid {"decimal": "1.5", "decimal_alias": "123e4567-e89b-12d3-a456-426614174000", "duration": "P1D"}: accepted
+Controls valid {"decimal": "text", "decimal_alias": "2.5", "duration": "123e4567-e89b-12d3-a456-426614174000"}: accepted
+Controls invalid {"decimal": 1.5}: rejected
+Controls invalid {"decimal_alias": 2}: rejected
+warning: --merge-msgspec-str-like-union-members writes Controls.decimal with str in place of its str-like members Decimal, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Controls.decimal_alias with str in place of its str-like members StringDecimal, UUID, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Controls.duration with str in place of its str-like members timedelta, UUID, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: msgspec cannot decode the union Base.inherited: it holds the str-like members Decimal, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.decimal: it holds the str-like members Decimal, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.decimal_alias: it holds the str-like members NumberDecimal, UUID, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.decimal_items: it holds the str-like members Decimal, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.decimal_values: it holds the str-like members Decimal, UUID, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.duration: it holds the str-like members timedelta, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.moment: it holds the str-like members str, UUID, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.nullable_decimal: it holds the str-like members Decimal | None, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.type_array: it holds the str-like members Decimal, UUID, while a msgspec union holds only one str-like member (str and Literal str values count as one).

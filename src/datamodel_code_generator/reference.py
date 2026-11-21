@@ -373,6 +373,7 @@ TYPE_ORIGIN_KEY: Final = "_type_origin"
 BINARY_CONTENT_KEY: Final = "_binary_content"
 UNIQUE_ITEMS_KEY: Final = "_unique_items"
 ENUM_LITERAL_KEY: Final = "_enum_literal"
+_JSON_NUMBER_KEY: Final = "_json_number"
 SUBTYPE_REF_KEY: Final = "_subtype_ref"
 
 
@@ -430,6 +431,18 @@ def binary_content_of(data_type: object) -> bool:
     return BINARY_CONTENT_KEY in data_type.__dict__
 
 
+def _json_number_of(data_type: object) -> bool:
+    """Return whether the parser built a type node for a JSON number: an ``integer`` or ``number`` schema (L1).
+
+    The type mapping records it when it builds the node, from the schema type, whatever the model type and
+    ``--type-mappings`` write for it (a ``number`` of ``format: decimal`` is ``Decimal``, msgspec's ``number`` of
+    ``format: time`` is ``str``). A copy of a node keeps it; an enum or const of numbers, and a node a later pass
+    builds, has none. ``--merge-msgspec-str-like-union-members`` reads it: such a str-like member decodes a JSON
+    number, which one ``str`` refuses.
+    """
+    return _JSON_NUMBER_KEY in data_type.__dict__
+
+
 def unique_items_of(data_type: object) -> bool:
     """Return whether the schema the parser built a type node from declares ``uniqueItems: true`` (UNIQUE_ITEMS, L1).
 
@@ -459,13 +472,13 @@ def subtype_ref_of(data_type: object) -> str | None:
     return data_type.__dict__.get(SUBTYPE_REF_KEY)
 
 
-_NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY, UNIQUE_ITEMS_KEY, ENUM_LITERAL_KEY)
+_NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY, _JSON_NUMBER_KEY, UNIQUE_ITEMS_KEY, ENUM_LITERAL_KEY)
 
 
 def keep_node_records(copy: object, source: object) -> None:
     """Give a copy of a type node the records the parser keeps on the node it copies.
 
-    They are TYPE_ORIGIN, BINARY_CONTENT, UNIQUE_ITEMS and ENUM_LITERAL.
+    They are TYPE_ORIGIN, BINARY_CONTENT, JSON_NUMBER, UNIQUE_ITEMS and ENUM_LITERAL.
     """
     copy.__dict__.update((key, source.__dict__[key]) for key in _NODE_RECORDS if key in source.__dict__)
 

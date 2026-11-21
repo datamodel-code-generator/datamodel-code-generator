@@ -14,8 +14,10 @@ union loses. A merged member that admits null leaves ``None`` in the union, and 
 that are no str in a ``Literal`` of their own. An Enum of no str value, and an alias of a container, count as no
 str-like member. A union is left as it is, still warned about, when the str-like members are not all of the kinds the
 decision can merge: an Enum of str values (whose class the union would lose), a member a ``x-python-type`` annotation
-types, an alias of a union that mixes str-like and other members, or an alias of a ``Literal`` of str and other
-values.
+types, a str-like member built for an ``integer`` or ``number`` schema (``reference.py:_json_number_of``: a
+``Decimal`` of ``format: decimal``, a ``timedelta`` of ``format: time-delta``, a ``datetime`` of ``format: date-time``,
+directly or through an alias, whose JSON numbers one ``str`` would refuse), an alias of a union that mixes str-like and
+other members, or an alias of a ``Literal`` of str and other values.
 """
 
 from __future__ import annotations
@@ -28,6 +30,7 @@ from datamodel_code_generator.model._decisions.msgspec_str_like import STR, msgs
 from datamodel_code_generator.parser._passes._shared import msgspec_union_members
 from datamodel_code_generator.parser._passes.imports import _msgspec_enum_kinds
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, live_model_of
+from datamodel_code_generator.reference import _json_number_of
 from datamodel_code_generator.types import _union_members, _written_member, _written_union_members
 
 if TYPE_CHECKING:
@@ -104,14 +107,17 @@ class _Classifier:
         A type alias or root model of one type counts as that type, and one of a union whose members are all
         str-like members it merges as ``str``; one of a container counts as none, as its items are no members. An
         Enum counts by the values of its members: one of no str value as none. A type alias of a ``Literal`` of str
-        and other values, which the merge would lose, an Enum of str values and a type an ``x-python-type``
-        annotation writes cannot merge.
+        and other values, which the merge would lose, an Enum of str values, a type an ``x-python-type`` annotation
+        writes and a str-like type built for a JSON number (``_json_number_of``) cannot merge.
         """
         member = _written_member(member)
         if (reference := member.reference) is None:
             if member.python_type is not None or (seen and _other_literals(member)):
                 raise _UnmergeableError
-            return None if member in CONTAINERS else msgspec_str_like_leaf(member)
+            counted = None if member in CONTAINERS else msgspec_str_like_leaf(member)
+            if counted is not None and _json_number_of(member):
+                raise _UnmergeableError
+            return counted
         if id(reference) in seen or (model := self._model_of(reference)) is None:
             return None
         match model.form:

@@ -5563,8 +5563,9 @@ of them, such as a `format: uuid` string beside a plain string, writes `UUID | s
 members, so it decodes every string they accept, as `str`, without their formats and constraints; a warning names the
 members each union loses. A merged member that admits null leaves `None` in the union, and a merged `Literal` keeps
 its values that are no str. A union whose str-like members include an Enum of str values, a member typed by
-`x-python-type`, an alias of a union that mixes str-like and other members or an alias of a `Literal` of str and other
-values is left as it is, with its warning.
+`x-python-type`, a member built for an `integer` or `number` schema (a number of `format: decimal`, `time-delta` or
+`date-time`), whose JSON numbers one `str` would refuse, an alias of a union that mixes str-like and other members or
+an alias of a `Literal` of str and other values is left as it is, with its warning.
 
 !!! tip "Usage"
 

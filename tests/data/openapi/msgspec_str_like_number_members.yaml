@@ -1,0 +1,34 @@
+openapi: 3.0.3
+info:
+  title: Str-like members built for numbers
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    NumberDecimal:
+      type: number
+      format: decimal
+    Model:
+      type: object
+      properties:
+        decimal:
+          anyOf:
+            - type: number
+              format: decimal
+            - type: string
+        decimal_alias:
+          anyOf:
+            - $ref: '#/components/schemas/NumberDecimal'
+            - type: string
+              format: uuid
+        nullable_decimal:
+          anyOf:
+            - type: number
+              format: decimal
+              nullable: true
+            - type: string
+        control:
+          anyOf:
+            - type: string
+              format: decimal
+            - type: string

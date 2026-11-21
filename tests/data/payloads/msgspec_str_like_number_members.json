@@ -1,0 +1,36 @@
+{
+  "Model": {
+    "valid": [
+      {
+        "decimal": 1.5,
+        "decimal_alias": 2,
+        "decimal_items": [1, "a"],
+        "decimal_values": {"k": 3.25},
+        "type_array": 4,
+        "nullable_decimal": null,
+        "duration": 30,
+        "moment": 1700000000,
+        "mapped": 1.5,
+        "child": {"inherited": 1.5, "name": "n"}
+      },
+      {
+        "decimal": "text",
+        "decimal_alias": "123e4567-e89b-12d3-a456-426614174000",
+        "decimal_items": ["a"],
+        "type_array": "1.5",
+        "nullable_decimal": "text",
+        "duration": "text",
+        "moment": "123e4567-e89b-12d3-a456-426614174000",
+        "mapped": "123e4567-e89b-12d3-a456-426614174000",
+        "child": {"inherited": "text"}
+      }
+    ]
+  },
+  "Controls": {
+    "valid": [
+      {"decimal": "1.5", "decimal_alias": "123e4567-e89b-12d3-a456-426614174000", "duration": "P1D"},
+      {"decimal": "text", "decimal_alias": "2.5", "duration": "123e4567-e89b-12d3-a456-426614174000"}
+    ],
+    "invalid": [{"decimal": 1.5}, {"decimal_alias": 2}]
+  }
+}
