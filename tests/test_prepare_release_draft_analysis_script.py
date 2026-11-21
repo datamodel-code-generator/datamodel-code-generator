@@ -13,63 +13,54 @@ from scripts import prepare_release_draft_analysis as preparer
 from tests.conftest import assert_output
 
 DATA_PATH = Path(__file__).parent / "data" / "prepare_release_draft_analysis"
-EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "prepare_release_draft_analysis"
 REPOSITORY_ROOT = Path(__file__).parents[1]
 ROUTING_CASES = (
-    ("blank_record", 1, "requires_claude"),
-    ("codspeed", 1, "safe"),
-    ("codspeed", 2, "requires_claude"),
-    ("codspeed_mixed_runtime", 2, "requires_claude"),
-    ("codspeed_rename_from_runtime", 1, "requires_claude"),
-    ("codspeed_rename_to_runtime", 1, "requires_claude"),
-    ("empty", 0, "requires_claude"),
-    ("empty", 1, "requires_claude"),
-    ("empty_path", 1, "requires_claude"),
-    ("docs_guide", 1, "requires_claude"),
-    ("dockerfile", 1, "requires_claude"),
-    ("invalid_json", 1, "requires_claude"),
-    ("invalid_record_type", 1, "requires_claude"),
-    ("invalid_type", 1, "requires_claude"),
-    ("lock_file", 1, "requires_claude"),
-    ("malformed", 1, "requires_claude"),
-    ("mismatched_count", 3, "requires_claude"),
-    ("newline", 1, "requires_claude"),
-    ("package_metadata", 1, "requires_claude"),
-    ("playground", 1, "requires_claude"),
-    ("pre_commit_hooks", 1, "requires_claude"),
-    ("prompt_data", 1, "requires_claude"),
-    ("readme", 1, "requires_claude"),
-    ("release_diagnostics", 1, "safe"),
-    ("rename", 1, "requires_claude"),
-    ("rename_safe", 1, "safe"),
-    ("runtime", 1, "requires_claude"),
-    ("safe", 5, "safe"),
-    ("safe", 3_000, "requires_claude"),
-    ("shipped_action", 1, "requires_claude"),
-    ("skip_safe", 16, "skip_changelog"),
-    ("tests_root", 1, "requires_claude"),
-    ("unknown_path", 1, "requires_claude"),
-    ("unsafe_mixed", 3, "requires_claude"),
-    ("whitespace", 1, "requires_claude"),
-    ("workflow_docs_deploy", 1, "requires_claude"),
-    ("workflow_docker", 1, "requires_claude"),
-    ("workflow_known", 1, "skip_changelog"),
-    ("workflow_publish", 1, "requires_claude"),
-    ("workflow_root", 1, "requires_claude"),
-    ("workflow_unknown", 1, "requires_claude"),
+    ("blank_record", 1),
+    ("codspeed", 1),
+    ("codspeed", 2),
+    ("codspeed_mixed_runtime", 2),
+    ("codspeed_rename_from_runtime", 1),
+    ("codspeed_rename_to_runtime", 1),
+    ("empty", 0),
+    ("empty", 1),
+    ("empty_path", 1),
+    ("docs_guide", 1),
+    ("dockerfile", 1),
+    ("invalid_json", 1),
+    ("invalid_record_type", 1),
+    ("invalid_type", 1),
+    ("lock_file", 1),
+    ("malformed", 1),
+    ("mismatched_count", 3),
+    ("newline", 1),
+    ("package_metadata", 1),
+    ("playground", 1),
+    ("pre_commit_hooks", 1),
+    ("prompt_data", 1),
+    ("readme", 1),
+    ("release_diagnostics", 1),
+    ("rename", 1),
+    ("rename_safe", 1),
+    ("runtime", 1),
+    ("safe", 5),
+    ("safe", 3_000),
+    ("shipped_action", 1),
+    ("skip_safe", 16),
+    ("tests_root", 1),
+    ("unknown_path", 1),
+    ("unsafe_mixed", 3),
+    ("whitespace", 1),
+    ("workflow_docs_deploy", 1),
+    ("workflow_docker", 1),
+    ("workflow_known", 1),
+    ("workflow_publish", 1),
+    ("workflow_root", 1),
+    ("workflow_unknown", 1),
 )
 
 
-@pytest.mark.parametrize(
-    ("case_name", "expected_changed_files", "expected_name"),
-    ROUTING_CASES,
-)
-def test_script_routes_release_analysis(
-    case_name: str,
-    expected_changed_files: int,
-    expected_name: str,
-    tmp_path: Path,
-) -> None:
+@pytest.mark.parametrize(("case_name", "expected_changed_files"), ROUTING_CASES)
+def test_script_routes_release_analysis(case_name: str, expected_changed_files: int, tmp_path: Path) -> None:
     """The real CLI skips Claude only for a nonempty safe path list."""
     analysis_path = tmp_path / "analysis.json"
     github_output_path = tmp_path / "github-output.txt"
@@ -104,18 +95,12 @@ def test_script_routes_release_analysis(
             },
             sort_keys=True,
         )
-        + "\n",
-        EXPECTED_PATH / f"{expected_name}.txt",
+        + "\n"
     )
 
 
-@pytest.mark.parametrize(("case_name", "expected_changed_files", "expected_name"), ROUTING_CASES)
-def test_main_routes_files_without_mocks(
-    case_name: str,
-    expected_changed_files: int,
-    expected_name: str,
-    tmp_path: Path,
-) -> None:
+@pytest.mark.parametrize(("case_name", "expected_changed_files"), ROUTING_CASES)
+def test_main_routes_files_without_mocks(case_name: str, expected_changed_files: int, tmp_path: Path) -> None:
     """The in-process CLI path keeps production routing under normal coverage."""
     analysis_path = tmp_path / "analysis.json"
     github_output_path = tmp_path / "github-output.txt"
@@ -142,8 +127,7 @@ def test_main_routes_files_without_mocks(
             },
             sort_keys=True,
         )
-        + "\n",
-        EXPECTED_PATH / f"{expected_name}.txt",
+        + "\n"
     )
 
 

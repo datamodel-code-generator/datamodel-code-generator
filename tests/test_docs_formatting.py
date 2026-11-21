@@ -14,7 +14,6 @@ from scripts import build_cli_docs, build_docs_examples, build_preset_docs
 from tests.conftest import assert_output
 
 DATA = Path(__file__).parent / "data"
-EXPECTED = DATA / "expected" / "docs_formatting"
 MODEL_PATH = "docs_formatting/model.py"
 
 
@@ -52,6 +51,6 @@ def test_documentation_formatting_preserves_generated_examples(kind: str, monkey
     markdown = markdown.replace("<!-- generated-example -->", rendered)
     command = [sys.executable, "-m", "ruff", "format", "--isolated", "--preview", "--stdin-filename", "example.md", "-"]
     result = subprocess.run(command, input=markdown, encoding="utf-8", capture_output=True, check=True)
-    assert_output(result.stdout, EXPECTED / f"{kind}.txt")
+    assert_output(result.stdout, name="markdown")
     repeated = subprocess.run(command, input=result.stdout, encoding="utf-8", capture_output=True, check=True)
-    assert_output(repeated.stdout, EXPECTED / f"{kind}.txt")
+    assert_output(repeated.stdout, name="markdown")

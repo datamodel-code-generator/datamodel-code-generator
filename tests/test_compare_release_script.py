@@ -27,16 +27,14 @@ from tests.conftest import assert_output
 ROOT = Path(__file__).resolve().parents[1]
 IMPORTED = re.compile(r"from \S+,")
 """Where a refused side imported datamodel-code-generator from: the interpreter's own installation."""
-EXPECTED = ROOT / "tests/data/expected/compare_release"
 
 pytestmark = needs("posix")
 
 
 @pytest.mark.parametrize(
-    ("case", "args"),
+    "args",
     [
-        (
-            "identical",
+        pytest.param(
             [
                 "--types",
                 "pydantic_v2.BaseModel,typing.TypedDict",
@@ -45,9 +43,9 @@ pytestmark = needs("posix")
                 "--import-check",
                 str(ROOT / "tests/data/openapi/api.yaml"),
             ],
+            id="identical",
         ),
-        (
-            "directory",
+        pytest.param(
             [
                 "--types",
                 "pydantic_v2.BaseModel",
@@ -55,18 +53,18 @@ pytestmark = needs("posix")
                 "--import-check",
                 str(ROOT / "tests/data/jsonschema/alias_import_alias"),
             ],
+            id="directory",
         ),
-        (
-            "path_option",
+        pytest.param(
             [
                 "--types",
                 "pydantic_v2.BaseModel",
                 f"--options=--aliases={ROOT / 'tests/data/openapi/aliases.json'}",
                 str(ROOT / "tests/data/openapi/api.yaml"),
             ],
+            id="path_option",
         ),
-        (
-            "fail_both",
+        pytest.param(
             [
                 "--types",
                 "pydantic_v2.BaseModel",
@@ -74,9 +72,9 @@ pytestmark = needs("posix")
                 "--options=--no-such-option",
                 str(ROOT / "tests/data/jsonschema/person.json"),
             ],
+            id="fail_both",
         ),
-        (
-            "import_fails_both",
+        pytest.param(
             [
                 "--types",
                 "pydantic_v2.BaseModel",
@@ -85,10 +83,11 @@ pytestmark = needs("posix")
                 "--import-check",
                 str(ROOT / "tests/data/jsonschema/person.json"),
             ],
+            id="import_fails_both",
         ),
     ],
 )
-def test_compare_release(case: str, args: list[str], tmp_path: Path) -> None:
+def test_compare_release(args: list[str], tmp_path: Path) -> None:
     """Both sides run through warm workers; the second run reuses the cached base outputs."""
     outputs = []
     for _ in range(2):
@@ -106,7 +105,7 @@ def test_compare_release(case: str, args: list[str], tmp_path: Path) -> None:
                 *args,
             ])
         outputs.append(f"exit={code}\n{stdout.getvalue()}")
-    assert_output("\n".join(outputs), EXPECTED / f"{case}.txt")
+    assert_output("\n".join(outputs))
 
 
 def test_ran_out_of_memory() -> None:

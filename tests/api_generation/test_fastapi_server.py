@@ -18,8 +18,6 @@ from scripts.build_docs_examples import (
     CLIENT_HOWTO,
     CLIENT_HOWTO_SCRIPTS,
     DOCS_PROJECTS,
-    EXPECTED_CLIENT_HOWTO,
-    EXPECTED_DOCS_PROJECTS,
     TUTORIAL,
     api_quick_start_arguments,
     docs_project_arguments,
@@ -39,14 +37,12 @@ from tests.api_generation.support.model_codec_builtin import builtin_codec_repor
 from tests.conftest import (
     assert_generated_modules_output,
     assert_output,
-    create_assert_file_content,
 )
 from tests.main.conftest import run_main_with_args
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs/pydantic"
 PRESET = needs("type-statements")
-assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
 
 
 @pytest.mark.parametrize(
@@ -244,12 +240,11 @@ def test_docs_project(
     generated = generate_project(
         DOCS_PROJECTS / project, tmp_path / project, docs_project_arguments(project), monkeypatch, capsys
     )
-    expected = EXPECTED_DOCS_PROJECTS / project
-    assert_output(generated.notice, expected / "notice.txt")
-    assert_output(generated.files, expected / "files.txt")
-    for name in ("app/models.py", "app/server/services.py"):
-        assert_docs_file(generated.root / name, f"{project}/{name}")
-    assert_output(run_tests(generated.root, "test_app.py"), expected / "pytest.txt")
+    assert_output(generated.notice, name="notice")
+    assert_output(generated.files, name="files")
+    for path, role in (("app/models.py", "models"), ("app/server/services.py", "services")):
+        assert_output((generated.root / path).read_text(encoding="utf-8"), name=role, suffix=".py")
+    assert_output(run_tests(generated.root, "test_app.py"), name="pytest")
 
 
 @PRESET
@@ -258,17 +253,16 @@ def test_docs_tutorial_client(
 ) -> None:
     """Serve the tutorial with uvicorn and call it with the client generated from the same document."""
     server = generate_project(TUTORIAL, tmp_path / "server", docs_project_arguments("tutorial"), monkeypatch, capsys)
-    expected = EXPECTED_DOCS_PROJECTS / "tutorial"
     with serve(server.root, "app.server.main:app") as url:
         client = generate_project(
             TUTORIAL, tmp_path / "client", api_quick_start_arguments("client"), monkeypatch, capsys, server_url=url
         )
-        assert_output(client.notice, expected / "client-notice.txt")
-        assert_output(client.files, expected / "client-files.txt")
-        sync = "app/client/resources/pets/_sync.py"
-        assert_docs_file(client.root / sync, f"tutorial/{sync}")
-        for script in ("call.py", "call_async.py"):
-            assert_output(run_python(client.root, script), expected / script.replace(".py", ".txt"))
+        assert_output(client.notice, name="notice")
+        assert_output(client.files, name="files")
+        sync = client.root / "app/client/resources/pets/_sync.py"
+        assert_output(sync.read_text(encoding="utf-8"), name="sync", suffix=".py")
+        for script, role in (("call.py", "call"), ("call_async.py", "call_async")):
+            assert_output(run_python(client.root, script), name=role)
 
 
 @PRESET
@@ -277,10 +271,10 @@ def test_docs_client_howto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caps
     project = generate_project(
         CLIENT_HOWTO, tmp_path / "client-howto", docs_project_arguments("client-howto"), monkeypatch, capsys
     )
-    assert_output(project.notice, EXPECTED_CLIENT_HOWTO / "notice.txt")
+    assert_output(project.notice, name="notice")
     for script in (*CLIENT_HOWTO_SCRIPTS, "generate"):
-        assert_output(run_python(project.root, f"{script}.py"), EXPECTED_CLIENT_HOWTO / f"{script}.txt")
-    assert_output(run_tests(project.root, "test_client.py"), EXPECTED_CLIENT_HOWTO / "pytest.txt")
+        assert_output(run_python(project.root, f"{script}.py"), name=script)
+    assert_output(run_tests(project.root, "test_client.py"), name="pytest")
 
 
 def test_fastapi_entrypoint(tmp_path: Path) -> None:

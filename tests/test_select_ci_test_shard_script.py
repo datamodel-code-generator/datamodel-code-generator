@@ -19,7 +19,6 @@ SCRIPT = ROOT / "scripts" / "select_ci_test_shard.py"
 SHARDED_TESTS = "tests/api_generation/test_client_typing.py"
 SELECTIONS = {"all": (), "keyword": ("-k", "pagination or streams")}
 DATA = Path(__file__).parent / "data/ci_shards"
-EXPECTED = Path(__file__).parent / "data/expected/ci_shards"
 PAYLOAD_VALIDATION_FILE = "tests/main/test_payload_validation.py"
 
 
@@ -89,8 +88,7 @@ def test_test_shard_option_partitions_collection(name: str) -> None:
             },
             sort_keys=True,
         )
-        + "\n",
-        EXPECTED / f"test-shard-{name}.txt",
+        + "\n"
     )
 
 
@@ -166,7 +164,7 @@ def test_recipe_cli_validates_external_cases(case: str, tmp_path: Path) -> None:
             select_ci_test_shard.main([*data["args"], "--recipe", str(recipe)])
         except SystemExit as error:
             output.write(f"error: {error}\n")
-    assert_output(output.getvalue(), Path(__file__).parent / f"data/expected/ci_shards/{case}.txt")
+    assert_output(output.getvalue())
 
 
 @pytest.mark.parametrize("profile", select_ci_test_shard.PROFILES)
@@ -217,8 +215,7 @@ def test_discovery_includes_new_files_and_methods(tmp_path: Path, profile: str) 
             sort_keys=True,
             indent=2,
         )
-        + "\n",
-        Path(__file__).parent / f"data/expected/ci_shards/new-tests-{profile}.txt",
+        + "\n"
     )
 
 
@@ -251,4 +248,4 @@ def test_weights_cli_validates_external_cases(case: str, tmp_path: Path, monkeyp
         output.write(json.dumps(recorded, indent=2, sort_keys=True) + "\n")
     if (recipe := data.get("recipe")) is not None:
         output.write((tmp_path / recipe).read_text(encoding="utf-8"))
-    assert_output(output.getvalue(), EXPECTED / f"weights-{case}.txt")
+    assert_output(output.getvalue())

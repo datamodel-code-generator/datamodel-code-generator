@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
 from typing import Any
 
 from datamodel_code_generator import AliasGenerator
@@ -23,8 +22,6 @@ from datamodel_code_generator.model.pydantic_v2.dataclass import DataClass
 from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 from tests.conftest import assert_output
-
-EXPECTED_PYDANTIC_V2_MODEL_PATH = Path(__file__).parents[2] / "data" / "expected" / "model" / "pydantic_v2"
 
 
 def _extra_template_data() -> defaultdict[str, dict[str, Any]]:
@@ -152,7 +149,7 @@ def test_base_model_alias_generator_adds_field_import_for_mismatch() -> None:
 
     assert_output(
         _render_model_with_imports(model),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_alias_generator_mismatch.py",
+        suffix=".py",
     )
 
 
@@ -175,7 +172,7 @@ def test_base_model_alias_generator_omits_matching_alias_field_import() -> None:
 
     assert_output(
         _render_model_with_imports(model),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_alias_generator_matching_alias.py",
+        suffix=".py",
     )
 
 
@@ -231,7 +228,7 @@ def test_base_model_alias_generator_keeps_non_alias_early_returns() -> None:
 
     assert_output(
         _render_model_with_imports(model),
-        EXPECTED_PYDANTIC_V2_MODEL_PATH / "base_model_alias_generator_non_alias_fields.py",
+        suffix=".py",
     )
 
 
