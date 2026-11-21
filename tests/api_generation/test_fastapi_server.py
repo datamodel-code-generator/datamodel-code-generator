@@ -124,9 +124,9 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
     The snapshotted packages pin their Python modules and the served OpenAPI document.
     """
     report, packages, documents = fastapi_server_report(case, tmp_path, monkeypatch)
-    assert_output(report, EXPECTED / f"{case}.txt")
+    assert_output(report, name="report")
     package = {(backend, *parts): body for backend, modules in packages.items() for parts, body in modules.items()}
-    assert_generated_modules_output({**package, **documents}, EXPECTED / "packages" / case, pattern="*")
+    assert_generated_modules_output({**package, **documents}, pattern="*", name="package")
 
 
 @pytest.mark.parametrize(
