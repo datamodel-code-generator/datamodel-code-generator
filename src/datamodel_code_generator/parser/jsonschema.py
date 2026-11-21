@@ -61,6 +61,7 @@ from warnings import (
 
 from pydantic import ConfigDict as ConfigDict
 from pydantic import Field as Field
+from pydantic import ValidationError
 from pydantic import ValidationInfo as ValidationInfo
 from pydantic import field_validator as field_validator
 from pydantic import model_validator as model_validator
@@ -8269,8 +8270,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         keyword = next((key for key in (id_field, "$id", "id") if root_raw.get(key)), None)
         root_id = None if keyword is None else root_raw[keyword]
         if keyword is not None and not isinstance(root_id, str | dict | list):
-            from pydantic import ValidationError  # noqa: PLC0415
-
             error = ValidationError.from_exception_data(
                 self.SCHEMA_OBJECT_TYPE.__name__, [{"type": "string_type", "loc": (keyword,), "input": root_id}]
             )

@@ -72,6 +72,11 @@ from datamodel_code_generator._parse_memo import ParseMemo, bump_field, bump_mod
 from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
+from datamodel_code_generator.model.base import (
+    NULLABLE_WITHOUT_DEFAULT_KEY,
+    _apply_literal_default,
+    _path_identity_keys,
+)
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._passes._keys import _SITE_CONSTRAINTS_KEY
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
@@ -84,6 +89,7 @@ from datamodel_code_generator.parser._sites import (
     position_step,
     site_of,
 )
+from datamodel_code_generator.reference import SCHEMA_PATH_KEY
 from datamodel_code_generator.types import _hint_null
 
 if TYPE_CHECKING:
@@ -1752,9 +1758,6 @@ class GenerationStore:  # noqa: PLR0904
         (``SCHEMA_PATH_KEY``). Every rename is recorded with the names before and after it (``renames``), under the
         keys the model has then.
         """
-        from datamodel_code_generator.model.base import _path_identity_keys  # noqa: PLC0415
-        from datamodel_code_generator.reference import SCHEMA_PATH_KEY  # noqa: PLC0415
-
         class_name_before, path_before, name_before = model.class_name, model.reference.path, model.reference.name
         self._update_model_reference(
             model, class_name=class_name, reference_name=reference_name, new_path=new_path, new_file_path=new_file_path
@@ -1823,11 +1826,6 @@ class GenerationStore:  # noqa: PLR0904
 
         A field made not null keeps no ``nullable`` without its default (``record_nullable_without_default``).
         """
-        from datamodel_code_generator.model.base import (  # noqa: PLC0415
-            NULLABLE_WITHOUT_DEFAULT_KEY,
-            _apply_literal_default,
-        )
-
         _apply_literal_default(field_, decision)
         if decision.not_null:
             field_.__dict__.pop(NULLABLE_WITHOUT_DEFAULT_KEY, None)
@@ -1910,8 +1908,6 @@ class GenerationStore:  # noqa: PLR0904
     @deprecated("Use GenerationStore.builder().record_nullable_without_default() instead.", category=None)
     def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
         """Record the ``nullable`` a field has as one without its default; none where it equals its ``nullable``."""
-        from datamodel_code_generator.model.base import NULLABLE_WITHOUT_DEFAULT_KEY  # noqa: PLC0415
-
         if nullable is field_.nullable:
             field_.__dict__.pop(NULLABLE_WITHOUT_DEFAULT_KEY, None)
         else:

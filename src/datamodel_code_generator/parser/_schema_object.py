@@ -23,6 +23,7 @@ from pydantic import (
 from pydantic_core import core_schema
 from typing_extensions import override
 
+from datamodel_code_generator._format_types import NEWEST_TARGET
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
 from datamodel_code_generator._regex_syntax import read_pattern
 from datamodel_code_generator.parser._null_facts import null_sources, resolve_null_facts
@@ -714,7 +715,6 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
 
         The parser checks a path again for the run's target where a model takes it as its base class.
         """
-        from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
         from datamodel_code_generator.validators import _validate_schema_python_import_path  # noqa: PLC0415
 
         match value:
