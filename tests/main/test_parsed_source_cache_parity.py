@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import marshal
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 from threading import Barrier, Event
 from typing import TYPE_CHECKING
 
@@ -26,6 +25,7 @@ from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_m
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
     from typing import Any
 
 
@@ -42,9 +42,7 @@ def test_source_loading_facade_keeps_compatible_exports() -> None:
         for name, (public, neutral) in exports.items()
     )
 
-    assert_output(
-        report + "\n", Path(__file__).parents[1] / "data" / "expected" / "main" / "source_loading_boundary.txt"
-    )
+    assert_output(report + "\n")
 
 
 def _input_file_type_option(input_file_type: InputFileType) -> str:
@@ -293,7 +291,8 @@ def test_generate_output_matches_with_and_without_parsed_source_cache(
 
     assert cached_entry_count > 0
     assert uncached_entry_count == 0
-    assert_output(uncached_output.read_text(encoding="utf-8"), cached_output)
+    assert_output(cached_output.read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output(uncached_output.read_text(encoding="utf-8"), name="model", suffix=".py")
 
 
 @pytest.mark.parametrize(
@@ -341,4 +340,5 @@ def test_generate_output_ignores_external_cached_source_mutation(
         use_builtin_default_formatter=False,
     )
 
-    assert_output(uncached_output.read_text(encoding="utf-8"), cached_output)
+    assert_output(cached_output.read_text(encoding="utf-8"), name="model", suffix=".py")
+    assert_output(uncached_output.read_text(encoding="utf-8"), name="model", suffix=".py")

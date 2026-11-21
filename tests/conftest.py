@@ -2282,7 +2282,6 @@ class AssertFileContent(Protocol):
         output_file: Path,
         expected_name: str | Path | None = None,
         encoding: str = "utf-8",
-        transform: Callable[[str], str] | None = None,
     ) -> None:
         """Assert file content matches expected output."""
         ...
@@ -2316,14 +2315,11 @@ def create_assert_file_content(
         output_file: Path,
         expected_name: str | Path | None = None,
         encoding: str = "utf-8",
-        transform: Callable[[str], str] | None = None,
     ) -> None:
         """Assert that file content matches expected external file."""
         __tracebackhide__ = True
         assert expected_name is not None, "name the stored file: pytest names it when no helper compares a file by path"
         content = output_file.read_text(encoding=encoding)
-        if transform is not None:
-            content = transform(content)
         _compare_expected(base_path / expected_name, _normalize_line_endings(content))
 
     return _assert_file_content

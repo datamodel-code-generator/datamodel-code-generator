@@ -10,12 +10,12 @@ no-extra	main/migration_warnings/genson_notice_for_installed_requirements[no-ext
 other-extra	main/migration_warnings/genson_notice_for_installed_requirements[other-extra].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
 own-extra	main/migration_warnings/genson_notice_for_installed_requirements[own-extra].notices.txt	= main/migration_warnings/optional_dependency_notices_real_generation[api-csv].notices.txt
 [test_migration_api_warning_filters]
-error	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-error	main/migration_warnings/file-error.txt
-ignore	main/migration_warnings/empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-ignore	main/migration_warnings/file-ignore.txt
+error	main/migration_warnings/migration_api_warning_filters[error].file.txt	= main/migration_warnings/file-error.txt
+error	main/migration_warnings/migration_api_warning_filters[error].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+ignore	main/migration_warnings/migration_api_warning_filters[ignore].file.txt
+ignore	main/migration_warnings/migration_api_warning_filters[ignore].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_migration_error_filter_is_not_consumed_by_cli_scope]
-	main/migration_warnings/file-error.txt
+	main/migration_warnings/migration_error_filter_is_not_consumed_by_cli_scope.txt	= main/migration_warnings/file-error.txt
 [test_migration_notices_batch_deduplicated]
 both	main/migration_warnings/batch-both-old-pydantic-old-black-old-isort.txt	?
 both	main/migration_warnings/batch-both-pydantic-black-isort.txt	?	= main/migration_warnings/optional.txt

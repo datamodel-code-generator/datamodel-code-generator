@@ -89,7 +89,6 @@ from tests.conftest import (
     assert_runtime_import_package,
     assert_warnings_contain,
     assert_warnings_do_not_contain,
-    create_assert_file_content,
     freeze_time,
     validate_generated_code,
 )
@@ -119,10 +118,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
     from tests.main.conftest import InputFileTypeLiteral
 
-assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 BLACK_VERSION = version.parse(black.__version__)
 BLACK_LT_233 = version.parse("23.3.0") > BLACK_VERSION
-CLI_OPTION_SUGGESTIONS_PATH = EXPECTED_MAIN_PATH / "cli_option_suggestions"
 
 
 class _GenerateParseAbort(BaseException):
@@ -5451,7 +5448,7 @@ def test_custom_file_header_path_prepend_jsonschema_multi_file(output_dir: Path,
                 # Avoid helper-created config/parity outputs changing the overlapping layout.
                 *(["--formatters", "builtin"] if layout != "sibling" else []),
             ],
-            expected_directory=EXPECTED_MAIN_PATH / "jsonschema" / "custom_file_header_path_prepend_multi_file",
+            name="tree",
         )
         if run == 0:
             for module_path in output_path.rglob("*.py"):
@@ -6551,7 +6548,6 @@ def test_generate_resolves_relative_custom_template_dir_from_caller_cwd(
     """Keep API template paths anchored to the caller when output changes cwd."""
     project_root = Path(__file__).parents[2]
     relative_template_dir = Path("tests/data/templates_relative_dir")
-    expected_file = EXPECTED_MAIN_PATH / "jsonschema" / "custom_template_relative.py"
     monkeypatch.chdir(project_root)
 
     generate_options = {
@@ -6561,21 +6557,19 @@ def test_generate_resolves_relative_custom_template_dir_from_caller_cwd(
     with freeze_time(TIMESTAMP):
         run_generate_and_assert(
             input_=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
-            expected_file=expected_file.with_name("custom_template_relative_api.txt"),
+            expected_file=EXPECTED_MAIN_PATH / "jsonschema" / "custom_template_relative_api.txt",
             **generate_options,
         )
         run_generate_file_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
             output_path=tmp_path / "relative" / "model.py",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
+            name="model",
             **generate_options,
         )
         run_generate_file_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
             output_path=tmp_path / "absolute" / "model.py",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
+            name="model",
             **{
                 **generate_options,
                 "custom_template_dir": project_root / relative_template_dir,
@@ -6585,8 +6579,7 @@ def test_generate_resolves_relative_custom_template_dir_from_caller_cwd(
             input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
             output_path=tmp_path / "cli.py",
             input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
+            name="model",
             force_exec_validation=True,
             extra_args=[
                 "--custom-template-dir",

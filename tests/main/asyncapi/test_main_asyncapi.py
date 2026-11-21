@@ -18,7 +18,6 @@ from tests.main.conftest import (
     BACKEND_GOLDEN_CASES,
     BACKEND_GOLDEN_TARGET_ARGS,
     DATA_PATH,
-    EXPECTED_ASYNC_API_PATH,
     assert_generated_model_json_validation,
     run_generate_file_and_assert,
     run_main_and_assert,
@@ -131,7 +130,6 @@ def test_main_asyncapi_discriminator_state_isolated_per_document(output_dir: Pat
         input_path=ASYNC_API_DATA_PATH / "discriminator_state_isolation",
         output_path=output_dir,
         input_file_type="asyncapi",
-        expected_directory=EXPECTED_ASYNC_API_PATH / "discriminator_state_isolation",
         extra_args=["--disable-timestamp"],
         runtime_validation_module="b",
         runtime_validation_model_name="Holder",
@@ -383,10 +381,7 @@ def test_asyncapi_parser_renders_non_finite_embedded_schemas() -> None:
     """Render embedded schema defaults without a subprocess boundary."""
     parser = AsyncAPIParser(ASYNC_API_DATA_PATH / "non_finite_embedded_schemas.yaml")
 
-    assert_output(
-        f"{parser.parse(format_=False)}\n",
-        DATA_PATH / "expected/parser/asyncapi/non_finite_embedded_schemas.py",
-    )
+    assert_output(f"{parser.parse(format_=False)}\n", suffix=".py")
 
 
 @pytest.mark.parametrize(

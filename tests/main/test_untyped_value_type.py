@@ -147,13 +147,15 @@ def test_untyped_value_type_keeps_msgspec_any(output_file: Path, tmp_path: Path)
     """Generate the same msgspec models with the option as without it: msgspec decodes ``Any`` into JSON values."""
     without = tmp_path / "without.py"
     args = [*COMMON_ARGS, "--output-model-type", "msgspec.Struct"]
-    run_main_and_assert(input_path=EVENT_LOG, output_path=without, input_file_type="jsonschema", extra_args=args)
+    run_main_and_assert(
+        input_path=EVENT_LOG, output_path=without, input_file_type="jsonschema", extra_args=args, name="model"
+    )
     run_main_and_assert(
         input_path=EVENT_LOG,
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[*args, *JSON_VALUE],
-        expected_output=without.read_text(encoding="utf-8"),
+        name="model",
     )
 
 
