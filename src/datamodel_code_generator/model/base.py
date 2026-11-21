@@ -16,12 +16,15 @@ from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass as dataclass
 from functools import cached_property, lru_cache
+from hashlib import sha256
 from itertools import accumulate as accumulate
 from itertools import (
     chain,
     takewhile,
 )
+from os import scandir
 from pathlib import Path
+from stat import S_ISDIR, S_ISREG
 from threading import RLock
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
 from warnings import warn
@@ -141,8 +144,11 @@ from datamodel_code_generator.types import (
     NONE,
     DataType,
     Nullable,
+    _copy_data_type,
     _hint_null,
     chain_as_tuple,
+    merge_normalized_constraint,
+    strict_number_constraint,
 )
 
 if TYPE_CHECKING:
@@ -546,8 +552,6 @@ def _normalized_constraint_kwargs(  # noqa: PLR0913
     A constraint that ``drop`` returns an entry for, given its item, keyword, value and normalized form (None where
     ``strict_number_constraint`` leaves it out), goes to ``omitted`` as that entry.
     """
-    from datamodel_code_generator.types import merge_normalized_constraint, strict_number_constraint  # noqa: PLC0415
-
     values: dict[str, Any] = {}
     sources: dict[str, tuple[str, ...]] = {}
     for k, v in constraints.items():
@@ -1340,8 +1344,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         and takes every field value in ``values`` when it is made, so no caller finishes it by hand. A copy given
         ``extras`` or ``default`` owns those instead of a copy of this field's.
         """
-        from datamodel_code_generator.types import _copy_data_type  # noqa: PLC0415
-
         copied_data_type = data_type or _copy_data_type(self.data_type, register_references=register_references)
         update: dict[str, Any] = {"data_type": copied_data_type, "parent": None}
         if "extras" not in values:
@@ -1985,8 +1987,6 @@ def _scan_custom_template_directory(
     entries: list[tuple[str, ...]],
     pending_directories: list[tuple[Path, str]],
 ) -> None:
-    from os import scandir  # noqa: PLC0415
-    from stat import S_ISDIR, S_ISREG  # noqa: PLC0415
 
     mode_checks = (S_ISDIR, S_ISREG)
     try:
@@ -2032,8 +2032,6 @@ def _scan_custom_template_entry(
 
 def _get_custom_template_signature(custom_template_dir: Path) -> _CustomTemplateSignature:
     """Return a stable metadata signature for all files a custom template can include."""
-    from hashlib import sha256  # noqa: PLC0415
-
     entries: list[tuple[str, ...]] = []
     visited_directories: set[tuple[int, int]] = set()
     pending_directories = [(custom_template_dir, "")]
