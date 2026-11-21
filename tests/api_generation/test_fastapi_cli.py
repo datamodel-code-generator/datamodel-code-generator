@@ -465,8 +465,9 @@ def test_fastapi_cli_generation_json(
     if case.get("package"):
         assert_output((tmp_path / model).read_text(encoding="utf-8"), name="model", suffix=".py")
         assert_directory_content(tmp_path / server, name="server")
-    for name in case.get("published", ()):
-        assert_output((tmp_path / name).read_text(encoding="utf-8"), name=name)
+    for role, published in (("metadata", "metadata.json"), ("lock", "api.lock")):
+        if published in case.get("published", ()):
+            assert_output((tmp_path / published).read_text(encoding="utf-8"), name=role)
     stale = case.get("stale")
     with warnings.catch_warnings(record=True) as checked:
         warnings.simplefilter("always", UserWarning)

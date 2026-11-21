@@ -463,8 +463,8 @@ leftover-manifest	api_generation/fastapi_cli/generation_json[leftover-manifest].
 leftover-manifest	api_generation/fastapi_cli/generation_json[leftover-manifest].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 leftover-manifest	api_generation/fastapi_cli/generation_json[leftover-manifest]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].2/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
-metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].api.lock.txt	= http/remote_lock_empty.txt
-metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].metadata.json.txt
+metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].lock.txt	= http/remote_lock_empty.txt
+metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].metadata.txt
 metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].notice.txt	= api_generation/fastapi_cli/check_outputs[json-modular].notice.txt
 metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].payload.txt	= api_generation/fastapi_cli/generation_json[absolute].payload.txt
 metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].stdout.json	= api_generation/fastapi_cli/check_outputs[json-crlf].stdout.json
