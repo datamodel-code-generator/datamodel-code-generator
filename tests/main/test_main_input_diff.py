@@ -478,6 +478,7 @@ def test_diff_against_preserves_a_preexisting_virtual_file(
         name="sentinel",
         copy_files=[(VIRTUAL_FILE_SENTINEL, output_file)],
     )
+    assert_output(output_file.read_text(encoding="utf-8"), name="sentinel", suffix=".py")
     assert_output(VIRTUAL_FILE_SENTINEL.read_text(encoding="utf-8"), name="sentinel", suffix=".py")
 
 
@@ -512,6 +513,7 @@ def test_diff_against_preserves_a_preexisting_virtual_directory(
         name="sentinel",
         copy_files=[(VIRTUAL_DIRECTORY_SENTINEL / "sentinel.py", output_dir / "sentinel.py")],
     )
+    assert_directory_content(output_dir, pattern="*", name="sentinel")
     assert_directory_content(VIRTUAL_DIRECTORY_SENTINEL, pattern="*", name="sentinel")
 
 
