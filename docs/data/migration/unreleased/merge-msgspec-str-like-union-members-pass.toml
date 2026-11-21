@@ -1,0 +1,12 @@
+[[change]]
+id = "merge-msgspec-str-like-union-members-pass"
+category = "internal"
+title = "Declare the msgspec str-like union merge pass"
+summary = "The decision merge_msgspec_str_like_union_members joins the decision registry, its seam and the where-script listings."
+refs = ["#1"]
+covers = [
+    "checks/checks/check_seams.txt",
+    "where_script/where_grammar[decision-in-registry-order].txt",
+    "where_script/where_grammar[fact-without-attribute-rows].txt",
+    "where_script/where_runs_only_the_lookups_of_the_kind.txt",
+]
