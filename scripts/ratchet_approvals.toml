@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:BUILDER_BYPASSES"
+head = 9
+pr = 7294
+decision = ["#7289"]
+reason = "the scopes that bypass a builder home of L1 today, recorded as the baseline the guard of #7289 lets only shrink"
