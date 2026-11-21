@@ -57,6 +57,9 @@ class Mark(NamedTuple):
     on; ``""``: none is asked."""
     value: bool | int | str | None = None
     """The constant the keyword takes."""
+    argument: tuple[int, str] | None = None
+    """A positional argument the call passes as ``(index, constant)``: the slot a flags helper is asked for
+    (``_container_flags(obj, "dict")``); ``None``: none is asked."""
 
 
 class BuilderHome(NamedTuple):
@@ -64,8 +67,11 @@ class BuilderHome(NamedTuple):
 
     A record with a ``table`` stands for a position of L1: its builder chooses the parse method from that dispatch table
     (``parser/_schema_dispatch.py``), the only call of the table's ``choose``, and the parse methods the table's rows
-    hold run only through the tables. A record with a ``mark`` stands for an output: a call with that mark is built only
-    in the builder and its ``parts``.
+    hold run only through the tables; the table is read outside the builder only by ``typed_children``. A record with
+    ``marks`` stands for an output: a call with one of those marks is built only in the builder and its ``parts``.
+    The marks are syntactic: a call of the class (or its ``model_construct``/``model_validate``), a keyword, a flag
+    dict or a constant slot argument. An output built by ``model_copy`` or by a flag computed from a variable slot
+    (``{CONTAINER_FLAGS[slot]: True}``) carries no mark and is not seen.
     """
 
     output: str
@@ -77,8 +83,8 @@ class BuilderHome(NamedTuple):
     """The def that builds the output."""
     table: Home | None = None
     """The dispatch table the builder chooses from, as the class attribute that holds it."""
-    mark: Mark | None = None
-    """The mark of the output outside a dispatch table."""
+    marks: tuple[Mark, ...] = ()
+    """The marks of the output outside a dispatch table: a call with any of them builds it."""
     parts: tuple[Home, ...] = ()
     """The defs the builder hands parts of the output to, which the builder reaches by calls through one another."""
     within: str = ""
@@ -8182,8 +8188,9 @@ BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
         output="the dict of an object map",
         prose="is built by one builder at every position (`_parse_object_map`)",
         builder=Home("parser/jsonschema.py", "JsonSchemaParser._parse_object_map"),
-        mark=Mark(keyword="is_dict", value=True),
+        marks=(Mark(keyword="is_dict", value=True), Mark(callee="_container_flags", argument=(1, "dict"))),
         parts=(
+            Home("parser/_object_maps.py", "parse_additional_properties_map"),
             Home("parser/_object_maps.py", "parse_pattern_map"),
             Home("parser/_object_maps.py", "pattern_map_type"),
             Home("parser/jsonschema.py", "JsonSchemaParser.parse_property_names"),
@@ -8195,7 +8202,11 @@ BUILDER_HOMES: Final[tuple[BuilderHome, ...]] = (
         output="the reference that names a model",
         prose="Names come from `ModelResolver.add`.",
         builder=Home("reference.py", "ModelResolver.add"),
-        mark=Mark(callee="datamodel_code_generator.reference.Reference"),
+        marks=(
+            Mark(callee="datamodel_code_generator.reference.Reference"),
+            Mark(callee="datamodel_code_generator.reference.Reference.model_construct"),
+            Mark(callee="datamodel_code_generator.reference.Reference.model_validate"),
+        ),
         parts=(Home("reference.py", "ModelResolver._register_reference"),),
     ),
 )

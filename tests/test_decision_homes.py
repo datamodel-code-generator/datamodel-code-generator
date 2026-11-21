@@ -336,9 +336,9 @@ def _tables(reads: _Reads) -> list[Home]:
     return found
 
 
-def _mark_of(record: BuilderHome) -> Mark | None:
-    """Return the mark of what a record's builder builds: a call of its table's ``choose``, else its own mark."""
-    return Mark(callee=f"{record.table.name.rpartition('.')[2]}.choose") if record.table else record.mark
+def _marks_of(record: BuilderHome) -> tuple[Mark, ...]:
+    """Return the marks of what a record's builder builds: a call of its table's ``choose``, else its own marks."""
+    return (Mark(callee=f"{record.table.name.rpartition('.')[2]}.choose"),) if record.table else record.marks
 
 
 def _sets(pairs: Iterable[tuple[str | None, ast.expr]], mark: Mark) -> bool:
@@ -367,7 +367,10 @@ def _is_text(node: ast.expr | None) -> TypeGuard[ast.Constant]:
 
 
 def _marked(model: SourceModule, node: ast.AST, mark: Mark) -> bool:
-    """Return whether a call carries a mark, or, for a keyword asked of any call, a dict display of flags sets it."""
+    """Return whether a call carries a mark, or, for a keyword asked of any call, a dict display of flags sets it.
+
+    A mark may ask the call for a constant positional argument (``_container_flags(obj, "dict")``).
+    """
     if isinstance(node, ast.Dict):
         return not mark.callee and bool(mark.keyword) and _sets(_pairs(node), mark)
     if not isinstance(node, ast.Call):
@@ -375,6 +378,11 @@ def _marked(model: SourceModule, node: ast.AST, mark: Mark) -> bool:
     callee = ast.unparse(node.func)
     if mark.callee and mark.callee not in {model.origin(node.func), callee} and not callee.endswith(f".{mark.callee}"):
         return False
+    if mark.argument is not None:
+        index, constant = mark.argument
+        given = node.args[index] if len(node.args) > index else None
+        if not (isinstance(given, ast.Constant) and given.value == constant):
+            return False
     return not mark.keyword or _sets(_pairs(node), mark)
 
 
@@ -413,7 +421,7 @@ def builder_problems(repo: Repo, records: Iterable[BuilderHome], page: str, pack
             problems.append(f"{key}: the page has no passage {record.prose!r}")
         elif not any(name == span or name.endswith(f".{span}") for span in SPAN.findall(record.prose)):
             problems.append(f"{key}: the passage does not name {name}")
-        if (record.table is None) is (record.mark is None):
+        if (record.table is None) is (not record.marks):
             problems.append(f"{key}: a record states either a table or a mark")
         problems += [
             f"{key}: {missing}" for home in (record.builder, *record.parts) if (missing := _missing(home, repo))
@@ -435,8 +443,10 @@ def builder_bypasses(repo: Repo, records: Iterable[BuilderHome], package: str = 
 
     A parse method that an entry of a recorded table holds (``Row.build``, ``Default.build``) runs only through the
     tables: a read of it outside every recorded table (and the shared rows a table reads) is a bypass, whatever calls
-    it, a public hook too. A call with the mark of a record outside its builder and parts, in a module under its
-    ``within``, is a bypass: for a table record the mark is a call of the table's ``choose``.
+    it, a public hook too. A read of a record's table outside its builder, other than by ``typed_children``, is a
+    bypass (an alias of the table escapes the ``choose`` mark otherwise). A call with a mark of a record outside its
+    builder and parts, in a module under its ``within``, is a bypass: for a table record the mark is a call of the
+    table's ``choose``.
     """
     reads = _Reads(repo, package)
     found: dict[tuple[str, str], int] = {}
@@ -458,7 +468,25 @@ def builder_bypasses(repo: Repo, records: Iterable[BuilderHome], package: str = 
             if id(node) not in inside:
                 key = (f"{build.path}:{build.name}", f"{rel.removeprefix(package)}:{scope_name(scope)}")
                 found[key] = min(found.get(key, node.lineno), node.lineno)
-    for record, mark in [(record, mark) for record in records if (mark := _mark_of(record)) is not None]:
+    parents: dict[str, dict[int, ast.AST]] = {}
+    for record, table in [(record, record.table) for record in records if record.table]:
+        for rel, node, scope in reads.reads(table):
+            tree = parents.setdefault(
+                rel,
+                {
+                    id(child): parent
+                    for parent in ast.walk(repo.model(rel).tree)
+                    for child in ast.iter_child_nodes(parent)
+                },
+            )
+            parent = tree.get(id(node))
+            if (isinstance(parent, ast.Attribute) and parent.attr == "typed_children") or _covers(
+                record.builder, rel.removeprefix(package), scope_name(scope)
+            ):
+                continue
+            key = (f"{record.builder.path}:{record.builder.name}", f"{rel.removeprefix(package)}:{scope_name(scope)}")
+            found[key] = min(found.get(key, node.lineno), node.lineno)
+    for record, mark in [(holder, mark) for holder in records for mark in _marks_of(holder)]:
         for rel in reads.paths(mark.keyword or mark.callee.rpartition(".")[2]):
             if not rel.startswith(f"{package}{record.within}"):
                 continue
@@ -690,7 +718,8 @@ SEEDED_BUILDER_PACKAGE = {
         "    _OTHER = DispatchTable((), Default('other', None))\n\n"
         "    def parse_site(self, site):\n        return self._TABLE.choose(self, site)\n\n"
         "    def shortcut(self, site):\n        return self._TABLE.choose(self, site)\n\n"
-        "    def parameter(self, _build_enum):\n        return _build_enum\n"
+        "    def parameter(self, _build_enum):\n        return _build_enum\n\n"
+        "    def alias(self, site):\n        table = self._TABLE\n        return table.choose(self, site)\n"
     ),
     "parser/maps.py": (
         "def build_map(parser):\n    return part(parser)\n\n\n"
@@ -698,13 +727,18 @@ SEEDED_BUILDER_PACKAGE = {
         "def flags(parser):\n    return parser.data_type(**{'is_dict': True})\n\n\n"
         "def handed_on():\n    return {'is_dict': True, 'is_list': False}\n\n\n"
         "def not_a_map(parser):\n    return parser.data_type(is_dict=False)\n\n\n"
-        "def unreached(parser):\n    return parser\n"
+        "def unreached(parser):\n    return parser\n\n\n"
+        "def seeded_slot(parser, obj):\n    return parser.data_type(**parser._container_flags(obj, 'dict'))\n\n\n"
+        "def other_slot(parser, obj):\n    return parser._container_flags(obj, 'list')\n"
     ),
     "model.py": (
         "class Ref:\n    pass\n\n\ndef name_model():\n    return Ref()\n\n\n"
         "def outside(parser):\n    return parser.data_type(is_dict=True)\n"
     ),
-    "naming.py": "from datamodel_code_generator.model import Ref as Named\n\n\ndef rename():\n    return Named()\n",
+    "naming.py": (
+        "from datamodel_code_generator.model import Ref as Named\n\n\ndef rename():\n    return Named()\n\n\n"
+        "def construct():\n    return Named.model_construct()\n"
+    ),
     "other.py": "class Ref:\n    pass\n\n\ndef local():\n    return Ref()\n",
 }
 """A package with a dispatch table in ``parser/kinds.py`` and an object-map builder in ``parser/maps.py``.
@@ -714,7 +748,9 @@ SEEDED_BUILDER_PACKAGE = {
 the table's ``choose`` outside its position, and ``_OTHER`` is a table no record holds. ``flags`` and ``handed_on``
 build the dict flag outside the builder; ``model.py`` lies outside the record's ``within``. ``naming.py`` builds a
 ``Ref`` of ``model.py`` through an alias outside ``name_model``; ``other.py`` builds a class of its own of that name.
-``Parser.parameter`` reads a parameter spelled as a parse method.
+``Parser.parameter`` reads a parameter spelled as a parse method, ``Parser.alias`` reads the table into a name,
+``seeded_slot`` asks ``_container_flags`` for the ``dict`` slot (``other_slot`` for another) and ``naming.construct``
+builds a ``Ref`` by ``model_construct``.
 """
 
 SEEDED_BUILDERS = (
@@ -728,7 +764,7 @@ SEEDED_BUILDERS = (
         output="seeded: a map",
         prose="one builder (`build_map`)",
         builder=Home("parser/maps.py", "build_map"),
-        mark=Mark(keyword="is_dict", value=True),
+        marks=(Mark(keyword="is_dict", value=True), Mark(callee="_container_flags", argument=(1, "dict"))),
         parts=(Home("parser/maps.py", "part"),),
         within="parser/",
     ),
@@ -736,7 +772,7 @@ SEEDED_BUILDERS = (
         output="seeded: a named model",
         prose="Names come from `name_model`.",
         builder=Home("model.py", "name_model"),
-        mark=Mark(callee=f"{PACKAGE}.model.Ref"),
+        marks=(Mark(callee=f"{PACKAGE}.model.Ref"), Mark(callee=f"{PACKAGE}.model.Ref.model_construct")),
     ),
 )
 """Records of the seeded package that its page states."""
@@ -763,12 +799,15 @@ def _seeded_builder_repo(root: Path) -> Repo:
 def test_builder_bypasses_on_a_seeded_package(tmp_path: Path) -> None:
     """Calls of row parse methods outside the tables, of ``choose`` outside the position and marks are bypasses."""
     assert builder_bypasses(_seeded_builder_repo(tmp_path), SEEDED_BUILDERS) == [
+        Bypass("model.py:name_model", "naming.py:construct", 9),
         Bypass("model.py:name_model", "naming.py:rename", 5),
         Bypass("parser/kinds.py:Parser._build_enum", "parser/kinds.py:Parser._build_array", 16),
+        Bypass("parser/kinds.py:Parser.parse_site", "parser/kinds.py:Parser.alias", 44),
         Bypass("parser/kinds.py:Parser.parse_site", "parser/kinds.py:Parser.shortcut", 38),
         Bypass("parser/kinds.py:_shared", "parser/kinds.py:Parser.parse_object", 25),
         Bypass("parser/maps.py:build_map", "parser/maps.py:flags", 10),
         Bypass("parser/maps.py:build_map", "parser/maps.py:handed_on", 14),
+        Bypass("parser/maps.py:build_map", "parser/maps.py:seeded_slot", 26),
     ]
 
 
@@ -781,14 +820,14 @@ def test_builder_problems_on_seeded_records(tmp_path: Path) -> None:
             output="seeded: a passage the page lacks",
             prose="the builder (`build_map`) of nothing",
             builder=Home("parser/maps.py", "build_map"),
-            mark=Mark(callee="build"),
+            marks=(Mark(callee="build"),),
         ),
         BuilderHome(
             output="seeded: a passage that names another builder",
             prose="one builder (`build_map`)",
             builder=Home("parser/maps.py", "part"),
             table=Home("parser/kinds.py", "Parser._ROWS"),
-            mark=Mark(callee="build"),
+            marks=(Mark(callee="build"),),
             parts=(Home("parser/maps.py", "unreached"), Home("parser/maps.py", "no_such_part")),
         ),
         BuilderHome(
