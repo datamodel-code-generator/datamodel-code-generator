@@ -89,6 +89,7 @@ missing-sentinel-client	api_generation/client_cli/missing_sentinel_models_as_giv
 missing-sentinel-models	api_generation/client_cli/missing_sentinel_models_as_given[missing-sentinel-models].py	= main/generation_platform/client/cli/missing-sentinel-models.py
 [test_client_cli_models_package_onto_a_file]
 check	api_generation/client_cli/models_package_onto_a_file[check].txt
+diff	api_generation/client_cli/models_package_onto_a_file[diff]	= api_generation/fastapi_cli/models_package_onto_a_file[diff]
 diff	api_generation/client_cli/models_package_onto_a_file[diff].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
 write	api_generation/client_cli/models_package_onto_a_file[write].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
 [test_client_cli_nested_models]

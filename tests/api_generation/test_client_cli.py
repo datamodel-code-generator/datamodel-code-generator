@@ -1016,7 +1016,6 @@ def test_client_cli_models_package_onto_a_file(
         expected_exit=Exit.OK if compares else Exit.ERROR,
         capsys=capsys,
         expected_stderr=None if compares else "Error: Modular references require an output directory, not a file\n",
-        expected_output="kept = 1\n" if compares else None,
         assert_no_stderr=compares,
     )
     assert_output(

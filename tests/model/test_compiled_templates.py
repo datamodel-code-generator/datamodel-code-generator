@@ -74,7 +74,6 @@ from tests.capabilities import needs
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[2]
-EXPECTED_PATH = ROOT / "tests/data/expected/model/compiled_templates"
 TEMPLATE_SETS = dict(zip(("model", "fastapi", "client"), template_sets(), strict=True))
 
 
@@ -1140,9 +1139,8 @@ def test_compile_check_matches_checked_in_generated_artifacts() -> None:
 
 def test_every_built_in_template_matches_its_jinja_oracle() -> None:
     """Every generated root/include/macro renderer remains byte-for-byte Jinja-compatible."""
-    expected = EXPECTED_PATH / "all_templates_parity.txt"
-    assert_output(_render_all_builtin_templates(compiled=False), expected)
-    assert_output(_render_all_builtin_templates(compiled=True), expected)
+    assert_output(_render_all_builtin_templates(compiled=False), name="rendered")
+    assert_output(_render_all_builtin_templates(compiled=True), name="rendered")
 
 
 @pytest.mark.parametrize("target", ["fastapi", "client"])
@@ -1166,23 +1164,20 @@ def test_target_templates_match_jinja_oracle(target: str) -> None:
             label = f"=== {relative_path.as_posix()} / {name}\n"
             compiled_output.append(f"{label}{render(**context)}\n")
             jinja_output.append(f"{label}{template.render(**context)}\n")
-    expected = EXPECTED_PATH / f"{target}_templates_parity.txt"
-    assert_output("\n".join(jinja_output), expected)
-    assert_output("\n".join(compiled_output), expected)
+    assert_output("\n".join(jinja_output), name="rendered")
+    assert_output("\n".join(compiled_output), name="rendered")
 
 
 def test_branch_variants_match_jinja_for_models_macros_and_namespace_state() -> None:
     """Optional contexts and output branches retain their exact Jinja whitespace and values."""
-    expected = EXPECTED_PATH / "branch_variants_parity.txt"
-    assert_output(_render_template_branch_cases(compiled=False), expected)
-    assert_output(_render_template_branch_cases(compiled=True), expected)
+    assert_output(_render_template_branch_cases(compiled=False), name="rendered")
+    assert_output(_render_template_branch_cases(compiled=True), name="rendered")
 
 
 def test_runtime_subset_matches_jinja_for_missing_filters_loops_and_namespace() -> None:
     """The compact standalone runtime preserves exactly the built-in Jinja subset."""
-    expected = EXPECTED_PATH / "runtime_subset_parity.txt"
-    assert_output(_render_runtime_subset(compiled=False), expected)
-    assert_output(_render_runtime_subset(compiled=True), expected)
+    assert_output(_render_runtime_subset(compiled=False), name="rendered")
+    assert_output(_render_runtime_subset(compiled=True), name="rendered")
 
 
 def test_runtime_edge_and_error_paths_remain_explicit() -> None:
@@ -1269,9 +1264,8 @@ def test_model_rendering_uses_generated_renderers_with_real_model_objects() -> N
     jinja = (
         "\n\n".join(get_template(model.template_file_path).render(**_model_context(model)) for model in models) + "\n"
     )
-    expected = EXPECTED_PATH / "real_model_parity.txt"
-    assert_output(jinja, expected)
-    assert_output(generated, expected)
+    assert_output(jinja, name="rendered")
+    assert_output(generated, name="rendered")
 
 
 def test_template_base_extension_seams_and_unknown_templates_stay_on_jinja(tmp_path: Path) -> None:
@@ -1389,9 +1383,8 @@ def test_external_base_model_module_helper_stays_on_jinja(monkeypatch: pytest.Mo
     rendered = ExternalBaseModel.render_module_code([model])
     compiled_lookup.assert_not_called()
 
-    expected = EXPECTED_PATH / "module_helper_parity.txt"
-    assert_output(f"{jinja!r}\n", expected)
-    assert_output(f"{rendered!r}\n", expected)
+    assert_output(f"{jinja!r}\n", name="rendered")
+    assert_output(f"{rendered!r}\n", name="rendered")
 
 
 def test_module_runtime_validation_helper_uses_generated_or_custom_jinja_renderer(
@@ -1420,16 +1413,15 @@ def test_module_runtime_validation_helper_uses_generated_or_custom_jinja_rendere
         has_required_groups=True,
         has_conditional_required=False,
     )
-    expected = EXPECTED_PATH / "module_helper_parity.txt"
-    assert_output(f"{jinja!r}\n", expected)
-    assert_output(f"{generated!r}\n", expected)
+    assert_output(f"{jinja!r}\n", name="rendered")
+    assert_output(f"{generated!r}\n", name="rendered")
 
     from datamodel_code_generator.model import _compiled_templates
 
     with monkeypatch.context() as patch_context:
         patch_context.setattr(_compiled_templates, "get_builtin_renderer", lambda _: None)
         fallback = BaseModel.render_module_code([model])
-    assert_output(f"{fallback!r}\n", expected)
+    assert_output(f"{fallback!r}\n", name="rendered")
 
     custom_dir = tmp_path / "pydantic_v2"
     custom_dir.mkdir()
@@ -1453,7 +1445,7 @@ def test_module_runtime_validation_helper_uses_generated_or_custom_jinja_rendere
         ),
     )
     custom = BaseModel.render_module_code([custom_model])
-    assert_output(f"{custom}\n", EXPECTED_PATH / "module_helper_custom_template.txt")
+    assert_output(f"{custom}\n", name="custom")
 
 
 def test_module_property_count_runtime_validation_helper_uses_custom_jinja_renderer(tmp_path: Path) -> None:

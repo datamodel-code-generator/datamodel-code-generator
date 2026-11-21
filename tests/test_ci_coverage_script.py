@@ -16,7 +16,6 @@ from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "tests/data/ci_coverage"
-EXPECTED = ROOT / "tests/data/expected/ci_coverage"
 CASES = json.loads((DATA / "cases.json").read_text(encoding="utf-8"))
 MODULE = """import sys
 
@@ -261,7 +260,7 @@ def test_coverage_artifact_cli(
         )
         + "\n"
     )
-    assert_output(output, EXPECTED / f"{case}.txt")
+    assert_output(output)
 
 
 @pytest.mark.parametrize(
