@@ -7,8 +7,8 @@ Usage:
 The architecture page is intentionally not fully generated. This script only
 syncs the code-sourced inventory that tends to drift during releases: parser
 routes, parser inheritance, output backends, config model sizes, and formatter
-names, the pass table that ``scripts/pass_decls.py`` declares, the table of decision homes that
-``scripts/decision_homes.py`` declares, and the table of legacy rows that ``scripts/legacy_rows.py`` declares.
+names, the pass table that ``scripts/pass_decls.py`` declares, the placement table and the table of decision homes
+that ``scripts/decision_homes.py`` declares, and the table of legacy rows that ``scripts/legacy_rows.py`` declares.
 """
 
 from __future__ import annotations
@@ -55,6 +55,8 @@ BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED ARCHITECTURE INVENTORY -->"
 END_MARKER = "<!-- END AUTO-GENERATED ARCHITECTURE INVENTORY -->"
 PASS_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED PASS DECLARATIONS -->"
 PASS_END_MARKER = "<!-- END AUTO-GENERATED PASS DECLARATIONS -->"
+PLACEMENT_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED PLACEMENTS -->"
+PLACEMENT_END_MARKER = "<!-- END AUTO-GENERATED PLACEMENTS -->"
 DECISION_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED DECISION HOMES -->"
 DECISION_END_MARKER = "<!-- END AUTO-GENERATED DECISION HOMES -->"
 LEGACY_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED LEGACY ROWS -->"
@@ -296,6 +298,13 @@ def generate_pass_table() -> str:
     return "\n".join(lines) + "\n"
 
 
+def generate_placement_table() -> str:
+    """Generate the placement table of the Placement Guide, in the order ``scripts/decision_homes.py`` lists it."""
+    lines = ["", "| The decision reads | Earliest correct place |", "| --- | --- |"]
+    lines.extend(f"| {row.reads} | {row.place} |" for row in decision_homes.PLACEMENTS)
+    return "\n".join(lines) + "\n"
+
+
 def generate_decision_table() -> str:
     """Generate the table of decision homes, in the order ``scripts/decision_homes.py`` lists them."""
     lines = ["", "| Decision | Pure core | Adapters |", "| --- | --- | --- |"]
@@ -316,6 +325,7 @@ def generate_legacy_table() -> str:
 GENERATED_BLOCKS = (
     (BEGIN_MARKER, END_MARKER, generate_architecture_inventory),
     (PASS_BEGIN_MARKER, PASS_END_MARKER, generate_pass_table),
+    (PLACEMENT_BEGIN_MARKER, PLACEMENT_END_MARKER, generate_placement_table),
     (DECISION_BEGIN_MARKER, DECISION_END_MARKER, generate_decision_table),
     (LEGACY_BEGIN_MARKER, LEGACY_END_MARKER, generate_legacy_table),
 )

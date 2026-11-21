@@ -1363,6 +1363,7 @@ Procedure for a new decision:
 4. Before changing a node, check whether it can have more than one holder. Replace it in its owner through the store's
    mutation APIs instead of writing to it.
 
+<!-- BEGIN AUTO-GENERATED PLACEMENTS -->
 | The decision reads | Earliest correct place |
 | --- | --- |
 | raw keywords of one schema object (`const`, `enum`, `nullable`, `uniqueItems`, extension keys) | L1 at that object, or record them on the field for a later pass |
@@ -1377,10 +1378,17 @@ Procedure for a new decision:
 | where a model comes from in its document | after L1, through `location_of(model.reference)`, never from `Reference.path` or a parse path |
 | imports or names written in annotations | end of `_finalize_modules`, or at render |
 | the target Python or Pydantic version a generated construct needs | any pass: read its row in `_requirements.py` (`python_target_meets`, `pydantic_target_meets`, or `model_target_meets` for the target recorded on a Pydantic model); a new construct gets a row instead of a version comparison |
+<!-- END AUTO-GENERATED PLACEMENTS -->
 
 A decision that changes field order, defaults or required state must also run before constructor ordering reads them
 (`fix_constructor_field_ordering` and `fix_tag_opt_out_field_ordering`, after the decision phase); when that conflicts with a row above,
 step 3 applies.
+
+Each row of the table above is a record of `scripts/decision_homes.py` (`PLACEMENTS`): its two cells, the facts of
+`scripts/fact_tables.py` it reads and the passes its place puts the decision after. `tests/test_decision_homes.py`
+fails for such a pass that `scripts/pass_decls.py` does not declare, that writes none of the row's facts or that the
+place cell does not name, for a pass the cell names that the record leaves out, and for a fact that is no member of
+`Fact` or `RenderFact`.
 
 **One home per decision.** A decision that several passes or backends need is one pure function in
 `model/_decisions/` over the immutable facts it reads, passed by keyword (or as a frozen record), or, for a decision
