@@ -100,11 +100,7 @@ OPERATION_0: Final[OperationPlan[ReadSimpleScalarFalseResponse]] = OperationPlan
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
+                location='path', name='wire-name', style='simple', required=True
             ),
             codec=model_bindings.codec_0,
         ),
@@ -156,7 +152,6 @@ OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse]] = OperationPlan(
                 name='wire-name',
                 style='simple',
                 required=True,
-                allow_reserved=True,
                 shape='array',
             ),
             codec=model_bindings.codec_3,
@@ -218,7 +213,6 @@ OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse]] = OperationPlan(
                 style='simple',
                 explode=True,
                 required=True,
-                allow_reserved=True,
                 shape='array',
             ),
             codec=model_bindings.codec_6,
@@ -281,7 +275,6 @@ OPERATION_9: Final[OperationPlan[ReadSimpleObjectFalseResponse]] = OperationPlan
                 name='wire-name',
                 style='simple',
                 required=True,
-                allow_reserved=True,
                 shape='object',
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
             ),
@@ -346,7 +339,6 @@ OPERATION_12: Final[OperationPlan[ReadSimpleObjectTrueResponse]] = OperationPlan
                 style='simple',
                 explode=True,
                 required=True,
-                allow_reserved=True,
                 shape='object',
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
             ),
@@ -408,11 +400,7 @@ OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse]] = OperationPlan
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                allow_reserved=True,
+                location='path', name='wire-name', style='label', required=True
             ),
             codec=model_bindings.codec_15,
         ),
@@ -464,7 +452,6 @@ OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse]] = OperationPlan(
                 name='wire-name',
                 style='label',
                 required=True,
-                allow_reserved=True,
                 shape='array',
             ),
             codec=model_bindings.codec_18,
@@ -526,7 +513,6 @@ OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse]] = OperationPlan(
                 style='label',
                 explode=True,
                 required=True,
-                allow_reserved=True,
                 shape='array',
             ),
             codec=model_bindings.codec_21,
@@ -589,7 +575,6 @@ OPERATION_24: Final[OperationPlan[ReadLabelObjectFalseResponse]] = OperationPlan
                 name='wire-name',
                 style='label',
                 required=True,
-                allow_reserved=True,
                 shape='object',
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
             ),
@@ -654,7 +639,6 @@ OPERATION_27: Final[OperationPlan[ReadLabelObjectTrueResponse]] = OperationPlan(
                 style='label',
                 explode=True,
                 required=True,
-                allow_reserved=True,
                 shape='object',
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
             ),
@@ -716,11 +700,7 @@ OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse]] = OperationPla
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                allow_reserved=True,
+                location='path', name='wire-name', style='matrix', required=True
             ),
             codec=model_bindings.codec_30,
         ),
@@ -772,7 +752,6 @@ OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse]] = OperationPlan
                 name='wire-name',
                 style='matrix',
                 required=True,
-                allow_reserved=True,
                 shape='array',
             ),
             codec=model_bindings.codec_33,
@@ -834,7 +813,6 @@ OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse]] = OperationPlan(
                 style='matrix',
                 explode=True,
                 required=True,
-                allow_reserved=True,
                 shape='array',
             ),
             codec=model_bindings.codec_36,
@@ -897,7 +875,6 @@ OPERATION_39: Final[OperationPlan[ReadMatrixObjectFalseResponse]] = OperationPla
                 name='wire-name',
                 style='matrix',
                 required=True,
-                allow_reserved=True,
                 shape='object',
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
             ),
@@ -962,7 +939,6 @@ OPERATION_42: Final[OperationPlan[ReadMatrixObjectTrueResponse]] = OperationPlan
                 style='matrix',
                 explode=True,
                 required=True,
-                allow_reserved=True,
                 shape='object',
                 fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
             ),
@@ -1422,11 +1398,7 @@ OPERATION_67: Final[OperationPlan[ReadSuffixResponse]] = OperationPlan(
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
+                location='path', name='wire-name', style='simple', required=True
             ),
             codec=model_bindings.codec_68,
         ),
@@ -1442,11 +1414,7 @@ OPERATION_68: Final[OperationPlan[ReadCompositeResponse]] = OperationPlan(
     parameters=(
         ParameterSpec(
             plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
+                location='path', name='wire-name', style='simple', required=True
             ),
             codec=model_bindings.codec_69,
         ),
