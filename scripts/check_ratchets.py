@@ -14,6 +14,10 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   ruff configuration file (``ruff.toml``, ``.ruff.toml``, a nested ``pyproject.toml`` with ``[tool.ruff]``).
 - ``pragma:no-cover``, ``pragma:no-branch``, ``pragma:conditional-cover``, ``ty-ignore:<rule>``,
   ``pyright-ignore:<rule>`` and ``type-ignore:<code>`` comments, read with ``tokenize``.
+- ``heki-ignore:<rule>``: ``# heki: ignore`` comments, bare (``BARE``) or per listed rule or rule name, and ``# noqa``
+  comments that list a heki rule code (``EFF101``, ``MUT201``, ``DATA101``, ``OPT110``), which heki reads as
+  suppressions too; a ``noqa`` also counts under ``ruff:`` where ruff would report the finding. The source model
+  reports the ``heki: ignore`` comments as suppressions of tool ``heki``.
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
@@ -164,7 +168,10 @@ CHUNK = 200
 PRAGMA = re.compile(r"\bpragma:\s*(no\s+cover|no\s+branch|\S+(?:\s+no)?\s+cover)\b")
 PRAGMA_KINDS = {"no cover": "no-cover", "no branch": "no-branch"}
 TYPE_IGNORE = re.compile(r"\b(ty|pyright|type):\s*ignore\b(?:\[([^\]]*)\])?")
-COMMENT_HINT = re.compile(r"pragma:|ignore")
+HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?:\[([^\]]*)\])?", re.IGNORECASE)
+HEKI_NOQA = re.compile(r"#\s*noqa(?![\w-]):\s*([A-Z0-9]+(?:[\s,]+[A-Z0-9]+)*)", re.IGNORECASE)
+HEKI_CODE = re.compile(r"(?:EFF|MUT|DATA|OPT)\d{3}", re.IGNORECASE)
+COMMENT_HINT = re.compile(r"pragma:|ignore|noqa", re.IGNORECASE)
 CALL_HINT = re.compile(
     r"cast|attr\(|attrgetter|__getattribute__|import_module|__import__|filterwarnings|simplefilter|catch_warnings"
     r"|abnormal_path|no_type_check|\bAny\b"
@@ -281,6 +288,7 @@ ADVICE = {
     "ty-ignore": "Fix the type error or the annotation instead of ignoring it.",
     "pyright-ignore": "pyright checks only generated packages: drop the comment outside `_runtime`, or fix the type.",
     "type-ignore": "Fix the type error or the annotation instead of ignoring it.",
+    "heki-ignore": "Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.",
     "cast": "Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().",
     "any": "Name the type (a Protocol, a TypeVar, object or a union) instead of Any.",
     "no-type-check": "Fix the annotations instead of switching the type checker off for the function.",
@@ -636,7 +644,18 @@ def _comment_keys(text: str) -> list[str]:
         for match in TYPE_IGNORE.finditer(text)
         for rule in (match[2] or "").split(",")
     ]
-    return [*pragmas, *ignores]
+    heki = [
+        f"heki-ignore:{rule.strip() or 'BARE'}"
+        for match in HEKI_IGNORE.finditer(text)
+        for rule in (match[1] or "").split(",")
+    ]
+    heki += [
+        f"heki-ignore:{code.upper()}"
+        for match in HEKI_NOQA.finditer(text)
+        for code in re.split(r"[\s,]+", match[1])
+        if HEKI_CODE.fullmatch(code)
+    ]
+    return [*pragmas, *ignores, *heki]
 
 
 def _private_name(node: ast.expr) -> bool:

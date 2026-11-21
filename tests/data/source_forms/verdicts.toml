@@ -985,6 +985,7 @@
 "suppressions/ruff_disable_ranges" = "finding: private-reexport src:9 src:11"
 "suppressions/ruff_ignore_placement" = "no finding: the form holds none of the shapes a source rule reports"
 "suppressions/type_ignore_forms" = "no finding: the form holds none of the shapes a source rule reports"
+"suppressions/heki_ignore_forms" = "no finding: the form holds none of the shapes a source rule reports"
 "references/a6_lazy_exports" = "finding: redundant-local-import src/table.py:28"
 
 ["architecture-boundaries"]

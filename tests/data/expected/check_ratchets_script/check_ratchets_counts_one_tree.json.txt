@@ -30,6 +30,18 @@ exit status 0
  "getattr-private@src": {
   "src/pkg/d.py": 1
  },
+ "heki-ignore:BARE@src": {
+  "src/pkg/d.py": 1
+ },
+ "heki-ignore:OPT103@src": {
+  "src/pkg/d.py": 1
+ },
+ "heki-ignore:OPT110@src": {
+  "src/pkg/d.py": 1
+ },
+ "heki-ignore:list-front-pop@src": {
+  "src/pkg/d.py": 1
+ },
  "pragma:conditional-cover@src": {
   "src/pkg/d.py": 1
  },

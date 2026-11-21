@@ -92,6 +92,12 @@ def risky(value: object) -> int:  # pragma: no cover
     module = importlib.import_module("json")  # ty: ignore[unresolved-import]
     secret = getattr(module, "_default_encoder", None)  # pyright: ignore[reportPrivateUsage]
     return cast("int", secret)  # type: ignore[return-value]  # pragma: win32 cover
+
+
+def silenced(items: list[int]) -> None:
+    items.insert(0, 1)  # heki: ignore
+    items.pop(0)  # heki: ignore[OPT103, list-front-pop]
+    items.sort()  # noqa: OPT110, E501
 """,
     "tests/test_d.py": FUTURE
     + """
