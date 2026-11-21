@@ -874,7 +874,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             return NONE
         if self._field_null_source(data_type, hint_has_none=hint_has_none) is None:
             return type_hint
-        return data_type._optional_hint(type_hint, self._use_union_operator)  # noqa: SLF001
+        return data_type._optional_hint(type_hint, use_union_operator=self._use_union_operator)  # noqa: SLF001
 
     def _field_null_source(
         self,

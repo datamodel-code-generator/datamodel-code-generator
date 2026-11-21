@@ -779,11 +779,11 @@ class DataType(_BaseModel):  # noqa: PLR0904
             name,
             base,
             self.python_version,
-            self.use_standard_collections,
-            self.use_generic_container,
-            self.use_union_operator,
-            self.treat_dot_as_module,
-            self.use_serialize_as_any,
+            use_standard_collections=self.use_standard_collections,
+            use_generic_container=self.use_generic_container,
+            use_union_operator=self.use_union_operator,
+            treat_dot_as_module=self.treat_dot_as_module,
+            use_serialize_as_any=self.use_serialize_as_any,
         )
 
     @classmethod
@@ -1178,7 +1178,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return whether the type is the plain type ``None``."""
         return self.type == NONE and not (self.alias or self.reference or self.data_types or self.is_func)
 
-    def _optional_hint(self, type_: str, use_union_operator: bool) -> str:  # noqa: FBT001
+    def _optional_hint(self, type_: str, *, use_union_operator: bool) -> str:
         """Write the hint with its None, except for the name of an alias of None, which is None already."""
         if use_union_operator and self.names_none_alias:
             return type_
@@ -1532,7 +1532,7 @@ def _render_apply(expr: TypeApply) -> tuple[str, NullSource | None]:
         text = node._get_wrapped_alias_type_hint(text)  # noqa: SLF001
     if (container := expr.container) is not None:
         if member_null:
-            text = node._optional_hint(text, node.use_union_operator)  # noqa: SLF001
+            text = node._optional_hint(text, use_union_operator=node.use_union_operator)  # noqa: SLF001
         member_null = merged_null = False
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
@@ -1545,7 +1545,7 @@ def _render_apply(expr: TypeApply) -> tuple[str, NullSource | None]:
         text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
     null = _hint_null(node, reference=expr.form != "base", member_null=merged_null)
     if null is not None and (member_null or null != "member") and text != ANY:
-        return node._optional_hint(text, node.use_union_operator), null  # noqa: SLF001
+        return node._optional_hint(text, use_union_operator=node.use_union_operator), null  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
         return call_text(text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items())), null
     return text, null
@@ -1871,15 +1871,16 @@ def written_type_name(data_type: DataType) -> str | None:
 
 
 @cache
-def _create_context_data_type(  # noqa: PLR0917
+def _create_context_data_type(
     model_name: str,
     base: type[DataType],
     python_version: PythonVersion,
-    use_standard_collections: bool,  # noqa: FBT001
-    use_generic_container: bool,  # noqa: FBT001
-    use_union_operator: bool,  # noqa: FBT001
-    treat_dot_as_module: bool | None,  # noqa: FBT001
-    use_serialize_as_any: bool,  # noqa: FBT001
+    *,
+    use_standard_collections: bool,
+    use_generic_container: bool,
+    use_union_operator: bool,
+    treat_dot_as_module: bool | None,
+    use_serialize_as_any: bool,
 ) -> type[DataType]:
     """Create or reuse a DataType subclass with context-specific defaults.
 
@@ -2160,11 +2161,11 @@ class DataTypeManager(ABC):
             "ContextDataType",
             DataType,
             python_version,
-            use_standard_collections,
-            use_generic_container_types,
-            use_union_operator,
-            treat_dot_as_module,
-            use_serialize_as_any,
+            use_standard_collections=use_standard_collections,
+            use_generic_container=use_generic_container_types,
+            use_union_operator=use_union_operator,
+            treat_dot_as_module=treat_dot_as_module,
+            use_serialize_as_any=use_serialize_as_any,
         )
 
     def _context_class(self, name: str, base: type[DataType]) -> type[DataType]:
@@ -2173,11 +2174,11 @@ class DataTypeManager(ABC):
             name,
             base,
             self.python_version,
-            self.use_standard_collections,
-            self.use_generic_container_types,
-            self.use_union_operator,
-            self.treat_dot_as_module,
-            self.use_serialize_as_any,
+            use_standard_collections=self.use_standard_collections,
+            use_generic_container=self.use_generic_container_types,
+            use_union_operator=self.use_union_operator,
+            treat_dot_as_module=self.treat_dot_as_module,
+            use_serialize_as_any=self.use_serialize_as_any,
         )
 
     def use_untyped_value_type(self, untyped_value_type: str | None) -> None:

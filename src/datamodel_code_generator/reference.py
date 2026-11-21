@@ -2380,7 +2380,8 @@ class ModelResolver:  # noqa: PLR0904
         self,
         name: str,
         model_type: str = "model",
-        is_root: bool = False,  # noqa: FBT001, FBT002
+        *,
+        is_root: bool = False,
     ) -> str:
         """Apply prefix/suffix based on scope.
 
@@ -2506,9 +2507,9 @@ class ModelResolver:  # noqa: PLR0904
     def _get_unique_name(
         self,
         name: str,
-        camel: bool = False,  # noqa: FBT001, FBT002
-        model_type: str = "model",
         *,
+        camel: bool = False,
+        model_type: str = "model",
         prefix: str = "",
         yields: bool = False,
         path: str | None = None,
