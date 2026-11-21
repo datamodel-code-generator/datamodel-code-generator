@@ -3,7 +3,7 @@ id = "drop-expected-paths-b7b"
 category = "harness"
 title = "Store the avro, error message, payload, HTTP and skill test outputs under the test names"
 summary = "These tests store their outputs under their own names, and tests that compared part of a tree or two runs store the whole output; the package writes the same output."
-refs = ["#7281"]
+refs = ["#7282"]
 covers = [
     "main/avro/namespace_reference_precedence.txt",
     "main/jsonschema/enum_names_beside_null_payload_warnings.txt",
