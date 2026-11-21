@@ -881,10 +881,10 @@ class _HTTPFetchSession:
         self,
         url: str,
         headers: Sequence[tuple[str, str]] | None = None,
-        ignore_tls: bool = False,  # noqa: FBT001, FBT002
+        *,
+        ignore_tls: bool = False,
         query_parameters: Sequence[tuple[str, str]] | None = None,
         timeout: float = DEFAULT_HTTP_TIMEOUT,
-        *,
         allow_private_network: bool = False,
         encoding: str = "utf-8",
     ) -> str:
@@ -892,9 +892,9 @@ class _HTTPFetchSession:
         return _get_body(
             url,
             headers,
-            ignore_tls,
-            query_parameters,
-            timeout,
+            ignore_tls=ignore_tls,
+            query_parameters=query_parameters,
+            timeout=timeout,
             allow_private_network=allow_private_network,
             session=self,
             response_observer=self._response_observer,
@@ -1126,9 +1126,9 @@ def get_body(
     return _get_body(
         url,
         headers,
-        ignore_tls,
-        query_parameters,
-        timeout,
+        ignore_tls=ignore_tls,
+        query_parameters=query_parameters,
+        timeout=timeout,
         allow_private_network=allow_private_network,
         http_backend=http_backend,
         response_observer=response_observer,
@@ -1156,9 +1156,9 @@ def _get_configured_body(
     return fetch(
         url,
         settings.http_headers,
-        settings.http_ignore_tls,
-        settings.http_query_parameters,
-        DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
+        ignore_tls=settings.http_ignore_tls,
+        query_parameters=settings.http_query_parameters,
+        timeout=DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
         allow_private_network=settings.allow_private_network,
         encoding=settings.encoding,
     )
@@ -1167,10 +1167,10 @@ def _get_configured_body(
 def _get_body(  # noqa: PLR0914
     url: str,
     headers: Sequence[tuple[str, str]] | None,
-    ignore_tls: bool,  # noqa: FBT001
+    *,
+    ignore_tls: bool,
     query_parameters: Sequence[tuple[str, str]] | None,
     timeout: float,
-    *,
     allow_private_network: bool,
     http_backend: HTTPBackend = HTTPBackend.AUTO,
     session: _HTTPFetchSession | None = None,
