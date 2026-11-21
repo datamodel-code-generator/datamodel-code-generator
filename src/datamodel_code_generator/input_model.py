@@ -169,7 +169,7 @@ None without the option; the descent of reuse follows the fields of every model 
 """
 
 
-def _load_model_schema_isolated(  # ruff: ignore[too-many-arguments]
+def _load_model_schema_isolated(
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None,
@@ -1021,7 +1021,7 @@ def _add_python_type_to_model_properties(
             prop["x-python-type"] = serialized
 
 
-def _add_python_type_info(  # ruff: ignore[too-many-arguments]
+def _add_python_type_info(
     schema: dict[str, Any],
     model: type,
     expression_collector: PythonTypeExpressionCollector | None = None,
@@ -1313,7 +1313,7 @@ def _reused_generic_definition(
     )
 
 
-def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def _filter_defs_by_strategy(  # ruff: ignore[too-many-positional-arguments]
     schema: dict[str, Any],
     nested_models: dict[str, type],
     output_family: _OutputModelFamily | None,
@@ -1458,7 +1458,7 @@ def _partition_inherited_fields(
     )
 
 
-def _transform_single_model_to_inheritance(  # noqa: PLR0913, PLR0917
+def _transform_single_model_to_inheritance(  # noqa: PLR0917
     schema: dict[str, object],
     model_class: type[BaseModel],
     schema_generator: type[GenerateJsonSchema],
@@ -1601,7 +1601,7 @@ class _InputModelDefinitions:
         return schema
 
 
-def load_model_schema(  # ruff: ignore[too-many-arguments]
+def load_model_schema(
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,
@@ -1627,7 +1627,7 @@ def load_model_schema(  # ruff: ignore[too-many-arguments]
     )
 
 
-def _load_model_schema_with_python_type_expressions(  # ruff: ignore[too-many-arguments]
+def _load_model_schema_with_python_type_expressions(
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,

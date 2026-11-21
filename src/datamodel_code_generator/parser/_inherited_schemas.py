@@ -531,7 +531,7 @@ class InheritedSchemasHost(RwSplitHost, Protocol):
     ) -> DataType | None:
         """Get the data type for an inherited property from parent schemas."""
 
-    def _take_field_aliases(  # noqa: PLR0913
+    def _take_field_aliases(
         self,
         field: DataModelFieldBase,
         name: str,
@@ -910,7 +910,7 @@ def is_partial_inherited_property(
     return True
 
 
-def is_partial_inherited_nested_value(  # noqa: PLR0913
+def is_partial_inherited_nested_value(
     parser: InheritedSchemasHost,
     child: object,
     parent: object,
@@ -1072,7 +1072,7 @@ def get_nested_inherited_active(
     return active
 
 
-def merge_inherited_union_branch(  # noqa: PLR0913
+def merge_inherited_union_branch(
     parser: InheritedSchemasHost,
     parent: object,
     child: dict[str, Any],
@@ -2263,7 +2263,7 @@ def get_inherited_field_schema(
     )
 
 
-def build_missing_required_field(  # noqa: PLR0913, PLR0917
+def build_missing_required_field(  # noqa: PLR0917
     parser: InheritedSchemasHost,
     required_field_name: str,
     excludes: set[str],

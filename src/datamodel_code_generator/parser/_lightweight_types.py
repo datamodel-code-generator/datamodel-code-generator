@@ -168,7 +168,7 @@ def merge_schema_constraints(
             base_dict.pop(field, None)
 
 
-def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
+def build_lightweight_array_type(  # noqa: PLR0917
     parser: LightweightTypesHost,
     schema: JsonSchemaObject,
     depth: int,
@@ -211,7 +211,7 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
             is_tuple=is_homogeneous_tuple,
             tuple_item_count=tuple_item_count if is_homogeneous_tuple else None,
         ),
-        schema.uniqueItems,
+        unique_items=schema.uniqueItems,
     )
     other_types = [
         parser._get_format_data_type(schema, type_) for type_ in parser._get_array_union_non_array_types(schema)

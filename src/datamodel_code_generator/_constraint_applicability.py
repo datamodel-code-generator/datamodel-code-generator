@@ -868,7 +868,7 @@ def literal_number_keywords(*, literals_take: bool, has_non_string_value: bool) 
     return NUMBER_KEYWORDS if literals_take and has_non_string_value else NO_KEYWORDS
 
 
-def listed_type_keywords(  # noqa: PLR0913
+def listed_type_keywords(
     path: str,
     /,
     *,

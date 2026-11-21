@@ -167,7 +167,7 @@ def _either(kinds: Iterable[str]) -> str:
     return english_list(kinds, "or", "serial")
 
 
-def _value_types_problem(  # noqa: PLR0913, PLR0917
+def _value_types_problem(  # noqa: PLR0917
     helper: Helper,
     spec: OperationSpec,
     what: str,
@@ -276,7 +276,7 @@ class _Pages(HelperPlanner):
             else self.facts.field_types(facts)
         )
 
-    def reached(  # noqa: PLR0913, PLR0917
+    def reached(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -327,7 +327,7 @@ class _Pages(HelperPlanner):
             return _problem("E_CONFIG_VALUE", "config", at, message, spec)
         return successes[0], use, use.type
 
-    def schema(  # noqa: PLR0913, PLR0917
+    def schema(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -424,7 +424,7 @@ class _Pages(HelperPlanner):
             return None
         return reached.steps, item
 
-    def read(  # noqa: PLR0913, PLR0917
+    def read(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -618,7 +618,7 @@ class _Pages(HelperPlanner):
         elif types is not None and (others := sorted(types - {expected})):
             yield _value_types_problem(helper, spec, chosen, others, f"{expected} values fit", where)
 
-    def fits(  # noqa: PLR0913, PLR0917
+    def fits(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -670,7 +670,7 @@ class _Pages(HelperPlanner):
             screened=True,
         )
 
-    def bindings(  # noqa: PLR0913
+    def bindings(
         self,
         helper: Helper,
         spec: OperationSpec,

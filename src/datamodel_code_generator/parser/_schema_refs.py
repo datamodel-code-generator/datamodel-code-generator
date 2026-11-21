@@ -456,7 +456,7 @@ def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None =
     return parser._get_ref_body(file_part)
 
 
-def read_ref_value(  # noqa: PLR0913
+def read_ref_value(
     parser: SchemaRefsHost,
     resolved_ref: str,
     *,
@@ -1222,7 +1222,7 @@ def ref_target_dump(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> tupl
     return deepcopy(cached[0]), cached[1]
 
 
-def intersect_ref_siblings(  # noqa: PLR0913
+def intersect_ref_siblings(
     parser: SchemaRefsHost,
     target: dict[str, Any],
     siblings: dict[str, Any],
@@ -1251,7 +1251,7 @@ def intersect_ref_siblings(  # noqa: PLR0913
     return intersection.keywords, intersection.unsatisfiable
 
 
-def intersect_ref_siblings_schema(  # noqa: PLR0913
+def intersect_ref_siblings_schema(
     parser: SchemaRefsHost,
     target: dict[str, Any],
     siblings: dict[str, Any],

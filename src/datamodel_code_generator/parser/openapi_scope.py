@@ -212,7 +212,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         return super()._get_model_name(stripped, method, suffix)
 
     @contextmanager
-    def _schema_frame(  # noqa: PLR0913
+    def _schema_frame(
         self,
         name: str,
         path: list[str],
@@ -435,7 +435,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         models = self._get_model_by_json_pointer(raw, tokens, ref)
         self._parse_raw_at(tokens[-1], models, [*path_parts, "#", *tokens], self._member_location(raw, *tokens))
 
-    def _parse_file(  # noqa: PLR0913
+    def _parse_file(
         self,
         raw: dict[str, YamlValue],
         obj_name: str,
@@ -559,7 +559,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 self._parse_raw_or_validated_obj(name, raw, path, validated)
             self._processed_declarations.add(declaration)
 
-    def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
+    def _acquire_item_schema(
         self,
         name: str,
         item: YamlValue,
@@ -974,7 +974,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         use_site = self.declaration_frames[-1].root_use_site if self.declaration_frames else None
         self.ignored_declarations.append(ApiIgnoredDeclaration(declaration, use_site, reason, owner, media, wire_name))
 
-    def _ignores_content_type(  # noqa: PLR0913, PLR0917
+    def _ignores_content_type(  # noqa: PLR0917
         self,
         holder: dict[str, YamlValue],
         headers: dict[str, YamlValue],

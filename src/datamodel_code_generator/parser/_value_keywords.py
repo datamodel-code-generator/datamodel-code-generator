@@ -606,7 +606,7 @@ def enum_literal(parser: ValueKeywordsHost, obj: JsonSchemaObject, written: froz
     return data_type
 
 
-def create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
+def create_synthetic_enum_obj(  # noqa: PLR0917
     parser: ValueKeywordsHost,
     original: JsonSchemaObject,
     enum_values: list[Any],

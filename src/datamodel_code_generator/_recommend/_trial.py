@@ -112,7 +112,7 @@ def _rejection(error: Exception) -> str:
     return f"{name}: {message}" if message else name
 
 
-def _run_candidate(  # noqa: PLR0913
+def _run_candidate(
     input_: TrialInput,
     candidate: TrialCandidate,
     config: Any,

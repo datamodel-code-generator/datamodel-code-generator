@@ -368,33 +368,33 @@ def _get_config_class() -> type[Config]:
                 raise Error(msg)
             return v
 
-        input: Optional[Union[Path, str]] = None  # noqa: UP007, UP045
-        input_model: Optional[list[str]] = None  # noqa: UP045
-        input_model_ref_strategy: Optional[InputModelRefStrategy] = None  # noqa: UP045
+        input: Optional[Union[Path, str]] = None
+        input_model: Optional[list[str]] = None
+        input_model_ref_strategy: Optional[InputModelRefStrategy] = None
         input_file_type: InputFileType = InputFileType.Auto
         output_model_type: DataModelType = DataModelType.PydanticV2BaseModel
-        output: Optional[Path] = None  # noqa: UP045
+        output: Optional[Path] = None
         check: bool = False
-        diff_against: Optional[Path] = None  # noqa: UP045
+        diff_against: Optional[Path] = None
         repair_invalid_dotted_stdout: bool = Field(default=False, exclude=True)
         forced_invalid_dotted_stdout_repair_modules: tuple[tuple[str, ...], ...] = Field(default=(), exclude=True)
         debug: bool = False
         disable_warnings: bool = False
         extra_template_data: Mapping[str, dict[str, Any]] | None = None
-        validators: Optional[ValidatorsConfigValue] = None  # noqa: UP045
-        aliases: Optional[Mapping[str, str | list[str]]] = None  # noqa: UP045
-        serialization_aliases: Optional[Mapping[str, str]] = None  # noqa: UP045
-        default_values: Optional[Mapping[str, Any]] = None  # noqa: UP045
+        validators: Optional[ValidatorsConfigValue] = None
+        aliases: Optional[Mapping[str, str | list[str]]] = None
+        serialization_aliases: Optional[Mapping[str, str]] = None
+        default_values: Optional[Mapping[str, Any]] = None
         use_default: bool = False
         force_optional: bool = False
-        url: Optional[ParseResult] = None  # noqa: UP045
+        url: Optional[ParseResult] = None
         strict_types: list[StrictTypes] = Field(default_factory=list)
-        openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: _openapi_scopes_or_default(None))  # noqa: UP045
-        custom_formatters_kwargs: Optional[dict[str, str]] = None  # noqa: UP045
+        openapi_scopes: Optional[list[OpenAPIScope]] = Field(default_factory=lambda: _openapi_scopes_or_default(None))
+        custom_formatters_kwargs: Optional[dict[str, str]] = None
         watch: bool = False
         watch_delay: float = DEFAULT_WATCH_DELAY
-        list_deprecations: Optional[str] = None  # noqa: UP045
-        list_experimental: Optional[str] = None  # noqa: UP045
+        list_deprecations: Optional[str] = None
+        list_experimental: Optional[str] = None
 
         def merge_args(self, args: Namespace) -> None:
             """Merge command-line arguments into config."""

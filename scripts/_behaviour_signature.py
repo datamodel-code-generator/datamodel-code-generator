@@ -316,7 +316,7 @@ def _default_text(value: object, factory: object = None) -> str:
     return "<obj>" if " at 0x" in text else text
 
 
-def _field(  # ruff: ignore[too-many-arguments]
+def _field(
     ctx: Context,
     annotation: object,
     *,

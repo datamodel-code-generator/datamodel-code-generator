@@ -289,7 +289,7 @@ def convert_protobuf_schema_data(
     )
 
 
-def _convert_protobuf_schema_data(  # noqa: PLR0913
+def _convert_protobuf_schema_data(
     raw_schema: Any,
     *,
     base_path: Path | None = None,

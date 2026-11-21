@@ -236,6 +236,11 @@ lint.ignore = [
   "single-line-implicit-string-concatenation", # Conflict with formatter
   "useless-import-alias",                      # `import x as x` is the explicit re-export form of a py.typed package
 ]
+lint.per-file-ignores."!src/datamodel_code_generator/_runtime/**" = [
+  # Facts are passed by keyword by design; too-many-positional-arguments stays on. The runtime is copied into
+  # generated packages with its comments, so it keeps the rule.
+  "too-many-arguments",
+]
 lint.per-file-ignores."scripts/*.py" = [
   "implicit-namespace-package", # no implicit namespace
   "print",                      # print is fine for CLI scripts
@@ -243,6 +248,16 @@ lint.per-file-ignores."scripts/*.py" = [
   "too-many-branches",          # too many branches
   "too-many-locals",            # too many local variables
   "too-many-statements",        # too many statements
+]
+lint.per-file-ignores."src/datamodel_code_generator/__main__.py" = [
+  "print", # A CLI module writes its output with print.
+]
+lint.per-file-ignores."src/datamodel_code_generator/_agent_skill_cli.py" = [
+  "print", # A CLI module writes its output with print.
+]
+lint.per-file-ignores."src/datamodel_code_generator/_cli_config.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+  "non-pep604-annotation-union",    # The annotations of these model classes are read as data.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/_client/_compiled_templates/*.py" = [
   "ALL", # Generated sources are checked by compile_builtin_templates.py.
@@ -257,17 +272,62 @@ lint.per-file-ignores."src/datamodel_code_generator/_runtime/protocols/*.py" = [
 lint.per-file-ignores."src/datamodel_code_generator/_runtime/server/*.py" = [
   "relative-imports", # Generated packages copy the runtime, so the server runtime imports its sibling runtime relatively.
 ]
+lint.per-file-ignores."src/datamodel_code_generator/_target_cli.py" = [
+  "print", # A CLI module writes its output with print.
+]
 lint.per-file-ignores."src/datamodel_code_generator/model/_compiled_templates/*.py" = [
   "ALL", # Generated sources are checked by compile_builtin_templates.py.
 ]
+lint.per-file-ignores."src/datamodel_code_generator/model/_constraints.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
 lint.per-file-ignores."src/datamodel_code_generator/model/_field_imports.py" = [
   "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+]
+lint.per-file-ignores."src/datamodel_code_generator/model/base.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/model/dataclass.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/model/msgspec.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/model/pydantic_base.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/model/pydantic_v2/__init__.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/model/pydantic_v2/base_model.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/parser/_*.py" = [
   "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
 ]
 lint.per-file-ignores."src/datamodel_code_generator/parser/_passes/*.py" = [
   "private-member-access", # check_architecture_boundaries.py owns it here (host-private-access).
+]
+lint.per-file-ignores."src/datamodel_code_generator/parser/_schema_object.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+  "non-pep604-annotation-union",    # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/parser/base.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/parser/openapi.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+  "non-pep604-annotation-union",    # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/reference.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/types.py" = [
+  "non-pep604-annotation-optional", # The annotations of these model classes are read as data.
+  "non-pep604-annotation-union",    # The annotations of these model classes are read as data.
+]
+lint.per-file-ignores."src/datamodel_code_generator/watch.py" = [
+  "print", # A CLI module writes its output with print.
 ]
 lint.per-file-ignores."tests/**/*.py" = [
   "FBT",                                # don't care about booleans as positional arguments in tests

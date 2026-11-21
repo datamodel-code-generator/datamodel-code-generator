@@ -633,7 +633,7 @@ def _validate_job_watch_settings(name: str, config: Mapping[str, Any]) -> None:
         raise Error(msg)
 
 
-def _get_job_config(  # noqa: PLR0913
+def _get_job_config(
     *,
     name: str,
     job: Mapping[str, Any],
@@ -1068,7 +1068,7 @@ def _run_recommend_options(
 
     if (target := _selected_target(config)) is not None:
         if (error := _target_options_error(config)) is not None:
-            print(f"Error: {error}", file=sys.stderr)  # noqa: T201
+            print(f"Error: {error}", file=sys.stderr)
             return Exit.ERROR
         config = _imply_target_settings(config)
 
@@ -1091,7 +1091,7 @@ def _run_recommend_options(
             )
         )
     except (Error, RemoteLockError) as e:
-        print(str(e), file=sys.stderr)  # noqa: T201
+        print(str(e), file=sys.stderr)
         return Exit.ERROR
     arguments = (
         [*recommendation.command_selector, *_cli_arguments(recommendation.command_values)]
@@ -1112,11 +1112,11 @@ def _run_recommend_options(
         from datamodel_code_generator.prompt import generate_prompt  # noqa: PLC0415
 
         payload = recommendation_payload(recommendation, content=content, arguments=arguments)
-        print(generate_prompt(args, arg_parser.format_help(), arg_parser, recommendation=payload))  # noqa: T201
+        print(generate_prompt(args, arg_parser.format_help(), arg_parser, recommendation=payload))
     elif args.output_format == "json":
-        print(render_json(recommendation, content=content, arguments=arguments))  # noqa: T201
+        print(render_json(recommendation, content=content, arguments=arguments))
     else:
-        print(content, end="")  # noqa: T201
+        print(content, end="")
     return Exit.OK
 
 
@@ -1161,7 +1161,7 @@ def _write_generated_result(
     return None
 
 
-def run_generate_from_config(  # noqa: PLR0913, PLR0917
+def run_generate_from_config(  # noqa: PLR0917
     config: Config,
     input_: Path | str | ParseResult | Mapping[str, Any],
     output: Path | None,
@@ -1215,7 +1215,7 @@ def _run_values(config: Config, args: Sequence[str] | None = None) -> dict[str, 
     }
 
 
-def _generation_config(  # noqa: PLR0913
+def _generation_config(
     config: Config,
     *,
     output: Path | None,
@@ -1326,7 +1326,7 @@ def _apply_model_run_options(config: Config) -> Exit | None:
     record: RunOptions = config._run_options  # noqa: SLF001
     uses_black_formatter = config.formatters is None or Formatter.BLACK in config.formatters
     if uses_black_formatter and not is_supported_in_black(config.target_python_version):
-        print(_unsupported_black_message(config.target_python_version), file=sys.stderr)  # noqa: T201
+        print(_unsupported_black_message(config.target_python_version), file=sys.stderr)
         return Exit.ERROR
 
     if config.debug:
@@ -1384,7 +1384,7 @@ def _warn_naming_hint(hint: NamingHint | None) -> None:
             warnings.warn(message, NamingHintWarning, stacklevel=2)
 
 
-def _run_target(  # noqa: PLR0913, PLR0917
+def _run_target(  # noqa: PLR0917
     args: Sequence[str],
     namespace: Namespace,
     config: Config,
@@ -1587,7 +1587,7 @@ def _run_jobs(
         )
         remote_locks = _RemoteLockTransaction.open(entries, remote_lock_plans)
     except Error as exc:
-        print(str(exc), file=sys.stderr)  # noqa: T201
+        print(str(exc), file=sys.stderr)
         return Exit.ERROR
     try:
         staged_plans = _stage_job_plans(plans)
@@ -1595,7 +1595,7 @@ def _run_jobs(
         if remote_locks is not None:
             with suppress(OSError):
                 remote_locks.discard()
-        print(f"Error: could not prepare batch output staging: {exc}", file=sys.stderr)  # noqa: T201
+        print(f"Error: could not prepare batch output staging: {exc}", file=sys.stderr)
         return Exit.ERROR
 
     try:
@@ -1606,11 +1606,11 @@ def _run_jobs(
                 result = _run_jobs_text(args, staged_plans, remote_locks, remote_lock_plans)
     except BaseException:
         if cleanup_error := _staging_cleanup_error(None, _cleanup_job_transaction(staged_plans, remote_locks)):
-            print(f"Error: {cleanup_error}", file=sys.stderr)  # noqa: T201
+            print(f"Error: {cleanup_error}", file=sys.stderr)
         raise
 
     if cleanup_error := _staging_cleanup_error(None, _cleanup_job_transaction(staged_plans, remote_locks)):
-        print(f"Error: {cleanup_error}", file=sys.stderr)  # noqa: T201
+        print(f"Error: {cleanup_error}", file=sys.stderr)
         return Exit.ERROR
     return result
 
@@ -1639,7 +1639,7 @@ def _error_with_traceback() -> Exit:
     """Print the traceback of the exception being handled, which ends a run with the error exit."""
     import traceback  # noqa: PLC0415
 
-    print(traceback.format_exc(), file=sys.stderr)  # noqa: T201
+    print(traceback.format_exc(), file=sys.stderr)
     return Exit.ERROR
 
 
@@ -1664,7 +1664,7 @@ def _publish_or_error(
             else:
                 _publish_staged_job_plans(staged_plans)
     except (Error, OSError) as exc:
-        print(f"Error: could not publish batch output: {exc}", file=sys.stderr)  # noqa: T201
+        print(f"Error: could not publish batch output: {exc}", file=sys.stderr)
         return Exit.ERROR
     except Warning:
         return _error_with_traceback()
@@ -1744,7 +1744,7 @@ def _run_jobs_json(
                     try:
                         payload = json.load(output)
                     except json.JSONDecodeError:
-                        print(  # noqa: T201
+                        print(
                             f"Error: Job '{staged_plan.plan.name}' returned invalid JSON batch output.",
                             file=sys.stderr,
                         )
@@ -1761,7 +1761,7 @@ def _run_jobs_json(
                             if isinstance(payload, Mapping) and "kind" in payload
                             else f"raw JSON {stable_repr(raw_output)}"
                         )
-                        print(  # noqa: T201
+                        print(
                             f"Error: Job '{staged_plan.plan.name}' returned unsupported JSON batch output ({context}); "
                             "expected a generation or check payload.",
                             file=sys.stderr,
@@ -1781,7 +1781,7 @@ def _run_jobs_json(
             _write_batch_json_spool(batch_spool)
             return exit_code
     except OSError as exc:
-        print(f"Error: could not spool batch JSON output: {exc}", file=sys.stderr)  # noqa: T201
+        print(f"Error: could not spool batch JSON output: {exc}", file=sys.stderr)
         return Exit.ERROR
 
 
@@ -1806,7 +1806,7 @@ def _single_job_plan(config: Config, pyproject_path: Path | None) -> JobPlan:
     )
 
 
-def _run_single_remote_transaction(  # noqa: PLR0913
+def _run_single_remote_transaction(
     args: Sequence[str],
     config: Config,
     pyproject_path: Path | None,
@@ -1854,12 +1854,12 @@ def _run_single_remote_transaction(  # noqa: PLR0913
                     shutil.copyfileobj(stdout_spool, sys.stdout)
                     exit_code = result if result is Exit.DIFF else Exit.OK
     except OSError as exc:
-        print(f"Error: could not prepare command output staging: {exc}", file=sys.stderr)  # noqa: T201
+        print(f"Error: could not prepare command output staging: {exc}", file=sys.stderr)
         exit_code = Exit.ERROR
     finally:
         if cleanup_errors := _cleanup_job_transaction(staged_plans, remote_locks):
             cleanup_message = "; ".join(str(error) for error in cleanup_errors)
-            print(  # noqa: T201
+            print(
                 f"Error: could not clean up command transaction: {cleanup_message}",
                 file=sys.stderr,
             )
@@ -1965,9 +1965,9 @@ def _print_command_output(
     if namespace.output_format == "json":
         from datamodel_code_generator._structured_output import command_output_json  # noqa: PLC0415
 
-        print(command_output_json(kind, content, **payload()))  # noqa: T201
+        print(command_output_json(kind, content, **payload()))
     else:
-        print(content, end=end)  # noqa: T201
+        print(content, end=end)
     return Exit.OK
 
 
@@ -2017,7 +2017,7 @@ def _watch_and_regenerate(
             watch_delay=watch_delay,
         )
     except Exception as e:  # noqa: BLE001
-        print(str(e), file=sys.stderr)  # noqa: T201
+        print(str(e), file=sys.stderr)
         return Exit.ERROR
 
 
@@ -2043,7 +2043,7 @@ def _main(
     arg_parser.parse_args(args, namespace=namespace)
 
     if namespace.recommend_options is not None and (conflict := _recommend_options_conflict(namespace)):
-        print(f"Error: --recommend-options cannot be used with {conflict}", file=sys.stderr)  # noqa: T201
+        print(f"Error: --recommend-options cannot be used with {conflict}", file=sys.stderr)
         return Exit.ERROR
 
     if namespace.output_format == "json":
@@ -2070,7 +2070,7 @@ def _main(
 
         if not isinstance(e, Error | ValidationError):
             raise
-        print(e if isinstance(e, Error) else f"Invalid configuration: {e}", file=sys.stderr)  # noqa: T201
+        print(e if isinstance(e, Error) else f"Invalid configuration: {e}", file=sys.stderr)
         return Exit.ERROR
     return _run_config(
         args, config, pyproject_path, _watch_dependencies(config, dependencies, watch_values), start_watch=start_watch
@@ -2094,15 +2094,15 @@ def _command_output(namespace: Namespace) -> Exit | None:
             )
         )
     if _skill_options_given(namespace):
-        print("Error: --skill-scope and --overwrite-skill require --install-skill", file=sys.stderr)  # noqa: T201
+        print("Error: --skill-scope and --overwrite-skill require --install-skill", file=sys.stderr)
         return Exit.ERROR
 
     if namespace.version:
-        print(f"datamodel-codegen {get_version()}")  # noqa: T201
+        print(f"datamodel-codegen {get_version()}")
         sys.exit(Exit.OK)
 
     if namespace.output_format_json_schema is not None:
-        print(json_schema_text(namespace.output_format_json_schema))  # noqa: T201
+        print(json_schema_text(namespace.output_format_json_schema))
         return Exit.OK
 
     if namespace.generate_pyproject_config:
@@ -2118,7 +2118,7 @@ def _command_output(namespace: Namespace) -> Exit | None:
 
         help_text = arg_parser.format_help()
         prompt_output = generate_prompt(namespace, help_text, arg_parser)
-        print(prompt_output)  # noqa: T201
+        print(prompt_output)
         return Exit.OK
     return None
 
@@ -2137,12 +2137,12 @@ def _command_pyproject(namespace: Namespace) -> Exit | tuple[Mapping[str, object
                 Path.cwd(), profile=namespace.profile
             )
         except Error as e:
-            print(e.message, file=sys.stderr)  # noqa: T201
+            print(e.message, file=sys.stderr)
             return Exit.ERROR
 
     if namespace.generate_cli_command:
         if not pyproject_config:
-            print(  # noqa: T201
+            print(
                 "No [tool.datamodel-codegen] section found in pyproject.toml",
                 file=sys.stderr,
             )
@@ -2157,7 +2157,7 @@ def _command_pyproject(namespace: Namespace) -> Exit | tuple[Mapping[str, object
     try:
         pyproject_config = _resolve_pyproject_relative_paths(pyproject_config, pyproject_path)
     except Error as e:
-        print(e.message, file=sys.stderr)  # noqa: T201
+        print(e.message, file=sys.stderr)
         return Exit.ERROR
     return pyproject_config, pyproject_path
 
@@ -2169,7 +2169,7 @@ def _run_batch_command(args: Sequence[str], *, start_watch: bool, dependencies: 
     except Error as e:
         if dependencies is not None:
             _record_raw_batch_watch_dependencies(namespace, dependencies)
-        print(str(e), file=sys.stderr)  # noqa: T201
+        print(str(e), file=sys.stderr)
         return Exit.ERROR
     if namespace.recommend_options is not None:
         (job_plan,) = batch_plan.jobs
@@ -2186,7 +2186,7 @@ def _run_batch_command(args: Sequence[str], *, start_watch: bool, dependencies: 
         (any(plan.config.check for plan in batch_plan.jobs), _WATCH_CHECK_CONFLICT),
         (namespace.output_format == "json", _WATCH_JSON_CONFLICT),
     )):
-        print(f"Error: {conflict}", file=sys.stderr)  # noqa: T201
+        print(f"Error: {conflict}", file=sys.stderr)
         return Exit.ERROR
 
     from datamodel_code_generator.watch_dependencies import WatchDependencies  # noqa: PLC0415
@@ -2251,11 +2251,11 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return _print_registry("experimental", render_experimental_features, config.list_experimental)
 
     if diff_error := _diff_against_validation_error(config, namespace):
-        print(diff_error, file=sys.stderr)  # noqa: T201
+        print(diff_error, file=sys.stderr)
         return Exit.ERROR
 
     if not config.input and not config.url and not config.input_model and sys.stdin.isatty():
-        print(  # noqa: T201
+        print(
             "Not Found Input: require `stdin` or arguments `--input`, `--url`, or `--input-model`",
             file=sys.stderr,
         )
@@ -2263,7 +2263,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return Exit.ERROR
 
     if config.input_model and (config.input or config.url):
-        print(  # noqa: T201
+        print(
             "Error: --input-model cannot be used with --input or --url",
             file=sys.stderr,
         )
@@ -2282,7 +2282,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
     if option_errors := _generation_option_errors(config, namespace):
         for error in option_errors:
-            print(f"Error: {error}", file=sys.stderr)  # noqa: T201
+            print(f"Error: {error}", file=sys.stderr)
         return Exit.ERROR
 
     from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
@@ -2299,7 +2299,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                     (("command", config, pyproject_path),), (_remote_lock_plan(config, pyproject_path),)
                 )
             except Error as e:
-                print(str(e), file=sys.stderr)  # noqa: T201
+                print(str(e), file=sys.stderr)
                 return Exit.ERROR
         elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
             lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
@@ -2328,7 +2328,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         try:
             _remote_locks = _RemoteLockTransaction.open((("command", config, pyproject_path),), (lock_plan,))
         except Error as e:
-            print(str(e), file=sys.stderr)  # noqa: T201
+            print(str(e), file=sys.stderr)
             return finish_watch_remote_lock_intent(Exit.ERROR)
         remote_transaction_owner = _remote_locks is not None
     remote_locks = cast("_RemoteLockTransaction | None", _remote_locks)
@@ -2344,7 +2344,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if remote_transaction_owner and remote_locks is not None:
             with suppress(OSError):
                 remote_locks.discard()
-        print(str(e), file=sys.stderr)  # noqa: T201
+        print(str(e), file=sys.stderr)
         return finish_watch_remote_lock_intent(Exit.ERROR)
     if remote_transaction_owner and remote_locks is not None:
         result = finish_watch_remote_lock_intent(
@@ -2362,7 +2362,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     try:
         extra_template_data = _template_data(config)
     except Error as e:
-        print(str(e), file=sys.stderr)  # noqa: T201
+        print(str(e), file=sys.stderr)
         return finish_watch_remote_lock_intent(Exit.ERROR)
 
     writes_json_output_file = (
@@ -2428,21 +2428,21 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                     **run_options, input_=input_, output=generate_output, logical_output=_batch_original_output
                 )
     except InvalidClassNameError as e:
-        print(_invalid_class_name_message(e, namespace, config.class_name), file=sys.stderr)  # noqa: T201
+        print(_invalid_class_name_message(e, namespace, config.class_name), file=sys.stderr)
         return cleanup_and_return(Exit.ERROR)
     except UnicodeDecodeError as e:
         from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
 
-        print(f"Unable to decode input using encoding {stable_repr(config.encoding)}: {e}", file=sys.stderr)  # noqa: T201
+        print(f"Unable to decode input using encoding {stable_repr(config.encoding)}: {e}", file=sys.stderr)
         return cleanup_and_return(Exit.ERROR)
     except Error as e:
-        print(str(e), file=sys.stderr)  # noqa: T201
+        print(str(e), file=sys.stderr)
         return cleanup_and_return(Exit.ERROR)
     except Exception as e:  # noqa: BLE001
         from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 
         if isinstance(e, RemoteLockError):
-            print(str(e), file=sys.stderr)  # noqa: T201
+            print(str(e), file=sys.stderr)
             return cleanup_and_return(Exit.ERROR)
         return cleanup_and_return(_error_with_traceback())
 
@@ -2451,7 +2451,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if refusal := layout_refusal(
             layout, _batch_original_output or config.output, compares=config.diff_against is not None
         ):
-            print(refusal, file=sys.stderr)  # noqa: T201
+            print(refusal, file=sys.stderr)
             return cleanup_and_return(Exit.ERROR)
         if config.check and is_directory_output and (layout or output_layout(config.output)) == "module":
             is_directory_output = False
@@ -2511,7 +2511,7 @@ def _run_config(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         except _OutputDecodeError as e:
             from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
 
-            print(  # noqa: T201
+            print(
                 f"Unable to decode output {e.path.as_posix()} using encoding {stable_repr(config.encoding)}: {e}",
                 file=sys.stderr,
             )
@@ -2548,7 +2548,7 @@ def main(args: Sequence[str] | None = None) -> Exit:
         with cli_migration_warning_scope(), naming_hint_scope():
             return _main(args, start_watch=True)
     except _StructuredOutputUnavailableError as e:
-        print(str(e), file=sys.stderr)  # noqa: T201
+        print(str(e), file=sys.stderr)
         return Exit.ERROR
     except Warning:
         return _error_with_traceback()

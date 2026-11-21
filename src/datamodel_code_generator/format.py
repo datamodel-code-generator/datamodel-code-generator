@@ -397,7 +397,7 @@ def _is_formatter_available(formatter: Formatter) -> bool:
     return True
 
 
-def apply_builtin_formatter(  # noqa: PLR0913
+def apply_builtin_formatter(
     code: str,
     *,
     line_length: int = DEFAULT_LINE_LENGTH,
@@ -479,7 +479,7 @@ def resolve_use_type_checking_imports(
 class CodeFormatter:
     """Formats generated code using black, isort, ruff, and custom formatters."""
 
-    def __init__(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
+    def __init__(  # noqa: PLR0912, PLR0914, PLR0915, PLR0917
         self,
         python_version: PythonVersion,
         settings_path: Path | None = None,
@@ -755,7 +755,7 @@ class CodeFormatter:
         )
 
     @staticmethod
-    def apply_builtin_formatter(  # noqa: PLR0913
+    def apply_builtin_formatter(
         code: str,
         *,
         line_length: int = DEFAULT_LINE_LENGTH,

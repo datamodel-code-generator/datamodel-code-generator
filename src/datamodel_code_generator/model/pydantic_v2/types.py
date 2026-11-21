@@ -249,7 +249,7 @@ class DataTypeManager(_DataTypeManagerBase):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # noqa: PLR0917
         self,
         python_version: PythonVersion = PythonVersionMin,
         use_standard_collections: bool = False,  # noqa: FBT001, FBT002
@@ -313,11 +313,11 @@ class DataTypeManager(_DataTypeManagerBase):
             "PydanticV2ContextDataType",
             PydanticV2DataType,
             python_version,
-            use_standard_collections,
-            use_generic_container_types,
-            use_union_operator,
-            treat_dot_as_module,
-            use_serialize_as_any,
+            use_standard_collections=use_standard_collections,
+            use_generic_container=use_generic_container_types,
+            use_union_operator=use_union_operator,
+            treat_dot_as_module=treat_dot_as_module,
+            use_serialize_as_any=use_serialize_as_any,
         )
 
     @property
@@ -326,7 +326,7 @@ class DataTypeManager(_DataTypeManagerBase):
         """Return True: Pydantic checks the ``pattern`` of the ``constr`` or ``StringConstraints`` key type."""
         return True
 
-    def type_map_factory(  # noqa: PLR0913, PLR0917
+    def type_map_factory(  # noqa: PLR0917
         self,
         data_type: type[DataType],
         strict_types: Sequence[StrictTypes],
@@ -524,7 +524,7 @@ class DataTypeManager(_DataTypeManagerBase):
             strict=strict,
         )
 
-    def _encoded_text_type(  # noqa: PLR0913
+    def _encoded_text_type(
         self,
         name: str,
         base: type[DataType],

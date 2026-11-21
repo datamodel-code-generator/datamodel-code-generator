@@ -43,7 +43,7 @@ class DataModelSet(NamedTuple):
     known_third_party: list[str] | None = None
 
 
-def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
+def get_data_model_types(  # noqa: PLR0912, PLR0917
     data_model_type: DataModelType,
     target_python_version: PythonVersion = DEFAULT_TARGET_PYTHON_VERSION,
     use_type_alias: bool = False,  # noqa: FBT001, FBT002

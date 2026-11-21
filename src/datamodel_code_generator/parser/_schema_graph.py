@@ -318,7 +318,7 @@ class DocumentResources:
     nothing the registry reads; row ``legacy-external-anchor-search`` reads them."""
 
 
-def walk_schema_resources(  # noqa: PLR0913
+def walk_schema_resources(
     raw: dict[str, Any],
     implicit: Sequence[tuple[SchemaPath, dict[str, Any]]],
     *,

@@ -104,15 +104,15 @@ class _WatcherState:
 
 def _regenerate_after_change(changes: set[tuple[Any, str]] | None, regenerate: Callable[[], Exit]) -> None:
     if changes is None:
-        print("\nDetected changes while restarting the watcher.")  # noqa: T201
+        print("\nDetected changes while restarting the watcher.")
     else:
-        print(f"\nDetected changes: {changes}")  # noqa: T201
-    print("Regenerating...")  # noqa: T201
+        print(f"\nDetected changes: {changes}")
+    print("Regenerating...")
     try:
         _regenerate(regenerate)
-        print("Done.")  # noqa: T201
+        print("Done.")
     except Exception as e:  # noqa: BLE001
-        print(f"Error: {e}", file=sys.stderr)  # noqa: T201
+        print(f"Error: {e}", file=sys.stderr)
 
 
 def _watch_stream(watchfiles: Any, watch_roots: tuple[Path, ...], **options: Any) -> Iterator[set[tuple[Any, str]]]:
@@ -271,7 +271,7 @@ def watch_and_regenerate(
 
     watch_path = watch_path or (Path(config.input) if isinstance(config.input, (str, Path)) else None)
     if watch_path is None:
-        print("Watch mode requires --input file path", file=sys.stderr)  # noqa: T201
+        print("Watch mode requires --input file path", file=sys.stderr)
         return Exit.ERROR
 
     if dependencies is None:
@@ -280,7 +280,7 @@ def watch_and_regenerate(
     if force_polling := _force_polling():
         dependencies.enable_polling_fingerprints()
 
-    print(f"Watching {watch_path} for changes... (Ctrl+C to stop)")  # noqa: T201
+    print(f"Watching {watch_path} for changes... (Ctrl+C to stop)")
 
     watch_context = _WatchContext(
         watchfiles,
@@ -303,6 +303,6 @@ def watch_and_regenerate(
                 return Exit.OK
             catch_up = True
     except KeyboardInterrupt:
-        print("\nWatch mode stopped.")  # noqa: T201
+        print("\nWatch mode stopped.")
 
     return Exit.OK

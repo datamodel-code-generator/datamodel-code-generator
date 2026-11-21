@@ -344,7 +344,7 @@ def field_source_name(*, name: str | None, original_name: str | None, alias: str
     return original_name if original_name is not None else alias or name
 
 
-def tag_field_matches(  # noqa: PLR0913
+def tag_field_matches(
     mode: TagFieldMatch,
     wanted: str,
     /,

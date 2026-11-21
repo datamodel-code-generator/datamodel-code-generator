@@ -70,7 +70,7 @@ class TargetPolicy:
     name_code: str
     verb: str
 
-    def problem(  # ruff: ignore[too-many-arguments]
+    def problem(
         self,
         code: str,
         message: str,
@@ -324,7 +324,7 @@ def claim(
     return [item if isinstance(item, str) else next(claimed) for item in items], held
 
 
-def argument_names(  # noqa: PLR0913
+def argument_names(
     policy: TargetPolicy,
     names: TargetNames,
     operation: OperationContract,
@@ -356,7 +356,7 @@ def argument_names(  # noqa: PLR0913
     return python_names
 
 
-def alias(  # noqa: PLR0913
+def alias(
     policy: TargetPolicy,
     names: TargetNames,
     operation: OperationContract,

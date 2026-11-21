@@ -230,7 +230,7 @@ class _Polls:
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{helper.at}.{name}[{index}]", message, polled.spec)
 
-    def bindings(  # noqa: PLR0913, PLR0917
+    def bindings(  # noqa: PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
@@ -266,7 +266,7 @@ class _Polls:
             yield from self.required(helper, spec, [key for key, _ in writes], at, complete=complete)
 
     @staticmethod
-    def required(  # noqa: PLR0913
+    def required(
         helper: Helper,
         spec: OperationSpec,
         written: list[tuple[str, ...]],
@@ -314,7 +314,7 @@ class _Polls:
             message = f"{label} requires a request body, which no binding of {stable_repr(helper.name)} writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
-    def reached(  # noqa: PLR0913, PLR0917
+    def reached(  # noqa: PLR0917
         self, helper: Helper, source: _Source, selector: Mapping[str, Any], reference: Any, at: str, what: str
     ) -> _Result | Diagnostic:
         """Return the type and accessor of the property a body pointer names, checked against the declared schema."""

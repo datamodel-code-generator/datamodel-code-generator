@@ -325,7 +325,7 @@ def _xml_schema_cache_entry_is_fresh(entry: _XMLSchemaDataCacheEntry) -> bool:
     return all(path.is_file() and _digest_path(path) == digest for path, digest in entry.dependencies)
 
 
-def _load_xml_schema_data_from_path(  # noqa: PLR0913
+def _load_xml_schema_data_from_path(
     path: Path,
     base_path: Path,
     encoding: str,
@@ -411,7 +411,7 @@ def convert_xml_schema_data(
     )
 
 
-def _convert_xml_schema_data(  # noqa: PLR0913
+def _convert_xml_schema_data(
     raw_schema: Any,
     *,
     base_path: Path | None = None,
@@ -441,7 +441,7 @@ def _convert_xml_schema_data(  # noqa: PLR0913
 
 
 class _XMLSchemaConverter:
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         base_path: Path,
         encoding: str,
@@ -874,7 +874,7 @@ class _XMLSchemaConverter:
             schema["x-xsd-abstract"] = True
         return schema
 
-    def _apply_value_constraint(  # noqa: PLR0913, PLR0917
+    def _apply_value_constraint(  # noqa: PLR0917
         self,
         schema: JsonSchema,
         kind: str,
@@ -970,7 +970,7 @@ class _XMLSchemaConverter:
             restriction.get("base"), _first_xsd_child(restriction, "simpleType"), restriction, seen
         )
 
-    def _warn_invalid_default(  # noqa: PLR0913, PLR0917
+    def _warn_invalid_default(  # noqa: PLR0917
         self,
         kind: str,
         name: str | None,

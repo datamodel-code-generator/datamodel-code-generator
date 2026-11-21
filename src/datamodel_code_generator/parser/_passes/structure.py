@@ -832,7 +832,7 @@ def _released_internal_modules(
     return paths
 
 
-def _released_internal_forwarder(  # noqa: PLR0913, PLR0917
+def _released_internal_forwarder(  # noqa: PLR0917
     parser: StructureHost,
     merge: set[tuple[str, ...]],
     grown_models: list[DataModel],

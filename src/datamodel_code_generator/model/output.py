@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.validators import ModelValidators
 
 
-def prepare_output_model_config(  # noqa: PLR0913, PLR0912
+def prepare_output_model_config(  # noqa: PLR0912
     extra_template_data: defaultdict[str, dict[str, Any]],
     *,
     validators: Mapping[str, ModelValidators] | None,
@@ -157,7 +157,7 @@ class OutputModelContext:
         "writes_discriminator_argument",
     )
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         data_model_type: type[DataModel],
@@ -196,7 +196,7 @@ class OutputModelContext:
         self.writes_discriminator_argument = writes_discriminator_argument
 
     @classmethod
-    def from_generation_types(  # noqa: PLR0913
+    def from_generation_types(
         cls,
         *,
         data_model_type: type[DataModel],
@@ -269,7 +269,7 @@ class OutputModelContext:
         """Return the data type a typed additional-properties entry was rendered from, while it names classes."""
         return getattr(extra_template_data.get(_ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY), "source", None)
 
-    def store_additional_properties_type(  # noqa: PLR0913
+    def store_additional_properties_type(
         self,
         extra_template_data: dict[str, Any],
         type_hint: str,

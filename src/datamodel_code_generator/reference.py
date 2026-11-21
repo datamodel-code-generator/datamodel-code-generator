@@ -229,7 +229,7 @@ class _BaseModel(BaseModel):
 
     if not TYPE_CHECKING:  # pragma: no branch
 
-        def dict(  # noqa: PLR0913
+        def dict(
             self,
             *,
             include: AbstractSet[int | str] | Mapping[int | str, Any] | None = None,
@@ -258,9 +258,9 @@ class Reference(_BaseModel):
     path: str
     original_name: str = ""
     name: str
-    duplicate_name: Optional[str] = None  # noqa: UP045
+    duplicate_name: Optional[str] = None
     loaded: bool = True
-    source: Optional[_ReferenceSource] = None  # noqa: UP045
+    source: Optional[_ReferenceSource] = None
     children: list[ReferenceChild] = Field(default_factory=list)
     _exclude_fields: ClassVar[set[str]] = {"children"}
 
@@ -557,7 +557,7 @@ class FieldNameResolver:
     capitalise_numbered_enum_members: bool = False
     """Set by ``__init__``; a resolver unpickled from 0.89.0, whose state lacks it, reads it off."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # noqa: PLR0917
         self,
         aliases: Mapping[str, str | list[str]] | None = None,
         snake_case_field: bool = False,  # noqa: FBT001, FBT002
@@ -1126,7 +1126,7 @@ class ModelResolver:  # noqa: PLR0904
     _MIN_STATEFUL_REDUCE_ITEMS: ClassVar[int] = 3
     _SLOTTED_STATE_ITEMS: ClassVar[int] = 2
 
-    def __init__(  # noqa: PLR0913, PLR0915, PLR0917
+    def __init__(  # noqa: PLR0915, PLR0917
         self,
         exclude_names: set[str] | None = None,
         duplicate_name_suffix: str | None = None,
@@ -1468,7 +1468,7 @@ class ModelResolver:  # noqa: PLR0904
             )
             raise Error(msg)
 
-    def _apply_model_name_map(  # noqa: PLR0913
+    def _apply_model_name_map(
         self,
         path: str,
         original_name: str,
@@ -2137,7 +2137,7 @@ class ModelResolver:  # noqa: PLR0904
                     self._rename_reference(ref, new_name, name)
                     break
 
-    def add(  # noqa: PLR0913
+    def add(
         self,
         path: Sequence[str],
         original_name: str,
@@ -2285,7 +2285,7 @@ class ModelResolver:  # noqa: PLR0904
         )
         return allocated, yields and allocated is generated
 
-    def _register_reference(  # noqa: PLR0913
+    def _register_reference(
         self,
         path: str,
         original_name: str,
@@ -2380,7 +2380,8 @@ class ModelResolver:  # noqa: PLR0904
         self,
         name: str,
         model_type: str = "model",
-        is_root: bool = False,  # noqa: FBT001, FBT002
+        *,
+        is_root: bool = False,
     ) -> str:
         """Apply prefix/suffix based on scope.
 
@@ -2431,7 +2432,7 @@ class ModelResolver:  # noqa: PLR0904
             return name
         return self.class_name_generator(name)
 
-    def get_class_name(  # noqa: PLR0913, PLR0917
+    def get_class_name(  # noqa: PLR0917
         self,
         name: str,
         unique: bool = True,  # noqa: FBT001, FBT002
@@ -2503,12 +2504,12 @@ class ModelResolver:  # noqa: PLR0904
             return get_last_word_singular_name(name, suffix)
         return get_singular_name(name, suffix)
 
-    def _get_unique_name(  # noqa: PLR0913
+    def _get_unique_name(
         self,
         name: str,
-        camel: bool = False,  # noqa: FBT001, FBT002
-        model_type: str = "model",
         *,
+        camel: bool = False,
+        model_type: str = "model",
         prefix: str = "",
         yields: bool = False,
         path: str | None = None,
@@ -2650,7 +2651,7 @@ class ModelResolver:  # noqa: PLR0904
         """Return a unique class field name without creating a Reference."""
         return self._get_unique_name(self.get_valid_field_name(name, model_type=ModelType.CLASS))
 
-    def get_valid_field_name_and_alias(  # noqa: PLR0913
+    def get_valid_field_name_and_alias(
         self,
         field_name: str,
         excludes: set[str] | None = None,

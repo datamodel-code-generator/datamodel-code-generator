@@ -205,7 +205,7 @@ def build_all_exports_code(
     return export_imports
 
 
-def init_export_imports(  # noqa: PLR0913, PLR0917
+def init_export_imports(  # noqa: PLR0917
     parser: InitExportsHost,
     module: ModulePath,
     contexts: Sequence[_ModuleContextRow],

@@ -743,7 +743,7 @@ class _Walker:
             self.name_parents[name].add(parent)
             parents[name].add(parent)
 
-    def walk(  # noqa: PLR0913
+    def walk(
         self, node: object, *, parent: str, name: str, depth: int, component: str, at_property: bool = False
     ) -> None:
         """Walk one inline schema reached under a parent model through a property (``at_property``) or keyword."""

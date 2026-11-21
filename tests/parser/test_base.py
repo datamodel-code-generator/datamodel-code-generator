@@ -1823,10 +1823,10 @@ def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:
         {collapsed_root: (("output.py",), models)},
         {("output.py",): imports},
         (),
-        True,
-        ParseConfig(True, True, None, None, None, None),
-        set(),
-        {},
+        with_import=True,
+        config=ParseConfig(True, True, None, None, None, None),
+        internal_modules=set(),
+        model_path_to_module_name={},
     )
 
     assert models == [surviving_model]

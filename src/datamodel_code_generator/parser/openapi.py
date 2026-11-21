@@ -159,26 +159,26 @@ def _reference_first(value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
 
 
 _ObjectT = TypeVar("_ObjectT")
-OrReference = Annotated[Union[ReferenceObject, _ObjectT], WrapValidator(_reference_first)]  # noqa: UP007
+OrReference = Annotated[Union[ReferenceObject, _ObjectT], WrapValidator(_reference_first)]
 """An OpenAPI object or a Reference Object, the reference for a mapping whose ``$ref`` is a string."""
 
 
 class ExampleObject(BaseModel):
     """Represent an OpenAPI example object."""
 
-    summary: Optional[str] = None  # noqa: UP045
-    description: Optional[str] = None  # noqa: UP045
+    summary: Optional[str] = None
+    description: Optional[str] = None
     value: YamlValue = None
-    externalValue: Optional[str] = None  # noqa: N815, UP045
+    externalValue: Optional[str] = None  # noqa: N815
 
 
 class MediaObject(BaseModel):
     """Represent an OpenAPI media type object."""
 
-    schema_: Optional[Union[ReferenceObject, JsonSchemaObject, bool]] = Field(None, alias="schema")  # noqa: UP007, UP045
-    itemSchema: Optional[Union[ReferenceObject, JsonSchemaObject, bool]] = None  # noqa: N815, UP007, UP045
+    schema_: Optional[Union[ReferenceObject, JsonSchemaObject, bool]] = Field(None, alias="schema")
+    itemSchema: Optional[Union[ReferenceObject, JsonSchemaObject, bool]] = None  # noqa: N815
     example: YamlValue = None
-    examples: Optional[Union[str, OrReference[ExampleObject]]] = None  # noqa: UP007, UP045
+    examples: Optional[Union[str, OrReference[ExampleObject]]] = None
 
     @classmethod
     @override
@@ -231,33 +231,33 @@ class RawMediaObject(BaseModel):
 class ParameterObject(BaseModel):
     """Represent an OpenAPI parameter object."""
 
-    name: Optional[str] = None  # noqa: UP045
-    in_: Optional[ParameterLocation] = Field(None, alias="in")  # noqa: UP045
-    description: Optional[str] = None  # noqa: UP045
+    name: Optional[str] = None
+    in_: Optional[ParameterLocation] = Field(None, alias="in")
+    description: Optional[str] = None
     required: bool = False
     deprecated: bool = False
-    schema_: Optional[JsonSchemaObject] = Field(None, alias="schema")  # noqa: UP045
+    schema_: Optional[JsonSchemaObject] = Field(None, alias="schema")
     example: YamlValue = None
-    examples: Optional[Union[str, OrReference[ExampleObject]]] = None  # noqa: UP007, UP045
+    examples: Optional[Union[str, OrReference[ExampleObject]]] = None
     content: dict[str, MediaObject] = Field(default_factory=dict)
 
 
 class HeaderObject(BaseModel):
     """Represent an OpenAPI header object."""
 
-    description: Optional[str] = None  # noqa: UP045
+    description: Optional[str] = None
     required: bool = False
     deprecated: bool = False
-    schema_: Optional[JsonSchemaObject] = Field(None, alias="schema")  # noqa: UP045
+    schema_: Optional[JsonSchemaObject] = Field(None, alias="schema")
     example: YamlValue = None
-    examples: Optional[Union[str, OrReference[ExampleObject]]] = None  # noqa: UP007, UP045
+    examples: Optional[Union[str, OrReference[ExampleObject]]] = None
     content: dict[str, MediaObject] = Field(default_factory=dict)
 
 
 class RequestBodyObject(BaseModel):
     """Represent an OpenAPI request body object."""
 
-    description: Optional[str] = None  # noqa: UP045
+    description: Optional[str] = None
     content: dict[str, MediaObject] = Field(default_factory=dict)
     required: bool = False
 
@@ -265,21 +265,21 @@ class RequestBodyObject(BaseModel):
 class ResponseObject(BaseModel):
     """Represent an OpenAPI response object."""
 
-    description: Optional[str] = None  # noqa: UP045
+    description: Optional[str] = None
     headers: dict[str, ParameterObject] = Field(default_factory=dict)
-    content: dict[Union[str, int], MediaObject] = Field(default_factory=dict)  # noqa: UP007
+    content: dict[Union[str, int], MediaObject] = Field(default_factory=dict)
 
 
 class Operation(BaseModel):
     """Represent an OpenAPI operation object."""
 
     tags: list[str] = Field(default_factory=list)
-    summary: Optional[str] = None  # noqa: UP045
-    description: Optional[str] = None  # noqa: UP045
-    operationId: Optional[str] = None  # noqa: N815, UP045
+    summary: Optional[str] = None
+    description: Optional[str] = None
+    operationId: Optional[str] = None  # noqa: N815
     parameters: list[OrReference[ParameterObject]] = Field(default_factory=list)
-    requestBody: Optional[OrReference[RequestBodyObject]] = None  # noqa: N815, UP045
-    responses: dict[Union[str, int], OrReference[ResponseObject]] = Field(default_factory=dict)  # noqa: UP007
+    requestBody: Optional[OrReference[RequestBodyObject]] = None  # noqa: N815
+    responses: dict[Union[str, int], OrReference[ResponseObject]] = Field(default_factory=dict)
     deprecated: bool = False
 
     @field_validator("responses", mode="before")
@@ -292,7 +292,7 @@ class Operation(BaseModel):
 class ComponentsObject(BaseModel):
     """Represent an OpenAPI components object."""
 
-    schemas: dict[str, Union[ReferenceObject, JsonSchemaObject]] = Field(default_factory=dict)  # noqa: UP007
+    schemas: dict[str, Union[ReferenceObject, JsonSchemaObject]] = Field(default_factory=dict)
     responses: dict[str, OrReference[ResponseObject]] = Field(default_factory=dict)
     examples: dict[str, OrReference[ExampleObject]] = Field(default_factory=dict)
     requestBodies: dict[str, OrReference[RequestBodyObject]] = Field(default_factory=dict)  # noqa: N815
@@ -937,8 +937,8 @@ class OpenAPIParser(JsonSchemaParser):
         self,
         obj: JsonSchemaObject,
         path: list[str],
-        module_name: Optional[str] = None,  # noqa: UP045
-        class_name: Optional[str] = None,  # noqa: UP045
+        module_name: Optional[str] = None,
+        class_name: Optional[str] = None,
         *,
         output_names: tuple[str, ...] = (),
     ) -> list[DataModelFieldBase]:
@@ -1115,7 +1115,7 @@ class OpenAPIParser(JsonSchemaParser):
         """Check if path matches any of the include patterns."""
         return path_selected(path, self.openapi_include_paths, self._normalize_path)
 
-    def _process_path_items(  # noqa: PLR0913
+    def _process_path_items(
         self,
         items: dict[str, dict[str, Any]],
         base_path: list[str],

@@ -740,7 +740,7 @@ class Struct(DataModel):
         ("use_attribute_docstrings", True): None,
     }
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reference: Reference,
@@ -867,7 +867,7 @@ class Struct(DataModel):
         return None
 
     @staticmethod
-    def _select_layout_conflict(  # noqa: PLR0913, PLR0917
+    def _select_layout_conflict(  # noqa: PLR0917
         conflict: tuple[DataModel, DataModel],
         pending: list[tuple[DataModel, bool]],
         owners: list[DataModel],
@@ -1174,7 +1174,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     }
     _PARSE_METHOD = "convert"
     _COMPARE_EXPRESSIONS: ClassVar[set[str]] = set(_applicability.NUMBER_FIELD_KEYWORDS)
-    constraints: Optional[Constraints] = None  # noqa: UP045
+    constraints: Optional[Constraints] = None
 
     @override
     def process_const(self) -> None:

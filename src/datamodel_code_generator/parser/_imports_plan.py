@@ -438,7 +438,7 @@ class ModuleImportLedger:
             view.remove(repeat(_key_import(key), min(count, imports.counter.get(key, 0)) - kept.get(key, 0)))
         return view
 
-    def add_name(  # noqa: PLR0913, PLR6301
+    def add_name(  # noqa: PLR6301
         self,
         imports: Imports,  # noqa: ARG002
         resolver: ModelResolver,

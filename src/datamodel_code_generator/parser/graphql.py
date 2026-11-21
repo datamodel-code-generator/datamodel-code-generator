@@ -333,7 +333,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
         self._graph_builder.register_model(enum)
 
-    def parse_field(  # noqa: PLR0913
+    def parse_field(
         self,
         field_name: str,
         alias: str | list[str] | None,

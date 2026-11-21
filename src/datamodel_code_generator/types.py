@@ -680,12 +680,12 @@ class DataType(_BaseModel):  # noqa: PLR0904
         defer_build=True,
     )
 
-    type: Optional[str] = None  # noqa: UP045
-    reference: Optional[Reference] = None  # noqa: UP045
+    type: Optional[str] = None
+    reference: Optional[Reference] = None
     data_types: list[DataType] = Field(default_factory=list)
     is_func: bool = False
-    kwargs: Optional[dict[str, Any]] = None  # noqa: UP045
-    import_: Optional[Import] = None  # noqa: UP045
+    kwargs: Optional[dict[str, Any]] = None
+    import_: Optional[Import] = None
     python_type: _BoundPythonTypeField | None = Field(default=None, exclude=True, repr=False)
     python_version: PythonVersion = PythonVersionMin
     is_optional: bool = False
@@ -697,19 +697,19 @@ class DataType(_BaseModel):  # noqa: PLR0904
     is_sequence: bool = False
     is_tuple: bool = False
     tuple_item_count: int | None = Field(default=None, ge=0)
-    given_container: Optional[GivenContainerName] = None  # noqa: UP045
+    given_container: Optional[GivenContainerName] = None
     is_custom_type: bool = False
-    literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)  # noqa: UP007
+    literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)
     enum_member_literals: list[tuple[str, str]] = Field(default_factory=list)  # [(EnumClassName, member_name), ...]
-    enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()  # noqa: UP007
+    enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()
     """The values written after ``enum_member_literals``, ``Literal[Kind.a, 'a']``: the tags a payload carries for
     members of a plain Enum, which equal no value (``parser/_tag_plan.py:writes_member_values``)."""
     use_standard_collections: bool = False
     use_generic_container: bool = False
     use_union_operator: bool = False
     preserve_union_member_order: bool = False
-    alias: Optional[str] = None  # noqa: UP045
-    parent: Union[DataModelFieldBase, DataType, None] = None  # noqa: UP007
+    alias: Optional[str] = None
+    parent: Union[DataModelFieldBase, DataType, None] = None
 
     @field_validator("python_type")
     @classmethod
@@ -726,10 +726,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
     children: list[DataType] = Field(default_factory=list)
     strict: bool = False
-    dict_key: Optional[DataType] = None  # noqa: UP045
+    dict_key: Optional[DataType] = None
     treat_dot_as_module: bool = False
     use_serialize_as_any: bool = False
-    discriminator: Optional[str] = None  # noqa: UP045
+    discriminator: Optional[str] = None
 
     _exclude_fields: ClassVar[set[str]] = {"parent", "children"}
     _pass_fields: ClassVar[set[str]] = {"parent", "children", "data_types", "reference"}
@@ -779,15 +779,15 @@ class DataType(_BaseModel):  # noqa: PLR0904
             name,
             base,
             self.python_version,
-            self.use_standard_collections,
-            self.use_generic_container,
-            self.use_union_operator,
-            self.treat_dot_as_module,
-            self.use_serialize_as_any,
+            use_standard_collections=self.use_standard_collections,
+            use_generic_container=self.use_generic_container,
+            use_union_operator=self.use_union_operator,
+            treat_dot_as_module=self.treat_dot_as_module,
+            use_serialize_as_any=self.use_serialize_as_any,
         )
 
     @classmethod
-    def from_import(  # noqa: PLR0913
+    def from_import(
         cls: builtins.type[DataTypeT],
         import_: Import,
         *,
@@ -1178,7 +1178,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return whether the type is the plain type ``None``."""
         return self.type == NONE and not (self.alias or self.reference or self.data_types or self.is_func)
 
-    def _optional_hint(self, type_: str, use_union_operator: bool) -> str:  # noqa: FBT001
+    def _optional_hint(self, type_: str, *, use_union_operator: bool) -> str:
         """Write the hint with its None, except for the name of an alias of None, which is None already."""
         if use_union_operator and self.names_none_alias:
             return type_
@@ -1532,7 +1532,7 @@ def _render_apply(expr: TypeApply) -> tuple[str, NullSource | None]:
         text = node._get_wrapped_alias_type_hint(text)  # noqa: SLF001
     if (container := expr.container) is not None:
         if member_null:
-            text = node._optional_hint(text, node.use_union_operator)  # noqa: SLF001
+            text = node._optional_hint(text, use_union_operator=node.use_union_operator)  # noqa: SLF001
         member_null = merged_null = False
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
@@ -1545,7 +1545,7 @@ def _render_apply(expr: TypeApply) -> tuple[str, NullSource | None]:
         text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
     null = _hint_null(node, reference=expr.form != "base", member_null=merged_null)
     if null is not None and (member_null or null != "member") and text != ANY:
-        return node._optional_hint(text, node.use_union_operator), null  # noqa: SLF001
+        return node._optional_hint(text, use_union_operator=node.use_union_operator), null  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
         return call_text(text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items())), null
     return text, null
@@ -1871,15 +1871,16 @@ def written_type_name(data_type: DataType) -> str | None:
 
 
 @cache
-def _create_context_data_type(  # noqa: PLR0913, PLR0917
+def _create_context_data_type(
     model_name: str,
     base: type[DataType],
     python_version: PythonVersion,
-    use_standard_collections: bool,  # noqa: FBT001
-    use_generic_container: bool,  # noqa: FBT001
-    use_union_operator: bool,  # noqa: FBT001
-    treat_dot_as_module: bool | None,  # noqa: FBT001
-    use_serialize_as_any: bool,  # noqa: FBT001
+    *,
+    use_standard_collections: bool,
+    use_generic_container: bool,
+    use_union_operator: bool,
+    treat_dot_as_module: bool | None,
+    use_serialize_as_any: bool,
 ) -> type[DataType]:
     """Create or reuse a DataType subclass with context-specific defaults.
 
@@ -2121,7 +2122,7 @@ class DataTypeManager(ABC):
     type_map: dict[Types, DataType]
     """The type of each schema type and format, which the type managers of the outputs build."""
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # noqa: PLR0917
         self,
         python_version: PythonVersion = PythonVersionMin,
         use_standard_collections: bool = False,  # noqa: FBT001, FBT002
@@ -2160,11 +2161,11 @@ class DataTypeManager(ABC):
             "ContextDataType",
             DataType,
             python_version,
-            use_standard_collections,
-            use_generic_container_types,
-            use_union_operator,
-            treat_dot_as_module,
-            use_serialize_as_any,
+            use_standard_collections=use_standard_collections,
+            use_generic_container=use_generic_container_types,
+            use_union_operator=use_union_operator,
+            treat_dot_as_module=treat_dot_as_module,
+            use_serialize_as_any=use_serialize_as_any,
         )
 
     def _context_class(self, name: str, base: type[DataType]) -> type[DataType]:
@@ -2173,11 +2174,11 @@ class DataTypeManager(ABC):
             name,
             base,
             self.python_version,
-            self.use_standard_collections,
-            self.use_generic_container_types,
-            self.use_union_operator,
-            self.treat_dot_as_module,
-            self.use_serialize_as_any,
+            use_standard_collections=self.use_standard_collections,
+            use_generic_container=self.use_generic_container_types,
+            use_union_operator=self.use_union_operator,
+            treat_dot_as_module=self.treat_dot_as_module,
+            use_serialize_as_any=self.use_serialize_as_any,
         )
 
     def use_untyped_value_type(self, untyped_value_type: str | None) -> None:
@@ -2392,7 +2393,7 @@ class DataTypeManager(ABC):
         return frozenset(keywords)
 
     @classmethod
-    def _constraint_keywords(  # noqa: PLR0911, PLR0913
+    def _constraint_keywords(  # noqa: PLR0911
         cls,
         data_type: DataTypeView,
         target_version: tuple[int, int],

@@ -229,7 +229,7 @@ if TYPE_CHECKING:
         URL: _HTTPXURLFactory
         create_ssl_context: Callable[[bool], ssl.SSLContext]
 
-        def get(  # noqa: PLR0913
+        def get(
             self,
             url: str,
             *,
@@ -837,7 +837,7 @@ class _HTTPFetchSession:
         self._dns_cache.put(host, resolved_ips, _HTTP_FETCH_DNS_CACHE_MAX_SIZE)
         return resolved_ips
 
-    def get_response(  # noqa: PLR0913
+    def get_response(
         self,
         http_stack: _HTTPStack[_HTTPTransport],
         url: str,
@@ -877,14 +877,14 @@ class _HTTPFetchSession:
                 with contextlib.suppress(Exception):
                     client.close()
 
-    def get_body(  # noqa: PLR0913
+    def get_body(
         self,
         url: str,
         headers: Sequence[tuple[str, str]] | None = None,
-        ignore_tls: bool = False,  # noqa: FBT001, FBT002
+        *,
+        ignore_tls: bool = False,
         query_parameters: Sequence[tuple[str, str]] | None = None,
         timeout: float = DEFAULT_HTTP_TIMEOUT,
-        *,
         allow_private_network: bool = False,
         encoding: str = "utf-8",
     ) -> str:
@@ -892,9 +892,9 @@ class _HTTPFetchSession:
         return _get_body(
             url,
             headers,
-            ignore_tls,
-            query_parameters,
-            timeout,
+            ignore_tls=ignore_tls,
+            query_parameters=query_parameters,
+            timeout=timeout,
             allow_private_network=allow_private_network,
             session=self,
             response_observer=self._response_observer,
@@ -910,7 +910,7 @@ class _HTTPFetchSession:
                 client.close()
 
 
-def _get_http_response(  # noqa: PLR0913
+def _get_http_response(
     http_stack: _HTTPStack[_HTTPTransport],
     url: str,
     *,
@@ -1095,7 +1095,7 @@ def _get_redirect_headers(
     return fields_without(headers, _SENSITIVE_REDIRECT_HEADERS)
 
 
-def get_body(  # noqa: PLR0913
+def get_body(
     url: str,
     headers: Sequence[tuple[str, str]] | None = None,
     ignore_tls: bool = False,  # noqa: FBT001, FBT002
@@ -1126,9 +1126,9 @@ def get_body(  # noqa: PLR0913
     return _get_body(
         url,
         headers,
-        ignore_tls,
-        query_parameters,
-        timeout,
+        ignore_tls=ignore_tls,
+        query_parameters=query_parameters,
+        timeout=timeout,
         allow_private_network=allow_private_network,
         http_backend=http_backend,
         response_observer=response_observer,
@@ -1156,21 +1156,21 @@ def _get_configured_body(
     return fetch(
         url,
         settings.http_headers,
-        settings.http_ignore_tls,
-        settings.http_query_parameters,
-        DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
+        ignore_tls=settings.http_ignore_tls,
+        query_parameters=settings.http_query_parameters,
+        timeout=DEFAULT_HTTP_TIMEOUT if settings.http_timeout is None else settings.http_timeout,
         allow_private_network=settings.allow_private_network,
         encoding=settings.encoding,
     )
 
 
-def _get_body(  # noqa: PLR0913, PLR0914
+def _get_body(  # noqa: PLR0914
     url: str,
     headers: Sequence[tuple[str, str]] | None,
-    ignore_tls: bool,  # noqa: FBT001
+    *,
+    ignore_tls: bool,
     query_parameters: Sequence[tuple[str, str]] | None,
     timeout: float,
-    *,
     allow_private_network: bool,
     http_backend: HTTPBackend = HTTPBackend.AUTO,
     session: _HTTPFetchSession | None = None,

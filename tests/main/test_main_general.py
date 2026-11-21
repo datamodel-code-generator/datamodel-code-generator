@@ -869,9 +869,9 @@ def test_model_graph_check_reports_an_emitted_model_that_is_not_written() -> Non
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 
     class DroppingParser(JsonSchemaParser):
-        def _finalize_modules(self, contexts: Any, *args: Any) -> None:
+        def _finalize_modules(self, contexts: Any, *args: Any, **kwargs: object) -> None:
             contexts[0].models.pop()
-            super()._finalize_modules(contexts, *args)
+            super()._finalize_modules(contexts, *args, **kwargs)
 
     parser = DroppingParser(
         JSON_SCHEMA_DATA_PATH / "reuse_model_inline_definitions.json", formatters=[Formatter.BUILTIN]

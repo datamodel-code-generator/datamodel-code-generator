@@ -692,7 +692,7 @@ class _Reconciler:
         return self.schema(schemas, row_value) if isinstance(row_value, dict) else None
 
 
-def intersect_keywords(  # noqa: PLR0913
+def intersect_keywords(
     parts: Sequence[Mapping[str, Any]],
     row: dict[str, Any],
     *,
@@ -793,7 +793,7 @@ def merge_inherited_value(
     return child
 
 
-def merge_inherited_keyword(  # noqa: PLR0913
+def merge_inherited_keyword(
     key: str,
     parent: object,
     child: object,

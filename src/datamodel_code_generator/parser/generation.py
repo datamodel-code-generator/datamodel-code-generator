@@ -673,7 +673,7 @@ class GenerationIndexBuilder:
             next_data_type_id=self._next_data_type_id,
         )
 
-    def update(  # noqa: PLR0913
+    def update(
         self,
         facts: GenerationFacts,
         models: Sequence[DataModel],
@@ -969,7 +969,7 @@ def _walk_slots(
     return occurrences, sites
 
 
-def _walk_tree(  # noqa: PLR0913, PLR0917
+def _walk_tree(  # noqa: PLR0917
     root: DataType,
     field_index: int | None,
     root_role: DataTypeRole,
@@ -1732,7 +1732,7 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate()
 
     @deprecated("Use GenerationStore.builder().rename_model() instead.", category=None)
-    def rename_model(  # noqa: PLR0913
+    def rename_model(
         self,
         model: DataModel,
         *,
@@ -2002,7 +2002,7 @@ class GenerationStore:  # noqa: PLR0904
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_type_expressions() instead.", category=None)
-    def set_type_expressions(  # noqa: PLR0913
+    def set_type_expressions(
         data_type: DataType,
         *,
         type_: str | None = None,
@@ -2461,7 +2461,7 @@ class GraphBuilder:
         """Write the bare builtins of a model through ``GenerationStore.bind_builtin_names``."""
         self._store.bind_builtin_names(model, bindings)  # ty: ignore[deprecated]
 
-    def set_type_expressions(  # noqa: PLR0913
+    def set_type_expressions(
         self,
         data_type: DataType,
         *,
@@ -2640,7 +2640,7 @@ class GraphBuilder:
         """Rename a field through ``GenerationStore.rename_field``."""
         self._store.rename_field(field_, name, alias=alias)  # ty: ignore[deprecated]
 
-    def rename_model(  # noqa: PLR0913
+    def rename_model(
         self,
         model: DataModel,
         *,

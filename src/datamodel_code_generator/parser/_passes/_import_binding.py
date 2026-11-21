@@ -163,7 +163,7 @@ class ModuleImportTarget:
         return shared_import_bindings(self.shared_imports)
 
 
-def reference_import_target(  # ruff: ignore[too-many-arguments]
+def reference_import_target(
     name: str,
     current_module_name: str,
     target_full_name: str,
@@ -226,7 +226,7 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     return ReferenceImportTarget(full_path, from_, import_, written_from, beside_shared_import)
 
 
-def register_reference_import(  # noqa: PLR0913
+def register_reference_import(
     reference: Reference,
     current_module_name: str,
     target_full_name: str,
@@ -312,7 +312,7 @@ class ReferenceExpressionHost(Protocol):
         """Whether dots in schema names make modules."""
 
 
-def set_reference_expression(  # noqa: PLR0913
+def set_reference_expression(
     host: ReferenceExpressionHost,
     module: ModuleImportTarget,
     data_type: DataType,
@@ -348,7 +348,7 @@ def set_reference_expression(  # noqa: PLR0913
     return True
 
 
-def import_references(  # noqa: PLR0913
+def import_references(
     host: ReferenceExpressionHost,
     module: ModuleImportTarget,
     model: DataModel,
@@ -436,7 +436,7 @@ def emitting_module_name(
     return _get_model_module_name(model, model_path_to_module_name)
 
 
-def reimport_module_references(  # noqa: PLR0913
+def reimport_module_references(
     host: ReimportHost,
     module: ModuleImportTarget,
     models: list[DataModel],

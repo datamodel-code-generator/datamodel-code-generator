@@ -152,7 +152,8 @@ class _IdentityWeakRef:
 @lru_cache(maxsize=256)
 def _python_type_expr_from_runtime_cached(
     type_ref: _IdentityWeakRef,
-    full_name: bool,  # noqa: FBT001
+    *,
+    full_name: bool,
 ) -> PythonTypeExpr:
     if (tp := type_ref()) is None:  # pragma: no cover - the type is collected between its cache key and this call
         msg = "Runtime type was released during annotation binding"
@@ -171,7 +172,7 @@ def _cached_runtime_expression(tp: object, *, full_name: bool) -> PythonTypeExpr
         type_ref = _IdentityWeakRef(tp)
     except TypeError:
         return _runtime_expr(tp, full_name=full_name)
-    return _python_type_expr_from_runtime_cached(type_ref, full_name)
+    return _python_type_expr_from_runtime_cached(type_ref, full_name=full_name)
 
 
 def python_type_expr_from_runtime(tp: object) -> PythonTypeExpr:

@@ -680,7 +680,7 @@ def fix_constructor_field_ordering_of(
             parser._graph_builder.set_fields(model, sorted(model.fields, key=_assigned_key(model)))
 
 
-def copy_inherited_conflicts(  # noqa: PLR0913, PLR0917
+def copy_inherited_conflicts(  # noqa: PLR0917
     parser: RenderPrepHost,
     model: DataModel,
     inherited: _InheritedConstructorInfo,
@@ -835,7 +835,7 @@ def disable_union_operator_for_forward_ref(
                 pending.append((holder, writes_name and not joins_members))
 
 
-def field_forward_references(  # noqa: PLR0913
+def field_forward_references(
     field: DataModelFieldBase,
     model: DataModel,
     positions: _ModelPositions,
@@ -966,7 +966,7 @@ def _reached_before_head(models: Sequence[DataModel], head: DataModel, cycles: M
     return any(id(model) in reached for model in takewhile(lambda model: model is not head, models))
 
 
-def defer_recursive_containers(  # noqa: PLR0913
+def defer_recursive_containers(
     field: DataModelFieldBase,
     model: DataModel,
     *,
@@ -1003,7 +1003,7 @@ def defer_recursive_containers(  # noqa: PLR0913
         _flatten_union_members(root, graph_builder)
 
 
-def quote_forward_enum_member_literals(  # noqa: PLR0913
+def quote_forward_enum_member_literals(
     field: DataModelFieldBase,
     positions: _ModelPositions,
     index: int,
@@ -1022,7 +1022,7 @@ def quote_forward_enum_member_literals(  # noqa: PLR0913
     return bool(member_literals)
 
 
-def update_type_aliases(  # noqa: PLR0913
+def update_type_aliases(
     models: list[DataModel],
     pydantic_v2_root_model_type: type[DataModel] | None,
     *,

@@ -78,7 +78,7 @@ def with_subtype_ref(data_type: DataType, ref: str) -> DataType:
     return data_type
 
 
-def with_unique_items(data_type: DataType, unique_items: bool | None) -> DataType:  # noqa: FBT001
+def with_unique_items(data_type: DataType, *, unique_items: bool | None) -> DataType:
     """Record on ``data_type`` that the schema it is built from declares ``uniqueItems: true`` (``unique_items``)."""
     if unique_items is True:
         data_type.__dict__[UNIQUE_ITEMS_KEY] = True

@@ -551,7 +551,7 @@ def _models_by_source_ref(entries: Iterable[tuple[str, str, type | None]]) -> di
     return models
 
 
-def _build_dynamic_module(  # noqa: PLR0913
+def _build_dynamic_module(
     input_: Mapping[str, Any],
     config: GenerateConfig,
     *,
@@ -858,7 +858,7 @@ def _register_dynamic_module(
         )
 
 
-def _register_new_module(  # noqa: PLR0913
+def _register_new_module(
     input_: Mapping[str, Any],
     config: GenerateConfig,
     name: str,

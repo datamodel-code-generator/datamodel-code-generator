@@ -823,7 +823,7 @@ def _merged_tags(sites: Sequence[_MergeSite]) -> dict[tuple[int, str], tuple[Dis
     }
 
 
-def tags_of_variant(  # noqa: PLR0913
+def tags_of_variant(
     source: VariantTagSource,
     variant: DataModel,
     field_name: str,
@@ -2076,7 +2076,7 @@ class TagPlan:
             self.first_tags[key] = VariantTags(variant, property_name, values, union_name, {})
             self.union_written.add(key)
 
-    def record_collapsed_tags(  # noqa: PLR0913
+    def record_collapsed_tags(
         self,
         variant: DataModel,
         union_name: str,

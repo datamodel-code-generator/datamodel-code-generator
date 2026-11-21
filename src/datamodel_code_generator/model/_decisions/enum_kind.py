@@ -138,7 +138,7 @@ _INHERITED_SPECIALIZED = EnumKind(
 )
 
 
-def decide_enum_kind(  # noqa: PLR0913
+def decide_enum_kind(
     origin: EnumOrigin,
     /,
     *,

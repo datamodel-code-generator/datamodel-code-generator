@@ -532,7 +532,7 @@ class SchemaDocumentsHost(SchemaResourcesHost, Protocol):
     def _parse_dynamic_specializations(self) -> None:
         """Parse pending specialized models iteratively, outside of any specialization being parsed."""
 
-    def _parse_file(  # noqa: PLR0913
+    def _parse_file(
         self,
         raw: dict[str, Any],
         obj_name: str,
@@ -996,7 +996,7 @@ def loads_document(parser: SchemaResourcesHost, absolute: str) -> bool:
     return file_uri_path(document_part(absolute)).is_file()
 
 
-def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
+def rewrite_schema_resource_refs(  # noqa: PLR0917
     parser: SchemaDocumentsHost,
     schema: dict[str, Any],
     document: str,

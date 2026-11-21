@@ -404,7 +404,7 @@ def settle_diagnostics_reported_once() -> Generator[None]:
         yield
 
 
-def settle_diagnostics_suppressed(suppress_parse_warnings: bool) -> bool:  # noqa: FBT001
+def settle_diagnostics_suppressed(*, suppress_parse_warnings: bool) -> bool:
     """Return whether a parse leaves out the settle diagnostics: a parse again does after one that reported them.
 
     A parse again outside a generation run (``settle_diagnostics_reported_once``) always leaves them out.

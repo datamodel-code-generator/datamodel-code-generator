@@ -50,7 +50,7 @@ if TYPE_CHECKING:
     """Publish a single run's planned target with its notice as a batch of one; return the exit code of a failure."""
 
 
-def run_target(  # noqa: PLR0913, PLR0917
+def run_target(  # noqa: PLR0917
     args: Sequence[str],
     namespace: Namespace,
     config: Any,
@@ -81,10 +81,10 @@ def run_target(  # noqa: PLR0913, PLR0917
 
     kind, selector = _target_side(config)
     if config.preset is not None and (problem := python_problem(config, kind)) is not None:
-        print(f"Error: --target-python-version: {problem}", file=sys.stderr)  # noqa: T201
+        print(f"Error: --target-python-version: {problem}", file=sys.stderr)
         return _ExitCode.ERROR
     if requirement := model_requirement(config, selector):
-        print(f"Error: {requirement}", file=sys.stderr)  # noqa: T201
+        print(f"Error: {requirement}", file=sys.stderr)
         return _ExitCode.ERROR
     try:
         return _run(
@@ -108,7 +108,7 @@ def run_target(  # noqa: PLR0913, PLR0917
 
 def _print_notice(notice: str | None) -> None:
     if notice is not None:
-        print(notice, file=sys.stderr)  # noqa: T201
+        print(notice, file=sys.stderr)
 
 
 def _implied(config: Any) -> dict[str, Any]:
@@ -116,7 +116,7 @@ def _implied(config: Any) -> dict[str, Any]:
     return {name: json_ready(getattr(config, name)) for name in config._run_options.staged_by("implied-target")}  # noqa: SLF001
 
 
-def _implied_notice(  # noqa: PLR0913
+def _implied_notice(
     args: Sequence[str], config: Any, namespace: Namespace, pyproject: Path | None, job: str, *, announce: bool
 ) -> str | None:
     """Return how to set the implied settings: the command with their options, or the lines of the table to add.
@@ -147,7 +147,7 @@ def _target_side(config: Any) -> tuple[str, str]:
     return ("fastapi", "--generate-server") if config.generate_client is None else ("client", "--generate-client")
 
 
-def _run(  # noqa: PLR0913, PLR0917
+def _run(  # noqa: PLR0917
     args: Sequence[str],
     namespace: Namespace,
     config: Any,
@@ -221,7 +221,7 @@ def _run(  # noqa: PLR0913, PLR0917
         )
         _join(batch, job, planned, _next_step(target, planned.project, notice))
         if json_output:
-            print(_target_json(planned.project, config, target))  # noqa: T201
+            print(_target_json(planned.project, config, target))
         return _ExitCode.OK
     planned = plan_target(source, model_config=effective, config=target, generator=generator, publish=True)
     project = planned.project
@@ -229,7 +229,7 @@ def _run(  # noqa: PLR0913, PLR0917
     if (failure := publish(config, pyproject_path, (job, planned, _next_step(target, project, notice)))) is not None:
         return int(failure)
     if output is not None:
-        print(output)  # noqa: T201
+        print(output)
     return _ExitCode.OK
 
 
@@ -254,7 +254,7 @@ def publish_targets(files: Iterable[StagedFile], targets: Sequence[tuple[str, Pl
     written = [(job, planned, notice) for job, planned, notice in targets if notice is not None]
     publish_planned(files, [(job, planned) for job, planned, _ in written])
     for _, _, notice in written:
-        print(notice, file=sys.stderr)  # noqa: T201
+        print(notice, file=sys.stderr)
 
 
 def _shown(path: Path) -> str:
@@ -594,6 +594,6 @@ def _failure(error: Exception, namespace: Namespace, config: Any) -> None:
         from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 
         if not isinstance(error, RemoteLockError):
-            print("".join(traceback.format_exception(error)), file=sys.stderr)  # noqa: T201
+            print("".join(traceback.format_exception(error)), file=sys.stderr)
             return
-    print(f"Error: {message}", file=sys.stderr)  # noqa: T201
+    print(f"Error: {message}", file=sys.stderr)

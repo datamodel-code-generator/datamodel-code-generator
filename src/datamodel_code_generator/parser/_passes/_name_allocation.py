@@ -49,7 +49,7 @@ def suffix_kind(model: DataModel) -> Literal["enum", "model"]:
     return "enum" if isinstance(model, Enum) else "model"
 
 
-def scheme_resolver(  # noqa: PLR0913
+def scheme_resolver(
     scheme: NameScheme,
     *,
     target_python_version: PythonVersion | None,

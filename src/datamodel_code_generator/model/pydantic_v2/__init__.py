@@ -39,27 +39,27 @@ declare_resolve_reference_action_capabilities(
 
 
 class ConfigDict(_BaseModel):
-    """Pydantic v2 model_config options."""
+    """Pydantic v2 model_config options; ``validate_by_name`` and ``validate_by_alias`` exist from v2.11 on."""
 
     model_config = _PydanticConfigDict(defer_build=True)
 
-    extra: Optional[str] = None  # noqa: UP045
-    title: Optional[str] = None  # noqa: UP045
-    populate_by_name: Optional[bool] = None  # noqa: UP045  # deprecated in v2.11+
-    validate_by_name: Optional[bool] = None  # noqa: UP045  # v2.11+
-    validate_by_alias: Optional[bool] = None  # noqa: UP045  # v2.11+
-    alias_generator: Optional[str] = None  # noqa: UP045
-    allow_extra_fields: Optional[bool] = None  # noqa: UP045
-    extra_fields: Optional[str] = None  # noqa: UP045
-    from_attributes: Optional[bool] = None  # noqa: UP045
-    frozen: Optional[bool] = None  # noqa: UP045
-    arbitrary_types_allowed: Optional[bool] = None  # noqa: UP045
-    protected_namespaces: Optional[tuple[str, ...]] = None  # noqa: UP045
-    regex_engine: Optional[str] = None  # noqa: UP045
-    use_enum_values: Optional[bool] = None  # noqa: UP045
-    coerce_numbers_to_str: Optional[bool] = None  # noqa: UP045
-    use_attribute_docstrings: Optional[bool] = None  # noqa: UP045
-    json_schema_extra: Optional[Dict[str, Any]] = None  # noqa: UP006, UP045
+    extra: Optional[str] = None
+    title: Optional[str] = None
+    populate_by_name: Optional[bool] = None
+    validate_by_name: Optional[bool] = None
+    validate_by_alias: Optional[bool] = None
+    alias_generator: Optional[str] = None
+    allow_extra_fields: Optional[bool] = None
+    extra_fields: Optional[str] = None
+    from_attributes: Optional[bool] = None
+    frozen: Optional[bool] = None
+    arbitrary_types_allowed: Optional[bool] = None
+    protected_namespaces: Optional[tuple[str, ...]] = None
+    regex_engine: Optional[str] = None
+    use_enum_values: Optional[bool] = None
+    coerce_numbers_to_str: Optional[bool] = None
+    use_attribute_docstrings: Optional[bool] = None
+    json_schema_extra: Optional[Dict[str, Any]] = None  # noqa: UP006
 
     @override
     def dict(self, **kwargs: Any) -> dict[str, Any]:  # ty: ignore[invalid-type-form]
