@@ -29,7 +29,6 @@ from .payload_validation.native_numeric import (
 )
 
 INPUT_PATH = Path(__file__).parents[1] / "data" / "payloads" / "numeric_policy"
-EXPECTED_PATH = Path(__file__).parents[1] / "data" / "expected" / "main" / "payloads" / "numeric_policy"
 WITNESSES = json.loads((INPUT_PATH / "witnesses.json").read_text())
 ORACLE_CASES = json.loads((INPUT_PATH / "source_oracle.json").read_text())
 REGISTERED_CASE = next(case for case in SCHEMA_CASES if case.id == NATIVE_FLOAT_CONTRACT["case_id"])
@@ -51,7 +50,7 @@ def test_canonical_json_source_oracle(name: str) -> None:
         valid = source_schema_validator(case).is_valid(record["payload"])
         if valid:
             validate_with_source_schema(case, record["payload"])
-        assert_output(json.dumps(valid), EXPECTED_PATH / f"oracle_{name}.txt")
+        assert_output(json.dumps(valid))
 
 
 @pytest.mark.parametrize(
@@ -76,12 +75,9 @@ def test_native_float_contract_generation(variant: str, tmp_path: Path) -> None:
             validated, errors = pydantic_payload_result(adapter, payload)
             if not errors:
                 dumped = adapter.dump_python(validated, mode="json", by_alias=True, exclude_unset=True)
-                assert_output(
-                    json.dumps(source_schema_validator(case).is_valid(dumped) == source_valid),
-                    EXPECTED_PATH / f"dump_{variant}_{name}.txt",
-                )
+                assert_output(json.dumps(source_schema_validator(case).is_valid(dumped) == source_valid), name="dump")
             records[name] = {"source_valid": source_valid, "matches_native": errors == expected_errors}
-        assert_output(json.dumps(records, indent=2), EXPECTED_PATH / f"generation_{variant}.txt")
+        assert_output(json.dumps(records, indent=2))
 
 
 @pytest.mark.parametrize("change", ["source", "input"])
@@ -98,9 +94,7 @@ def test_native_float_contract_rejects_unproven_assumptions(change: str) -> None
 def test_unregistered_numeric_case_uses_source_acceptance() -> None:
     """An unregistered shape cannot silently acquire native rejection handling."""
     case = replace(REGISTERED_CASE, id="unregistered")
-    assert_output(
-        json.dumps(native_float_multiple_errors(case, WITNESSES["ordinary"])), EXPECTED_PATH / "unregistered.txt"
-    )
+    assert_output(json.dumps(native_float_multiple_errors(case, WITNESSES["ordinary"])))
 
 
 @pytest.mark.parametrize("name", ["constant", "enum", "ordinary_constant", "string_constant", "mixed_enum"])
@@ -132,6 +126,4 @@ def test_integral_float_constants_reach_generated_models(name: str, tmp_path: Pa
         validated = adapter.validate_python(payload)
         dumped = adapter.dump_python(validated, mode="json", by_alias=True, exclude_unset=True)
         validate_with_source_schema(case, dumped)
-        assert_output(
-            json.dumps(type(payload).__name__ in schemas["runtime_types"][name]), EXPECTED_PATH / "runtime_numbers.txt"
-        )
+        assert_output(json.dumps(type(payload).__name__ in schemas["runtime_types"][name]), name="runtime")

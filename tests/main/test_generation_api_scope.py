@@ -14,7 +14,6 @@ from tests.data.python.generation_session_inputs import observe_api_session
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
-EXPECTED = DATA / "expected/main/generation_platform/api_scope"
 
 
 @pytest.mark.parametrize("empty", [False, True])
@@ -36,10 +35,10 @@ def test_api_capture_factory_attempts(empty: bool, monkeypatch: pytest.MonkeyPat
         monkeypatch=monkeypatch,
     )
     if not empty:
-        assert_output(result, EXPECTED / "pydantic_v2_BaseModel.py")
+        assert_output(result, suffix=".py")
     else:
         observation["empty_result"] = result
-    assert_output(json.dumps(observation, indent=2) + "\n", EXPECTED / "capture-collapse_once.txt")
+    assert_output(json.dumps(observation, indent=2) + "\n", name="observation")
 
 
 def test_api_scope_does_not_allow_empty_jsonschema() -> None:

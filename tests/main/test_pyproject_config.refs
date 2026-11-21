@@ -4,71 +4,71 @@
 False	main/pyproject_config/cli_flag_implying_another_option_beside_project_table[False].py
 True	main/pyproject_config/cli_flag_implying_another_option_beside_project_table[True].py
 [test_cli_reads_pyproject_json_files_from_working_directory]
-	main/pyproject_config/json_files_working_directory.py
+	main/pyproject_config/cli_reads_pyproject_json_files_from_working_directory.py
 [test_load_pyproject_config_generation]
-all_overridden	main/pyproject_config/cli_only.txt
-all_overridden	main/pyproject_config/no_config.py
-annotated_false	main/pyproject_config/annotated_false.py
-annotated_false	main/pyproject_config/annotated_false.txt
-cli_only	main/pyproject_config/cli_only.txt
-cli_only	main/pyproject_config/no_config.py
-config	main/pyproject_config/mapping.py
-config	main/pyproject_config/mapping.txt
-constraints_false	main/pyproject_config/annotated_false.py
-constraints_false	main/pyproject_config/annotated_false.txt
-default	main/pyproject_config/default.py
-default	main/pyproject_config/default.txt
-directory	main/pyproject_config/default.py
-directory	main/pyproject_config/default.txt
-discover_parent	main/pyproject_config/default.py
-discover_parent	main/pyproject_config/default.txt
-empty_config	main/pyproject_config/default.py
-empty_config	main/pyproject_config/default.txt
-empty_formatters	main/pyproject_config/empty_formatters.py
-empty_formatters	main/pyproject_config/empty_formatters.txt
-empty_mapping	main/pyproject_config/default.py
-empty_mapping	main/pyproject_config/default.txt
-file	main/pyproject_config/default.py
-file	main/pyproject_config/default.txt
-inline_json	main/pyproject_config/inline_json.py
-inline_json	main/pyproject_config/inline_json.txt
-json_files	main/pyproject_config/json_files.py
-json_files	main/pyproject_config/json_files.txt
-legacy_naming	main/pyproject_config/legacy_naming.py
-legacy_naming	main/pyproject_config/legacy_naming.txt
-mapping	main/pyproject_config/mapping.py
-mapping	main/pyproject_config/mapping.txt
-msgspec	main/pyproject_config/msgspec.py
-msgspec	main/pyproject_config/msgspec.txt
-msgspec_override	main/pyproject_config/msgspec_override.py
-msgspec_override	main/pyproject_config/msgspec_override.txt
-multiple_profiles	main/pyproject_config/multiple_profiles.py
-multiple_profiles	main/pyproject_config/multiple_profiles.txt
-no_config	main/pyproject_config/no_config.py
-no_config	main/pyproject_config/no_config.txt
-no_section	main/pyproject_config/no_config.py
-no_section	main/pyproject_config/no_config.txt
-overridden_invalid_alias	main/pyproject_config/overridden_invalid_alias.py
-overridden_invalid_alias	main/pyproject_config/overridden_invalid_alias.txt
-override_legacy_naming	main/pyproject_config/mapping.py
-override_legacy_naming	main/pyproject_config/override_legacy_naming.txt
-preset	main/pyproject_config/preset.py
-preset	main/pyproject_config/preset.txt
-profile	main/pyproject_config/profile.py
-profile	main/pyproject_config/profile.txt
-python_310	main/pyproject_config/python_310.py
-python_310	main/pyproject_config/python_310.txt
-relative_file	main/pyproject_config/default.py
-relative_file	main/pyproject_config/default.txt
-relative_output	main/pyproject_config/default.py
-relative_output	main/pyproject_config/relative_output.txt
-settings_reset	main/pyproject_config/settings_reset.py
-settings_reset	main/pyproject_config/settings_reset.txt
-string_directory	main/pyproject_config/default.py
-string_directory	main/pyproject_config/default.txt
-string_file	main/pyproject_config/default.py
-string_file	main/pyproject_config/default.txt
-string_relative_file	main/pyproject_config/default.py
-string_relative_file	main/pyproject_config/default.txt
-string_template_imports	main/pyproject_config/json_files.py
-string_template_imports	main/pyproject_config/json_files.txt
+all_overridden	main/pyproject_config/load_pyproject_config_generation[all_overridden].py
+all_overridden	main/pyproject_config/load_pyproject_config_generation[all_overridden].txt
+annotated_false	main/pyproject_config/load_pyproject_config_generation[annotated_false].py
+annotated_false	main/pyproject_config/load_pyproject_config_generation[annotated_false].txt
+cli_only	main/pyproject_config/load_pyproject_config_generation[cli_only].py	= main/pyproject_config/load_pyproject_config_generation[all_overridden].py
+cli_only	main/pyproject_config/load_pyproject_config_generation[cli_only].txt	= main/pyproject_config/load_pyproject_config_generation[all_overridden].txt
+config	main/pyproject_config/load_pyproject_config_generation[config].py
+config	main/pyproject_config/load_pyproject_config_generation[config].txt
+constraints_false	main/pyproject_config/load_pyproject_config_generation[constraints_false].py	= main/pyproject_config/load_pyproject_config_generation[annotated_false].py
+constraints_false	main/pyproject_config/load_pyproject_config_generation[constraints_false].txt	= main/pyproject_config/load_pyproject_config_generation[annotated_false].txt
+default	main/pyproject_config/load_pyproject_config_generation[default].py
+default	main/pyproject_config/load_pyproject_config_generation[default].txt
+directory	main/pyproject_config/load_pyproject_config_generation[directory].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+directory	main/pyproject_config/load_pyproject_config_generation[directory].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+discover_parent	main/pyproject_config/load_pyproject_config_generation[discover_parent].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+discover_parent	main/pyproject_config/load_pyproject_config_generation[discover_parent].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+empty_config	main/pyproject_config/load_pyproject_config_generation[empty_config].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+empty_config	main/pyproject_config/load_pyproject_config_generation[empty_config].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+empty_formatters	main/pyproject_config/load_pyproject_config_generation[empty_formatters].py
+empty_formatters	main/pyproject_config/load_pyproject_config_generation[empty_formatters].txt
+empty_mapping	main/pyproject_config/load_pyproject_config_generation[empty_mapping].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+empty_mapping	main/pyproject_config/load_pyproject_config_generation[empty_mapping].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+file	main/pyproject_config/load_pyproject_config_generation[file].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+file	main/pyproject_config/load_pyproject_config_generation[file].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+inline_json	main/pyproject_config/load_pyproject_config_generation[inline_json].py
+inline_json	main/pyproject_config/load_pyproject_config_generation[inline_json].txt
+json_files	main/pyproject_config/load_pyproject_config_generation[json_files].py
+json_files	main/pyproject_config/load_pyproject_config_generation[json_files].txt
+legacy_naming	main/pyproject_config/load_pyproject_config_generation[legacy_naming].py
+legacy_naming	main/pyproject_config/load_pyproject_config_generation[legacy_naming].txt
+mapping	main/pyproject_config/load_pyproject_config_generation[mapping].py	= main/pyproject_config/load_pyproject_config_generation[config].py
+mapping	main/pyproject_config/load_pyproject_config_generation[mapping].txt	= main/pyproject_config/load_pyproject_config_generation[config].txt
+msgspec	main/pyproject_config/load_pyproject_config_generation[msgspec].py
+msgspec	main/pyproject_config/load_pyproject_config_generation[msgspec].txt
+msgspec_override	main/pyproject_config/load_pyproject_config_generation[msgspec_override].py
+msgspec_override	main/pyproject_config/load_pyproject_config_generation[msgspec_override].txt
+multiple_profiles	main/pyproject_config/load_pyproject_config_generation[multiple_profiles].py
+multiple_profiles	main/pyproject_config/load_pyproject_config_generation[multiple_profiles].txt
+no_config	main/pyproject_config/load_pyproject_config_generation[no_config].py	= main/pyproject_config/load_pyproject_config_generation[all_overridden].py
+no_config	main/pyproject_config/load_pyproject_config_generation[no_config].txt
+no_section	main/pyproject_config/load_pyproject_config_generation[no_section].py	= main/pyproject_config/load_pyproject_config_generation[all_overridden].py
+no_section	main/pyproject_config/load_pyproject_config_generation[no_section].txt	= main/pyproject_config/load_pyproject_config_generation[no_config].txt
+overridden_invalid_alias	main/pyproject_config/load_pyproject_config_generation[overridden_invalid_alias].py
+overridden_invalid_alias	main/pyproject_config/load_pyproject_config_generation[overridden_invalid_alias].txt
+override_legacy_naming	main/pyproject_config/load_pyproject_config_generation[override_legacy_naming].py	= main/pyproject_config/load_pyproject_config_generation[config].py
+override_legacy_naming	main/pyproject_config/load_pyproject_config_generation[override_legacy_naming].txt
+preset	main/pyproject_config/load_pyproject_config_generation[preset].py
+preset	main/pyproject_config/load_pyproject_config_generation[preset].txt
+profile	main/pyproject_config/load_pyproject_config_generation[profile].py
+profile	main/pyproject_config/load_pyproject_config_generation[profile].txt
+python_310	main/pyproject_config/load_pyproject_config_generation[python_310].py
+python_310	main/pyproject_config/load_pyproject_config_generation[python_310].txt
+relative_file	main/pyproject_config/load_pyproject_config_generation[relative_file].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+relative_file	main/pyproject_config/load_pyproject_config_generation[relative_file].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+relative_output	main/pyproject_config/load_pyproject_config_generation[relative_output].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+relative_output	main/pyproject_config/load_pyproject_config_generation[relative_output].txt
+settings_reset	main/pyproject_config/load_pyproject_config_generation[settings_reset].py
+settings_reset	main/pyproject_config/load_pyproject_config_generation[settings_reset].txt
+string_directory	main/pyproject_config/load_pyproject_config_generation[string_directory].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+string_directory	main/pyproject_config/load_pyproject_config_generation[string_directory].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+string_file	main/pyproject_config/load_pyproject_config_generation[string_file].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+string_file	main/pyproject_config/load_pyproject_config_generation[string_file].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+string_relative_file	main/pyproject_config/load_pyproject_config_generation[string_relative_file].py	= main/pyproject_config/load_pyproject_config_generation[default].py
+string_relative_file	main/pyproject_config/load_pyproject_config_generation[string_relative_file].txt	= main/pyproject_config/load_pyproject_config_generation[default].txt
+string_template_imports	main/pyproject_config/load_pyproject_config_generation[string_template_imports].py	= main/pyproject_config/load_pyproject_config_generation[json_files].py
+string_template_imports	main/pyproject_config/load_pyproject_config_generation[string_template_imports].txt	= main/pyproject_config/load_pyproject_config_generation[json_files].txt

@@ -293,14 +293,11 @@ def test_main_modular_json_no_file(capsys: pytest.CaptureFixture[str]) -> None:
 
 def test_single_module_mapping_text_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve valid text stdout for a generated mapping with one module."""
-    expected_path = EXPECTED_MAIN_KR_PATH / "single_module_mapping" / "output.py"
-    _write_generated_result(
-        {("model.py",): stored_expected(expected_path).read_text().removesuffix("\n")},
-        None,
-        fail_on_multi_module_stdout=True,
-    )
+    module = "class Model:\n    pass"
+    _write_generated_result({("model.py",): module}, None, fail_on_multi_module_stdout=True)
 
-    _assert_captured_output(capsys, expected_stdout_path=expected_path, assert_no_stderr=True)
+    _assert_captured_output(capsys, derived_stdout=True, stdout_suffix=".py", assert_no_stderr=True)
+    assert_output(f"{module}\n", name="stdout", suffix=".py")
 
 
 def test_main_modular_filename(output_file: Path) -> None:
@@ -5019,14 +5016,15 @@ def test_output_format_json_schema_generate_prompt(capsys: pytest.CaptureFixture
         GENERATE_PROMPT_JSON_SCHEMA_ARGS,
         expected_exit=Exit.OK,
         capsys=capsys,
-        expected_stdout_path=EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_schema.txt",
+        derived_stdout=True,
         assert_no_stderr=True,
     )
 
 
-def test_output_format_json_schema_validates_generate_prompt_json() -> None:
+def test_output_format_json_schema_validates_generate_prompt_json(capsys: pytest.CaptureFixture[str]) -> None:
     """Test prompt JSON output conforms to its emitted JSON Schema."""
-    schema = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_schema.txt").read_text())
+    run_main_with_args(GENERATE_PROMPT_JSON_SCHEMA_ARGS)
+    schema = json.loads(capsys.readouterr().out)
     payload = json.loads(stored_expected(EXPECTED_MAIN_KR_PATH / "generate_prompt" / "json_output.txt").read_text())
 
     jsonschema.validate(instance=payload, schema=schema)

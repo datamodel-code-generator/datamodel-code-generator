@@ -297,14 +297,18 @@ def test_read_format_as_annotation_keeps_converted_formats(
     """
     without = tmp_path / "without.py"
     run_main_and_assert(
-        input_path=input_path, output_path=without, input_file_type=input_file_type, extra_args=COMMON_ARGS
+        input_path=input_path,
+        output_path=without,
+        input_file_type=input_file_type,
+        extra_args=COMMON_ARGS,
+        name="model",
     )
     run_main_and_assert(
         input_path=input_path,
         output_path=output_file,
         input_file_type=input_file_type,
         extra_args=[*COMMON_ARGS, "--read-format-as-annotation"],
-        expected_output=without.read_text(encoding="utf-8"),
+        name="model",
     )
 
 
