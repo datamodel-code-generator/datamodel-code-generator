@@ -205,6 +205,7 @@ ORACLE_FILES = (
     "scripts/_behaviour_classify.py",
     "scripts/_behaviour_report.py",
     "scripts/_behaviour_signature.py",
+    "scripts/_cell_catalog.py",
     "scripts/_change_records.py",
     "scripts/_change_units.py",
     "scripts/_source_model.py",
