@@ -15,6 +15,9 @@ exit status 0
  "cast@src": {
   "src/pkg/d.py": 1
  },
+ "comment:plain@src": {
+  "src/pkg/d.py": 2
+ },
  "coverage-config:exclude:if TYPE_CHECKING:": {
   "pyproject.toml": 1
  },
@@ -31,7 +34,7 @@ exit status 0
   "src/pkg/d.py": 1
  },
  "heki-ignore:BARE@src": {
-  "src/pkg/d.py": 1
+  "src/pkg/d.py": 2
  },
  "heki-ignore:MUT201@src": {
   "src/pkg/d.py": 2
@@ -80,6 +83,9 @@ exit status 0
  },
  "ruff-config:per-file:tests/**/*.py:S101": {
   "pyproject.toml": 1
+ },
+ "ruff:FURB113@src": {
+  "src/pkg/d.py": 1
  },
  "ruff:PLC0415@src": {
   "src/pkg/a.py": 1

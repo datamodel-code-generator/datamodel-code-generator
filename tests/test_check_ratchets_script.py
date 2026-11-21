@@ -100,6 +100,9 @@ def silenced(items: list[int]) -> None:
     items.sort()  # noqa: OPT110, E501
     items.reverse()  # noqa: write-owner-violation
     items.clear()  # noqa: PLC0415 - MUT201
+    items.append(1)  # noqa
+    items.append(2)  # heki: ignore[MUT201
+    items.append(3)  # heki: ignore[]
 """,
     "tests/test_d.py": FUTURE
     + """

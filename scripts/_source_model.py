@@ -388,7 +388,7 @@ _NOQA = re.compile(rf"#\s*noqa(?![\w-]){_CODES}", re.IGNORECASE)
 _FILE_NOQA = re.compile(rf"#\s*(?:ruff|flake8):\s*noqa(?![\w-]){_CODES}")
 _RUFF_RULES = re.compile(r"#\s*ruff:\s*(?P<action>ignore|disable|enable)\[(?P<rules>[^\]]*)\]")
 _TYPE_IGNORE = re.compile(r"\b(?P<tool>ty|pyright|type):\s*ignore\b(?:\[(?P<codes>[^\]]*)\])?")
-_HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?:\[(?P<codes>[^\]]*)\])?", re.IGNORECASE)
+_HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?!\[[^\]]*$)(?:\[(?P<codes>[^\]]*)\])?", re.IGNORECASE)
 _PRAGMA = re.compile(r"\bpragma:\s*(no\s+cover|no\s+branch|\S+(?:\s+no)?\s+cover)\b")
 _PRAGMA_FORMS = {"no cover": "no-cover", "no branch": "no-branch"}
 _LOOP_KEYWORDS = {ast.For: "for", ast.AsyncFor: "async for", ast.While: "while", ast.With: "with"}
@@ -1310,9 +1310,12 @@ class _Suppressions(_Extents):
                 found.append(Suppression(match["tool"], "ignore", codes, line, frozenset({line})))
             for match in _HEKI_IGNORE.finditer(comment):
                 codes = (
-                    tuple(code.strip() for code in match["codes"].split(",")) if match["codes"] is not None else None
+                    tuple(code.strip() for code in match["codes"].split(",") if code.strip())
+                    if match["codes"] is not None
+                    else None
                 )
-                found.append(Suppression("heki", "ignore", codes, line, frozenset({line})))
+                if codes != ():
+                    found.append(Suppression("heki", "ignore", codes, line, frozenset({line})))
             for match in _PRAGMA.finditer(comment):
                 form = _PRAGMA_FORMS.get(" ".join(match[1].split()), "conditional-cover")
                 lines = frozenset({line}) if form == "no-branch" else self._covered(line)

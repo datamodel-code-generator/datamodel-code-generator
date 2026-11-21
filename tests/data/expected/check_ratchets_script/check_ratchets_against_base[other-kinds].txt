@@ -7,12 +7,13 @@ allowlist:DEFAULT_ALLOWLIST                        0       1      +1
 allowlist:FROZEN_EXEMPT_FILES                      0       1      +1
 allowlist:JUSTIFIED_VIOLATIONS                     0       1      +1
 cast@src                                           0       1      +1
+comment:plain@src                                  0       2      +2
 coverage-config:exclude:if TYPE_CHECKING:          0       1      +1
 coverage-config:omit:src/pkg/d.py                  0       1      +1
 dynamic-import@src                                 0       1      +1
 filterwarnings-ignore@src                          0       2      +2
 getattr-private@src                                0       1      +1
-heki-ignore:BARE@src                               0       1      +1
+heki-ignore:BARE@src                               0       2      +2
 heki-ignore:MUT201@src                             0       2      +2
 heki-ignore:OPT103@src                             0       1      +1
 heki-ignore:OPT110@src                             0       1      +1
@@ -29,6 +30,7 @@ ruff-config:ignore:D                               1       1       0
 ruff-config:ignore:ERA001                          1       1       0
 ruff-config:ignore:INP                             1       1       0
 ruff-config:per-file:tests/**/*.py:S101            1       1       0
+ruff:FURB113@src                                   0       1      +1
 ruff:PLC0415@src                                   1       1       0
 source-rule:raw-skip                               0       1      +1
 store-allowlist:counted                            0       2      +2
@@ -53,6 +55,9 @@ allowlist:JUSTIFIED_VIOLATIONS rose by 1 (0 -> 1). Allowlist entries only shrink
 cast@src rose by 1 (0 -> 1). Narrow the type with isinstance, an annotation or a TypeGuard instead of cast().
   src/pkg/d.py: 0 -> 1 (lines 14)
 
+comment:plain@src rose by 2 (0 -> 2). Say it in the docstring or fix it: a comment that only explains a stopgap hides the stopgap.
+  src/pkg/d.py: 0 -> 2 (lines 24, 25)
+
 coverage-config:exclude:if TYPE_CHECKING: rose by 1 (0 -> 1). An omitted or excluded file is never measured: reach it with tests instead.
   pyproject.toml: 0 -> 1
 
@@ -68,8 +73,8 @@ filterwarnings-ignore@src rose by 2 (0 -> 2). Fix the warning's cause, or assert
 getattr-private@src rose by 1 (0 -> 1). A private name read through getattr() hides it from SLF001: give its owner a method instead.
   src/pkg/d.py: 0 -> 1 (lines 13)
 
-heki-ignore:BARE@src rose by 1 (0 -> 1). Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.
-  src/pkg/d.py: 0 -> 1 (lines 18)
+heki-ignore:BARE@src rose by 2 (0 -> 2). Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.
+  src/pkg/d.py: 0 -> 2 (lines 18, 23)
 
 heki-ignore:MUT201@src rose by 2 (0 -> 2). Fix the finding or the contract instead of silencing heki on the line; the baseline only shrinks.
   src/pkg/d.py: 0 -> 2 (lines 21, 22)
@@ -97,6 +102,9 @@ pyright-ignore:reportPrivateUsage@src rose by 1 (0 -> 1). pyright checks only ge
 
 pytest-config:filterwarnings-ignore rose by 1 (0 -> 1). Fix the warning's cause, or assert it with pytest.warns, instead of filtering it for all tests.
   pyproject.toml: 0 -> 1
+
+ruff:FURB113@src rose by 1 (0 -> 1). Fix the finding instead of suppressing it. A noqa comment, a `ruff: ignore` comment and a per-file ignore count the same, so moving one changes nothing; if one must stay, remove another suppression of this rule in the same area.
+  src/pkg/d.py: 0 -> 1 (lines 23)
 
 source-rule:raw-skip rose by 1 (0 -> 1). Say what the test needs with a capability of tests/capabilities.py (`@needs("symlinks")`), adding one with its reason when none fits; delete a skip that no lane takes; `python scripts/check_source_rules.py --rule raw-skip` prints each site with its detail.
   tests/test_d.py: 0 -> 1 (lines 8)

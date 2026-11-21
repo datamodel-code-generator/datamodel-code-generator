@@ -15,6 +15,7 @@ import sysconfig
 from pathlib import Path
 
 import pytest
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_heki_contracts.py"
@@ -104,3 +105,66 @@ def test_heki_reports_a_fact_write_outside_its_store_operations(tmp_path: Path) 
         1,
         [(f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields")],
     ), result.stderr
+
+
+SEEDED_HOMES = {
+    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/home.py": "def decide() -> int:\n    return 1\n",
+    f"{PACKAGE}/caller.py": (
+        "from datamodel_code_generator.home import decide\n\n\n"
+        "def run() -> int:\n    return decide()\n\n\n"
+        "def run_through_helper() -> int:\n    return _helper()\n\n\n"
+        "def _helper() -> int:\n    return decide()\n"
+    ),
+}
+"""A decision home that ``run`` and ``run_through_helper`` may call; the second delegates the call to a private helper."""
+SEEDED_HOME_CONTRACT = """[[call-owners]]
+name = "home:home.py:decide"
+targets = ["datamodel_code_generator.home.decide"]
+allowed-callers = ["datamodel_code_generator.caller:run", "datamodel_code_generator.caller:run_through_helper"]
+references = "calls"
+subclasses = false
+attribution = "lexical"
+"""
+
+
+@pytest.mark.allow_direct_assert("the contracts' attribution must fail the test, not be stored as an expected output")
+def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
+    """Homes, builders, held parse methods and dispatch tables are judged where the call or read is written.
+
+    The guards of the records (`scripts/_decision_home_reads.py`) report the scope that holds each read, so a call
+    handed to a private helper is the helper's, not its caller's.
+    """
+    contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
+    judged = [
+        (table["name"], table.get("attribution"))
+        for kind in ("call-owners", "read-owners")
+        for table in contracts[kind]
+        if table["name"].startswith(("home:", "builder:", "held:", "table:"))
+    ]
+
+    assert judged
+    assert [name for name, attribution in judged if attribution != "lexical"] == []
+
+
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_judges_a_home_call_in_the_helper_that_makes_it(tmp_path: Path) -> None:
+    """With lexical attribution a call delegated to a private helper is reported at the helper, as the guard does."""
+    for name, text in SEEDED_HOMES.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    contracts = tmp_path / "contracts.toml"
+    contracts.write_text(SEEDED_HOME_CONTRACT, encoding="utf-8")
+    heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
+
+    result = subprocess.run(
+        [heki, "check", "--config", str(contracts), "--output-format", "json", "src"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    found = [(item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)]
+    assert (result.returncode, found) == (1, [("_helper", "MUT204")]), result.stderr

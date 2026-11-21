@@ -6,7 +6,8 @@ Usage:
 
 heki (a development dependency) checks the contracts statically: ``heki check --config scripts/heki.toml --baseline
 scripts/heki_baseline.toml src``. Every contract comes from a record that a check of the repository already reads,
-so the file is never edited by hand:
+so the file is never edited by hand. The contracts of homes, builders and tables judge each call or read in the scope
+that holds it (``attribution = "lexical"``), as the guards of those records do:
 
 - ``write-owners`` (``MUT201``, ``MUT205``): the ``fact``, ``presentation`` and ``cache`` rows of
   ``scripts/fact_tables.py`` outside the parser run state, one contract per kind and set of store operations; the
@@ -16,7 +17,9 @@ so the file is never edited by hand:
   (`scripts._decision_home_reads.checked_homes`), callable by the home modules and the adapter sites of their rows; the
   parse methods that dispatch tables hold, callable only where the tables are built; and the outputs that builder
   records mark by a callee, built only by the builder and its parts.
-- ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder; and the private members of
+- ``read-owners`` (``MUT203``): each recorded dispatch table, read only by its builder (the guard of the builder
+  records also allows ``typed_children`` reads; heki cannot tell the method a read is followed by, so such a read
+  outside the builder is a finding, and none exists in the package today); and the private members of
   the classes outside the concern modules of the host rule of ``scripts/check_architecture_boundaries.py`` (and of the
   Protocols inside them that are no ``*Host``), which the concern modules may neither read nor call (``MUT206``,
   ``MUT207`` report what heki cannot tie to a class).
@@ -176,6 +179,7 @@ def decision_home_contracts(repo: Repo) -> list[str]:
             allowed_callers=sorted(allowed),
             references="calls",
             subclasses=False,
+            attribution="lexical",
         )
     return [contracts[home] for home in sorted(contracts)]
 
@@ -196,6 +200,7 @@ def builder_contracts(repo: Repo) -> list[str]:
                     name=f"table:{record.table.path}:{record.table.name}",
                     targets=[f"{_module(record.table.path)}.{record.table.name}"],
                     allowed_readers=builder,
+                    attribution="lexical",
                 )
             )
         if callees := sorted(mark.callee for mark in record.marks if "." in mark.callee):
@@ -207,6 +212,7 @@ def builder_contracts(repo: Repo) -> list[str]:
                     targets=callees,
                     allowed_callers=[*builder, *parts],
                     subclasses=False,
+                    attribution="lexical",
                 )
             )
     contracts += [
@@ -216,6 +222,7 @@ def builder_contracts(repo: Repo) -> list[str]:
             targets=[f"{_module(method.path)}.{method.name}"],
             allowed_callers=[f"{table}:<module>" for table in tables],
             references="calls",
+            attribution="lexical",
         )
         for method in held_parse_methods(repo, BUILDER_HOMES)
     ]

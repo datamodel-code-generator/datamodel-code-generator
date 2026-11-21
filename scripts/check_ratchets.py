@@ -14,11 +14,12 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   ruff configuration file (``ruff.toml``, ``.ruff.toml``, a nested ``pyproject.toml`` with ``[tool.ruff]``).
 - ``pragma:no-cover``, ``pragma:no-branch``, ``pragma:conditional-cover``, ``ty-ignore:<rule>``,
   ``pyright-ignore:<rule>`` and ``type-ignore:<code>`` comments, read with ``tokenize``.
-- ``heki-ignore:<rule>``: ``# heki: ignore`` comments, bare (``BARE``) or per listed rule or rule name, and ``# noqa``
-  comments that name a heki rule, by its code (``EFF101``, ``MUT201``, ``DATA101``, ``OPT110``) or its name
-  (``write-owner-violation``) anywhere after ``noqa:``, which heki reads as suppressions too (a name counts under the
-  rule's code, also inside ``heki: ignore[...]``). A ``noqa`` also counts under ``ruff:`` where ruff would report the
-  finding. The source model reports the ``heki: ignore`` comments as suppressions of tool ``heki``.
+- ``heki-ignore:<rule>``: ``# heki: ignore`` comments, bare (``BARE``) or per listed rule, and ``# noqa`` comments,
+  bare (``BARE``) or naming a heki rule, which heki reads as suppressions too. A rule is named by its code
+  (``EFF101``, ``MUT201``, ``DATA101``, ``OPT110``) or its name (``write-owner-violation``; anywhere after
+  ``noqa:``, or inside ``heki: ignore[...]``) and counts under the rule's code. A bracketed list that is not closed
+  or names no rule silences nothing in heki and counts none. A ``noqa`` also counts under ``ruff:`` where ruff
+  would report the finding. The source model reports the ``heki: ignore`` comments as suppressions of tool ``heki``.
 - ``cast``, ``any`` (``Any`` inside an annotation or a ``cast`` target), ``getattr-private`` (a constant private
   name given to ``getattr`` and its siblings), ``dynamic-import``, ``filterwarnings-ignore``, ``no-type-check`` and
   ``abnormal-path`` (the test marker), read with ``ast``.
@@ -169,8 +170,8 @@ CHUNK = 200
 PRAGMA = re.compile(r"\bpragma:\s*(no\s+cover|no\s+branch|\S+(?:\s+no)?\s+cover)\b")
 PRAGMA_KINDS = {"no cover": "no-cover", "no branch": "no-branch"}
 TYPE_IGNORE = re.compile(r"\b(ty|pyright|type):\s*ignore\b(?:\[([^\]]*)\])?")
-HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?:\[([^\]]*)\])?", re.IGNORECASE)
-HEKI_NOQA = re.compile(r"#\s*noqa(?![\w-]):(.*)", re.IGNORECASE)
+HEKI_IGNORE = re.compile(r"\bheki:\s*ignore\b(?!\[[^\]]*$)(?:\[([^\]]*)\])?", re.IGNORECASE)
+HEKI_NOQA = re.compile(r"#\s*noqa(?![\w-])(?::(.*))?", re.IGNORECASE)
 HEKI_RULES = {
     "cached-property-stale-mutation": "MUT101",
     "summary-effect-regression": "MUT103",
@@ -691,17 +692,14 @@ def _comment_keys(text: str) -> list[str]:
         for match in TYPE_IGNORE.finditer(text)
         for rule in (match[2] or "").split(",")
     ]
-    heki = [
-        f"heki-ignore:{_heki_rule(rule.strip()) or 'BARE'}"
-        for match in HEKI_IGNORE.finditer(text)
-        for rule in (match[1] or "").split(",")
-    ]
-    heki += [
-        f"heki-ignore:{rule}"
-        for match in HEKI_NOQA.finditer(text)
-        for word in re.findall(r"[\w-]+", match[1])
-        if HEKI_CODE.fullmatch(rule := _heki_rule(word))
-    ]
+    heki: list[str] = []
+    for match in HEKI_IGNORE.finditer(text):
+        listed = None if match[1] is None else [rule.strip() for rule in match[1].split(",") if rule.strip()]
+        heki += ["heki-ignore:BARE"] if listed is None else [f"heki-ignore:{_heki_rule(rule)}" for rule in listed]
+    for match in HEKI_NOQA.finditer(text):
+        words = re.findall(r"[\w-]+", match[1] or "")
+        rules = [rule for word in words if HEKI_CODE.fullmatch(rule := _heki_rule(word))]
+        heki += [f"heki-ignore:{rule}" for rule in rules] if words else ["heki-ignore:BARE"]
     return [*pragmas, *ignores, *heki]
 
 
