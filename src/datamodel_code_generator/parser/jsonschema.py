@@ -1150,8 +1150,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """The site, keyword and branches the last ``parse_combined_schema`` parsed (``_parse_all_of_union_parts``)."""
         self._init_schema_resources()
         self._pattern_validation_document_root: JsonSchemaObject | None = None
-        self._root_id: Optional[str] = None  # noqa: UP045
-        self._root_id_base_path: Optional[str] = None  # noqa: UP045
+        self._root_id: str | None = None
+        self._root_id_base_path: str | None = None
 
         self._external_ref_mapping: dict[str, str] = {
             _external_ref_mapping_key(file_path, self.base_path): python_package

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ast import literal_eval
 from functools import lru_cache, partial
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, Optional, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias
 
 from typing_extensions import override
 
@@ -369,7 +369,7 @@ class Member:
         """Initialize enum member."""
         self.enum: Enum = enum
         self.field: DataModelFieldBase = field
-        self.alias: Optional[str] = None  # noqa: UP045
+        self.alias: str | None = None
 
     @override
     def __repr__(self) -> str:
