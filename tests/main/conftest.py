@@ -49,7 +49,6 @@ from tests.conftest import (
     _compare_derived,
     _compare_expected,
     _derived_output_role,
-    _infer_expected_file,
     _normalize_line_endings,
     _output_tree,
     _validation_stats,
@@ -869,7 +868,6 @@ def run_generate_file_and_assert(
     input_file_type: InputFileType | None = None,
     assert_func: AssertFileContent | None = None,
     expected_file: str | Path | None = None,
-    expected_directory: Path | None = None,
     transform: Callable[[str], str] | None = None,
     expected_warnings: Sequence[str] | None = None,
     unchanged_inputs: Mapping[str, object] | None = None,
@@ -914,9 +912,7 @@ def run_generate_file_and_assert(
                 )
             assert_warnings_contain(warning_records, *expected_warnings)
 
-    if expected_directory is not None:
-        assert_directory_content(output_path, expected_directory)
-    elif assert_func is None:
+    if assert_func is None:
         _compare_output(output_path, expected_file, transform, name=name)
     else:
         assert_func(output_path, expected_file, transform=transform)
@@ -942,8 +938,8 @@ def run_generate_and_assert(
 ) -> None:
     """Execute generate() and assert returned text, written text, or an expected error.
 
-    An expected error without ``expected_error_match`` or ``expected_file`` compares the error text with the output
-    pytest stores for the test. ``name`` names a stored output; two runs under one name must give equal output.
+    An expected error without ``expected_error_match`` compares the error text with the output pytest stores for the
+    test. ``name`` names a stored output; two runs under one name must give equal output.
     """
     __tracebackhide__ = True
 
@@ -956,9 +952,7 @@ def run_generate_and_assert(
         if expected_error is not None:
             with pytest.raises(expected_error, match=expected_error_match) as error:
                 generate(input_=input_, **options)
-            if expected_file is not None:
-                assert_output(f"{error.value}\n", expected_file)
-            elif expected_error_match is None:
+            if expected_error_match is None:
                 _compare_derived(
                     _normalize_line_endings(f"{error.value}\n"), role=_derived_output_role(name=name), suffix=".txt"
                 )
@@ -1028,7 +1022,6 @@ def run_main_and_assert(  # noqa: PLR0912
     expected_file: str | Path | None = None,
     expected_output: str | None = None,
     expected_directory: Path | None = None,
-    output_to_expected: Sequence[tuple[str, str | Path]] | None = None,
     file_should_not_exist: Path | Sequence[Path] | None = None,
     output_should_not_exist: bool = False,
     # Verification options
@@ -1080,7 +1073,6 @@ def run_main_and_assert(  # noqa: PLR0912
         assert_func + expected_file: Compare with expected file using assert function
         expected_output: Compare with string directly
         expected_directory: Compare entire directory
-        output_to_expected: Compare multiple files
         file_should_not_exist: Assert a file does NOT exist
         output_should_not_exist: Assert output_path does NOT exist
 
@@ -1120,7 +1112,6 @@ def run_main_and_assert(  # noqa: PLR0912
         expected_file is not None,
         expected_output is not None,
         expected_directory is not None,
-        output_to_expected is not None,
         file_should_not_exist is not None,
         output_should_not_exist,
     ))
@@ -1206,17 +1197,16 @@ def run_main_and_assert(  # noqa: PLR0912
     )
 
     output_verification_modes = (
-        int(assert_func is not None and output_to_expected is None)
+        int(assert_func is not None)
         + int(expected_output is not None)
         + int(expected_directory is not None)
-        + int(output_to_expected is not None)
         + int(file_should_not_exist is not None)
         + int(output_should_not_exist)
     )
     if output_verification_modes > 1:  # pragma: no cover
         pytest.fail(
             "Output verification options are mutually exclusive; use exactly one of "
-            "standalone assert_func, expected_output, expected_directory, output_to_expected, "
+            "assert_func, expected_output, expected_directory, "
             "file_should_not_exist, or output_should_not_exist"
         )
 
@@ -1243,13 +1233,6 @@ def run_main_and_assert(  # noqa: PLR0912
         if output_path is None:  # pragma: no cover
             pytest.fail("output_path is required when using expected_directory")
         assert_directory_content(output_path, expected_directory)
-    elif output_to_expected is not None:
-        if output_path is None:  # pragma: no cover
-            pytest.fail("output_path is required when using output_to_expected")
-        if assert_func is None:  # pragma: no cover
-            pytest.fail("assert_func is required when using output_to_expected")
-        for output_relative, exp_file in output_to_expected:
-            assert_func(output_path / output_relative, exp_file)
     elif expected_output is not None:
         if output_path is None:  # pragma: no cover
             pytest.fail("output_path is required when using expected_output")
@@ -1259,12 +1242,6 @@ def run_main_and_assert(  # noqa: PLR0912
     elif assert_func is not None:
         if output_path is None:  # pragma: no cover
             pytest.fail("output_path is required when using assert_func")
-        if expected_file is None:
-            frame = inspect.currentframe()
-            assert frame is not None
-            assert frame.f_back is not None
-            expected_file = _infer_expected_file(frame.f_back.f_code.co_name)
-            del frame
         assert_func(output_path, expected_file, transform=transform)
     elif output_path is not None:
         _compare_output(
