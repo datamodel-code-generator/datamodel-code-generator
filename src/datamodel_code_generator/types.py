@@ -902,7 +902,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             new_data_type.parent = parent
             if is_data_model_field(parent):
                 parent.data_type = new_data_type
-            elif isinstance(parent, DataType):  # pragma: no cover - not proven unreachable
+            else:
                 parent.data_types = [new_data_type if d is self else d for d in parent.data_types]
 
     @property
