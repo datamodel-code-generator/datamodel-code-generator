@@ -37,7 +37,7 @@ UNBOUND_NAME_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "not-generated": (
         "main/main_watch/batch_watch_nested_dependency_reruns_full_batch_without_output_loop.stale.py::stale",
     ),
-    "unknown-x-python-type": ("main/jsonschema/x_python_type_nested_unknown_type.py::MyCustomType",),
+    "unknown-x-python-type": ("main/jsonschema/main_jsonschema/x_python_type_nested_unknown_type.py::MyCustomType",),
 }
 UNBOUND_NAME_GROUP_REASONS: dict[str, str] = {
     "custom-file-header": (
