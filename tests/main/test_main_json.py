@@ -14,10 +14,8 @@ from tests.conftest import (
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_httpx_get_kwargs,
-    create_assert_file_content,
 )
 from tests.main.conftest import (
-    EXPECTED_JSON_PATH,
     JSON_DATA_PATH,
     run_main_and_assert,
     run_main_url_and_assert,
@@ -25,9 +23,6 @@ from tests.main.conftest import (
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-assert_file_content = create_assert_file_content(EXPECTED_JSON_PATH)
 
 
 @pytest.mark.cli_doc(
@@ -67,8 +62,6 @@ def test_main_json(output_file: Path) -> None:
         input_path=JSON_DATA_PATH / "pet.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
-        expected_file="general.py",
     )
 
 
@@ -131,7 +124,7 @@ eliminates redundant empty subclasses (e.g., `class Foo(Bar): pass`)
 by replacing all references to duplicate models with the canonical model.""",
     input_schema="json/duplicate_models.json",
     cli_args=["--reuse-model", "--collapse-reuse-models"],
-    golden_output="json/json_collapse_reuse_model.py",
+    golden_output="main_json/collapse_reuse_model.py",
     related_options=["--reuse-model"],
 )
 def test_main_json_collapse_reuse_model(output_file: Path) -> None:
@@ -145,7 +138,6 @@ def test_main_json_collapse_reuse_model(output_file: Path) -> None:
         input_path=JSON_DATA_PATH / "duplicate_models.json",
         output_path=output_file,
         input_file_type="json",
-        assert_func=assert_file_content,
         extra_args=["--reuse-model", "--collapse-reuse-models"],
     )
 

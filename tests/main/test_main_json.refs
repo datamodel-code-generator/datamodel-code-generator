@@ -3,11 +3,11 @@
 [test_main_http_json]
 	main/main_json/main_http_json.py	= main/json/general.py
 [test_main_json]
-	main/json/general.py
+	main/main_json/main_json.py	= main/json/general.py
 [test_main_json_array_include_null]
 	main/main_json/array_include_null.py
 [test_main_json_collapse_reuse_model]
-	main/json/json_collapse_reuse_model.py
+	main/main_json/collapse_reuse_model.py
 [test_main_json_reuse_model]
 	main/main_json/reuse_model.py
 [test_main_json_reuse_model_pydantic2]

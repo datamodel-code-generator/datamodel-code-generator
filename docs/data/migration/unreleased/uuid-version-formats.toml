@@ -6,7 +6,6 @@ summary = "--read-uuid6-uuid7-uuid8-formats reads format uuid6, uuid7 and uuid8 
 refs = ["#7246"]
 surface = ["--read-uuid6-uuid7-uuid8-formats"]
 covers = [
-    "builtin_formatter/parser_config_contract.txt",
     "input_model/config_class.txt",
     "main/help/color.txt",
     "main/help/no_color.txt",
@@ -52,5 +51,6 @@ covers = [
     "main_kr/generate_prompt/with_options.txt",
     "main_kr/generate_prompt/with_question.txt",
     "main_kr/help_shows_new_options.txt",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
     "prompt/generate_prompt_uses_default_parser_for_text_output.txt",
 ]

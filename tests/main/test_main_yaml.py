@@ -14,9 +14,8 @@ import yaml
 
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.util import get_safe_loader, get_yaml_backend, get_yaml_parse_errors
-from tests.conftest import assert_output, create_assert_file_content
+from tests.conftest import assert_output
 from tests.main.conftest import (
-    EXPECTED_MAIN_PATH,
     OPEN_API_DATA_PATH,
     YAML_DATA_PATH,
     assert_generated_model_json_validation,
@@ -26,8 +25,6 @@ from tests.main.conftest import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 
 
 class InvalidYamlError(ValueError):
@@ -75,7 +72,7 @@ For schema definition files (JSON Schema or OpenAPI), use `--input-file-type jso
 or `--input-file-type openapi` instead, regardless of whether the file is in JSON or YAML format.""",
     input_schema="yaml/pet.yaml",
     cli_args=["--input-file-type", "yaml"],
-    golden_output="yaml.py",
+    golden_output="main_yaml/main_yaml.py",
 )
 def test_main_yaml(output_file: Path) -> None:
     """Generate models from raw YAML sample data.
@@ -91,7 +88,6 @@ def test_main_yaml(output_file: Path) -> None:
         input_path=YAML_DATA_PATH / "pet.yaml",
         output_path=output_file,
         input_file_type="yaml",
-        assert_func=assert_file_content,
     )
 
 

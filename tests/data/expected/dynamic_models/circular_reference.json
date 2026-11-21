@@ -1,9 +1,0 @@
-{
-  "Node": {
-    "value": "root",
-    "children": [
-      {"value": "child1", "children": []},
-      {"value": "child2", "children": []}
-    ]
-  }
-}
